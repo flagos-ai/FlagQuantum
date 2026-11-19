@@ -293,21 +293,19 @@ def test_concrete_dtypes_and_actual_phase_adjoint(
         emitter = import_register_emitter(source)
         assert emitter.requirements() == (0, 0)
         instructions = emitter.snapshots[0].instructions
-        if kind in {"opaque", "uint"}:
-            program = on_each_word_program(
-                3, bit_child(code), target_dtype=native_types[kind]
-            )
-            assert verify_program_record(program) == ()
-            bound = bind_register_program(program, ((0, 1, 2),))
-            assert bound.circuit.instructions == instructions
-            assert bound.outputs == ((0, 1, 2),) and not bound.events
-        else:
+        program = on_each_word_program(
+            3, bit_child(code), target_dtype=native_types[kind]
+        )
+        assert verify_program_record(program) == ()
+        if kind == "fixed":
             with pytest.raises(
                 ValueError, match="unsupported executable register descriptor"
             ):
-                on_each_word_program(
-                    3, bit_child(code), target_dtype=native_types[kind]
-                )
+                bind_register_program(program, ((0, 1, 2),))
+        else:
+            bound = bind_register_program(program, ((0, 1, 2),))
+            assert bound.circuit.instructions == instructions
+            assert bound.outputs == ((0, 1, 2),) and not bound.events
         circuit = fq.Circuit(3, dtype=torch.complex128)
         circuit.append(FieldOperation(3, instructions))
         torch.testing.assert_close(
