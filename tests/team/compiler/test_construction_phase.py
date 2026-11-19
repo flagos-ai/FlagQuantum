@@ -4,13 +4,13 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.bindings import verify_bindings
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     ConstructionBudget,
     select_arithmetic,
 )
+from flagquantum.compiler._construction.verification.bindings import verify_bindings
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction
 
@@ -150,7 +150,7 @@ def test_full_phase_and_inverse_count_against_the_existing_operation_budget(stra
 def test_an_unadmitted_prefix_gate_cannot_silently_use_a_wrong_adjoint(
     monkeypatch, kind
 ):
-    from flagquantum.compiler._construction import lowering
+    from flagquantum.compiler._construction.codegen import arithmetic as lowering
 
     monkeypatch.setattr(
         lowering,
@@ -212,7 +212,7 @@ def test_phase_preparation_cannot_touch_predicate_workspace_or_a_hidden_output()
 
 
 def test_projective_basis_paths_and_non_native_preparation_are_not_admitted():
-    from flagquantum.compiler._construction.target import PHASE_BASIS, Target
+    from flagquantum.compiler._construction.scheduling.target import PHASE_BASIS, Target
     from flagquantum.compiler.topology.coupling import CouplingMap
 
     graph = capture(marked, {"x": 2, "y": 2})

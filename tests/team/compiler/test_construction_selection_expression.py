@@ -4,9 +4,12 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture, qfunc
-from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
-from flagquantum.compiler._construction.profile import uint_type, verify_construction
+from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
+from flagquantum.compiler._construction.frontend.python import capture, qfunc
+from flagquantum.compiler._construction.verification.profile import (
+    uint_type,
+    verify_construction,
+)
 from flagquantum.compiler._hybrid.model import INDEX, Block, Operation, Region, Value
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python import _cell

@@ -4,7 +4,9 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.register_profile import register_type
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_type,
+)
 from flagquantum.compiler._hybrid.model import Operation, Value, ValueId
 from flagquantum.compiler._hybrid.unitary_effects import (
     inverse_effects,

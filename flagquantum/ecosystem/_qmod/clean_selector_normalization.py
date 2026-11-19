@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import torch
 
-from ...compiler._construction.clean_unitary_proof import verify_clean_unitary
+from ...compiler._construction.semantics.clean_unitary_proof import verify_clean_unitary
 from ...compiler._hybrid.model import HybridProgram
 from .syntax import Expression, Function, Statement, Token, reject
 from .unary_selection_proof import _calls, _reachable

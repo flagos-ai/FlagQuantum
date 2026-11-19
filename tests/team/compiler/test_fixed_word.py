@@ -8,7 +8,7 @@ from typing import NoReturn
 
 import pytest
 
-from flagquantum.compiler._fixed_word import (
+from flagquantum.compiler._construction.semantics._fixed_word import (
     exact_expression,
     fixed_xor_table,
     truth_cubes,

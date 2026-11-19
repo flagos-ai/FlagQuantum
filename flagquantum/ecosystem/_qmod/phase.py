@@ -2,28 +2,28 @@
 
 from collections.abc import Callable
 
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     MAX_PHASE_DEGREE as MAX_PHASE_DEGREE,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     MAX_PHASE_INPUT_BITS as MAX_PHASE_INPUT_BITS,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     MAX_PHASE_PREDICATE_BITS as MAX_PHASE_PREDICATE_BITS,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     MAX_PHASE_PRODUCTS as MAX_PHASE_PRODUCTS,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     MAX_PHASE_TERMS as MAX_PHASE_TERMS,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     Location as Location,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     Polynomial as Polynomial,
 )
-from ...compiler._phase_polynomial import (
+from ...compiler._construction.semantics._phase_polynomial import (
     expand_phase as _expand_phase,
 )
 from .syntax import Expression, reject

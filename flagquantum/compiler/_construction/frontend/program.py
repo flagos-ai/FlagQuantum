@@ -17,7 +17,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
-from ..profile import _width
+from ..analysis.ranges import unsigned_width
 from ..program_types import (
     _width_spec,
     adjoint,
@@ -60,8 +60,8 @@ from ..program_types import (
     within,
     x,
 )
-from ..ranges import unsigned_width
-from ..register_profile import (
+from ..verification.profile import _width
+from ..verification.register_profile import (
     equatorial_rotation,
     euler_rotation,
     register_type,

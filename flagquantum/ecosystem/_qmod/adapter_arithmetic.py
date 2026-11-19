@@ -6,7 +6,7 @@ import math
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.verification.register_profile import (
     register_type,
     register_width,
 )

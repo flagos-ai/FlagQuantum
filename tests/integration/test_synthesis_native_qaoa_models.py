@@ -36,7 +36,7 @@ from examples.synthesis.applications.physical_systems.ising_model.comparisons im
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 
 pytestmark = pytest.mark.integration
 CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod/corpus/original"

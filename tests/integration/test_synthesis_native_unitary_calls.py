@@ -8,10 +8,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.register_profile import verify_register_program
-from flagquantum.compiler._construction.selection import select_register_program
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.model import HybridProgram, Operation
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
