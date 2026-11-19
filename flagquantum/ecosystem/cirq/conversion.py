@@ -146,7 +146,7 @@ def _flagquantum_parameter_value(
                 return parameters_by_symbol[node]
             except KeyError as exc:
                 raise ValueError(f"unknown symbol {node!s}") from exc
-        if bool(getattr(node, "is_Number", False)):
+        if isinstance(node, (sympy.Number, sympy.NumberSymbol)):
             converted = complex(node)
             if converted.imag != 0 or not math.isfinite(converted.real):
                 raise ValueError(f"constant {node!s} is not a finite real scalar")
@@ -613,6 +613,13 @@ def _export_gate(cirq: Any, instruction: Instruction, params: list[Any]) -> Any:
         return cirq.rz(params[0])
     if instruction.name == "rzz":
         return cirq.ZZPowGate(exponent=params[0] / math.pi, global_shift=-0.5)
+    if instruction.name == "phase":
+        return cirq.ZPowGate(exponent=params[0] / math.pi)
+    if instruction.name == "cphase":
+        return cirq.CZPowGate(exponent=params[0] / math.pi)
+    if instruction.name in {"crx", "cry", "crz"}:
+        rotation = {"crx": cirq.rx, "cry": cirq.ry, "crz": cirq.rz}
+        return rotation[instruction.name](params[0]).controlled()
     if instruction.name == "sdg":
         return cirq.S**-1
     if instruction.name == "tdg":
@@ -640,6 +647,8 @@ def _export_cirq(
     supported_gates = set(_CIRQ_SYMBOL_TO_FLAGQUANTUM.values())
     if include_inverse_phases:
         supported_gates.update(("sdg", "tdg"))
+    if extent_declared_by_gate:
+        supported_gates.update(("phase", "cphase", "crx", "cry", "crz"))
     issues: list[CirqConversionIssue] = []
     feedback = None
     if feedback_key_prefix is not None:

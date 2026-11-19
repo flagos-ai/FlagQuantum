@@ -18,7 +18,13 @@ from ...core.classical_control import validate_classical_control
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
 from ._channel import _channel_instruction
-from .conversion import _cirq, _lower_gate, _real_scalar, _report
+from .conversion import (
+    _cirq,
+    _flagquantum_parameter_value,
+    _lower_gate,
+    _real_scalar,
+    _report,
+)
 from .models import CirqConversionError, CirqConversionIssue, CirqImportResult
 
 Bit = int | bool
@@ -38,6 +44,16 @@ def _lower_feedback_gate(
             name = "sx" if exponent % 2 == 0.5 else "sxdg"
             return ("c" + name if isinstance(gate, cirq.CXPowGate) else name), {}
     if isinstance(gate, (cirq.ZPowGate, cirq.CZPowGate)) and gate.global_shift == 0:
+        if cirq.is_parameterized(gate.exponent):
+            try:
+                theta = _flagquantum_parameter_value(
+                    cirq, gate.exponent, scale_by_pi=True
+                )
+            except (TypeError, ValueError):
+                return _lower_gate(cirq, gate, issues, index)
+            return ("cphase" if isinstance(gate, cirq.CZPowGate) else "phase"), {
+                "theta": theta
+            }
         # A Z power is a phase gate, not Rz: its scalar phase is observable
         # after coherent control. Preserve exact fixed opcodes when available.
         lowered = _lower_gate(cirq, gate, [], index)
