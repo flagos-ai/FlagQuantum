@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from flagquantum.compiler import CouplingMap, route_to_topology
+from flagquantum.compiler import compile as compile_circuit
 from flagquantum.compiler.topology import sabre
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.parameters import Parameter
@@ -92,6 +93,11 @@ def test_repeated_layout_recovers_and_preserves_the_complete_operator() -> None:
         for item in first
         if item.metadata.get("routing_phase") is None
     ) == list(range(len(program)))
+    # Automatic compilation prices SABRE even when another candidate wins. A
+    # heuristic cycle must not prevent the ordinary compiler workflow either.
+    compiled = compile_circuit(program, coupling_map=topology, optimize=False)
+    assert compiled.metadata["routing"]["mapping_restored"] is True
+    assert _basis_permutation(compiled) == _basis_permutation(program)
 
 
 @pytest.mark.parametrize("n_wires", (4, 5, 6, 7))
