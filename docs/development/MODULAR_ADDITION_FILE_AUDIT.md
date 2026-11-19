@@ -67,3 +67,120 @@ match all input tuples of the three slow grids. The original controlled
 constant tensor blocks are matched via the certified native output map.
 Q-0571 is accepted. Q-0568 exports other modular modules and remains open
 until those dependencies are audited.
+
+## Stored graph interfaces and ownership
+
+The next executable graph owners follow the unchanged four composite methods.
+All words are MSB first. Arguments describe encoded integers, with a concrete
+positive width and modulus in `[1, 2**width]`. Input quantum values retain the
+source domain promise. No value inspection or source-domain repair is inserted.
+
+| Owner | Ordered ports | Intermediate views and ownership |
+| --- | --- | --- |
+| `modular_addition_component.modular_addition_program` | `x, y`, Montgomery words with the declared modulus | Own junk/sign prefixes, widened Montgomery Add/AddK, source unsigned comparator views, release both prefixes |
+| `controlled_modular_addition_component.controlled_modular_addition_program` | `ctrl, x, y`, uint or Montgomery, control polarity zero or one | Source Cast to unsigned, one sign prefix, CAdd, unconditional corrections, controlled comparator and release |
+| `modular_constant_component.controlled_modular_constant_program` | `ctrl, x`, uint, positive control | Own IntState constant until matching IntEffect, preserve the original encoded constant without modular reduction |
+| `scaled_modular_addition_component.scaled_modular_addition_program` | `ctrl, x, y`, uint, positive control | Iterate MSB bits, own one And output per bit until its measured inverse, call CModAddK with source-reduced scale constants |
+
+Stored graph lifetimes use the shared scheduler and fresh measurement SSA slots.
+The established explicit-wire emitters retain their separately accepted layouts.
+`ModAddK` has no frozen executable decomposition and retains its independent
+bounded physical permutation and five-Add analytical declaration.
+
+## Complete definition disposition
+
+Every definition in the unchanged source is assigned below. Concrete executable
+closure and broader source-interface acceptance remain distinct.
+
+| Source definitions | FlagQuantum owner or retained boundary |
+| --- | --- |
+| `ModAdd`, `ModAdd.signature`, `ModAdd.build_composite_bloq` | `modular_addition_component` and `ModularAdditionExample.signature`, declared Montgomery ports and original internal views |
+| `ModAdd.on_classical_vals` | Existing `simulation.classical_modular_addition.modular_add_classical_values` |
+| `ModAdd.build_call_graph` | Existing `ModularAdditionExample.call_graph` and independent modular resource models |
+| `ModAdd.short_name` | Original notebook labels retained, no additional executable semantics |
+| `ModAddK`, `ModAddK.signature`, `ModAddK._validate_mod` | Existing bounded modular owner, catalog signature and explicit executable validation |
+| `ModAddK._classical_unctrled`, `ModAddK.on_classical_vals`, `ModAddK.__pow__` | Existing full-domain bounded permutation and signed integer multiples, original callback/control/power evidence reused |
+| `ModAddK.build_call_graph` | Existing five-Add declaration, separate from synthesized primitive counts |
+| `CModAddK`, `CModAddK.signature`, `CModAddK.build_composite_bloq` | `modular_constant_component`, shared IntState, controlled modular graph and IntEffect |
+| `CModAddK.on_classical_vals` | Existing `simulation.classical_modular_constant_addition.controlled_modular_add_constant_classical_values` |
+| `CModAddK.build_call_graph` | Existing catalog one-CModAdd declaration, separate constant Clifford model and primitives |
+| `CModAddK.wire_symbol` | Original notebook's control and constant labels retained, generic diagram metadata reused |
+| `CtrlScaleModAdd`, `CtrlScaleModAdd.signature`, `CtrlScaleModAdd.build_composite_bloq` | `scaled_modular_addition_component`, every MSB traversal and paired And lifetime |
+| `CtrlScaleModAdd.build_call_graph` | Existing symbolic allocated-constant declaration, source model generalizes each concrete constant |
+| `CtrlScaleModAdd.on_classical_vals` | Existing `simulation.classical_modular_scaled_addition.controlled_modular_scaled_add_classical_values` |
+| `CtrlScaleModAdd.wire_symbol` | Original notebook's control and scale labels retained, generic diagram metadata reused |
+| `CModAdd`, `CModAdd.signature`, `CModAdd.build_composite_bloq` | `controlled_modular_addition_component`, source unsigned casts and both activation values |
+| `CModAdd.on_classical_vals` | Existing `simulation.classical_modular_addition.controlled_modular_add_classical_values` |
+| `CModAdd.build_call_graph` | Existing catalog declarations and independent controlled modular resource model |
+| `_mod_add`, `_mod_add_k`, `_mod_add_k_small`, `_mod_add_k_large`, `_cmod_add_k`, `_cmod_add_k_small`, `_ctrl_scale_mod_add`, `_ctrl_scale_mod_add_small`, `_cmodadd_symbolic`, `_cmodadd_example` | Existing ten catalog fixtures and accepted original notebook/test intake, concrete composable factories now exercise stored graphs |
+
+All 40 class, method and factory definitions are disposed. The existing Q-0571
+446-case original intake, including 356 slow cases, remains reusable evidence.
+The stored-graph addition does not require rerunning those unchanged callbacks.
+
+### Source failures and executable boundaries
+
+The source's positive AddK loader requires an encodable constant. Consequently
+modulus `2**width` cannot physically decompose any of the four composite chains.
+The stored graph raises at that same dependency. The existing append catalog
+retains its original full-ring rejection at this boundary. The separately
+implemented ModAddK full-ring permutation remains available. The residue-range
+catalog paths use stored graphs. A fitting CModAddK constant
+outside `[0, modulus]` remains available for source diagnostics, while the catalog
+continues its existing rejection. For `width=2, modulus=2, k=3, ctrl=1, x=1`,
+source/native primitives produce 2 and the source classical callback produces 0.
+No constant normalization repairs that source disagreement.
+
+Target-at-modulus sign cleanup, strict type edges, symbolic physical admission,
+foreign admission and source fixture count-mode limitations remain recorded gaps.
+The concrete graph's loose-width compatibility retains the original untyped
+Join and Montgomery-to-unsigned comparator connections. Five owned fixture modes
+with no explicit qtyping edges do not establish strict source dtype acceptance.
+
+## Stored graph acceptance and separate resources
+
+The four concrete source graphs and their direct typed arithmetic, comparison,
+basis-vector, cast and And dependencies are closed for the admitted executable
+range. Root connections and full primitive streams, operands, individual
+measurement slots and feedback match unchanged source through eight bits.
+Both CModAdd control values and uint/Montgomery descriptors are covered.
+Negative scale and zero-constant stages retain every original traversal.
+
+All valid columns through three bits satisfy each certified And-erasure
+invariant, proving identical amplitudes for every composed measurement history.
+One- and two-bit coherent states include an entangled spectator. Every raw
+history is enumerated when there are at most seven events. Three raw histories
+are separately projected above that bound. Work is zero on the admitted domain.
+The target-at-modulus dirty-sign witness and encoded out-of-domain constant
+witness retain the unchanged source behavior. The existing catalog's normal
+`circuit.append(op)` route binds stored graphs and passes with old physical
+emitters disabled. Its original range refusals and independent ModAddK route
+are preserved. Three actual concrete source factories pass all five owned
+fixture modes. The qtyping mode has no explicit source edge proof.
+
+For width eight, modulus 251, and constant/scale 173 where applicable,
+primitive scans and independent source categories are as follows.
+
+| Graph | Emitted CX | Emitted T/T† | Emitted X | Emitted measurements | Source And | Source Clifford | Native/source peak quantum | Fresh classical slots |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ModAdd | 376 | 124 | 27 | 31 | 31 | 248 | 34 / 34 | 31 |
+| CModAdd, cv=1 | 479 | 164 | 45 | 41 | 41 | 320 | 35 / 35 | 41 |
+| CModAdd, cv=0 | 479 | 164 | 81 | 41 | 41 | 320 | 35 / 35 | 41 |
+| CModAddK | 479 | 164 | 55 | 41 | 41 | 320 | 35 / 35 | 41 |
+| CtrlScaleModAdd | 3880 | 1344 | 422 | 336 | 336 | 2568 | 44 / 44 | 336 |
+
+Stored Programs use one fresh SSA slot per measurement event. Earlier explicit
+emitters reuse physical classical storage after cleanup. This slot distinction
+does not change source gates, their operands or event-specific feedback.
+Owned temporary quantum outputs are fully returned in every graph.
+
+Local receipts use `ftqc-reference-env/g2-modular-native-*`. The final focused
+lane contains 116 passing cases. The concentrated lane contains 8953 passing
+cases with 22 established warnings. Its collection predates the final five
+source-defect/catalog refusal additions, which pass in the final focused lane.
+Six changed Python files pass strict typing, Black, Ruff, team scope,
+architecture, IR and protected API checks. The default smoke/unit lane's
+established docstring-coverage failure remains recorded. Its failing test and
+nine reported modules are byte-identical to the prior published baseline.
+The existing KMX primitive transport and original 446-case/356-slow source
+intake are reused. G2 parent Q-0570 remains open for the specific boundaries above.
