@@ -69,16 +69,16 @@ no whole-file acceptance.
 | `_ControlledBase._tensor_data` | 461–484 | `simulation/tensor_network/controlled_tensor.py` and component tensor binding; full complex tensors and measurement histories. |
 | `_ControlledBase._unitary_` | 486–510 | `simulation/tensor_network/controlled_tensor.py` and component tensor binding; full complex tensors and measurement histories. |
 | `_ControlledBase.my_tensors` | 512–523 | `simulation/tensor_network/controlled_tensor.py` and component tensor binding; full complex tensors and measurement histories. |
-| `_ControlledBase.wire_symbol` | 525–544 | `drawer/control_symbols.py` plus register score callbacks. Generic metadata and SDK diagram fallback remain to audit. |
+| `_ControlledBase.wire_symbol` | 525–544 | `drawer/control_symbols.py` plus register score callbacks. Generic child/control symbols and all four original SDK diagrams are audited in `CONTROLLED_REGISTER_EXPORT_AUDIT.md`. |
 | `_ControlledBase.__str__` | 546–549 | Explicit FunctionRecord names and Drawer titles; source class-name spelling remains presentation metadata. |
-| `_ControlledBase.as_cirq_op` | 551–561 | `ecosystem/cirq` bound export exists. Direct declaration wrapper, control-spec transport and diagram protocols require complete audit. |
-| `_ControlledBase._circuit_diagram_info_` | 563–580 | `ecosystem/cirq` bound export exists. Direct declaration wrapper, control-spec transport and diagram protocols require complete audit. |
+| `_ControlledBase.as_cirq_op` | 551–561 | `ecosystem/cirq` bound export exists. `ecosystem/cirq/_register_control.py` now directly controls an exported child using typed control transport. All four original SDK diagrams and source/imported primitive streams agree. |
+| `_ControlledBase._circuit_diagram_info_` | 563–580 | `ecosystem/cirq` bound export exists. `ecosystem/cirq/_register_control.py` now directly controls an exported child using typed control transport. All four original SDK diagrams and source/imported primitive streams agree. |
 | `Controlled` | 584–675 | `compiler/registers/component_control.py`, control predicate/selection owners and typed builder. THRU checks, controls-first ordering and stored call propagation are tested. |
 | `Controlled.__attrs_post_init__` | 603–610 | `component_predicate.py` typed quantum descriptor validation. Physical Core excludes additional source types. |
 | `Controlled.make_ctrl_system` | 613–621 | `compiler/registers/component_control.py`, control predicate/selection owners and typed builder. THRU checks, controls-first ordering and stored call propagation are tested. |
 | `Controlled.decompose_bloq` | 623–624 | `compiler/registers/component_control.py`, control predicate/selection owners and typed builder. THRU checks, controls-first ordering and stored call propagation are tested. |
 | `Controlled.build_composite_bloq` | 626–653 | `compiler/registers/component_control.py`, control predicate/selection owners and typed builder. THRU checks, controls-first ordering and stored call propagation are tested. |
-| `Controlled.build_call_graph` | 655–672 | `compiler/_component_trace` controlled models and program call graphs. Arbitrary declared child count transformation requires whole-file audit. |
+| `Controlled.build_call_graph` | 655–672 | `compiler/_component_trace` controlled models and program call graphs. `_component_trace/controlled.py` now propagates arbitrary child declarations with specialized factories and the same allocator; complete source graph edges are tested. |
 | `Controlled.adjoint` | 674–675 | `compiler/registers/control/component_adjoint_control.py` and exact hierarchy adjoint; branch/work regressions reused. |
 | `make_ctrl_system_with_correct_metabloq` | 678–717 | `component_control_selection.py`, specialized control and predicate owners. Full classical/quantum selection admission remains to audit. |
 
@@ -140,8 +140,10 @@ alone as evidence of native capability.
   emitters but remain outside Core typed physical admission. Generic symbolic
   control execution and mixed classical/quantum controls require their actual
   admission/selection contracts to be closed.
-- Generic declarations, direct SDK controlled wrappers, diagram fallback and
-  arbitrary declared-child resource propagation require full protocol coverage.
+- Direct exported SDK wrappers and original diagram protocols now have exact
+  comparison evidence. Generic declared-child control counts are implemented
+  with complete source graph edge comparison. Whole symbolic typed control
+  metadata and classical/quantum selection admission still require full audit.
 
 The source notebook's signed QInt(8) value 255 draws but fails physical encoding.
 Its prose also predates the direct tensor and Cirq controlled-operation methods
