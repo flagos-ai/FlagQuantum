@@ -15,7 +15,7 @@ owns presentation. Source Python objects are confined to reference tests.
 
 | Source definitions | Native owner and evidence | Remaining boundary |
 | --- | --- | --- |
-| `_to_tuple`, `_to_set`, `CompositeBloq` | Core immutable tuples and typed Program validation replace attrs converter storage. | Symbolic and non-executable typed graph admission is still Q-0149. Source object equality is represented through native records, not source Python classes. |
+| `_to_tuple`, `_to_set`, `CompositeBloq` | Core immutable tuples and typed Program validation replace attrs converter storage. | Logical typed graph admission and scheduling are accepted under Q-0149. Source object equality is represented through native records, not source Python classes. |
 | `CompositeBloq._default_bloq_instances`, `all_soquets`, `_binst_graph` | Existing operations/results/arguments and `component_graph` / `component_schedule` derive nodes, values and dependencies. `test_component_graph.py` checks metadata, array shape, ownership and copy. | A portable ordering for source frozenset-only isolated nodes is unavailable. Native stored order is explicit. |
 | `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. Arbitrary SDK-backed leaf wrappers and symbolic graphs remain open. The gate wrapper and direct returned-output conversion have separate ownership semantics. |
 | `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | Source permits arbitrary Cirq wrappers; native admission is finite and explicit. Audit unsupported operation classes before full conversion closure. |
@@ -34,7 +34,7 @@ owns presentation. Source Python objects are confined to reference tests.
 | `_IgnoreAvailable`, `_IgnoreAvailable.add` | Existing binding constructor can omit availability tracking, while live builder owns its availability set. | A source private helper class is replaced by the native callable boundary. |
 | `_reg_to_soq`, `_process_soquets` | `component_bindings.create_register_bindings`, `process_register_bindings`; source-backed contract tests cover shape, order, prefix mutations and width compatibility. | Wider descriptor admission remains tracked separately. |
 | `_map_soqs`, `_map_flat_soqs`, `_update_flat_soq_map` | `component_binding_map.map_register_bindings`, copy/expansion SSA replacement maps. `test_component_inline_calls.py` covers scalar/shaped replacement, duplicate precedence, failures and inlining. | The public collection operation is covered; private flat-map mutation is expressed with native SSA dictionaries and must be assessed through copy/expansion consumers. |
-| `BloqBuilder`, `__init__`, `add_register_from_dtype`, all `add_register` overloads, `from_signature` | `ComponentProgramBuilder` accepts a Signature and supports opt-in `allow_register_addition`; `component_signature.infer_output_registers`. Commit `b6a6705b5`, mutable-signature tests and audit. | Negative width source metadata is rejected at the native finite execution boundary. Fixed-point, bounded integer and symbolic bit-width graphs are admitted by the logical register contract. Symbolic element shapes and broader descriptor families remain open. |
+| `BloqBuilder`, `__init__`, `add_register_from_dtype`, all `add_register` overloads, `from_signature` | `ComponentProgramBuilder` accepts a Signature and supports opt-in `allow_register_addition`; `component_signature.infer_output_registers`. Commit `b6a6705b5`, mutable-signature tests and audit. | Negative width source metadata is rejected at the native finite execution boundary. Fixed-point, bounded integer and symbolic bit-width graphs are admitted by the logical register contract. Both source and native builder reject symbolic element shapes. Broader descriptor behaviors require explicit source comparison. |
 | `BloqBuilder.map_soqs` | `map_register_bindings` is independently owned and callable, shared by inlining. | The operation is a module function; no builder convenience duplicate is needed. |
 | `BloqBuilder._new_binst_i`, `_add_cxn`, `_add_binst` | Builder operation positions, Core SSA operands/results, `_new_value`, `_consume` and ordinary call insertion own identity and consumption. | Source private counters are not native contracts. Preserved display labels remain separate metadata returned by expansion. |
 | `BloqBuilder.add_t`, `add_d`, `add` | Native `call_tuple`, `call_dict`, `call` for known definitions and `call_program` for imported composite bodies. Builder tests verify ordered outputs, linear consumption and failure prefixes. | Executable source leaves require native definitions/providers, not a live foreign object in the Program. |
@@ -54,8 +54,9 @@ immediate-layer counts, including nested shared definitions.
 
 The frozen source file's own tests currently pass 39 cases and its original
 notebook test passes separately. Those runs confirm the reference environment.
-They do not close untested native replacements. Q-0157 is accepted through its complete test inventory. Q-0149 remains open
-for broader descriptors and symbolic shapes, as do the dashboard numerical and PennyLane declaration gaps.
+They do not close untested native replacements. Q-0157 is accepted through its complete test inventory. Q-0149 and Q-0154 have since passed complete acceptance, including symbolic dtype
+scheduling and the atomic PennyLane adapter. The dashboard numerical boundary
+remains open.
 
 ## Summary presentation follow-up
 
@@ -310,5 +311,26 @@ after 434 passes and 51 skips. Logs use g2-channel-. Optional-dependency guards
 in the touched feedback witness are repaired and included in the dependency
 receipt with 689 global findings and zero batch findings, down from 706.
 Q-0156 remains open pending complete parent re-audit of broader
-symbolic graphs and declared SDK boundaries. Q-0149/Q-0154 and the dashboard
-numerical discrepancy also remain open.
+symbolic graphs and declared SDK boundaries. Q-0149 and Q-0154 subsequently passed complete acceptance. The dashboard
+numerical discrepancy remains open.
+
+
+## Owned symbolic scalar follow-up
+
+The complete scalar dependency now preserves existing owned Parameter and
+ParameterExpression nodes across Program constants, validation, nested binding,
+copy, ordinary append, parameter binding and SDK export/reimport. Core244e0f780,
+Compiler27154329a and Ecosystemad34f3b8c follow contractf88a890fa. Read
+OWNED_SYMBOLIC_SCALAR_AUDIT.md for the complete ownership and source-protocol
+mapping. The nine supported SDK atoms retain one immediate primitive and operand
+order at the raw SDK leaf boundary. Full complex amplitudes, all applicable
+measurement outcomes, record/work zero and the nested gradient pass. QEC model
+estimates remain separate from emitted primitive counts.
+
+Wider source symbolic expression transport remains a concrete Q-0156 gap.
+Unchanged source transports Rz(sin(theta)), while native import explicitly
+refuses it. Generic symbolic global shifts remain open. Source CZPow and CRz
+wrappers omit parameter protocols, and source CZPow graph export decomposes into
+measurement-assisted And erasure. Their protocol and granularity differences
+are explicit in tests. Q-0149 and Q-0154 remain accepted, and source symbolic
+array-element counts remain a shared refusal. This batch does not close Q-0156.
