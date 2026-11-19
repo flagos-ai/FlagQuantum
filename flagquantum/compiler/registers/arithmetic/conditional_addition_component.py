@@ -5,61 +5,16 @@
 
 """Compose conditional sum/difference through shared typed arithmetic calls."""
 
-from dataclasses import replace
-from functools import partial
-
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.register_verifier import executable_register_width
-from ....core.ir.program.registers import Register, RegisterSide, RegisterType
+from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
-from ..bits.bitwise_component import bitwise_word_program
-from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_control import ControlAdder, control_component_hierarchy
+from ..bits.bitwise_component_control import controlled_bitwise_word_program
+from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from .addition_component import addition_component_program
-
-
-def _preserve_control(
-    builder: ComponentProgramBuilder,
-    control: BindingCollection,
-    values: dict[str, BindingCollection],
-    *,
-    callee: str,
-) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-    return control, tuple(builder.call_dict(callee, values).values())
-
-
-def _controlled_x(
-    builder: ComponentProgramBuilder,
-    control: BindingCollection,
-    values: dict[str, BindingCollection],
-) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-    outputs = builder.call_dict(
-        "conditional_cx", {"ctrl": control, "target": values["q"]}
-    )
-    return outputs["ctrl"], (outputs["target"],)
-
-
-def _controlled_complement(dtype: RegisterType) -> ProgramRecord:
-    record = bitwise_word_program(dtype, "bitwise_not")
-    bit = quantum_bit_type()
-    cx = bit_gate_function(
-        "conditional_cx",
-        (Register("ctrl", bit), Register("target", bit)),
-        CircuitIR(2, (Instruction("cx", (0, 1)),)),
-    )
-    adders: dict[str, ControlAdder] = {}
-    for function in record.functions:
-        assert function.registers is not None
-        if function.name.endswith("bitwise_x"):
-            adders[function.name] = _controlled_x
-        elif any(register.side != RegisterSide.THRU for register in function.registers):
-            adders[function.name] = partial(_preserve_control, callee=function.name)
-    return control_component_hierarchy(
-        replace(record, functions=(*record.functions, cx)), adders
-    )
 
 
 def conditional_addition_program(
@@ -86,7 +41,7 @@ def conditional_addition_program(
         left_dtype=a_dtype,
         right_dtype=target_dtype,
     )
-    complement = _controlled_complement(target_dtype)
+    complement = controlled_bitwise_word_program(target_dtype, "bitwise_not")
     bit = quantum_bit_type()
     flip = bit_gate_function(
         "conditional_x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))

@@ -87,7 +87,7 @@ def test_complete_source_hierarchy_and_original_physical_feedback(
     terminals = {
         function.name
         for function in graph.functions
-        if function.name.endswith("conditional_cx")
+        if function.name.endswith("bitwise_controlled_x")
         or function.name in {"conditional_add", "conditional_x"}
         or any(
             register.side != RegisterSide.THRU for register in function.registers or ()

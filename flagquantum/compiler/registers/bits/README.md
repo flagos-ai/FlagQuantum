@@ -65,3 +65,8 @@ control-flip wrapper with both words live. See
 adjoint consumption. The gate emitter and width graph share the tree and six-step
 compression sequence. See [the interface and evidence](../../../../docs/development/HAMMING_WEIGHT_RESOURCE_WIDTH.md).
 Run `python -m pytest tests/unit/test_hamming_weight_resource_width.py tests/unit/test_hamming_weight.py -q`.
+
+`bitwise_component_control.py` owns control propagation through actual XorK and
+BitwiseNot child calls. It specializes X to CNOT and threads controls unchanged
+through Split/Join. Conditional arithmetic and controlled constant loading share
+this owner. Arithmetic constants arrive as already encoded word patterns.
