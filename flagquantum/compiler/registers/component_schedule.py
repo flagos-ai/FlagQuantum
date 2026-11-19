@@ -163,6 +163,8 @@ def _operation_step(
     *,
     logical_graph: bool,
 ) -> WidthStep:
+    has_inputs = bool(operation.operands)
+    has_outputs = bool(operation.results)
     symbolic_signature = False
     if operation.opcode == "call":
         callee = functions[operation.callee or ""]
@@ -183,8 +185,8 @@ def _operation_step(
         operation = body[0]
         if logical_graph:
             break
-    if operation.opcode == "allocate_register":
+    if operation.opcode == "allocate_register" and not has_inputs:
         return WidthStep("allocate")
-    if operation.opcode == "free_register":
+    if operation.opcode == "free_register" and not has_outputs:
         return WidthStep("free")
     return WidthStep("component", symbolic_signature=symbolic_signature)
