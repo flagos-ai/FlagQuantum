@@ -38,6 +38,8 @@ def validate_control_ports(
             "opaque": "unsigned",
             "uint": "unsigned",
             "signed": "twos_complement",
+            "ones_complement": "ones_complement",
+            "montgomery": "unsigned",
         }.get(register.dtype.encoding)
         if (
             register.side != RegisterSide.THRU
@@ -87,9 +89,9 @@ def control_predicate_program(
     Forward owns clean allocation of n-1 prefix outputs. Erasure requires their
     correct computed values, measures in reverse ladder order and releases them
     after clearing. These logical outputs remain live across an intervening
-    controlled call. The current Program admission permits unparameterized bit,
-    opaque, unsigned and two's-complement quantum words. Other descriptors raise
-    ValueError.
+    controlled call. Canonical integer storage retains its descriptor across
+    split/join. Montgomery controls use stored residues and bounded unsigned
+    controls use their stored bit values. Unsupported descriptors raise ValueError.
     """
     count = validate_control_ports(controls, patterns)
     signature = control_predicate_signature(controls, uncompute=uncompute)

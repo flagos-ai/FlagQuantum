@@ -330,16 +330,6 @@ def test_generated_prefix_collision_and_canonical_payload() -> None:
     assert any(f.name == "__fq_predicate_1_positive" for f in module.functions)
 
 
-@pytest.mark.parametrize("case", CASES[4:])
-def test_typed_boundary_rejects_descriptors_outside_core_admission(
-    case: ControlCase,
-) -> None:
-    _, patterns, _ = control_fixture(case)
-    controls = native_controls(case, tuple(f"c{i}" for i in range(len(case))))
-    with pytest.raises(ValueError):
-        control_predicate_program(controls, patterns)
-
-
 @pytest.mark.parametrize("case", (SINGLE[0], MULTI[0], MULTI[2], SIGNED[0]))
 @pytest.mark.parametrize("expanded", (False, True))
 def test_exact_adjoint_body_restores_all_forward_inverse_histories(
