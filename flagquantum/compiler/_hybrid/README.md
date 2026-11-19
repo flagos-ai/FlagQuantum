@@ -10,7 +10,7 @@ evolution. This package does not introduce a second public IR or execution API.
 
 ## Follow a program
 
-[Capture](capture.py) → [verify](verifier.py) → [normalize](passes.py) →
+[Capture](frontend/README.md) → [verify](verifier.py) → [normalize](passes.py) →
 [specialize](specialize.py) → [lower](lowering.py).
 [Dynamic lowering](dynamic_lowering.py) handles measurement-dependent control.
 
@@ -33,3 +33,7 @@ bounded profiles, parameter flow, and migration constraints.
 effects. Native construction and the external source adapter share these rules;
 source-specific diagnostics and storage binding checks remain at their capture
 boundaries. No execution or new IR representation is introduced.
+
+Python capture implementation ownership and its shortest executable workflow are
+documented in [frontend/README.md](frontend/README.md). The existing
+`capture.py` module retains the source entry points and diagnostic aliases.
