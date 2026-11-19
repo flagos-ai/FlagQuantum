@@ -2,7 +2,7 @@ schema = "flagquantum.parameter_expression_contract"
 version = "1.0"
 proposal = "docs/development/API_CHANGE_PROPOSAL_107_NONLINEAR_PARAMETER_EXPRESSIONS.md"
 approval = "explicit_user_approval_2026-11-19"
-implementation_status = "contract_only"
+implementation_status = "core_implemented_adapter_pending"
 owner = "core"
 public_methods_added = []
 

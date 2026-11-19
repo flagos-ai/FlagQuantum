@@ -92,3 +92,32 @@ execution boundaries. Ecosystem owns all SDK expression conversion.
    concentrated regression and local integration. Synchronize the ledger and
    phase overview after complete acceptance. Q-0156 stays open until the whole
    parent audit has evidence for every remaining definition.
+
+
+## Core implementation evidence
+
+The Core implementation adds the six approved operations behind the existing
+ParameterExpression constructor and bind method. Program scalar literals and
+physical-control validation reuse one structural validator. Unresolved log and
+reciprocal trees are admitted without evaluating them at zero. Old arithmetic
+operations retain their binding behavior and byte-identical serialization.
+
+The concentrated Core/Program regression passes 177 cases. Six source files pass
+strict typing, Black and Ruff. Architecture and the multi-level IR checker pass.
+The seven nested register tests include the six nonlinear operations, copying,
+allocated-work phase, complete complex output, gradients and work-zero through
+circuit.append(op). Expression transport adds zero primitive operations. These
+fixtures still emit exactly two Rz operations, with one clean work qubit.
+
+The native circuit and Rydberg training integration suite passes all 172
+cases, with nine existing deprecation warnings. Single-rank Gloo checks run
+with local loopback permission. The separate Rydberg legacy-field compatibility suite has one pre-existing
+failure. Replaying the pre-change parameters, scalar and physical modules
+reproduces the same mismatch between the old allowed Operation tail and the
+already present callee/register/workspace/matrix/kraus fields. This evidence
+is stored in g2-nonlinear-core-baseline.log. It is not counted as passing.
+
+Ecosystem nonlinear import/export and symbolic global phase remain pending.
+Full Proposal 107 and Q-0156 acceptance await those consumers and the complete
+source audit. The Core batch does not imply that SDK conversion accepts the new
+expressions yet.

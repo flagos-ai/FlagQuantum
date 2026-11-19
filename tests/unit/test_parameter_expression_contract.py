@@ -1,12 +1,16 @@
 """Proposal 107 keeps previous expression bytes, hashes and binding semantics."""
 
 import json
-import tomllib
 from pathlib import Path
 
 import pytest
 
 from flagquantum.core.ir import CircuitIR
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
