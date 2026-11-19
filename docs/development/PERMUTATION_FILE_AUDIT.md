@@ -71,3 +71,61 @@ Q-0213 closes. Q-0214 and Q-0215 retain the order-sensitive partial-map
 witness, generic shape and foreign admission, strict source dtype checks
 and original serialization boundaries. Symbolic declarations and costs
 are available separately from concrete gate lowering.
+
+
+## Native graph batch interface and acceptance
+
+Compiler control owns literal MultiControlX through the existing shared predicate
+and scalar CX owner. Compiler comparison owns EqualsAConstant through integer
+Split/MultiControlX/Join. Compiler sorting owns ordered PermutationCycle and
+Permutation graph composition. The target is a bounded unsigned MSB-first THRU
+word. The cycle allocates and frees its clean marker. Equality owns and erases
+its temporary predicate carries. Each cycle returns all work clean before the
+next cycle. Concrete empty cycle sequences represent the source identity.
+Existing source cycle discovery, symbolic declarations, resource models and
+classical callbacks retain their respective owners and accepted evidence.
+
+
+The three native owners preserve every comparable typed call boundary through
+the accepted predicate, bookkeeping and primitive leaves. MultiControlX delegates
+the source scalar X control directly to CX through the existing entry callback.
+This avoids an additional stored wrapper. Equality retains the source integer
+Split/MultiControlX/Join. The cycle retains Allocate, ordered equalities and
+controlled XorK calls, the final equality and Free. Empty outer cycle sequences
+retain the source identity. Original dense/partial conversion and symbolic
+factory declarations reuse their existing owners and audit evidence.
+
+The batch passes 77 focused checks. All three actual concrete source factories
+use all five existing native example checks. Source root/child named connections,
+primitive dependencies and feedback compare through eight bits. The small
+source tensors include an entangled spectator and every raw measurement history,
+for forward and inverse application independently. Workspace amplitudes are
+zero within the same 3e-12 absolute tolerance as the full complex state. The
+normal append example now binds these native graphs.
+
+The three-bit overlapping-cycle example emits 101 CX, 52 X, 56 T/TDG and
+14 measurements. Its independent source model is retained in the separate
+seven-category resource receipt. Program allocates one SSA classical slot per
+measurement lifetime, giving 14 slots in this example. The explicit primitive
+interface reuses two caller-supplied slots. Each untouched source measurement
+event is bound bijectively to its corresponding native event on that measured
+wire, including the dependent feedback. Event count, SSA storage and reusable
+primitive storage are recorded separately. Source primitive gates are unchanged.
+
+The source whole-file 37 passes, 8 skips, 6 serialization xfails and complete
+notebook evidence are reused. Q-0214/Q-0215 remain open for the insertion-order
+partial-map lost-edge defect, generic shape/symbolic physical/foreign admission
+and the original strict bounded-to-unsigned dtype and serialization boundaries.
+Proposal 108 remains pending. Receipt prefix `g2-permutation-native-*` records
+this batch, including the frozen source hashes and actual primitive/resource
+model tables.
+
+
+The final concentrated regression passes 4967 checks with no skips and twelve
+existing warnings. Strict typing covers seven Python files. Black, Ruff,
+compiler scope, architecture, IR and public API checks pass, as do six local
+integration cases. The default suite reaches 434 passes and 51 skips before
+the established docstring coverage failure. Its nine reported modules and the
+failed test are byte-identical to base e2abfd8d4. Dependency policy reports
+688 whole-repository findings and zero findings in this batch. Frozen source
+blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified separately.
