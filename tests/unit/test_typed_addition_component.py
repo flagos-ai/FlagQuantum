@@ -53,18 +53,19 @@ def integer_types(
 
 @pytest.mark.parametrize("kind", ("unsigned", "signed", "montgomery", "mixed"))
 @pytest.mark.parametrize("left,right", ((1, 1), (1, 2), (2, 2), (2, 3), (3, 5), (8, 8)))
+@pytest.mark.parametrize("adjoint", (False, True))
 def test_typed_add_preserves_descriptors_and_original_gate_feedback(
-    kind: str, left: int, right: int
+    kind: str, left: int, right: int, adjoint: bool
 ) -> None:
     from qualtran.bloqs.arithmetic import Add
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
     a_dtype, b_dtype, source_a, source_b = integer_types(kind, left, right)
     graph = addition_component_program(
-        left, right, left_dtype=a_dtype, right_dtype=b_dtype
+        left, right, left_dtype=a_dtype, right_dtype=b_dtype, adjoint=adjoint
     )
     if kind == "unsigned":
-        assert graph == addition_component_program(left, right)
+        assert graph == addition_component_program(left, right, adjoint=adjoint)
     root = next(function for function in graph.functions if function.name == "main")
     assert root.registers is not None
     assert tuple(register.dtype for register in root.registers) == (a_dtype, b_dtype)
@@ -78,6 +79,8 @@ def test_typed_add_preserves_descriptors_and_original_gate_feedback(
         if gate.name == "measure"
     }
     source = Add(source_a, source_b)
+    if adjoint:
+        source = source.adjoint()
     expected = reference_arithmetic_gates(source, {"a": a, "b": b}, work, slots)
     assert_source(bound.circuit.instructions, expected)
     assert bound.outputs == (a, b)
@@ -89,14 +92,15 @@ def test_typed_add_preserves_descriptors_and_original_gate_feedback(
 
 @pytest.mark.parametrize("kind", ("signed", "montgomery", "mixed"))
 @pytest.mark.parametrize("left,right", ((1, 1), (1, 2), (2, 3)))
+@pytest.mark.parametrize("adjoint", (False, True))
 def test_typed_add_full_source_tensor_and_each_raw_measurement_history(
-    kind: str, left: int, right: int
+    kind: str, left: int, right: int, adjoint: bool
 ) -> None:
     from qualtran.bloqs.arithmetic import Add
 
     a_dtype, b_dtype, source_a, source_b = integer_types(kind, left, right)
     graph = addition_component_program(
-        left, right, left_dtype=a_dtype, right_dtype=b_dtype
+        left, right, left_dtype=a_dtype, right_dtype=b_dtype, adjoint=adjoint
     )
     logical = left + right
     work = right - 1
@@ -108,9 +112,10 @@ def test_typed_add_full_source_tensor_and_each_raw_measurement_history(
     )
     initial = torch.zeros(1 << (logical + work + 1), dtype=torch.complex128)
     initial[indexes] = state
-    matrix = torch.as_tensor(
-        Add(source_a, source_b).tensor_contract(), dtype=torch.complex128
-    )
+    source = Add(source_a, source_b)
+    if adjoint:
+        source = source.adjoint()
+    matrix = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
     expected = torch.zeros_like(initial)
     expected[indexes] = (
         matrix.reshape(1 << logical, 1 << logical) @ state.reshape(-1, 2)
@@ -141,3 +146,8 @@ def test_typed_add_rejects_wrong_width_or_non_source_integer(
 ) -> None:
     with pytest.raises(ValueError, match="integer descriptors"):
         addition_component_program(3, left_dtype=dtype)
+
+
+def test_typed_add_direction_requires_explicit_boolean() -> None:
+    with pytest.raises(ValueError, match="direction requires a boolean"):
+        addition_component_program(2, adjoint=1)  # type: ignore[arg-type]

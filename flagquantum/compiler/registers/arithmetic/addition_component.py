@@ -27,18 +27,22 @@ def addition_component_program(
     name: str = "main",
     left_dtype: RegisterType | None = None,
     right_dtype: RegisterType | None = None,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Construct ``a,b -> a,(a+b) mod 2**right_width`` in existing IR.
 
     Ports default to scalar uint words, ordered a then b, with MSB-first binding.
     Explicit integer descriptors retain their identities and must match widths.
     The source circuit zero-extends a narrower signed input before addition.
+    The exact adjoint reverses shared logical components before measurement lowering.
     Each AND owns its new carry until the matching measured erasure releases it.
     The existing predicate owner supplies physical AND bodies, clean allocation,
     feedback and erasure. The returned graph contains real executable functions;
     callers can retain AND leaves for tensor contraction or bind to append an op.
     No tensor, simulator, resource estimate or foreign source object is created.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Add direction requires a boolean")
     if right_width is None:
         right_width = left_width
     if (
@@ -98,7 +102,7 @@ def addition_component_program(
     left = tuple(range(left_width))
     right = tuple(range(left_width, left_width + right_width))
     carries = tuple(range(left_width + right_width, left_width + 2 * right_width - 1))
-    for kind, addresses in addition_components(left, right, carries):
+    for kind, addresses in addition_components(left, right, carries, adjoint=adjoint):
         x, y = addresses[:2]
         if kind == "cx":
             result = builder.call_dict("add_cx", {"ctrl": wires[x], "target": wires[y]})
