@@ -2065,3 +2065,26 @@ and release priorities continue to take precedence. Concrete scheduling and
 physical admission retain their current semantics. No public API or IR schema
 changes are introduced. Validate the flag and compare complete visitation order
 with the unchanged source for symbolic metadata, numeric widths, sides and ties.
+
+### Prerequisite 1.24 — owned symbolic scalar leaves
+
+The frozen Cirq wrapper retains parameterized graphs before parameter resolution.
+The current register importer already obtains native Parameter values for
+rotation angles, but internal Program lowering forces float and rejects them.
+Retain existing Core Parameter and ParameterExpression objects in the constant
+operation's literal field. No foreign expression enters Program. Preserve float
+normalization for concrete input and old numeric hashes. Validate the supported
+immutable arithmetic tree (add, sub, mul and neg), its arity, finite numeric
+leaves and parameter names. Reject malformed trees through program.result_kind.
+The physical binder reconstructs symbolic Instruction parameters using these
+same owned objects, allowing the existing Circuit.bind_parameters entry point to
+resolve values. Unbound numerical execution keeps its existing refusal.
+
+Ecosystem reuses the existing symbolic converter for exact zero-shift ZPow and
+CZPow phase semantics, and existing rotation conversion for rx/ry/rz/rzz and
+supported controlled rotations. Preserve phase, input order and feedback across
+copy, nested calls, export and reimport. This prerequisite adds no public
+parameter operations or serialized schema. Existing unsupported nonlinear
+expressions and generic symbolic global shifts must retain explicit diagnostics
+and remain recorded as broader source-wrapper gaps. Core and Compiler changes
+land independently of the Ecosystem translator after this contract.
