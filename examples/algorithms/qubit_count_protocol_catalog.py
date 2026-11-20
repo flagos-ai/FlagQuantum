@@ -38,7 +38,17 @@ def interior_workspace_signature(width: SymbolicInt) -> Signature:
     return Signature.build(x=width, y=width)
 
 
-def _word_swap(width: int) -> ProgramRecord:
+def _word_swap(width: SymbolicInt) -> ProgramRecord:
+    if not isinstance(width, int):
+        return ProgramRecord(
+            (
+                FunctionRecord(
+                    "swap_word",
+                    (),
+                    registers=tuple(interior_workspace_signature(width)),
+                ),
+            )
+        )
     bit = quantum_bit_type()
     dtype = opaque_register_type(width)
     swap = bit_gate_function(
@@ -47,7 +57,7 @@ def _word_swap(width: int) -> ProgramRecord:
         CircuitIR(2, swap_bit_ir(0, 1)),
     )
     builder = ComponentProgramBuilder(
-        Signature((Register("x", dtype), Register("y", dtype))),
+        interior_workspace_signature(width),
         (swap,),
         name="swap_word",
     )
@@ -65,10 +75,10 @@ def _word_swap(width: int) -> ProgramRecord:
     )
 
 
-def interior_workspace_fixture(width: int) -> ProgramRecord:
+def interior_workspace_fixture(width: SymbolicInt) -> ProgramRecord:
     """Route x into y on the clean-y input subspace; the middle word is freed."""
     dtype = opaque_register_type(width)
-    signature = Signature((Register("x", dtype), Register("y", dtype)))
+    signature = interior_workspace_signature(width)
     builder = ComponentProgramBuilder(signature, _word_swap(width).functions)
     middle = builder.allocate(dtype=dtype)
     first = builder.call_dict("swap_word", {"x": builder.inputs["x"], "y": middle})
