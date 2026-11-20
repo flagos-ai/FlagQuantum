@@ -100,7 +100,8 @@ def import_register_graph(source: object) -> ProgramRecord:
     Missing source decompositions and unsupported leaves retain their errors.
     The returned Program owns all data and retains no foreign object.
     """
-    from qualtran import Bloq, CompositeBloq
+    from qualtran import Bloq, CompositeBloq, QMontgomeryUInt
+    from qualtran.bloqs.bookkeeping import Join, Split
     from qualtran.serialization.bloq import bloqs_to_proto
 
     if not isinstance(source, Bloq):
@@ -123,10 +124,21 @@ def import_register_graph(source: object) -> ProgramRecord:
             .declaration
         )
         candidates = leaves.setdefault(declaration.name, [])
-        if any(
-            _declaration_key(existing) == _declaration_key(declaration)
-            for existing, _ in candidates
-        ):
+        duplicates = [
+            existing_leaf
+            for existing, existing_leaf in candidates
+            if _declaration_key(existing) == _declaration_key(declaration)
+        ]
+        if duplicates:
+            # The source serializer omits Montgomery modulus. These exact
+            # views lower only raw ordered storage through the owned dtype.
+            if (
+                type(leaf) in (Split, Join)
+                and type(leaf.dtype) is QMontgomeryUInt
+                and type(duplicates[0]) is type(leaf)
+                and type(duplicates[0].dtype) is QMontgomeryUInt
+            ):
+                continue
             raise ValueError(
                 "Distinct live components share one serialized declaration"
             )
