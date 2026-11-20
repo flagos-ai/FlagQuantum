@@ -36,8 +36,9 @@ X = CliffordCall("x", 1)
 def integer_multiplication_examples() -> tuple[MultiplicationExample, ...]:
     """Preserve original port order, fixed-point formats and declared calls.
 
-    The fixed-point square's two input ports and the reciprocal's mixed THRU
-    result are source metadata. Their executable native contracts differ.
+    Stored owners preserve the fixed-point square's two input ports and the
+    reciprocal's mixed THRU result. Numerical paper constructions and source
+    analytical models retain their independently recorded precision limits.
     """
     right = RegisterSide.RIGHT
     uint = unsigned_register_type

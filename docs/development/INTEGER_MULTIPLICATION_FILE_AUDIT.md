@@ -461,3 +461,85 @@ and Q-0209 remain open for the complete foreign-interface disposition of
 construction, drawing, rebinding, serialization and original missing root
 decomposition/autotester modes. The whole-file inventory must resolve those
 remaining interfaces before parent acceptance.
+
+## Complete multiplication-file interface closure, November 20, 2026
+
+The complete frozen module has eight classes, forty own methods and eight
+factories, totaling 56 definitions. Its complete native disposition follows.
+
+| Own definitions | Native owner and final disposition |
+| --- | --- |
+| PlusEqualProduct validation, signature, a/b/result dtype properties, registers, adjoint, apply, classical callback, tensor, wire symbol, Cirq diagram info, graph | The stored live accumulator, existing classical/tensor owners and analytical T model retain these contracts. The SDK adapter converts both adjoint flags into the same native Program. Diagram results use the original Cirq label c+=a*b or c-=a*b. |
+| PlusEqualProduct.with_registers | The unchanged original explicitly raises NotImplementedError. Native physical rebinding uses the existing named emitter with reversed wires and fresh feedback slots. This source refusal is fully disposed. |
+| Square signature, classical callback, wire symbol, graph, tensor, adjoint | The accepted stored square and value/tensor owners supply the native contract. Its previous SDK square realization is byte-identical and remains the same owner. |
+| SumOfSquares signature, wire symbol, graph | The shaped stored sum owner, retained model and row-major score geometry cover all three methods. |
+| Product signature, wire symbol, graph | The stored product owner, retained analytical model and a*b score label cover all three methods. |
+| ScaleIntByReal signature, wire symbol, graph | The stored D4 owner retains mixed result metadata, including the accepted wider integer case. The SDK adapter uses that owner. Source formula and actual primitive counts remain separate. |
+| MultiplyTwoReals signature, wire symbol, graph | The stored D5 owner, retained analytical model and pure-fraction metadata cover all three methods. |
+| SquareRealNumber validation, signature, wire symbol, graph | The stored D24/D28 owner preserves both THRU input ports and RIGHT/LEFT result ownership. Minimum width and analytical model are retained separately from the executable construction. |
+| InvertRealNumber validation, signature, wire symbol, graph | The mixed THRU reciprocal, owned seed/Newton history and retained eight-child source model provide the final native owners. Approximation and source-model precision differences remain explicit. |
+| Eight factories and module documentation specifications | The accepted native catalogue, full notebook and source declaration tests cover all factories, signatures, fixed-point formats and call graphs. Original source factory serialization passes for all eight. |
+
+`ecosystem/cirq/_multiplication_arithmetic.py` translates the seven remaining
+concrete source declarations into their existing Compiler Program owners.
+The SDK receives primitive native IR immediately. Source objects stop at this
+boundary. The bridge uses the existing Program expansion and physical binder,
+with a synthetic pool bounded by the sum of allocation lifetimes. Only scratch
+wires actually used by binding are allocated in the SDK. RIGHT results receive
+local clean storage. LEFT images transfer ownership for erasure. Actual output
+aliases are restored before returning to the original SDK operands. This
+avoids maintaining duplicate arithmetic or resource formulas in Ecosystem.
+The existing integer-square bridge remains byte-identical.
+
+`drawer/arithmetic_symbols.py` owns multiplication formulas and register labels.
+Existing layout handles array grouping, lifetime arrows and geometry. All eight
+complete scores match original geometry, ordered ports and formula labels,
+including SumOfSquares' shaped input. Native snapshots serialize and deserialize
+through the existing CircuitIR schema. Every original factory also passes the
+unchanged source serialization check. The deliberately unsupported original
+with_registers callback is preserved as a source limitation, with native named
+physical rebinding separately verified.
+
+Forward and backward imported snapshots cover all eight roots. Normal append,
+reversed logical/work placement and fresh classical slots preserve complete
+complex input states and their spectator through round trips. Forward states
+also match independent integer or accepted truncation/reciprocal oracles.
+Complete all-input measured-channel certificates verify each erase invariant
+and zero scratch. Original accumulation value/tensor and square tensor
+callbacks retain their prior direct evidence. Observed primitives remain the
+native paper streams. The original roots still have no executable decomposition.
+No original-root primitive alignment is asserted for those missing recipes.
+Physical capture retains its existing concrete positive-port contract. Symbolic
+metadata and resource formulas are covered by the earlier declaration owners.
+Generic inherited control protocols and arbitrary foreign subclasses belong to
+their own source-file owners.
+
+| Imported example | Actual forward primitives and clean/slot requirements | Original model |
+| --- | --- | --- |
+| PlusEqualProduct 1x1 into 2 | 8 T/Tdg, 14 CX, 2 measurements/resets, 2 clean and 2 slots | Approximate 8 T |
+| Product 1x1 | 4 T/Tdg, 7 CX, 1 measurement/reset, 1 clean and 1 slot | 1 Toffoli |
+| SumOfSquares two one-bit words | 4 T/Tdg, 10 CX, 1 measurement/reset, 1 clean and 1 slot | 1 Toffoli |
+| ScaleIntByReal 2,1 | 4 T/Tdg, 6 CX, 0 measurements, 0 clean, 1 reusable inverse slot | 1 Toffoli |
+| MultiplyTwoReals 2 | 4 T/Tdg, 6 CX, 0 measurements, 0 clean, 1 reusable inverse slot | 1 Toffoli |
+| SquareRealNumber 3 | 8 T/Tdg, 16 CX, 2 measurements/resets, 2 clean and 2 slots | 0 Toffoli in the original formula |
+| InvertRealNumber 2,1 | 304 T/Tdg, 699 CX, 76 measurements/resets, 31 clean and 76 slots | Original minimum-three-bit square failure |
+
+The original test file passes all 24 runnable non-notebook checks. Its 24 skips
+are exactly the original missing-decomposition, decomposition-count and dtype
+modes. The accepted complete notebook run is reused. Native concentrated
+regression passes 4,234 checks with one existing IPython warning and no skips.
+Local integration passes 17 checks. Final focused checks pass 30 cases. The
+additional Cirq 1.6.1 lane passes 21 checks, alongside the default Cirq 1.7 lane.
+Strict typing covers all five batch Python files. Black, Ruff, scope,
+architecture, IR and public API checks pass. Six frozen source blobs and the
+required Qualtran/Kickmix Simulator environment are verified. Eleven accepted
+owners/tests remain byte-identical to 7fc0bef3d. Dependency policy reports 687
+existing whole-repository findings and zero batch-path findings. The interrupted
+over-broad run is retained separately and excluded from acceptance. Default
+coverage continues using the verified pre-existing docstring failure baseline.
+Receipts use `ftqc-reference-env/g2-multiplication-foreign-`.
+
+Q-0208 and Q-0209 have complete definition, dependency, test and asset
+disposition and can be accepted together with the previously accepted Q-0207
+notebook. Native numerical constructions and the upstream model-only boundary
+remain independently traceable.
