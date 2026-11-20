@@ -198,6 +198,28 @@ before_seconds,candidate_seconds
 0.004071000003023073,0.004311166994739324
 ```
 
+### HHL workflow resource regression
+
+The first full CI attempt exposed a fixed CX-count expectation in the portfolio
+HHL workflow: the new path emitted `(498, 498, 672)` instead of the earlier
+`(612, 612, 824)`. This was investigated rather than retried as infrastructure.
+A same-source local control rejects only the optional pulse proposal and
+recovers the general factor sequence and all three earlier counts. Its U3 counts
+are `(1887, 1887, 2549)`; admitted pulse proposals produce `(1653, 1653, 2245)`.
+The CX reduction occurs in the complete synthesis/basis-conversion workflow;
+it is not the three-CX random-matrix diagnostic above.
+
+Both paths preserve the exact finite outcomes `(1154, 799, 91, 4)` for each
+reduced profile and `(1132, 797, 108, 11)` for the basic profile, the same overlap
+estimates and widths `(9, 9, 10)`. Complete converted statevectors are checked
+against their native statevectors at `1e-12` up to the existing global phase;
+observed maximum residuals were below `5e-15` on both paths. Separate existing
+tests compare each native profile's absolute state with an independently built
+HHL circuit. These are full state checks for the declared input, not complete
+operators or held-out SDKBench evidence. The regression now checks both exact
+resource tuples and both paths' state acceptance; no threshold was relaxed and
+historical notebook evidence was not rewritten.
+
 ## Acceptance and supported workflow
 
 The focused tests cover fixed random SU(4) matrices, framed two-CX interactions,
