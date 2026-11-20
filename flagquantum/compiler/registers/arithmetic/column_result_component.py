@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
-"""Shared typed result ownership for exact unsigned column arithmetic."""
+"""Shared typed result ownership for unsigned column arithmetic."""
 
 import numpy as np
 
@@ -19,6 +19,7 @@ def column_result_program(
     terms: tuple[tuple[int, int, int | None], ...],
     *,
     adjoint: bool,
+    result_dtype: RegisterType | None = None,
 ) -> ProgramRecord:
     """Preserve source words and create or consume their polynomial image.
 
@@ -26,7 +27,8 @@ def column_result_program(
     Terms index their concatenated MSB-first words in row-major port order.
     This owner handles result storage, views and the shared column call only.
     """
-    result_dtype = RegisterType("uint", result_width)
+    if result_dtype is None:
+        result_dtype = RegisterType("uint", result_width)
     builder = ComponentProgramBuilder(
         Signature(
             (
