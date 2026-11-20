@@ -117,3 +117,18 @@ and four-qubit input, applies a complex Fourier matrix and compiles with
 Circuit amplitudes and hidden-zero checks verify the emitted result. Previously
 the scheduler ignored the tighter clean tail for this operation and proposed
 three work bits, which the unchanged resource acceptance rejected.
+
+The same scheduler correction makes the harmonic oscillator's one-work-bit
+schedule and Lanchester's three-work-bit schedule feasible. Their previous
+rejection assertions are replaced by explicit success, exact resource-bound
+and independent state checks: all 32 harmonic input columns and the complete
+Lanchester output state, including hidden-zero workspace. Operation, depth and
+memory refusal tests remain in place. No test accepts either success or failure.
+
+On the development host, the constrained harmonic schedule uses 6 qubits,
+1,889 operations and depth 1,653 (its ordinary two-work-bit schedule uses
+7 qubits, 203 operations and depth 173). The constrained Lanchester schedule
+uses 15 qubits, 20,350 operations and depth 18,261; its observed full-state
+maximum error is `9.788462989003254e-14`, with zero observed workspace leakage.
+These input-specific observations show a width versus gate/depth tradeoff;
+they do not replace the ordinary resource ceilings or qualify a benchmark.

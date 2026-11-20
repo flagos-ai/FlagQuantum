@@ -91,9 +91,26 @@ def test_complete_lanchester_state_global_phase_field_order_and_clean_work(
         assert native_resources.depth <= 18016
 
 
-@pytest.mark.parametrize(
-    "budget", ["width", "workspace", "operations", "depth", "memory"]
-)
+@pytest.mark.parametrize("limit", ["width", "workspace"])
+def test_three_work_bit_schedule_preserves_complete_state(limit: str) -> None:
+    program = synth.synthesize(
+        main,
+        classical_inputs={"amplitudes": list(INITIAL_VECTOR)},
+        max_qubits=15 if limit == "width" else None,
+        max_workspace=3 if limit == "workspace" else None,
+    )
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_qubits == 15
+    assert program.report["workspace_qubits"] == 3
+    logical_size = 1 << sum(len(wires) for wires in program.registers.values())
+    actual = fq.run(program).statevector().reshape(logical_size, -1)
+    expected = fq.run(reference_circuit()).statevector().reshape(logical_size, -1)
+    torch.testing.assert_close(actual[:, 0], expected[:, 0], atol=1e-12, rtol=0)
+    assert float(actual[:, 1:].abs().square().sum()) < 1e-24
+
+
+@pytest.mark.parametrize("budget", ["operations", "depth", "memory"])
 def test_lanchester_actual_resource_refusals(budget: str) -> None:
     measured = synth.synthesize(
         main, classical_inputs={"amplitudes": list(INITIAL_VECTOR)}
@@ -104,8 +121,6 @@ def test_lanchester_actual_resource_refusals(budget: str) -> None:
         synth.synthesize(
             main,
             classical_inputs={"amplitudes": list(INITIAL_VECTOR)},
-            max_qubits=15 if budget == "width" else None,
-            max_workspace=3 if budget == "workspace" else None,
             max_operations=(
                 resources.n_operations - 1 if budget == "operations" else None
             ),
