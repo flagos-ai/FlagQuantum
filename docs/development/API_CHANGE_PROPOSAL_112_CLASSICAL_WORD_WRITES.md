@@ -143,3 +143,11 @@ and native physical measurements remain distinct evidence.
 
 Complete-file acceptance of `ClassicallyControlled` and its inherited dependencies
 requires a final interface audit. This proposal alone accepts no parent item.
+
+## Implementation evidence
+
+Core admission and Compiler owned replacement binding are implemented after the
+approved contract in separate domain commits. The complete-file disposition,
+source comparison scope, resource accounting and remaining inherited generic
+boundaries are recorded in `CLASSICALLY_CONTROLLED_FILE_AUDIT.md`. Validation
+receipts use the `g2-classical-write-*` prefix in the reference workspace.
