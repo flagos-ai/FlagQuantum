@@ -159,3 +159,73 @@ by that failure and optional dependency skips. The local integration selection
 pins PYTHONPATH to this worktree for child processes and covers both arithmetic
 append consumers and the QEC retirement gate. Dependency-policy findings for the
 whole repository and changed paths remain separately recorded.
+
+## Complete foreign consumer closure (2026-11-20)
+
+This section supersedes the preceding foreign-admission open disposition.
+All 14 recursive definitions in the frozen source and all 11 original test
+functions, including the separately verified notebook, map to existing native
+owners. The two actual factories retain deterministic source library bytes at
+depths zero and one. The three-bit factory also retains depth two. The
+thousand-bit source fails at depth two with RecursionError while recursively
+decomposing Add. This source failure is asserted without changing the source
+or raising its recursion limit. The original default factory serializer passes.
+
+Both signed and unsigned symbolic declarations, with both activation values,
+resolve through the existing explicit native factory interface. Their unresolved
+physical execution remains rejected by source and native owners. Metadata
+resolution is separate from executable specialization.
+
+Actual CAdd.controlled objects serialize a two-row library. The outer row's
+component reference resolves to the native positive CAdd function. The caller's
+explicit factories compose existing controlled_addition_program and
+multi_controlled_component_program, namespace private helpers, and reuse the
+resolver's existing native FunctionRecord references. No reflection registry or
+new execution owner is introduced. Both signed and unsigned types and all four
+old/new activation combinations preserve exact instructions, operands, classical
+slots, feedback, output aliases and JSON. All eight raw measurement histories of
+a complete complex input with an entangled spectator agree with the unchanged
+source tensor. Every work qubit returns to zero. These checks use widths one and
+two, including the original narrow signed circuit semantics.
+
+The existing typed SDK register importer accepts original CAdd and its adjoint
+at widths 1/1, 1/2, 2/3 and 3/3, for both polarities and reversed SDK qubit names.
+Its complete ordered primitive stream and output aliases equal direct native
+binding. Existing accepted stored graph, exact adjoint, all small branch and
+forward/inverse history, normal circuit.append(op), thousand-bit physical
+accounting, numerical callback, score and model evidence is reused and rerun.
+
+The source's narrow signed numerical callback still differs from its actual
+zero-extending gate chain. Q-0186.02 remains an explicit open semantic exception.
+The native numerical owner follows the callback, and the gate owner follows the
+source gates. The original drawer's Register-versus-Soquet interface failure and
+thousand-bit QubitCount recursion failure also remain recorded. Full-file
+acceptance means all original definitions and supported consumers have a tested
+disposition, including these retained source defects. It does not certify those
+conflicting source semantics as equal.
+
+The small outer-control executable uses 12 T/T-dagger, three measurements,
+three resets and three clean work qubits, with a spectator-inclusive physical
+width of nine. No single-qubit matrix atom is introduced. Existing independent
+QEC and peak-width assertions remain separate. The thousand-bit executable uses
+7,996 T/T-dagger and 1,999 measurements with 1,999 work qubits and 4,000 total
+qubits. Source Toffoli-only estimation reports 1,999. These are different
+accounting categories.
+
+Evidence and verification receipts are stored under
+ftqc-reference-env/g2-cadd-foreign-*. Production owners remain unchanged in
+this consumer closure.
+
+The final concentrated regression passes 1,082 cases without skips, retaining
+five recorded source/native overflow, notebook-environment and source escape
+warnings. Local integration passes 17 cases. The original test file passes
+169 cases with the notebook deselected and two original slow-marker warnings.
+Both original and native notebooks are exercised by the concentrated asset audit.
+The new consumer checks pass 30 cases under both Cirq 1.7 and 1.6.1. Strict
+mypy, Black, Ruff, team scope, architecture, multilevel IR and the public API
+baseline pass. Three frozen blobs, nine unchanged owners, locked Qualtran and
+Kickmix versions and native Simulator availability are verified. The dependency
+policy retains its whole-repository baseline, with zero findings for this batch.
+The established default docstring-policy failure remains qualified by ten
+byte-identical baseline files. These results do not assert whole-repository
+acceptance.
