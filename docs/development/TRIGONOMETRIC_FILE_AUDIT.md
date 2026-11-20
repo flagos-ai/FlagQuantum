@@ -65,3 +65,59 @@ Q-0223 closes through the complete two-export responsibility map.
 Q-0228 closes as a complete teaching asset. Q-0224–Q-0227 retain the
 original decomposition, generic interface, approximation and original
 test-mode boundaries above.
+
+## Complete generic declarations and foreign consumers — 2026-11-20
+
+All 13 definitions across arcsin.py and arctan.py now have explicit owned
+interfaces or preserved original-source failures. The existing original scalar,
+lookup, approximation, notebook and original-test evidence remains authoritative.
+
+| Source responsibility | Owned disposition |
+|---|---|
+| ArcSin fields/defaults/post-init/signature | `fixed_point/arcsine_declaration.py` retains width/fraction/iteration/degree metadata, defaults, exact source validation including equality, and unsigned fixed-point x/result. Concrete and symbolic signatures match original serialized descriptors. |
+| ArcSin classical callback and direct cost | Existing Simulation callback and independent source formula are reused. The actual width-ten/fraction-seven factory declares 13,425 Toffoli. |
+| ArcSin factory and documentation | Actual concrete/symbolic libraries transport exact source bytes at depths 0/1/2, reconstruct equally upstream and resolve to native typed declarations. Existing complete notebook and factory evidence is reused. |
+| ArcTan signature and registers | `lookup/arctangent_declaration.py` owns select/sign/target and original binary digit dimensions. Symbolic digit construction retains TypeError. Original with_registers remains unimplemented. |
+| ArcTan apply and adjoint | Existing bounded QROM retains the actual unsigned encoded domain, occupied XOR outputs and self-inverse mapping. Native declaration adjoint returns itself. Original tensor-only SDK import is qualified separately below. |
+| ArcTan direct model | The generic declaration uses the shared SymbolAllocator, producing fresh c multiplicities per query. Catalogue delegates to the declaration. Sequential original/native allocators agree exactly. |
+
+The complete direct dependency closure also repairs two shared format defects.
+The original ArcTan library contains `_c0`, previously refused by the native
+parser. Single-underscore atoms now construct symbolic nodes directly, with
+existing dunder/call/attribute/subscript refusals retained. The symbolic ArcSin
+model exposed intermediate product distribution that changed printed wire
+expressions. One product construction now preserves the original factor grouping.
+Both complete libraries retain exact source bytes in all three depth settings.
+See `PROTO_ARGUMENT_FILE_AUDIT.md` for the format ownership and regression scope.
+
+Both sources lack gate decomposition. ArcSin also lacks a tensor-unitary SDK
+fallback, and the existing import reports unsupported_operation. Its width-four
+input word 15 produces 19 for all declared fractional widths 2/3/4. Those three
+original failure witnesses remain unchanged. ArcTan's register-aware gate helper
+returns no decomposition. The existing operation-tree import with explicit typed
+placements then consumes the original ArithmeticGate tensor as one matrix leaf.
+No new SDK import policy or Core contract is introduced.
+
+Actual ArcTan SDK tensor consumers at 1/2, 2/3 and 3/3 source/target widths agree
+in complete complex amplitude with a coherent spectator. Native QROM consumers
+agree with that same original matrix in every raw measurement history, including
+zero work after each branch. The QROM's primitive stream and resource model
+reuse accepted original-QROM evidence. The tensor leaf is one `any` operation.
+At 3/3 the native QROM emits 43 CX, 16 T/TDG and four measurements, with two clean
+work wires. The original ArcTan product estimate is independently 72*c T. Matrix
+size, primitive emission and symbolic arithmetic estimates stay separate.
+
+Acceptance has 551 concentrated passes. The initial twelve optional QREF skips
+were rerun with the existing locked qref-bartiq directory and all twelve pass.
+All 17 integration cases pass. The 25 declaration, ten foreign and 46 shared
+argument cases also pass together on Cirq 1.6.1, with twelve original NumPy shape
+warnings. Strict typing covers seven changed Python files. Black, Ruff, scope,
+architecture, IR and public API baseline checks pass. Frozen source hashes and
+unchanged numerical/SDK owners are verified in `g2-trigonometric-foreign-evidence.json`.
+
+Q-0225 and Q-0227 close with original 10-pass/3-skip source evidence retained.
+Q-0224 remains open for the unrecovered original minimax coefficient obligation.
+Q-0226 remains open for the independent arithmetic path's four of 256 +1-ulp
+words. Their missing original gate bodies remain explicit source limitations.
+This batch completes generic interfaces and foreign consumers without claiming
+those independent scientific gaps are resolved.
