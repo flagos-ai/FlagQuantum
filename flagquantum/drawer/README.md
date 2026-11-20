@@ -472,3 +472,9 @@ function body before expansion and counts repeated calls separately.
 register-score layout. It owns labels and lifetime arrows while Compiler owns
 the arithmetic. The complete eight-class source geometry comparisons are in
 `tests/unit/test_multiplication_foreign_file.py`.
+
+`subtraction_symbols.py` supplies typed `subtract` and `subtract_from` display
+labels to `register_score_data(register_wire_symbol=...)`. It retains a/b
+formulas and directional glyphs. Compiler owns subtraction semantics and
+workspace. Run `python -m pytest tests/unit/test_subtraction_symbols.py -q` for
+original symbol and complete register-score geometry comparisons.
