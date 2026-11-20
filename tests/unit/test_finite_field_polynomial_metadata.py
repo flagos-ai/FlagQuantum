@@ -6,8 +6,14 @@ from itertools import product
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
 import pytest
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip(
+        "NumPy is needed for polynomial metadata codecs", allow_module_level=True
+    )
 
 from flagquantum.core.ir.program.register_verifier import executable_register_width
 from flagquantum.core.ir.program.registers import Register
@@ -31,7 +37,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 @pytest.mark.parametrize("p,m,degree", CASES)
 @pytest.mark.parametrize("classical", [False, True])
-def test_projection_domains_truth_table_and_independent_core_refusal(
+def test_projection_domains_truth_table_and_approved_core_admission(
     p: int, m: int, degree: int, classical: bool
 ) -> None:
     encoding, source = pair(p, m, degree, classical)
@@ -41,8 +47,11 @@ def test_projection_domains_truth_table_and_independent_core_refusal(
     assert resolved.field.gf_type is encoding.field.gf_type is source.qgf.gf_type
     assert_domain_and_table(dtype, source)
     assert (dtype.num_qubits, dtype.num_cbits) == (source.num_qubits, source.num_cbits)
-    with pytest.raises(ValueError, match="unsupported executable"):
-        executable_register_width(dtype)
+    if p == 2 and not classical:
+        assert executable_register_width(dtype) == int(encoding.bitsize)
+    else:
+        with pytest.raises(ValueError, match="unsupported executable"):
+            executable_register_width(dtype)
 
 
 @pytest.mark.parametrize("p,m,degree", CASES)
