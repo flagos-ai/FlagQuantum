@@ -31,6 +31,7 @@ from flagquantum.core.ir.program import (
 )
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
+from tests.unit.register_source_workspace import SourceWorkspace
 from tests.unit.test_subtraction_foreign_file import native_signature
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -150,6 +151,18 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         ("allocate", wires, dirty),
         ("free", wires, dirty),
     ]
+    source_pool = SourceWorkspace(() if dirty else wires, wires if dirty else ())
+    operation, outputs = allocation.as_cirq_op(source_pool)
+    assert operation is None and release.as_cirq_op(source_pool, **outputs) == (
+        None,
+        {},
+    )
+    assert not source_pool.live
+    assert source_pool.events == [
+        (event.kind, event.wires, event.dirty) for event in bound.events
+    ]
+    assert allocation.as_pl_op(wires=wires) is None
+    assert release.as_pl_op(wires=wires) is None
     # Dirty storage may be coherently entangled with the spectator. Clean storage
     # is initialized to zero. An empty lifetime emits no operation in either case.
     generator = torch.Generator().manual_seed(59)

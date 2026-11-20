@@ -7,9 +7,9 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0310 | `allocate.ipynb` | `8d91513e62d1015fcbd97c0601442916e3ba6796` | Closed by the complete native Allocate and Free tutorial. |
-| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Open for external object hooks, full executable dtype and symbolic component drawing. |
+| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Open for full executable dtype coverage, including pending Proposal 116. Direct SDK lifetime hooks and symbolic component drawing are verified. |
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
-| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for external object hooks, full executable dtype and symbolic component drawing. |
+| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for full executable dtype coverage, including pending Proposal 116. Direct SDK lifetime hooks and symbolic component drawing are verified. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
 | Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Complete base control protocol accepted in 6d6460528; see BOOKKEEPING_CONTROL_FILE_AUDIT.md. |
 
@@ -33,7 +33,9 @@ the caller contract. The tensor zero projection is a separate diagnostic;
 its amplitude is intentionally unnormalized. Existing Cirq probes compare
 ordered qalloc, qborrow and qfree events with native leases. The source
 PennyLane hooks return no operation. Native emitted circuits likewise have
-no lifetime gate. Direct PennyLane and Cirq object-level bookkeeping adapters remain open.
+no lifetime gate. Actual direct hooks are now compared with the existing native
+explicit factory and pool owners across all eight supported foreign dtype
+families, including both dirty flags.
 
 Concrete typed component scores identify lifetime calls by their primitive
 bodies. Allocate and Free reuse the existing default arrows and empty
@@ -43,8 +45,8 @@ and three bits under both dirty flags. The tested source `qalloc` or
 reversed pool. Both bindings produce zero gates. The physical circuit
 reserves the pool and one spectator. The source qubit model visits its
 disconnected spectator separately and reports the pool width. The
-locked symbolic glyph has the same labels, while native typed component
-scores require concrete widths.
+locked symbolic glyph has the same labels. Internal native typed component
+scores now retain symbolic width metadata through geometry and export.
 
 ## Shared bookkeeping control
 
@@ -181,3 +183,53 @@ Black, Ruff, scope, architecture, IR and protected API checks pass. Four inherit
 strict errors in the touched SelectSwap test reproduce on baseline and are
 resolved by removing variable shadowing and typing the deliberately invalid
 boolean fixture explicitly. The original frozen reference is untouched.
+
+## Symbolic presentation and complete direct lifetime hooks
+
+The internal Drawer projection now retains the Core symbolic width expression
+instead of coercing it to int. RegisterLine and RegisterConnection share the
+existing SymbolicInt representation. Layout uses the existing symbolic metadata
+predicate and the original concrete nonnegative-integer validation. A logical
+word occupies one display lane, independently of its physical bit count. Finite
+array shapes, original operand dependencies and lane ownership retain their
+existing traversal rules.
+
+Actual original _alloc and _free factories now match complete open-boundary
+geometry, directional glyphs and width labels. Closed allocation/free graphs
+also match for n, 2*n+1 and symbolic Integer(3), under both dirty flags. The exact
+width object survives through layout and connection export. JSON, HTML and DOT
+presentation succeeds. Physical binding continues to reject these unresolved
+symbolic storage descriptors before allocating wires. Invalid negative integer,
+boolean, float and string widths still fail the concrete display guard.
+
+Across the eight supported foreign wire dtype families and both dirty flags,
+actual source qalloc/qborrow/qfree calls produce the same reversed pool events
+as native resolved lifetime bodies. The source and native calls return the same
+logical ownership transitions, and both original PennyLane hooks return None.
+Native emission has zero gates. Previous coherent borrowed-state restoration,
+clean-work zero, spectator phase and independent zero-QEC/word-width resource
+evidence remain applicable because all Compiler and numerical owners are
+unchanged.
+
+Two old mixed-score tests still expected rejection of classical unsigned words
+admitted by approved Proposal 108. Both fail identically with all three Drawer
+owners restored temporarily to the pre-batch HEAD. Their assertions now check
+the approved exact Core port metadata and valid Program identity. No production
+Core behavior changes. The baseline failing run is retained separately.
+
+Q-0311 and Q-0323 remain open for complete executable dtype coverage, including
+signed and empty fixed-point storage awaiting Proposal 116. Their direct SDK
+lifetime hooks and symbolic presentation obligations are verified. The remaining
+physical admission boundary is owned by Core and Compiler, independently of
+Drawer metadata presentation. Proposal 117 remains independently pending.
+
+The final batch passes 172 concentrated cases and 17 local integration cases.
+All 89 direct-lifetime, symbolic and mixed-score cases also pass under Cirq
+1.6.1, while the primary environment uses 1.7.0. The eight existing source
+Graphviz/parser deprecation warnings remain recorded. Strict typing passes all
+six changed Python files. Black, Ruff, Compiler scope, architecture, multilevel
+IR and protected API checks pass. Three frozen source blobs and six unchanged
+Core/Compiler/numerical/lane owners are verified. Dependency findings total 681
+repository-wide and zero on the batch surface after optional dependency guards
+are added to the touched mixed-score tests. Evidence is recorded under
+ftqc-reference-env/g2-symbolic-lifetime-*.
