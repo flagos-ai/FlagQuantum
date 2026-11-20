@@ -2,7 +2,8 @@
 
 ## Review status
 
-Draft awaiting explicit user approval. Proposal 108 approved classical integer
+Approved explicitly by the user on 2026-11-20 with the instruction
+“批准，按 Proposal 110 实施”. Proposal 108 approved classical integer
 words. Proposal 109 approved quantum binary-field polynomial ports. Their
 accepted scopes expressly exclude the classical field ports proposed here.
 
@@ -43,7 +44,8 @@ tracked. This proposal adds no class, root export, opcode or operation field.
 
 The existing `read_classical_register` returns the identical typed successor
 and MSB-first boolean snapshots, reusing Proposal 108's result convention.
-Split/Join and nested calls retain their existing ownership rules. Arrays are
+Nested calls retain their existing ownership rules. Split/Join retain their
+existing quantum-only operand restriction. Classical fields use owned reads. Arrays are
 row-major, with highest-degree-first polynomial coefficients and MSB-first
 coefficient bits. Reads allocate no additional classical slots. Existing
 feedback consumes stored-bit activation patterns and preserves the field

@@ -1,0 +1,37 @@
+schema = "flagquantum.classical_field_feedback_contract"
+version = "1.0"
+proposal = "docs/development/API_CHANGE_PROPOSAL_110_CLASSICAL_FIELD_FEEDBACK.md"
+approval = "explicit_user_approval_2026-11-20"
+implementation_status = "approved_pending_implementation"
+owner = "core"
+public_methods_added = []
+
+[admission]
+encodings = ["finite_field", "finite_field_polynomial"]
+storage = "classical"
+quantum_width = 0
+metadata = "canonical_existing_quantum_validator_after_storage_projection"
+field_width = "positive_binary_coefficient_degree"
+polynomial_width = "(polynomial_degree + 1) * coefficient_degree"
+symbolic_nonbinary = "separate_admission"
+
+[read]
+opcode = "read_classical_register"
+results = "identical_type_successor_then_width_boolean_snapshots"
+bit_order = "MSB_first"
+coefficient_order = "highest_degree_first"
+array_order = "row_major"
+quantum_gates = 0
+new_classical_slots = 0
+
+[entry]
+values = "built_in_unsigned_stored_word_per_classical_element"
+user_entry = "circuit.append(op)"
+
+[compatibility]
+fixture = "tests/fixtures/classical_field_feedback_compatibility.json"
+previous_words = "identical_program_repr_circuit_bytes_hash_outputs_and_slots"
+quantum_polynomials = "existing_Proposal_109_fixture"
+operation_fields = "unchanged"
+classical_split_join = "existing_quantum_only_operation_restriction"
+source_wrapper_model = "preserve_decomposition_and_model_refusal"
