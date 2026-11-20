@@ -64,11 +64,12 @@ This module always returns the general factors, which are an exact
 decomposition of the same matrix. The gate counts for those inputs are
 therefore Qiskit's *pulse_optimize=False* counts, not its specialized ones.
 
-**`pulse_optimize` is absent on purpose.** Qiskit's pulse-optimal chooser only
-applies to a ``{rz, sx}`` basis around a CNOT and removes one or two single-qubit
-gates between entanglers. Dropping it removes a few hundred lines of
-float-threshold branching. A gate-count comparison against Qiskit has to pass
-``pulse_optimize=False`` on the Qiskit side.
+**Pulse optimization remains an implementation gap.** This module does not
+implement Qiskit's pulse-optimization rewrites. Internal formula-conformance
+checks may use ``pulse_optimize=False`` to isolate the shared closed forms.
+End-to-end SDK comparisons must retain the declared upstream optimization
+settings and report any resulting FlagQuantum disadvantage. They must not
+disable an upstream optimization merely to match this implementation.
 
 Every number is deterministic: the one randomized step Qiskit has -- the
 diagonalization of ``M2`` -- uses the same fixed first attempt here and a

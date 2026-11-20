@@ -89,6 +89,16 @@ qualification cannot retroactively establish it.
 The implementation still lacks several important upstream mechanisms. The
 presence of SABRE or KAK alone does not establish equivalent compilation quality.
 
+### Formula conformance and comparative performance
+
+An internal formula-conformance test may disable an upstream optimization to
+isolate the particular closed forms being checked. That setting applies only
+to the diagnostic. SDKBench comparisons must retain their declared participant
+settings, including upstream optimizations that FlagQuantum has not implemented.
+Missing pulse optimization is a FlagQuantum gap to measure and improve, not a
+reason to constrain a competitor. The published compiler studies do not set
+`pulse_optimize=False` in their Qiskit adapter.
+
 ## Recovery port and deliberate modifications
 
 Previously, reaching `4 * n_wires` speculative SWAPs was treated as evidence that
