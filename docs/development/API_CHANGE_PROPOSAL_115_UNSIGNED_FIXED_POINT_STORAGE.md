@@ -2,9 +2,10 @@
 
 ## Review status
 
-Awaiting explicit user approval. Proposals 113 and 114 admit only canonical
+Approved explicitly by the user on 2026-11-20 for implementation according
+to Proposal 115. Proposals 113 and 114 admitted only canonical
 unsigned single-bit storage, with a built-in integer fractional width at most
-one. This proposal extends the physical storage contract for wider unsigned
+one. This approved proposal extends the physical storage contract for wider unsigned
 words required by the complete multiplication source signatures.
 
 ## Requirement and evidence
