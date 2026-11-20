@@ -6,16 +6,15 @@
 
 import numpy as np
 
-from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
-from ..component_gate_function import bit_gate_function
-from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
 from .bit_compression import weighted_column_components
+from .bit_compression_structure import CompressionComponent
+from .column_steps_component import append_column_steps, column_bit_functions
 
 
 def weighted_columns_xor_program(
@@ -59,21 +58,6 @@ def weighted_columns_xor_program(
             "Column network exceeds result or workspace capacity"
         ) from error
     bit = quantum_bit_type()
-    cx = bit_gate_function(
-        "column_cx",
-        (Register("ctrl", bit), Register("target", bit)),
-        CircuitIR(2, (Instruction("cx", (0, 1)),)),
-    )
-    conjunction = bit_gate_function(
-        "column_and",
-        (Register("bits", bit, (3,)),),
-        CircuitIR(3, and_compute_ir(0, 1, 2)),
-    )
-    erasure = bit_gate_function(
-        "column_erase",
-        (Register("bits", bit, (3,)),),
-        CircuitIR(3, and_uncompute_ir(0, 1, 2, 0)),
-    )
     builder = ComponentProgramBuilder(
         Signature(
             (
@@ -81,7 +65,7 @@ def weighted_columns_xor_program(
                 Register("result", bit, (result_width,)),
             )
         ),
-        (cx, conjunction, erasure),
+        column_bit_functions(),
     )
     wires: dict[int, RegisterBinding] = dict(
         enumerate(np.asarray(builder.inputs["input"]).flat)
@@ -91,7 +75,7 @@ def weighted_columns_xor_program(
         wires.update(
             (input_width + i, value) for i, value in enumerate(builder.split(workspace))
         )
-    copies = tuple(
+    copies: tuple[CompressionComponent, ...] = tuple(
         ("cx", (source, input_width + workspace_width + i))
         for i, source in reversed(tuple(enumerate(word)))
         if source is not None
@@ -101,24 +85,7 @@ def weighted_columns_xor_program(
         for i, value in enumerate(np.asarray(builder.inputs["result"]))
     )
     for steps, inverse in ((compute, False), (copies, False), (erase, True)):
-        for kind, addresses in steps:
-            x, y = addresses[:2]
-            if kind == "cx":
-                result = builder.call_dict(
-                    "column_cx", {"ctrl": wires[x], "target": wires[y]}
-                )
-                control, target = result["ctrl"], result["target"]
-                assert isinstance(control, RegisterBinding) and isinstance(
-                    target, RegisterBinding
-                )
-                wires[x], wires[y] = control, target
-            else:
-                result = builder.call_dict(
-                    "column_erase" if inverse else "column_and",
-                    {"bits": np.array([wires[i] for i in addresses], dtype=object)},
-                )
-                returned = np.asarray(result["bits"])
-                wires.update(zip(addresses, returned, strict=True))
+        append_column_steps(builder, wires, steps, inverse=inverse)
     if workspace_width:
         builder.free(
             builder.join(
