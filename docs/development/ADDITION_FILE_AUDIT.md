@@ -243,3 +243,82 @@ pass. The default suite has 434 passes and 51 skips before the established
 and failing test are byte-identical to this batch's base `e59ec616a`.
 The dependency policy reports 688 whole-repository findings and none in the
 changed paths. Local evidence receipts use the `g2-addition-native-*` prefix.
+
+## Complete foreign consumer and factory closure
+
+The final closure covers all 45 recursive class/function definitions, ten
+factories, three DocSpecs and 25 original test functions. The preceding open
+items describe earlier checkpoints. Approved Proposals 108 through 115 and the
+existing Compiler library and Ecosystem register adapters now supply the
+required direct dependencies. Q-0174 and Q-0175 close with the source defects
+and execution boundaries below explicitly retained.
+
+`test_addition_foreign_file.py` serializes all ten actual original factory
+objects at depths zero and one. Existing Compiler library records preserve
+original deterministic bytes, constructor arguments, typed registers, count rows
+and decomposition edges. Explicit native factories resolve declarations,
+including all three symbolic examples. Symbolic widths retain logical and
+model ownership and the original physical-decomposition refusal. The generic
+arbitrary source-type graph scope remains in Q-0937.
+
+The three actual concrete Add examples, including 64-bit and unequal 4/16-bit
+ports, now use all five existing native example-check modes. Their count mode
+compares full emitted opcode multiplicities against independent original
+emission. This joins the already accepted four AddK/out-of-place concrete
+examples. Existing symbolic source models, dtype/cache identities, input
+validation, full matrices, exact adjoints and tensor provider evidence are
+reused and rerun. The six complete original unsigned/signed controlled AddK
+callback fixtures delegate the existing Simulation constant addition and
+controlled-value owners, matching both original root results and decomposed
+classical execution. Production numerical and quantum owners remain unchanged.
+
+### SDK arithmetic and sided decomposition contracts
+
+The existing `import_cirq_register_gate` accepts original OutOfPlaceAdder
+operations with an explicit typed sided signature. Widths one, two, three and
+five, both carry flags and both directions retain reversed SDK Qid placement,
+complete primitive instruction order, operand indices, measurement slots,
+feedback, returned aliases and JSON. Every instruction equals the existing
+native component's instruction. Widths one and two additionally verify every
+applicable raw erasure history, complete complex sum amplitudes, entangled
+spectators and zero consumed output bits. Transport produces zero matrix atoms.
+Normal append, larger domains and source tensor/isometry checks retain their
+accepted owners in the concentrated regression.
+
+Original `ArithmeticGate.registers` produces its three binary radix lists.
+Its `apply` returns a, b, c+a+b for either value of is_adjoint. Existing native
+integer addition independently matches that unbounded numerical protocol.
+The sided clean-output decomposition separately owns creation or consumption
+of a correct sum. Original `with_registers` raises NotImplementedError.
+Original power-minus-one drops the truncated carry flag, while explicit adjoint
+preserves it. These exact source witnesses remain checked. The ordinary static
+`import_cirq` adapter retains its unsupported-operation result for the original
+root. Register decomposition transport is the executable adapter for this
+source contract. Source numerical methods and sided quantum channels retain
+their distinct ownership conditions.
+
+### Final validation and resource accounts
+
+Concentrated regression passes 4,236 cases with two existing notebook/environment
+warnings and zero skips. Both original and native notebooks run through the
+existing complete asset audit. Integration passes 17 cases. All 48 focused
+consumer cases also pass with Cirq 1.6.1. The untouched original test file has
+267 passes, nine source skips, five source xfails, one notebook deselection and
+four source pytest warnings. Its separately accepted notebook evidence is
+revalidated in the concentrated asset audit. Strict typing, Black, Ruff, team
+scope, architecture, multilevel IR and protected API checks pass for this batch.
+
+All eleven reused production/test owners and the ten files implicated by the
+established default-run docstring-policy failure are byte-identical to the
+batch baseline. Dependency policy retains 687 existing findings and zero in
+changed paths. Whole-repository status retains that documented policy failure. Receipts
+and logs use `ftqc-reference-env/g2-addition-foreign-*`.
+
+For a two-bit full sum, actual forward emission is 22 CX, four H, four T,
+four TDG and two S, with three caller-visible output bits. Actual inverse
+emission is ten CX, two H, two measurements, two conditioned CZ and two resets.
+Independent source estimates are two And and ten Clifford for the forward
+operation, and twelve Clifford with two measurements for the inverse. Both
+source peak estimates are seven qubits. Interchange adds zero instructions,
+quantum storage or measurement slots. Existing source count discrepancies stay
+recorded independently of these measured streams.
