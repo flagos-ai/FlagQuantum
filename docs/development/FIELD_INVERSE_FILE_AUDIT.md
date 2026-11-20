@@ -123,3 +123,55 @@ unchanged. Native exact linear inverses match the explicitly repaired reference
 at gate level. Equality of resource counts does not close unchanged-source
 mathematical gate parity. Existing source defect witnesses and accepted
 measurement histories remain authoritative, with no duplicate capability IDs.
+
+## Complete stored source schedule — 2026-11-20
+
+`inverse_component.py` closes the concrete stored execution chain for the
+complete eleven-method/property `GF2Inverse` source class. Constructor, two
+factory, static-width, numerical, symbolic-model and notebook evidence above
+is reused. The original builder reconstructs the identical native Program
+through shared field-addition, Frobenius and Karatsuba child adapters. Exact
+native inverse children retain the previously disclosed source defects.
+No unchanged-source physical parity is claimed inside those defective children.
+
+Input x remains THRU. Result and the original shaped junk array are RIGHT.
+Degree two retains its empty junk array and source output aliases. Degree one
+uses the original copy path. Physical slots may be freed and subsequently
+reallocated, so ownership is verified sequentially against allocation events.
+The final live set equals all returned words. Logical junk is retained data.
+Only the original temporary and recursive polynomial padding are cleaned.
+
+Complete native streams and aliases agree with the accepted exact physical
+owner for degrees 1/2/3/4/5/6/8, including both degree-eight polynomials 283 and
+285. All small full complex states through degree four retain source, inverse,
+junk and an entangled spectator, with exact reversal restoration. Sparse full
+complex states cover every input at degrees five, six and eight without dense
+large-state allocation. Unused work is zero. The normal append test replaces
+the previous public inverse emitter with a raising stub.
+
+The degree-eight 285-polynomial raw graph emits 108 CCX and 920 CX, retains
+three junk words and has 40 final logical bits. The 283-polynomial graph emits
+108 CCX and 943 CX. Independent source Toffoli/Clifford estimates match these
+categories. Measurements and classical SSA are zero. Detailed peak live storage
+and returned aliases are in `g2-field-inverse-stored-evidence.json`. The existing
+clean XOR wrapper and its doubled resource account remain separate.
+
+Validation passes 24 focused checks, 2202 concentrated checks without skips,
+17 local integration checks and strict typing for all three touched Python
+files. Black, Ruff, team scope, architecture, multi-level IR and public API
+checks pass. Six frozen source/dependency blobs match, Qualtran 0.7.0 and
+Kickmix 0.1 Simulator are verified, and dependency policy reports 688 existing
+repository findings with zero batch findings. Early test-only failures involved
+a lifetime assertion that ignored slot reuse and passing a foreign QGF object
+to the native polynomial codec. Both checks now follow the existing contracts.
+Prior whole-repository failures remain recorded.
+
+Q-0516 and Q-0517 remain open for the unchanged source adjoint defects and
+generic foreign, symbolic physical, automatic inverse and serialization
+admission. Module commit 47526bb29 owns the stored schedule; 06e4b820a owns
+its normal append and complete source/complex-state verification.
+
+```bash
+python -m examples.algorithms.register_field_inverse
+python -m pytest tests/unit/test_field_inverse_component.py -q
+```

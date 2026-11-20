@@ -86,3 +86,10 @@ codecs and independent source models retain their original owners. Run
 and returned physical aliases. The multiplication audit records original
 linear-adjoint defects and unsupported domains separately from accepted native
 mathematical execution and resource models.
+
+`inverse_component.py` composes the original Itoh--Tsujii schedule from shared
+addition, Frobenius and Karatsuba stored children. Its RIGHT junk array is
+retained logical output, distinct from temporary clean padding. Run
+`python -m examples.algorithms.register_field_inverse` for the normal append
+path and returned aliases. `FIELD_INVERSE_FILE_AUDIT.md` records the complete
+source map, exact-native adjoint adaptation and remaining admission boundaries.
