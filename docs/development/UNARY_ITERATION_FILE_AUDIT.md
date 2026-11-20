@@ -165,3 +165,84 @@ Primitive inventories retain the S/controlled-S rows above,
 with the zero selector removed from the signature width. This closes the
 literal-zero-port gap recorded in the preceding section. Symbolic execution and
 additional dynamic subclass hooks remain recorded under Q-0597.
+
+## Complete definition and private-child consumer audit, November 21
+
+The complete implementation file and its directly dependent indexed execution,
+resource and register-capture owners have the following dispositions. Existing
+interval, root-fold, prefix-fold and empty-selection evidence above is reused.
+
+| Source definition | Native responsibility and evidence |
+| --- | --- |
+| `_unary_iteration_segtree` | `append_bounded_unary_tree` preserves segment splitting, negative compute controls and positive measured release |
+| `_unary_iteration_zero_control` | Existing input-predicate reuse and source flanking X operations |
+| `_unary_iteration_single_control` | Existing positive predicate bounded traversal |
+| `_unary_iteration_multi_controls` | Existing `indexed_component_ir` MultiAnd reduction and measurement-assisted cleanup |
+| `unary_iteration` | Caller-owned workspace, half-open interval and leaf callback; native interval example and original tests are retained |
+| `_unary_iteration_callgraph_segtree`, `_unary_iteration_callgraph` | Independent `indexed_component_cost` planning and prefix-depth live-width model; source graph comparisons remain separate from emitted instructions |
+| `control_registers`, `selection_registers`, `target_registers` | Named control and bounded selector ports, row-major shaped targets and explicit child binding |
+| `signature`, `extra_registers` | Existing named emitter and explicit native target ownership; a source subclass must include extra registers in its own signature |
+| `nth_operation`, `nth_operation_callgraph` | Native controlled recipe and separate child resource model; private clean child lifetime exercised below |
+| `decompose_zero_selection`, `_break_early` | Existing explicit root/empty recipe and prefix-aware folding, including original default failure |
+| `decompose_from_registers` | Existing nested native emitter and real source subclass capture in both directions |
+| `_circuit_diagram_info_` | Native register-score renderer owns presentation; original default diagram omits extra-register glyphs |
+| `build_call_graph` | Existing independent child models with live parent predicates; original custom resource callback and child peak are exercised below |
+
+The new consumer uses the unchanged source base class with a custom three-row
+subclass. Its signature includes an optional enable bit, a two-bit bounded
+selector, a target bit and a two-cell phase register. Each leaf allocates one
+clean qubit, copies the positive predicate into it, applies CZ to the selected
+phase cell and CX to the target, uncomputes the predicate copy and frees the
+qubit. The source leaf separately declares three CNOT, one CZ and a four-qubit
+peak. The native controlled recipe and child cost use the same existing
+Compiler interfaces. No additional production owner is introduced.
+
+Forward instructions match source per-wire gates, operands and feedback with
+explicit parent and child storage. Every logical operator column, including
+arbitrary phase-register values and the padded selector encoding, matches the
+source's unnormalized complex amplitude in every measurement branch. All
+parent and private child work ends at zero. The actual source adjoint receives
+the same complete channel checks. Normal `Circuit.append(op)` and CircuitIR
+roundtrips are exercised. Existing Ecosystem capture consumes the complete
+subclass, converts both original directions to owned snapshots and executes the
+same full-column/all-branch checks with its own classical slots.
+
+### Retained private-allocation adjoint gap
+
+The source generic adjoint replays Allocate/Free lifetimes and can recycle a
+previous leaf's clean qubit as a later parent predicate. The fixed-child native
+indexed recipe reserves one child wire throughout. Consequently their inverse
+primitive names and counts match, and every complex branch and clean output
+matches, while the raw physical work-wire operands differ. An exhaustive
+permutation probe over the two- and three-wire work pools finds no single
+whole-circuit wire renaming that aligns those inverse streams. Tests retain
+this distinction explicitly. The frozen source and its allocation schedule
+remain unchanged. Closing it requires lifetime-aware shared child/parent
+allocation replay before raw inverse operand parity can be claimed.
+
+The custom subclass also overrides `signature` to include its extra ports.
+The original base signature contains only control, selection and target
+registers. Its default circuit diagram likewise counts only those registers.
+These are source subclass responsibilities and presentation limitations.
+Unresolved symbolic physical execution, mixed empty axes and dirty borrowing
+remain separate open obligations. Q-0597 remains open.
+
+| Private-child fixture | Measured T-family / CX / CZ / measurement / clean work | Independent source AND / Clifford / measurement / peak |
+| --- | --- | --- |
+| No enable, either direction | 4 / 16 / 4 / 1 / 2 | 1 / 16 / 1 / 7 |
+| One enable, either direction | 8 / 23 / 5 / 2 / 3 | 2 / 16 / 2 / 9 |
+
+The shared source-oracle helper now uses the installed SDK's `CY` leaf when
+available and the existing generic controlled-Y representation on Cirq 1.6.1,
+which has no `CY` constant. Keeping the SDK-specific leaf is necessary because
+Cirq 1.7's specialized decomposition differs from the generic representation.
+The reference source itself is unchanged. The helper's manager is duck-typed,
+matching the existing register snapshot manager, and explicit metadata types
+and the existing DynamicCircuit variable preserve its strict typing.
+
+The concentrated dependency lane passed 748 cases and local integration passed
+17. The separate Cirq 1.6.1 lane passed 94. Strict typing of both changed test
+modules, Black, Ruff, team scope, architecture, IR and protected API checks
+passed. Frozen source hashes and unchanged production owners are recorded in
+the external evidence receipt. The dependency-policy scan retains 666 existing
+repository findings and zero changed-path findings for this batch.
