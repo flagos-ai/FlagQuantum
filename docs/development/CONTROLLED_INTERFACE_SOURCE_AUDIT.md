@@ -208,3 +208,25 @@ The complete metadata dependency review reuses native records without new
 production types. See `CONTROL_DESCRIPTOR_METADATA_AUDIT.md` for each source
 member's owner, exact array mutation/cache discrepancy and symbolic shape leak.
 Parent acceptance remains open for the execution dependencies listed there.
+
+### Binary field dependency review (2026-11-20)
+
+`49792efd6` and `1e74de508` close the quantum single-bit canonical field/poly
+control dependency. Wider fields are rejected by original CtrlSpecAnd. The
+preliminary wider-field intake was corrected with explicit source witnesses.
+Two native zero-gate type views are disclosed in the comparable call traces.
+
+A recursive AST inventory counts 49 definitions, comprising the 47 previously
+listed outer occurrences plus nested `CtrlSpec.__cvs_tuple._serialize` and
+`_ControlledBase._make_ctrl_system.add_controlled`. The former is covered by
+existing identity/cache evidence and the latter by returned callback evidence.
+This clarifies inventory counting without adding parallel production owners.
+
+The next concrete execution gap is classical binary field/poly Program
+admission. Six source/native callback witnesses agree for active and inactive
+values over GF(2), GF(4), GF(8) and degree-one polynomials. Native identity
+validation and feedback reads reject those descriptors. Proposal 110 records
+this separately protected extension and awaits approval. Original classical
+wrapper decomposition/model refusals remain explicit. The evidence is
+`g2-classical-field-intake.json`; these findings establish a remaining gap and
+supply no new parent acceptance.
