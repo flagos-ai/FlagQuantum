@@ -10,7 +10,7 @@ from flagquantum import Circuit
 from flagquantum.compiler.registers.component_graph import iter_component_calls
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
-from flagquantum.core.ir.program import FunctionRecord
+from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.tensor_network.component_dense import (
     contract_component_tensors,
@@ -50,8 +50,9 @@ def supply(
     return (bind_register_tensor(tensor, signature, inputs, outputs),)
 
 
-@pytest.mark.parametrize("mode", ["serial", "parallel", "independent"])
-def test_composition_port_actions_and_projection(mode: Mode) -> None:
+def assert_composition_port_actions_and_projection(
+    mode: Mode, native: ProgramRecord
+) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.for_testing.atom import TestAtom
     from qualtran.bloqs.for_testing.with_decomposition import (
@@ -67,7 +68,6 @@ def test_composition_port_actions_and_projection(mode: Mode) -> None:
         "independent": TestIndependentParallelCombo,
     }[mode]()
     width = {"serial": 1, "parallel": 3, "independent": 0}[mode]
-    native = composition_fixture(mode)
     main = next(function for function in native.functions if function.name == "main")
     assert main.registers is not None
     assert [(r.name, r.bitsize) for r in main.registers] == [
@@ -139,3 +139,8 @@ def test_composition_port_actions_and_projection(mode: Mode) -> None:
             atol=0,
             rtol=0,
         )
+
+
+@pytest.mark.parametrize("mode", ["serial", "parallel", "independent"])
+def test_composition_port_actions_and_projection(mode: Mode) -> None:
+    assert_composition_port_actions_and_projection(mode, composition_fixture(mode))
