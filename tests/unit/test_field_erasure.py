@@ -296,6 +296,7 @@ def test_qroam_consumer_accepts_replaced_measurement_primitives(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum.compiler.registers.lookup import qroam
+    from flagquantum.compiler.registers.primitives import measurement
     from flagquantum.core.ir import Instruction
 
     arguments = dict(
@@ -335,7 +336,7 @@ def test_qroam_consumer_accepts_replaced_measurement_primitives(
                 for bit in self.bits
             )
 
-    monkeypatch.setattr(qroam, "measure_x_clear_ir", replacement_measure)
+    monkeypatch.setattr(measurement, "measure_x_clear_ir", replacement_measure)
     monkeypatch.setattr(qroam, "ParityPhase", ReplacementPhase)
     assert qroam.paired_lookup_ir(**arguments).instructions == expected.instructions
     assert sum(call[0] == "measure" for call in calls) == 4
