@@ -87,3 +87,14 @@ words reuse the same fanout owner. Fanout uses a QBit target at width one and an
 opaque word at larger widths, following the frozen source signature. Run
 `python -m pytest tests/unit/test_sign_extension_component.py -q` for both
 encodings, source call order, complex states, spectator coherence and cleanup.
+
+`signed_encoding_component.py` consumes LEFT one's-complement `x` and returns
+RIGHT two's-complement `y` over the same MSB-first word. Its inverse exchanges
+the two types. It shares the existing increment sequence with
+`signed_encoding.py`, calls the shared And owner and erases/frees each carry.
+Bind with `width - 2` clean wires, then append the bound operation as above.
+Run `python -m pytest tests/unit/test_signed_encoding_component.py tests/unit/test_signed_encoding.py -q`
+for exact native streams, source And leaves, complete complex amplitudes,
+measurement histories and clean work. The frozen conversion root supplies a
+signature and Toffoli model but no executable decomposition. See
+[the complete source audit](../../../../docs/development/SIGNED_CONVERSION_FILE_AUDIT.md).
