@@ -17,27 +17,18 @@ from ...compiler._component_trace.resource_model import (
 )
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.lookup.bounded_majorana_select import (
-    bounded_majorana_ir,
-    bounded_majorana_workspace,
-)
-from ...compiler.registers.lookup.unary_iteration import (
-    append_nested_bounded_unary_tree,
-)
-from ...compiler.registers.primitives.and_compute import (
-    and_compute_ir,
-    and_uncompute_ir,
-)
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...compiler.registers.primitives.global_phase import scalar_phase_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
+from .hubbard_majorana import HubbardMajorana
 from .hubbard_prepare import hubbard_selection_layout
 from .hubbard_qubitization_resource_model import (
     source_hubbard_majorana_formula,
     source_hubbard_spin_up_formula,
 )
+from .hubbard_spin_up import HubbardSpinUpZ
 
 
 @dataclass(frozen=True)
@@ -69,14 +60,9 @@ class SelectHubbard:
 
     def requirements(self) -> tuple[int, int]:
         """Return the clean Majorana work and reusable feedback slots."""
-        d = self.dimension
-        work = bounded_majorana_workspace(
-            2 * d**2,
-            controlled=self.controlled,
-            axis_extents=(d, d, 2) if d > 1 else (),
-            selection_width=1 if d == 1 else None,
-        )
-        return work, work - 1
+        return HubbardMajorana(
+            self.dimension, controlled=self.controlled
+        ).requirements()
 
     def source_resource_model(self) -> ComponentCost:
         """Report the source wrapper's declared costs and its decomposed width."""
@@ -180,65 +166,48 @@ class SelectHubbard:
         (u,), (v,) = ports["U"], ports["V"]
         target = ports["target"]
         control = ports["control"][0] if self.controlled else None
-        axes = (d, d, 2) if d > 1 else ()
-        selection_width = 1 if d == 1 else None
         swap_x = controlled_swap_ir(v, px, qx) if px else ()
         swap_y = controlled_swap_ir(v, py, qy) if py else ()
         swap_spin = controlled_swap_ir(v, alpha, beta)
-        majorana_y = bounded_majorana_ir(
-            (*px, *py, *alpha),
-            target,
-            control,
-            "Y",
-            work,
-            slots,
-            axis_extents=axes,
-            selection_width=selection_width,
+        majorana_ports = {
+            "x": px,
+            "y": py,
+            "spin": alpha,
+            "target": target,
+            **({"control": (control,)} if control is not None else {}),
+        }
+        majorana_y = HubbardMajorana(d, "Y", self.controlled)._emit(
+            majorana_ports, work, slots
         )
-        majorana_x = bounded_majorana_ir(
-            (*qx, *qy, *beta),
-            target,
-            control,
-            "X",
-            work,
-            slots,
-            axis_extents=axes,
-            selection_width=selection_width,
+        majorana_x = HubbardMajorana(d, "X", self.controlled)._emit(
+            {**majorana_ports, "x": qx, "y": qy, "spin": beta}, work, slots
         )
         swap_out = (*swap_x, *swap_y, *swap_spin)
         swap_back = (*swap_spin, *swap_y, *swap_x)
-        start = int(control is not None)
-        predicate = v
         if control is None:
             phase = (
                 *scalar_phase_ir(u, pi / 2 if adjoint else -pi / 2),
                 Instruction("z", (u,)),
             )
-            spin_up: list[Instruction] = []
         else:
             phase = (
                 Instruction("s" if adjoint else "sdg", (control,)),
                 Instruction("cz", (control, u)),
             )
-            predicate = work[0]
-            spin_up = list(and_compute_ir(v, control, predicate))
 
-        def apply_spin_z(index: int, enabled: int) -> None:
-            spin_up.append(Instruction("cz", (enabled, target[d**2 + index])))
-
-        # The source spin-up leaf deliberately traverses y before x.
-        append_nested_bounded_unary_tree(
-            spin_up,
-            predicate,
-            (qy, qx),
-            (d, d),
-            work[start:],
-            slots[start:],
-            apply_spin_z,
-            zero_selection=lambda: apply_spin_z(0, predicate),
+        spin = HubbardSpinUpZ(d, self.controlled)
+        spin_work, spin_slots = spin.requirements()
+        spin_up = spin._emit(
+            {
+                "x": qx,
+                "y": qy,
+                "V": (v,),
+                "target": target,
+                **({"control": (control,)} if control is not None else {}),
+            },
+            work[:spin_work],
+            slots[:spin_slots],
         )
-        if control is not None:
-            spin_up.extend(and_uncompute_ir(v, control, predicate, slots[0]))
 
         # The bounded Pauli stages are involutions on the declared addresses.
         # Reorder whole stages so measurement predicates still compute before erasing.

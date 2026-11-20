@@ -159,13 +159,15 @@ source owner map and measured/model separation are in
 Chemistry package grouping is represented by these existing domain modules.
 Double factorization uses the `double_factorization_*` composition and model
 owners. Hubbard preparation, selection and walk use `hubbard_prepare.py`,
-`hubbard_select.py` and `hubbard_walk.py`. Shared traversal, phase conjunction
+`hubbard_select.py` and `hubbard_walk.py`. Standalone Majorana X/Y and spin-up
+phase selection live in `hubbard_majorana.py` and `hubbard_spin_up.py`. Shared
+traversal, phase conjunction
 and workspace allocation remain in Compiler. External SDK objects are translated
 at Ecosystem before native execution.
 
 The license-only chemistry and DF initializers and the empty Hubbard root have
 no executable behavior to duplicate. Their complete disposition and the five
-Hubbard-qubitization exports still requiring direct consumer closure are recorded
+Hubbard-qubitization export consumers and retained source-body gaps are recorded
 in `docs/development/CHEMISTRY_PACKAGE_ENTRY_AUDIT.md`. Existing Hubbard use starts
 with `HubbardWalk.from_lattice(2, 1, 2)`, binds `walk.layout` and `walk.requirements()`
 through `make_on`, then uses `circuit.append(op)` on a `DynamicCircuit`. The full
@@ -195,3 +197,16 @@ actual stored-graph consumers. Physical coefficient changes are verified by
 `test_double_factorization_block_encoding.py`. Source analytical declarations
 and unavailable leaf bodies remain explicit in
 `docs/development/DOUBLE_FACTORIZATION_FILE_AUDIT.md`.
+
+
+Standalone Hubbard changes start in `hubbard_majorana.py` or
+`hubbard_spin_up.py`. Both expose a named `layout`, clean-work/feedback
+`requirements()` and `make_on(ports, workspace=...)`, then use the existing
+`DynamicCircuit.append(op)` path. Majorana targets use x/y/spin order, while
+spin-up Z uses y/x in the second system half. Both preserve valid addresses and
+restore clean work. Measurements require DynamicCircuit, and coordinates are
+classical circuit configuration rather than differentiable parameters. Run
+`test_hubbard_majorana.py`, `test_hubbard_spin_up.py`,
+`test_hubbard_package_consumers.py`, `test_hubbard_select.py` and
+`test_hubbard_walk.py` together. The file audit records source negative-control
+and singleton defects and separates emitted gates from analytical declarations.

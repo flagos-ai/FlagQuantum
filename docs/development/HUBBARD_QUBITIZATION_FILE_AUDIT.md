@@ -155,3 +155,96 @@ SELECT. Existing tests cover both control polarities, uncontrolled action,
 forward/inverse complex amplitudes, every small measurement history and clean
 work. Source side-one decomposition and model failures described above remain
 unchanged. This repair does not close Q-0353 or Q-0354.
+
+
+## Standalone SELECT consumers and exact replacement
+
+The complete `select_hubbard.py` file contains 39 class/function/method
+definitions and three documentation specifications. The standalone native
+consumers now have independent domain owners. Shared register traversal and
+measurement erasure remain in Compiler. Source bytes and the frozen module
+inventory retain their original hashes.
+
+| Complete source definition group | Native owner and disposition |
+| --- | --- |
+| SelectHubbard constructor, post-init, log_m and all register/signature properties | Existing `hubbard_select.SelectHubbard` owns square-lattice admission and named physical layout. Original negative control uses the specialized X wrapper. |
+| SelectHubbard decompose_bloq/decompose_from_registers, get_ctrl_system and adjoint | Existing SELECT now composes standalone Majorana X/Y and spin-up components with the unchanged swap and phase schedule. All 30 native before/after streams are exactly equal at sides 1/2/3/5/11, all three control modes and both directions. |
+| HubbardMajorannaOperator constructor, log_m, N, register/signature properties and target gate | `hubbard_majorana.HubbardMajorana` owns the X/Y choice and address `(x, y, spin)`. Each coordinate word is MSB first. Target index is `(x * side + y) * 2 + spin`. The clean accumulator precedes shared unary predicates. |
+| Majorana build_composite_bloq | The actual unchanged source builder supplies SelectedMajoranaFermion. Its generator is compared against the standalone append path at sides 2/3/5 with X/Y and absent/positive control. The native negative control encloses this positive stream in X gates. |
+| Majorana build_call_graph | Existing `source_hubbard_majorana_formula` retains the original And-only declaration. Native zero-control adds the two wrapper X gates separately. Full emitted primitive counts remain distinct. |
+| HubbardSpinUpZ constructor, log_m and all register/signature properties | `hubbard_spin_up.HubbardSpinUpZ` owns V and the optional external control. It targets the second half at `side**2 + y * side + x`, preserving the source's different coordinate order. |
+| SpinUpZ build_composite_bloq | The actual unchanged source builder packs V before external control and selects y before x. Its emitted child generator matches native operands and feedback. Full graph export has identical opcode counts and can recycle physical temporary names differently. |
+| SpinUpZ build_call_graph | Existing `source_hubbard_spin_up_formula` supplies the source analytical row. Native zero control adds two X gates. |
+| Both child wire_symbol methods and all three __str__ methods | Existing owned notebook score/symbol evidence covers names, blank connectors, filled controls and target captions. Source spelling is provenance. Native Majorana ownership uses the mathematical spelling. |
+| Five original examples and three documentation specifications | Existing concrete/symbolic notebook and original autotest evidence is reused. The original source unit suite was independently rerun, including its failures and skips. |
+
+Both standalone components are involutions on valid lattice addresses. Users bind
+named ports and caller-owned clean workspace with `make_on`, then use
+`circuit.append(op)` on DynamicCircuit. Standalone tests include reversed physical
+binding, a coherent spectator, complex amplitudes, JSON, repeated append with fresh
+feedback slots and work cleanup. Side-one and side-two fixtures enumerate every
+measurement history. Side-three fixtures use two alternating histories, in
+addition to existing complete SELECT representative histories and inverse tests.
+
+The actual package-export constructor libraries for PREPARE, SELECT, Majorana X/Y,
+SpinUpZ and the walk factory round-trip every protobuf field, reconstruct through
+the original resolver and execute owned append/model paths with external SDK
+imports blocked. The walk source forms its signature from named sets. The native
+handoff preserves each captured named physical port rather than assuming tuple
+order, and retains the two persistent direction bits separately.
+
+### Retained source boundaries
+
+- Original standalone Majorana with `control_val=0` raises KeyError for the
+  missing control connection. Native negative control is explicitly an X
+  sandwich around the positive stream.
+- Original SpinUpZ builds exactly the same graph for control values zero and
+  one. Native zero polarity uses an X sandwich and accounts for its two X gates.
+- Original side-one Majorana construction raises AssertionError, while SpinUpZ
+  raises NotImplementedError for empty selection. Native side-one physical
+  action passes all small histories. Source resource formulas remain unavailable
+  at that size.
+- The eight original Majorana count tests fail with Cirq 1.7.0 because its
+  CYPowGate is unrecognized by the frozen Clifford classifier. With Cirq 1.6.1,
+  ControlledGate is recognized and all eight pass. Fresh unchanged-source runs
+  are 25 passes/eight failures/eight skips/three expected failures on 1.7.0 and
+  33 passes/eight skips/three expected failures on 1.6.1. Native tests preserve
+  both exact classifications and independently check the physical CY leaves.
+  Historical statements of an unconditional eight-test CY defect are superseded
+  by this dependency-specific diagnosis. The source declaration itself remains
+  And-only, so full emitted primitive counts continue to be separate.
+- Source model/primitive differences, larger whole-graph scheduling and existing
+  zero-width errors keep Q-0353/Q-0354 open under the original acceptance scope.
+  Constructor and package handoff evidence does not close those source files.
+
+### Measured gates and declared resources
+
+| Native physical fixture | T/T-dagger | Measurements | Clean work |
+| --- | --- | --- | --- |
+| Side 1 Majorana X or Y, no control | 0 | 0 | 1 |
+| Side 1 Majorana X or Y, positive control | 4 | 1 | 2 |
+| Side 1 spin-up Z, no control | 0 | 0 | 0 |
+| Side 1 spin-up Z, positive control | 4 | 1 | 1 |
+| Side 3 Majorana X or Y, no control | 64 | 16 | 5 |
+| Side 3 Majorana X or Y, positive control | 68 | 17 | 6 |
+| Side 3 spin-up Z, no control | 32 | 8 | 4 |
+| Side 3 spin-up Z, positive control | 36 | 9 | 5 |
+
+Negative control adds two physical X gates and keeps the table's T, measurement
+and work values. The evidence JSON records every emitted opcode and reserved
+width beside independent analytical estimates for 36 rows. No full primitive
+count is inferred from a source call-graph declaration.
+
+### Reproducible evidence
+
+`g2-hubbard-standalone-evidence.json` records six original source blobs, all
+source definitions, runtime versions, 30 exact replacement streams and the
+36 measured/model rows. The concentrated Hubbard/Compiler regression passed
+360 cases before removing two duplicate package scenarios. The final
+concentrated run passed 358, and local integration passed 17. Six
+production/new-test files pass strict typing. Changed files pass Black, Ruff,
+Algorithms scope, architecture, multi-level IR and protected API checks. Source diagnostics and earlier assertion/typing attempts remain
+separate from accepted receipts. Updated final consumers and Cirq 1.6.1 are
+checked independently in `g2-hubbard-standalone-cirq16-accepted.log`, with all 114 cases passing.
+The initial 1.6.1 diagnostic receipts expose the earlier CY constant/classifier
+assumption and remain preserved. The source files were unchanged in both runs.
