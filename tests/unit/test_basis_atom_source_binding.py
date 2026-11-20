@@ -1,5 +1,7 @@
 """Bind complete basis-file display and concrete Pauli source interfaces."""
 
+from collections.abc import Mapping
+from dataclasses import replace
 from functools import partial
 from hashlib import sha1
 from pathlib import Path
@@ -11,10 +13,137 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
+from flagquantum.core.ir.program.registers import Register
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.mark.parametrize(
+    "kind", ("plus_state", "minus_state", "plus_effect", "minus_effect", "x")
+)
+@pytest.mark.parametrize("depth", (0, 1, 2))
+def test_actual_x_basis_foreign_factories_and_native_consumers(
+    kind: str, depth: int
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran.bloqs.basic_gates import XGate, x_basis
+    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+
+    from flagquantum.compiler.formats.legacy_component_library import (
+        deserialize_component_library,
+        serialize_component_library,
+    )
+    from flagquantum.compiler.formats.legacy_component_resolution import (
+        ResolvedArgument,
+        resolve_component_program,
+    )
+    from flagquantum.compiler.registers.component_graph import _namespace_helpers
+    from flagquantum.compiler.registers.primitives.basis_state import basis_state_ir
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.ecosystem.cirq._register_import import import_cirq_register_optree
+    from flagquantum.simulation.tensor_network.entrypoints import (
+        build_tensor_network,
+        tensor_network_basis_effect,
+    )
+    from tests.unit.test_subtraction_foreign_file import native_signature
+
+    source = XGate() if kind == "x" else getattr(x_basis, "_" + kind).make()
+    proto = bloqs_to_proto(source, max_depth=depth)
+    wire = proto.SerializeToString(deterministic=True)
+    library = deserialize_component_library(wire)
+    assert serialize_component_library(library) == wire
+    assert bloqs_from_proto(proto)[0] == source
+    assert len(library.entries) == 1
+    signature = native_signature(source.signature)
+    bit = int(kind.startswith("minus"))
+    effect = kind.endswith("effect")
+
+    def factory(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        assert registers == tuple(signature)
+        assert arguments == ({} if kind == "x" else {"n": 1})
+        if effect:
+            # Source effects have tensor semantics and explicitly refuse Cirq.
+            # Keep that sided declaration separate from physical clean release.
+            return FunctionRecord(name, (), registers=registers)
+        operation, outputs = source.as_cirq_op(
+            qubit_manager=cirq.SimpleQubitManager(),
+            **({"q": [cirq.LineQubit(0)]} if kind == "x" else {}),
+        )
+        program = import_cirq_register_optree(
+            cirq.decompose(operation, keep=lambda op: op.gate in (cirq.X, cirq.H)),
+            signature=signature,
+            in_quregs=outputs if kind == "x" else {},
+            out_quregs=outputs,
+        )
+        program = replace(
+            program,
+            functions=(
+                replace(program.functions[0], name=name),
+                *program.functions[1:],
+            ),
+        )
+        return _namespace_helpers(program, name)
+
+    program = resolve_component_program(
+        library, 0, {library.entries[0].declaration.name: factory}
+    )
+    if effect:
+        with pytest.raises(
+            ValueError, match="physical lowering requires component bodies"
+        ):
+            bind_register_program(program, ((1,),))
+        initial = torch.tensor([1 + 2j, 3 - 1j, -2j, 4 + 1j], dtype=torch.complex128)
+        initial /= initial.norm()
+        circuit = Circuit(2, inputs=initial, dtype=torch.complex128)
+        actual = tensor_network_basis_effect(
+            build_tensor_network(circuit, dtype=torch.complex128), {1: ("x", bit)}
+        )
+        expected = initial.reshape(2, 2) @ torch.as_tensor(source.tensor_contract())
+        torch.testing.assert_close(actual.flatten(), expected, rtol=0, atol=2e-12)
+    else:
+        bound = bind_register_program(
+            program,
+            ((1,),) if kind == "x" else (),
+            clean=(1,) if kind != "x" else (),
+            allow_workspace_outputs=kind != "x",
+        )
+        expected_gates = (
+            (Instruction("x", (1,)),) if kind == "x" else basis_state_ir("x", bit, 1)
+        )
+        assert bound.circuit.instructions == expected_gates
+        assert bound.outputs == ((1,),)
+        spectator = torch.tensor([1j, 2 - 1j], dtype=torch.complex128)
+        spectator /= spectator.norm()
+        zero = torch.tensor([1, 0], dtype=torch.complex128)
+        initial = torch.kron(spectator, zero)
+        circuit = Circuit(2, inputs=initial, dtype=torch.complex128)
+        circuit.append(FieldOperation(2, bound.circuit.instructions))
+        vector = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+        if kind == "x":
+            vector = vector @ zero
+        torch.testing.assert_close(
+            circuit.state().flatten(), torch.kron(spectator, vector), rtol=0, atol=2e-12
+        )
+
+
+@pytest.mark.parametrize("depth", (0, 1, 2))
+def test_actual_measure_x_factory_retains_original_cbit_serialization_failure(
+    depth: int,
+) -> None:
+    from qualtran.bloqs.basic_gates.x_basis import _meas_x
+    from qualtran.serialization.bloq import bloqs_to_proto
+
+    with pytest.raises(
+        AttributeError, match="'CBit' object has no attribute 'bitsize'"
+    ):
+        bloqs_to_proto(_meas_x.make(), max_depth=depth)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -174,7 +303,7 @@ def test_complete_basis_source_score_and_factories(
 
 
 def test_original_vector_and_measurement_capture_refusals() -> None:
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.basic_gates import (
         IntState,
         MeasureX,
@@ -192,7 +321,7 @@ def test_original_vector_and_measurement_capture_refusals() -> None:
             import_register_emitter(
                 source, local_ports=tuple(r.name for r in source.signature)
             )
-    import numpy as np
+    np = pytest.importorskip("numpy")
 
     integer = IntState(2, 3)
     manager = cirq.SimpleQubitManager()

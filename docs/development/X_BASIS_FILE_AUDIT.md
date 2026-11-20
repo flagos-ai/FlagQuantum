@@ -6,7 +6,7 @@ Apache-2.0 attribution.
 
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
-| Q-0268 `x_basis.py` | `8b903d048e307789d71539441088efeec2868f99` | Actual Pauli binding and complete native symbols are verified. Only the recorded source controlled-measurement phase callback failure remains open. |
+| Q-0268 `x_basis.py` | `8b903d048e307789d71539441088efeec2868f99` | Closed. Complete native owners and actual foreign consumers are verified. Original controlled-measurement callback and classical-bit serialization failures are retained boundaries. |
 | Q-0269 `x_basis_test.py` | `cf8ce512efec89ede19cddf60a27cdaff6d1cddf` | Closed. All ten source tests have native evidence. |
 
 ## Bindings and original tests
@@ -67,8 +67,8 @@ so its physical execution uses the dynamic measurement owner, while named
 through-port capture refuses the sided signature. Measurement primitives and
 its independent one-measurement model remain separate as previously recorded.
 
-Q-0268 stays open only for the previously recorded source controlled-MeasureX
-right-output phase callback failure. Existing tests preserve both the actual
+The source controlled-MeasureX right-output phase callback remains an explicit
+failure boundary. Existing tests preserve both the actual
 source exceptions and native callback behavior across both control values and
 both basis inputs, with and without the supplied classical output. No failure
 is reclassified as executable support. Q-0269 remains closed.
@@ -81,3 +81,49 @@ filled-circle default and an invalid dataclass replacement of native Register.
 The callback now reuses directional glyph output directly, and all source
 geometry passes. The integer-adjoint test also distinguishes wrapper creation
 from its later source decomposition failure.
+
+## Complete foreign factory and source-failure disposition
+
+All four original vector factories and the actual X atom round-trip the frozen
+library at depths zero, one and two. Decoded arguments retain exactly n=1 for
+vectors and no arguments for X. The single scalar q port retains QBit and its
+LEFT, RIGHT or THRU direction. Source reconstruction equals the original object.
+The original MeasureX factory fails serialization at every depth because CBit
+has no bitsize attribute. The unchanged AttributeError is explicitly tested.
+
+Actual preparation and X factories resolve through the existing explicit native
+factory boundary, the existing sided Cirq optree importer and typed Program
+binder. Minus preparation first exposes the source CircuitOperation's existing
+X/H leaves, as in the original decomposition comparison. Reversed placement
+emits exactly H, X/H or X on the selected wire. Complete complex outputs preserve
+the coherent spectator through circuit.append(op). Preparation returns the
+allocated output wire, with no additional work or measurements. Effects retain
+logical declarations and numerical tensor contraction. Physical binding of a
+bodyless declaration refuses explicitly. It never turns a nonunitary bra into
+an owned clean release or supplies a physical effect the original SDK refuses.
+Both effect signs contract complete unnormalized amplitudes with a spectator.
+
+The physical primitive inventories remain one H for PlusState, X/H for
+MinusState, and one X for XGate. Source vector QEC cost remains zero and logical
+qubit count one. MeasureX's model remains one measurement, while physical
+H/measurement/optional cleanup inventories stay separately recorded. Existing
+controlled-X branches, measured channels, inverse restoration, work zero,
+callbacks, diagrams and the ten original test dispositions are reused.
+
+Q-0268 closes with all complete-file methods and direct consumers assigned to
+existing native owners or unchanged source-failure witnesses. Its former last
+open item was an already verified original callback defect. That defect remains
+recorded without claiming successful controlled measurement, following the same
+complete-file acceptance rule as Swap. This batch changes no production owner,
+public contract, frozen source or supported physical effect boundary.
+
+The final concentrated profile passes 738 cases without skips, including full
+classical measurement callbacks and unchanged source-defect witnesses. Seventeen
+local integration cases, all ten original source tests and 73 Cirq 1.6.1 cases
+pass. Default comparison uses Cirq 1.7.0. Strict typing of the changed Python
+file, Black, Ruff, Compiler scope, architecture, multilevel IR and the protected
+API baseline pass. Three frozen source blobs and eight unchanged owner/test
+files are verified. Optional dependency guards in the touched test also cover its existing Cirq
+and NumPy consumers. Whole dependency-policy findings total 683, with zero on
+the batch surface. Receipts are g2-x-basis-foreign-evidence.json and the matching
+regression, integration, source, cirq16 and check logs in ftqc-reference-env.
