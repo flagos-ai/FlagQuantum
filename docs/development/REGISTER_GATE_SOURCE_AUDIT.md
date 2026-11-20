@@ -144,3 +144,25 @@ port/read/control dependency. The unchanged full source inventory is reused.
 comparison, explicit polynomial tensor failures, complete child streams and
 measurement histories. No generic SDK dialect or nonbinary quantum admission
 is inferred. Q-0163 still requires the remaining control/interface review.
+
+## Concrete remaining SDK storage boundary
+
+The post-Proposal-111 interface regression passes 599 cases, with two optional
+skips for PennyLane and qiskit-aer. Existing primitive, callback, branch,
+workspace, diagram, parameter and empty-register evidence is reused.
+
+A separate source intake uses a register gate with a CBit or CGF(3) THRU port
+and an X on its first raw SDK operand. Unchanged source `on_registers` and Cirq
+decomposition accept one and two physical operands respectively. Explicit
+native classical signatures are refused with `Cirq placement requires a
+concrete quantum register`. The receipt is
+`g2-register-gate-classical-sdk-intake.json`. Raw SDK projection and true native
+classical storage have distinct execution contracts. Proposal 111 admits
+classical Program ports and read-only feedback. It does not authorize assigning
+quantum wire ownership to classical values or conditional classical writes.
+
+This is a concrete remaining interface boundary of Q-0163 and its control
+consumer, independent from the now accepted field word dependency. Symbolic
+physical execution and source defects remain separately recorded. The complete
+parent stays open. The next closure must determine the explicit native storage
+semantics of these source consumers before changing protected behavior.
