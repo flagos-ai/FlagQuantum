@@ -128,3 +128,10 @@ Receipts are `g2-empty-register-evidence.json`, `g2-empty-register-dependency.js
 default and quality logs in the reference directory. The complete Q-0163 parent
 remains open solely for the wider typed/control dependency tracked by Q-0158
 and pending Proposal 108.
+
+The 2026-11-20 review of all 26 class/function definitions closes the canonical
+one-bit binary field/polynomial control dependency using the existing shared
+control owner. The full dependency evidence and original wider-field refusal
+are recorded in `CONTROLLED_VIA_AND_FILE_AUDIT.md`. Foreign SDK object contracts,
+nonbinary/symbolic physical execution and previously recorded source defects
+retain their existing scope.

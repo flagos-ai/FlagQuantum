@@ -101,3 +101,11 @@ are covered by the concentrated regression. Full six-control state comparison
 covers 64 single-pass histories; larger source tutorial fixtures reuse sparse
 amplitude and exact stream evidence. Predicate glyphs match every original
 port and direction, including daggered text boxes under the generic adjoint.
+
+The 2026-11-20 canonical field-control re-audit preserves the original
+`CtrlSpecAnd` rejection of field and polynomial dtypes for more than one bit.
+Only `ControlledViaAnd`'s one-bit bypass admits them. See
+`CONTROLLED_VIA_AND_FILE_AUDIT.md` and `test_field_control_component.py` for the
+six original refusal witnesses, the two zero-gate native type views and all
+supported scalar/singleton polarities. This corrects the wider-field gap stated
+in the preliminary intake.

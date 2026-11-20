@@ -103,3 +103,44 @@ Whole-repository dependency diagnostics retain 687 existing findings, with zero
 in changed paths. Earlier complete source suites and unchanged numerical
 fixtures remain the evidence for their original ranges. The new resource
 receipt separates actual resolved primitives from source model estimates.
+
+## Canonical field control dependency closure (2026-11-20)
+
+The approved binary `finite_field` and `finite_field_polynomial` descriptors
+now enter the existing one-bit control path. Scalar and singleton-array ports
+retain their nominal descriptor through explicit Split/Join views. These two
+views emit no gates. The comparable child calls, operands, exact primitive
+stream and feedback match the unchanged source after resolving only those view
+aliases. Both activation polarities, expanded calls, exact adjoints, every small
+measurement history, full complex spectator amplitudes and clean work pass.
+The existing `circuit.append(operation)` workflow and replacement callback pass.
+
+The earlier dependency intake incorrectly classified wider field predicates as
+missing supported functionality. Original `CtrlSpecAnd.__attrs_post_init__`
+rejects these dtypes. Six negative fixtures retain that refusal, including wide
+scalars, arrays and mixed groups. No wider field predicate support is claimed.
+Original `ControlledViaAnd.get_ctrl_system` would combine such groups into the
+same refused predicate. The previously recorded `(1, 1)` source shape defect
+remains outside the scalar and `(1,)` acceptance range.
+
+For decoded GF scalars, original root resource caching raises `TypeError`
+because the activation is unhashable. Tests retain that failure and separately
+query the unchanged decomposed children. Packed polynomial root queries pass.
+The fixture emits four T/T-dagger gates and one measurement with one clean work
+wire. Source models report one AND and one measurement. Native type views add
+zero primitive gates. Physical emission and abstract model categories remain
+separate.
+
+The batch reuses all existing complete-file mappings. AST inventory has 13
+class/function definitions in `controlled_via_and.py`, including the nested
+`_adder`; the earlier count of twelve excluded that nested callback. It has 18
+in `ctrl_spec_and.py` and 26 in `gate_with_registers.py`. All three frozen blobs
+match the original inventory. These counts describe coverage, not new files.
+
+Validation passes 46 focused cases, 857 concentrated cases without skips and
+17 local integration cases, plus strict typing of all three changed Python
+files, Black, Ruff, team scope, architecture, IR and public API checks. The
+whole dependency audit retains 687 findings and zero in changed paths. Native
+Kickmix 0.1 Simulator and Qualtran 0.7.0 were verified. Receipts are
+`g2-field-control-*` in the reference workspace. Existing generic foreign
+serialization, nonbinary and symbolic physical execution boundaries remain.
