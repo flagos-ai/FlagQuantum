@@ -3,6 +3,7 @@
 This package is intentionally absent from :mod:`flagquantum.compiler` exports.
 """
 
+from .diagnostics import SpecializationError
 from .dynamic.program import LoweredDynamicProgram, lower_dynamic_program
 from .frontend.diagnostics import CaptureDiagnostic, HybridCaptureError
 from .frontend.source import capture_function, capture_source
@@ -41,7 +42,6 @@ from .passes import (
     run_pass_pipeline,
 )
 from .specialize import (
-    SpecializationError,
     SpecializedTrace,
     TraceGate,
     specialize_program,

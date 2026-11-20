@@ -9,9 +9,10 @@ from typing import Any, NoReturn
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.parameters import Parameter, bind_parameter_value
+from ..diagnostics import SpecializationError
 from ..model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..passes import PassRecord, run_pass_pipeline
-from ..specialize import SpecializationError, _input_signature
+from ..runtime_inputs import _input_signature
 from . import expressions
 from .expressions import (
     _FALSE_CLAUSES,

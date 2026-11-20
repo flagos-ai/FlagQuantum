@@ -14,8 +14,8 @@ Runtime executes feedback and Simulation evolves numerical state.
 `program.py` owns the single lowering state. Expression functions receive that
 state for its existing diagnostics and clause budget. Its type is imported only
 under `TYPE_CHECKING`. They preserve clause ordering and expansion rejection.
-Dependencies are the parent hybrid model, verified passes and specialization
-helpers, Core IR and parameters, and the Python standard library. Backend
+Dependencies are the parent hybrid model, verified passes, shared runtime input
+validation and diagnostics, Core IR and parameters, and the Python standard library. Backend
 selection, job submission and numerical execution belong to their owning domains.
 
 The package-level `lower_dynamic_program` and `LoweredDynamicProgram` entries

@@ -75,6 +75,14 @@ trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 reference; reusable structure identity never serializes or hashes their values.
 The optional structure cache is bounded and reports hit, miss, and eviction.
 
+`runtime_inputs.py` owns the input validation and structural signature shared by
+static specialization and dynamic lowering. Descriptors include declared types,
+concrete shapes, dtype names and device classes; numerical input values are
+excluded. `diagnostics.py` owns their shared `SpecializationError`.
+`specialize.py` retains the former helper and error names as direct aliases.
+See the [local contributor guide](README.md#input-validation-and-specialization-ownership)
+for ownership, compatibility scope and the shortest accepted/rejected workflow.
+
 The verified Program IR normalization stage is split by responsibility:
 `analysis.py` computes facts, `rewrites.py` owns SSA substitution and cloning,
 `transforms.py` contains concrete transformations, and `passes.py` verifies and

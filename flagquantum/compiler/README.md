@@ -90,6 +90,18 @@ Additional contributor workflows are documented in
 [formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
 [registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
 
+The private hybrid stages also have explicit implementation owners.
+
+| Existing hybrid entry or helper | Implementation owner |
+| --- | --- |
+| `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](_hybrid/specialize.py) |
+| `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](_hybrid/runtime_inputs.py), with direct aliases at the old path |
+| `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
+| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
+
+The [hybrid contributor guide](_hybrid/README.md#input-validation-and-specialization-ownership)
+describes the shared input boundary and its local accepted/rejected workflow.
+
 ## Reusable Module frontend
 
 [Module capture](_torch/module_builder.py) owns the private entry approved in

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ..model import Operation
-from ..specialize import _runtime_shape
+from ..runtime_inputs import _runtime_shape
 
 if TYPE_CHECKING:
     from .program import _DynamicLowerer
