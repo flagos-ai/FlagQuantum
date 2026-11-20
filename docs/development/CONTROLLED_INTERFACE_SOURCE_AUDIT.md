@@ -291,3 +291,83 @@ Earlier broad symbolic-physical gap labels need this source distinction.
 The complete unchanged controlled test suite now passes 42 cases, including
 its actual notebook, with three collection warnings. Native evidence is
 recorded separately in the Proposal 113 audit.
+
+## Complete file closure after Proposals 108 through 115
+
+The final review covers all 49 recursive definitions, including the two nested
+callbacks, and every original test/helper listed above. Earlier open-dependency
+statements describe their intake dates. The following disposition supersedes
+those statements for Q-0158 and Q-0159.
+
+| Former dependency | Final owner and executable evidence |
+| --- | --- |
+| Constructor, identity, count and symbolic metadata | Existing Register/Signature, normalized activation patterns and immutable ControlRegister snapshots. `test_control_descriptor_metadata.py` preserves the array-cache and concrete-shape source defects. |
+| Total and predicate child propagation | Existing `component_control.py`, predicate, exact adjoint and specialized control adders. Stored serial/parallel, nested children and actual returned attachment callbacks retain source call/operand/feedback comparisons. |
+| Classical stored children and wide reads/writes | Existing classical control/feedback builders and approved Proposals 108, 110, 111 and 112. Scalar/shaped integer and field controls retain complete numerical/tensor comparisons, occupied classical snapshots and measured child histories. |
+| Packed quantum fields and fixed-point storage | Approved Proposals 109 and 113 through 115. Single-bit predicate execution retains both polarities, source leaf streams, complex branches and clean work. Wider fixed-point storage supports its approved native arithmetic owners. Wider field/fixed-point predicate refusals match original CtrlSpecAnd. |
+| Generic SDK child operation and diagrams | Existing `control_register_operation` preserves the child operation, SDK protocols, port aliases and quantum control clause. The final foreign test exercises every stored value of five unsigned fixed-point formats and all legal values of GF(2), GF(4), GF(3), GF(5), GF(9) and their degree-one polynomials. |
+| Symbolic foreign conversion | Original CtrlSpec.to_cirq_cv rejects unresolved widths or activations. Native symbolic metadata/models retain existing owners, with explicit concrete specialization before physical export. The final regression checks the matching refusal. |
+| Missing classical wrapper decomposition/model | Original ClassicallyControlled has neither. Native stored feedback is independently specified and checked against the original callbacks/tensors. Conditional measurement/reset/channel graph admission remains its documented execution boundary. |
+| Arbitrary foreign child subclasses | SDK operations or explicit native component definitions enter their existing adapters. Native providers implement existing control adders and typed ports. No implicit translation of unknown Python class identity is required by these source methods. Original missing child decomposition failures and native provider-cycle rejection remain explicit. |
+
+The final SDK review found and fixed a real import defect. Eigen-phase
+normalization converted a three-control XPow into canonical controlled Rx. The
+SDK decomposed Rx into XPow plus phase, which normalization converted back into
+the same controlled Rx. Native cycle detection then rejected a valid operation.
+For more than two controls, the adapter now retains the original SDK
+operation before decomposition. Existing one/two-control symbolic lowering and
+true cyclic-provider rejection retain their existing regression evidence.
+
+`test_controlled_foreign_file.py` checks the direct SDK gate/operands through
+source operation export, exact diagrams, complete source unitaries, coherent
+complex states entangled with a spectator, and normal `circuit.append(op)`.
+Three/four controls cover X/Y/Z powers, mixed polarities and three global-shift
+values. No work or measurement is introduced by these SDK witnesses. This
+protocol has a broader domain than the original typed predicate decomposition,
+so its successful wider controls do not change native typed predicate admission.
+The original single-bit predicate, exact inverse, all applicable measurement
+histories and clean-work certificates remain accepted and are reused.
+
+Actual bound primitive counts and the original wrapper QEC estimates are recorded
+separately in `g2-controlled-foreign-evidence.json`. SDK rotation synthesis is
+identified as SDK synthesis. It does not establish gate-count equivalence with
+the separate predicate recipe or with a declared QEC model. Original cursor,
+mutable-array cache, singleton-matrix, signed-tutorial and nonbinary polynomial
+tensor defects retain their existing witnesses and remain unchanged upstream.
+
+The affected-path regression passes 1,210 cases with two existing warnings.
+Twelve optional Qiskit cases are skipped because Qiskit is absent, explicitly
+outside this Cirq batch. All 43 final foreign cases execute. Local construction
+and artifact integration passes 17 cases. Strict typing, Black, Ruff, Ecosystem
+scope, architecture, multi-level IR and public API checks pass. Six immutable
+source blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Nine accepted
+owners/tests remain byte-identical to the batch base. The complete original
+42-case result, including its notebook and three collection warnings, is reused
+after frozen blob verification. The established default docstring-policy failure
+is separately retained after verifying its ten files against the batch base.
+
+The Cirq 1.6.1 compatibility lane passes 100 cases, including all 43 final
+foreign cases. Its 1,446 SDK/NumPy shape deprecation warnings are retained.
+The dependency scan retains 687 existing findings and zero changed-path findings.
+Three positive controls emit 5 phase, 15 single-qubit matrix atoms, 12 CX and
+2 CCX instructions, with zero workspace and measurements. The separate source
+predicate model declares 2 And, 2 Clifford, 1 rotation and 2 measurements.
+Every emitted `any` atom in this witness has exactly one operand. Matrix atoms
+retain SDK-synthesized one-qubit leaves and have their own count.
+
+The existing native example can be used through the normal append workflow.
+
+```python
+from examples.algorithms.controlled_programs import controlled_serial_program
+from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum import Circuit
+from flagquantum.compiler.registers.register_binding import bind_register_program
+
+bound = bind_register_program(controlled_serial_program(), ((0,), (1,)))
+circuit = Circuit(2)
+circuit.append(FieldOperation(2, bound.circuit.instructions))
+```
+
+Parent acceptance closes the complete controlled source and test files, with
+the source defects and explicit execution boundaries above retained as their
+disposition.
