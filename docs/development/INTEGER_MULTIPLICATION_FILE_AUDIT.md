@@ -389,3 +389,75 @@ batch-path findings. Known default docstring failure evidence is reused after
 verifying its ten files against fbea65709. Default-suite completion remains open.
 Type annotation and unused-import fixes after broad collection are checked by
 the final strict and focused runs.
+
+## Stored reciprocal direct dependency, November 20, 2026
+
+The final native numerical root in the eight-class multiplication file now has
+stored composition. `reciprocal_seed_component.py` creates a RIGHT pure-fraction
+seed or consumes the matching LEFT image. Its Figure 4 selection and actual
+stored MultiControlX cleanup retain the existing seed construction.
+`reciprocal_newton_component.py` calls the accepted integer square, subtracting
+live product accumulator, retained XOR slice, restoring product accumulator
+and square inverse. It preserves both mixed source and pure-fraction estimate.
+Numerator and square storage are owned across their actual use and restored
+before release. Precision may be smaller than the source integer width for a
+standalone Newton step, retaining the flat step's modular behavior.
+
+`reciprocal_component.py` preserves the source's two mixed QFxp(n,f) THRU ports,
+including occupied result storage. It allocates a seed at precision n, performs
+ceil(log2(n)) widened steps, XORs the leading f estimate bits into the mixed
+result's low f positions, then erases all history and seed storage. The integer
+prefix of the occupied result survives. Below one, its mask is zero. The finite
+lower estimate remains strictly below one at a=1. Nonpositive fractional
+widths consequently have a zero quantized mask and the typed root is identity.
+These are explicit native approximation choices inherited from the accepted
+paper construction. The source root supplies no numeric callback or executable
+decomposition. Its declared square/product children use different precision
+assumptions, as already documented. Exact root gate parity remains unavailable.
+
+Stored and expanded seed streams match the accepted flat Figure 4 construction
+in primitive multiplicity, per-wire order, operands and validated feedback.
+The original multi-control child evidence is reused. Expansion can assign the
+private flag and predicate work in a different order, so comparisons use their
+actual physical allocation. Five standalone Newton widths match the flat
+primitive multisets. Square, PlusEqualProduct, Add, And and MultiControlX source
+child evidence is reused unchanged. Scratch addresses may be reused for other
+roles at later lifetimes, so a fixed whole-circuit scratch renaming is
+inapplicable to Newton's complete stored schedule.
+
+All raw coherent source/estimate/occupied-result combinations and a spectator
+are checked for the five small Newton formats, including modular behavior
+outside the numerical approximation domain. Seed tests cover creation and LEFT
+erasure. Complete mixed reciprocal inputs and occupied results are checked at
+(2,1), (3,1) and (3,2), plus nonpositive fraction identities. Whole-state
+comparison includes all restored work. Every smallest Newton measurement
+history is enumerated, totaling 256. Larger small domains use complete measured
+And channel certificates for all basis inputs and two primitive trajectory
+seeds, which also check complex relative phase. Root circuit.append(op) round
+trips execute through the sparse test interpreter, and the smallest Newton
+round trip uses normal dynamic trajectory execution. Flat root functions are
+replaced by failing stubs during replacement acceptance.
+
+| Mixed reciprocal n,f | Observed primitives and storage | Original analytical model |
+| --- | --- | --- |
+| 2,1 | 304 T/Tdg, 699 CX, 76 measurements/resets, 31 peak clean bits | Original graph fails through its minimum-three-bit square child |
+| 3,1 | 1,416 T/Tdg, 3,449 CX, 2 CCX, 354 measurements/resets, 62 peak clean bits | 21 Toffoli, 5 And, 46 Clifford, 5 measurements |
+| 4,2 | 2,536 T/Tdg, 6,374 CX, 2 CCX, 634 measurements/resets, 99 peak clean bits | 47 Toffoli, 7 And, 66 Clifford, 7 measurements |
+
+Observed work lifetimes balance exactly. Seven frozen source blobs, Qualtran
+0.7.0 and Kickmix 0.1 Simulator presence are verified. Eleven accepted owners
+and tests are byte-identical to 00b000446. Dependency policy has 687 existing
+whole-repository findings and zero batch-path findings. Concentrated regression
+passes 4,112 checks with one existing IPython warning and no skips. Local
+integration passes 17 checks. Final reciprocal-focused regression passes 86
+checks. Strict typing covers all four batch Python files. Black, Ruff, scope,
+architecture, IR and public API checks pass. Default docstring failure evidence
+is reused after verifying its ten implicated files against 00b000446. Full
+default-suite completion remains open. Receipts use
+`ftqc-reference-env/g2-reciprocal-components-`.
+
+All eight native typed arithmetic execution owners are now delivered. Q-0208
+and Q-0209 remain open for the complete foreign-interface disposition of
+construction, drawing, rebinding, serialization and original missing root
+decomposition/autotester modes. The whole-file inventory must resolve those
+remaining interfaces before parent acceptance.

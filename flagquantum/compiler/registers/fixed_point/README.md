@@ -40,3 +40,16 @@ wider, the result retains its negative fractional metadata and the construction
 omits multiplier terms that shift entirely past the retained word. The unchanged
 flat emitter still covers its original narrower width domain. Source model
 extrapolation and native retained-term counts are reported separately.
+
+`reciprocal_seed_component.py` owns a RIGHT pure-fraction seed and its LEFT
+inverse, calling the existing stored multi-control cleanup.
+`reciprocal_newton_component.py` composes owned integer square, live product
+subtraction, a retained XOR slice and exact restoration. Its source and estimate
+are THRU words. `reciprocal_component.py` preserves InvertRealNumber's original
+mixed fixed-point THRU a/result formats. It owns and erases every history word
+and XORs the lower approximation into the result's fractional suffix. The
+occupied integer prefix survives. Nonpositive fractional widths have a zero
+quantized mask. The unchanged source supplies a model and lacks root
+decomposition. Native numerical construction and source model remain separate.
+Run `tests/unit/test_reciprocal_components.py` for stored/expanded calls,
+complex occupied results, channel certificates and ordinary append replacement.
