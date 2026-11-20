@@ -76,9 +76,8 @@ consume matching forward outputs and preserve the original source constants.
 | `KaliskiModInverse` | Through x, RIGHT forward or LEFT inverse 4n junk, inlined algorithm, source allocation/release order |
 
 The existing step, algorithm and public physical emitters retain their accepted
-source-stream, inverse, complex-amplitude and resource evidence. Stored graph
-implementation and normal append replacement remain pending until independently
-validated. Source all-ones p+1 loading, nonunits and unreachable step-five/six
+source-stream, inverse, complex-amplitude and resource evidence. Stored graph implementation and normal append replacement were subsequently
+validated by the complete batch acceptance below. Source all-ones p+1 loading, nonunits and unreachable step-five/six
 callback disagreements remain open. The accepted package export Q-0568 has an
 independent ledger disposition.
 
@@ -118,3 +117,113 @@ format, scope, architecture, IR and API checks pass. Receipt prefix is
 `g2-modular-inverse-native-exchange-*`. This owner is locally accepted; the
 complete nine-class stored-graph batch remains in progress until the other
 owners, normal root execution and concentrated regression close together.
+
+## Complete stored graph closure — 2026-11-20
+
+All nine frozen classes and their 48 definition dispositions now have native
+owners. The six original step emitters remain the accepted low-level physical
+interfaces. Stored graph owners retain actual child calls, linear register
+ownership and the specialized measured adjoints of shared dependencies.
+
+| Frozen class | Stored graph owner | Owned result/work contract |
+| --- | --- | --- |
+| Step1 | `inversion/inverse_termination_component.py` | v/m/f/is_terminal through; measured zero-test work internal |
+| Step2 | `inversion/inverse_parity_component.py` | u/v/b/a/m/f through; second predicate reads updated a |
+| Step3 | `inversion/inverse_ordering_component.py` | comparison difference/target consumed by exact measured inverse |
+| Step4 | `inversion/inverse_exchange_component.py` | two calls share the exact register-swap definition |
+| Step5 | `inversion/inverse_arithmetic_component.py` | original complements and two CAdd calls; finite-width arithmetic |
+| Step6 | `inversion/inverse_scaling_component.py` | descending controlled shifts, real ModDbl output aliases, paired exchanges |
+| Iteration | `inversion/inverse_iteration_component.py` | six step calls; private a/b restored on reachable inputs |
+| Implementation | `inversion/inverse_algorithm_component.py` | 2n calls to one shared iteration; two retained 2n-bit histories |
+| Public shell | `modular_inverse_component.py` | source inlining; x through, 4n-bit junk RIGHT forward/LEFT inverse |
+
+The direct dependency `modular_halving_component.py` composes the exact ModDbl
+adjoint through existing constant-addition adjoints and the original parity
+cleanup. Its allocated high bit becomes data and its input low bit becomes
+clean work. The compiler binder receives explicit caller ownership when source
+Free consumes an input wire. Consumers follow returned physical aliases.
+
+All words and histories are MSB-first. Marker/terminal history is logical data
+and remains live until the public inverse consumes it. Only source-reachable
+inputs, zero sentinel, units and matching inverse images carry cleanup promises.
+
+### Source, state and replacement evidence
+
+* Forward and inverse source primitive streams, operands, measurement feedback,
+  output aliases and source resource models are checked through eight-bit grids.
+  The original Soquet connections bind each physical lifetime. Source And
+  generators and original bookkeeping views remain unmodified references.
+* Termination, parity, ordering and arithmetic test every small logical column,
+  every applicable raw measurement branch, complex phase, spectator and work
+  cleanup. Existing larger step/iteration/algorithm certificates are reused.
+* Public graph execution checks every unit and zero at (n,p)=(3,5),(4,9),(5,13),
+  exact histories and full clean workspace. Complete sparse complex/spectator
+  vectors run through all literal primitives for three sampled histories in
+  each direction. These numerical trajectories do not enumerate their Cartesian
+  product of 176 or more measurement outcomes. The accepted compositional
+  measured-And channel certificates cover the full history channel.
+* `examples.algorithms.register_modular_inverse` now binds the stored graph on
+  the normal `circuit.append(ModularInverse(...))` route. Replacing the previous
+  public physical emitter with a raising stub preserves that append workflow.
+  A clean-pool permutation retains the example's established target/history
+  placement and inverse restoration without inserting routing gates.
+  The example constructs and counts IR. It does not allocate a dense 38-bit state.
+* Q-0572/Q-0574 notebook/original-suite evidence is reused with matching frozen
+  blobs. Original 55 passed, one metadata skip and one expected count failure
+  remain independently recorded. Source files have not been modified.
+
+### Measured resources and separate source models
+
+At n=3,p=5 the following are emitted primitive counts, peak live quantum storage
+and fresh measurement SSA slots. Reset counts equal measurement counts, and
+refer only to erased conjunction work. Retained logical history is 12 bits.
+
+| Module | Emitted T/TDG | Emitted CX | Measurements | Peak quantum | Fresh measurement slots | Source default T | Source exact-swap T |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| step1 | 12 | 21 | 3 | 9 | 3 | 12 | 12 |
+| step2 | 12 | 22 | 3 | 12 | 3 | 12 | 12 |
+| step3 | 20 | 68 | 5 | 17 | 5 | 20 | 20 |
+| step4 | 42 | 48 | 0 | 13 | 0 | 24 | 42 |
+| step5 | 44 | 84 | 11 | 20 | 11 | 44 | 44 |
+| step6 | 84 | 150 | 7 | 27 | 7 | 60 | 84 |
+| iteration | 214 | 393 | 29 | 28 | 29 | 172 | 214 |
+| algorithm | 1292 | 2383 | 176 | 38 | 176 | 1040 | 1292 |
+| public | 1292 | 2383 | 176 | 38 | 176 | 1040 | 1292 |
+
+The whole forward graph emits 5533 primitives. Its 1292 T/TDG agree with the
+source model configured for exact seven-T CSwap, while the source default is
+1040 T. Both source and native peak storage are 38 quantum bits. Each source
+measurement event owns a fresh static classical SSA identity in the stored
+binder. The older explicit physical emitter reuses a smaller caller-supplied
+slot pool. Event count, static SSA count and reusable physical slots are
+separate resource observations.
+
+### Retained boundaries
+
+* Step1 at n=1 is rejected by the original MultiAnd minimum-control condition.
+* Full all-ones p cannot load p+1 in its source n-bit AddK. Neither implementation
+  reduces that original constant to conceal the failure.
+* Nonunits and arbitrary iteration inputs can violate the source Free promises.
+  Step5's unbounded callback differs from its finite-width gates on overflow,
+  and Step6's odd active v callback drops a bit while its circuit cyclically rotates.
+* Symbolic physical widths, generic foreign/strict dtype admission and unresolved
+  source count/autotester interfaces retain their existing independent ledger
+  dispositions. This graph closure alone does not close parent Q-0573.
+* Earlier whole-repository default/integration failures remain recorded. This
+  batch claims its concentrated local regression and strict checks, with no new
+  whole-repository success assertion.
+
+The initial new test harness mistakenly sized dense branch states using the
+entire reserve pool. Its process exited 137. The harness now derives width from
+actual emitted wires before branch simulation, and affected tests passed again.
+
+The initial concentrated run had 883 passed and 12 failures because the append
+example changed physical result/history placement. Its caller-compatible pool
+binding was corrected, and the unchanged original-grid tests were rerun.
+
+Final batch receipts are `ftqc-reference-env/g2-modular-inverse-native-*` outside
+the repository. Final validation passed 899 concentrated cases and 17 local integration cases.
+Strict typing passed for 22 files, alongside Black, Ruff, Compiler scope,
+architecture, multi-level IR and protected API checks. Six frozen source blobs
+match. The dependency scan reports 688 existing repository findings and zero
+batch findings.
