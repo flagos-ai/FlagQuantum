@@ -58,12 +58,36 @@ python -m pytest -q tests/integration/test_synthesis_native_lanchester.py
 
 The matrix checks replay every computational-basis column of complex Fourier
 and seeded random matrices with and without coherent controls, including global
-phase and clean workspace. They use the workspace count chosen by the existing
-allocator. A diagnostic with one fewer workspace bit for the controlled
-four-qubit case exposed approximately `2.2e-12` inactive-branch simulator drift;
-that separate fallback precision issue is tracked in
-[issue #1240](https://github.com/flagos-ai/FlagQuantum/issues/1240) and is not
-claimed fixed here.
+phase and clean workspace. They cover both the allocator's usual workspace
+count and a controlled four-qubit matrix with only two clean work bits.
+
+### Controlled matrices with two clean work bits
+
+When a controlled block has fewer clean work bits than its full conjunction
+ladder needs, `unitary.py` reuses `mcx.one_clean_mcx` to compute the conjunction
+into one clean flag using a second clean work bit and temporarily borrowed
+controls. The work bit, flag and borrowed controls are restored. The block's
+registered gates are controlled by the computed flag, then the conjunction is
+uncomputed. The register scheduler supplies only the available proven-clean tail, capped
+by the existing synthesis width and workspace constraints. It no longer
+requires the entire preferred tail before passing any work bits. The ordinary
+full-workspace path is unchanged; fewer than two clean work bits still use the
+existing ancilla-free expansion.
+
+[Issue #1240](https://github.com/flagos-ai/FlagQuantum/issues/1240) records the
+original two-work-bit Fourier example: 51,125 gates and approximately
+`2.2e-12` inactive-branch simulator drift. Reusing the existing conjunction
+implementation emits 2,673 gates for that example and gives zero observed
+inactive-branch error on the same macOS ARM64 / Torch 2.14.0 environment. The
+full-workspace example emits 2,431 gates. These counts describe this input,
+not a universal cost guarantee or a hardware performance claim.
+
+The regression checks all input columns of both Fourier and seeded random
+matrices on active and inactive branches, retaining the absolute `1e-12`
+acceptance bound, the input's `0.37` global phase and clean return of both work
+bits. This correction does not establish the accuracy of every smaller-workspace
+fallback, and does not change workspace allocation, IR, public contracts or
+simulation tolerances.
 
 ### Harmonic oscillator resource regression
 
@@ -85,3 +109,26 @@ invalid-input rejection.
 ```bash
 python -m pytest -q tests/integration/test_synthesis_native_harmonic.py
 ```
+
+The public regression in
+`tests/integration/test_synthesis_native_unitary.py` prepares a coherent control
+and four-qubit input, applies a complex Fourier matrix and compiles with
+`max_workspace=2`, `max_qubits=7` and `max_operations=10_000`. Independent dense
+Circuit amplitudes and hidden-zero checks verify the emitted result. Previously
+the scheduler ignored the tighter clean tail for this operation and proposed
+three work bits, which the unchanged resource acceptance rejected.
+
+The same scheduler correction makes the harmonic oscillator's one-work-bit
+schedule and Lanchester's three-work-bit schedule feasible. Their previous
+rejection assertions are replaced by explicit success, exact resource-bound
+and independent state checks: all 32 harmonic input columns and the complete
+Lanchester output state, including hidden-zero workspace. Operation, depth and
+memory refusal tests remain in place. No test accepts either success or failure.
+
+On the development host, the constrained harmonic schedule uses 6 qubits,
+1,889 operations and depth 1,653 (its ordinary two-work-bit schedule uses
+7 qubits, 203 operations and depth 173). The constrained Lanchester schedule
+uses 15 qubits, 20,350 operations and depth 18,261; its observed full-state
+maximum error is `9.788462989003254e-14`, with zero observed workspace leakage.
+These input-specific observations show a width versus gate/depth tradeoff;
+they do not replace the ordinary resource ceilings or qualify a benchmark.
