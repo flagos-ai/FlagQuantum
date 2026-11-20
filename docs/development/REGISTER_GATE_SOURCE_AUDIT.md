@@ -7,12 +7,12 @@ The reference is Qualtran v0.7.0 revision `bcb17bb25360ed68ce3bc084645db3e929799
 | Parent | Complete file | Git blob | Disposition |
 |---|---|---|---|
 | Q-0162 | `qualtran/_infra/gate_with_registers.ipynb` | `108c73c15f07476d976e0777c4b916bb466670f7` | Accepted native replacement of all 17 cells, preserving cell types and source-cell metadata. |
-| Q-0163 | `qualtran/_infra/gate_with_registers.py` | `df21c8cc00ae7cac7a8bfcd4d769f76daac5515f` | Zero-width ownership accepted. Open pending wider typed/control dependency closure. |
+| Q-0163 | `qualtran/_infra/gate_with_registers.py` | `df21c8cc00ae7cac7a8bfcd4d769f76daac5515f` | Accepted after the 2026-11-20 complete-definition and raw-storage projection review below. |
 | Q-0164 | `qualtran/_infra/gate_with_registers_test.py` | `31fd6f8635cec0b18b1c1f3487d4db9c8fabacf3` | Original five tests pass, with native counterparts for every original scenario. |
 
 ## Complete definition mapping
 
-The inventory counts 26 class/function/method occurrences, including the class and both overloads. It is navigation and ownership evidence. It does not independently close Q-0163.
+The inventory counts 26 class/function/method occurrences, including the class and both overloads. The original intake mapped ownership. The final acceptance below combines that inventory with the complete original tests, direct-dependency evidence and native execution.
 
 | Source definition | Native owner | Evidence or remaining boundary |
 |---|---|---|
@@ -145,7 +145,7 @@ comparison, explicit polynomial tensor failures, complete child streams and
 measurement histories. No generic SDK dialect or nonbinary quantum admission
 is inferred. Q-0163 still requires the remaining control/interface review.
 
-## Concrete remaining SDK storage boundary
+## Historical explicit-classical-signature intake
 
 The post-Proposal-111 interface regression passes 599 cases, with two optional
 skips for PennyLane and qiskit-aer. Existing primitive, callback, branch,
@@ -161,8 +161,70 @@ classical storage have distinct execution contracts. Proposal 111 admits
 classical Program ports and read-only feedback. It does not authorize assigning
 quantum wire ownership to classical values or conditional classical writes.
 
-This is a concrete remaining interface boundary of Q-0163 and its control
-consumer, independent from the now accepted field word dependency. Symbolic
-physical execution and source defects remain separately recorded. The complete
-parent stays open. The next closure must determine the explicit native storage
-semantics of these source consumers before changing protected behavior.
+This intake established the explicit-signature refusal. It did not test the
+existing default raw import. The final review below corrects the earlier
+classification of that refusal as a missing raw SDK capability.
+
+
+## Final complete-file acceptance on 2026-11-20
+
+Q-0163 is accepted. All 26 original definitions, including both controlled
+method overloads, retain the native owners listed above. The tutorial and all
+original test scenarios were already mapped. Proposals 107 through 111 and the
+zero-width continuation closed the concrete scalar, phase, classical-word and
+field control dependencies. The frozen three-file blob inventory is reverified
+in `g2-register-storage-projection-evidence.json`.
+
+The raw Cirq interface describes quantum operands, even when the source label
+is CBit, an integer CDType or a classical finite field. The existing default
+`import_cirq_register_gate(operation)` derives native quantum ports from that
+raw interface. It already preserves the complete original operation. Explicit
+native classical signatures describe owned classical slots and retain their
+independent validation. The two routes have distinct representations.
+
+`test_register_gate_storage_projection.py` covers eight classical source label
+families with scalar, two-element and empty-array shapes. All 24 cases verify
+the existing raw import, exact H/T/CX streams and operands, complete complex
+operators including the entire raw bit space, entangled spectator amplitudes,
+normal `circuit.append(op)`, returned aliases and zero classical slots. Empty
+imports have no owned values. Their physical binder receives the already
+present borrowed spectator because it requires a physical wire. There are zero
+allocation/release events and zero clean workspace in every case. Explicit
+classical signatures continue to fail their quantum placement check.
+
+The new test uses original types only at its reference boundary. Production
+code is unchanged. The source labels remain boundary metadata. No numerical
+classical field value is converted into a quantum-owned Program value.
+Conditional classical updates remain a separately tracked dependency of the
+control and classical-component owners, Q-0158 and Q-0547. They are not an
+unimplemented method of this register-gate file. Unresolved symbolic physical
+values and original empty-tuple, shape and adjoint defects retain their recorded
+refusals or counterexamples at their owning boundaries.
+
+## Final checks and resource distinction
+
+All 688 concentrated native interface cases pass. Two optional lanes skip
+because PennyLane and qiskit-aer are absent. The complete original source file
+passes all five tests, including an actual notebook kernel. The initial combined
+attempt reached a sandbox loopback-socket restriction at that notebook. Running
+its unchanged original suite with local-kernel permission resolves that harness
+failure. The failed attempt remains in the sandbox log.
+
+Strict typing, Black, Ruff, Ecosystem scope, architecture, IR and public API
+checks pass for the new reference test. Strict typing resolves the frozen
+`GateWithRegisters` base through `MYPYPATH=../ftqc-reference-env`, so its actual
+source class is checked instead of an unresolved optional-import Any. The
+dependency scan retains 687 existing
+repository findings and zero batch findings. Previously accepted field/control
+4454-case and 17-case local integration evidence is reused because the production
+implementations are identical. The existing default docstring coverage failure
+and its byte-identical baseline comparison are also reused. Whole-repository
+passing status is not asserted.
+
+Each nonempty raw projection emits one H and one T, plus one CX for width above
+one. The independent original decomposed-leaf QEC models report one T and one
+or two Clifford gates respectively. Empty projections emit zero instructions.
+All have zero measurement, clean workspace and classical slots. The borrowed
+spectator is declared separately. A root estimate is not inferred from its
+classical label. The full receipt records observed emission and leaf models in
+separate fields.
