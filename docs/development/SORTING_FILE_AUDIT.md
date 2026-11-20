@@ -138,3 +138,88 @@ IR and protected API checks pass. The default suite retains its previously
 recorded docstring-example coverage failure. Q-0217/Q-0218 remain open for
 generic symbolic/foreign admission, original strict dtype/count-mode gaps and
 unsupported concrete lengths. The frozen reference remains unchanged.
+
+## Generic declaration batch interface
+
+Compiler comparison owns ComparatorDeclaration and ParallelComparatorsDeclaration,
+including unsigned MSB-first words, offset/count metadata and RIGHT history.
+Compiler sorting owns BitonicMergeDeclaration and BitonicSortDeclaration, including
+LEFT merge inputs, RIGHT results and the retained recursive history. Signatures,
+source symbolic predicates and direct comparison counts are independent of finite
+physical lowering. The catalogue consumes these owners. Physical program methods
+reuse the existing directional stored graphs, including their exact adjoints.
+Logical history remains owned by the caller until inverse consumption. Each
+child owns and clears its temporary comparison work. Symbolic lengths or widths
+remain declaration/model values and are rejected by finite physical conversion.
+
+## Complete declaration and consumer acceptance, 2026-11-20
+
+This acceptance supersedes the generic-declaration and foreign-consumer items in
+the earlier batch sections. Q-0217 and Q-0218 close with the original source and
+physical-domain limits retained below.
+
+All 29 source definitions are accounted for across the four classes, signatures,
+validation, symbolic predicates, comparison counts, executable bodies, direct
+models and six factories. Comparison declarations and sorting declarations have
+separate owners. Both replace the catalogue's duplicated metadata. Every source
+finite count/offset pair from one through nine compares its complete signature
+and exact direct model. Generic symbolic count, offset, width and combined cases
+retain the original half-count upper bound. Generic merge/sort symbolic length
+and width retain the exact source bit-length expressions. Finite conversion in
+both directions delegates to the existing accepted stored hierarchies.
+
+All six actual source factories round-trip exact original library bytes at depths
+zero, one and two and reconstruct equal source objects. Their real serialized
+arguments resolve through general native declarations. Finite factories return
+the existing executable graph. Symbolic-width factories retain declarations and
+reject finite conversion. Symbolic-length libraries preserve source round-trip
+assumption loss and the existing native array-dimension rejection. This foreign
+resolution restriction is separate from symbolic declaration/model support.
+
+Eight SDK consumers exercise all four classes through one- and two-bit words,
+using real source sided signatures and explicit input/output qubit placement.
+They compare complete source isometries including an entangled spectator, every
+raw measurement history and zero non-output workspace through circuit.append(op).
+These cases contain one comparator, with respectively two and eight raw histories.
+The previously accepted complete networks retain their broader source hierarchy,
+primitive operands/feedback, all small branch amplitudes, exact inverse and
+45 seeded-list evidence. The original reference and all nine execution/interop
+owners recorded in the receipt are unchanged.
+
+The original direct BitonicMerge.as_cirq_op wrapper fails before native import.
+For half-length one, it supplies 4n+1 physical operands to a wrapper expecting
+2n+1. Both widths retain this exact original ValueError witness. Its unchanged
+CompositeBloq.to_cirq_circuit_and_quregs path succeeds. The merge SDK execution
+check imports that original composite circuit with explicit LEFT/RIGHT mapping.
+The accepted native merge graph already retains the source physical output
+aliases and clean comparison lifetime.
+
+| One-comparator SDK case | Actual imported leaves | Independent source model |
+|---|---|---|
+| One-bit compare, offset, merge or sort | 15 CX, 8 X, 4 T/TDG, 1 measurement, 1 matrix CSwap leaf | 1 And, 1 CSwap, 14 Clifford, 1 measurement, 8 default-T or 11 exact-seven-T equivalents |
+| Two-bit compare, offset, merge or sort | 45 CX, 10 X, 12 T/TDG, 3 measurements, 2 matrix CSwap leaves | 3 And, 2 CSwap, 36 Clifford, 3 measurements, 20 default-T or 26 exact-seven-T equivalents |
+
+The SDK matrices are atomic unitary leaves. Their displayed T counts exclude
+an expansion of those matrices. Full primitive expansion remains the accepted
+native typed path using seven-T CSwap. The earlier eight-word table and
+separate g2-sorting-native-evidence.json retain those measured primitives and
+source categories. SDK counts are recorded in
+g2-sorting-foreign-sdk-resources.json. Supplied unused clean-pool capacity is
+identified separately from logical width in that receipt.
+
+Concentrated regression passes 574 cases and local integration passes 18 cases,
+including the normal append consumers. The 19 foreign cases pass independently
+on Cirq 1.7.0 and 1.6.1. The generic declaration acceptance contains 102 cases.
+Strict typing covers all five changed Python files. Black, Ruff, Compiler scope,
+architecture, multilevel IR and public API checks pass. Five frozen blobs and
+Qualtran 0.7.0 with Kickmix 0.1 Simulator are verified. Existing complete source
+114-pass/2-skip/2-xfail and notebook evidence is reused. The prior default-suite
+docstring-coverage failure retains byte-identical reported modules and test.
+
+Original strict QUInt-to-QAny typing and count-mode policy remain visible.
+Non-power-of-two merge lengths have declarations and models but no supported
+source/native physical decomposition. Native declaration validation raises
+ValueError for invalid lengths where the original constructor uses AssertionError.
+Unknown symbolic dimensions retain metadata and direct models while finite
+execution rejects them. The original merge SDK wrapper arity failure and source
+symbol-assumption loss remain explicit. Receipts use g2-sorting-foreign-*.
