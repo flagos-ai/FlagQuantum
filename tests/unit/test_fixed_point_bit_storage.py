@@ -1,4 +1,4 @@
-"""Proposal 113 admits precisely canonical unsigned one-bit quantum storage."""
+"""Proposals 113 and 114 admit canonical unsigned one-bit quantum storage."""
 
 from dataclasses import replace
 
@@ -11,7 +11,7 @@ from flagquantum.core.ir.program.registers import RegisterType
 pytestmark = [pytest.mark.unit]
 
 
-@pytest.mark.parametrize("fraction", [0, 1])
+@pytest.mark.parametrize("fraction", [-10000, -7, -2, -1, 0, 1])
 def test_canonical_bit_storage(fraction: int) -> None:
     dtype = fixed_point_register_type(1, fraction)
     assert executable_register_width(dtype) == 1
@@ -39,9 +39,6 @@ def test_canonical_bit_storage(fraction: int) -> None:
         ),
         RegisterType(
             "fixed_point", 1, parameters=(("fractional_width", 1), ("signed", True))
-        ),
-        RegisterType(
-            "fixed_point", 1, parameters=(("fractional_width", -1), ("signed", False))
         ),
         RegisterType(
             "fixed_point", 1, parameters=(("fractional_width", 2), ("signed", False))
