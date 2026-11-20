@@ -247,3 +247,43 @@ shaped metadata transport, complete measured-child histories and exact binary
 compatibility artifacts. Earlier statements that all nonbinary classical
 values are refused are historical. Nonbinary quantum execution and unresolved
 symbolic or generic interface dependencies retain their own scopes.
+
+## Current concrete physical dependency after Proposal 112
+
+Proposal 112 closes owned conditional classical updates and Q-0547 at
+`3d85c62d8`. Its source-only decomposition/model absence and numerical tensor
+counterexamples remain independently recorded. Earlier all-classical-read and
+all-classical-write missing-capability statements are superseded by accepted
+Proposals 108 through 112.
+
+The next real physical gap is unsigned one-bit QFxp storage. For fractional
+width 0 and 1 and both activation bits, unchanged ControlledViaAnd emits CX
+or X/CX/X, while the native typed physical validator rejects the descriptor.
+For fraction 1, source numerical 0.5 corresponds to native stored bit 1.
+`g2-fixed-point-control-intake.json` retains this four-case distinction. Signed
+one-bit construction and wider QFxp predicates are original refusals.
+Proposal 103 prerequisite 1.20 explicitly protected physical fixed-point
+refusal, so Proposal 113 records the narrow required extension before coding.
+Proposal 113 was explicitly approved on 2026-11-20 and is implemented in
+Core `1c87aac95` and Compiler `f586d6276`. The approved concrete storage
+dependency is accepted in `FIXED_POINT_BIT_CONTROL_AUDIT.md`. It supplies
+no parent acceptance.
+
+## Remaining physical dependency after Proposal 113
+
+The final concrete intake also exercised negative integer fractional widths.
+Original QFxp(1,-1/-2/-7) with either stored activation bit decomposes to CX or
+X/CX/X. Proposal 113 intentionally admits only fractions 0 and 1, so native
+physical admission still refuses these six source-supported cases. The exact
+streams are in `g2-fixed-point-negative-fraction-intake.json`. Proposal 114
+records the separately protected extension and awaits approval. This is a
+remaining native execution gap, and Q-0158/Q-0159 stay open.
+
+Unresolved symbolic fractional widths have a different source behavior.
+Original CtrlSpec.get_single_ctrl_val raises for symbolic metadata. The
+new explicit negative witness verifies both extraction and decomposition
+refusals. Its physical rejection supplies no missing source-executable case.
+Earlier broad symbolic-physical gap labels need this source distinction.
+The complete unchanged controlled test suite now passes 42 cases, including
+its actual notebook, with three collection warnings. Native evidence is
+recorded separately in the Proposal 113 audit.
