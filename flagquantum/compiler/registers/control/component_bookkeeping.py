@@ -5,20 +5,23 @@
 
 """Pass controls unchanged through verified lifetime and register rebindings."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from typing import TypeVar
 
 from ....core.ir.program import ProgramRecord, verify_program_record
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from .component_extension import StructuredControlAdder
 
+_Controls = TypeVar("_Controls", bound=Sequence[BindingCollection])
+
 
 def call_with_unchanged_controls(
     builder: ComponentProgramBuilder,
     callee: str,
-    controls: tuple[BindingCollection, ...],
+    controls: _Controls,
     values: Mapping[str, object],
-) -> tuple[tuple[BindingCollection, ...], tuple[BindingCollection, ...]]:
-    """Call an already selected body and return the original control tuple."""
+) -> tuple[_Controls, tuple[BindingCollection, ...]]:
+    """Call an already selected component and retain its control container."""
     return controls, builder.call_tuple(callee, values)
 
 
@@ -27,11 +30,12 @@ def bookkeeping_component_control_system(
 ) -> tuple[ProgramRecord, StructuredControlAdder]:
     """Return the stored bookkeeping body and its control-pass-through callback.
 
-    Reachable finite typed bodies may only call, allocate/free words, or
-    split/join registers. Unrelated definitions are verified but need not be
-    bookkeeping. Quantum/classical computation, untyped bodies, physical
-    contexts and invalid graphs raise ValueError. Controls are returned as the
-    original tuple; no control descriptor, predicate or gate is added. The
+    Reachable typed definitions may be declarations or contain only calls,
+    word allocation/free and split/join operations. Declared components retain
+    their signatures and require a body before physical binding. Unrelated
+    definitions are verified but need not be bookkeeping. Quantum/classical
+    computation, untyped bodies, physical contexts and invalid graphs raise
+    ValueError. Controls are returned as the original tuple; no control descriptor, predicate or gate is added. The
     existing builder owns input consumption and errors. Dirty restoration and
     allocated-output transfer remain obligations of the caller and binder.
     """
@@ -53,19 +57,19 @@ def bookkeeping_component_control_system(
         function = functions[name]
         if function.registers is None:
             raise ValueError("bookkeeping control requires finite typed bodies")
-        block = function.blocks[0]
-        for operation in block.operations:
-            if operation.opcode == "call":
-                pending.append(operation.callee or "")
-            elif operation.opcode not in {
-                "allocate_register",
-                "free_register",
-                "split_register",
-                "join_register",
-            }:
-                raise ValueError(
-                    "bookkeeping control cannot ignore computational operations"
-                )
+        for block in function.blocks:
+            for operation in block.operations:
+                if operation.opcode == "call":
+                    pending.append(operation.callee or "")
+                elif operation.opcode not in {
+                    "allocate_register",
+                    "free_register",
+                    "split_register",
+                    "join_register",
+                }:
+                    raise ValueError(
+                        "bookkeeping control cannot ignore computational operations"
+                    )
 
     def add(
         builder: ComponentProgramBuilder,

@@ -129,3 +129,18 @@ control bits, the pinned source converts its unknown-length activation marker
 to all-positive controls. Extension composition preserves that whole-spec rule.
 `tests/unit/test_symbolic_predicate_program.py` compares the source connections
 and exercises replacement through the same physical consumers.
+
+The bookkeeping factory also accepts existing typed declarations, including
+symbolic widths and supported classical or fixed-point descriptors. The original
+base control protocol does not inspect the dtype or control specification.
+`call_with_unchanged_controls` retains any Sequence container by identity,
+including lists and empty tuples. Each callback makes exactly one ordinary child
+call with the original inputs. A declaration records that logical connection;
+physical binding requires its implementation. Revalidate the factory after
+replacing declarations, so computational descendants cannot masquerade as
+bookkeeping. This declaration boundary does not certify child semantics.
+
+Run `tests/unit/test_bookkeeping_control_file.py` for the complete base protocol
+and all ten original concrete descendants. The complete source-file disposition,
+reused execution evidence and independent storage boundaries are recorded in
+[the bookkeeping control audit](../../../../docs/development/BOOKKEEPING_CONTROL_FILE_AUDIT.md).
