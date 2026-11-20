@@ -204,3 +204,35 @@ NumPy imports use the optional-dependency guard required for dev-only installs.
 The source shape-only bound remains a separate analytical observation. These
 counts exclude gates for callers who explicitly materialize output mappings.
 No whole-repository success is claimed by the focused validation.
+
+## Complete actual square-factory consumers
+
+The existing named-emitter boundary now consumes both original GF2Square
+factories. The concrete GF16 forward and original adjoint each emit two CX and
+one physical output-binding SWAP. Both actual directions match the unchanged
+flattened graph's primitive operands and returned ownership. SWAP is symmetric,
+so reversed operand spelling is compared as the same physical transposition.
+The original QEC declaration is two Clifford and QubitCount is four. Binding
+SWAP is separately reported. There is no private work, feedback or measurement.
+
+Full coherent states cover every field word and spectator under ordinary and
+reversed binding. JSON and `circuit.append(op)` execute with Qualtran, Cirq,
+Galois and Kickmix imports blocked. The forward matches the original square
+callback. The original adjoint repeats that forward linear recipe, and its
+composition deliberately fails mathematical inverse restoration. Existing owned
+exact-adjoint and k=0/k=3 source-defect evidence remains reused without modifying
+the reference or presenting a corrected body as original-source equality.
+
+Both actual constructors retain the original QGF codec failure. The symbolic
+factory rejects unresolved physical extent, while its declared Clifford bound
+`m**2-m` and zero-T model are independently checked. The complete whole-file
+inventory, original tests, numerical matrices, arbitrary supported powers and
+native mathematical inverse evidence above remains authoritative.
+
+The joint complete-factory regression passes 356 cases without skips, alongside
+17 local integration checks and nine cases on Cirq 1.6.1. Strict typing, format,
+scope, architecture, IR and API checks pass. Six original source/test blobs and
+the pinned Qualtran/Kickmix runtime are verified. Directional actual primitive,
+logical peak and independent source model rows are retained separately in
+`g2-field-linear-foreign-evidence-20261121.json`. Q-0522/Q-0523 remain open for the
+original mathematical-adjoint, bookkeeping/generic/autotester and codec scope.

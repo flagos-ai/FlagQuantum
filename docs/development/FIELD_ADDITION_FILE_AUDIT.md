@@ -127,3 +127,42 @@ batch reuses their accepted dependency evidence and does not reopen them.
   domain scope checks, architecture, multi-level IR and protected API checks pass.
 - The three new production/example modules have 68 statements and 14 branches,
   all covered. Existing protected API and schema checks pass.
+
+## Complete actual addition-factory consumers
+
+The complete `gf2_addition.py` and `gf2_add_k.py` factory sets are now consumed
+through the existing actual-source named emitter. Each original module has one
+GF16 concrete example and one unresolved symbolic example. Their complete
+source-definition, original tests, numerical callbacks, typed native Program and
+tutorial evidence above is reused.
+
+Both directions of the actual GF16 addition emit four CX, with zero workspace,
+feedback and binding SWAP. The actual constant-one factory emits one X in either
+direction with the same zero overhead. Logical source QubitCount is eight for
+addition and four for constant addition. Original QEC declarations independently
+match the physical Clifford counts. No measurement branches occur.
+
+Every concrete input word, arbitrary coherent target word and spectator is
+covered in a full complex state, under both ordinary and reversed physical
+binding. Every primitive operand and per-wire order agrees with an independent
+flattening of the unchanged graph. Captured IR round-trips JSON and executes
+through `circuit.append(op)` while all optional source SDK imports are blocked.
+Both original directional streams restore the complete coherent input when
+composed. GF2AddK uses the original generic adjoint, whose classical callback is
+NotImplemented; its independently checked self-inverse forward action supplies
+the expected numerical result, with the original adjoint graph checked separately.
+
+All four actual factory constructors reproduce the original QGF serialization
+TypeError. Both unresolved examples reject physical decomposition and capture,
+while their symbolic Clifford bounds remain independently checked. The original
+GF2Addition deprecated `bitsize=` warning and equality with the canonical factory
+are verified. Source bookkeeping-count omissions and the original remaining
+generic/autotester boundaries stay explicit. These consumers do not change the
+original serializer or claim that its QGF codec succeeds.
+
+The combined addition/Frobenius/direct-dependency regression passes 356 cases
+without skips in 5.55 seconds. Local integration passes 17 cases and independent
+Cirq 1.6.1 passes all nine new factory consumers. Strict typing, Black, Ruff,
+Ecosystem scope, architecture, multi-level IR and API checks pass. Six unchanged
+source/test blobs and Qualtran 0.7.0/Kickmix 0.1 Simulator are reverified. Separate
+primitive and model rows are in `g2-field-linear-foreign-evidence-20261121.json`.
