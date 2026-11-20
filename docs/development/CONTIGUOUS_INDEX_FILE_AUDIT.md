@@ -146,3 +146,63 @@ policy retains 687 whole-repository findings and zero batch findings. The prior
 default-suite docstring failure is reused separately, with its nine implicated
 modules verified byte-identical to the recorded baseline. That evidence is not
 a fresh whole-suite pass.
+
+## Complete file and SDK transport closure, November 20, 2026
+
+All six original definitions and both original test functions now have their
+complete owner/dependency disposition. Earlier open-parent statements describe
+historical intake. The source signature, callback, symbols, declared model and
+factory retain the owners and diagnosed contradictions above. Existing native
+square/add execution and its direct arithmetic dependencies remain unchanged.
+
+The final foreign review uses existing Program export/import with the exact
+three THRU word ports. Five width/result-width pairs cover narrow truncation,
+wide occupied prefixes and the original four/eight-bit factory shape. Reversed
+input Qid placement and all three output aliases are retained. Original factory
+serialization also passes its unchanged source check.
+
+The SDK allocator is explicitly configured as GreedyQubitManager with
+maximize_reuse enabled. Its allocation results are recorded independently.
+Every original native allocation event is paired with the corresponding SDK
+lease. Each emitted instruction then retains its opcode, parameters, measurement
+slot and feedback condition in its original position. Operands are checked
+against those observed leases and one consistent physical mapping per SDK Qid.
+No gates are sorted or removed. The configured roundtrip retains the complete
+instruction count and original physical capacity. CircuitIR JSON also preserves
+the restored circuit exactly.
+
+The allocator choice is material. The default SDK SimpleQubitManager creates
+fresh Qids across released lifetimes. A measured operation tree has no explicit
+free markers from which an importer can reconstruct those lifetimes. Importing
+that default export can therefore require more static physical storage.
+Greedy reuse preserves the original capacity. Its free-list ordering permutes
+some temporary addresses, which the independent lease trace checks explicitly.
+This policy distinction is retained rather than hidden in a count comparison.
+
+Both smallest output formats check every measurement history on all coherent
+input and occupied-result words with an entangled spectator. Every final work
+amplitude outside zero vanishes, with absolute unnormalized complex amplitudes
+matching the independent integer XOR oracle. Existing larger native complex
+states, exact cleanup, normal append and original shared-leaf evidence are
+reused. The complete notebook and real resource consumers are rerun in the
+concentrated regression.
+
+The configured SDK roundtrip adds zero gates, measurements or physical storage.
+The separate width-five square/add account remains 304 T/TDG, 772 CX,
+76 measurements and 30 work bits. The Appendix F account remains 116 T/TDG,
+342 CX, 29 measurements and 33 work bits. The original model declares
+29 Toffoli. Original missing decomposition, through-s callback failure and
+nu-minus-one printed label retain their explicit witnesses. Native occupied
+XOR and scalar callback behavior have independently specified domains.
+
+The final regression passes 339 cases with one existing IPython warning and
+zero skips, and local integration passes 17 cases. The unchanged original suite
+reports three passes and three decomposition-dependent skips. Cirq 1.6.1 passes
+all six new transport/factory cases. Strict typing, Black, Ruff, Ecosystem scope,
+architecture, multi-level IR and public API checks pass. Three frozen source
+blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Eight accepted
+owners/tests are byte-identical to the base. The known default docstring-policy
+failure retains its ten-file baseline. Dependency policy remains 687 existing
+findings with zero changed-path findings. Q-0190 and Q-0191 are accepted with
+these source and allocator boundaries retained. Receipts use
+`ftqc-reference-env/g2-index-foreign-`.
