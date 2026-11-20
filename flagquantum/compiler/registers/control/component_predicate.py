@@ -38,6 +38,7 @@ def validate_control_ports(
             "signed": "twos_complement",
             "ones_complement": "ones_complement",
             "montgomery": "unsigned",
+            "fixed_point": "unsigned",
             "finite_field": "unsigned",
             "finite_field_polynomial": "unsigned",
         }.get(register.dtype.encoding)
