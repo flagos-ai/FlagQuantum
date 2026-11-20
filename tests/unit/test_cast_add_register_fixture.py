@@ -49,10 +49,12 @@ def test_typed_cast_add_calls_preserve_fixed_point_storage(width: int) -> None:
 
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source
+    from tests.unit.test_subtraction_foreign_file import native_signature
 
     source = TestCastToFrom(bitsize=width)
     record = cast_add_fixture(width)
     main = next(fn for fn in record.functions if fn.name == "main")
+    assert main.registers == tuple(native_signature(source.signature))
     assert main.registers is not None
     assert [(r.name, r.bitsize, r.side.name) for r in main.registers] == [
         (r.name, r.bitsize, r.side.name) for r in source.signature
