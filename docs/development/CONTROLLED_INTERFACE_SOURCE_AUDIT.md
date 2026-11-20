@@ -269,15 +269,19 @@ Core `1c87aac95` and Compiler `f586d6276`. The approved concrete storage
 dependency is accepted in `FIXED_POINT_BIT_CONTROL_AUDIT.md`. It supplies
 no parent acceptance.
 
-## Remaining physical dependency after Proposal 113
+## Negative fractional physical dependency after Proposal 114
 
 The final concrete intake also exercised negative integer fractional widths.
 Original QFxp(1,-1/-2/-7) with either stored activation bit decomposes to CX or
 X/CX/X. Proposal 113 intentionally admits only fractions 0 and 1, so native
-physical admission still refuses these six source-supported cases. The exact
-streams are in `g2-fixed-point-negative-fraction-intake.json`. Proposal 114
-records the separately protected extension and awaits approval. This is a
-remaining native execution gap, and Q-0158/Q-0159 stay open.
+physical admission initially refused these six source-supported cases. The historical
+streams are in `g2-fixed-point-negative-fraction-intake.json`. Proposal 114 was
+explicitly approved on 2026-11-20 and now admits canonical unsigned one-bit
+storage at every built-in integer fractional width at most one. The six exact
+source/native streams, complete complex states, measurement histories and
+work cleanup pass. See `FIXED_POINT_BIT_CONTROL_AUDIT.md` and
+`g2-negative-fraction-control-` receipts. Q-0158/Q-0159 stay open for the other
+foreign interfaces and source limitations recorded in this audit.
 
 Unresolved symbolic fractional widths have a different source behavior.
 Original CtrlSpec.get_single_ctrl_val raises for symbolic metadata. The

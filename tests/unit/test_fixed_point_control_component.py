@@ -23,13 +23,15 @@ from tests.unit.test_register_control_predicate import ControlCase
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 CASES: tuple[ControlCase, ...] = tuple(
     ((f"QFxp{fraction}", 1, shape, (bit,), "unsigned"),)
-    for fraction, shape, bit in product((0, 1), ((), (1,)), (0, 1))
+    for fraction, shape, bit in product((-7, -2, -1, 0, 1), ((), (1,)), (0, 1))
 )
 
 
 def controls(case: ControlCase, names: tuple[str, ...]) -> tuple[Register, ...]:
     return tuple(
-        Register(name, fixed_point_register_type(1, int(kind[-1])), shape)
+        Register(
+            name, fixed_point_register_type(1, int(kind.removeprefix("QFxp"))), shape
+        )
         for name, (kind, _, shape, _, _) in zip(names, case, strict=True)
     )
 
@@ -51,7 +53,7 @@ def fixture(
     value = dtype.from_bits([bit])
     from flagquantum.simulation.fixed_point_encoding import fixed_point_real_value
 
-    fraction = int(case[0][0][-1])
+    fraction = int(case[0][0].removeprefix("QFxp"))
     real_value = bit / (2**fraction)
     assert fixed_point_real_value(value, 1, fraction) == real_value
     assert value == bit

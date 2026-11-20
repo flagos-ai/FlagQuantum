@@ -2,7 +2,8 @@
 
 ## Review status
 
-Approved explicitly by the user on 2026-11-20: "批准，按 Proposal 114 实施".
+Approved explicitly by the user on 2026-11-20 for implementation according
+to Proposal 114.
 Proposal 113 admitted fractional widths 0 and 1. This separately approved
 extension admits the negative integer widths specified below.
 

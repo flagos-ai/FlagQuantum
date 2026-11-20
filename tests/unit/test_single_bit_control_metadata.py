@@ -22,7 +22,19 @@ np = pytest.importorskip("numpy")
 CASES = [
     (kind, shape, polarity)
     for kind, shape, polarity in product(
-        ("QBit", "QAny", "QUInt", "QInt", "QFxp0", "QFxp1"), ((), (1,), (1, 1)), (0, 1)
+        (
+            "QBit",
+            "QAny",
+            "QUInt",
+            "QInt",
+            "QFxp-7",
+            "QFxp-2",
+            "QFxp-1",
+            "QFxp0",
+            "QFxp1",
+        ),
+        ((), (1,), (1, 1)),
+        (0, 1),
     )
 ]
 
@@ -42,7 +54,7 @@ def test_single_bit_metadata_and_physical_control(
     signed = kind == "QInt"
     fixed = kind.startswith("QFxp")
     source_type = (
-        q.QFxp(1, int(kind[-1]), False)
+        q.QFxp(1, int(kind.removeprefix("QFxp")), False)
         if fixed
         else getattr(q, kind)() if kind == "QBit" else getattr(q, kind)(1)
     )
@@ -54,7 +66,7 @@ def test_single_bit_metadata_and_physical_control(
     spec = q.CtrlSpec(source_type, np.full(shape, value))
     assert spec.get_single_ctrl_val() == polarity
     dtype = (
-        fixed_point_register_type(1, int(kind[-1]))
+        fixed_point_register_type(1, int(kind.removeprefix("QFxp")))
         if fixed
         else RegisterType(
             {"QBit": "bit", "QAny": "opaque", "QUInt": "uint", "QInt": "signed"}[kind],

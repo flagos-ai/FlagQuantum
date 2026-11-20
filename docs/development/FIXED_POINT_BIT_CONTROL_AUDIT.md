@@ -48,11 +48,12 @@ Signed one-bit construction and wider QFxp CtrlSpecAnd are original refusals.
 Canonical wider, symbolic and malformed native storage remain refused. The
 symbolic fractional-width source control also refuses single-bit extraction.
 
-Negative integer fractional widths are a genuine remaining source-supported
-physical gap. Six unchanged original cases at -1, -2 and -7 successfully emit
-CX or X/CX/X, while approved Proposal 113 deliberately permits only 0 and 1.
-Proposal 114 records this separate extension and awaits explicit approval.
-Q-0158 and Q-0159 remain open. No new parent or capability acceptance is counted.
+Proposal 114 was explicitly approved on 2026-11-20. It extends canonical
+unsigned one-bit physical storage to every built-in integer fractional width
+at most one. The six original -1/-2/-7 cases now match native execution exactly.
+The historical intake remains evidence of the former gap. Q-0158 and Q-0159
+remain open for their other recorded foreign interfaces and source limitations.
+No new parent or capability acceptance is counted.
 
 The old logical-register test expected bounded unsigned words to be refused,
 although their earlier approved physical implementation already accepts them.
@@ -80,3 +81,39 @@ was added after broad-run collection and is included in the final 117 focused
 checks. All three source blobs and Qualtran 0.7.0/Kickmix 0.1 Simulator presence
 are verified. Dependency policy reports 687 existing whole-repository findings
 and zero batch-path findings.
+
+## Proposal 114 negative fractional storage
+
+Core changes only the existing canonical admission predicate. Compiler keeps
+its accepted stored-bit predicate, Split/Join, component calls and exact
+adjoints. The accepted descriptors retain their original fractional metadata.
+At fractional width -1 the real interpretation of stored bit 1 is 2, while the
+activation remains raw integer 1. Physical storage also accepts fraction -10000
+without evaluating a real conversion. This verifies the integer contract beyond
+the three source execution fixtures.
+
+For -1/-2/-7, both polarities and scalar/singleton arrays reuse all complete
+complex operator columns, entangled spectators, both unnormalized measured
+branches and all four forward/inverse histories from the approved component
+witnesses. Matrix-singleton source defects remain asserted at all five tested
+fractions. Normal append and specialized-child replacement pass. Direct source
+and native X streams match exactly, including operands and feedback, in the
+six original negative-fraction witnesses. Wider, signed, unresolved symbolic,
+bool-valued and malformed descriptors retain their refusals.
+
+The resource table above also applies to negative fractions. Source analytical
+models and observed primitive streams remain separately recorded for all ten
+fraction/polarity cases in
+`ftqc-reference-env/g2-negative-fraction-control-evidence.json`.
+Source revision and three blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are
+verified. All six strictly typed Python files, Black, Ruff, Integration scope,
+architecture, IR and public API checks pass. Final focused checks pass 176 cases.
+The original 42-case controlled suite is reused from Proposal 113 with its
+unchanged source blob. The known default docstring failure is reused after
+verifying all ten implicated files against base `8f5fe216c`. This batch makes no
+clean-default-suite claim. Dependency policy has 687 whole-repository findings
+and zero batch-path findings. Concentrated regression passes 10,752 checks with 32 existing warnings and
+zero skips. Local integration passes 17 checks. The 18 added matrix/scalar
+metadata cases were added after broad collection and are included in the final
+176 focused checks. All results use the `g2-negative-fraction-control-` receipt
+prefix.
