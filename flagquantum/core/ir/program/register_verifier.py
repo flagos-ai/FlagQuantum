@@ -7,6 +7,7 @@ This module supplies register port compatibility and typed lifetime signatures.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import cast
 
 from ...value_math import SymbolicInt
@@ -150,6 +151,49 @@ def concrete_logical_register_width(dtype: RegisterType) -> int:
     return width
 
 
+def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
+    """Validate canonical owned classical integer storage without binding slots.
+
+    Proposal 108 preserves CBit identity and constructor parameter ordering.
+    A quantum metadata view reuses the existing integer constructor validation.
+    It provides no physical admission for finite-field or polynomial storage.
+    """
+    if (
+        dtype == classical_bit_type()
+        and type(dtype.quantum_bits) is int
+        and type(dtype.classical_bits) is int
+    ):
+        return 1
+    if (
+        not isinstance(dtype, RegisterType)
+        or type(dtype.quantum_bits) is not int
+        or dtype.quantum_bits != 0
+        or dtype.parameters[:1] != (("storage", "classical"),)
+        or dtype.encoding
+        not in {"uint", "signed", "ones_complement", "montgomery", "fixed_point"}
+    ):
+        raise ValueError(f"unsupported classical register descriptor {dtype!r}")
+    quantum_view = replace(
+        dtype,
+        quantum_bits=dtype.classical_bits,
+        classical_bits=0,
+        parameters=dtype.parameters[1:],
+    )
+    return logical_register_width(quantum_view)
+
+
+def executable_classical_register_width(dtype: RegisterType) -> int:
+    """Resolve a canonical classical element's storage width for a feedback read."""
+    width = logical_classical_register_width(dtype)
+    if type(width) is not int or any(
+        type(value) is not int and not (name == "signed" and type(value) is bool)
+        for name, value in dtype.parameters
+        if name != "storage"
+    ):
+        raise ValueError("classical execution requires concrete integral metadata")
+    return width
+
+
 def register_port_types(
     function: FunctionRecord, side: RegisterSide
 ) -> tuple[RegisterType, ...]:
@@ -161,12 +205,11 @@ def register_port_types(
     signature = Signature(function.registers)
     for register in signature:
         dtype = register.dtype
-        if not (
-            isinstance(dtype, RegisterType)
-            and type(dtype.quantum_bits) is int
-            and type(dtype.classical_bits) is int
-            and dtype == classical_bit_type()
+        if dtype == classical_bit_type() or dtype.parameters[:1] == (
+            ("storage", "classical"),
         ):
+            logical_classical_register_width(dtype)
+        else:
             logical_register_width(dtype)
         if register.side not in (
             RegisterSide.LEFT,
@@ -269,15 +312,30 @@ def verify_register_block(
                         "classical discard requires an owned CBit register",
                     )
                 )
-        elif operation.opcode in {"parity_register", "read_classical_register"}:
-            parity = operation.opcode == "parity_register"
-            count = len(operation.operands) if parity else 1
+        elif operation.opcode == "read_classical_register":
+            dtype = types.get(operation.operands[0]) if operation.operands else None
+            width = 1
+            try:
+                if dtype is None:
+                    raise ValueError(
+                        "classical read needs a producer-defined word type"
+                    )
+                width = executable_classical_register_width(dtype)
+            except ValueError as exc:
+                diagnostics.append(_diagnostic("program.register_type", str(exc)))
+            signatures[position] = OpcodeSignature(
+                operation.opcode,
+                operand_kinds=("register",),
+                result_kinds=("register",) + ("bool",) * width,
+            )
+            if dtype is not None and operation.results:
+                types[operation.results[0]] = dtype
+        elif operation.opcode == "parity_register":
+            count = len(operation.operands)
             signatures[position] = OpcodeSignature(
                 operation.opcode,
                 operand_kinds=("register",) * count,
-                result_kinds=(
-                    ("register",) * (count + 1) if parity else ("register", "bool")
-                ),
+                result_kinds=("register",) * (count + 1),
             )
             if any(
                 types.get(value) != classical_bit_type() for value in operation.operands
