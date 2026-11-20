@@ -235,6 +235,7 @@ class SelectHubbard:
             work[start:],
             slots[start:],
             apply_spin_z,
+            zero_selection=lambda: apply_spin_z(0, predicate),
         )
         if control is not None:
             spin_up.extend(and_uncompute_ir(v, control, predicate, slots[0]))

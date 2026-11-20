@@ -143,3 +143,15 @@ zero work. The emitted CY count is exactly twice the site count.
 The eight frozen declaration-versus-decomposition comparisons still
 exhibit the documented missing CY category. The gate estimates are
 recorded independently of the emitted stream.
+
+### Zero-selection traversal consumer repair
+
+The complete chemistry package-entry regression exposed six existing side-one
+SELECT failures after shared unary traversal began requiring an explicit recipe
+for empty selectors. The Hubbard spin-up caller now supplies its existing leaf
+at index zero with the retained potential predicate. This reuses the original
+spin-up CZ behavior and preserves the compute/erase enclosure for controlled
+SELECT. Existing tests cover both control polarities, uncontrolled action,
+forward/inverse complex amplitudes, every small measurement history and clean
+work. Source side-one decomposition and model failures described above remain
+unchanged. This repair does not close Q-0353 or Q-0354.
