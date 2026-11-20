@@ -124,3 +124,71 @@ libraries also fail to serialize their `Shaped` object arrays with pickle
 disabled at all three tested depths. Source negative-index, omitted-singleton
 and scalar classical indexing behavior remains separately recorded in the
 existing classical suite. These gaps keep Q-0481 open.
+
+## Complete implementation-file consumers, November 21
+
+All definitions in the frozen `data_loading/qrom.py` have been assigned to
+existing native responsibilities. This batch adds executable coverage of the
+actual four documentation factories and their direct consumers. Q-0480 remains
+open for the physical and presentation differences listed above.
+
+| Source definition | Native owner and executable disposition |
+| --- | --- |
+| `_to_tuple` | Native immutable dataset tuples; conversion is verified through the actual factories |
+| `QROM`, `build_from_data`, `build_from_bitsize` | `QromTable` concrete and shape factories with explicit selection widths and typed signatures |
+| `_load_nth_data` | `source_qrom_ir` target-word toggles in dataset, target-cell and MSB bit order; full factory streams are checked |
+| `decompose_zero_selection` | Existing zero-selection load and And/MultiAnd reduction, including measurement-assisted erasure; existing source channel tests cover zero through multiple controls |
+| `decompose_from_registers` | Existing table binding and typed component builder; unknown data refuses physical binding |
+| `_break_early` | Existing `_uniform` traversal predicate compares all flattened cells in the selected slice, separately for every dataset |
+| `nth_operation` | Existing bounded unary traversal and retained singleton-axis source failure |
+| `_circuit_diagram_info_` | Existing native score rendering consumes source port glyphs; source Cirq ASCII spacing remains a presentation gap |
+| `my_static_costs` | Existing concrete resource peak and symbolic formula match source `QubitCount`; unrelated keys return the original `NotImplemented` |
+| `__str__` | Source metadata representation checked against native shape, target axes and widths; native dataclass representation remains domain-owned |
+| `wire_symbol` | Existing `qrom_wire_symbol` covers valid signature ports and diagram title |
+| `nth_operation_callgraph` | Existing immediate calls count loaded set bits; every row is checked for scalar and shaped targets |
+| `build_call_graph` | Existing concrete immediate graph and independent symbolic formula; all seven QEC categories and both shim profiles are compared |
+| `adjoint` | Original returns itself; source-matched XOR execution and existing all-branch channel evidence retain the self-inverse logical map |
+| `_qrom_small`, `_qrom_multi_data`, `_qrom_multi_dim`, `_qrom_symb`, `_QROM_DOC` | All four actual factories are invoked; the three concrete factories also pass original library depths 0/1/2 and typed primitive execution |
+
+The actual concrete factories pass through the existing shared component
+builder, explicit work allocation/free, existing table emitter and normal
+binder. Every primitive, operand and measurement feedback dependency is
+compared against unchanged original decomposition, returned wire ownership is
+retained, and CircuitIR roundtrips. The two-axis factory retains the original
+eight-bit target declarations rather than minimizing their widths. Full
+complex branch and clean-work evidence is reused from the earlier small
+scalar/shaped/control suites and the complete base consumer suite. The large
+documentation factories receive literal primitive verification, without a
+claim of exhaustive statevector simulation at their larger widths.
+
+Pruning checks deliberately include repeated shaped rows whose cells differ.
+The source does not prune those rows because it compares flattened target cells
+as well as rows. Prefix slicing and multiple datasets are checked directly.
+An empty source pruning slice raises `IndexError`; valid native traversal never
+requests an empty interval. This failure is retained as a source boundary.
+
+Source QEC declarations and actual emitted primitives remain separate. The
+actual factory resource models are compared independently across all seven
+categories and logical peak, including the original product-over-datasets
+shape-only CNOT formula. These model comparisons do not certify the physical
+singleton or zero-width target cases. Whole-file acceptance remains open until
+those recorded differences and the direct base-file admission gaps are closed.
+
+The typed binder assigns fresh classical slots to repeated measurements on the
+same recycled work wire. The literal comparison checks that each feedback
+condition reads that wire's latest measurement before renaming the slot to the
+original source key. Gate count, physical operands, per-wire order and feedback
+values remain unchanged by this lifetime-checked name mapping.
+
+| Actual source factory | Measured T-family / CX / measurement / clean work | Independent source model AND / Clifford / measurement / logical peak |
+| --- | --- | --- |
+| `_qrom_small` | 12 / 26 / 3 / 2 | 3 / 13 / 3 / 8 |
+| `_qrom_multi_data` | 12 / 33 / 3 / 2 | 3 / 20 / 3 / 12 |
+| `_qrom_multi_dim` | 28 / 77 / 7 / 3 | 7 / 44 / 7 / 23 |
+
+The complete lookup dependency regression passed 474 cases, the local
+integration lane passed 17, and the separate Cirq 1.6.1 lane passed 186.
+Strict typing, Black, Ruff, team scope, architecture, IR and protected API
+checks passed. The dependency-policy scan retains 666 repository findings,
+with zero findings on this batch's changed paths. Frozen source hashes and
+unchanged physical owners are recorded in the external evidence receipt.
