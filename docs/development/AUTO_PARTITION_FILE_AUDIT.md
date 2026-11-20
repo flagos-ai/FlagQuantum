@@ -154,3 +154,23 @@ strict typing, formatting, Ruff, Compiler scope, architecture, IR and protected
 API checks. The retained direct Partition test is checked separately at its
 existing annotation boundary. Source hashes and unchanged physical execution
 owners are verified in the evidence receipt.
+
+## Whole typed-array views, 2026-11-21
+
+The existing AutoPartition owner also passes whole-array source handoffs for
+seven admitted three-bit descriptors, unsigned, bounded, Montgomery, unsigned
+fixed point with fractions -2 and 3, GF(8), and degree-two GF(2) polynomials.
+Shapes (2,), (2, 2) and (0, 2) run in ordinary and left-only mode. The source
+and native roots independently wrap an entire row-major child array in one
+packed scalar word. Root dependencies, original emitted operands and physical
+aliases agree. Left-only views consume the packed input and expose the child's
+original word outputs. The empty array executes with its real control wire.
+
+Full complex appended execution includes an entangled spectator. No private
+work, workspace events or measurement feedback are introduced. Actual atomic
+CH count equals the number of words. Independently queried original QEC costs
+are four Clifford and two rotations per word, with peak 1 + 3 * word_count.
+Partition views themselves contribute zero gates. This is part of the 232-case
+shaped batch documented in SPECIALIZED_CONTROL_FILE_AUDIT.md and the shared
+g2-specialized-shaped evidence receipt. Q-0318 remains open for its existing
+signed/empty fixed-point admission and unresolved physical boundaries.

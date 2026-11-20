@@ -129,3 +129,54 @@ this evidence. Existing shaped single-control refusal, direction-aware ownership
 nonleading-control callback permutation and repeated-control source TypeError
 witnesses remain separately classified. Pending Proposal 116 owns the signed and
 empty fixed-point extension. Pending Proposals 117 and 118 remain independent.
+
+## Shaped callbacks and declaration boundaries, 2026-11-21
+
+The complete source file remains the acceptance unit. The shaped handoff extends
+its existing public-helper evidence to nine admitted three-bit descriptors and
+five row-major shapes, scalar, (2,), (1, 2), (2, 2), and (0, 2). All four old/new
+control polarities invoke the actual unchanged source callback. Source fixtures
+are independent Bloq declarations using original Split, CH and Join operations.
+They do not replace or modify the frozen helper implementation.
+
+Stored dependencies, dictionary mutation, nominal outputs and physical aliases
+agree. Emitted operands, parameters, order and measurement feedback match.
+JSON and the existing DynamicCircuit.append(op) path preserve the program. An
+independent conditional-H oracle checks every complex amplitude with arbitrary
+packed bystanders and an entangled spectator. Both unnormalized measurement
+branches and all four forward/self-adjoint history pairs restore clean work.
+The largest finite case uses 16 physical wires. This is coherent-state evidence,
+without a claim to exhaustive dense-operator construction at that size.
+
+Actual primitives and original QEC estimates remain separate. For a scalar word
+with old/new controls both zero, actual counts are X 8, H 3, T 2, T-dagger 2,
+CX 6, S 1, CH 1, measurement 1, measured CZ 1 and reset 1. The original model
+reports And 1, Clifford 5, rotation 2, measurement 1 and peak 6. Other control
+polarities and shapes have individual rows in the evidence receipt. Each
+physical callback allocates and releases one work wire and uses one feedback
+slot. Array partition views add zero gates or workspace.
+
+Symbolic widths n and 2*n+1 retain their logical source graphs and explicitly
+refuse unresolved physical binding. Unknown terminal costs are unavailable.
+Signed fixed-point targets retain matching logical graphs and original model
+checks, while native physical storage awaits Proposal 116. An actual symbolic
+array dimension fails original construction with DecomposeTypeError. Native
+construction rejects it with the structured executable-array ValueError. These
+are recorded exception adaptations, without physical parity claims.
+
+The direct AutoPartition dependency now also covers whole row-major typed
+arrays in ordinary and left-only mode. Its dedicated audit records that scope.
+The concentrated regression passes 752 cases and local integration passes 29.
+The additional Cirq 1.6.1 lane passes all 232 focused cases. Strict typing,
+Black, Ruff, Compiler scope, architecture, IR and API checks pass. Four frozen
+blobs and Qualtran 0.7.0 / Kickmix 0.1 native Simulator are reverified. Receipts
+are g2-specialized-shaped-evidence-20261121.json,
+g2-specialized-shaped-final-accepted-*-20261121.log and
+g2-specialized-shaped-cirq16-20261121.log in the shared reference environment.
+Two unchanged notebook SyntaxWarnings remain in the concentrated lane.
+
+Q-0561 remains open. The finite shaped domain above is verified. Signed/empty
+fixed-point physical admission, unresolved physical widths and previously
+recorded original callback defects retain their separate dispositions. Pending
+Proposals 116, 117 and 118 are outside this delivery. No complete parent is
+newly accepted by this batch.
