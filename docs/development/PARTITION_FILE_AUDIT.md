@@ -67,3 +67,13 @@ The unchanged non-notebook source suite has twelve passes and nine
 fixture-mode skips. The original 17- and 14-cell notebooks and the
 native 19- and 16-cell versions passed independent kernels. The native
 runner rejects reference imports and validates the five SVGs.
+
+
+The AutoPartition symbolic-width batch reproduced an inherited direct Partition
+assertion on its unmodified batch base. Forward signed-fixed part construction
+refuses at executable-width validation. Inverse logical Split/Join construction
+succeeds, retaining metadata, and physical binding refuses under pending
+Proposal 116. The regression now checks those separate boundaries. Partition
+production and Core admission remain unchanged. The dependent AutoPartition
+root can store unresolved-width typed partition declarations; no symbolic
+physical Split/Join body is inferred.

@@ -1,5 +1,7 @@
 """Concrete partitions preserve source port order without emitting gates."""
 
+from typing import Literal
+
 import pytest
 import torch
 
@@ -74,7 +76,8 @@ def test_original_notebook_shaped_partition_and_join_keep_port_order():
         program = partition_component_program(ports, "main", reverse)
         result = bind_register_program(program, inputs)
         assert result.outputs == outputs
-        assert result.events == result.circuit.instructions == ()
+        assert result.events == ()
+        assert result.circuit.instructions == ()
 
 
 @pytest.mark.ftqc_reference
@@ -228,7 +231,8 @@ def test_split2_join2_match_source_physical_bindings_and_resources(widths):
     assert op is None
     assert join_register_pair(*words) == tuple(q.x for q in joined["x"]) == order
     layout = (("y1", widths[0]), ("y2", widths[1]))
-    for opcode, leaf in (("split2", source), ("join2", source.adjoint())):
+    opcodes: tuple[Literal["split2", "join2"], ...] = ("split2", "join2")
+    for opcode, leaf in zip(opcodes, (source, source.adjoint()), strict=True):
         assert partition_width(layout) == get_cost_value(leaf, QubitCount())
         assert get_cost_value(leaf, QECGatesCost()).asdict() == {}
         assert query_qec_gate_cost(BookkeepingCall(opcode, widths)) == QECGateCost()
@@ -387,11 +391,14 @@ def test_admitted_mixed_partition_preserves_word_types_and_physical_bindings():
         program = partition_component_program(native, "mixed", reverse)
         result = bind_register_program(program, inputs, entry="mixed")
         assert result.outputs == outputs
-        assert result.events == result.circuit.instructions == ()
+        assert result.events == ()
+        assert result.circuit.instructions == ()
 
 
 @pytest.mark.ftqc_reference
-def test_partition_retains_signed_and_fixed_point_metadata_at_execution_boundary():
+def test_partition_retains_signed_and_fixed_point_metadata_at_execution_boundary() -> (
+    None
+):
     from qualtran import BQUInt, QFxp, QInt
     from qualtran import Register as SourceRegister
     from qualtran.bloqs.bookkeeping.partition import Partition
@@ -426,7 +433,23 @@ def test_partition_retains_signed_and_fixed_point_metadata_at_execution_boundary
             (p.name, p.shape, p.bitsize, p.side.value) for p in declared
         ) == tuple((p.name, p.shape, p.bitsize, p.side.value) for p in locked.signature)
         assert tuple(p.dtype for p in declared[1:]) == tuple(p.dtype for p in native)
-        with pytest.raises(
-            ValueError, match="unsupported executable register descriptor"
-        ):
-            partition_component_program(native, "restricted", reverse)
+        if reverse:
+            # Logical Split/Join construction retains the signed storage descriptor.
+            program = partition_component_program(native, "restricted", reverse)
+            from flagquantum.compiler.registers.register_binding import (
+                bind_register_program,
+            )
+
+            with pytest.raises(
+                ValueError, match="unsupported executable register descriptor"
+            ):
+                bind_register_program(
+                    program,
+                    ((0, 1), (2, 3, 4), (5, 6, 7), (8, 9, 10, 11)),
+                    entry="restricted",
+                )
+        else:
+            with pytest.raises(
+                ValueError, match="unsupported executable register descriptor"
+            ):
+                partition_component_program(native, "restricted", reverse)
