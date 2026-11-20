@@ -296,6 +296,7 @@ def verify_register_block(
             "measure_register",
             "parity_register",
             "read_classical_register",
+            "write_classical_register",
             "discard_classical_register",
         }
         or op.register_type is not None
@@ -358,21 +359,25 @@ def verify_register_block(
                         "classical discard requires an owned CBit register",
                     )
                 )
-        elif operation.opcode == "read_classical_register":
+        elif operation.opcode in {
+            "read_classical_register",
+            "write_classical_register",
+        }:
             dtype = types.get(operation.operands[0]) if operation.operands else None
             width = 1
             try:
                 if dtype is None:
                     raise ValueError(
-                        "classical read needs a producer-defined word type"
+                        "classical access needs a producer-defined word type"
                     )
                 width = executable_classical_register_width(dtype)
             except ValueError as exc:
                 diagnostics.append(_diagnostic("program.register_type", str(exc)))
+            writing = operation.opcode == "write_classical_register"
             signatures[position] = OpcodeSignature(
                 operation.opcode,
-                operand_kinds=("register",),
-                result_kinds=("register",) + ("bool",) * width,
+                operand_kinds=("register",) + (("bool",) * width if writing else ()),
+                result_kinds=("register",) + (() if writing else ("bool",) * width),
             )
             if dtype is not None and operation.results:
                 types[operation.results[0]] = dtype
@@ -472,12 +477,16 @@ def verify_register_block(
             "measure_register",
             "parity_register",
             "read_classical_register",
+            "write_classical_register",
             "discard_classical_register",
         }:
             if (
                 operation.parameters
                 or operation.literal is not None
-                or operation.condition_clauses
+                or (
+                    operation.condition_clauses
+                    and operation.opcode != "write_classical_register"
+                )
                 or operation.physical_data is not None
                 or operation.callee is not None
             ):
