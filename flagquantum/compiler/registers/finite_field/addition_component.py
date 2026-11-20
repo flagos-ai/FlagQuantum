@@ -17,14 +17,17 @@ from .coefficients import gf2_add_constant_ir, gf2_add_ir
 
 
 def field_addition_program(
-    dtype: RegisterType, *, constant: int | None = None
+    dtype: RegisterType, *, constant: int | None = None, adjoint: bool = False
 ) -> ProgramRecord:
     """XOR a field word or a classical constant into a typed through word.
 
     The descriptor and polynomial identity already belong to the caller. The
     graph splits each owned word into big-endian bits, applies the existing
     coefficient gate order, and rejoins the original field descriptors.
+    Quantum XOR is source-self-adjoint. Constant adjoints reverse their X calls.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Field addition direction requires a boolean")
     if dtype.encoding != "finite_field":
         raise ValueError("Field addition requires a binary field descriptor")
     width = executable_register_width(dtype)
@@ -42,6 +45,8 @@ def field_addition_program(
             "field_x", bit_ports, CircuitIR(1, (Instruction("x", (0,)),))
         )
         gates = gf2_add_constant_ir(tuple(range(width)), constant)
+        if adjoint:
+            gates = tuple(reversed(gates))
 
     builder = ComponentProgramBuilder(signature, (leaf,))
     x = builder.inputs["x"]
