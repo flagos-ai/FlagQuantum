@@ -325,3 +325,67 @@ Kickmix versions/Simulator are verified. Dependency policy remains at 687
 whole-repository findings and zero touched-path findings. The eight accepted
 flat/CAdd/Add owners and their parity tests are byte-identical to c06b8aaea.
 Default docstring failure evidence is reused after ten-file baseline validation.
+
+## Stored PlusEqualProduct live accumulation, November 20, 2026
+
+`arithmetic/product_accumulation_component.py` closes the occupied-accumulator
+stored execution dependency. It preserves unsigned THRU a, b and result with
+result_width>=left_width+right_width, and adds or subtracts the full product
+modulo the result width. The accumulator can start occupied. The column network
+computes its live product/carry parity word in one owned work block, passes that
+word directly to the accepted Add or exact Add inverse, then erases the network
+and releases its zeroed work. The word can have one absent leading zero column.
+
+`bits/column_steps_component.py` owns the shared typed CX, And compute and
+immediate-feedback erasure steps. It serves the existing XOR consumer and this
+live Add consumer. Allocation, term generation and consumer choice remain with
+their respective owners. The former XOR loop and primitive functions were
+extracted without changing their definitions or sequence. Equality checks load
+the prebatch weighted-column implementation and compare full Program records
+and complete bound records for twelve square widths. The actual resulting
+instructions, aliases, allocation/release positions and classical slots match.
+
+Stored and expanded accumulation calls retain exactly one shared Add root,
+without a copied intermediate product. Six equal/unequal input and accumulator
+formats compare primitive multisets, per-wire order, operands and validated
+measurement feedback against the accepted flat accumulation owner. Its Add
+child is additionally compared directly with the unchanged original Add or
+Adjoint(Add) on the actual live column addresses. Existing original And and
+column leaf/channel evidence is reused. Independent global gates can schedule
+in different orders, while fresh feedback slots are normalized after validating
+each measurement dependency.
+
+Complete coherent input and occupied accumulator values, an entangled spectator
+and clean work are checked at widths 1x1 into 2, 1x2 into 3 and 2x2 into 4,
+including overflow wraparound. Both directions and both stored/expanded paths
+pass. The 1x1 case exhausts all sixteen forward/inverse measurement history
+pairs. Other sizes use two trajectory seeds and accepted leaf/channel evidence.
+Normal circuit.append(op) round trips pass with the flat root replaced by a
+failing stub. Seven accepted flat/shared owners and their existing source-value,
+tensor, primitive and classical tests are byte-identical to base fbea65709.
+
+The original PlusEqualProduct supplies value/tensor callbacks and an approximate
+T model, with no root decomposition. Its full existing original tensor/value
+and basis evidence is reused. Actual gates and approximate model are separately
+recorded in `g2-live-accumulation-evidence.json`. At 2x2 into four bits, the
+construction emits 36 T/Tdg, 73 CX and nine measurements/resets with nine clean
+work bits, versus the original approximate 32 T model. The inverse has the same
+physical counts. The live column construction retains the accepted flat counts.
+
+InvertRealNumber's mixed THRU output and generic foreign construction, drawing,
+rebinding and serialization remain the complete multiplication-file gaps.
+Original root decomposition absence stays explicitly recorded. Q-0208 and
+Q-0209 remain open until the remaining full-file scope is disposed.
+
+Live-accumulation receipts use `ftqc-reference-env/g2-live-accumulation-`.
+Concentrated regression passes 4,026 checks with one existing IPython warning
+and zero skips. Local integration passes 17 checks. Final focused checks pass
+47 cases. Strict typing covers four Python files, including the existing XOR
+consumer. Black, Ruff, scope, architecture, IR and public API checks pass.
+Five frozen source blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified.
+The twelve prebatch full Program and binding comparisons pass exactly.
+Dependency policy reports 687 existing whole-repository findings and zero
+batch-path findings. Known default docstring failure evidence is reused after
+verifying its ten files against fbea65709. Default-suite completion remains open.
+Type annotation and unused-import fixes after broad collection are checked by
+the final strict and focused runs.

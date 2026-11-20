@@ -178,3 +178,10 @@ with both flat roots replaced. Run
 `python -m pytest tests/unit/test_column_result_components.py -q` for both owned
 result workflows. See the multiplication audit for unavailable source root
 expansions and separately reported primitive/model counts.
+
+`product_accumulation_component.py` preserves PlusEqualProduct's occupied THRU
+accumulator. It sends the live product column word directly to shared Add or its
+exact inverse, then erases products/carries. It reuses the typed column steps
+with weighted-column XOR consumers. No product output word is allocated. Run
+`tests/unit/test_product_accumulation_component.py` for coherent occupied inputs,
+wraparound, measurement histories, work cleanup and ordinary append replacement.

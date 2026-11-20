@@ -108,3 +108,8 @@ and sorting index compose this owner. Numerical execution and domain-specific
 term selection remain in their respective owners. Run
 `python -m pytest tests/unit/test_weighted_columns_component.py -q` for original
 And leaves, feedback, per-wire dependency order, resource and lifetime checks.
+
+`column_steps_component.py` owns only typed column CX/And/erase leaves and SSA
+updates. Weighted-column XOR and live product accumulation both use it. Consumers
+retain their own term layout, allocation lifetimes and arithmetic action. The
+pre-extraction XOR Program and complete binding are checked for exact equality.
