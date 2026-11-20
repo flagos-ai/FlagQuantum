@@ -287,3 +287,41 @@ zero touched-path findings. Default docstring coverage failure is reused after
 verifying all ten implicated files against c5271cbec. Default-suite completion
 remains open. Earlier expanded-output coordinate assumptions were corrected in
 the tests, then both stored and expanded coherent execution were verified.
+
+### Negative fractional scaling outputs
+
+The complete source signature also accepts integer_width greater than
+real_width. Proposal 115 already admits the resulting negative fractional
+metadata. The stored scaling constructor now covers every pair of positive
+concrete input widths. For a negative initial retained width, it discards
+integer_width-real_width+1 low multiplier bits whose terms shift every source
+bit past the result cutoff. The first remaining term uses a one-bit And copy;
+subsequent terms reuse the same growing CAdd calls. A one-bit real word has no
+surviving term in this range and returns a zero image.
+
+The independent quantization oracle remains the accepted D4 sum of individually
+truncated terms. Native output raw bits represent that sum in the original
+QFxp(real_width, real_width-integer_width) format. Both original input words
+survive, including ignored low multiplier bits. The inverse clears the computed
+image. Stored/expanded source-CAdd comparison covers 1x3, 2x3, 2x4, 3x4 and 3x5.
+Complete coherent 2x3 and 3x4 inputs, spectators and clean work use both binding
+paths. All 2x3 measurement-history pairs are exhausted.
+
+The unchanged flat scaling emitter retains its narrower real_width>=integer_width
+admission. Exact native-flat primitive multiset comparison applies throughout
+that common domain. The added negative-fraction range instead uses the unchanged
+original CAdd child streams and independent D4 quantization oracle. Original
+root models remain unchanged, including their negative counts in extrapolated
+formats. For 2x4, the original model reports negative two Toffoli while the
+native retained construction emits one And copy. This boundary has explicit
+separate resource accounts. Source root decomposition remains unavailable.
+
+The negative-fraction closure uses `g2-truncated-products-wide-` receipts. Final
+concentrated regression passes 3,976 checks with one existing IPython warning
+and zero skips, plus 17 local integration and 59 focused checks. Strict typing
+covers all four batch Python files. Black, Ruff, scope, architecture, IR and
+public API checks pass. Five frozen source blobs and the required Qualtran and
+Kickmix versions/Simulator are verified. Dependency policy remains at 687
+whole-repository findings and zero touched-path findings. The eight accepted
+flat/CAdd/Add owners and their parity tests are byte-identical to c06b8aaea.
+Default docstring failure evidence is reused after ten-file baseline validation.

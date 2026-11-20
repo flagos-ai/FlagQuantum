@@ -50,6 +50,11 @@ CASES: tuple[tuple[Kind, int, int], ...] = (
     ("scale", 3, 2),
     ("scale", 4, 4),
     ("scale", 6, 4),
+    ("scale", 1, 3),
+    ("scale", 2, 3),
+    ("scale", 2, 4),
+    ("scale", 3, 4),
+    ("scale", 3, 5),
     ("product", 1, 1),
     ("product", 2, 2),
     ("product", 3, 3),
@@ -69,7 +74,7 @@ def graph(kind: Kind, n: int, m: int, adjoint: bool = False) -> ProgramRecord:
 def layout(kind: Kind, n: int, m: int) -> tuple[tuple[int, ...], ...]:
     count = (
         scale_integer_workspace_size(n, m)
-        if kind == "scale"
+        if kind == "scale" and m <= n
         else fixed_point_product_workspace_size(n)
     )
     start = 2 * n + m
@@ -98,6 +103,8 @@ def test_original_ports_calls_primitive_operands_feedback_and_models(
     original = ScaleIntByReal(n, m) if kind == "scale" else MultiplyTwoReals(n)
     a, b, output, work = layout(kind, n, m)
     first_width, omitted = (n - m, 0) if kind == "scale" else (1, 1)
+    if first_width < 0:
+        first_width, omitted = 1, 1 + m - n
     active = tuple(reversed(b))[omitted:]
     steps = tuple(enumerate(active[1:], first_width + 1))
     for adjoint in (False, True):
@@ -210,29 +217,30 @@ def test_original_ports_calls_primitive_operands_feedback_and_models(
             normalized_feedback(expected),
         )
         pool = len(work) // 2
-        flat = (
-            scale_integer_by_real_ir(
-                a,
-                b,
-                output,
-                work[:pool],
-                work[pool:],
-                tuple(range(2 * pool)),
-                adjoint=adjoint,
-            )
-            if kind == "scale"
-            else fixed_point_product_ir(
-                a,
-                b,
-                output,
-                work[:pool],
-                work[pool:],
-                tuple(range(2 * pool)),
-                adjoint=adjoint,
-            )
-        )
         counts = Counter(g.name for g in bound.circuit.instructions)
-        assert counts == Counter(g.name for g in flat)
+        if kind != "scale" or m <= n:
+            flat = (
+                scale_integer_by_real_ir(
+                    a,
+                    b,
+                    output,
+                    work[:pool],
+                    work[pool:],
+                    tuple(range(2 * pool)),
+                    adjoint=adjoint,
+                )
+                if kind == "scale"
+                else fixed_point_product_ir(
+                    a,
+                    b,
+                    output,
+                    work[:pool],
+                    work[pool:],
+                    tuple(range(2 * pool)),
+                    adjoint=adjoint,
+                )
+            )
+            assert counts == Counter(g.name for g in flat)
         assert counts["t"] + counts["tdg"] == 8 * sum(w for w, _ in steps) + (
             0 if adjoint else 4 * len(pairs)
         )
@@ -264,6 +272,8 @@ def test_original_ports_calls_primitive_operands_feedback_and_models(
         ("scale", 2, 1),
         ("scale", 2, 2),
         ("scale", 3, 2),
+        ("scale", 2, 3),
+        ("scale", 3, 4),
         ("product", 1, 1),
         ("product", 2, 2),
         ("product", 3, 3),
@@ -381,7 +391,7 @@ def test_normal_append_replaces_flat_roots(
     )
 
 
-@pytest.mark.parametrize("n,m", ((True, 1), (0, 1), (1, 0), (1, 2), (-1, 1)))
+@pytest.mark.parametrize("n,m", ((True, 1), (0, 1), (1, 0), (1, True), (-1, 1)))
 def test_invalid_scaling_widths(n: int, m: int) -> None:
     with pytest.raises(ValueError):
         scale_integer_by_real_program(n, m)

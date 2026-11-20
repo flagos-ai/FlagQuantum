@@ -35,3 +35,8 @@ using the accepted exact Add inverse during erasure. Physical binding returns
 the result mapping, which can change after call expansion. Run
 `tests/unit/test_truncated_product_components.py` for direct source-child
 comparison, full complex states and ordinary circuit.append(op) round trips.
+Scaling supports every pair of positive concrete input widths. When int_in is
+wider, the result retains its negative fractional metadata and the construction
+omits multiplier terms that shift entirely past the retained word. The unchanged
+flat emitter still covers its original narrower width domain. Source model
+extrapolation and native retained-term counts are reported separately.
