@@ -84,6 +84,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ...core.ir import Instruction
+from .one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
 from .one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
@@ -1140,6 +1141,30 @@ def _verified_cx_pulses(
 ) -> bool:
     product = _IDENTITY
     for instruction in candidate:
+        if len(instruction.wires) == 1:
+            if instruction.wires[0] not in pair:
+                return False
+            factor = _one_qubit_matrix(instruction)
+            if factor is None:
+                return False
+            # Left multiplication by a local gate combines row pairs; no lifted
+            # 4x4 matrix or arithmetic on its structural zeros is needed.
+            row_pairs = (
+                ((0, 2), (1, 3))
+                if instruction.wires[0] == pair[0]
+                else ((0, 1), (2, 3))
+            )
+            updated = product.copy()
+            for lower, upper in row_pairs:
+                for index, row in enumerate((lower, upper)):
+                    updated[row] = [
+                        factor[index][0] * left + factor[index][1] * right
+                        for left, right in zip(
+                            product[lower], product[upper], strict=True
+                        )
+                    ]
+            product = updated
+            continue
         reverse = len(instruction.wires) == 2 and instruction.wires == pair[::-1]
         matrix = _lifted_matrix(instruction, pair[::-1] if reverse else pair)
         if matrix is None:

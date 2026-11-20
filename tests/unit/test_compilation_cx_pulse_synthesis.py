@@ -141,3 +141,39 @@ def test_rejected_optimization_retains_the_general_synthesis() -> None:
     assert not torch.allclose(
         _product(candidate[1:]), _product(candidate), atol=1e-12, rtol=0
     )
+
+
+@pytest.mark.parametrize("pair", [(0, 1), (7, 2)])
+def test_verifier_handles_interleaved_local_gates_and_reversed_cx(
+    pair: tuple[int, int],
+) -> None:
+    emitted = (
+        Instruction("ry", (pair[0],), params={"theta": 0.91}),
+        Instruction("sx", (pair[1],)),
+        Instruction("cx", pair[::-1]),
+        Instruction("rz", (pair[0],), params={"theta": -0.73}),
+        Instruction("rx", (pair[1],), params={"theta": 0.32}),
+        Instruction("cx", pair),
+        Instruction("ry", (pair[1],), params={"theta": -0.21}),
+    )
+    source = _product(emitted, pair)
+    assert synthesis._verified_cx_pulses(source.tolist(), emitted, pair)
+    assert not synthesis._verified_cx_pulses(source.tolist(), emitted[1:], pair)
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        Instruction("sx", (9,)),
+        Instruction(
+            "rz", (0,), params={"theta": torch.tensor(0.1, requires_grad=True)}
+        ),
+        Instruction("rz", (0,), params={"theta": [0.1, 0.2]}),
+    ],
+)
+def test_verifier_rejects_unreadable_or_outside_local_gates(
+    invalid: Instruction,
+) -> None:
+    assert not synthesis._verified_cx_pulses(
+        torch.eye(4, dtype=torch.complex128).tolist(), (invalid,), (0, 1)
+    )

@@ -91,7 +91,8 @@ from this optimized comparator.
 A serial local macOS CPU source control compared the same twelve matrices in
 one process, with three warmup blocks per implementation and eleven measured
 blocks in alternating order. Both numerical synthesis modules for the before
-control were loaded from the pinned pre-change commit above; Core and the
+control were loaded from pre-change commit
+`c9b6d5ab29e807ee5c4f582c39ca60ff82a51cd4`; Core and the
 installed environment were shared. The median time per twelve-matrix block was
 `0.0041105419950326905` seconds before and `0.006969959009438753` seconds after,
 a ratio of approximately `1.70`. The reduced pulses therefore retain a measured
@@ -121,10 +122,44 @@ before_seconds,candidate_seconds
 0.004052167001646012,0.006928959002834745
 ```
 
-The final source control checks both instruction economics and full numerical
+That source control checks both instruction economics and full numerical
 correctness. Extra proposal algebra and complete-operator acceptance remain
 explicit compiler costs; qualified whole-workflow time and memory evaluation
 is still required before a broader performance conclusion.
+
+### Row-pair verification refinement
+
+Profiling identified dense multiplication of lifted one-qubit matrices as
+avoidable verifier work. A local gate now combines the affected row pairs of the
+complete operator directly, reusing the authoritative one-qubit matrix reader.
+This computes all sixteen entries without multiplying structural zeros; it does
+not inspect fewer columns or relax the phase or error thresholds. Two-qubit
+instructions, reversed operands and unreadable inputs keep their matrix-reader
+and rejection paths.
+
+A subsequent source control used the same pre-change revision, twelve matrices,
+three warmup blocks and eleven alternating measured blocks. The before median
+was `0.004150291002588347` seconds and the revised candidate median was
+`0.005828666995512322` seconds, a ratio of approximately `1.40`. Compilation was
+still slower than the pre-port path. The earlier `1.70` observations remain
+above; measurements from different runs must not be divided to assert a speedup.
+These observations retain the same local-development limitations and do not
+qualify as SDKBench results. The complete paired observations were:
+
+```text
+before_seconds,candidate_seconds
+0.004243915987899527,0.005896208007470705
+0.004249791993061081,0.005812125004013069
+0.004121457997825928,0.005825792002724484
+0.004137042007641867,0.005791624993435107
+0.004111375004868023,0.005875417002243921
+0.004144457998336293,0.005795999997644685
+0.004116250012884848,0.005831542002852075
+0.0042472500063013285,0.005751000004238449
+0.004164957994362339,0.005980750007438473
+0.004150374996243045,0.005844832994625904
+0.004150291002588347,0.005828666995512322
+```
 
 ## Acceptance and supported workflow
 
