@@ -192,7 +192,11 @@ def test_complete_atomic_source_display(
 def test_shifted_power_atoms_keep_source_absolute_phase(
     axis: PauliAxis, shift: float
 ) -> None:
+    import cirq
     from qualtran.bloqs.basic_gates import XPowGate, YPowGate
+
+    from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
+    from tests.unit.test_controlled_unitary_synthesis import assert_source_stream
 
     source = (XPowGate if axis == "x" else YPowGate)(0.37, global_shift=shift)
     emitter = import_register_emitter(source)
@@ -200,7 +204,11 @@ def test_shifted_power_atoms_keep_source_absolute_phase(
         original = source.adjoint() if inverse else source
         expected = torch.as_tensor(original.tensor_contract())
         assert original.global_shift == shift
-        assert len(emitter.snapshots[int(inverse)].instructions) == 1
+        qubit = cirq.LineQubit(0)
+        direct = import_cirq_feedback(
+            cirq.Circuit(original.cirq_gate.on(qubit)), qubit_order=(qubit,)
+        ).ir
+        assert_source_stream(emitter.snapshots[int(inverse)], direct)
         torch.testing.assert_close(
             get_unitary(emitter.snapshots[int(inverse)], dtype=torch.complex128),
             expected,
@@ -289,7 +297,7 @@ def test_actual_crz_named_capture_and_all_original_factories() -> None:
         )
     for name in ("_z_pow", "_cz_pow", "_x_pow", "_y_pow", "_rx", "_ry", "_rz", "_crz"):
         example = getattr(rotation, name).make()
-        # Original symbolic examples retain distinct native admission paths.
+        # Original symbolic examples bind through the approved parameter contract.
         if name in {"_rz", "_crz"}:
             from qualtran.resource_counting import QECGatesCost, get_cost_value
 
@@ -306,28 +314,26 @@ def test_actual_crz_named_capture_and_all_original_factories() -> None:
                 query_qec_gate_cost(key).asdict()
                 == get_cost_value(example, QECGatesCost()).asdict()
             )
-            if name == "_crz":
-                with pytest.raises(ValueError, match="cannot be decomposed"):
-                    import_register_emitter(example)
-            else:
-                symbolic_emitter = import_register_emitter(example)
-                for inverse in (False, True):
-                    circuit = (
-                        Circuit(1, dtype=torch.complex128)
-                        .append(
-                            FieldOperation(
-                                1, symbolic_emitter.snapshots[int(inverse)].instructions
-                            )
+            symbolic_emitter = import_register_emitter(example)
+            width = 2 if name == "_crz" else 1
+            source_class = rotation.CRz if name == "_crz" else rotation.Rz
+            for inverse in (False, True):
+                circuit = (
+                    Circuit(width, dtype=torch.complex128)
+                    .append(
+                        FieldOperation(
+                            width, symbolic_emitter.snapshots[int(inverse)].instructions
                         )
-                        .bind_parameters({"a": 0.4})
                     )
-                    matrix = rotation.Rz(-0.4 if inverse else 0.4).tensor_contract()
-                    torch.testing.assert_close(
-                        get_unitary(circuit),
-                        torch.as_tensor(matrix),
-                        rtol=0,
-                        atol=3e-12,
-                    )
+                    .bind_parameters({str(example.angle): 0.4})
+                )
+                matrix = source_class(-0.4 if inverse else 0.4).tensor_contract()
+                torch.testing.assert_close(
+                    get_unitary(circuit),
+                    torch.as_tensor(matrix),
+                    rtol=0,
+                    atol=3e-12,
+                )
             continue
         bound = import_register_emitter(example)
         assert sum(width for _, width in bound.layout) in (1, 2)

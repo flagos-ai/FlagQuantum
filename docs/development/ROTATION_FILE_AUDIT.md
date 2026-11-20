@@ -105,3 +105,18 @@ the restored pre-existing state-preparation tests, exact controlled-H frontend,
 shared feedback import, Pauli rotation and measured controlled-Z consumers.
 Strict typing of the three changed Python files, Black, Ruff, both owner scopes,
 architecture, multilevel IR and public API checks passed.
+
+## Actual capture regression refresh
+
+The shared snapshot regression now compares shifted X/Y power captures against
+an independent import of the actual original Cirq operation. Arbitrary source
+global shift uses the existing five-primitive exact scalar-phase path. The
+previous single-instruction expectation applied only to the canonical shift.
+Full complex matrices remain checked against unchanged source tensors.
+
+The actual symbolic CRz factory also uses the approved parameter execution
+contract. Both captured directions bind its original angle and match the
+complete source complex tensor after numerical binding, alongside the existing
+symbolic Rz case. Original analytical resource declarations remain independently
+compared. This refresh changes stale test expectations and adds execution
+coverage without changing the rotation implementation or frozen reference.
