@@ -36,6 +36,11 @@ def fanout_component_program(width: int) -> ProgramRecord:
     )
     control, target = builder.inputs["control"], builder.inputs["targets"]
     assert isinstance(control, RegisterBinding) and isinstance(target, RegisterBinding)
+    if width == 1:
+        result = builder.call_dict(cx.name, {"ctrl": control, "target": target})
+        return builder.finalize(
+            {"control": result["ctrl"], "targets": result["target"]}
+        )
     wires = [control, *builder.split(target)]
     for gate in fanout_ir(0, tuple(range(1, width + 1))):
         left, right = gate.wires
