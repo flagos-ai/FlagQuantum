@@ -11,7 +11,10 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.bits.bitwise import xor_ir
-from flagquantum.compiler.registers.bits.hamming_weight import hamming_weight_ir
+from flagquantum.compiler.registers.bits.hamming_weight_component import (
+    hamming_weight_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -21,13 +24,25 @@ class PopulationCount:
     """Bind four data bits, three junk, three temporary output and three result bits."""
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        source, junk, output, result = (0, 1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12)
-        compute = hamming_weight_ir(source, junk, output)
-        erase = hamming_weight_ir(
-            source, junk, output, adjoint=True, classical_bits=(0, 1, 2)
+        compute = bind_register_program(
+            hamming_weight_program(4),
+            ((0, 1, 2, 3),),
+            clean=(4, 5, 6, 7, 8, 9),
+            allow_workspace_outputs=True,
         )
+        erase = bind_register_program(
+            hamming_weight_program(4, adjoint=True),
+            compute.outputs,
+            input_ownership=tuple(
+                (wire, False) for word in compute.outputs[1:] for wire in word
+            ),
+        )
+        copy = xor_ir(compute.outputs[2], (10, 11, 12))
         return circuit.compose(
-            CircuitIR(circuit.n_qubits, (*compute, *xor_ir(output, result), *erase))
+            CircuitIR(
+                circuit.n_qubits,
+                (*compute.circuit.instructions, *copy, *erase.circuit.instructions),
+            )
         )
 
 
@@ -41,9 +56,8 @@ def main() -> None:
     counts = torch.tensor([value.bit_count() for value in range(16)])
     expected = torch.zeros_like(state)
     expected[(data << 9) | counts] = amps
-    circuit = DynamicCircuit(13, inputs=state, dtype=torch.complex128).append(
-        PopulationCount()
-    )
+    circuit = DynamicCircuit(13, inputs=state, dtype=torch.complex128)
+    circuit.append(PopulationCount())
     result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
     torch.testing.assert_close(
         result.final_states.reshape(32, -1), expected.expand(32, -1), rtol=0, atol=1e-12

@@ -113,3 +113,12 @@ And leaves, feedback, per-wire dependency order, resource and lifetime checks.
 updates. Weighted-column XOR and live product accumulation both use it. Consumers
 retain their own term layout, allocation lifetimes and arithmetic action. The
 pre-extraction XOR Program and complete binding are checked for exact equality.
+
+`hamming_weight_component.py` stores the population-count tree through the
+existing Hamming traversal, compression sequence, CX and And owners. It returns
+source, opaque junk and unsigned count in that order. The inverse consumes the
+computed junk/count and restores source. Width one retains an empty junk word.
+Run `python -m examples.algorithms.register_hamming_weight` for coherent count
+copying and complete work erasure through `circuit.append(PopulationCount())`.
+Run `python -m pytest tests/unit/test_hamming_weight_component.py -q` to check
+stored calls, gate dependencies, branch amplitudes, ownership and source models.
