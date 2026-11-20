@@ -324,3 +324,55 @@ and both addition consumers. Generic foreign construction, connection-level
 tensor wrappers, symbolic/nonbinary execution and original autotester/serialization
 boundaries remain registered under Q-0527/Q-0529/Q-0533 and their test parents.
 Original count omissions and source defects remain in their existing accounts.
+
+## Actual complete polynomial factory handoffs — 2026-11-21
+
+All six original factories in the complete addition, constant-addition and
+coefficient-view files now have actual-object handoff evidence. This reuses
+all whole-definition, original-test, value, tensor, drawing, notebook and approved
+packed-Program evidence above. No production interface or source file changes.
+
+Both original directions of the degree-four GF(8) register addition and constant
+addition are independently flattened and compared with the named native emitter.
+Every primitive operand, per-wire order and returned output alias agrees in both
+ordinary and reversed bindings. Register addition has 15 CX on 30 logical wires.
+Constant addition has seven X on 15 logical wires. Their independent source QEC
+models match these primitive counts. Binding SWAP, private workspace, feedback
+and measurements are zero. There is one coherent branch.
+
+The actual 30-bit addition is checked on a sparse coherent subspace containing
+all 32,768 source words, two arbitrary target choices and both spectator values.
+The exact destination indices and full complex amplitudes agree, and both source
+directions restore the input. This does not allocate or certify the complete
+31-qubit dense statevector. Dense all-pairs SDK-blocked native `circuit.append(op)`
+is separately checked using the same complete source at degree zero over GF(8).
+The exact 15-bit constant factory is executed on its entire dense input space
+plus a coherent spectator with optional source SDK imports blocked. JSON
+roundtrips and exact inverse recovery are checked. Original polynomial callbacks
+independently certify selected packed arithmetic values.
+
+Both actual view factories retain their original atomic-decomposition refusal
+and the named emitter's through-port refusal. Their successful handoff uses the
+existing approved typed packed/coefficient Program owner. Its complete input and
+output shape, side, width, big-endian ordering and physical aliases match the
+actual source `as_cirq_op` result. Both bindings preserve every complex amplitude
+of the complete 15-bit packed word plus spectator through SDK-blocked append.
+Views emit zero primitives, workspace events and classical outputs. Their
+independent source QubitCount is 15 and all QEC categories are zero.
+
+All six original factory serializers retain the original QGFPoly/QGF TypeError.
+Both symbolic additions retain unresolved physical-width rejection while their
+exact symbolic Clifford declarations are independently checked. Original count
+omissions, generic autotester/codec mappings and unresolved symbolic/nonbinary
+execution remain registered under Q-0527/Q-0529/Q-0530/Q-0531/Q-0533/Q-0534.
+This batch does not close those complete file parents.
+
+The concentrated polynomial/field/typed-Program regression passes 305 cases
+without skips in 6.64 seconds. Local integration passes 17 cases. Cirq 1.6.1
+passes all 11 new actual-factory consumers. Strict typing, Black, Ruff, Ecosystem
+scope, architecture, multi-level IR and protected API checks pass. Six frozen
+source/test blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are reverified. Eight
+separate primitive/model rows are retained in
+`g2-poly-foreign-evidence-20261121.json`. An initial Cirq-profile command selected
+a misspelled test path and collected nothing. The corrected accepted log is
+`g2-poly-foreign-cirq16-accepted-20261121.log`.
