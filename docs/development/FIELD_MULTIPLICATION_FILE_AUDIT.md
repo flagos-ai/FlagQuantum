@@ -339,3 +339,71 @@ physical mismatch, generic foreign construction and serialization, generic root
 inverse dispatch, symbolic physical execution, complete original slow/autotester
 scope and full eight-bit coherent measurement-branch enumeration. This batch
 closes concrete dependencies within the existing whole-file inventory.
+
+
+## Complete original slow scope and live product capture
+
+The complete unchanged Q-0520 slow selection now passes all 22 cases in
+137.18 seconds, with 283 other items deselected and six original unknown-marker
+warnings. This includes every slow linear synthesis, product/accumulation,
+wide scaled polynomial, binary polynomial and Karatsuba classical-action case.
+The prior interrupted attempt remains diagnostic history. Its incomplete status
+is superseded for this specific slow selection. Existing accepted non-slow,
+notebook, whole-definition and native execution evidence is reused.
+
+### Actual foreign object handoff
+
+`test_field_product_foreign_snapshot.py` captures actual frozen
+GF2Multiplication objects at widths two and three, in clean-product and arbitrary
+THRU-accumulation modes. The existing named emitter accepts a RIGHT result only
+when explicitly listed as a caller-owned clean local port. It independently
+captures the actual source adjoint. Both directions use the existing native
+snapshot/append path with no SDK, Galois or reference object retained at execution.
+
+A separate read of the original flattened graph compares every primitive,
+ordered operand and per-wire dependency with each captured direction. The source
+helper is called with `repair_adjoint=False`. No reference body is modified.
+Complete complex states cover every x/y value, every target in accumulation mode
+and a coherent spectator under reversed physical binding. Clean-product output
+starts at zero and the original inverse consumes its produced value. JSON,
+source-adjoint recovery and SDK-blocked native append pass.
+
+### Separate primitive and analytical accounts
+
+| Field width and mode | Actual primitive stream in each direction | Independent original QEC model | Private work / measurements / binding swaps | Declared logical peak |
+| --- | --- | --- | --- | --- |
+| 2, clean product | 4 CCX + 2 CX | 4 Toffoli + 2 Clifford | 0 / 0 / 0 | 6 |
+| 2, arbitrary accumulation | 4 CCX + 4 CX | 4 Toffoli + 4 Clifford | 0 / 0 / 0 | 6 |
+| 3, clean product | 9 CCX + 3 CX | 9 Toffoli + 3 Clifford | 0 / 0 / 0 | 9 |
+| 3, arbitrary accumulation | 9 CCX + 6 CX | 9 Toffoli + 6 Clifford | 0 / 0 / 0 | 9 |
+
+The result word is logical output or THRU data. Its width is included in the
+logical peak and is not counted as private scratch. The retained spectator is
+outside the source model. These coherent captures have no measurement branches.
+
+### Remaining whole-file boundaries
+
+The actual source constructor serializer and automatic typed-graph importer
+still fail with TypeError before native handoff because QGF is unsupported by the
+original codec. Five actual constructor/graph failure-stage witnesses are in
+`g2-field-multiplication-foreign-intake-20261121.json`. Successful live capture uses
+the existing named boundary and does not claim the original codec works.
+
+The complete source file's other families retain their earlier native owners,
+exact-adjoint qualification, declared models and accepted physical dependencies.
+Original linear-adjoint defects, dependent Karatsuba mismatch, generic root
+inverse/constructor dispatch, symbolic physical execution and full eight-bit
+measurement enumeration remain recorded. Q-0519/Q-0520 stay open under their
+original scope. This batch closes the previously incomplete original slow
+selection and the concrete actual-product snapshot handoff without creating
+new parent IDs or changing acceptance denominators.
+
+### Evidence
+
+`g2-field-product-snapshot-evidence-20261121.json` records both unchanged source
+blobs, Qualtran 0.7.0, Kickmix 0.1 Simulator and all eight directional resource rows.
+The concentrated product/scaling/polynomial/file regression passes 174 cases.
+Local integration, strict typing of the new file, Black, Ruff, Ecosystem scope,
+architecture, multi-level IR and protected API checks are recorded separately.
+The four new cases also run in the independent Cirq 1.6.1 profile. No production
+owner changed in this batch, and earlier full-work/measurement evidence is reused.
