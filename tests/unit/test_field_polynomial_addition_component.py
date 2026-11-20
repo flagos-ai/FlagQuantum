@@ -24,6 +24,7 @@ from flagquantum.compiler.registers.finite_field.polynomial_addition_component i
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program.registers import RegisterType
+from tests.unit.test_packed_field_polynomial_program import polynomial_type
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -40,8 +41,9 @@ def field(width: int) -> RegisterType:
 @pytest.mark.parametrize("degree", [0, 1, 4])
 @pytest.mark.parametrize("adjoint", [False, True])
 @pytest.mark.parametrize("constant", [False, True])
+@pytest.mark.parametrize("typed", [False, True])
 def test_complete_stream_and_stored_children(
-    width: int, degree: int, adjoint: bool, constant: bool
+    width: int, degree: int, adjoint: bool, constant: bool, typed: bool
 ) -> None:
     layout = FieldPolynomialLayout(degree, width)
     size = layout.logical_width
@@ -50,7 +52,11 @@ def test_complete_stream_and_stored_children(
     constants = ((1 << width) - 1,) if constant else None
     inputs = (target,) if constant else (source, target)
     program = field_polynomial_addition_program(
-        layout, field(width), constants=constants, adjoint=adjoint
+        layout,
+        field(width),
+        constants=constants,
+        adjoint=adjoint,
+        packed_dtype=polynomial_type(degree, width) if typed else None,
     )
     bound = bind_register_program(program, inputs)
     expected = (
@@ -67,8 +73,12 @@ def test_complete_stream_and_stored_children(
 
 @pytest.mark.parametrize("constant", [None, (0,), (3,), (1, 2)])
 @pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("typed", [False, True])
 def test_full_complex_append_spectator_clean_wire_and_restore(
-    constant: tuple[int, ...] | None, adjoint: bool, monkeypatch: pytest.MonkeyPatch
+    constant: tuple[int, ...] | None,
+    adjoint: bool,
+    typed: bool,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import flagquantum.compiler.registers.finite_field.field_polynomial_addition as old
 
@@ -85,7 +95,14 @@ def test_full_complex_append_spectator_clean_wire_and_restore(
         if constant is not None
         else (tuple(range(size)), tuple(range(size, 2 * size)))
     )
-    operation = FieldPolynomialAddition(layout, field(2), inputs, constant, adjoint)
+    operation = FieldPolynomialAddition(
+        layout,
+        field(2),
+        inputs,
+        constant,
+        adjoint,
+        packed_dtype=polynomial_type(1, 2) if typed else None,
+    )
     state = torch.zeros(1 << (data_width + 2), dtype=torch.complex128)
     values = torch.arange(1, (1 << (data_width + 1)) + 1, dtype=torch.float64)
     state[::2] = torch.complex(values, torch.flip(values, (0,)))
@@ -138,8 +155,9 @@ def test_constant_child_exact_adjoint_order_and_contracts() -> None:
 @pytest.mark.parametrize("width,degree", [(1, 0), (2, 1), (3, 4), (5, 1), (8, 1)])
 @pytest.mark.parametrize("constant", [False, True])
 @pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("typed", [False, True])
 def test_unmodified_source_operands_feedback_and_resource_model(
-    width: int, degree: int, constant: bool, adjoint: bool
+    width: int, degree: int, constant: bool, adjoint: bool, typed: bool
 ) -> None:
     from galois import Poly
     from qualtran import QGF, QGFPoly
@@ -168,7 +186,12 @@ def test_unmodified_source_operands_feedback_and_resource_model(
         else (tuple(range(size)), tuple(range(size, 2 * size)))
     )
     bound = FieldPolynomialAddition(
-        layout, field(width), inputs, constants, adjoint
+        layout,
+        field(width),
+        inputs,
+        constants,
+        adjoint,
+        packed_dtype=polynomial_type(degree, width) if typed else None,
     ).bind()
     np = pytest.importorskip("numpy")
     port_inputs = {

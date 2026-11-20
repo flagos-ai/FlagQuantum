@@ -24,20 +24,29 @@ def field_polynomial_addition_program(
     *,
     constants: tuple[int, ...] | None = None,
     adjoint: bool = False,
+    packed_dtype: RegisterType | None = None,
 ) -> ProgramRecord:
     """Add a polynomial word or encoded constant into descending coefficients.
 
-    Packed f_x/g_x use the existing opaque view. Each coefficient retains the
-    supplied binary-field descriptor. The packed polynomial dtype remains a
-    separate admission boundary. This graph needs no workspace or measurements.
+    Packed f_x/g_x accept the explicit canonical polynomial descriptor approved
+    by Proposal 109. The default retains the existing opaque view. Coefficients
+    retain their binary-field identity. Workspace and measurements are zero.
     Source quantum adjoints reverse coefficient calls while retaining each
     self-adjoint field XOR. Constant adjoints also reverse each child's X calls.
     """
     if type(adjoint) is not bool:
         raise ValueError("Polynomial addition direction requires a boolean")
-    split = field_polynomial_component_program(layout, coefficient)
-    join = field_polynomial_component_program(layout, coefficient, reverse=True)
-    packed = opaque_register_type(layout.logical_width)
+    split = field_polynomial_component_program(
+        layout, coefficient, packed_dtype=packed_dtype
+    )
+    join = field_polynomial_component_program(
+        layout, coefficient, reverse=True, packed_dtype=packed_dtype
+    )
+    packed = (
+        opaque_register_type(layout.logical_width)
+        if packed_dtype is None
+        else packed_dtype
+    )
     ports = ("f_x", "g_x") if constants is None else ("f_x",)
     padded = None if constants is None else _constant_coefficients(constants, layout)
     builder = ComponentProgramBuilder(

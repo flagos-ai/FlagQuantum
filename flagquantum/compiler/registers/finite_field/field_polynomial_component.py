@@ -22,6 +22,7 @@ def field_polynomial_component_program(
     name: str = "main",
     *,
     reverse: bool = False,
+    packed_dtype: RegisterType | None = None,
 ) -> ProgramRecord:
     """Bind a packed view and its typed coefficient array through the same wires."""
     if (
@@ -31,8 +32,25 @@ def field_polynomial_component_program(
         raise ValueError(
             "polynomial coefficients require the matching executable field"
         )
+    if packed_dtype is not None:
+        expected = RegisterType(
+            "finite_field_polynomial",
+            layout.logical_width,
+            parameters=(("polynomial_degree", layout.degree),) + coefficient.parameters,
+        )
+        if packed_dtype != expected:
+            raise ValueError(
+                "Packed polynomial and coefficient field metadata must match"
+            )
+        executable_register_width(packed_dtype)
     packed = Register(
-        "reg", opaque_register_type(layout.logical_width), side=RegisterSide.LEFT
+        "reg",
+        (
+            opaque_register_type(layout.logical_width)
+            if packed_dtype is None
+            else packed_dtype
+        ),
+        side=RegisterSide.LEFT,
     )
     coefficients = Register(
         "reg", coefficient, (layout.degree + 1,), side=RegisterSide.RIGHT

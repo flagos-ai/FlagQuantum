@@ -31,6 +31,7 @@ class FieldPolynomialAddition:
     inputs: tuple[tuple[int, ...], ...]
     constants: tuple[int, ...] | None = None
     adjoint: bool = False
+    packed_dtype: RegisterType | None = None
 
     def bind(self) -> BoundRegisterProgram:
         program = field_polynomial_addition_program(
@@ -38,6 +39,7 @@ class FieldPolynomialAddition:
             self.coefficient,
             constants=self.constants,
             adjoint=self.adjoint,
+            packed_dtype=self.packed_dtype,
         )
         return bind_register_program(program, self.inputs)
 
@@ -57,7 +59,14 @@ def main() -> None:
     state = torch.arange(1, 257, dtype=torch.float64).to(torch.complex128)
     state += 1j * torch.flip(state.real, (0,))
     state /= torch.linalg.vector_norm(state)
-    operation = FieldPolynomialAddition(layout, coefficient, (source, target))
+    packed = RegisterType(
+        "finite_field_polynomial",
+        layout.logical_width,
+        parameters=(("polynomial_degree", layout.degree),) + coefficient.parameters,
+    )
+    operation = FieldPolynomialAddition(
+        layout, coefficient, (source, target), packed_dtype=packed
+    )
     circuit = fq.Circuit(8, inputs=state, dtype=torch.complex128).append(operation)
     restored = circuit.append(operation).state().flatten()
     torch.testing.assert_close(restored, state, atol=1e-12, rtol=0)
