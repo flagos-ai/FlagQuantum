@@ -27,6 +27,62 @@ from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
 
+def _field_register_width(dtype: RegisterType, *, binary_only: bool) -> int:
+    """Validate structural field metadata independently of numerical construction."""
+    width = dtype.quantum_bits
+    if (
+        type(width) is not int
+        or width <= 0
+        or type(dtype.classical_bits) is not int
+        or dtype.classical_bits != 0
+        or not isinstance(dtype.parameters, tuple)
+        or any(
+            not isinstance(pair, tuple)
+            or len(pair) != 2
+            or not isinstance(pair[0], str)
+            or type(pair[1]) is not int
+            for pair in dtype.parameters
+        )
+    ):
+        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+    names = tuple(name for name, _ in dtype.parameters)
+    parameters = {name: cast(int, value) for name, value in dtype.parameters}
+    if dtype.encoding == "finite_field_polynomial":
+        if not names or names[0] != "polynomial_degree":
+            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+        degree = parameters["polynomial_degree"]
+        order = parameters.get("order")
+        if degree < 0 or order is None or order < 2:
+            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+        coefficient_width = (order - 1).bit_length()
+        if width != (degree + 1) * coefficient_width:
+            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+        coefficient = RegisterType(
+            "finite_field", coefficient_width, parameters=dtype.parameters[1:]
+        )
+        _field_register_width(coefficient, binary_only=binary_only)
+        return width
+    base = ("characteristic", "degree", "order")
+    polynomial = (
+        "polynomial",
+        "polynomial_field_characteristic",
+        "polynomial_field_degree",
+        "polynomial_field_primitive_element",
+        "polynomial_field_modulus",
+    )
+    if names in (base, base + polynomial):
+        characteristic, degree, order = (parameters[name] for name in base)
+        if (
+            characteristic >= 2
+            and degree > 0
+            and order == characteristic**degree
+            and width == (order - 1).bit_length()
+            and (not binary_only or characteristic == 2)
+        ):
+            return width
+    raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+
+
 def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
@@ -37,60 +93,8 @@ def executable_register_width(dtype: RegisterType) -> int:
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
     width = dtype.quantum_bits
-    if dtype.encoding == "finite_field_polynomial":
-        if (
-            type(width) is not int
-            or type(dtype.classical_bits) is not int
-            or dtype.classical_bits != 0
-            or not isinstance(dtype.parameters, tuple)
-            or not dtype.parameters
-            or any(
-                not isinstance(pair, tuple)
-                or len(pair) != 2
-                or not isinstance(pair[0], str)
-                for pair in dtype.parameters
-            )
-        ):
-            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-        name, degree = dtype.parameters[0]
-        coefficient_width = dict(dtype.parameters[1:]).get("degree")
-        if (
-            name != "polynomial_degree"
-            or type(degree) is not int
-            or degree < 0
-            or type(coefficient_width) is not int
-            or width != (degree + 1) * coefficient_width
-        ):
-            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-        coefficient = RegisterType(
-            "finite_field", coefficient_width, parameters=dtype.parameters[1:]
-        )
-        executable_register_width(coefficient)
-        return width
-    if dtype.encoding == "finite_field":
-        names = tuple(name for name, _ in dtype.parameters)
-        base = ("characteristic", "degree", "order")
-        polynomial = (
-            "polynomial",
-            "polynomial_field_characteristic",
-            "polynomial_field_degree",
-            "polynomial_field_primitive_element",
-            "polynomial_field_modulus",
-        )
-        parameters = dict(dtype.parameters)
-        if (
-            type(width) is int
-            and width > 0
-            and type(dtype.classical_bits) is int
-            and dtype.classical_bits == 0
-            and names in (base, base + polynomial)
-            and all(type(value) is int for _, value in dtype.parameters)
-            and parameters["characteristic"] == 2
-            and parameters["degree"] == width
-            and parameters["order"] == 2**width
-        ):
-            return width
-        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+    if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
+        return _field_register_width(dtype, binary_only=True)
     if (
         dtype.encoding
         not in {"bit", "opaque", "uint", "signed", "ones_complement", "montgomery"}
@@ -187,7 +191,8 @@ def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
 
     Proposal 108 preserves CBit identity and constructor parameter ordering.
     A quantum metadata view reuses existing constructor validation. Proposal 110
-    admits concrete binary fields and polynomials through their quantum validators.
+    admits concrete binary fields and polynomials. Proposal 111 reuses structural
+    field metadata for nonbinary classical words, keeping quantum admission binary.
     """
     if (
         dtype == classical_bit_type()
@@ -218,6 +223,8 @@ def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
         classical_bits=0,
         parameters=dtype.parameters[1:],
     )
+    if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
+        return _field_register_width(quantum_view, binary_only=False)
     return logical_register_width(quantum_view)
 
 
