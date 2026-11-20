@@ -99,3 +99,14 @@ strict typing of all 1,142 package source files. Architecture boundaries,
 formatting and lint checks are recorded separately. Full default/runtime tiers
 and exact-head CI remain required before integration; focused results are not
 a substitute for those gates.
+
+## Evidence field normalization
+
+The first CI run rejected the undeclared `baseline_revision` field in the
+new development record. It was renamed to the existing `base_commit` field;
+the commit value, source hashes, host description and every measurement remain
+byte-for-byte unchanged. The original artifact SHA-256 was
+`90139597e4fa011a6eb6a06685325a5b98b70c36e7f976642e51003ce0f7cf64`; the normalized
+artifact SHA-256 is
+`fadaaa10a8b303dfc06888f4b5e583c1aeaf4bb078cf3ac952d094756729d5b0`.
+No evidence vocabulary or acceptance check was expanded.

@@ -6,7 +6,7 @@
   "platform": "macOS-27.0-arm64-arm-64bit",
   "machine": "arm64",
   "cpu_count": 10,
-  "baseline_revision": "ea1118f56af0b8e9c26d10a24b0fe72efb30f850",
+  "base_commit": "ea1118f56af0b8e9c26d10a24b0fe72efb30f850",
   "baseline_source_sha256": "b4167262ddb05ead7d8b597d8c4438b37125c14a1645f54a97d43d82f4743b3a",
   "candidate_source_sha256": "65453a5978da08e9701d6505757b92ac1fea3748d09caff8d6692976cf0e3530",
   "method": "line topology; four shuffled matchings; one warmup and five counterbalanced samples; planning only, no native lowering",
