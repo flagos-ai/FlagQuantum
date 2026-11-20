@@ -25,3 +25,7 @@ The example compiles a circuit onto alternative device paths and verifies that
 calibrated link costs select the lower-error path. Both routes use two SWAPs.
 For a small change, modify route selection and extend this scenario with the
 corresponding legality, layout restoration and rejection assertions.
+
+SABRE reuses dependency lookahead only within one unchanged frontier. See the
+[lifetime invariant and development evidence](../../../docs/development/COMPILER_FRONTIER_LOOKAHEAD_REUSE.md)
+before changing frontier advancement or speculative SWAP recovery.
