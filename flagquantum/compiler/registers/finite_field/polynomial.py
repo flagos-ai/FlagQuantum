@@ -101,7 +101,9 @@ def binary_polynomial_product_ir(
     """XOR fg or (1+x**shift)fg into a possibly nonzero polynomial target.
 
     Registers are big-endian coefficients. Inputs have equal positive width n.
-    The target width is 2n-1, or 2k+max(0,2n-k-1) for shift k in [1,n+1].
+    The target width is 2n-1, or 2k+max(0,2n-k-1) for positive shift k.
+    For n>1, k must be at most 2n-1, matching the source child shape.
+    Width one supports any positive shift.
     Caller-owned workspace must start in zero and is restored to zero. The
     network preserves both inputs and uses only CNOT and Toffoli instructions.
     """
@@ -110,8 +112,10 @@ def binary_polynomial_product_ir(
     _validate_registers(left, right, target, workspace)
     if len(right) != width:
         raise ValueError("Polynomial inputs require equal register widths")
-    if shift is not None and (type(shift) is not int or not 1 <= shift <= width + 1):
-        raise ValueError("Polynomial shift must be a concrete integer in [1, n+1]")
+    if shift is not None and (
+        type(shift) is not int or shift < 1 or (width > 1 and shift > 2 * width - 1)
+    ):
+        raise ValueError("Polynomial shift must be positive and at most 2n-1 when n>1")
     target_width = (
         2 * width - 1 if shift is None else 2 * shift + max(0, 2 * width - shift - 1)
     )

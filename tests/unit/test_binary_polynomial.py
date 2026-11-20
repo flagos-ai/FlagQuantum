@@ -15,7 +15,11 @@ from flagquantum.core.ir import Instruction
 from tests.unit.test_field_multiplication import assert_gate_streams, reference_gates
 
 pytestmark = pytest.mark.unit
-CASES = [(n, k) for n in (1, 2, 3, 4, 5, 6, 8) for k in (None, *range(1, n + 2))]
+CASES = [
+    (n, k)
+    for n in (1, 2, 3, 4, 5, 6, 8)
+    for k in (None, *range(1, 6 if n == 1 else 2 * n))
+]
 
 
 def registers(
@@ -176,6 +180,6 @@ def test_validation_and_minimum_workspace() -> None:
         binary_polynomial_product_ir(left, right, target[:-1], work)
     with pytest.raises(ValueError, match="distinct"):
         binary_polynomial_product_ir(left, right, target, left)
-    for bad in (0, -1, 5, True):
+    for bad in (0, -1, 6, True):
         with pytest.raises(ValueError, match="shift"):
             binary_polynomial_product_ir(left, right, target, work, shift=bad)

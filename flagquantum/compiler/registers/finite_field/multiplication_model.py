@@ -50,8 +50,12 @@ def polynomial_multiplication_graph(
     """Expand the concrete recursive declaration graph without constructing gates."""
     if type(width) is not int or width < 1:
         raise ValueError("Polynomial model width must be a positive integer")
-    if shift is not None and (type(shift) is not int or not 1 <= shift <= width + 1):
-        raise ValueError("Polynomial model shift must be in [1, n+1]")
+    if shift is not None and (
+        type(shift) is not int or shift < 1 or (width > 1 and shift > 2 * width - 1)
+    ):
+        raise ValueError(
+            "Polynomial model shift must be positive and at most 2n-1 when n>1"
+        )
     root = ("polynomial", width) if shift is None else ("one_plus", width, shift)
     declarations: dict[Hashable, dict[Hashable, SymbolicInt]] = {}
     pending = [root]

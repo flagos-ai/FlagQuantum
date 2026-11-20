@@ -5,6 +5,7 @@ from collections import Counter
 import pytest
 import torch
 
+from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.finite_field.polynomial import (
     binary_polynomial_product_ir,
@@ -13,12 +14,13 @@ from flagquantum.compiler.registers.finite_field.polynomial_product_component im
     binary_polynomial_program,
     one_plus_polynomial_program,
 )
-from flagquantum.core.ir import CircuitIR
 from tests.unit.field_product_checks import bind_product, product_source_stream
 from tests.unit.register_source_graph import assert_source_wire_streams
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-CASES = tuple((n, k) for n in (1, 2, 3, 5, 8) for k in (None, *sorted({1, n, n + 1})))
+CASES = tuple(
+    (n, k) for n in (1, 2, 3, 5, 8) for k in (None, *range(1, (6 if n == 1 else 2 * n)))
+)
 
 
 @pytest.mark.parametrize("width,shift", CASES)
@@ -67,7 +69,8 @@ def test_complete_source_graph_and_existing_owner(
 
 
 @pytest.mark.parametrize(
-    "width,shift", [(1, None), (1, 1), (1, 2), (2, None), (2, 1), (3, None)]
+    "width,shift",
+    [(1, None), (1, 1), (1, 2), (2, None), (2, 1), (3, None), (1, 5), (3, 5)],
 )
 def test_every_arbitrary_target_complex_amplitude_and_padding_zero(
     width: int, shift: int | None
@@ -105,10 +108,35 @@ def test_every_arbitrary_target_complex_amplitude_and_padding_zero(
             dst = output << (count - data) | spectator
             state[src] = logical[value * 2 + spectator]
             expected[dst] = logical[value * 2 + spectator]
-    result = (
-        Circuit(count, inputs=state, dtype=torch.complex128)
-        .compose(CircuitIR(count, bound.circuit.instructions))
-        .state()
-        .flatten()
+    operation = FieldOperation(count, bound.circuit.instructions)
+    circuit = Circuit(count, inputs=state, dtype=torch.complex128).append(operation)
+    torch.testing.assert_close(circuit.state().flatten(), expected, atol=1e-12, rtol=0)
+    torch.testing.assert_close(
+        circuit.append(operation).state().flatten(), state, atol=1e-12, rtol=0
     )
-    torch.testing.assert_close(result, expected, atol=1e-12, rtol=0)
+
+
+@pytest.mark.parametrize("width", [2, 3, 4, 5, 8])
+@pytest.mark.parametrize("offset", [0, 1])
+def test_source_invalid_child_shape_has_an_early_native_refusal(
+    width: int, offset: int
+) -> None:
+    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import MultiplyPolyByOnePlusXk
+
+    from flagquantum.compiler.registers.finite_field.multiplication_model import (
+        polynomial_multiplication_graph,
+    )
+    from tests.unit.test_binary_polynomial import registers
+
+    shift = 2 * width + offset
+    source = MultiplyPolyByOnePlusXk(width, shift)
+    # Construction and declared costs exist even when the physical child cannot fit.
+    assert len(tuple(source.signature)[2].shape) == 1
+    with pytest.raises(ValueError, match="broadcast"):
+        source.decompose_bloq()
+    with pytest.raises(ValueError, match="shift"):
+        one_plus_polynomial_program(width, shift)
+    with pytest.raises(ValueError, match="shift"):
+        binary_polynomial_product_ir(*registers(width, shift), shift=shift)
+    with pytest.raises(ValueError, match="shift"):
+        polynomial_multiplication_graph(width, shift)

@@ -93,12 +93,13 @@ def binary_polynomial_program(width: int) -> ProgramRecord:
 def one_plus_polynomial_program(width: int, shift: int) -> ProgramRecord:
     """XOR (1+x**shift)fg into h, preserving the original overlapping CX order.
 
-    The accepted concrete shift range is 1..n+1. It retains the source's wider
-    target at n=1. Source unvalidated larger shifts remain a separate boundary.
+    Positive shifts through 2n-1 retain the original child shape for n>1.
+    Width one supports any positive shift and preserves unused target lanes.
+    Larger shifts at n>1 fail in the unchanged source child assignment.
     """
     binary_polynomial_workspace_size(width)
-    if type(shift) is not int or not 1 <= shift <= width + 1:
-        raise ValueError("Polynomial shift must be a concrete integer in [1, n+1]")
+    if type(shift) is not int or shift < 1 or (width > 1 and shift > 2 * width - 1):
+        raise ValueError("Polynomial shift must be positive and at most 2n-1 when n>1")
     tail = max(0, 2 * width - shift - 1)
     builder = _builder(width, 2 * shift + tail)
     f, g, h = (

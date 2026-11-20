@@ -143,7 +143,7 @@ def test_entire_recursive_polynomial_graphs(width: int) -> None:
         ignore_split_join,
     )
 
-    for shift in [None, *range(1, width + 2)]:
+    for shift in [None, *range(1, 6 if width == 1 else 2 * width)]:
         original = (
             BinaryPolynomialMultiplication(width)
             if shift is None
