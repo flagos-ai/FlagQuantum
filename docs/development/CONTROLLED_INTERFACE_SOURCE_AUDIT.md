@@ -235,3 +235,15 @@ Proposal 110 was explicitly approved on 2026-11-20. The canonical classical
 binary field/poly execution dependency described in the preceding intake is
 implemented through the existing validators and feedback owner. Its accepted
 scope and remaining boundaries are in `CLASSICAL_FIELD_FEEDBACK_AUDIT.md`.
+
+## Proposal 111 dependency acceptance
+
+The approved nonbinary classical field/poly dependency now joins the accepted
+integer and binary paths. The native builder follows unchanged numerical
+callbacks and bit codecs for all 902 small legal activation/input pairs.
+`NONBINARY_CLASSICAL_FIELD_FEEDBACK_AUDIT.md` retains the original four polynomial
+tensor-index counterexamples, wrapper decomposition/model refusals, scalar and
+shaped metadata transport, complete measured-child histories and exact binary
+compatibility artifacts. Earlier statements that all nonbinary classical
+values are refused are historical. Nonbinary quantum execution and unresolved
+symbolic or generic interface dependencies retain their own scopes.

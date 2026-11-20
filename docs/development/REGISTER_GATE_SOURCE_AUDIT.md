@@ -66,7 +66,7 @@ A stored matrix leaf is counted at its storage granularity. Physical primitive s
 
 The original scalar `r3=Qid` placement exposed a native shape refusal before this batch. `_port_arrays` now wraps a scalar Qid using the same normalization as frozen `merge_qubits`. The failure and passing original scenario are retained in the reference receipt directory. Optional private `gate_label` preserves the original first-operand class title and survives integer powers and adjoint. Existing unlabelled behavior remains covered.
 
-Zero-width words and empty register arrays succeed in source layout/unitary paths. Original `decompose_bloq()` raises `ValueError` through empty-tuple identity collisions for scalar and positive-shaped empty words, or zero iteration dimensions for zero-sized arrays. Native register import now retains independent zero-width identities as detailed below. Wider classical words and control admission remain under Q-0158 and pending Proposal 108. Proposal 107 approval covers nonlinear parameters and scalar phases.
+Zero-width words and empty register arrays succeed in source layout/unitary paths. Original `decompose_bloq()` raises `ValueError` through empty-tuple identity collisions for scalar and positive-shaped empty words, or zero iteration dimensions for zero-sized arrays. Native register import now retains independent zero-width identities as detailed below. Wider classical words and control admission remain under Q-0158 and the remaining generic control dependencies. Proposal 107 approval covers nonlinear parameters and scalar phases.
 
 ## Reproducible checks
 
@@ -127,7 +127,7 @@ Receipts are `g2-empty-register-evidence.json`, `g2-empty-register-dependency.js
 `g2-empty-register-default-baseline.json` and the matching focused, regression,
 default and quality logs in the reference directory. The complete Q-0163 parent
 remains open solely for the wider typed/control dependency tracked by Q-0158
-and pending Proposal 108.
+and the remaining generic control dependencies.
 
 The 2026-11-20 review of all 26 class/function definitions closes the canonical
 one-bit binary field/polynomial control dependency using the existing shared
@@ -135,3 +135,12 @@ control owner. The full dependency evidence and original wider-field refusal
 are recorded in `CONTROLLED_VIA_AND_FILE_AUDIT.md`. Foreign SDK object contracts,
 nonbinary/symbolic physical execution and previously recorded source defects
 retain their existing scope.
+
+## Nonbinary classical dependency continuation
+
+Proposal 111 closes the concrete classical nonbinary field and polynomial
+port/read/control dependency. The unchanged full source inventory is reused.
+`NONBINARY_CLASSICAL_FIELD_FEEDBACK_AUDIT.md` records source callback/codec
+comparison, explicit polynomial tensor failures, complete child streams and
+measurement histories. No generic SDK dialect or nonbinary quantum admission
+is inferred. Q-0163 still requires the remaining control/interface review.

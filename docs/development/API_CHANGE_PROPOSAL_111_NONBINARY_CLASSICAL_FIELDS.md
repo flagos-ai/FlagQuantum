@@ -102,3 +102,10 @@ Report initializers, emitted quantum primitives, clean work and classical slots
 separately from source child resource estimates. Preserve the original wrapper's
 model/decomposition refusal and polynomial tensor index discrepancy. This
 proposal supplies no new parent acceptance before implementation and validation.
+
+## Implementation acceptance
+
+Implemented in independent Core and Compiler commits after the approved contract.
+`NONBINARY_CLASSICAL_FIELD_FEEDBACK_AUDIT.md` records the exact source comparison
+scope, original polynomial tensor counterexamples, compatibility fixtures and
+local acceptance. The pre-extension intake remains historical evidence.

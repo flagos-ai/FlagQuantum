@@ -88,3 +88,11 @@ reset and classical writes retain their separate boundaries. Generic foreign
 object contracts and original source contradictions remain explicitly tracked.
 The classical-field intake records the pre-extension refusal and is historical
 evidence. The approved contract and this acceptance supersede that refusal.
+
+## Approved nonbinary continuation
+
+The 2026-11-20 Proposal 111 acceptance supersedes the nonbinary classical refusal
+above. `NONBINARY_CLASSICAL_FIELD_FEEDBACK_AUDIT.md` records the shared structural
+validator, coefficient-range checks, all 902 small legal control pairs, original
+polynomial tensor-index counterexamples and complete measured-child histories.
+Nonbinary quantum execution retains its independent admission boundary.
