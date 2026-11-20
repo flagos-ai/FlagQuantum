@@ -268,3 +268,74 @@ The independent module commits are e34aef21c for typed shifts, a9a58dca3 for
 shared constant scaling, 5f5b21a87 for polynomial recursion, e4f35ef3b for
 quadratic ownership, f2467dc05 for Karatsuba/append/coherent verification and
 bd9eef5a3 for the shared measurement replacement test.
+
+## Polynomial range and internal target dependency closure — 2026-11-20
+
+The remaining concrete boundaries were rechecked against the unchanged complete
+source file and its direct recursive children. This section supersedes the
+historical wider-k and arbitrary-internal-h gaps above. Source inventory,
+notebook evidence, measured erasure histories, and the frozen linear-adjoint
+failure witnesses are reused.
+
+### Original executable shift range
+
+For `MultiplyPolyByOnePlusXk`, degree one supports every positive integer shift.
+For n greater than one, the recursive child fits for 1 <= k <= 2n-1.
+The source prose only establishes k <= n+1. The additional executable range is
+verified directly through the unchanged builder, ordered per-wire primitives,
+operands, output aliases and source declarations. The existing flat emitter,
+stored Program and concrete model graph now admit that range together. Polynomial
+coefficient zero remains first in stored arrays and MSB-first in word consumers.
+All f/g/h registers are THRU, with arbitrary initial h preserved by XOR accumulation.
+
+For n > 1 and k >= 2n, original construction succeeds and declaration costs
+remain available, but decomposition raises a NumPy broadcasting ValueError.
+Native paths reject these shapes before building. Ten committed fixtures retain
+the original failure at widths 2/3/4/5/8 and two successive invalid shifts.
+The exact exception message differs at this deliberately earlier native boundary.
+Width-one arbitrary shifts have finite witnesses through five.
+
+### Internal Karatsuba THRU target
+
+`karatsuba_implementation_program` already accepts arbitrary h. With the accepted
+exact scale-adjoint child, its complete action is
+`(f,g,h) -> (f,g,x**ceil(n/2)*h + f*g)` in the binary field. The docstring now
+states that action explicitly. A zero h produces the public clean product.
+The existing immutable-source root-builder comparison retains all actual child
+calls, operands, coefficient views and aliases. Its exact-adjoint adapter remains
+disclosed. The unmodified source still ignores the linear-adjoint flag, including
+the retained GF(4) product failure. No unchanged-source mathematical equivalence
+is claimed through that defective child.
+
+Dense states exhaust f/g/h and an entangled spectator at widths 2/3/4, including
+clean padding and exact Circuit adjoint restoration through `circuit.append(op)`.
+Sparse complex states cover every f/g pair with a nonzero-patterned target at
+widths 2/3/4/5/8. The sparse CCX/CX permutation is checked with its amplitudes at
+canonical output indices. There are zero measurements or classical slots in
+these coherent polynomial and internal product paths.
+
+### Separate resource accounts
+
+| Operation | Actual primitive stream | Independent source QEC model | Clean padding peak |
+| --- | --- | --- | --- |
+| n=1, k=5 polynomial | 1 CCX + 2 CX | 1 Toffoli + 2 Clifford | 0 |
+| n=3, k=5 polynomial | 7 CCX + 38 CX | 7 Toffoli + 38 Clifford | 1 |
+| n=5, k=9 polynomial | 17 CCX + 106 CX | 17 Toffoli + 106 Clifford | 1 |
+| n=8, k=15 polynomial | 27 CCX + 206 CX | 27 Toffoli + 206 Clifford | 0 |
+| n=8 internal field, modulus 283 | 27 CCX + 200 CX | 27 Toffoli + 200 Clifford | 0 |
+
+The polynomial implementation commit is `61a35624c`. Internal target evidence
+and corrected interface documentation are `722190750`. All 276 focused checks,
+4341 concentrated checks and 17 local integration checks pass. There are no
+skips and 30 existing paired source/native overflow warnings. Strict typing
+covers all eight touched Python files. Black, Ruff, both scope checks,
+architecture, IR, protected API and ledger synchronization pass. The two source
+Git blobs, Qualtran 0.7.0 and native Kickmix 0.1 Simulator are verified.
+Dependency diagnostics retain 687 whole-repository findings and zero batch
+findings. Receipts are `ftqc-reference-env/g2-polynomial-wide-*`.
+
+Q-0519/Q-0520 remain open for the frozen linear-adjoint defect and its dependent
+physical mismatch, generic foreign construction and serialization, generic root
+inverse dispatch, symbolic physical execution, complete original slow/autotester
+scope and full eight-bit coherent measurement-branch enumeration. This batch
+closes concrete dependencies within the existing whole-file inventory.
