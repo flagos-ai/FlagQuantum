@@ -7,7 +7,7 @@ files are Apache-2.0, copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0327 | `partition.ipynb` | `65ff47688d0c7715f2df9f95a97ae3d34b21dd8b` | Closed by the complete Partition and AutoPartition tutorial. |
-| Q-0328 | `partition.py` | `8cebbb58095d172f3db564cdfc231537e6214957` | Open for the full executable dtype and direct external object protocols. |
+| Q-0328 | `partition.py` | `8cebbb58095d172f3db564cdfc231537e6214957` | Open for complete physical dtype admission and symbolic physical binding. |
 | Q-0329 | `partition_test.py` | `c6c3236332577115ff6f09e17f340fe79825e1f4` | Closed for the original runnable scenarios and both source tutorials. |
 | Q-0332 | `split2.ipynb` | `eaf039d7f204f9a1e4fa1cb6d26fb2d93c73aae8` | Closed by the complete Split2 and Join2 tutorial. |
 
@@ -53,10 +53,10 @@ two binary-field elements and a single qubit. Native and source bind
 identical words in both directions. Native binding emits zero
 instructions and allocates no workspace, and the logical peak is eight.
 Bounded unsigned, signed and signed fixed-point descriptors retain their
-exact metadata in both directions. The existing executable register
-contract rejects these descriptors. The frozen Cirq callback admits them
+exact metadata in both directions. Bounded unsigned storage is now admitted. Signed fixed-point storage
+remains refused pending Proposal 116. The frozen Cirq callback admits them
 as wire bindings, and the native classical codecs are covered separately.
-Direct external object binding remains open.
+The concrete direct external consumers below now have explicit evidence.
 
 The source's raw Cirq Join concatenates direct keyword arguments in
 caller insertion order. Its typed composite and tensor path uses the
@@ -77,3 +77,33 @@ Proposal 116. The regression now checks those separate boundaries. Partition
 production and Core admission remain unchanged. The dependent AutoPartition
 root can store unresolved-width typed partition declarations; no symbolic
 physical Split/Join body is inferred.
+
+
+## Actual Partition, Split2 and Join2 foreign consumers
+
+The original `_partition`, `_split2` and `_join2` factories preserve exact
+serialized bytes and upstream reconstruction at depths zero, one and two.
+Explicit native factories preserve canonical types, direction and shape through
+the existing Partition owner. The 49-wire shaped Partition factory preserves
+reversed physical wire ownership, row-major word slices and the original direct
+SDK views with zero primitive gates, events, measurements or work. Its independent
+source model has zero QEC cost and peak 49. This large case checks wire/model
+behavior only. A six-data-bit shaped partition and inverse separately compare
+every complex amplitude with a coherent spectator and the unchanged tensor.
+
+Symbolic Split2 and Join2 retain typed bodyless declarations. Physical Program
+binding rejects unresolved widths. The original symbolic Split2 SDK callback
+also fails to reshape. The original Join2 SDK callback succeeds by concatenating
+supplied concrete arrays despite its unresolved declared widths. Its result
+matches the existing native raw `join_register_pair` helper. This raw SDK result
+does not supply symbolic typed physical binding. Both PennyLane callbacks return
+no operation, and the original symbolic QEC costs are zero.
+
+The existing direct inverse keyword-insertion-order discrepancy remains covered
+by `test_register_partition.py`. Named native Program binding and the source
+tensor/composite use declaration order. No source implementation is altered.
+The complete Q-0328 parent remains open for full physical dtype admission,
+including pending Proposal 116, and unresolved-width executable Program bodies.
+The batch reuses accepted numerical, drawing, notebook and measured downstream
+consumer evidence. `g2-partition-foreign-*` records 776 concentrated, 17 local
+integration and 122 Cirq 1.6.1 passes plus strict three-file and repository guards.
