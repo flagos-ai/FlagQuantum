@@ -2,12 +2,16 @@
 
 ## Review status
 
-Pending explicit user approval. Proposal 107 approves nonlinear scalar
-expressions and real-angle global phase. This proposal requires a separate
-decision because it broadens owned Program port admission and the result arity
-of an existing serialized operation. Core AGENTS and PUBLIC_API_PROTECTION.md
-require approval before changing that behavior. This document authorizes no
-production implementation by itself.
+Approved explicitly by the user on 2026-11-20 with the instruction
+“批准，按 Proposal 108 实施”. The approved scope is the typed classical word
+admission, read successor/snapshot arity and feedback behavior described below.
+This approval supersedes the previous CBit-only executable restriction for
+precisely these encodings and owned operations. Contract, Core, Compiler,
+Simulation and Ecosystem implementation commits remain separated by ownership.
+
+The machine contract is `contracts/classical-word-feedback-contract.toml`.
+The compatibility fixture captures the existing CBit stored function, bound
+CircuitIR JSON, content hash and classical slot outputs before implementation.
 
 ## Verified requirement
 

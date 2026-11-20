@@ -1,0 +1,42 @@
+schema = "flagquantum.classical_word_feedback_contract"
+version = "1.0"
+proposal = "docs/development/API_CHANGE_PROPOSAL_108_CLASSICAL_WORD_FEEDBACK.md"
+approval = "explicit_user_approval_2026-11-20"
+implementation_status = "approved_owner_implementation_in_progress"
+owner = "core"
+public_methods_added = []
+
+[admission]
+representations = ["ProgramRecord", "RegisterType", "Operation", "ConditionRef"]
+encodings = ["bit", "uint", "signed", "ones_complement", "montgomery", "fixed_point"]
+quantum_width = 0
+storage = "classical"
+parameters = "canonical_constructor_order"
+symbolic = "declaration_until_concretely_resolved"
+finite_field = "separate_admission"
+
+[read]
+opcode = "read_classical_register"
+operands = "one_owned_classical_element"
+results = "identical_type_successor_then_width_boolean_snapshots"
+bit_order = "MSB_first"
+snapshot_ownership = "read_only_fanout"
+quantum_gates = 0
+new_classical_slots = 0
+zero_width = "successor_with_zero_snapshots"
+
+[entry]
+values = "built_in_integer_per_flattened_classical_element"
+cbit_values = "built_in_zero_one_or_bool"
+quantum_values = "None"
+layout = "row_major_elements_with_MSB_first_storage_bits"
+validation = "complete_tuple_before_binding"
+fixed_point = "stored_integer"
+montgomery = "stored_residue"
+
+[compatibility]
+fixture = "tests/fixtures/classical_word_cbit_compatibility.json"
+old_cbit = "identical_graph_bound_circuit_bytes_hash_and_slots"
+operation_fields = "unchanged"
+parity_measurement_writes = "existing_admission_unchanged"
+source_wrapper_model = "preserve_DecomposeNotImplementedError"
