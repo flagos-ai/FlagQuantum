@@ -153,3 +153,22 @@ and all-branch native execution are exercised by
 `test_double_factorization_encoding_model.py` for a focused change. The complete
 source owner map and measured/model separation are in
 `docs/development/CHEMISTRY_BLACK_BOXES_FILE_AUDIT.md`.
+
+## Chemistry composition ownership
+
+Chemistry package grouping is represented by these existing domain modules.
+Double factorization uses the `double_factorization_*` composition and model
+owners. Hubbard preparation, selection and walk use `hubbard_prepare.py`,
+`hubbard_select.py` and `hubbard_walk.py`. Shared traversal, phase conjunction
+and workspace allocation remain in Compiler. External SDK objects are translated
+at Ecosystem before native execution.
+
+The license-only chemistry and DF initializers and the empty Hubbard root have
+no executable behavior to duplicate. Their complete disposition and the five
+Hubbard-qubitization exports still requiring direct consumer closure are recorded
+in `docs/development/CHEMISTRY_PACKAGE_ENTRY_AUDIT.md`. Existing Hubbard use starts
+with `HubbardWalk.from_lattice(2, 1, 2)`, binds `walk.layout` and `walk.requirements()`
+through `make_on`, then uses `circuit.append(op)` on a `DynamicCircuit`. The full
+runnable workflow is in `tests/unit/test_hubbard_walk.py`. Run that file with
+`test_hubbard_prepare.py`, `test_hubbard_select.py` and
+`test_hubbard_notebook_resources.py` when changing those owners.
