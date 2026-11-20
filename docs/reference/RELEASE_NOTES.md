@@ -27,6 +27,27 @@ Benchmark claims require audited artifacts and are not inferred from this file.
   a workload-level performance improvement. See the
   [approved proposal](../api-changes/FQ-COMPILER-AUTO-ROUTING-20261118.md).
 
+- Qualifying target compilation now automatically collects static numeric
+  two-qubit blocks and accepts re-synthesis only when it strictly reduces full
+  CZ count and passes complete block-operator verification up to global phase.
+  The initial profile requires parameterized RX/RZ and full CZ as the sole
+  native two-qubit entangler, absent or undirected unallocated topology, and
+  identity input/output placement. Symbolic and trainable instructions remain
+  collection boundaries. The appended `native_block_optimization` result retains
+  the per-instruction native baseline, accepted rewrites and rejection counts.
+  Qualifying rewrites can change instructions, schedules, hashes, compilation
+  time and memory; fewer CZ gates do not establish improvement in other metrics.
+
+  Accepted collective rewrites emit physical-plan and compilation-evidence
+  version `4.0` with many-to-many ancestry. Consumers accepting these artifacts
+  must add the strict v4 reader while retaining v1-v3 readers and their existing
+  identity semantics; older readers reject v4. Programs without an accepted
+  rewrite retain the existing evidence format and identities. Artifact envelopes
+  retain their current versions. The equivalence phase is an evidence witness,
+  not a phase written to IR. Release qualification and assignment of the first
+  release emitting v4 remain pending release-owner review. See the
+  [approved profile and migration](../api-changes/FQ-COMPILER-CZ-BLOCK-LINEAGE-20261118.md).
+
 - Add an approved candidate `write_shot_data_file` entry for caller-owned CPU
   bool and packed uint8 shot tables in six Stim 1.16.0 formats. It reuses the
   existing SDK or embedded source closure, validates a bounded owned copy, and

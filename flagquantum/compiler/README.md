@@ -97,7 +97,7 @@ The private hybrid stages also have explicit implementation owners.
 | `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](_hybrid/specialize.py) |
 | `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](_hybrid/runtime_inputs.py), with direct aliases at the old path |
 | `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
-| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic_lowering.py](_hybrid/dynamic_lowering.py) |
+| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
 
 The [hybrid contributor guide](_hybrid/README.md#input-validation-and-specialization-ownership)
 describes the shared input boundary and its local accepted/rejected workflow.
@@ -258,6 +258,8 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py) |
+| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](_hybrid/dynamic/expressions.py) |
 | Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
 | QIR base-profile emission | [qir.py](formats/qir.py) |
 
