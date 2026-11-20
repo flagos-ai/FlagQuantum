@@ -467,3 +467,8 @@ Component summaries use `format_component_summary` from
 `flagquantum.drawer.component_debug_text`. For `parallel_program()` the result
 is `ComponentProgram([5 components...])`. The count describes the selected
 function body before expansion and counts repeated calls separately.
+
+`arithmetic_symbols.py` supplies multiplication formula labels to the existing
+register-score layout. It owns labels and lifetime arrows while Compiler owns
+the arithmetic. The complete eight-class source geometry comparisons are in
+`tests/unit/test_multiplication_foreign_file.py`.
