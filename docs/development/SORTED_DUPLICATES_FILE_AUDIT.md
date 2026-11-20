@@ -119,3 +119,63 @@ quantum bits. The new Program uses twelve fresh SSA measurement slots. Logical
 source Clifford categories and expanded primitive CX remain separate.
 Ownership returns every temporary allocation, while physical cleanup assertions
 remain restricted to source-valid erasure paths.
+
+## Actual foreign library and SDK consumers (2026-11-20)
+
+The complete eleven-definition source inventory and its HalfLT, MCX, classical,
+resource, direct graph and original notebook evidence are reused. The three
+actual source factories now pass foreign-library checks in unsigned/signed and
+controlled/uncontrolled forms. Concrete length/width and symbolic word-width
+libraries retain exact deterministic bytes at depths zero, one and two. Explicit
+native factories resolve all concrete roots into the existing stored duplicate
+owner, with exact physical circuit and output aliases. Symbolic word widths
+resolve declarations and retain physical-width refusal.
+
+The original symbolic-length factory serializes only at depth zero. At larger
+depths its unchanged serializer rejects HasLength(l-1). Native root resolution
+also retains the existing symbolic array-extent rejection before binding.
+Proposal 103 prerequisite 1.20 explicitly keeps those extents unindexable.
+Neither failure is represented as successful executable admission. Q-0201.07
+remains open with these exact two boundaries.
+
+For two unsigned words of widths one, two and three, both control modes import
+through the current typed SDK path. This SDK interface returns fixed physical
+output ports, whereas the Bloq interface returns exchanged word aliases. SDK
+primitive CCX is retained when the upstream SDK emits it. Independent untouched
+SDK decomposition uses the existing workspace manager only to reserve live
+sibling operands, retaining every original decomposition method. The comparison
+matches complete temporary-wire histories and then checks every wire's ordered
+gates, every operand, all measurement feedback metadata and total primitives.
+Temporary names and independent global scheduling order may differ. The original
+Bloq graph remains independently covered by its existing exact source walk.
+
+Widths one and two additionally preserve all valid sorted input superpositions,
+dirty flag, both control inputs and an entangled spectator through every raw
+measurement history. Unnormalized branch amplitudes match the oracle and every
+allocated work bit returns to zero. Source alias-defective and invalid-erasure
+paths retain their previous witnesses. This batch adds no production owner.
+
+Both signed SDK widths one and two fail in the original SignExtend Cirq wrapper
+with a wrong-qubit-count ValueError. The untouched source alone reproduces the
+same failure before native import, in both control modes. Native stored signed
+execution retains its earlier source-graph, complex-branch and cleanup evidence.
+The source was not modified to supply a successful SDK reference.
+
+Resources are recorded per execution route. For two one-bit unsigned words,
+SDK primitives contain 23 CX, 13 X, three H, two T, two T-dagger, one S,
+one measurement, one feedback CZ and one reset. Controlled SDK has twelve X and
+one additional atomic CCX, with the same four explicit T gates and one
+measurement. Both SDK routes allocate six clean work bits. Independent source
+models report one versus two And, one versus two measurements and peak seven
+versus eight logical qubits. These source-model categories and the Bloq route's
+existing measured costs are separate from SDK primitives and allocation. All
+six SDK width/control cases contain zero matrix atoms. Full receipts are in
+`g2-duplicates-foreign-resources.json` in the external reference directory.
+
+Validation passed 799 concentrated cases and 17 local integration cases without
+skips or warnings, plus 22 focused cases in both Cirq 1.7 and 1.6.1 lanes. The
+unchanged complete source test file reports 22 passed, three source fixture
+skips, one source xfail and two unknown-slow-marker warnings. Changed Python
+passes strict mypy, Black and Ruff, with Compiler scope, architecture, multilevel
+IR and protected API checks. Parent Q-0201/Q-0202 remain open for the explicitly
+retained source failures and symbolic-length execution boundary.
