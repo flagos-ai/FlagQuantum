@@ -10,7 +10,10 @@ from dataclasses import replace
 from functools import partial
 from typing import Any
 
-from ...compiler.formats.legacy_component_arguments import ComponentArgument
+from ...compiler.formats.legacy_component_arguments import (
+    ComponentArgument,
+    ComponentReference,
+)
 from ...compiler.formats.legacy_component_library import (
     ComponentDeclaration,
     ComponentLibrary,
@@ -102,7 +105,11 @@ def import_register_graph(source: object) -> ProgramRecord:
     """
     from qualtran import Bloq, CompositeBloq, QMontgomeryUInt
     from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.serialization.bloq import bloqs_to_proto
+    from qualtran.serialization.bloq import (
+        _assign_bloq_an_id,
+        _search_for_subbloqs,
+        bloqs_to_proto,
+    )
 
     if not isinstance(source, Bloq):
         raise TypeError("Register graph import requires a live typed component")
@@ -112,17 +119,19 @@ def import_register_graph(source: object) -> ProgramRecord:
     library = deserialize_component_library(
         bloqs_to_proto(graph, max_depth=1, pred=lambda _: False).SerializeToString()
     )
-    # Shallow declarations identify live leaves without importing constructors
-    # named by serialized text. Values come only from this caller's live graph.
+    # Use the same unchanged discovery as serialization so constructor child
+    # IDs belong to this complete live graph, not separately numbered leaves.
+    source_ids: dict[Any, tuple[int, bool]] = {}
+    _assign_bloq_an_id(graph, source_ids, shallow=True)
+    _search_for_subbloqs(graph, source_ids, lambda _: False, 1)
+    entries = {entry.identifier: entry for entry in library.entries}
+    if {identifier for identifier, _ in source_ids.values()} != set(entries):
+        raise ValueError("Live graph discovery differs from serialized definitions")
     leaves: dict[str, list[tuple[ComponentDeclaration, Any]]] = {}
-    for leaf in dict.fromkeys(instance.bloq for instance in graph.bloq_instances):
-        declaration = (
-            deserialize_component_library(
-                bloqs_to_proto(leaf, max_depth=0).SerializeToString()
-            )
-            .entries[0]
-            .declaration
-        )
+    for leaf, (identifier, _) in source_ids.items():
+        if leaf is graph:
+            continue
+        declaration = entries[identifier].declaration
         candidates = leaves.setdefault(declaration.name, [])
         duplicates = [
             existing_leaf
@@ -153,24 +162,35 @@ def import_register_graph(source: object) -> ProgramRecord:
     ) -> FunctionRecord | ProgramRecord:
         if registers is None:
             raise ValueError("Register graph leaves require typed declarations")
-        constructor_arguments = tuple(
-            ComponentArgument(key, value)
-            for key, value in arguments.items()
-            if not isinstance(value, FunctionRecord)
-        )
-        matches = [
-            leaf
-            for declaration, leaf in leaves[source_name]
-            if _declaration_key(declaration)
-            == _declaration_key(
-                replace(
-                    declaration,
-                    registers=registers,
-                    arguments=constructor_arguments,
-                )
-            )
-            and len(constructor_arguments) == len(arguments)
-        ]
+        matches = []
+        for declaration, leaf in leaves[source_name]:
+            constructor_arguments = []
+            if set(arguments) != {arg.name for arg in declaration.arguments}:
+                continue
+            for argument in declaration.arguments:
+                value = arguments[argument.name]
+                expected = argument.value
+                if isinstance(expected, ComponentReference):
+                    if not isinstance(value, FunctionRecord) or value.name != (
+                        f"legacy_component_{expected.identifier}"
+                    ):
+                        break
+                    constructor_arguments.append(argument)
+                else:
+                    if isinstance(value, FunctionRecord):
+                        break
+                    constructor_arguments.append(
+                        ComponentArgument(argument.name, value)
+                    )
+            else:
+                if _declaration_key(declaration) == _declaration_key(
+                    replace(
+                        declaration,
+                        registers=registers,
+                        arguments=tuple(constructor_arguments),
+                    )
+                ):
+                    matches.append(leaf)
         if len(matches) != 1:
             raise ValueError(
                 "Register graph leaf needs an unambiguous live declaration"
