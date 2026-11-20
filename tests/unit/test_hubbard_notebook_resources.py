@@ -229,4 +229,14 @@ def test_source_majorana_count_gap_is_the_controlled_y_leaf(side, controlled):
     ]
     declared = Counter(source.bloq_counts(generalizer=generalizer))
     decomposed = Counter(source.decompose_bloq().bloq_counts(generalizer=generalizer))
-    assert decomposed == declared + Counter({CirqGateAsBloq(cirq.CY): 2 * side**2})
+    controlled_y = CirqGateAsBloq(cirq.Y.controlled())
+    assert cirq.has_stabilizer_effect(controlled_y.gate)
+    assert type(controlled_y.gate).__name__ in ("ControlledGate", "CYPowGate")
+    # Cirq 1.6 represents CY with a wrapper recognized by the frozen classifier.
+    # Cirq 1.7 introduces CYPowGate, which that classifier does not recognize.
+    residual = (
+        Counter()
+        if isinstance(controlled_y.gate, cirq.ControlledGate)
+        else Counter({controlled_y: 2 * side**2})
+    )
+    assert decomposed == declared + residual
