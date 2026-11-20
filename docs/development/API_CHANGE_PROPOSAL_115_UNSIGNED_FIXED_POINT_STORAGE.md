@@ -8,6 +8,9 @@ unsigned single-bit storage, with a built-in integer fractional width at most
 one. This approved proposal extends the physical storage contract for wider unsigned
 words required by the complete multiplication source signatures.
 
+Implementation and acceptance evidence are recorded in
+UNSIGNED_FIXED_POINT_STORAGE_AUDIT.md.
+
 ## Requirement and evidence
 
 The immutable Qualtran v0.7.0 revision is

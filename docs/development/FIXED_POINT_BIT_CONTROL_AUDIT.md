@@ -117,3 +117,12 @@ zero skips. Local integration passes 17 checks. The 18 added matrix/scalar
 metadata cases were added after broad collection and are included in the final
 176 focused checks. All results use the `g2-negative-fraction-control-` receipt
 prefix.
+
+## Approved wider storage dependency, November 20, 2026
+
+Proposal 115 supersedes the earlier wider unsigned storage refusals recorded
+above. Canonical unsigned fixed-point quantum words now bind at positive concrete
+widths with fractional width at most the word width. Multi-bit fixed-point
+control remains refused by an explicit Compiler predicate guard. Signed,
+symbolic and malformed storage refusals remain applicable. Full acceptance and
+resource separation appear in UNSIGNED_FIXED_POINT_STORAGE_AUDIT.md.

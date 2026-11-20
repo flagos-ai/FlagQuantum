@@ -150,3 +150,16 @@ Q-0208/Q-0209 remain open for the fixed-point and reciprocal executable contract
 differences and generic foreign construction, drawing, rebinding and
 serialization recorded above. The next closure must inventory those complete
 remaining definitions before introducing further arithmetic dependencies.
+
+## Approved unsigned fixed-point storage, November 20, 2026
+
+Proposal 115 closes the physical storage admission dependency of the four
+fixed-point signatures. Canonical multi-bit unsigned QFxp words now preserve
+nominal type, fractional metadata, MSB raw bits, shaped views and owned
+RIGHT/LEFT storage through physical binding. Shared Add and its exact inverse
+execute with full complex-state, all small-history and zero-work checks.
+Compiler retains wider fixed-point predicate refusal explicitly. See
+UNSIGNED_FIXED_POINT_STORAGE_AUDIT.md for evidence and separate observed/model
+counts. This dependency leaves SquareRealNumber's unused b port,
+InvertRealNumber's mixed THRU output scaling and the remaining generic foreign
+interfaces open. Original missing root decompositions remain recorded.
