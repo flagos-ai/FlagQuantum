@@ -3,13 +3,9 @@
 This package is intentionally absent from :mod:`flagquantum.compiler` exports.
 """
 
-from .capture import (
-    CaptureDiagnostic,
-    HybridCaptureError,
-    capture_function,
-    capture_source,
-)
 from .dynamic_lowering import LoweredDynamicProgram, lower_dynamic_program
+from .frontend.diagnostics import CaptureDiagnostic, HybridCaptureError
+from .frontend.source import capture_function, capture_source
 from .lowering import (
     CircuitStructureCache,
     LoweredHybridProgram,

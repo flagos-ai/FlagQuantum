@@ -29,8 +29,8 @@ models, or runtime contracts here.
    ```
 
 The first golden scenario is nested tensor-indexed loops with data-dependent
-RX/RY selection, a CX loop, and a scalar expectation. `capture.py` parses the
-restricted Python source into that representation without invoking the function
+RX/RY selection, a CX loop, and a scalar expectation. The
+[Python capture frontend](frontend/README.md) parses the restricted Python source into that representation without invoking the function
 or reading tensor values. It remains compilation only and does not execute the
 program.
 
