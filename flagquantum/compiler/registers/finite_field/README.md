@@ -66,8 +66,10 @@ explicit in the square audit. To bind, execute and restore a complete word, run
 
 `polynomial_addition_component.py` composes the existing typed coefficient views
 and field-addition calls, preserving highest-degree-first order and literal
-source adjoints. Packed words use the existing opaque view. Dedicated packed
-polynomial descriptor admission stays separate. The internal field constant
+source adjoints. An explicit `packed_dtype` retains the canonical quantum
+binary-polynomial descriptor approved by Proposal 109. The default keeps its
+existing opaque view. Both routes share the same coefficient split/join owner.
+The internal field constant
 adder's `adjoint=True` reverses X calls, while quantum field XOR retains its
 self-adjoint bit order. Run
 `python -m examples.algorithms.register_field_polynomial_addition` and

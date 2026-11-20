@@ -258,3 +258,69 @@ execution chain without claiming full parent or whole-repository acceptance.
 
 Five direct frozen source blobs match. The final dependency scan reports 688
 existing repository findings and zero batch findings.
+
+## Approved typed packed ports and complete view dependency closure
+
+The user approved Proposal 109 on 2026-11-20. Contract commit `652250cdc`
+precedes Core commit `b7c8cfcdd`. The complete frozen split/join source still has
+two classes with nine methods each, two factories and their DocSpecs. The
+persistent inventory in `g2-packed-field-polynomial-evidence.json` retains all
+members and six original source/test blobs. The full definition dispositions
+above remain applicable. Existing value, tensor, drawing, factory, notebook,
+atomic-decomposition and source model evidence is reused.
+
+Core now admits the existing concrete quantum `finite_field_polynomial`
+descriptor. Its first parameter is a built-in nonnegative polynomial degree.
+All remaining parameters pass the existing canonical executable binary-field
+validator, including optional complete nominal polynomial identity. The packed
+quantum width equals coefficient width times degree plus one, and classical
+width is zero. Canonical scalar, shaped, empty-array, split/join and linear
+ownership paths reuse Program's existing verifier. Classical polynomial storage,
+nonbinary fields and unresolved symbolic physical widths remain separate domains.
+
+Compiler adds the explicit `packed_dtype` argument to its existing view and
+addition graph builders. The descriptor must exactly match the supplied field
+and layout. The opaque default retains the exact stored Program representation,
+bound CircuitIR JSON, content hash and output aliases captured before the change.
+The typed route stores actual calls to the same split/join and field-addition
+children. Existing Cast and control callbacks preserve typed arrays, control
+handles and output aliases. The caller continues `circuit.append(op)` through
+`examples.algorithms.register_field_polynomial_addition`. Numerical codecs and
+foreign metadata projection retain their existing owners.
+
+The complete typed and opaque addition suites compare the original forward and
+adjoint primitive order, operands, output aliases and resource models. Full
+complex states include a populated spectator and a clean unused wire, and the
+source-specific inverse restores every amplitude. Register and constant addition
+use both directions. Gate-free views create zero primitives, work allocations,
+measurements and classical slots. The empty physical program still needs a
+caller-provided spare wire at binding, preserving the existing binder contract.
+
+| Concrete account | Emitted primitives | Independent frozen source model | Quantum ownership |
+| --- | --- | --- | --- |
+| Typed split or join | 0 | All categories 0 | Aliased packed/coefficient bits, zero scratch |
+| Degree-four GF(8) register add | 15 CX | 15 Clifford | 30 operand bits, zero scratch |
+| Degree-four GF(8) constant 7 | 3 X | 3 Clifford | 15 operand bits, zero scratch |
+
+The concentrated field, polynomial, native Kickmix, classical-word and type
+compatibility lane passes 2,357 cases without skips. The final focused lane
+passes 226 cases, including two additional typed control callback cases. The
+17 local integration cases, strict typing of nine files, Black, Ruff, team
+scopes, architecture, multi-level IR and public API checks pass. Qualtran 0.7.0,
+Kickmix 0.1 and its native Simulator are verified. The dependency scan retains
+687 whole-repository findings with zero changed-path findings.
+
+A supplemental wider diagnostic lane initially reported eight failures. Four
+were polynomial admission expectations superseded by the explicitly approved
+contract and are updated with positive binary-quantum and negative
+classical/nonbinary assertions. Four generic logical/partition expectations also
+fail against the exact pre-batch `961c4eee9` verifier functions. The baseline
+receipt records four failures and 36 passes. These existing unrelated tests are
+retained and excluded from the concentrated acceptance lane. This acceptance
+does not certify a green whole-repository test suite.
+
+This closes the concrete binary packed-port dependency of the full view file
+and both addition consumers. Generic foreign construction, connection-level
+tensor wrappers, symbolic/nonbinary execution and original autotester/serialization
+boundaries remain registered under Q-0527/Q-0529/Q-0533 and their test parents.
+Original count omissions and source defects remain in their existing accounts.

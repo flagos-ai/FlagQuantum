@@ -8,6 +8,12 @@ polynomial admission and typed binding described below. Proposal 108 separately
 approves classical integer words. Contract, Core and Compiler commits remain
 separated by ownership.
 
+The approved concrete scope is implemented. Its machine contract is
+`contracts/packed-field-polynomial-contract.toml`. Exact pre-extension opaque
+payloads remain captured in `tests/fixtures/packed_field_polynomial_compatibility.json`.
+The whole-file acceptance and retained boundaries are recorded in
+`FIELD_POLYNOMIAL_FILE_AUDIT.md`.
+
 ## Verified requirement
 
 The complete frozen Qualtran v0.7.0 GFPolySplit/GFPolyJoin file uses QGFPoly
