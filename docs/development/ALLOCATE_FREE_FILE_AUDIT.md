@@ -11,7 +11,7 @@ Reference: Qualtran v0.7.0 at
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
 | Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for external object hooks, full executable dtype and symbolic component drawing. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
-| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | All ten descendants verified on admitted concrete paths. Generic descriptors remain open. |
+| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Complete base control protocol accepted in 6d6460528; see BOOKKEEPING_CONTROL_FILE_AUDIT.md. |
 
 ## Lifetime, bit order and ownership
 
@@ -87,3 +87,48 @@ the original atomic decomposition, call-graph comparison and type checking.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_allocate_free.ipynb
 ```
+
+## Complete foreign factory and lifetime-body consumers
+
+The actual `_alloc` and `_free` examples serialize and deserialize unchanged at
+library depths zero, one and two. Their symbolic signatures resolve through the
+existing native library resolver and existing `allocate_word_function` and
+`free_word_function` bodies. Symbolic lifetime operations are valid logical IR;
+the physical binder rejects unresolved executable widths. No surrogate
+reference implementation or additional declaration type is required.
+
+Concrete Allocate/Free roots round-trip the original wire format and resolve to
+those same owners for QBit, QAny, QUInt, QInt, QFxp, QIntOnesComp, BQUInt and
+QMontgomeryUInt. Both clean and dirty flags preserve their serialized value and
+native exact boolean. Composition calls each leaf once, allocates and releases
+the same reversed pool wires, and emits zero primitives or measurements. Clean
+storage starts at zero and dirty storage retains an arbitrary complete complex
+state entangled with a spectator through `circuit.append(op)`. The original
+zero-initialized classical callback and original zero-gate/qubit-count models
+are queried separately. The spectator increases caller capacity by one wire.
+
+The original serializer rejects QGF and QGFPoly before producing a wire-format
+library. These exact source TypeErrors are asserted independently. Approved
+native binary-field lifetime behavior continues to use its earlier typed
+execution evidence; this batch makes no successful original-wire claim for those
+dtypes. It adds no new production owner or third-party adapter.
+
+Q-0311 and Q-0323 remain open for complete executable dtype admission, direct SDK
+lifetime hooks and symbolic component drawing. Signed and empty fixed-point
+storage still awaits Proposal 116. Generic classical and nonbinary physical
+lifetime semantics remain with their existing descriptor/execution owners.
+Source PennyLane `None` hooks and qubit-manager events retain their earlier
+observations, with direct foreign-object adapters still explicitly open.
+
+## Regression disposition
+
+The focused foreign profile passes 26 cases. An expanded consumer regression
+reports 1653 passes and ten failures. Eight compare mixed-lifetime event order
+and two expect an omitted-selector refusal. All ten reproduce with the
+pre-batch `9f03b3b11` bookkeeping control owner loaded before test collection;
+every other production file is unchanged between that baseline and this batch.
+The baseline run is retained in
+`g2-workspace-foreign-baseline-failures.log`. These inherited discrepancies stay
+open, and the expanded run is recorded as a failing run. The bounded directly
+owned lifetime regression is reported separately. No failing test or production
+behavior is weakened to close these parents.
