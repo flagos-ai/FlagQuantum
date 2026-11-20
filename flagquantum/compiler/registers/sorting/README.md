@@ -68,3 +68,11 @@ including complete unknown cycle shapes. Dense and partial conversion reuse
 Run `tests/unit/test_permutation_declaration.py` and
 `tests/unit/test_permutation_foreign_file.py` for factory, source serialization,
 typed SDK, complete complex amplitude and clean-work evidence.
+
+`bitonic_declaration.py` owns generic merge/sort signatures, symbolic histories
+and source direct models. It delegates finite forward and inverse conversion to
+the existing merge/sort component owners. The source catalogue consumes these
+same declarations. Merge uses LEFT input arrays and RIGHT result/history, while
+sort uses THRU words and RIGHT history. Run the sorting declaration and foreign
+consumer tests for the shortest checks, and see `SORTING_FILE_AUDIT.md` for the
+original direct SDK merge wrapper failure and its composite conversion evidence.
