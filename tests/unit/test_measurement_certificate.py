@@ -99,9 +99,9 @@ def test_broken_predicates_cleanliness_and_feedback_cannot_be_certified(
     mutation: str,
 ) -> None:
     compute, erase = and_compute_ir(0, 1, 2), and_uncompute_ir(0, 1, 2, 0)
-    prefix = ()
-    middle = ()
-    suffix = ()
+    prefix: tuple[Instruction, ...] = ()
+    middle: tuple[Instruction, ...] = ()
+    suffix: tuple[Instruction, ...] = ()
     if mutation == "control":
         middle = (Instruction("x", (0,)),)
     if mutation == "target":
@@ -124,9 +124,9 @@ def test_broken_predicates_cleanliness_and_feedback_cannot_be_certified(
 
 def test_matrix_support_preserves_control_and_does_not_round_tiny_transitions() -> None:
     compute, erase = and_compute_ir(0, 1, 2), and_uncompute_ir(0, 1, 2, 0)
-    controlled = torch.block_diag(
-        torch.eye(2, dtype=torch.complex128),
-        torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / (2**0.5),
+    controlled = torch.eye(4, dtype=torch.complex128)
+    controlled[2:, 2:] = torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / (
+        2**0.5
     )
     for middle in (
         Instruction("ch", (2, 3)),
@@ -189,3 +189,39 @@ def test_boolean_support_canonical_parity_and_product_match_complete_truth_table
             variable, low, high = support.nodes[node]
             node = high if values[variable] else low
         assert node == (values[0] & (values[1] ^ values[2]))
+
+
+def test_controlled_y_support_preserves_exact_phase_and_all_erasure_branches() -> None:
+    compute, erase = and_compute_ir(0, 1, 2), and_uncompute_ir(0, 1, 2, 0)
+    gates = (*compute, Instruction("cy", (2, 3)), *erase)
+    assert certify_erasure_histories(gates, n_wires=4, zero_wires=(2,)) == 1
+    state = torch.zeros((4, 2, 2), dtype=torch.complex128)
+    state[:, 0, :] = torch.tensor(
+        [[1, 1j], [2j, -1], [3, 2 - 1j], [1 - 2j, 2]], dtype=state.dtype
+    )
+    initial = state.flatten() / state.norm()
+    expected = state.clone()
+    expected[3, 0, 0] = -1j * state[3, 0, 1]
+    expected[3, 0, 1] = 1j * state[3, 0, 0]
+    expected = expected.flatten() / state.norm()
+    for outcome in (0, 1):
+        torch.testing.assert_close(
+            forced_branch(initial, gates, (outcome,)),
+            expected / (2**0.5),
+            atol=2e-14,
+            rtol=0,
+        )
+    # A CY that changes an erasure control invalidates the restored predicate.
+    with pytest.raises(AssertionError, match="predicate"):
+        certify_erasure_histories(
+            (*compute, Instruction("cy", (3, 0)), *erase),
+            n_wires=4,
+            zero_wires=(2,),
+        )
+    # A CY after erasure cannot certify a clean target unless it is restored.
+    with pytest.raises(AssertionError, match="restore every declared clean wire"):
+        certify_erasure_histories(
+            (*compute, *erase, Instruction("cy", (0, 2))),
+            n_wires=3,
+            zero_wires=(2,),
+        )

@@ -37,7 +37,7 @@ def _layout(registers: Any) -> tuple[tuple[str, int], ...]:
 def _bind_children(
     source: Any,
 ) -> tuple[LCUBlockEncoding, CircuitRegisterEmitter, CircuitRegisterEmitter]:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     local = tuple(reg for reg in source.prepare.junk_registers if reg.side.value == 2)
     through = tuple(reg for reg in source.prepare.junk_registers if reg.side.value == 3)
@@ -140,8 +140,9 @@ def test_actual_hubbard_children_replace_lcu_consumers_and_clean_all_histories(
     assert len(work) == 8  # Complete exported-frame liveness reserves two extra names.
     counts = Counter(g.name for g in ir.instructions)
     assert counts["t"] + counts["tdg"] == (540 if control is None else 552)
+    assert counts["cy"] == 18
     assert len(ir.instructions) == (
-        2526 if control is None else 2578 if control == 0 else 2576
+        2490 if control is None else 2542 if control == 0 else 2540
     )
     assert CircuitIR.from_json(ir.to_json()).to_json() == ir.to_json()
     # Capture is over: the existing native consumer emits from owned JSON only.
@@ -186,7 +187,8 @@ def test_actual_select_keeps_nonidentity_native_signal_and_excludes_prepare_junk
         )
         == 40
     )
-    assert len(ir.instructions) == 1134
+    assert sum(g.name == "cy" for g in ir.instructions) == 18
+    assert len(ir.instructions) == 1098
 
 
 @pytest.mark.parametrize("control", (None, 0, 1))
@@ -196,8 +198,11 @@ def test_named_children_full_operator_and_complex_state_for_every_small_history(
 ) -> None:
     import cirq
     from attrs import frozen
-    from qualtran import QBit, Register
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.s_gate import SGate
     from qualtran.bloqs.block_encoding.lcu_block_encoding import (
         LCUBlockEncoding as SourceLCU,
     )
@@ -220,9 +225,8 @@ def test_named_children_full_operator_and_complex_state_for_every_small_history(
         def l1_norm_of_coeffs(self) -> float:
             return 3.0
 
-        def build_composite_bloq(
-            self, bb: Any, selection: Any, junk: Any
-        ) -> dict[str, Any]:
+        def build_composite_bloq(self, bb: Any, **soqs: Any) -> dict[str, Any]:
+            selection, junk = soqs["selection"], soqs["junk"]
             wires = bb.split(selection)
             wires[0] = bb.add(Hadamard(), q=wires[0])
             wires[0] = bb.add(SGate(), q=wires[0])
@@ -275,8 +279,9 @@ def test_named_children_full_operator_and_complex_state_for_every_small_history(
 def test_emitter_admission_and_binding_are_owned_and_exact() -> None:
     from types import SimpleNamespace
 
-    from qualtran import QBit, Register, Side, Signature
-    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register, Side, Signature
+    from qualtran.bloqs.basic_gates.cnot import CNOT
 
     external = import_register_emitter(CNOT())
     assert external.layout == (("ctrl", 1), ("target", 1))
@@ -290,7 +295,8 @@ def test_emitter_admission_and_binding_are_owned_and_exact() -> None:
         with pytest.raises(ValueError):
             external(ports, (), (), False)
     with pytest.raises(ValueError, match="Boolean"):
-        external({"ctrl": (2,), "target": (4,)}, (), (), 1)
+        malformed_direction: dict[str, Any] = {"adjoint": 1}
+        external({"ctrl": (2,), "target": (4,)}, (), (), **malformed_direction)
     with pytest.raises(ValueError, match="through ports"):
         import_register_emitter(
             SimpleNamespace(
@@ -304,7 +310,8 @@ def test_emitter_admission_and_binding_are_owned_and_exact() -> None:
 
         replace(external, layout=(("q", Symbol("n")),))
     with pytest.raises(ValueError, match="directional"):
-        replace(external, snapshots=external.snapshots[:1])
+        malformed_snapshots: dict[str, Any] = {"snapshots": external.snapshots[:1]}
+        replace(external, **malformed_snapshots)
     with pytest.raises(ValueError, match="nonnegative"):
         replace(external, binding_swaps=(-1, 0))
     with pytest.raises(ValueError, match="declared work"):
@@ -324,7 +331,7 @@ def test_original_hubbard_composed_providers_full_sparse_complex_output(
         _black_box_lcu_block,
         _lcu_block,
     )
-    from qualtran.cirq_interop import BloqAsCirqGate
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
     from tests.unit.test_hubbard_hamiltonian_gqsp import (
         _modadd_leaf,

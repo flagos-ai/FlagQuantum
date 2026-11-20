@@ -77,12 +77,15 @@ def test_actual_original_named_and_packed_roots_all_measurement_histories(
         assert (
             len(work) == 8
         )  # Complete exported-frame liveness reserves two extra names.
+        # Both admitted source CY representations lower to one native CY.
+        # Eighteen Sdg/CX/S expansions would add thirty-six instructions.
+        assert sum(g.name == "cy" for g in ir.instructions) == 18
         assert (
             len(ir.instructions)
             == {
-                "lcu": 2526,
-                "lcu_zero": 2578,
-                "lcu_one": 2576,
+                "lcu": 2490,
+                "lcu_zero": 2542,
+                "lcu_one": 2540,
             }[mode]
         )
         assert sum(g.name in {"t", "tdg"} for g in ir.instructions) == (

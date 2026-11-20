@@ -337,3 +337,22 @@ pytest -q tests/unit/test_lcu_sided_junk.py tests/unit/test_prepare_oracle_file.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_lcu_block_encoding.ipynb
 ```
+
+## Controlled-Y dependency representations
+
+The complete actual named and packed LCU factory captures are verified against
+both installed Cirq profiles. Cirq 1.6 supplies ControlledGate(Y), while Cirq 1.7
+supplies CYPowGate. The existing owned importer lowers both to native CY.
+Each actual LCU root contains eighteen such operations. Physical instruction
+counts are 2490 without control, 2542 with zero control and 2540 with positive
+control, thirty-six below historical Sdg/CX/S-expanded expectations. The
+standalone SELECT consumer has eighteen CY and 1098 physical instructions,
+thirty-six below its historical expectation. Erasure-event, T and clean-work obligations
+are independently retained.
+
+The shared erasure certificate accepts CY's Boolean target XOR control update.
+An independent full complex-state check verifies its imaginary phase in both
+measurement outcomes. Changed erasure controls and dirty returned work remain
+rejected. The previous snapshot implementation reproduces the earlier CY
+certificate failure, separating this pre-existing verification issue from the
+field-factory output-alias repair. Original QEC declarations remain separate.

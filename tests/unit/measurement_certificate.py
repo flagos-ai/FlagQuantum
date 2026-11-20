@@ -210,7 +210,7 @@ def certify_erasure_histories(
             values[right] = support.xor(values[right], exchanged)
         elif gate.name in {"x", "y"}:
             values[gate.wires[0]] = support.xor(values[gate.wires[0]], ONE)
-        elif gate.name == "cx":
+        elif gate.name in {"cx", "cy"}:
             control, target = gate.wires
             values[target] = support.xor(values[target], values[control])
         elif gate.name == "ccx":
