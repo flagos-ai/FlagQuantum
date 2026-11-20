@@ -260,6 +260,12 @@ def _eigen_phase_operations(cirq: Any, operations: Iterable[Any]) -> Iterable[An
             controls = tuple(operation.qubits[: gate.num_controls()])
             control_values = gate.control_values
             gate = gate.sub_gate
+        if len(controls) > 2:
+            # Larger controlled rotations have no native scalar leaf. Preserve
+            # the SDK decomposition before factoring phases, otherwise its
+            # canonical rotation decomposition can normalize back to itself.
+            yield original
+            continue
         if (
             not isinstance(
                 gate,
