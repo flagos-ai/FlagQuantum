@@ -73,6 +73,14 @@ def gf2_monomial_multiplication(
     return FieldDecomposition(tuple(emitter.instructions), (result[::-1],), ())
 
 
+def _frobenius_matrix(width: int, count: int, modulus: int) -> list[list[int]]:
+    """Build the polynomial-coefficient matrix shared by graph and gate owners."""
+    columns = [1 << i for i in range(width)]
+    for _ in range(count % width):
+        columns = [_product(value, value, modulus) for value in columns]
+    return [[(columns[j] >> i) & 1 for j in range(width)] for i in range(width)]
+
+
 def _square(
     emitter: _FieldEmitter,
     qubits: tuple[int, ...],
@@ -81,11 +89,7 @@ def _square(
     adjoint: bool = False,
 ) -> tuple[int, ...]:
     """Apply a Frobenius power using the shared PLU emitter."""
-    n = len(qubits)
-    columns = [1 << i for i in range(n)]
-    for _ in range(count % n):
-        columns = [_product(value, value, emitter.modulus) for value in columns]
-    matrix = [[(columns[j] >> i) & 1 for j in range(n)] for i in range(n)]
+    matrix = _frobenius_matrix(len(qubits), count, emitter.modulus)
     start = len(emitter.instructions)
     result = emitter.linear(qubits[::-1], matrix)[::-1]
     if not adjoint:
