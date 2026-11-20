@@ -2,10 +2,11 @@
 
 ## Review status
 
-Pending explicit user approval. This proposal changes protected Program type
-admission. Proposal 108 approves classical integer words and does not approve
-this separate quantum polynomial encoding. No implementation is authorized by
-this draft.
+Approved explicitly by the user on 2026-11-20 with the instruction
+“批准，按 Proposal 109 实施”. The approved scope is the concrete quantum binary
+polynomial admission and typed binding described below. Proposal 108 separately
+approves classical integer words. Contract, Core and Compiler commits remain
+separated by ownership.
 
 ## Verified requirement
 

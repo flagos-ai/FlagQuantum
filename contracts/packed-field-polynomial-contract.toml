@@ -1,0 +1,35 @@
+schema = "flagquantum.packed_field_polynomial_contract"
+version = "1.0"
+proposal = "docs/development/API_CHANGE_PROPOSAL_109_PACKED_FIELD_POLYNOMIAL.md"
+approval = "explicit_user_approval_2026-11-20"
+implementation_status = "approved_contract"
+owner = "core"
+public_methods_added = []
+
+[admission]
+encoding = "finite_field_polynomial"
+storage = "quantum"
+polynomial_degree = "concrete_nonnegative_builtin_integer"
+coefficient = "existing_canonical_executable_binary_field"
+quantum_width = "(polynomial_degree + 1) * coefficient_degree"
+classical_width = 0
+parameters = "polynomial_degree_then_canonical_coefficient_parameters"
+symbolic_nonbinary_classical = "separate_admission"
+
+[binding]
+operations = ["split_register", "join_register", "cast_register", "call"]
+coefficient_order = "highest_degree_first"
+bit_order = "MSB_first"
+array_order = "row_major"
+ownership = "existing_linear_handles_and_output_aliases"
+view_primitives = 0
+view_work = 0
+view_classical_slots = 0
+user_entry = "circuit.append(op)"
+
+[compatibility]
+fixture = "tests/fixtures/packed_field_polynomial_compatibility.json"
+opaque_default = "identical_program_repr_circuit_bytes_hash_and_outputs"
+typed_route = "explicit_existing_RegisterType"
+operation_fields = "unchanged"
+classical_words = "Proposal_108_unchanged"
