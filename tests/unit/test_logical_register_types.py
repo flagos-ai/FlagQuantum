@@ -56,8 +56,10 @@ def test_numerical_metadata_survives_logical_calls(
     assert verify_program_record(record) == ()
     assert record.functions[0].registers == (Register("word", dtype, shape),)
     assert logical_register_width(dtype) == dtype.quantum_bits
-    if dtype.encoding == "uint":
-        assert executable_register_width(dtype) == 4
+    if dtype.encoding == "uint" or (
+        dtype.encoding == "fixed_point" and dict(dtype.parameters)["signed"] is False
+    ):
+        assert executable_register_width(dtype) == dtype.quantum_bits
     else:
         with pytest.raises(ValueError, match="unsupported executable"):
             executable_register_width(dtype)

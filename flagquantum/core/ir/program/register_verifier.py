@@ -88,8 +88,8 @@ def executable_register_width(dtype: RegisterType) -> int:
 
     Execution admits concrete bit, opaque, integer storage and binary fields,
     including packed polynomials over those binary fields (Proposal 109).
-    Proposals 113 and 114 admit unsigned one-bit fixed-point storage with
-    concrete integer fractional widths at most one.
+    Proposals 113 through 115 admit concrete unsigned fixed-point storage with
+    integer fractional widths at most the quantum width.
     Canonical parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
@@ -102,10 +102,10 @@ def executable_register_width(dtype: RegisterType) -> int:
         parameters = dict(dtype.parameters)
         if (
             type(width) is int
-            and width == 1
+            and width >= 1
             and parameters["signed"] is False
             and type(parameters["fractional_width"]) is int
-            and parameters["fractional_width"] <= 1
+            and parameters["fractional_width"] <= width
         ):
             return width
         raise ValueError(f"unsupported executable register descriptor {dtype!r}")
