@@ -578,7 +578,11 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
   interpreter;
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
-  proofs, running in parallel with the complete unit suite;
+  proofs, running in parallel with the complete unit suite. The full integration
+  selection is partitioned deterministically across eight jobs; the two launcher
+  proofs run only in shard zero. Available self-hosted runners determine
+  concurrency, without a matrix parallelism limit. Each job retains the
+  60-minute limit;
 - `cpu-core-3-12`: the required aggregation gate, reported to branch protection
   as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
@@ -1024,6 +1028,19 @@ also trigger qualification on trusted PRs. Coverage retains its already
 provisioned general CPU pool and the same locked environment. Test processes
 remain isolated and resource-budgeted.
 
+Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
+`/opt/flagquantum-runners/tools/public-wheels` directory when unset. Each private
+environment resolves compatible wheel bytes rather than reusing another job's
+installed packages. Missing Torch wheels retain the
+bounded mirror and official-index fallback. Self-hosted pip requests use a
+60-second socket timeout and at most two retries within the unchanged job limit.
+Supply-chain dependency installation selects the Aliyun mirror on self-hosted
+runners with the same availability check and official-index fallback. This
+job-specific selection avoids the repository-wide index variable, which may
+deliberately select official PyPI for other jobs. Vulnerability queries still
+contact PyPI directly. The 20-minute job limit, installed-environment
+audit, Bandit analysis, SBOM generation, and SBOM validation remain required.
+
 Source cache repair verifies Git objects and the exact workflow commit before
 any tests run; an incomplete cache falls back to the full source artifact. No
 tests or required checks are removed.
@@ -1137,3 +1154,13 @@ Coverage plan and result downloads use one bounded transport retry. Attempts
 stage in separate runner-temporary directories, so partial files from a failed
 transfer cannot enter the successful plan or coverage input set. Digest errors
 and a persistent transport failure still stop the job.
+
+### Cold dependency-bound source caches
+
+The dependency-bound jobs first reuse the incremental source artifact. When a
+self-hosted cache is incomplete, they try one 180-second HTTP/1.1 Git fetch of
+the exact workflow commit before the existing bounded API repair and full
+artifact fallback. The fetched commit ID and complete object closure must match;
+checkout still verifies `GITHUB_SHA`. This avoids the slow Actions blob-storage
+route when Git transport succeeds, without bypassing source identity checks or
+changing the 30-minute dependency-bound job limit.

@@ -13,7 +13,9 @@ import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
+from flagquantum.compiler._construction.semantics.unitary import _pattern_block
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition
 
@@ -326,3 +328,41 @@ def test_notebook_scope_separates_static_matrix_workflow_from_quantum_volume_stu
     assert [
         cell["index"] for cell in volume["workflow_validation"]["reviewed_code_cells"]
     ] == [2, 4, 6, 7, 8, 10, 13, 16, 18, 19, 20]
+
+
+@pytest.mark.parametrize("pattern", [0, 6, 14])
+@pytest.mark.parametrize("scratch", [(), (5, 6, 7)])
+@pytest.mark.parametrize("global_phase", [0.43, 1e-13])
+def test_two_level_phase_preserves_coherent_controls_and_clean_workspace(
+    pattern: int, scratch: tuple[int, ...], global_phase: float
+) -> None:
+    generator = torch.Generator().manual_seed(408)
+    logical = torch.randn(32, generator=generator, dtype=torch.complex128)
+    logical /= torch.linalg.vector_norm(logical)
+    expected = logical.clone()
+    cosine, sine = math.cos(0.73 / 2), math.sin(0.73 / 2)
+    block = torch.tensor(
+        [[cosine, -sine], [sine, cosine]], dtype=torch.complex128
+    ) * cmath.exp(1j * global_phase)
+    for word in range(32):
+        if word & 2 or not word & 1 or word >> 2 != pattern >> 1:
+            continue
+        indices = [word, word | 2]
+        expected[indices] = block @ logical[indices]
+    auxiliary = torch.zeros(1 << len(scratch), dtype=torch.complex128)
+    auxiliary[0] = 1
+    initial = torch.kron(logical, auxiliary)
+    gates = _pattern_block(
+        (Instruction("ry", (3,), {"theta": 0.73}),),
+        (0, 1, 2, 3),
+        pattern,
+        (4,),
+        scratch,
+        global_phase,
+    )
+    circuit = fq.Circuit.from_ir(
+        CircuitIR(5 + len(scratch), gates), dtype=torch.complex128, inputs=initial
+    )
+    torch.testing.assert_close(
+        circuit.state().flatten(), torch.kron(expected, auxiliary), atol=1e-14, rtol=0
+    )

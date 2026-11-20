@@ -59,6 +59,8 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         'printf "%s\\n" "filelock-1.0.whl setuptools-77.0.3.whl"\n'
     )
     curl.chmod(0o755)
+    wheel_cache = tmp_path / "public-wheels"
+    wheel_cache.mkdir()
     environments = []
     for attempt, (runner_environment, mirror_state) in enumerate(
         [
@@ -80,6 +82,8 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
             "FQ_SELF_HOSTED_PYPI_INDEX": "https://mirror.example/simple",
             "PIP_CACHE_DIR": str(tmp_path / "pip-cache"),
             "PIP_NO_CACHE_DIR": "1",
+            "PIP_FIND_LINKS": "",
+            "FQ_CPU_WHEEL_CACHE": str(wheel_cache),
         }
         subprocess.run(["bash", "-eu", "-c", script], env=env, check=True, timeout=45)
         exported = dict(
@@ -93,6 +97,9 @@ def test_isolation_rejects_host_packages_and_reuses_no_previous_environment(
         if runner_environment == "self-hosted":
             assert exported["PIP_CACHE_DIR"] == env["PIP_CACHE_DIR"]
             assert exported["PIP_NO_CACHE_DIR"] == ""
+            assert exported["PIP_FIND_LINKS"] == str(wheel_cache)
+            assert exported["PIP_DEFAULT_TIMEOUT"] == "60"
+            assert exported["PIP_RETRIES"] == "2"
         else:
             assert "PIP_CACHE_DIR" not in exported
         assert exported["LD_LIBRARY_PATH"] == runtime_library_path
@@ -129,6 +136,18 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
 
 
+def test_cpu_wheel_cache_defaults_to_the_shared_readable_runner_directory() -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
+    )
+    script = action["runs"]["steps"][0]["run"]
+    assert (
+        "${FQ_CPU_WHEEL_CACHE:-/opt/flagquantum-runners/tools/public-wheels}" in script
+    )
+    assert "/root/" not in script
+
+
+@pytest.mark.parametrize("cache_location", ["configured", "provisioned"])
 @pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(
@@ -146,11 +165,17 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     mirror_failure: str,
     torch_spec: str,
     cache_state: str,
+    cache_location: str,
 ) -> None:
     action = yaml.safe_load(
         (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
     )
     cache = tmp_path / "cpu-wheels"
+    script = action["runs"]["steps"][0]["run"]
+    if cache_location == "provisioned":
+        script = script.replace(
+            "/opt/flagquantum-runners/tools/public-wheels", str(cache)
+        )
     if cache_state != "absent":
         cache.mkdir()
     log = tmp_path / "pip-calls.jsonl"
@@ -162,7 +187,7 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
         "if sys.argv[1] == '-c' and 'Requirement' in sys.argv[2]:\n"
         "    raise SystemExit(1)\n"
-        "if '--find-links' in sys.argv and os.environ['FQ_CPU_WHEEL_CACHE'] in sys.argv:\n"
+        "if '--find-links' in sys.argv and os.environ['EXPECTED_WHEEL_CACHE'] in sys.argv:\n"
         "    raise SystemExit(0 if os.environ['CACHE_STATE'] == 'hit' else 1)\n"
         "if 'download' in sys.argv:\n"
         "    if os.environ['MIRROR_FAILURE'] == 'error':\n"
@@ -185,14 +210,15 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
     )
     fake_timeout.chmod(0o755)
     subprocess.run(
-        ["bash", "-eu", "-c", action["runs"]["steps"][0]["run"]],
+        ["bash", "-eu", "-c", script],
         env={
             **os.environ,
             "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
             "PIP_CALL_LOG": str(log),
             "MIRROR_FAILURE": mirror_failure,
             "CACHE_STATE": cache_state,
-            "FQ_CPU_WHEEL_CACHE": str(cache),
+            "FQ_CPU_WHEEL_CACHE": str(cache) if cache_location == "configured" else "",
+            "EXPECTED_WHEEL_CACHE": str(cache),
             "FQ_TORCH_SPEC": torch_spec,
             "RUNNER_ENVIRONMENT": runner_environment,
             "RUNNER_TEMP": str(tmp_path),

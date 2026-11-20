@@ -90,6 +90,18 @@ Additional contributor workflows are documented in
 [formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
 [registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
 
+The private hybrid stages also have explicit implementation owners.
+
+| Existing hybrid entry or helper | Implementation owner |
+| --- | --- |
+| `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](_hybrid/specialize.py) |
+| `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](_hybrid/runtime_inputs.py), with direct aliases at the old path |
+| `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
+| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
+
+The [hybrid contributor guide](_hybrid/README.md#input-validation-and-specialization-ownership)
+describes the shared input boundary and its local accepted/rejected workflow.
+
 ## Reusable Module frontend
 
 [Module capture](_torch/module_builder.py) owns the private entry approved in
@@ -246,6 +258,8 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py) |
+| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](_hybrid/dynamic/expressions.py) |
 | Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
 | QIR base-profile emission | [qir.py](formats/qir.py) |
 
@@ -1293,6 +1307,13 @@ two-level rotation. Gray-path permutations remain unconditional and cancel on
 the inactive branch. ZYZ rotations reuse the existing Euler-angle extraction,
 and each two-level global phase is conditioned once on the other bits. This
 avoids controlling pulse decompositions and their phase repairs repeatedly.
+For four/five-qubit blocks with clean helper storage, a rotation and its global
+phase reuse the same computed control flag; the phase is applied to that flag
+before it is uncomputed. Without enough helper storage, the existing
+separate phase decomposition is retained. No phase tolerance or resource limit is
+relaxed. `tests/integration/test_synthesis_native_unitary.py` checks coherent
+positive/negative controls and helper cleanup; the Lanchester integration test
+also retains its original operation and depth ceilings.
 
 Commutation analysis retains one representative per structural predicate class
 inside each open block. Its parameter-blind rules depend on opcode, ordered

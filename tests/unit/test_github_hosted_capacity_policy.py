@@ -333,7 +333,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     job = _document("ci.yml")["jobs"]["cpu-runtime"]
     assert job["strategy"] == {
         "fail-fast": False,
-        "matrix": {"shard": [0, 1, 2, 3]},
+        "matrix": {"shard": list(range(8))},
     }
     expensive_steps = [
         step
@@ -346,7 +346,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
     )
     assert runtime["run"] == (
-        "python tools/ci_tier.py pr-runtime --shard-count 4 "
+        "python tools/ci_tier.py pr-runtime --shard-count 8 "
         "--shard-index ${{ matrix.shard }}"
     )
     for step in expensive_steps:
@@ -854,4 +854,22 @@ def test_coverage_data_stays_outside_the_source_tree_copied_by_mutation_tests():
         'export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"'
         in command
         for command in commands
+    )
+
+
+def test_dependency_bounds_uses_checked_mirror_without_changing_torch_spec() -> None:
+    job = _document("ci.yml")["jobs"]["dependency-bounds"]
+    isolated = next(
+        step
+        for step in job["steps"]
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"] == {
+        "torch-spec": "${{ matrix.torch }}",
+        "self-hosted-pypi-index": "https://mirrors.aliyun.com/pypi/simple",
+    }
+    assert any(
+        step.get("uses") == "./.github/actions/install-cpu-torch"
+        and step["with"]["torch-spec"] == "${{ matrix.torch }}"
+        for step in job["steps"]
     )

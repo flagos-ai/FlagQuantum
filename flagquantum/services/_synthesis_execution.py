@@ -469,6 +469,25 @@ def inspect_execution(
     declarations checked/projected through a replayed Compiler layout; source
     semantic ownership and workspace cleanup remain Compiler obligations.
     """
+    checked, _ = _inspect_execution_with_resources(
+        plan, limits=limits, basis=basis, coupling=coupling, registers=registers
+    )
+    return checked
+
+
+def _inspect_execution_with_resources(
+    plan: ExecutionPlan,
+    *,
+    limits: CircuitLimits = _UNBOUNDED_LIMITS,
+    basis: Iterable[str] | None = None,
+    coupling: CouplingMap | None = None,
+    registers: Mapping[str, Sequence[int]] | None = None,
+) -> tuple[CheckedExecution, ResourceEstimate]:
+    """Return this inspection's costs for the immediate construction caller.
+
+    Nothing is cached on the checked plan: later resource access and execution
+    still revalidate the mutable payload and actual instruction layers.
+    """
     if not isinstance(limits, CircuitLimits):
         raise TypeError("limits must be CircuitLimits")
     program = _program(plan)
@@ -498,8 +517,9 @@ def inspect_execution(
                 )
             seen.add(q)
         mapped[name] = tuple(layout.physical_of(q) for q in ports)
-    _check_limits(limits, estimate_resources(program))
-    return CheckedExecution(
+    resources = estimate_resources(program)
+    _check_limits(limits, resources)
+    checked = CheckedExecution(
         plan,
         limits,
         gates,
@@ -509,3 +529,4 @@ def inspect_execution(
         program.content_hash,
         _controls(plan, program),
     )
+    return checked, resources

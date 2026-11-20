@@ -112,6 +112,66 @@ def test_complete_route_matches_absolute_scoring_replacement(seed: int) -> None:
     assert actual == reference
 
 
+@pytest.mark.parametrize("has_successors", [False, True])
+def test_lookahead_reuse_ends_at_frontier_and_trial_boundaries(
+    has_successors: bool,
+) -> None:
+    instructions = [Instruction("cx", (0, 13))]
+    if has_successors:
+        rng = random.Random(17)
+        instructions.extend(
+            Instruction("cx", tuple(rng.sample(range(14), 2))) for _ in range(32)
+        )
+    program = CircuitIR(14, tuple(instructions))
+    device = CouplingMap.line(14)
+    observations: list[tuple[tuple[int, ...], list[int], tuple[int, ...]]] = []
+    original = sabre._relative_score_swap
+
+    def observe(
+        candidates: set[tuple[int, int]],
+        qubit_pairs: tuple[tuple[int, ...], ...],
+        front: list[int],
+        extended: list[int],
+        layout: list[int],
+        distances: tuple[tuple[float, ...], ...],
+        *,
+        tie_rng: random.Random | None = None,
+    ) -> tuple[int, int] | None:
+        observations.append((tuple(front), extended, tuple(extended)))
+        return original(
+            candidates, qubit_pairs, front, extended, layout, distances, tie_rng=tie_rng
+        )
+
+    with patch.object(sabre, "_relative_score_swap", observe):
+        first = sabre._plan_sabre_trial(program, device)
+        first_trial = list(observations)
+        observations.clear()
+        second = sabre._plan_sabre_trial(program, device)
+    assert first is not None and first == second
+    repeated = changed = 0
+    for trial in (first_trial, observations):
+        for previous, following in itertools.pairwise(trial):
+            front, lookahead, _ = previous
+            next_front, next_lookahead, _ = following
+            if front == next_front:
+                assert lookahead is next_lookahead
+                repeated += 1
+            else:
+                assert lookahead is not next_lookahead
+                changed += 1
+        assert all(tuple(lookahead) == snapshot for _, lookahead, snapshot in trial)
+    assert repeated > 0
+    if has_successors:
+        assert changed > 0
+    else:
+        assert changed == 0
+    assert all(
+        first_lookahead is not second_lookahead
+        for _, first_lookahead, _ in first_trial
+        for _, second_lookahead, _ in observations
+    )
+
+
 @pytest.mark.parametrize("seed", [0, 1])
 def test_relative_scoring_preserves_state_and_shared_parameter_gradient(
     seed: int,
