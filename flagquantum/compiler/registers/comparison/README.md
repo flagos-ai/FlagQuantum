@@ -32,3 +32,11 @@ Run `python -m examples.algorithms.register_half_comparison` for the normal
 connections, gates, feedback, full complex amplitudes, clean work and resources.
 [The complete source audit](../../../../docs/development/COMPARISON_FILE_AUDIT.md)
 records all frozen definitions and retained admission/source boundaries.
+
+`ordering_declaration.py` owns generic Comparator and ParallelComparators
+signatures and source direct models. Symbolic dimensions remain metadata until
+explicit finite `program()` conversion delegates to the existing directional
+graph owners. The comparison bit and network histories are retained logical
+outputs, while comparison temporaries are cleaned internally. The shortest
+checks are `tests/unit/test_sorting_declaration.py` and
+`tests/unit/test_sorting_foreign_file.py`.
