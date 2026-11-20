@@ -60,3 +60,11 @@ Run `tests/unit/test_symmetric_difference_component.py` and
 `tests/unit/test_symmetric_difference_foreign_file.py` for its shortest checks.
 The root source supplies no gate decomposition. See the local audit for original
 model omissions, signed/symbolic execution limits and temporary-wire scheduling.
+
+`permutation_declaration.py` owns generic cycle/Permutation metadata and factories,
+including complete unknown cycle shapes. Dense and partial conversion reuse
+`cycle_decomposition.py`; concrete `program()` delegates to
+`permutation_component.py`. The example catalogue consumes these same declarations.
+Run `tests/unit/test_permutation_declaration.py` and
+`tests/unit/test_permutation_foreign_file.py` for factory, source serialization,
+typed SDK, complete complex amplitude and clean-work evidence.
