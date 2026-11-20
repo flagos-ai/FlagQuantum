@@ -142,3 +142,65 @@ free-permutation PLU count. Runtime statistics are a separate account.
   scope checks, architecture, multi-level IR and protected API checks pass.
 - The three new production/example modules have 62 statements and 14 branches,
   all covered. The executable numerical path uses existing local CPU execution.
+
+## Complete stored-graph chain — 2026-11-20
+
+The complete `gf2_square.py` definition map above now has a stored graph path.
+Compiler `linear_component.py` owns shaped coefficient-bit PLU synthesis and the
+exact inverse. It reuses `_FieldEmitter.linear`, with no second PLU algorithm.
+`frobenius_component.py` owns the typed MSB word, reversal, one real stored linear
+child and typed rejoin. The existing mathematical matrix construction is shared
+with `field_linear.py`. Canonical binary-field descriptors retain their original
+metadata, with the explicit modulus checked against an encoded polynomial.
+There are no new Core contracts, numerical field objects or workspace lifetimes.
+
+`examples.algorithms.register_field_frobenius` binds the stored graph through
+`circuit.append(op)`. Consumers follow returned output aliases. Appending its
+exact inverse restores the initial physical word. Replacement tests make the
+previous public Frobenius physical emitter raise while the append workflow
+continues to pass. Source's zero-power/non-power-of-two/adjoint defects above
+remain independently reproduced by the unchanged accepted tests. Correct
+mathematical behavior remains the native operation contract.
+
+The new tests compare the original unmodified builder calls directly, including
+all CNOT operands and output permutations. The Cirq exporter can reschedule
+independent CNOTs at degree eight, so its linearized sequence is not used as the
+source construction order. Its returned mapping and independent resource model
+are still checked. This corrected an initially overstrict total-export-order
+assertion. Initial test descriptors omitted required polynomial-field metadata,
+which was corrected to the existing canonical descriptor format.
+
+All forward/inverse mathematical powers 0/1/2/3/4 at degrees1/2/3/4/5/8 match
+the existing native emitted stream and output aliases exactly. Comparable frozen
+forward powers1/2/4 match the original source construction and independent
+Clifford estimate. Complete complex amplitudes, entangled spectator and a clean
+extra wire are checked for all powers0..4 through degree four, then the exact
+inverse restores the initial state. There is one coherent branch, zero
+measurements, zero fresh classical SSA, zero extra work and no hidden output
+binding SWAPs. Existing immutable source notebook and original-suite evidence,
+foreign/autotester/serialization and source model boundaries are reused.
+
+Final concentrated regression, strict checks and resource receipts are recorded
+under `ftqc-reference-env/g2-frobenius-stored-*`. Parent Q-0522 and Q-0523 remain
+open for the specifically enumerated source/admission boundaries above.
+
+Final validation passed 353 concentrated cases without skips and 17 local
+integration cases. Strict typing passed for six files, alongside Black, Ruff,
+Compiler scope, architecture, multi-level IR and protected API checks. The
+normal append example restores the full complex state. Existing field and
+Kickmix binary-linear/Frobenius file evidence is included in this regression.
+
+The final dependency scan has 688 existing whole-repository findings and zero
+batch findings. Three direct source blobs match the frozen inventory. New test
+NumPy imports use the optional-dependency guard required for dev-only installs.
+
+| Concrete forward case | Emitted CX | Independent source Clifford | Extra work | Measurements / fresh SSA | Binding SWAPs |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| degree1, polynomial0x3 | 0 | 0 | 0 | 0 / 0 | 0 |
+| degree3, polynomial0xB | 1 | 1 | 0 | 0 / 0 | 0 |
+| degree4, polynomial0x13 | 2 | 2 | 0 | 0 / 0 | 0 |
+| degree8, polynomial0x11B | 12 | 12 | 0 | 0 / 0 | 0 |
+
+The source shape-only bound remains a separate analytical observation. These
+counts exclude gates for callers who explicitly materialize output mappings.
+No whole-repository success is claimed by the focused validation.

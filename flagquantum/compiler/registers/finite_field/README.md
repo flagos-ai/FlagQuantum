@@ -53,3 +53,13 @@ coefficient arrays and reduction matrices live in Simulation's
 retains all nine source examples and uses the ordinary append protocol. See
 `docs/development/FIELD_MULTIPLICATION_FILE_AUDIT.md` for the complete definition
 map, immutable-source adjoint witness and retained generic boundaries.
+
+`linear_component.py` stores the shared source-order PLU child calls and their
+free output permutation. `frobenius_component.py` composes one such child between
+coefficient-order reversals, using the same mathematical matrix as
+`field_linear.py`. Both use zero additional quantum work and classical slots.
+The exact inverse preserves every coherent amplitude and restores the original
+physical input. Frozen source matrix-power and ignored-adjoint defects remain
+explicit in the square audit. To bind, execute and restore a complete word, run
+`python -m examples.algorithms.register_field_frobenius` and the corresponding
+`test_binary_linear_component.py` and `test_field_frobenius_component.py` tests.
