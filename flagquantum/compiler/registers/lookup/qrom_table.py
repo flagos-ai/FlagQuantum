@@ -126,9 +126,9 @@ class QromTable:
     def from_data(
         cls,
         *data: ArrayLike,
-        target_bitsizes: tuple[int, ...] | None = None,
+        target_bitsizes: tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[int, ...], ...] = (),
-        num_controls: int = 0,
+        num_controls: SymbolicInt = 0,
     ) -> "QromTable":
         """Infer source widths before converting lookup values to native integers.
 
