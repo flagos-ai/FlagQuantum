@@ -7,7 +7,7 @@ are Apache-2.0, copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0320 | `cast.ipynb` | `9895dcc29482ecf980c50d16af4776f309e4202c` | Closed by the complete native tutorial. |
-| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Open for full typed dtype admission and direct foreign-object protocols. |
+| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Actual source factory foreign resolution and direct SDK views verified. Classical word views and full executable dtype admission remain open. |
 | Q-0322 | `cast_test.py` | `c018d2af7aa811b11ff75753927ef19a1da85ecb` | Closed for the runnable original scenarios and notebook. |
 
 Compiler Cast retains the original bit pattern. Bind the left and right
@@ -57,5 +57,51 @@ reordered outputs of two MeasureZ calls. Through append it emits exactly
 the two measurements. All four histories match the frozen instrument
 on complete complex amplitudes and return the clean work bit to zero.
 The source model separately counts the two measurements and zero T.
-Mixed-domain declarations remain metadata. Full executable dtype
-admission and direct foreign-object interoperability remain open.
+Mixed-domain declarations remain metadata. Full executable dtype admission
+and classical word views remain open. Actual source factory transport and
+SDK consumers are detailed below.
+
+
+## Actual factory transport and approved fixed-point execution
+
+The original `_cast` QInt(32) to unsigned QFxp(32,32) factory and a shaped
+four-bit QAny to QFxp fixture preserve exact native library bytes and reconstruct
+equal in the unmodified source at depths 0, 1 and 2. Existing explicit native
+factories consume the already-decoded descriptor arguments and build the
+existing cast function. Original array-valued shape arguments remain arrays at
+the interchange boundary; the typed signature supplies the canonical shape.
+
+The actual 32-bit factory binds reversed physical words with no primitive,
+measurement, allocation or workspace. Its source SDK hook preserves the exact
+array object, and its PennyLane hook returns None. The independent source QEC
+model is zero and peak width is 32. This case verifies complete wire ownership
+and zero-operation identity without allocating a 32-qubit statevector. The
+shaped eight-data-bit fixture adds an entangled spectator and checks every
+complex amplitude through ordinary append. Its source model independently
+reports zero QEC cost and peak eight.
+
+Two historical Cast/Add/Cast fixture assertions still expected the unsigned
+fixed-point rejection predating approved Proposal 115. Both failures reproduce
+on the unmodified batch base. The typed fixture now retains its original QFxp
+port, replacing the old opaque substitute, and its two Cast functions retain
+actual nominal descriptors. One- and four-bit wrappers match every original
+primitive, operand and feedback. Every small measurement history matches the
+full unnormalized source complex map with all clean work zero. The existing
+uncontrolled append path and declaration-composition consumers also pass.
+Earlier source gate inventories and independent model boundary diagnostics
+remain separately recorded above.
+
+The unmodified source CUInt(4) to CInt(4) view reinterprets all sixteen raw
+words correctly and its SDK hook returns the same storage object. Source
+serialization raises its original unsupported-CUInt TypeError at depths
+0, 1 and 2. Native owned classical word casts are a separate missing capability;
+existing `cast_word_function` rejects their descriptors. Proposal 118 records
+an explicit protected contract for slot-preserving classical reinterprets and
+requires approval before implementation. Quantum/classical mixed-domain casts
+remain declaration-only. Full signed/empty fixed-point physical storage remains
+under pending Proposal 116. Q-0321 therefore stays open.
+
+Receipts `g2-cast-foreign-*` record complete factory transport, baseline failures,
+strict changed-file checks, concentrated/integration/dual-Cirq regressions,
+frozen source hashes and unchanged execution owners. No source patch or
+physical admission change is part of this batch.
