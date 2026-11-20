@@ -129,3 +129,89 @@ the established docstring coverage failure. Its nine reported modules and the
 failed test are byte-identical to base e2abfd8d4. Dependency policy reports
 688 whole-repository findings and zero findings in this batch. Frozen source
 blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified separately.
+
+## General declaration interface and dependency closure
+
+Compiler sorting owns finite or symbolic permutation declarations independently
+of physical execution. The declaration records the bound, width, ordered cycles
+and complete shape-only cycle dimensions. Dense and partial factories delegate
+to the existing cycle-discovery owner. Cycle-length construction preserves the
+original symbolic-or-at-least-two filter. Signatures and direct model keys share
+one owner with the example catalogue. Explicit physical conversion delegates to
+the existing typed cycle/Permutation programs and retains their finite checks.
+No shape metadata is interpreted as a list of known basis indices.
+
+The foreign boundary preserves source bytes where original serialization
+succeeds. Original Shaped/HasLength/object-array/ragged-array serialization
+failures are verified before native deserialization and remain separate from
+native declaration/model support. The source partial-map lost-edge example
+remains unchanged.
+
+## Complete source and consumer acceptance, 2026-11-20
+
+This acceptance supersedes the open generic-construction and foreign-consumer
+items recorded in the earlier batch sections. Q-0214 and Q-0215 close with
+source failures and physical-domain limits retained explicitly below.
+
+All 25 definitions in the frozen source are accounted for. The two converters,
+cached signatures, default widths, symbolic detection and three factory methods
+are implemented by the generic Compiler declaration and existing discovery
+owners. Both executable bodies reuse the already accepted typed hierarchy.
+Both direct models retain source child identities, insertion order and
+multiplicities, including unknown-cycle-count worst-case length N. All eight
+example factories and two documentation specifications retain the prior complete
+catalogue and notebook evidence. Dense factory construction compares every
+permutation through size five. Partial traversal preserves the original lost-edge
+witness under both insertion orders. Length filtering preserves symbolic lengths,
+duplicate multiplicity, empty outer identity and the original empty-cycle model
+failure. Full shape tuples remain declaration metadata.
+
+All eight actual source factories have a disposition at wire depths zero, one
+and two. Concrete cycle and composed libraries round-trip exact original bytes
+and reconstruct equal source objects. Symbolic-bound cycle bytes also round-trip,
+while the source reconstruction loses positive/integer assumptions. Original
+Shaped, HasLength, object-array and ragged-array serialization failures are
+asserted before native decoding. Four finite/symbolic cycle/composed factory
+resolutions consume the actual serialized arguments and original bounded-port
+metadata. Symbolic declarations resolve without claiming finite gate binding.
+
+Six SDK consumers cover two- and three-bit cycle, overlapping composition and
+identity. Their real bounded signatures survive import. Ordered leaves, operands
+and complete local matrices compare after the existing import normalization of
+one/two negative controls. The test independently proves that basis change with
+the original Cirq unitary before comparing streams. Complete complex source
+tensors, an entangled spectator and zero quantum work are verified through normal
+circuit.append(op). The SDK stream is coherent and has one empty measurement
+history. Every raw measured-Bloq branch, exact adjoint, source call graph and
+primitive dependency certificate reuses the accepted native batch evidence.
+
+| SDK case | Original raw SDK leaves | Native leaves after negative-control normalization |
+|---|---|---|
+| Two-bit cycle | 72 | 15, including 3 atomic CCX |
+| Two-bit overlapping composition | 142 | 28, including 6 atomic CCX |
+| Three-bit cycle | 120 | 120, including 45 matrix leaves and 6 atomic CCX |
+| Three-bit overlapping composition | 238 | 238, including 90 matrix leaves and 12 atomic CCX |
+| Either-width identity | 0 | 0 |
+
+Raw SDK leaf counts differ where control-basis normalization changes the selected
+SDK decomposition. These counts contain atomic CCX and matrix gates. The measured
+Bloq primitive counts and independent source model remain in the preceding
+resource tables and g2-permutation-native-resources.json. The separate SDK receipt
+is g2-permutation-foreign-sdk-resources.json.
+
+Concentrated regression passes 372 cases and local integration passes 17 cases.
+The 18 foreign cases pass independently on Cirq 1.7.0 and 1.6.1. The older SDK
+emits 18 original NumPy array-shape deprecation warnings. Strict typing covers
+four changed Python files. Black, Ruff, Compiler scope, architecture, multilevel
+IR and public API checks pass. Frozen source hashes and Qualtran 0.7.0 plus
+Kickmix 0.1 Simulator are verified. Existing execution, discovery, model and
+foreign-boundary owners are byte-identical to the batch base. The prior default
+suite's docstring-coverage failure is reused with every reported module and its
+test verified unchanged against that recorded baseline.
+
+The original partial-map lost edge, strict BQUInt-to-QUInt validation failure,
+serialization exceptions, source round-trip assumption loss and original
+37-pass/8-skip/6-xfail fixture disposition remain visible. Concrete physical
+execution rejects unknown cycle values and symbolic widths. Accepted declaration
+and model support is independent of this restriction. The frozen reference is
+unchanged. Receipts use g2-permutation-foreign-*.
