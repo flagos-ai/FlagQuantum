@@ -167,6 +167,8 @@ def test_mixed_matplotlib_matches_source_after_boundary_text_adaptation(
     monkeypatch: pytest.MonkeyPatch, kind: str, shape: tuple[int, ...]
 ) -> None:
     import attrs
+
+    pytest.importorskip("matplotlib")
     from matplotlib import pyplot as plt
     from qualtran.drawing.musical_score import (
         Text,
@@ -240,7 +242,7 @@ def test_invalid_layout_width_fails_before_lane_mutation(width: Any) -> None:
 def test_measured_parity_and_discard_preserve_storage_flavor_on_reused_lane(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import numpy as np
+    np = pytest.importorskip("numpy")
     from qualtran import BloqBuilder, QBit, Side
     from qualtran import Register as OriginalRegister
     from qualtran import Signature as OriginalSignature
@@ -315,7 +317,7 @@ def test_measured_parity_and_discard_preserve_storage_flavor_on_reused_lane(
 
 
 @pytest.mark.parametrize("kind", ["czero", "cword"])
-def test_classical_word_metadata_does_not_expand_core_executable_admission(
+def test_classical_word_metadata_retains_approved_core_port_admission(
     kind: str,
 ) -> None:
     from flagquantum.core.ir.program import verify_program_record
@@ -326,6 +328,7 @@ def test_classical_word_metadata_does_not_expand_core_executable_admission(
     leaf = identity(
         "main", (Register("word", classical_unsigned_register_type(width)),)
     )
-    with pytest.raises(ValueError, match="unsupported executable"):
-        register_port_types(leaf, RegisterSide.LEFT)
-    assert verify_program_record(ProgramRecord((leaf,)))
+    assert register_port_types(leaf, RegisterSide.LEFT) == (
+        classical_unsigned_register_type(width),
+    )
+    assert verify_program_record(ProgramRecord((leaf,))) == ()
