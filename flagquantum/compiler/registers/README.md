@@ -467,3 +467,18 @@ emission. Dense discovery lazily uses the optional NetworkX provider; partial
 traversal has no graph dependency. See [the complete source audit](../../../docs/development/PERMUTATION_SOURCE_AUDIT.md)
 for provider ownership, inherited partial-map defects, original-test replacement,
 append consumers and separate primitive/model resource counts.
+
+## Typed classical words
+
+Proposal 108 admits existing canonical classical integer descriptors at physical
+entry. `classical_word_storage.py` reuses the existing equality encoder for MSB
+slot values. `entry_bindings.py` validates the complete tuple, and
+`register_binding.py` keeps word slots separate from quantum wires and reuses
+them for owned read successors and boolean snapshots.
+
+`classical_control_component_program(..., control_types=(dtype, ...))` threads
+those words through existing shared calls. Omitted types retain the exact CBit
+graph and bound payload. Numerical codecs remain in Simulation. Run
+`python -m examples.algorithms.typed_classical_feedback` for the append path.
+See `docs/development/TYPED_CLASSICAL_WORD_FEEDBACK_AUDIT.md` for the approved
+domain, source tensor counterexample, resource split and validation boundaries.

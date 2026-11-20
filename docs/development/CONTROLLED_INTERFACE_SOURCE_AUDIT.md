@@ -174,10 +174,13 @@ tensor reference and the already verified child stream, with source wrapper
 model refusal reported independently.
 
 Proposal 108 records the required typed-port and read-result contract extension
-in `API_CHANGE_PROPOSAL_108_CLASSICAL_WORD_FEEDBACK.md`. Its status is pending
-explicit approval. Proposal 107's nonlinear approval is complete and published.
-The two decisions have separate scopes. No current acceptance count is increased
-by this intake or proposal.
+in `API_CHANGE_PROPOSAL_108_CLASSICAL_WORD_FEEDBACK.md`. The user approved it
+on 2026-11-20, and the bounded integer-word scope is implemented in Core and
+Compiler. `TYPED_CLASSICAL_WORD_FEEDBACK_AUDIT.md` supersedes the intake refusal
+for that scope and records the source ones'-complement tensor counterexample.
+Finite-field classical admission, unresolved symbolic physical values and generic
+external-consumer boundaries remain open. Proposal 107 is separately published.
+Source-parent acceptance counts remain unchanged.
 
 The source notebook's signed QInt(8) value 255 draws but fails physical encoding.
 Its prose also predates the direct tensor and Cirq controlled-operation methods

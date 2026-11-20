@@ -124,3 +124,17 @@ tests must establish old payload stability before owner implementation commits.
 6. Run concentrated regression, local integration, strict typing, formatting,
    classified team scope, architecture and IR/API checks. Synchronize the ledger,
    phase overview, current status and PR evidence only after acceptance.
+
+## Implementation acceptance — 2026-11-20
+
+The approved Core and Compiler scope is implemented. Core commit e7793cbac
+admits canonical descriptors and typed reads. Compiler commits 0906408c0 and
+97e9190ff bind stored words and carry feedback through shared calls. Numerical
+codecs and foreign descriptor metadata retain their existing owners.
+
+`TYPED_CLASSICAL_WORD_FEEDBACK_AUDIT.md` records complete acceptance evidence,
+the exact old CBit compatibility fixture, separate emitted/model resources and
+the unchanged source ones'-complement tensor disagreement. Concentrated and
+local integration checks pass. Full-repository validation has the separately
+recorded default and integration failures. Wider source parents retain their
+remaining finite-field, symbolic and external-consumer boundaries.

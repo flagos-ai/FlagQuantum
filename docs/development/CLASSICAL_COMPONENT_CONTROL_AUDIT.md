@@ -46,8 +46,11 @@ work must return to zero on both enabled and disabled branches before release.
 Reachable measurement, reset, classical discard, parity extraction and channels
 are rejected by the graph transform. The previous leaf constructor retains its
 existing conditional Kraus admission, protected by a dedicated regression.
-Wider classical words still require the protected typed read contract admission.
-Q-0547 remains open for that concrete boundary. Q-0548 evidence is reused.
+Proposal 108 was approved and implemented on 2026-11-20. Canonical integer word
+ports, MSB read snapshots, empty shapes and numerical feedback now execute
+through the existing binder. See `TYPED_CLASSICAL_WORD_FEEDBACK_AUDIT.md` for
+the scope and source tensor defect. Finite-field, symbolic physical and generic
+external-consumer boundaries retain Q-0547's open status. Q-0548 evidence is reused.
 
 ## Schedule repair
 
@@ -106,3 +109,9 @@ source blobs, Qualtran 0.7.0, Kickmix 0.1 with Simulator present, observed resou
 source model refusal, regression, integration and check outputs. Existing source
 defects and broader control execution admission remain tracked in
 `CONTROLLED_INTERFACE_SOURCE_AUDIT.md`.
+
+The CBit-only interface and positive-shape descriptions above document the
+original accepted baseline. Proposal 108 extends that baseline with explicit
+`control_types` and zero-sized shapes, while the exact CBit graph and bound
+serialization fixture remain unchanged. The typed-word audit is authoritative
+for the current executable domain.
