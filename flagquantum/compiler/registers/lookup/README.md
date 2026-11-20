@@ -24,3 +24,12 @@ scratch clean. It reuses `source_qroam_clean` and `qroam_clean_erasure`, whose
 primitive counts remain separate from the original model-only adjoint cost.
 Run `python -m pytest tests/unit/test_clean_lookup_component.py -q` for source
 forward primitives and every raw small lookup/erase measurement history.
+
+`arctangent_declaration.py` owns select/sign/target metadata, binary digit layouts,
+self-adjoint identity and fresh symbolic product multiplicities. Concrete
+execution remains in `arctan_lookup.py`, using the shared QROM. The original
+ArcTan has no gate decomposition. Its tensor-only SDK consumer imports one
+matrix leaf through `import_cirq_register_optree` with actual typed placement.
+That matrix count, native QROM primitives and symbolic product estimate are
+separate accounts. Run `tests/unit/test_trigonometric_foreign_file.py` for complete
+complex spectator amplitudes, all small raw histories and clean work.

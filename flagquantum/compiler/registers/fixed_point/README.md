@@ -53,3 +53,12 @@ quantized mask. The unchanged source supplies a model and lacks root
 decomposition. Native numerical construction and source model remain separate.
 Run `tests/unit/test_reciprocal_components.py` for stored/expanded calls,
 complex occupied results, channel certificates and ordinary append replacement.
+
+`arcsine_declaration.py` owns the frozen ArcSin constructor, unsigned fixed-point
+ports and degree/iteration model. Its source has no physical decomposition.
+Simulation's scalar callback and the independent Appendix D approximation keep
+their separate word contracts. The trigonometric catalogue consumes this
+metadata owner. Run `tests/unit/test_trigonometric_declarations.py` and
+`tests/unit/test_trigonometric_foreign_file.py` for symbolic/concrete declarations
+and actual foreign libraries. See `TRIGONOMETRIC_FILE_AUDIT.md` for source overflow,
+missing coefficients and the independent executable approximation.
