@@ -1,5 +1,8 @@
 # Stim and PyMatching integration compatibility
 
+For the current operation-by-operation boundary and next proposed slice, see the
+[remaining capability inventory](../development/QEC_STIM_REMAINING_CAPABILITIES.md).
+
 ## Toric distance qualification — 2026-11-18
 
 The existing Toric constructor now uses an exact matrix-derived logical-cycle
@@ -9,11 +12,13 @@ The candidate qualifies d=3,5,7,9,11,13,15 with both logical observables,
 X/Z readout and independent/correlated noise: 28 configurations in each of
 SDK and no-SDK embedded installed profiles, 64 shots and three rounds each.
 Strict DEM comparison uses Stim 1.16.0 without disjoint-error approximation;
-bundled BP/OSD decoding must reproduce every sampled syndrome. No-SDK runs
-consume captured original noisy text; exporting that text still requires the
-SDK. Recorded logical residuals are observations, not suppression or threshold
-claims. Final-head regressions and automatic CI remain publication gates;
-actual-main acceptance requires a separately authorized merge.
+bundled BP/OSD decoding must reproduce every sampled syndrome. The historical
+no-SDK qualification consumed captured original noisy text.
+PR #1235 subsequently added SDK-free memory export in opt-in embedded builds;
+marker-free builds retain the SDK requirement. Recorded logical residuals are
+observations, not suppression or threshold claims. The candidate gates described
+here belong to that historical qualification; current main acceptance is recorded
+in the operation inventory above.
 See [the configuration records](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
 
 
@@ -46,7 +51,7 @@ qualification on one OS does not certify every OS/SDK combination.
 | Code/memory/noise declaration | FlagQuantum QEC | Only explicitly executed code/basis scenarios are accepted as workflows |
 | Native-memory fixed-shot report | `execution.experiments.run_memory_experiment` | Original MemoryCircuit, required noise declaration, default decoder settings; source `memory_circuit` |
 | External-text fixed-shot report | `execution.experiments.run_stim_experiment` through the Stim SDK or an opt-in macOS arm64 or Linux x86_64 embedded build | Original annotated text, strict DEM, at least one detector and observable; source `stim_circuit` |
-| Stim parsing/compilation/sampling | Simulation SDK boundary | Existing instruction, size, seed, reference-normalization and ownership limits |
+| Stim parsing/compilation/sampling | Simulation SDK or opt-in embedded boundary | Existing instruction, size, seed, reference-normalization and ownership limits |
 | DEM text and probability model | FlagQuantum canonical DEM | Existing repeat bounds, detector/logical indexing, exact law and explicit refusal rules |
 | Complete independent-shot batches | `decoders.batch.decode_batch` | Sparse indices; five certified concrete types; complete original record fields |
 | PyMatching logical-only batches | `adapters.pymatching.PyMatchingDecoder.decode_batch` | Dense binary CPU Tensor; logical predictions only |
