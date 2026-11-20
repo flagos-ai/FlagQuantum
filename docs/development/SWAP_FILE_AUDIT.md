@@ -105,3 +105,59 @@ The whole-file batch passed 2,398 concentrated regression cases with no skips.
 Both changed Python files passed strict typing, Black and Ruff. Compiler scope,
 architecture, multilevel IR and protected API checks passed. The original test
 file closes independently of the retained source nested-control failure.
+
+## Stored plain exchange and complete foreign library closure — 2026-11-20
+
+`compiler/registers/primitives/swap_component.py` owns ordinary/controlled word
+signatures and direct atomic multiplicities. Plain physical construction stores
+Split(x), Split(y), the ordered TwoBitSwap calls, then both Join calls. It uses
+the existing native SWAP primitive. Controlled physical construction delegates
+to the existing exact seven-T Fredkin component owner. The tutorial's explicit
+three-CX demonstration retains its separate source and purpose.
+
+All eight actual source factories now have exact foreign-library byte roundtrips
+at depths zero, one and two. Original symbolic factory reconstruction loses the
+positive/integer assumptions attached to n, as its wire format stores only the
+name. The unchanged source inequality is asserted. Native resolutions preserve
+the decoded typed signatures and real child bodies. Atomic, four-bit and 64-bit
+factories bind without work or measurements. The two symbolic factories retain
+signatures and independent direct models while refusing physical construction.
+
+Plain widths one, two, three, eight and 64 match every original typed call layer,
+operand and primitive. Reversed word placements retain the original logical
+outputs. Full complex states entangled with a spectator match the original
+Swap tensor for small widths, and the independently captured actual source
+adjoint restores those states through ordinary circuit.append(op). Existing
+controlled-swap tests supply full Fredkin streams and coherent state evidence.
+Existing mixed/negative/multi-control branch and work-cleanup evidence is reused.
+
+Emission remains one SWAP per plain bit. Controlled emission remains eight CX,
+two H and seven T-family instructions per bit. Original direct models count one
+TwoBitSwap or TwoBitCSwap per bit, respectively. The default Fredkin model assigns
+four T equivalents while exact seven-T conversion assigns seven. Primitive
+inventories and these independent model conversions remain separate.
+
+The original zero-width roots fail decomposition with TypeError because their
+omitted ports do not satisfy build_composite_bloq. Native finite constructors
+retain explicit positive-width rejection. SymPy Integer widths retain the
+original symbolic-body refusal. These source failures and the merged multi-bit
+control rewrap TypeError remain recorded counterexamples.
+
+Q-0260 now closes for the complete source-file disposition. Its earlier final
+open item was the source nested-control failure, whose unchanged exception and
+native explicit refusal are already verified. Closure records that original
+failure as a retained boundary and makes no successful rewrap claim. All source
+methods, eight factories, diagrams, value callbacks, exact/relative gate paths,
+resource conventions and original test dispositions have native owners or exact
+original failure witnesses. No source patch or automatic inferred support is
+introduced.
+
+The final concentrated run passes 1,418 cases without skips and retains 520
+original resource/parser deprecation warnings. Seventeen local integration cases
+pass. All 45 foreign/stored/capture cases pass under Cirq 1.6.1. The original
+source suite and existing capture suite jointly pass 56 cases with the eight
+original harness-mode skips retained. An initial missing PennyLane import and
+two optional native skips were resolved using the existing cnot-pennylane
+dependency directory, then the complete concentrated and dual-version profiles
+were rerun. Strict typing of both new Python files, Black, Ruff, Compiler scope,
+architecture, multilevel IR and the public API baseline all pass.
