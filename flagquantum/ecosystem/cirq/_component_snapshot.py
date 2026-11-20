@@ -11,6 +11,7 @@ from ...core.ir import CircuitIR
 from ._feedback_import import (
     _has_explicit_matrix,
     _lower_feedback_gate,
+    _scalar_control_operations,
     import_cirq_feedback,
 )
 from ._integer_arithmetic import _square_operations
@@ -21,7 +22,7 @@ from ._multiplication_arithmetic import (
 )
 from ._phase_arithmetic import _phase_add_operations
 from ._qubit_manager import InteropQubitManager
-from .conversion import _cirq
+from .conversion import _cirq, _eigen_phase_operations
 
 
 class _CleanAllocations:
@@ -378,9 +379,18 @@ def _snapshot(
                             default=None,
                         )
                     if child is None:
-                        raise ValueError(
-                            f"Foreign oracle primitive cannot be decomposed: {op!r}"
+                        # Preserve every existing source decomposition. Normalize
+                        # exact eigen phases only for otherwise unsupported leaves.
+                        normalized = tuple(
+                            _scalar_control_operations(
+                                cirq, _eigen_phase_operations(cirq, (op,))
+                            )
                         )
+                        if normalized == (op,):
+                            raise ValueError(
+                                f"Foreign oracle primitive cannot be decomposed: {op!r}"
+                            )
+                        child = normalized
                     yield from expand(child)
                 live_outputs.difference_update(consumed)
                 live_outputs.update(produced)
