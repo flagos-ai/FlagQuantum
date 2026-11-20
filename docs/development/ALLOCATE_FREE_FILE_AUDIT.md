@@ -128,7 +128,56 @@ and two expect an omitted-selector refusal. All ten reproduce with the
 pre-batch `9f03b3b11` bookkeeping control owner loaded before test collection;
 every other production file is unchanged between that baseline and this batch.
 The baseline run is retained in
-`g2-workspace-foreign-baseline-failures.log`. These inherited discrepancies stay
-open, and the expanded run is recorded as a failing run. The bounded directly
-owned lifetime regression is reported separately. No failing test or production
+`g2-workspace-foreign-baseline-failures.log`. This historical expanded run remains failing evidence. The reconciliation below
+records the subsequent repair. The bounded directly owned lifetime regression
+from that publication is reported separately. No failing test or production
 behavior is weakened to close these parents.
+
+## Expanded lifetime and blocked-selector reconciliation
+
+The eight mixed-flag failures came from executable call expansion. Extra native
+bit/word adapter nodes delayed a ready Free until after predicate erasure. The
+resulting release order changed LIFO reuse on the next child invocation. This
+was a physical scheduling defect despite the existing primitive dependency
+comparison succeeding.
+
+`component_schedule.py` now gives directly action-free register views earlier
+insertion indices when building the physical scheduling graph. The existing
+source-derived greedy priorities and SSA edges still determine readiness. A
+view consists only of Split/Join operations, or a call to a single block with
+only those operations. Computation, measurement, allocation and release bodies
+retain their existing classification. The logical graph continues to use source
+connection insertion order, so independent source resource estimation and
+logical call ordering keep their accepted evidence.
+
+The unchanged `test_mixed_workspace_flags.py` verifies the exact original event
+sequence, per-wire flags, pool provenance and subsequent reuse for both expansion
+modes. It also verifies source primitive dependencies/operands/feedback, complete
+complex measured branches, zero work population, all forward/inverse history
+pairs, ordinary append execution and independent model estimates. The focused
+mixed-flag and SelectSwap profile passes all 111 cases with the original lifetime
+assertions retained.
+
+The other two failures were stale expectations that a whole-table block must
+be refused by `QroamCleanTable`. The existing owner deliberately supports a
+constant bank with no high address, covered by the accepted whole-table loading
+and exact-phase routing scenario in `test_source_qroam_clean.py`. The SelectSwap
+boundary test now asserts that admitted case has one batch and zero temporary
+And workspace. Mixed omitted-axis cases still raise. The original unmodified
+SelectSwap decomposition failure is asserted in every case and is kept distinct
+from the native supported storage/routing behavior.
+
+No upstream source file is changed. No failing lifetime equality, amplitude,
+workspace or resource assertion is removed. Q-0311/Q-0323 retain their independent
+storage, direct SDK and symbolic drawing obligations.
+
+The expanded scheduler/expansion/lifetime consumer profile now reports 3253
+passes and one optional PennyLane skip. The existing PennyLane dependency
+directory resolves that skip, and the exact skipped case passes together with
+the final mixed-lifetime/SelectSwap profile of 112 cases. Thus all 3254 selected
+expanded cases have passing evidence across the recorded runs. Local integration
+passes 17 cases and the second Cirq version profile passes 118. Strict typing,
+Black, Ruff, scope, architecture, IR and protected API checks pass. Four inherited
+strict errors in the touched SelectSwap test reproduce on baseline and are
+resolved by removing variable shadowing and typing the deliberately invalid
+boolean fixture explicitly. The original frozen reference is untouched.

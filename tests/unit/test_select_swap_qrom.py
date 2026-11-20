@@ -318,10 +318,10 @@ def test_source_gate_graph_and_bank_channel(
         high = tuple(a // b for a, b in zip(address, table.block_shape, strict=True))
         loaded_row = row.copy()
         if enable == (1 << control_count) - 1:
-            for src, padded, target, bank in zip(
+            for src, padded, target, bank_words in zip(
                 source.batched_data, source.padded_data, targets, banks, strict=True
             ):
-                for word, val in zip(bank, src[high].flat, strict=True):
+                for word, val in zip(bank_words, src[high].flat, strict=True):
                     for i, wire in enumerate(reversed(word)):
                         loaded_row[wire] ^= int(val) >> i & 1
                 data = int(padded[address])
@@ -418,10 +418,11 @@ def test_concrete_source_block_minimizer(
 def test_select_swap_validation() -> None:
     table = QroamCleanTable((1,), (0,), ((1,),))
     args = (table, (), ((),), ((0,),), (((1,),),), (), ())
+    invalid_flag: Any = 1
     with pytest.raises(ValueError, match="boolean"):
-        select_swap_qrom_ir(*args, dirty=1)
+        select_swap_qrom_ir(*args, dirty=invalid_flag)
     with pytest.raises(ValueError, match="boolean"):
-        select_swap_qrom_ir(*args, adjoint=1)
+        select_swap_qrom_ir(*args, adjoint=invalid_flag)
     with pytest.raises(ValueError, match="matching destination"):
         select_swap_qrom_ir(*args[:3], (), *args[4:])
     with pytest.raises(ValueError, match="distinct"):
@@ -453,8 +454,13 @@ def test_source_omitted_selector_failures(
     )
     with pytest.raises(BloqError, match="selection"):
         source.decompose_bloq()
-    with pytest.raises(ValueError, match="omitted"):
-        QroamCleanTable(shape, logs, (data,))
+    if shape == (4,):
+        table = QroamCleanTable(shape, logs, (data,))
+        assert table.batch_shape == (1,)
+        assert table.workspace_size(1, (2,)) == 0
+    else:
+        with pytest.raises(ValueError, match="omitted"):
+            QroamCleanTable(shape, logs, (data,))
 
 
 def test_append_borrowed_bank_example() -> None:
