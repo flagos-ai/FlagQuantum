@@ -64,7 +64,14 @@ def _function_connections(
     block = function.blocks[0]
     widths = _argument_widths(function, logical_graph)
     producers = dict.fromkeys(block.arguments, -1)
+    # Physical bit/word adapters carry no action. Make ready views precede
+    # computational peers so they expose dependent frees before pool reuse.
+    # Logical source graphs retain the original connection insertion order.
     nodes: dict[int, int] = {}
+    if not logical_graph:
+        for position, operation in enumerate(block.operations):
+            if _is_register_view(operation, functions):
+                nodes[position] = len(nodes)
     edges: list[WidthConnection] = []
 
     def connect(value: ValueRef, target: int) -> None:
@@ -101,6 +108,21 @@ def _function_connections(
             )
         steps.append(step)
     return steps, edges, tuple(nodes)
+
+
+def _is_register_view(
+    operation: Operation, functions: Mapping[str, FunctionRecord]
+) -> bool:
+    if operation.opcode == "call":
+        function = functions[operation.callee or ""]
+        if len(function.blocks) != 1:
+            return False
+        operations = function.blocks[0].operations
+    else:
+        operations = (operation,)
+    return all(
+        item.opcode in {"split_register", "join_register"} for item in operations
+    )
 
 
 def _connection_width(dtype: RegisterType, logical_graph: bool) -> SymbolicInt:
