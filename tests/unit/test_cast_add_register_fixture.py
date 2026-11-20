@@ -5,7 +5,10 @@
 
 """Check the original Cast/Add/Cast fixture through native typed calls."""
 
+from itertools import product
+
 import pytest
+import torch
 
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
@@ -16,7 +19,6 @@ from flagquantum.compiler.registers.register_binding import bind_register_progra
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_types import (
     fixed_point_register_type,
-    opaque_register_type,
     unsigned_register_type,
 )
 from flagquantum.core.ir.program.signatures import Signature
@@ -24,7 +26,7 @@ from flagquantum.core.ir.program.signatures import Signature
 
 def cast_add_fixture(width: int) -> ProgramRecord:
     unsigned = unsigned_register_type(width)
-    fraction = opaque_register_type(width)
+    fraction = fixed_point_register_type(width, width)
     add = addition_component_program(width, name="add")
     to_unsigned = cast_word_function("to_unsigned", fraction, unsigned)
     to_fraction = cast_word_function("to_fraction", unsigned, fraction)
@@ -49,10 +51,6 @@ def test_typed_cast_add_calls_preserve_fixed_point_storage(width: int) -> None:
     from tests.unit.test_register_subtraction import assert_source
 
     source = TestCastToFrom(bitsize=width)
-    raw_fraction = fixed_point_register_type(width, width)
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
-        cast_word_function("fraction_view", raw_fraction, unsigned_register_type(width))
-    # Existing physical Program admission stores the same word in an opaque port.
     record = cast_add_fixture(width)
     main = next(fn for fn in record.functions if fn.name == "main")
     assert main.registers is not None
@@ -78,3 +76,27 @@ def test_typed_cast_add_calls_preserve_fixed_point_storage(width: int) -> None:
     }
     oracle = reference_arithmetic_gates(source, {"a": a, "b": b}, work, slots)
     assert_source(instructions, oracle)
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum import Circuit
+    from tests.unit.measurement_checks import forced_branch
+
+    values = torch.arange(1, (1 << (2 * width)) + 1, dtype=torch.float64)
+    ket = torch.complex(values, values.remainder(7) - 3)
+    ket /= ket.norm()
+    clean = torch.zeros(1 << len(work), dtype=torch.complex128)
+    clean[0] = 1
+    initial = torch.kron(ket, clean)
+    expected = torch.kron(torch.as_tensor(source.tensor_contract()) @ ket, clean)
+    for history in product((0, 1), repeat=len(slots)):
+        actual = forced_branch(initial, instructions, history)
+        torch.testing.assert_close(
+            actual, expected / 2 ** (len(slots) / 2), atol=3e-12, rtol=0
+        )
+        assert torch.count_nonzero(actual.reshape(-1, 1 << len(work))[:, 1:]) == 0
+    if not slots:
+        circuit = Circuit(2 * width + len(work), inputs=initial, dtype=torch.complex128)
+        circuit.append(FieldOperation(2 * width + len(work), instructions))
+        torch.testing.assert_close(
+            circuit.state().flatten(), expected, atol=3e-12, rtol=0
+        )
