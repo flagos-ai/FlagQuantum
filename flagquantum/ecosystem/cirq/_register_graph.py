@@ -13,7 +13,10 @@ from typing import Any
 from ...compiler.formats.legacy_component_arguments import ComponentArgument
 from ...compiler.formats.legacy_component_library import (
     ComponentDeclaration,
+    ComponentLibrary,
+    ComponentLibraryEntry,
     deserialize_component_library,
+    serialize_component_library,
 )
 from ...compiler.formats.legacy_component_resolution import (
     ResolvedArgument,
@@ -34,6 +37,14 @@ from ...core.ir.program.signatures import Signature
 from ._qubit_manager import InteropQubitManager
 from ._register_import import import_cirq_register_optree
 from .conversion import _cirq
+
+
+def _declaration_key(declaration: ComponentDeclaration) -> bytes:
+    # Canonical interchange preserves array dtype, shape and exact values.
+    # Dataclass equality cannot compare ndarray-valued constructor arguments.
+    return serialize_component_library(
+        ComponentLibrary(entries=(ComponentLibraryEntry(0, declaration),))
+    )
 
 
 def _leaf_program(
@@ -112,7 +123,10 @@ def import_register_graph(source: object) -> ProgramRecord:
             .declaration
         )
         candidates = leaves.setdefault(declaration.name, [])
-        if any(existing == declaration for existing, _ in candidates):
+        if any(
+            _declaration_key(existing) == _declaration_key(declaration)
+            for existing, _ in candidates
+        ):
             raise ValueError(
                 "Distinct live components share one serialized declaration"
             )
@@ -135,8 +149,14 @@ def import_register_graph(source: object) -> ProgramRecord:
         matches = [
             leaf
             for declaration, leaf in leaves[source_name]
-            if declaration.registers == registers
-            and declaration.arguments == constructor_arguments
+            if _declaration_key(declaration)
+            == _declaration_key(
+                replace(
+                    declaration,
+                    registers=registers,
+                    arguments=constructor_arguments,
+                )
+            )
             and len(constructor_arguments) == len(arguments)
         ]
         if len(matches) != 1:
