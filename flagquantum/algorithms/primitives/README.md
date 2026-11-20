@@ -186,3 +186,12 @@ the existing coefficient-driven owners and the normal append workflow covered
 by `test_double_factorization_block_encoding.py`. The complete source mapping,
 physical evidence and model-only boundary are in
 `docs/development/DOUBLE_FACTORIZATION_PREPARE_SELECT_FILE_AUDIT.md`.
+
+Top-level DF model changes belong in `double_factorization_encoding_model.py`.
+Reuse the existing leaf owners when changing a call or its live width. Run
+`test_double_factorization_encoding_model.py` and
+`test_double_factorization_foreign_encoding.py` for original call/operand and
+actual stored-graph consumers. Physical coefficient changes are verified by
+`test_double_factorization_block_encoding.py`. Source analytical declarations
+and unavailable leaf bodies remain explicit in
+`docs/development/DOUBLE_FACTORIZATION_FILE_AUDIT.md`.
