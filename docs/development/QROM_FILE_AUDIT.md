@@ -192,3 +192,56 @@ Strict typing, Black, Ruff, team scope, architecture, IR and protected API
 checks passed. The dependency-policy scan retains 666 repository findings,
 with zero findings on this batch's changed paths. Frozen source hashes and
 unchanged physical owners are recorded in the external evidence receipt.
+
+## Actual typed graph handoff and failure stages, November 21
+
+The complete QROM and base-file consumer review now reuses the accepted private
+Ecosystem `import_register_graph` boundary. The actual source stored graph and
+its actual graph adjoint convert directly to owned Program without a handwritten
+QROM factory. Scalar and two-cell target words, with zero and one control, match
+original primitives, operands, per-wire dependencies and latest-measurement
+feedback. Every small measurement branch retains the full unnormalized complex
+joint state with an external spectator, zero clean work and original output
+ownership. The normal `circuit.append(op)` workflow and CircuitIR JSON roundtrip
+are exercised. Earlier complete factory, method, notebook, classical-value and
+all-column evidence remains applicable and is reused.
+
+`tests/unit/test_qrom_graph_handoff.py` also reproduces the following failure
+stages in the unchanged reference. These are distinct protocol outcomes.
+
+| Input | Original decomposition and model | Owned graph handoff disposition |
+| --- | --- | --- |
+| Leading, trailing or middle singleton selection axis | Physical decomposition and QEC counting raise the original array-to-scalar TypeError | The same original decomposition error propagates |
+| Target suffix declared as 3 cells for actual 2-cell data | Signature construction succeeds, then physical decomposition and QEC counting raise IndexError | The same original indexing error propagates |
+| Scalar first dataset followed by vector | Signature omits selection because widths came from the scalar; physical decomposition and QEC counting raise IndexError | The same original indexing error propagates |
+| Four zero rows and zero-width target | Signature and first decomposition succeed; QEC model has zero T gates; recursive flattening fails in original XorK(0) because its `x` input is absent | The original recursive failure propagates before conversion |
+
+The external intake receipt `g2-qrom-boundary-intake.json` additionally retains
+negative-control and inconsistent-row results. A negative-width control can
+produce an original QEC declaration and a zero logical peak while its physical
+conversion fails. Inconsistent row counts fail when the original signature
+requests the cached common shape. No source failure or abstract declaration is
+reported as a successful physical implementation.
+
+Actual primitive counts and independent original models remain separate. Both
+graph directions have the following counts. External spectator storage is
+excluded from original peaks.
+
+| Target / control | Measured T-family / CX / CZ / measurements / clean reservation | Source AND / Clifford / measurements / logical peak |
+| --- | --- | --- |
+| Scalar / 0 | 0 / 1 / 0 / 0 / 0 | 0 / 3 / 0 / 2 |
+| Scalar / 1 | 4 / 8 / 1 / 1 / 1 | 1 / 3 / 1 / 4 |
+| Two cells / 0 | 0 / 2 / 0 / 0 / 0 | 0 / 4 / 0 / 3 |
+| Two cells / 1 | 4 / 9 / 1 / 1 / 1 | 1 / 4 / 1 / 5 |
+
+The focused consumer and source-stage checks pass. Concentrated regression
+passes 295 cases and local integration passes 17. Cirq 1.6.1 passes 125 with
+zero skips or warnings. Strict typing, Black, Ruff, Ecosystem scope, architecture,
+IR and protected API checks pass. Independent resource rows are retained in
+`g2-qrom-graph-resources.json`.
+
+Q-0480 and Q-0481 remain open. This handoff closes their missing automatic typed
+graph consumer, while the four constructor-metadata admission differences
+listed in the complete base audit remain. Native QromTable still validates those
+objects earlier, and native score layout still differs from Cirq ASCII layout.
+These boundaries require an explicit disposition before whole-file acceptance.
