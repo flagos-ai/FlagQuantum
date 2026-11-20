@@ -6,10 +6,10 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Open for full executable dtype and direct external object protocols. |
+| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Open for complete physical dtype admission, including pending signed/empty fixed-point storage. |
 | Q-0326 | `join_test.py` | `8cd06b0d322692c18bd66b659bf85b9b76ddb3cf` | Closed for the runnable original scenarios. |
 | Q-0330 | `split.ipynb` | `f7150b192af058a668f5efb0d599fdbe03f658bd` | Closed by the complete native Split and Join tutorial. |
-| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Open for full executable dtype and direct external object protocols. |
+| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Open for complete physical dtype admission, including pending signed/empty fixed-point storage. |
 | Q-0333 | `split_test.py` | `8efb0a620f8939ee3c4d494f519afdd2a707e284` | Closed for the runnable original scenarios and notebook. |
 
 The Compiler's existing typed rebinding consumes each owned input exactly
@@ -60,5 +60,38 @@ The physical binder rejects an entirely wireless circuit. The source
 Cirq callback can return an empty word. The locked resource model reports
 zero gates and logical peaks of zero, one, two and five respectively.
 Both source constructors and native executable builders reject symbolic
-widths. Full executable dtype and direct foreign object adapters remain
-open.
+widths. Complete physical dtype admission remains open. The direct external
+consumers verified below close the concrete foreign-factory obligation.
+
+
+## Actual foreign factories and admitted storage families
+
+The actual `_split` and `_join` examples and eight other concrete dtype cases
+round-trip the original deterministic foreign libraries byte-for-byte at depths
+zero, one and two. Explicit native factories resolve their canonical nominal
+signatures into the existing Split/Join bodies. Bit, opaque, unsigned, signed,
+unsigned fixed-point with negative fractional width, ones-complement, bounded,
+Montgomery and empty opaque storage retain reversed caller wire order. The
+original direct Cirq reshapes and PennyLane no-operation callback agree.
+Binary-field and field-polynomial bodies also agree with the direct source SDK
+and tensor action. Their original serializer raises the same unrecognized-dtype
+TypeError at all three depths, retained separately from physical execution.
+
+Every small nonempty case compares the full complex tensor action with a coherent
+spectator through ordinary `Circuit.append(op)`. Empty opaque storage preserves
+the spectator. All paths emit zero primitive gates, feedback, measurements and
+work events. Independent source QEC cost is zero and logical peak is the dtype
+width. Existing downstream measured arithmetic evidence is reused.
+
+Two inherited symbolic-refusal assertions fail on the unchanged batch base
+959296a56 because logical-width validation now runs before physical descriptor
+admission. They now assert the existing concrete-logical-width failure. The
+source constructor still rejects symbolic dtype widths. No production admission
+or reference code changes are included in this batch.
+
+Batch evidence `g2-partition-foreign-*` records 776 concentrated, 17 local
+integration and 122 Cirq 1.6.1 passes, strict checks on three changed test files,
+formatting, scope, architecture, IR and API checks. Full-source parents Q-0325
+and Q-0331 remain open for unapproved signed/empty fixed storage under Proposal
+116 and any additional unadmitted full dtype families. Concrete foreign examples
+do not establish unrestricted dtype support.

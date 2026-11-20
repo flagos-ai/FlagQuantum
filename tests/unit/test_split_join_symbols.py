@@ -27,7 +27,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 @pytest.fixture(scope="module", autouse=True)
-def frozen_bookkeeping():
+def frozen_bookkeeping() -> None:
     from qualtran.bloqs.bookkeeping import join, split
 
     for source, digest in (
@@ -40,7 +40,9 @@ def frozen_bookkeeping():
 
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize("width", [0, 1, 2, 5])
-def test_typed_split_join_scores_bindings_and_costs_match_source(reverse, width):
+def test_typed_split_join_scores_bindings_and_costs_match_source(
+    reverse: bool, width: int
+) -> None:
     import cirq
     import numpy as np
     from qualtran import QGF, BloqBuilder, QAny, QBit, QUInt
@@ -80,7 +82,7 @@ def test_typed_split_join_scores_bindings_and_costs_match_source(reverse, width)
     assert op is None
     assert tuple(qubit.x for qubit in expected_wires["reg"].flat) == wires
     assert actual.outputs == ((wires,) if reverse else bits)
-    assert actual.circuit.instructions == actual.events == ()
+    assert actual.circuit.instructions == () and actual.events == ()
 
     source, source_inputs = BloqBuilder.from_signature(original.signature)
     original_graph = source.finalize(**source.add_d(original, **source_inputs))
@@ -103,7 +105,7 @@ def test_typed_split_join_scores_bindings_and_costs_match_source(reverse, width)
 
 
 @pytest.mark.parametrize("reverse", [False, True])
-def test_symbolic_width_is_refused_before_rebinding(reverse):
+def test_symbolic_width_is_refused_before_rebinding(reverse: bool) -> None:
     from qualtran import QAny
     from qualtran.bloqs.bookkeeping import Join, Split
     from sympy import Symbol
@@ -114,5 +116,7 @@ def test_symbolic_width_is_refused_before_rebinding(reverse):
     )
     with pytest.raises(ValueError, match="symbolic data type"):
         source(QAny(width))
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
+    with pytest.raises(
+        ValueError, match="split/join requires a concrete logical register width"
+    ):
         native("symbolic", opaque_register_type(width))
