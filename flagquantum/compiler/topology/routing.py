@@ -23,6 +23,9 @@ from .coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
 from .coupling import CouplingMap as CouplingMap
 from .routing_cost import LinkErrorRates as LinkErrorRates
 from .routing_cost import (
+    _count_sabre_orientation_swaps as _count_sabre_orientation_swaps,
+)
+from .routing_cost import (
     _PricedDevice,
     _source_routing_counts,
     _topology_cost_model,
@@ -70,6 +73,12 @@ from .sabre import (
     SabrePlan,
     plan_restore_swaps,
     plan_sabre_layout,
+)
+from .sabre import (
+    _plan_sabre_trial as _plan_sabre_trial,
+)
+from .sabre import (
+    _select_sabre_trials as _select_sabre_trials,
 )
 from .sabre import (
     plan_sabre_swaps as plan_sabre_swaps,

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from flagquantum.compiler import CouplingMap, route_to_topology
-from flagquantum.compiler.topology import routing, sabre
+from flagquantum.compiler.topology import routing, routing_strategy, sabre
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction
 
@@ -132,7 +132,7 @@ def test_materialization_reuses_the_selected_layout_search() -> None:
     source = _program(8, 3)
     topology = routing._topology_cost_model(CouplingMap.grid(2, 4), 8, "trial reuse")
     with patch.object(
-        routing, "plan_sabre_layout", wraps=routing.plan_sabre_layout
+        routing_strategy, "plan_sabre_layout", wraps=routing_strategy.plan_sabre_layout
     ) as search:
         estimate, plan = routing._estimate_routing_cost(
             source, topology, strategy="sabre_layout"
