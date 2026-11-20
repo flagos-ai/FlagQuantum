@@ -701,6 +701,15 @@ by estimated duration. Batches contain at most 16 tests, so a large untimed file
 can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
 coverage is written outside the source tree, then combined before the unchanged
 coverage policy runs. Unmeasured tests receive the same positive default weight.
+Coverage workers report long tests after 300 seconds with
+`tools.pytest_thread_dump`. It holds Python references to the thread frames
+while formatting their stacks, avoiding CPython's native asynchronous frame
+traversal, which stalled a local reproduction after its assertions passed and
+coincided with the worker exit in #1253. The original worker exit signal was
+not retained. These Python diagnostics require the GIL; a native call holding
+it may prevent the timed report. Fatal-signal faulthandler support remains
+enabled, and the job timeout still bounds such hangs. Test selection, coverage
+requirements, worker quotas, and job time limits are unchanged.
 Pull requests run complete smoke/unit coverage once on
 Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; manual
 full CI retains complete smoke/unit coverage on all supported interpreters. The
