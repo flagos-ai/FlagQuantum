@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from unittest.mock import patch
 
@@ -177,3 +178,32 @@ def test_verifier_rejects_unreadable_or_outside_local_gates(
     assert not synthesis._verified_cx_pulses(
         torch.eye(4, dtype=torch.complex128).tolist(), (invalid,), (0, 1)
     )
+
+
+def test_concurrent_synthesis_keeps_inputs_and_metadata_local() -> None:
+    source = _random_su4(8400)
+    targets = tuple(synthesis.SUPERCONTROLLED_ENTANGLERS)
+
+    def compile_case(index: int) -> tuple[Instruction, ...]:
+        emitted = synthesis.synthesize_two_qubit(
+            source,
+            qubits=(7, 2),
+            entangler=targets[index % len(targets)],
+            z_rotation="rz",
+            metadata={"case": index},
+        )
+        assert emitted is not None
+        return emitted
+
+    expected = [compile_case(index) for index in range(18)]
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(compile_case, index) for index in reversed(range(18))
+        ]
+        actual = [future.result(timeout=30) for future in futures]
+    for index, emitted in zip(reversed(range(18)), actual, strict=True):
+        assert emitted == expected[index]
+        assert all(item.metadata == {"case": index} for item in emitted)
+        assert (
+            _gap(emitted, torch.tensor(source, dtype=torch.complex128), (7, 2)) < 1e-12
+        )

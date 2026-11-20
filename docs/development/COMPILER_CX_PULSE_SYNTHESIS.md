@@ -161,6 +161,43 @@ before_seconds,candidate_seconds
 0.004150291002588347,0.005828666995512322
 ```
 
+### Fixed entangler preparation reuse
+
+The target entangler's Weyl factors and closed-form constants depend only on its
+published opcode. Preparation is now retained in a process-local LRU cache
+bounded to the six supported entanglers. Invalid names raise before insertion.
+The private objects are read without mutation, including their matrix factors;
+no source unitary, circuit, output instruction, layout or caller metadata enters
+the cache. The standard-library cache protects its index across threads; two
+simultaneous cold calls may prepare the same deterministic constants twice.
+Concurrent synthesis tests cover all six bases and distinct caller metadata.
+This reuses preparation, rather than memoizing benchmark input matrices.
+
+A new control retained the same twelve matrices, three warmup blocks and eleven
+alternating measured blocks. Its before median was `0.004095957992831245`
+seconds and its candidate median was `0.004311166994739324` seconds, a ratio of
+approximately `1.05`. The candidate still did not beat the pre-port path. This
+warm comparison excludes first-use basis preparation: a cold call still pays
+that preparation, and each worker process has its own bounded cache. The earlier
+`1.70` and `1.40` observations remain above; no ratio across runs is asserted.
+The raw pairs below retain the same local-development limitations and provide
+neither qualified SDKBench performance nor process-memory evidence.
+
+```text
+before_seconds,candidate_seconds
+0.004233500003465451,0.0043257499928586185
+0.004095957992831245,0.004323707995354198
+0.004099584009964019,0.004412333000800572
+0.0040964170038932934,0.004232332998071797
+0.004038833008962683,0.0043196250044275075
+0.004160750002483837,0.004274042003089562
+0.0041185419977409765,0.0041918329952750355
+0.003990875004092231,0.004273416998330504
+0.0040893749974202365,0.004384166997624561
+0.004067458008648828,0.004223791998811066
+0.004071000003023073,0.004311166994739324
+```
+
 ## Acceptance and supported workflow
 
 The focused tests cover fixed random SU(4) matrices, framed two-CX interactions,

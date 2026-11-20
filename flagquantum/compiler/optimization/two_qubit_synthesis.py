@@ -80,6 +80,7 @@ import cmath
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from types import MappingProxyType
 from typing import Any
 
@@ -798,6 +799,14 @@ class _BasisDecomposer:
         raise ValueError(f"{count} is not an entangler count this module can emit")
 
 
+@lru_cache(maxsize=len(SUPERCONTROLLED_ENTANGLERS))
+def _prepared_basis(entangler: str) -> _BasisDecomposer:
+    # Only fixed gate constants are retained. Decomposition reads these factors
+    # without mutating them; input matrices, instructions and metadata stay local.
+    # The six valid names bound storage; invalid names raise before insertion.
+    return _BasisDecomposer(entangler)
+
+
 # ------------------------------------------------------------------- public API
 
 
@@ -862,7 +871,7 @@ def synthesize_two_qubit(
     # Decompose in the low-control kron convention, then read the result back on
     # the caller's own qubits; see the module docstring.
     target = _weyl_decomposition(_swap_register(target_matrix))
-    decomposer = _BasisDecomposer(entangler)
+    decomposer = _prepared_basis(entangler)
     count = decomposer.entangler_count(target)
     factors = decomposer.decomposition(target, count)
 
