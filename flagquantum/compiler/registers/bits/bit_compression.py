@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterable
 
 from ....core.ir import Instruction
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
-from .bit_compression_structure import compression_components
+from .bit_compression_structure import CompressionComponent, compression_components
 from .bitwise import _validate_wires
 
 
@@ -21,6 +21,13 @@ def compress_three_bits_ir(
     components = compression_components(a, b, total, carry)
     if erase_bit is not None:
         components = tuple(reversed(components))
+    return _expand_column_components(components, erase_bit=erase_bit)
+
+
+def _expand_column_components(
+    components: Iterable[CompressionComponent], *, erase_bit: int | None = None
+) -> tuple[Instruction, ...]:
+    """Expand the shared logical sequence through the existing measured And."""
     gates: list[Instruction] = []
     for kind, wires in components:
         if kind == "cx":
@@ -73,18 +80,42 @@ def with_weighted_columns_ir(
     if type(measurement_bit) is not int or measurement_bit < 0:
         raise ValueError("Column compression requires a nonnegative measurement slot")
 
+    compute, word, undo = weighted_column_components(result_width, workspace, terms)
+    return (
+        *_expand_column_components(compute),
+        *consume(word),
+        *_expand_column_components(undo, erase_bit=measurement_bit),
+    )
+
+
+def weighted_column_components(
+    result_width: int,
+    workspace: tuple[int, ...],
+    terms: Iterable[tuple[int, int, int | None]],
+) -> tuple[
+    tuple[CompressionComponent, ...],
+    tuple[int | None, ...],
+    tuple[CompressionComponent, ...],
+]:
+    """Return product/compression steps, live parity word and inverse steps.
+
+    Addresses follow the caller's wire layout. The final word is MSB first.
+    AND targets consume workspace in order and remain live through the consumer.
+    Inverse AND steps erase their known targets with measurement feedback.
+    """
     columns: list[deque[int]] = [deque() for _ in range(result_width)]
     available = iter(workspace)
-    compute: list[Instruction] = []
-    undo: list[tuple[Instruction, ...]] = []
+    compute: list[CompressionComponent] = []
+    undo: list[tuple[CompressionComponent, ...]] = []
     for position, left, right in terms:
         if right is None:
             columns[position].append(left)
         else:
             product = next(available)
             columns[position].append(product)
-            compute.extend(and_compute_ir(left, right, product))
-            undo.append(and_uncompute_ir(left, right, product, measurement_bit))
+            step: CompressionComponent = ("and", (left, right, product))
+            compute.append(step)
+            undo.append((step,))
 
     for i, column in enumerate(columns):
         while len(column) >= 2:
@@ -93,22 +124,20 @@ def with_weighted_columns_ir(
             columns[i + 1].append(carry)
             if column:
                 total = column.popleft()
-                compute.extend(compress_three_bits_ir(a, b, total, carry))
-                undo.append(
-                    compress_three_bits_ir(
-                        a, b, total, carry, erase_bit=measurement_bit
-                    )
-                )
+                steps = compression_components(a, b, total, carry)
+                compute.extend(steps)
+                undo.append(tuple(reversed(steps)))
                 column.append(total)
             else:
-                parity = Instruction("cx", (a, b))
-                compute.extend((*and_compute_ir(a, b, carry), parity))
-                undo.append((parity, *and_uncompute_ir(a, b, carry, measurement_bit)))
+                parity: CompressionComponent = ("cx", (a, b))
+                conjunction: CompressionComponent = ("and", (a, b, carry))
+                compute.extend((conjunction, parity))
+                undo.append((parity, conjunction))
                 column.append(b)
 
     word = tuple(column[0] if column else None for column in reversed(columns))
     return (
-        *compute,
-        *consume(word),
-        *(gate for block in reversed(undo) for gate in block),
+        tuple(compute),
+        word,
+        tuple(step for block in reversed(undo) for step in block),
     )
