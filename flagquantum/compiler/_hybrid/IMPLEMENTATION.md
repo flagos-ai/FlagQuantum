@@ -110,7 +110,11 @@ not introduce a target dialect, `TargetIR`, general pass registry, stable pass
 extension API, device optimization, or performance claim. Operations that may
 fail at runtime are not removed merely because their result is unused.
 
-`dynamic_lowering.py` owns the separate bounded measurement-feedback profile.
+`dynamic/program.py` owns the separate bounded measurement-feedback profile.
+`dynamic/expressions.py` owns predicate canonicalization and condition-partitioned
+classical values. The retained `dynamic_lowering.py` entry aliases the lowering
+function and result type. The [dynamic guide](dynamic/README.md) describes the
+implementation boundary and executable feedback workflow.
 Capture represents a top-level measurement as a boolean SSA value plus a new
 linear quantum effect. A direct `if` on that value lowers both branches to
 classically conditioned instructions on one Core `CircuitIR`; it does not

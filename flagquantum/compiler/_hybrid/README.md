@@ -12,7 +12,7 @@ evolution. This package does not introduce a second public IR or execution API.
 
 [Capture](frontend/README.md) → [verify](verifier.py) → [normalize](passes.py) →
 [specialize](specialize.py) → [lower](lowering.py).
-[Dynamic lowering](dynamic_lowering.py) handles measurement-dependent control.
+[Dynamic lowering](dynamic/README.md) handles measurement-dependent control.
 
 For a small change, edit the owning stage and add an accepted and rejected
 scenario under `tests/hybrid_compiler`. Run from the repository root:
@@ -37,3 +37,7 @@ boundaries. No execution or new IR representation is introduced.
 Python capture implementation ownership and its shortest executable workflow are
 documented in [frontend/README.md](frontend/README.md). The existing
 `capture.py` module retains the source entry points and diagnostic aliases.
+
+Bounded measurement-feedback implementation ownership and its executable
+feedback workflow are documented in [dynamic/README.md](dynamic/README.md).
+The existing `dynamic_lowering.py` entry retains aliases to the implementation.
