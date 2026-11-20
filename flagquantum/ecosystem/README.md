@@ -126,3 +126,9 @@ and tests/unit/test_symbolic_global_phase.py for the shortest executable example
 integer and bit representation. Its lazy dependency and source-conformance
 boundary are documented in
 [the conversion guide](../../docs/development/FIXED_POINT_REAL_CONVERSION.md).
+
+The internal Cirq multiplication bridge converts concrete external declarations
+into the existing owned register Programs. Compiler retains arithmetic and
+measured cleanup. The bridge handles SDK allocation, output aliases and
+measurement keys. Use `tests/unit/test_multiplication_foreign_file.py` for the
+eight-class capture, physical rebinding, serialization and append workflow.
