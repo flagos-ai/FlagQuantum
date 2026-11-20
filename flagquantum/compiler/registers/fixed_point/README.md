@@ -24,3 +24,14 @@ The existing paper construction reads a and preserves b. The typed result owner
 keeps the fixed-point descriptor while measured And calls restore scratch.
 Run `tests/unit/test_fixed_point_square_component.py` for the stored/expanded
 call, complex-state, measurement-history and ordinary append workflow.
+
+`fixed_point_scaling_component.py` and `fixed_point_product_component.py` compose
+D4/D5 through the shared `truncated_product_component.py` owner. They preserve
+ScaleIntByReal's pure-fraction real_in, unsigned int_in and mixed fixed-point
+result, and MultiplyTwoReals' three pure-fraction formats. Results use RIGHT
+creation and matching LEFT image consumption. Initial And copies occupy the
+result itself. Each stored CAdd owns its temporary word and carry lifetimes,
+using the accepted exact Add inverse during erasure. Physical binding returns
+the result mapping, which can change after call expansion. Run
+`tests/unit/test_truncated_product_components.py` for direct source-child
+comparison, full complex states and ordinary circuit.append(op) round trips.

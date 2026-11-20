@@ -216,3 +216,74 @@ covered. Default docstring coverage failure evidence is reused after verifying
 the ten implicated files against that base. Default-suite completion remains
 open. Type-only test annotations were corrected after broad collection and are
 included in the final focused run.
+
+## Stored ScaleIntByReal and MultiplyTwoReals, November 20, 2026
+
+The two typed roots close the D4/D5 stored-call dependencies through
+`fixed_point/truncated_product_component.py`. ScaleIntByReal retains pure-fraction
+THRU real_in, unsigned THRU int_in and a RIGHT result with real_width-integer_width
+fractional bits. MultiplyTwoReals retains pure-fraction a, b and result. The exact
+inverse consumes a matching LEFT result image and releases zeroed storage.
+All root words retain original nominal descriptors and MSB-first order.
+
+The common owner uses the existing initial And compute/measurement erase
+primitives and imports the complete accepted controlled_addition_program for
+each growing prefix/suffix pair. CAdd retains its original And/Add/views and
+logical exact adjoint. Result storage owns the initial copied conjunctions.
+Each CAdd owns its loaded word and carries until their measured release. The
+flat D4/D5 owners, CAdd/Add owners and their accepted source-parity tests remain
+byte-identical to base c5271cbec. The frozen roots have signatures and resource
+models without executable decompositions.
+
+Original CAdd/adjoint decompositions are compared on every retained step with
+the actual data/control/result operands and native child allocation lifetimes.
+Fresh classical slots normalize only after checking the measurement supplying
+each feedback. Primitive multisets, per-wire order and conditional operands
+match those original child streams. Initial And leaf evidence is reused. Whole
+root primitive multisets match the unchanged accepted flat D4/D5 emitters.
+Independent global scheduling can differ.
+
+Each CAdd now reuses its own scratch lifetimes, so its physical temporary names
+can differ from the flat emitter's two fixed pools. Expanding calls can also
+move RIGHT result allocation behind an independent temporary allocation. The
+tests check live-owner disjointness, pool membership, returned output mapping,
+and clean release. Complete complex-state checks use the actual mapping in
+both stored and expanded paths. Caller input aliases remain identical.
+
+Full coherent inputs and an entangled spectator are checked for scaling 2x1,
+2x2 and 3x2, and fractional multiplication widths one, two and three. Forward
+and inverse restore all work. Widths at most two exhaust every measurement
+history pair, including sixteen pairs for scaling 2x2. Larger cases use two
+trajectory seeds and reuse the accepted complete And-channel certificates.
+Normal circuit.append(op) round trips pass with both flat roots replaced by
+failing stubs. The one-bit fractional result is zero, while its unchanged source
+model reports negative one Toffoli and negative four T-equivalent.
+
+Resource receipts separate actual primitive counts, peak owned wires including
+the result, total allocated wire lifetimes and original forward models. Dynamic
+wire reuse therefore retains both capacity and lifetime counts. The remaining
+whole-file executable contract is InvertRealNumber's mixed THRU result, alongside
+PlusEqualProduct's typed accumulation and generic foreign definitions. The
+source roots' missing decompositions retain their existing disposition.
+Q-0208 and Q-0209 remain open until their full remaining scope is disposed.
+
+| Stored product | Observed forward primitives and owned storage | Original forward model |
+| --- | --- | --- |
+| ScaleIntByReal 6x4 | 104 T/Tdg, 216 CX, 24 measurements/resets; 10 scratch plus 6 output peak, 30 allocated wire lifetimes | 26 Toffoli, 104 T-equivalent |
+| MultiplyTwoReals 4 bits | 44 T/Tdg, 88 CX, 10 measurements/resets; 6 scratch plus 4 output peak, 14 allocated wire lifetimes | 11 Toffoli, 44 T-equivalent |
+
+The inverse of these examples emits 96 and 40 T/Tdg respectively, with 26 and
+11 measurements/resets. The original forward model is kept in its own column.
+The initial copied conjunctions account for the forward/inverse asymmetry.
+
+Receipts use `ftqc-reference-env/g2-truncated-products-`. Concentrated regression
+passes 3,962 checks with one existing IPython warning and zero skips. Local
+integration passes 17 checks. Final focused acceptance passes 45 cases, including
+nominal-descriptor assertions added after broad collection. Strict typing covers
+four Python files. Black, Ruff, scope, architecture, IR and public API checks
+pass. Five original source blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are
+verified. Dependency policy reports 687 existing whole-repository findings and
+zero touched-path findings. Default docstring coverage failure is reused after
+verifying all ten implicated files against c5271cbec. Default-suite completion
+remains open. Earlier expanded-output coordinate assumptions were corrected in
+the tests, then both stored and expanded coherent execution were verified.
