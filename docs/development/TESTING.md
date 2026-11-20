@@ -1029,17 +1029,16 @@ provisioned general CPU pool and the same locked environment. Test processes
 remain isolated and resource-budgeted.
 
 Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
-`/opt/flagquantum-runners/tools/public-wheels` directory when unset. Torch
-installation retains the historical A800 directory when the provisioned default
-is absent. Each private environment resolves compatible wheel bytes rather than
-reusing another job's installed packages. Missing Torch wheels retain the
+`/opt/flagquantum-runners/tools/public-wheels` directory when unset. Each private
+environment resolves compatible wheel bytes rather than reusing another job's
+installed packages. Missing Torch wheels retain the
 bounded mirror and official-index fallback. Self-hosted pip requests use a
 60-second socket timeout and at most two retries within the unchanged job limit.
 Supply-chain dependency installation selects the Aliyun mirror on self-hosted
 runners with the same availability check and official-index fallback. This
 job-specific selection avoids the repository-wide index variable, which may
-deliberately select official PyPI for other jobs. Vulnerability
-queries still contact PyPI directly. The 20-minute job limit, installed-environment
+deliberately select official PyPI for other jobs. Vulnerability queries still
+contact PyPI directly. The 20-minute job limit, installed-environment
 audit, Bandit analysis, SBOM generation, and SBOM validation remain required.
 
 Source cache repair verifies Git objects and the exact workflow commit before

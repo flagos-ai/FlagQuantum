@@ -136,7 +136,18 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
 
 
-@pytest.mark.parametrize("cache_location", ["configured", "provisioned", "historical"])
+def test_cpu_wheel_cache_defaults_to_the_shared_readable_runner_directory() -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
+    )
+    script = action["runs"]["steps"][0]["run"]
+    assert (
+        "${FQ_CPU_WHEEL_CACHE:-/opt/flagquantum-runners/tools/public-wheels}" in script
+    )
+    assert "/root/" not in script
+
+
+@pytest.mark.parametrize("cache_location", ["configured", "provisioned"])
 @pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(
@@ -165,10 +176,6 @@ def test_cpu_wheel_mirror_fallback_preserves_the_official_hosted_route(
         script = script.replace(
             "/opt/flagquantum-runners/tools/public-wheels", str(cache)
         )
-    elif cache_location == "historical":
-        script = script.replace(
-            "/opt/flagquantum-runners/tools/public-wheels", str(tmp_path / "missing")
-        ).replace("/root/liuwei/fq-ci-bootstrap/cpu-wheels", str(cache))
     if cache_state != "absent":
         cache.mkdir()
     log = tmp_path / "pip-calls.jsonl"

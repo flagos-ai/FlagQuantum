@@ -70,7 +70,7 @@ from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import plan_execution_program, plan_program
 from ..runtime.options import ExecutionOptions
 from ..runtime.result import ExecutionResult
-from ._synthesis_execution import CheckedExecution, inspect_execution
+from ._synthesis_execution import CheckedExecution, _inspect_execution_with_resources
 from ._synthesis_preparation import prepare_inputs as _prepare_inputs
 from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
@@ -253,7 +253,12 @@ class Program:
             raise ValueError(
                 "the synthesis circuit changed; synthesize again before reading or execution"
             ) from error
-        if self.circuit.content_hash != row.target.submitted.content_hash:
+        # The target validation above already hashed its submitted object.
+        # A separately supplied circuit still needs a full content comparison.
+        if (
+            self.circuit is not row.target.submitted
+            and self.circuit.content_hash != row.target.submitted.content_hash
+        ):
             raise ValueError("the synthesis circuit changed; synthesize again")
         if dict(self.registers) != dict(self.selection.registers):
             raise ValueError("logical registers changed; synthesize again")
@@ -924,7 +929,7 @@ def _complete(
         allow_backend_fallback=False,
     )
     execution = plan(row.target.submitted, options=options)
-    checked = inspect_execution(
+    checked, resources = _inspect_execution_with_resources(
         execution,
         limits=selection.constraints.limits,
         basis=selection.target.basis,
@@ -937,7 +942,6 @@ def _complete(
             f"execution memory budget exceeded: state requires {execution.state_bytes} "
             f"bytes, limit is {memory_limit_bytes}; no allocation was performed"
         )
-    resources = checked.resources
     complete_report = dict(report)
     complete_report.update(
         workspace_qubits=row.arithmetic.peak_workspace,

@@ -246,6 +246,8 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
+| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py) |
+| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](_hybrid/dynamic/expressions.py) |
 | Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
 | QIR base-profile emission | [qir.py](formats/qir.py) |
 
