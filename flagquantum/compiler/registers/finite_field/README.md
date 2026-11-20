@@ -63,3 +63,13 @@ physical input. Frozen source matrix-power and ignored-adjoint defects remain
 explicit in the square audit. To bind, execute and restore a complete word, run
 `python -m examples.algorithms.register_field_frobenius` and the corresponding
 `test_binary_linear_component.py` and `test_field_frobenius_component.py` tests.
+
+`polynomial_addition_component.py` composes the existing typed coefficient views
+and field-addition calls, preserving highest-degree-first order and literal
+source adjoints. Packed words use the existing opaque view. Dedicated packed
+polynomial descriptor admission stays separate. The internal field constant
+adder's `adjoint=True` reverses X calls, while quantum field XOR retains its
+self-adjoint bit order. Run
+`python -m examples.algorithms.register_field_polynomial_addition` and
+`tests/unit/test_field_polynomial_addition_component.py` for coherent append,
+original source and clean-spectator restoration checks.

@@ -202,3 +202,59 @@ events. The independent source model counts zero gates and peaks at
 three or eight lines including the controls. The physical view keeps
 its coefficient dtype. General QGFPoly Program descriptors, nonbinary
 typed field execution, and direct foreign object protocols remain open.
+
+## Complete stored coefficient-call chain — 2026-11-20
+
+The full two addition source files now execute as stored Programs through
+`finite_field/polynomial_addition_component.py`. Existing typed coefficient
+split/join graphs own the packed view. Each original degree-plus-one addition
+is a real call to `field_addition_program`, with shared child definitions.
+No new polynomial dtype or executable descriptor is introduced. Packed ports
+continue to use the existing opaque view and coefficient ports retain their
+canonical binary-field type. The specific packed polynomial admission gap above
+remains open. Numerical constructor validation, symbolic source graphs and
+original-suite dispositions are reused from the complete definition map.
+
+`addition_component.py` now exposes the exact constant-child adjoint through
+its internal `adjoint` argument. It reverses the existing X sequence. Quantum
+field XOR retains its source-self-adjoint bit order. Polynomial inverse traversal
+reverses coefficient calls and split/join order. Descending zero padding and
+all-zero coefficient children remain in the stored call graph. Both directions
+return the original physical words with no hidden output swaps, workspace,
+measurements or classical SSA slots.
+
+`python -m examples.algorithms.register_field_polynomial_addition` executes the
+normal `circuit.append(op)` workflow and restores every complex amplitude of
+two packed degree-one GF(4) words. Replacement tests make both previous public
+polynomial physical emitters raise while the stored append operation executes.
+Full complex states, entangled spectator and a clean wire pass for quantum XOR
+and zero/single/multiple encoded constants, in both directions. Degree0/1/4 and
+coefficient widths1/2/3/5/8 match the entire previously accepted stream exactly.
+Original frozen forward and adjoint circuits are also checked at all five widths
+for exact gates and operands on each wire, output aliases and independent QEC
+Clifford counts. Source DAG scheduling may reorder disjoint operations. The
+source-self-adjoint quantum child and reversed constant child retain their
+separate accepted literal traversal checks.
+
+The batch passed 246 concentrated cases without skips and 17 local integration
+cases. Strict typing passed for four files, with Black, Ruff, Compiler scope,
+architecture, multi-level IR and protected API checks. Final evidence and source
+inventories are stored under `ftqc-reference-env/g2-polynomial-add-stored-*`.
+Optional source-test Cirq access uses the existing pytest dependency guard.
+
+| Degree / coefficient width | Emitted quantum XOR CX | Source Clifford | Emitted one-word all-ones constant X | Source Clifford |
+| --- | ---: | ---: | ---: | ---: |
+| 0 / 1 | 1 | 1 | 1 | 1 |
+| 1 / 2 | 4 | 4 | 2 | 2 |
+| 4 / 3 | 15 | 15 | 3 | 3 |
+| 4 / 8 | 40 | 40 | 8 | 8 |
+
+All rows use zero extra quantum work, zero measurements and zero classical SSA.
+The quantum operand width is twice the packed polynomial width for XOR and one
+packed word for constants. Symbolic models stay independent of these emitted
+counts. Generic packed-type, foreign-object, nonbinary and original-autotester
+boundaries remain open in Q-0527/Q-0529/Q-0533. This closes their stored binary
+execution chain without claiming full parent or whole-repository acceptance.
+
+Five direct frozen source blobs match. The final dependency scan reports 688
+existing repository findings and zero batch findings.
