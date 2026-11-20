@@ -19,8 +19,11 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     OnEachCall,
 )
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
+from flagquantum.compiler.registers.arithmetic.subtraction_declaration import (
+    SubtractFromDeclaration,
+    SubtractionDeclaration,
+)
 from flagquantum.core.ir.program.register_types import signed_register_type
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 
 SubtractionExample = tuple[str, Signature, dict[Hashable, SymbolicInt]]
@@ -59,36 +62,19 @@ def subtraction_examples() -> tuple[SubtractionExample, ...]:
         ("subtract_from_small", 4, 4, "from"),
         ("subtract_from_large", 64, 64, "from"),
     ):
-        signature = Signature(
-            (
-                Register("a", signed_register_type(left)),
-                Register("b", signed_register_type(right)),
+        declaration = (
+            SubtractFromDeclaration(signed_register_type(right))
+            if direction == "from"
+            else SubtractionDeclaration(
+                signed_register_type(left), signed_register_type(right)
             )
         )
-        calls: dict[Hashable, SymbolicInt]
-        if direction == "from":
-            calls = {
-                ArithmeticCall("bitwise_not", (right,), ("twos_complement",)): 2,
-                ArithmeticCall("add", (right, right), ("twos_complement",) * 2): 1,
-            }
-        elif direction == "composite":
-            calls = dict(
-                Counter(child for child, _ in symbolic_subtraction_steps(right))
-            )
-        else:
-            calls = {
-                OnEachCall(CliffordCall("x", 1), right): 3,
-                ArithmeticCall("add", (right, right)): 1,
-            }
-            delta = right - left
-            if delta:
-                calls.update(
-                    {
-                        ("allocate", delta): 1,
-                        ("free", delta): 1,
-                        ("multi_target_cx", delta): 2,
-                    }
-                )
+        signature = declaration.signature
+        calls = (
+            dict(Counter(child for child, _ in symbolic_subtraction_steps(right)))
+            if direction == "composite"
+            else declaration.direct_calls()
+        )
         examples.append((name, signature, calls))
     return tuple(examples)
 

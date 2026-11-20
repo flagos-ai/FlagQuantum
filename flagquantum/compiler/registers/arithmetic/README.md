@@ -185,3 +185,14 @@ exact inverse, then erases products/carries. It reuses the typed column steps
 with weighted-column XOR consumers. No product output word is allocated. Run
 `tests/unit/test_product_accumulation_component.py` for coherent occupied inputs,
 wraparound, measurement histories, work cleanup and ordinary append replacement.
+
+`subtraction_declaration.py` owns generic Subtract/SubtractFrom dtype defaults,
+unsigned projections, signatures and ordered direct models. The subtraction
+catalogue consumes these declarations. Concrete execution delegates to the
+existing `subtraction_component.py`, with caller-owned a/b and clean prefix/carry
+lifetimes. `subtraction_control.py` derives both scalar control polarities
+through the same graph, reusing CAdd and controlled BitwiseNot. Signed prefixes
+retain the original controlled fanout with atomic Toffoli leaves. Model Toffoli
+cost and emitted atomic gates are reported separately. Run
+`python -m pytest tests/unit/test_subtraction_control.py tests/unit/test_subtraction_foreign_file.py -q`.
+The ordinary `circuit.append(op)` entry remains in `register_subtraction.py`.
