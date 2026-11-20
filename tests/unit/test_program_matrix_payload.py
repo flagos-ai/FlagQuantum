@@ -101,3 +101,61 @@ def test_payload_on_other_opcode_and_zero_arity_are_rejected() -> None:
             plain.condition_clauses,
         )
     )
+
+
+def previous_inner_product_error(
+    matrix: tuple[tuple[complex, ...], ...],
+) -> str | None:
+    """Keep the complete pre-optimization inner products as an independent oracle."""
+    size = len(matrix)
+    for left in range(size):
+        for right in range(left, size):
+            inner = sum(row[left].conjugate() * row[right] for row in matrix)
+            if abs(inner - int(left == right)) > 1e-10:
+                return "matrix must be unitary within absolute tolerance 1e-10"
+    return None
+
+
+def test_monomial_proof_matches_every_small_phased_permutation() -> None:
+    from itertools import permutations, product
+
+    for columns in permutations(range(4)):
+        for phases in product((1 + 0j, -1 + 0j, 1j, -1j), repeat=4):
+            matrix = tuple(
+                tuple(phase if column == selected else 0j for column in range(4))
+                for selected, phase in zip(columns, phases, strict=True)
+            )
+            assert matrix_error(matrix, 2) == previous_inner_product_error(matrix)
+
+
+@pytest.mark.parametrize("offset", (0.0, 1e-12, 4e-11, 6e-11, 1e-8, -1e-8))
+@pytest.mark.parametrize("duplicate", (False, True))
+def test_monomial_invalid_columns_and_norm_tolerance_match_prior_validator(
+    offset: float, duplicate: bool
+) -> None:
+    columns = (0, 1, 2, 2 if duplicate else 3)
+    matrix = tuple(
+        tuple(complex(1 + offset) if column == selected else 0j for column in range(4))
+        for selected in columns
+    )
+    assert matrix_error(matrix, 2) == previous_inner_product_error(matrix)
+
+
+def test_nonmonomial_fallback_matches_prior_validator() -> None:
+    generator = torch.Generator().manual_seed(127)
+    for width in (1, 2, 3):
+        size = 1 << width
+        dense = torch.randn((size, size), generator=generator, dtype=torch.complex128)
+        unitary, _ = torch.linalg.qr(dense)
+        for tensor in (dense, unitary, unitary * 1.0001, torch.zeros_like(unitary)):
+            matrix = tuple(tuple(complex(value) for value in row) for row in tensor)
+            assert matrix_error(matrix, width) == previous_inner_product_error(matrix)
+    # The first rows can be monomial while a later block requires full products.
+    root = 2**-0.5
+    mixed = (
+        (1 + 0j, 0j, 0j, 0j),
+        (0j, 1j, 0j, 0j),
+        (0j, 0j, complex(root), complex(root)),
+        (0j, 0j, complex(root), complex(-root)),
+    )
+    assert matrix_error(mixed, 2) == previous_inner_product_error(mixed)

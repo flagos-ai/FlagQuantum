@@ -20,6 +20,20 @@ def matrix_error(matrix: object, arity: int) -> str | None:
         for value in row
     ):
         return "matrix entries must be finite"
+    # Reversible lookup matrices have one phased nonzero per row. Their
+    # disjoint column supports certify unitarity without cubic inner products.
+    occupied = []
+    for row in matrix:
+        entries = [(column, value) for column, value in enumerate(row) if value != 0]
+        if len(entries) != 1:
+            break
+        occupied.append(entries[0])
+    else:
+        if len({column for column, _ in occupied}) != size or any(
+            abs(value.conjugate() * value - 1) > 1e-10 for _, value in occupied
+        ):
+            return "matrix must be unitary within absolute tolerance 1e-10"
+        return None
     for left in range(size):
         for right in range(left, size):
             inner = sum(row[left].conjugate() * row[right] for row in matrix)
