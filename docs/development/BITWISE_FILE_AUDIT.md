@@ -153,3 +153,57 @@ warnings. The original native fixture is reused without another framework.
 The two symbolic factories still have only metadata/model owners and explicit
 physical refusal. Generic symbolic foreign-object conversion and roundtrip
 remain open, including their shared source-testing dependency Q-0937.
+
+## Complete factory interchange and file acceptance
+
+The final closure maps all 29 recursive class/function definitions, all five
+factories, both DocSpecs and the twelve original test functions to the owners
+above. `test_bitwise_foreign_file.py` exercises every actual source factory
+through unchanged source serialization and the existing Compiler library
+codec at depths zero, one and two. Deterministic original bytes, constructor
+arguments, register dtype metadata, decomposition connections and count rows
+roundtrip without reconstruction of foreign Python classes in native code.
+
+Both symbolic factories resolve to native typed declarations through
+`resolve_component_program` with explicit caller factories. Width assignment
+is explicit caller construction of a concrete dtype and declaration. It is
+not a generic symbolic Program specialization engine. Widths one, three and
+five then resolve through the unchanged `bitwise_word_program` owner. Every
+bound instruction and reversed operand matches original capture. Complete
+complex amplitudes including an entangled spectator, output aliases and
+normal `circuit.append(operation)` involution agree. No workspace or
+measurement branches exist. Unresolved symbolic physical construction retains
+its actual rejection. The original symbolic XOR/NOT decomposition-depth
+distinction remains checked in the existing audit suite.
+
+This closes Q-0177/Q-0178 using existing owners. The generic arbitrary source
+object/type-graph scope of Q-0937 remains open. The preceding sections describe
+historical intermediate gaps. Symbolic models and declarations do not imply
+physical execution at an unresolved width. Concrete factory five-mode checks,
+classical callbacks, controls, complete score geometry and source models reuse
+their accepted evidence and are included in concentrated regression.
+
+The concentrated regression passes 2,706 cases with eight existing paired
+source/native NumPy integer overflow warnings. Integration passes 17 cases.
+The Cirq 1.6.1 lane passes all seven new cases. The untouched original test file
+retains 37 passes, four source skips, one source xfail and its unknown slow
+marker warning. Two stale existing OnEach S/T assertions still expected
+three-bit unsigned fixed-point storage to fail after approved Proposal 115.
+Their independent correction checks exact bound instructions and aliases.
+All production owners are byte-identical to the batch baseline.
+
+Both changed native test modules pass the established strict type-checking
+configuration, Black and Ruff. Explicitly adding the complete unmodified
+upstream tree to MYPYPATH separately exposes 36 implicit-reexport diagnostics
+in the existing OnEach source imports. No reference annotation or import was
+changed to hide them. Scope, architecture, multilevel IR and protected API
+checks pass. The existing default-run docstring-policy failure is reused with
+all ten implicated files verified byte-identical to the batch baseline.
+Dependency policy reports 687 existing findings and zero in changed files.
+Receipts and logs use `ftqc-reference-env/g2-bitwise-foreign-*`.
+
+Interchange and explicit construction add zero gates. Actual XOR emits width
+CX, NOT emits width X and the eight-bit constant-87 factory emits five X.
+All own zero workspace, measurement and T. Original independent QEC models
+report corresponding Clifford multiplicities. A symbolic n-Clifford formula
+is retained separately from the unavailable unresolved physical stream.
