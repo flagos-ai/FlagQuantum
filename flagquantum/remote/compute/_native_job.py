@@ -12,7 +12,6 @@ import uuid
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
 
 from ...core.ir import ensure_circuit_ir
 from ...observables import lower_outputs
@@ -23,6 +22,7 @@ from .jiuding import JiudingClient
 
 _MAX_RESULT = 8 * 1024 * 1024
 _MAX_COMMAND = 64 * 1024
+_LOG_QUERY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
 
 def _one(rows: list[dict[str, Any]], name: str, label: str) -> dict[str, Any]:
@@ -274,18 +274,8 @@ class NativeJiudingJobClient(JiudingClient):
         )
         if not isinstance(executable, str) or not executable:
             raise ValueError("Image has no executable registry URL")
-        # Preflight the same authenticated log service used for result retrieval.
-        datasource = self._request(
-            "/grafana/api/datasources/name/"
-            + quote("log." + w["clusterName"], safe=""),
-            None,
-            self._auth(),
-            method="GET",
-        )
-        if datasource.get("type") != "loki" or not isinstance(
-            datasource.get("uid"), str
-        ):
-            raise RuntimeError("Expected the platform Loki job log datasource")
+        if not isinstance(w.get("clusterName"), str) or not w["clusterName"]:
+            raise RuntimeError("Jiuding job logs require a cluster name")
         receipt = Path(tempfile.mkdtemp(prefix="flagquantum-job-")) / "receipt.json"
         record = {
             "run_id": run_id,
@@ -299,7 +289,7 @@ class NativeJiudingJobClient(JiudingClient):
             "requested_target": target,
             "selected_target": selected,
             "artifact_transport": "job_logs",
-            "datasource_uid": datasource["uid"],
+            "cluster_name": w["clusterName"],
             "created_ms": int(time.time() * 1000),
             "devices": devices,
             "execution_distribution_semantics": (
@@ -334,42 +324,56 @@ class NativeJiudingJobClient(JiudingClient):
             raise ValueError("Job receipt belongs to another project or endpoint")
         job_id = str(uuid.UUID(receipt["jobId"]))
         run_id = uuid.UUID(hex=receipt["run_id"]).hex
-        if self.workspace()["queueId"] != receipt["queueId"]:
+        context = self.workspace()
+        if context["queueId"] != receipt["queueId"]:
             raise ValueError("Job receipt belongs to another queue")
-        response = self._request(
-            "/grafana/api/ds/query",
-            {
-                "from": str(receipt["created_ms"] - 60000),
-                "to": str(int(time.time() * 1000)),
-                "queries": [
-                    {
-                        "refId": "A",
-                        "datasource": {
-                            "type": "loki",
-                            "uid": receipt["datasource_uid"],
-                        },
-                        "expr": '{namespace="airs", app=~"job-'
-                        + job_id
-                        + '.*"} |= "FQ_RESULT_'
-                        + run_id
-                        + ' "',
-                        "queryType": "range",
-                        "maxLines": 4096,
-                        "direction": "forward",
-                    }
-                ],
+        # Receipts written before telemetry migration have only datasource_uid.
+        cluster_name = receipt.get("cluster_name", context.get("clusterName"))
+        if not isinstance(cluster_name, str) or not cluster_name:
+            raise RuntimeError("Jiuding job logs require a cluster name")
+        end_ms = int(time.time() * 1000)
+        body: dict[str, Any] = {
+            "workload_id": job_id,
+            "workload_type": 1,
+            "cluster_name": cluster_name,
+            "time_range": {
+                "from": max(
+                    receipt["created_ms"] - 60000, end_ms - _LOG_QUERY_WINDOW_MS
+                ),
+                "to": end_ms,
             },
-            self._auth(),
-        )
-        result = response.get("results", {}).get("A", {})
-        if result.get("error") or result.get("status") != 200:
-            raise RuntimeError("Jiuding job log query did not succeed")
-        lines = []
-        for frame in result.get("frames", []):
-            fields = frame["schema"]["fields"]
-            for index, field in enumerate(fields):
-                if field.get("name") == "Line":
-                    lines.extend(frame["data"]["values"][index])
+            "filter_options": {"log_source": 1, "keyword": f"FQ_RESULT_{run_id}"},
+            "pagination": {"limit": 4096, "direction": 2},
+        }
+        lines: list[str] = []
+        cursors: set[str] = set()
+        for _ in range(32):
+            response = self._request("/api/v1/telemetry/logs/query", body, self._auth())
+            if response.get("code") != 0:
+                raise RuntimeError(
+                    f"Jiuding job log query failed (code {response.get('code')})"
+                )
+            data = response.get("data")
+            if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
+                raise RuntimeError("Malformed Jiuding job log response")
+            for entry in data["entries"]:
+                if not isinstance(entry, dict) or not isinstance(
+                    entry.get("message"), str
+                ):
+                    raise RuntimeError("Malformed Jiuding job log entry")
+                line = entry["message"]
+                if len(line) > 4096 or len(lines) >= 4096:
+                    raise RuntimeError("Jiuding job logs exceed transport bounds")
+                lines.append(line)
+            if not data.get("hasMore", data.get("has_more", False)):
+                break
+            cursor = data.get("nextCursor", data.get("next_cursor"))
+            if not isinstance(cursor, str) or not cursor or cursor in cursors:
+                raise RuntimeError("Jiuding job log pagination did not advance")
+            cursors.add(cursor)
+            body["pagination"]["cursor"] = cursor
+        else:
+            raise RuntimeError("Jiuding job log pagination exceeds transport bounds")
         value = _decode_lines(lines, run_id)
         return decode_program_result(
             value,
