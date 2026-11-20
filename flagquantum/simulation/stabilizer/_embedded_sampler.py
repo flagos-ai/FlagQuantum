@@ -33,6 +33,37 @@ def _operations_text(operations: tuple[_EngineOperation, ...]) -> str:
     return "\n".join(lines)
 
 
+def _annotated_operations_text(
+    operations: tuple[_EngineOperation, ...],
+    terminal_qubits: tuple[int, ...],
+    detector_columns: tuple[tuple[int, ...], ...],
+    observable_columns: tuple[tuple[int, ...], ...],
+) -> str:
+    if terminal_qubits:
+        operations += (("M", terminal_qubits, None),)
+    recorded = sum(len(targets) for name, targets, _ in operations if name == "M")
+    lines = [_operations_text(operations)]
+    for kind, columns in (
+        ("DETECTOR", detector_columns),
+        ("OBSERVABLE_INCLUDE", observable_columns),
+    ):
+        for index, parity in enumerate(columns):
+            if any(column < 0 or column >= recorded for column in parity):
+                raise ValueError("parity column outside recorded measurements")
+            name = kind if kind == "DETECTOR" else f"{kind}({index})"
+            targets = " ".join(f"rec[{column - recorded}]" for column in parity)
+            lines.append(f"{name} {targets}".rstrip())
+    return "\n".join(lines)
+
+
+def _validate_text_experiment(text: str) -> None:
+    _validate_stim_experiment_source(text)
+    try:
+        _text_experiment_engine().validate_text_experiment(text)
+    except OverflowError as error:
+        raise CapabilityError(str(error)) from error
+
+
 class _EmbeddedSampler:
     def __init__(
         self,

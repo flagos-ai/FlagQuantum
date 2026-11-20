@@ -85,16 +85,30 @@ def _controlled_block(
     gates: tuple[Instruction, ...],
     controls: tuple[int, ...],
     scratch: tuple[int, ...],
+    global_phase: float = 0.0,
 ) -> tuple[Instruction, ...]:
     if len(controls) < 2 or len(scratch) < len(controls) - 1:
+        if global_phase:
+            target = gates[0].wires[0]
+            flip = Instruction("x", (target,))
+            phase = Instruction("phase", (target,), {"theta": global_phase})
+            gates = (*gates, flip, phase, flip, phase)
         return tuple(
             leaf for gate in gates for leaf in controlled_instruction(gate, controls)
         )
     flag, *workspace = scratch
     predicate = _clean_mcx_instructions(controls, flag, workspace[: len(controls) - 2])
+    # The clean flag already represents the whole condition, including when the
+    # target is zero. Apply the block's global phase before uncomputing it.
+    phase_gates = (
+        (Instruction("phase", (flag,), {"theta": global_phase}),)
+        if global_phase
+        else ()
+    )
     return (
         *predicate,
         *(leaf for gate in gates for leaf in controlled_instruction(gate, (flag,))),
+        *phase_gates,
         *reversed(predicate),
     )
 
@@ -105,6 +119,7 @@ def _pattern_block(
     pattern: int,
     external_controls: tuple[int, ...] = (),
     scratch: tuple[int, ...] = (),
+    global_phase: float = 0.0,
 ) -> tuple[Instruction, ...]:
     if not gates:
         return ()
@@ -117,7 +132,11 @@ def _pattern_block(
         for position, wire in enumerate(wires)
         if wire in controls and not pattern & (1 << (len(wires) - position - 1))
     )
-    return (*flips, *_controlled_block(gates, controls, scratch), *reversed(flips))
+    return (
+        *flips,
+        *_controlled_block(gates, controls, scratch, global_phase),
+        *reversed(flips),
+    )
 
 
 def _two_level_instructions(
@@ -147,12 +166,26 @@ def _two_level_instructions(
         matrix = matrix.flip((0, 1))
     gates = [gate for permutation in permutations for gate in permutation]
     local, angle = _small_decomposition(matrix, (target,), op, zyz=True)
+    share_phase = (
+        len(wires) >= 4
+        and bool(local)
+        and len(scratch) >= len(controls) + len(wires) - 2
+    )
     if len(wires) >= 4:
-        gates.extend(_pattern_block(local, wires, left, controls, scratch))
+        gates.extend(
+            _pattern_block(
+                local,
+                wires,
+                left,
+                controls,
+                scratch,
+                angle if share_phase and abs(angle) > 1e-15 else 0.0,
+            )
+        )
     else:
         for gate in local:
             gates.extend(_pattern_block((gate,), wires, left, controls))
-    if abs(angle) > 1e-15:
+    if abs(angle) > 1e-15 and not share_phase:
         # A two-level global phase acts on both target values. Condition it on
         # the other bits once instead of controlling four phase-repair gates.
         condition = (*controls, *(wire for wire in wires if wire != target))

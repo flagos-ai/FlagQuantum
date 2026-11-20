@@ -38,7 +38,8 @@ def memory_to_stim_text(
     """Export the positioned memory experiment and its declared parities.
 
     Noise is read from the actual executed Kraus law. No geometric coordinates
-    are invented for native layouts. Requires the optional Stim extra.
+    are invented for native layouts. Uses the embedded engine when present;
+    other builds require the optional Stim extra.
 
     Examples:
         >>> from importlib.util import find_spec

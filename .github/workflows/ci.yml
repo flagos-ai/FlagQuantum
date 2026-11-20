@@ -797,13 +797,13 @@ jobs:
     permissions:
       contents: read
       packages: read
-    # Run 43187409331 reached 99% at 60 minutes. Partition the full selection
-    # with the existing deterministic planner; run both launcher proofs once.
+    # Run 44503097029 shard 1 passed in 58m59s but exceeded the job limit
+    # after setup and report upload. Keep the full selection in eight partitions.
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -889,7 +889,7 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-runtime --shard-count 4 --shard-index ${{ matrix.shard }}
+        run: python tools/ci_tier.py pr-runtime --shard-count 8 --shard-index ${{ matrix.shard }}
       - name: Prove native distributed runtime does not require JAX
         if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
@@ -1884,7 +1884,15 @@ jobs:
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
           git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
-          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+          # A cold cache otherwise downloads the complete Actions artifact over
+          # the runner's slow blob-storage route. Git negotiates existing objects.
+          if timeout --kill-after=15s 180s git -c http.version=HTTP/1.1 fetch \
+            --no-tags --depth=1 "https://github.com/${GITHUB_REPOSITORY}.git" "$sha" &&
+            test "$(git rev-parse FETCH_HEAD)" = "$sha" &&
+            objects="$(git rev-list --objects --missing=print --no-walk "$sha")" &&
+            ! printf '%s\n' "$objects" | grep -q '^?'; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          elif timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
@@ -2473,7 +2481,7 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report=
+            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
@@ -2484,7 +2492,7 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report=
+            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
@@ -2717,6 +2725,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
+        with:
+          self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - name: Install project and security tooling

@@ -245,6 +245,108 @@ def test_partial_source_caches_get_bounded_verified_api_repair_before_full_trans
     } <= set(consumers)
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Source repair runs in Linux bash")
+@pytest.mark.parametrize(
+    "transport,api_success,expected",
+    [
+        ("success", False, True),
+        ("failure", True, True),
+        ("failure", False, False),
+        ("wrong-head", False, False),
+        ("missing-object", False, False),
+    ],
+)
+def test_dependency_source_repair_verifies_git_transport_before_api_fallback(
+    tmp_path: Path, transport: str, api_success: bool, expected: bool
+) -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    repair = next(
+        step["run"]
+        for step in jobs["dependency-bounds"]["steps"]
+        if step.get("id") == "source-repair"
+    )
+    environment = {
+        **os.environ,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "RUNNER_TEMP": str(tmp_path),
+        "GITHUB_REPOSITORY": "fixture/source",
+        "GITHUB_OUTPUT": str(tmp_path / "output"),
+        "TRANSPORT": transport,
+    }
+    source = tmp_path / "origin"
+    source.mkdir()
+
+    def git(*arguments: str) -> str:
+        return subprocess.run(
+            ["git", *arguments],
+            cwd=source,
+            env=environment,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        ).stdout.strip()
+
+    git("init")
+    git("config", "user.name", "FlagQuantum")
+    git("config", "user.email", "liuwei.chem.phys@gmail.com")
+    (source / "tools").mkdir()
+    (source / "tools/ci_source_archive.py").write_text(
+        "from pathlib import Path\n"
+        f"Path({str(tmp_path / 'api-called')!r}).touch()\n"
+        f"raise SystemExit({0 if api_success else 1})\n"
+    )
+    git("add", ".")
+    git("commit", "-m", "Fixture source")
+    sha = git("rev-parse", "HEAD")
+    environment.update(GITHUB_SHA=sha, FIXTURE_ORIGIN=str(source))
+    (tmp_path / "ci-source").mkdir()
+    (tmp_path / "ci-source/source.sha").write_text(sha + "\n")
+    target = tmp_path / "target"
+    subprocess.run(
+        ["git", "clone", "--no-checkout", str(source), str(target)],
+        env=environment,
+        check=True,
+        capture_output=True,
+        timeout=20,
+    )
+    # Only the network boundary is replaced; object and commit checks use Git.
+    boundary = """
+    timeout() { shift 2; "$@"; }
+    git() {
+      if test "$1" = -c; then
+        test "$2" = http.version=HTTP/1.1 || return 90
+        test "$3" = fetch || return 91
+        test "$4" = --no-tags || return 92
+        test "$5" = --depth=1 || return 93
+        test "$6" = https://github.com/fixture/source.git || return 94
+        test "$7" = "$GITHUB_SHA" || return 95
+        test "$TRANSPORT" != failure || return 1
+        command git fetch --no-tags --depth=1 "$FIXTURE_ORIGIN" "$7"
+      elif test "$1 $2" = 'rev-parse FETCH_HEAD' &&
+           test "$TRANSPORT" = wrong-head; then
+        printf '%040d\\n' 0
+      elif test "$1" = rev-list && test "$TRANSPORT" = missing-object; then
+        printf '?missing-object\\n'
+      else
+        command git "$@"
+      fi
+    }
+    """
+    subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", boundary + repair],
+        cwd=target,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert (tmp_path / "output").read_text() == f"complete={str(expected).lower()}\n"
+    assert (tmp_path / "api-called").exists() == (transport != "success")
+
+
 def test_source_cache_stops_previous_runner_writers_before_checkout():
     for workflow in ("ci.yml", "local-gpu.yml"):
         jobs = yaml.safe_load((ROOT / ".github/workflows" / workflow).read_text())[

@@ -56,6 +56,13 @@ runs:
               fi
             done
           fi
+          # Select only compatible wheel bytes; never reuse an installed environment.
+          wheel_cache="${FQ_CPU_WHEEL_CACHE:-/opt/flagquantum-runners/tools/public-wheels}"
+          if [ -d "$wheel_cache" ]; then
+            echo "PIP_FIND_LINKS=${PIP_FIND_LINKS:+$PIP_FIND_LINKS }$wheel_cache" >> "$GITHUB_ENV"
+          fi
+          echo "PIP_DEFAULT_TIMEOUT=60" >> "$GITHUB_ENV"
+          echo "PIP_RETRIES=2" >> "$GITHUB_ENV"
           # Reuse wheel downloads across job-local virtual environments.
           echo "PIP_CACHE_DIR=${PIP_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pip}" >> "$GITHUB_ENV"
           echo "PIP_NO_CACHE_DIR=" >> "$GITHUB_ENV"

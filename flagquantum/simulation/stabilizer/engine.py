@@ -20,6 +20,12 @@ from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
+from ._circuit_text import (
+    _annotated_stim_source as _annotated_stim_source,
+)
+from ._circuit_text import (
+    _annotated_stim_text as _annotated_stim_text,
+)
 from ._gate_expansions import GATE_EXPANSIONS, expand_gate
 from ._validation import (
     _bounded_stim_expansion,
@@ -1096,59 +1102,6 @@ def _parse_stim_experiment(circuit_text: str) -> Any:
     if circuit.num_detectors == 0:
         raise ValueError("Stim experiment requires at least one detector")
     return circuit
-
-
-def _annotated_stim_text(
-    program: CircuitIR,
-    *,
-    terminal_qubits: tuple[int, ...],
-    detector_columns: tuple[tuple[int, ...], ...],
-    observable_columns: tuple[tuple[int, ...], ...],
-) -> str:
-    """Serialize and validate a positioned program with QEC-owned parity columns."""
-    text = _annotated_stim_source(
-        program,
-        terminal_qubits=terminal_qubits,
-        detector_columns=detector_columns,
-        observable_columns=observable_columns,
-    )
-    _parse_stim_experiment(text)
-    return text
-
-
-def _annotated_stim_source(
-    program: CircuitIR,
-    *,
-    terminal_qubits: tuple[int, ...],
-    detector_columns: tuple[tuple[int, ...], ...],
-    observable_columns: tuple[tuple[int, ...], ...],
-) -> str:
-    ir = _measurement_record_ir(program)
-    circuit = _noisy_engine_circuit(_noisy_operations(ir), terminal_qubits)
-    recorded = circuit.num_measurements
-    stim = _stim()
-    for kind, columns in (
-        ("DETECTOR", detector_columns),
-        ("OBSERVABLE_INCLUDE", observable_columns),
-    ):
-        for index, parity in enumerate(columns):
-            if any(column < 0 or column >= recorded for column in parity):
-                raise ValueError("parity column outside recorded measurements")
-            targets = [stim.target_rec(column - recorded) for column in parity]
-            if kind == "DETECTOR":
-                circuit.append(kind, targets)
-            else:
-                circuit.append(kind, targets, index)
-    lines = []
-    for instruction in circuit:
-        line = str(instruction)
-        if arguments := instruction.gate_args_copy():
-            # The SDK circuit printer rounds arguments; preserve their binary64 values.
-            prefix, suffix = line.split("(", 1)
-            values = ", ".join(map(repr, arguments))
-            line = f"{prefix}({values}){suffix.split(')', 1)[1]}"
-        lines.append(line)
-    return "\n".join(lines)
 
 
 def _prepare_stim_experiment(
