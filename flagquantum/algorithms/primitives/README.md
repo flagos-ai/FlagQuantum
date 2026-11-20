@@ -172,3 +172,17 @@ through `make_on`, then uses `circuit.append(op)` on a `DynamicCircuit`. The ful
 runnable workflow is in `tests/unit/test_hubbard_walk.py`. Run that file with
 `test_hubbard_prepare.py`, `test_hubbard_select.py` and
 `test_hubbard_notebook_resources.py` when changing those owners.
+
+Double-factorization declaration changes start in
+`double_factorization_prepare_model.py` or
+`double_factorization_rotation_model.py`. Preserve source signature order,
+zero-width port rules and directional lookup costs. Raw signed source counts
+travel through the existing component-library interchange before estimator
+admission. Run `test_double_factorization_prepare_model.py`,
+`test_double_factorization_rotation_model.py` and
+`test_double_factorization_foreign_models.py`. The runnable model example is
+`examples/algorithms/double_factorization_resources.py`. Executable changes use
+the existing coefficient-driven owners and the normal append workflow covered
+by `test_double_factorization_block_encoding.py`. The complete source mapping,
+physical evidence and model-only boundary are in
+`docs/development/DOUBLE_FACTORIZATION_PREPARE_SELECT_FILE_AUDIT.md`.

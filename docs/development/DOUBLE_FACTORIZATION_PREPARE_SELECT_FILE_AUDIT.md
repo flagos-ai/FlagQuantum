@@ -78,7 +78,76 @@ estimator admits nonnegative local counts and nonempty lookups,
 including one bit for suitable dimensions. The prior executable cases
 retain their own precision domain.
 
-Q-0343 and Q-0345 remain open for general external objects and source
-declarations outside native model admission. The executable small-table
+Before the complete declaration closure below, Q-0343 and Q-0345 retained
+external-object and raw-declaration gaps outside ordinary estimator admission. The executable small-table
 tests use the shared compiler lookup rather than the analytical
 placeholder.
+
+## Complete source declaration closure
+
+Q-0343 and Q-0345 cover 18 definitions across the two complete source files.
+Their actual external declarations now pass through existing Ecosystem/Compiler
+library interchange and explicit native model consumers. No source algorithm was
+edited. The original four classes declare signatures and analytical call counts
+without executable bodies. Complete acceptance retains that boundary and reuses
+the independently executable coefficient-driven components above.
+
+| Complete source definitions | Native owner and evidence |
+| --- | --- |
+| `InnerPrepareDoubleFactorization`, `signature`, `build_call_graph`, `__str__` | `double_factorization_prepare_model`, `double_factorization_inner_prepare`, exact source display and original example tests. |
+| `OuterPrepareDoubleFactorization`, `signature`, `build_call_graph`, `__str__` | `double_factorization_prepare_model`, `double_factorization_outer_prepare`, exact source display and original example tests. |
+| `OutputIndexedData`, `signature`, `build_call_graph`, `__str__` | `double_factorization_prepare_model`, `double_factorization_indexed_data`, exact source display and original example tests. |
+| `_prep_inner`, `_prep_outer`, `_indexed_data` | Existing unchanged-source example comparisons and `examples/algorithms/double_factorization_resources.py`. |
+| `ProgRotGateArray`, `signature`, `build_call_graph` | `double_factorization_rotation_model` and the existing rotation/SELECT execution owners. |
+
+`test_double_factorization_foreign_models.py` captures actual original constructor
+libraries at depths zero, one and two in both directions for all four classes.
+Owned constructor arguments feed the existing native signature and cost queries.
+Original resolver reconstruction, registers, counts and all protobuf fields are
+preserved. Protobuf count maps have no specified entry ordering, so the comparison
+uses equality of parsed original messages and separately checks deterministic
+owned-byte roundtrips. It does not claim byte identity with nondeterministic
+original map serialization. The native estimator runs with Qualtran, Cirq and
+Kickmix imports blocked after capture.
+
+Actual signed inner-PREPARE and programmed-rotation declarations retain their
+negative local Toffoli counts through the owned library and original resolver.
+The nonnegative native estimator continues to reject these declarations at its
+existing guard. Raw source declarations and an executable circuit have distinct
+admission requirements. Small-table forward lookup and zero-precision source
+failures remain as documented above. Negative widths, odd spin-orbital counts
+and nonintegral dimensions remain outside the existing native model domain.
+These boundaries are explicit dispositions, not pending physical implementations
+of the original placeholders.
+
+### Separate declaration models and executed fixtures
+
+For 50 auxiliaries, 10 spin orbitals, 250 eigenvalues, 8 rotation bits and
+12 alias bits, the unchanged-source and native models agree as follows.
+
+| Declaration | Forward Toffoli | Adjoint Toffoli | And / Clifford / measurement | Rotation | Model peak |
+| --- | --- | --- | --- | --- | --- |
+| Inner PREPARE | 161 | 78 | 7 / 46 / 7 | 0 | 25 |
+| Outer PREPARE | 62 | 33 | 17 / 111 / 17 | 2 | 24 |
+| Indexed data | 46 | 15 | 0 / 0 / 0 | 0 | 26 |
+| Programmed rotation | 235 | 99 | 0 / 0 / 0 | 0 | 62 |
+
+Actual primitive counts for these original objects are unavailable because their
+source classes have no executable decomposition. Both direct decomposition and
+actual graph import preserve that error. The coefficient-driven fixture counts
+in the earlier section remain independently measured evidence with different
+input tables. Their full complex-amplitude, measurement-history, clean-work,
+forward/inverse and normal append regressions are rerun as part of this batch.
+
+The external receipt prefix is `g2-df-foreign-closure-`. It records all five
+frozen source blobs, the complete definition lists, eight separate directional
+resource rows, focused and concentrated tests, integration, strict typing,
+formatting, architecture, IR, scope and API checks. The fresh original suite
+reports 10 passed and nine source-owned skips for absent decompositions and the
+associated graph/dtype checks. The original references retain their bytes.
+
+The closure batch passed 218 concentrated cases, 17 local integration cases and
+strict typing for the new foreign-consumer test file. Black, Ruff, Algorithms
+scope, architecture, multi-level IR and protected API checks passed. The earlier
+91-case chemistry/Hubbard repair regression remains separate accepted evidence.
+Cirq 1.6.1 additionally passed all 78 declaration and foreign-consumer cases.
