@@ -122,6 +122,51 @@ def append_bounded_unary_tree(
     The interval lower bound and extent are address values. An empty or
     inverted interval contributes no gates and does not invoke the child.
     """
+
+    def emit_and(
+        left: int, right: int, target: int, values: tuple[int, int], erase: bool
+    ) -> None:
+        if erase:
+            gates.extend(
+                and_uncompute_ir(
+                    left,
+                    right,
+                    target,
+                    classical_bits[workspace.index(target)],
+                    values=values,
+                )
+            )
+        else:
+            gates.extend(and_compute_ir(left, right, target, values=values))
+
+    _walk_bounded_unary_tree(
+        control,
+        selection,
+        extent,
+        workspace,
+        visit_leaf,
+        gates.append,
+        emit_and,
+        lower=lower,
+        break_early=break_early,
+        adjoint=adjoint,
+    )
+
+
+def _walk_bounded_unary_tree(
+    control: int | None,
+    selection: tuple[int, ...],
+    extent: int,
+    workspace: tuple[int, ...],
+    visit_leaf: Callable[[int, int], None],
+    emit_gate: Callable[[Instruction], None],
+    emit_and: Callable[[int, int, int, tuple[int, int], bool], None],
+    *,
+    lower: int = 0,
+    break_early: Callable[[int, int], bool] | None = None,
+    adjoint: bool = False,
+) -> None:
+    """Share traversal order between physical IR and typed lifetime calls."""
     if lower >= extent:
         return
     capacity = 1 << len(selection)
@@ -153,15 +198,11 @@ def append_bounded_unary_tree(
         wire, work = selection[depth], workspace[depth]
         halves = ((start, middle), (middle, stop))
         first, second = reversed(halves) if adjoint else halves
-        gates.extend(and_compute_ir(predicate, wire, work, values=compute_values))
+        emit_and(predicate, wire, work, compute_values, False)
         visit(work, depth + 1, *first)
-        gates.append(Instruction("cx", (predicate, work)))
+        emit_gate(Instruction("cx", (predicate, work)))
         visit(work, depth + 1, *second)
-        gates.extend(
-            and_uncompute_ir(
-                predicate, wire, work, classical_bits[depth], values=erase_values
-            )
-        )
+        emit_and(predicate, wire, work, erase_values, True)
 
     if control is not None:
         visit(control, 0, 0, capacity)
@@ -175,13 +216,13 @@ def append_bounded_unary_tree(
     flip = Instruction("x", (predicate,))
     if adjoint:
         visit(predicate, 0, middle, capacity)
-        gates.append(flip)
+        emit_gate(flip)
         visit(predicate, 0, 0, middle)
-        gates.append(flip)
+        emit_gate(flip)
     else:
-        gates.append(flip)
+        emit_gate(flip)
         visit(predicate, 0, 0, middle)
-        gates.append(flip)
+        emit_gate(flip)
         visit(predicate, 0, middle, capacity)
 
 
