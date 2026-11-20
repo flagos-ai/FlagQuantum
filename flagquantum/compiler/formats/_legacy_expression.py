@@ -116,7 +116,7 @@ def parse_legacy_expression(text: str) -> Expr:
     def condition(node: ast.expr) -> Boolean:
         if isinstance(node, ast.Constant) and type(node.value) is bool:
             return sympy.true if node.value else sympy.false
-        if isinstance(node, ast.Name) and not node.id.startswith("_"):
+        if isinstance(node, ast.Name) and not node.id.startswith("__"):
             value = evaluate(node)
             if isinstance(value, Symbol):
                 return value
@@ -147,6 +147,11 @@ def parse_legacy_expression(text: str) -> Expr:
             f"Unsupported legacy symbolic predicate: {type(node).__name__}"
         )
 
+    def factors(node: ast.expr) -> list[Expr]:
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            return [*factors(node.left), *factors(node.right)]
+        return [evaluate(node)]
+
     def evaluate(node: ast.expr) -> Expr:
         if isinstance(node, ast.Constant):
             if type(node.value) is int:
@@ -155,13 +160,19 @@ def parse_legacy_expression(text: str) -> Expr:
                 return literal
             if type(node.value) is float:
                 return Float(ast.get_source_segment(text, node) or str(node.value))
-        elif isinstance(node, ast.Name) and not node.id.startswith("_"):
+        elif isinstance(node, ast.Name) and not node.id.startswith("__"):
             return getattr(sympy, node.id) if node.id in _CONSTANTS else Symbol(node.id)
         elif isinstance(node, ast.UnaryOp) and isinstance(
             node.op, (ast.UAdd, ast.USub)
         ):
             value = evaluate(node.operand)
             return value if isinstance(node.op, ast.UAdd) else -value
+        elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            # Construct one product so intermediate scalar multiplication cannot
+            # distribute into a sum and change the source's printed wire value.
+            result = sympy.Mul(*factors(node))
+            _check_integer_size(result)
+            return result
         elif isinstance(node, ast.BinOp) and type(node.op) in _BINARY:
             left, right = evaluate(node.left), evaluate(node.right)
             if isinstance(node.op, ast.Pow):

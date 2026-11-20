@@ -58,3 +58,19 @@ The shared protobuf factory uses the optional runtime on demand and
 serves both arguments and standalone resource annotations. The format
 layer carries values and emits zero quantum operations. Compiled program
 formats and execution admission are owned by their existing contracts.
+
+## Generated count symbols and product grouping — 2026-11-20
+
+Actual ArcTan depth-one libraries contain the source allocator's `_c0` atom.
+The shared bounded parser now accepts single-underscore symbol names, including
+inside Piecewise predicates. Double-underscore names, attribute access, indexed
+values and arbitrary calls retain their refusal. The AST builds symbolic nodes
+without resolving names to Python objects.
+
+The actual symbolic ArcSin cost also exposes a structural codec defect. Binary
+left-associated multiplication distributed a scalar into an intermediate sum,
+changing the original printed expression despite equal mathematics. The parser
+now collects factors into one SymPy product. The unchanged source model then
+roundtrips with exact wire bytes at depths zero, one and two. The trigonometric
+foreign tests protect that real library. Existing integer/exponent/combinatorial
+budgets and unsupported-code cases remain active.

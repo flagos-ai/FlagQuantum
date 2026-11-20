@@ -123,6 +123,9 @@ INTEGERS = (
     -(1 << 63),
     (1 << 63) - 1,
     sympy.Integer(0),
+    sympy.Symbol("_c0"),
+    sympy.Symbol("_n1") + 2 * sympy.Symbol("_c0"),
+    sympy.Piecewise((sympy.Symbol("_n1"), sympy.Symbol("_c0") > 0), (0, True)),
     x * y + z / 10,
     sympy.floor(x / 2) + sympy.sqrt(y),
     sympy.log(x) + sympy.sin(y),
@@ -225,6 +228,10 @@ def test_unsupported_symbolic_code_missing_value_and_overflow() -> None:
         native.serialize_integer_argument(1 << 63)
     for text in (
         "__import__('os')",
+        "__builtins__",
+        "_c0.__class__",
+        "_c0(1)",
+        "_c0[0]",
         "x.__class__",
         "x[0]",
         "unknown(x)",
