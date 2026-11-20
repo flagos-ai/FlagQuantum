@@ -124,3 +124,32 @@ allocation, numerical circuit execution or sampling state. See the
 [whole-source audit](../../../docs/development/ALIAS_DISCRETIZATION_SOURCE_AUDIT.md)
 for original-test replacement, append consumers, bit/work ownership and separate
 primitive/model counts; the register guide remains the shortest workflow.
+
+## Chemistry lookup declarations and number phase
+
+`chemistry_qroam_model.py` owns the clean/dirty chemistry lookup scores, the
+forward/inverse block-exponent query and the one/two-axis literature models.
+Its costs feed both DF and THC consumers. `chemistry_number_phase.py` binds the
+most-significant system-wire phase through the existing Compiler conjunction
+recipe. Ecosystem converts external objects before these native owners consume
+them. Measurement cleanup belongs to the existing Compiler primitives.
+
+```python
+from flagquantum import Circuit
+from flagquantum.algorithms.primitives.chemistry_number_phase import ChemistryNumberPhase
+from flagquantum.algorithms.primitives.chemistry_qroam_model import chemistry_qroam_log_block_size
+
+exponent = chemistry_qroam_log_block_size(100, 10)
+phase = ChemistryNumberPhase((0, 1), 2)
+circuit = Circuit(5)
+circuit.append(phase.make_on((0, 1), (2, 3), (4,), (0,)))
+```
+
+The phase operation has two control wires, a two-bit system and one caller-owned
+clean work wire with one measurement slot. Query tests, actual external objects
+and all-branch native execution are exercised by
+`tests/unit/test_chemistry_black_boxes_file.py`. Run that file together with
+`test_chemistry_qroam_model.py`, `test_chemistry_symbols.py` and
+`test_double_factorization_encoding_model.py` for a focused change. The complete
+source owner map and measured/model separation are in
+`docs/development/CHEMISTRY_BLACK_BOXES_FILE_AUDIT.md`.

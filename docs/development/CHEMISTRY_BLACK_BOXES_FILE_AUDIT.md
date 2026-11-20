@@ -6,7 +6,7 @@ are Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0335 | `black_boxes.py` | `f9670a2ebaf2fe0973323cf7b532c88142970902` | Concrete resource formulas and controlled-number phase verified. The native controlled-phase glyphs match the source. General foreign-object interoperability remains open. |
+| Q-0335 | `black_boxes.py` | `f9670a2ebaf2fe0973323cf7b532c88142970902` | Accepted complete definition/direct-dependency closure. Actual foreign model declarations and stored phase graphs are covered in the November 21 section. |
 | Q-0336 | `black_boxes_test.py` | `23cfe1e1bae3f437837e031348a0d09bfe201bf0` | Closed for all four original OpenFermion comparisons and the corresponding native resource queries. |
 
 ## QROAM estimates
@@ -58,4 +58,107 @@ unchanged source geometry and glyphs. The empty control array draws Z
 on the system. Its frozen decomposition passes an invalid controls
 keyword to ZGate and its declared Toffoli count is minus one. Native
 execution continues to admit nonempty systems with at least one binary
-control. Arbitrary external Bloq interoperability remains open.
+control. Actual external object handoff is completed in the November 21 section.
+
+## Complete source and external consumers, November 21
+
+Q-0335 closes the complete 19-definition source file and its direct dependencies.
+The original four tests in Q-0336 also pass unchanged in OpenFermion 1.6.1 during
+this batch. The source stays byte-identical to the frozen inventory. The earlier
+control-geometry, numerical recipe, all-column and full-branch evidence is reused.
+
+### Ownership of every definition
+
+| Source definition | Native owner and complete disposition |
+| --- | --- |
+| `qroam_cost` | `chemistry_qroam_model.chemistry_qroam_block_score`, clean scalar score |
+| `qroam_cost_dirty` | The same owner with `dirty=True`, original inverse and forward formulas |
+| `get_optimal_log_block_size_clean_ancilla` | `chemistry_qroam_log_block_size`, independently callable forward/inverse query, explicit blocks and floor-first ties |
+| `get_qroam_cost_clean_ancilla` | `source_chemistry_qroam_cost`, including original explicit-block-one rows-minus-one rule |
+| `QROAM` | Immutable native dimensions, signature, directional resource model and owned external declaration |
+| `QROAM.signature` | `chemistry_qroam_signature`, first selector and target word |
+| `QROAM.build_call_graph` | Native model Toffoli count, actual original serialized direct counts and source QEC query |
+| `QROAM.adjoint` | Existing model's `adjoint` argument, with actual foreign direction flag verified |
+| `QROAM.__str__` | Source presentation title retained as metadata; native model carries its domain name |
+| `QROAMTwoRegs` | Existing two-axis model retains both axes and both block dimensions |
+| `QROAMTwoRegs.signature` | Original first-axis-only selector and target signature retained |
+| `QROAMTwoRegs.build_call_graph` | `source_chemistry_qroam_two_axis_cost` and actual foreign direct counts |
+| `QROAMTwoRegs.adjoint` | Existing two-axis model direction, actual foreign flag and double adjoint |
+| `QROAMTwoRegs.__str__` | Original QROAM/dagger title verified independently of native two-axis model identity |
+| `ApplyControlledZs` | `ChemistryNumberPhase` plus existing Compiler MultiControlZ and Ecosystem named capture |
+| `ApplyControlledZs.signature` | Original shaped QBit controls and packed through-system word |
+| `ApplyControlledZs.wire_symbol` | Existing `number_phase_wire_symbol`, including empty controls and ten-control labels |
+| `ApplyControlledZs.build_composite_bloq` | Existing split, most-significant target, measured conjunction/erase and join; actual stored source graph capture verified |
+| `ApplyControlledZs.build_call_graph` | Original wrapper Toffoli-only declaration retained separately from measured recipe costs |
+
+The standalone exponent query was the remaining numerical interface gap. It now
+uses the existing forward selector and the existing chemistry scalar-score
+owner for inverse and explicit-block selection. Existing cost calculation calls
+this shared query. It retains the source floor-before-ceiling tie ordering and
+the existing native validation. The original forward query for fewer rows than
+target bits raises AssertionError; native raises its existing domain ValueError.
+The concrete positive-dimension model domain remains explicit.
+
+### Actual foreign declarations and executable handoff
+
+Actual one- and two-axis source placeholders serialize at depths zero, one and
+two, roundtrip exact bytes through the owned library codec, reconstruct in the
+unchanged source resolver, and reproduce native signatures, direct counts,
+QEC Toffoli counts and logical peaks from their constructor arguments. Original
+placeholder decomposition raises DecomposeNotImplementedError in both
+directions. Their original scope is an analytical declaration. Physical lookup
+continues to use the existing executable table owners.
+
+The actual `ApplyControlledZs` decomposition is flattened by unchanged source
+code and passed to the existing `import_register_emitter`. That named boundary
+captures the stored graph and its actual adjoint without depending on the source
+serializer. Literal primitive operands, per-wire ordering and feedback match
+independent expansion of the actual source root and its actual root adjoint.
+Fresh classical slot names are compared after checking each feedback read's
+latest measurement producer. The executed streams retain their original slot
+names. Every small measurement history matches complete unnormalized complex
+states entangled with an external spectator, returns clean work to zero and
+passes ordinary append and CircuitIR roundtrip with SDK imports blocked after
+capture. The source graph path retains measured AND cleanup. Direct SDK synthesis
+of the outer root has its own primitive recipe.
+
+The flattened source graph's original serializer fails on numpy.uint8 control
+arguments. The original outer component serializes successfully before recursive
+flattening. This source interchange defect is retained as an explicit test and
+separate evidence. The original source code receives zero edits. The already
+recorded zero-control construction error and minus-one wrapper count remain
+separate failure/model dispositions.
+
+| Control values, both actual directions | Measured T-family / CX / CZ / measurements / clean work | Source wrapper Toffoli / logical peak |
+| --- | --- | --- |
+| `0` | 0 / 0 / 1 / 0 / 0 | 0 / 3 |
+| `1` | 0 / 0 / 1 / 0 / 0 | 0 / 3 |
+| `01` | 4 / 6 / 2 / 1 / 1 | 1 / 5 |
+| `101` | 8 / 12 / 3 / 2 / 2 | 2 / 7 |
+
+CZ counts include measurement-feedback CZ instructions. System width is two in
+these external captures. The external spectator is excluded from source peaks.
+All eight directional resource receipts are retained independently.
+
+### Verification and evidence provenance
+
+Concentrated regression passes 262 cases, local integration passes 17 and the
+Cirq 1.6.1 lane passes 86 with zero skips or warnings. Both changed Python files
+pass strict typing, Black and Ruff. Algorithms scope, architecture, multi-level
+IR and protected API checks pass. The external evidence prefix for this closure
+is `g2-chemistry-black-boxes-closure-`.
+
+The initial verification reused the November 16 batch's external log names and
+overwrote those historical raw outputs. Those old raw logs are unavailable.
+The original commits, historical audit and historical PR verification receipt
+remain intact. Current outputs are independently retained under the closure
+prefix, and all four original source tests have been rerun successfully. The
+provenance receipt records the exact affected log roles. Historical test counts
+continue to refer to the historical acceptance, and current checks refer to the
+current commit's closure logs.
+
+Five frozen source blobs and six unchanged native owners are verified. A separate
+480-input comparison against the exact pre-batch native cost implementation
+retains every supported result and domain-error message. Dependency policy keeps
+666 existing findings and zero changed-path findings. Evidence and eight separate
+measured/model rows are retained under the closure prefix.
