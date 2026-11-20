@@ -89,8 +89,8 @@ def test_untouched_source_native_reference_and_all_matrix_entries() -> None:
     assert isinstance(resources, ResourceEstimate)
     assert (resources.n_qubits, resources.n_operations, resources.depth) == (
         7,
-        387,
-        335,
+        203,
+        173,
     )
 
 

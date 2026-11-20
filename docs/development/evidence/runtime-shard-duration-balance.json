@@ -1,0 +1,51 @@
+{
+  "before": {
+    "selected_tests": 12152,
+    "counts": [
+      3036,
+      3039,
+      3046,
+      3031
+    ],
+    "known_measured_call_setup_seconds_by_shard": [
+      4855.49,
+      3293.74,
+      5782.78,
+      1630.66
+    ],
+    "resiliency_case_shards": {
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[0-resiliency_planning]": 0,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[0-resiliency_planning_AMD]": 1,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[1-resiliency_planning]": 2,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[1-resiliency_planning_AMD]": 2
+    }
+  },
+  "after": {
+    "selected_tests": 12152,
+    "counts": [
+      3047,
+      3062,
+      3021,
+      3022
+    ],
+    "known_measured_call_setup_seconds_by_shard": [
+      3588.39,
+      4068.64,
+      3769.87,
+      4135.77
+    ],
+    "resiliency_case_shards": {
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[0-resiliency_planning]": 0,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[0-resiliency_planning_AMD]": 3,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[1-resiliency_planning]": 2,
+      "tests/integration/test_synthesis_native_flow_costs.py::test_complete_original_and_native_costs_match_absolute_full_states[1-resiliency_planning_AMD]": 1
+    }
+  },
+  "base_commit": "45468b934a18e552a2a69dcc0b8f1db0d8fa16f9",
+  "observed_run": 44487669516,
+  "observed_job": 135479850494,
+  "source_commit": "abde94db5cef007495cc1bce41ce36f673747cff",
+  "collection_environment": "macOS ARM64, Python 3.12.14; optional-dependency skips differ from Linux CI",
+  "interpretation": "Sums of 50 known test call/setup durations reassigned to a local collection; not elapsed-time predictions or complete CI performance results.",
+  "collection_log_sha256": "4f70b321f9da68266748525b4a3f59124a13f37c1e72b00c23b01aa9c9cd8a86"
+}

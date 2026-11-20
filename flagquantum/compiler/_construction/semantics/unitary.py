@@ -191,14 +191,13 @@ def _givens_instructions(
     reduced = matrix.clone()
     rotations: list[tuple[int, int, torch.Tensor]] = []
     last = matrix.shape[0] - 1
-    # A unitary column has norm one. Sub-epsilon elimination residuals are
-    # roundoff at that scale; rotating them amplifies platform-specific noise.
-    # The complete reconstruction check below still verifies every entry.
-    elimination_epsilon = math.ulp(1.0)
     for column in range(last):
         for row in range(last, column, -1):
             a, b = reduced[row - 1, column].item(), reduced[row, column].item()
-            if abs(b) <= elimination_epsilon:
+            # Match the phase residual floor instead of promoting last-bit
+            # eigensolver/BLAS noise into a controlled rotation network. The
+            # complete reconstruction below still enforces its 1e-12 bound.
+            if abs(b) <= 1e-15:
                 continue
             norm = math.hypot(abs(a), abs(b))
             rotation = torch.tensor(
