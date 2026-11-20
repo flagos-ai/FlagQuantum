@@ -43,8 +43,8 @@ def frozen_bookkeeping() -> None:
 def test_typed_split_join_scores_bindings_and_costs_match_source(
     reverse: bool, width: int
 ) -> None:
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import QGF, BloqBuilder, QAny, QBit, QUInt
     from qualtran.bloqs.bookkeeping import Split
     from qualtran.drawing import get_musical_score_data
