@@ -71,5 +71,144 @@ Q-0576 remains open for the recorded exterior-input counterexamples, the
 window carry overflow disagreement, and the final gate-stage addition
 versus callback subtraction when reduction fires. It retains the
 concrete-width symbolic-modulus QROAM construction failure and the source
-callback's Fermat-based assumptions. Q-0568 also depends on the modular
-subtraction file family.
+callback's Fermat-based assumptions. The modular package export Q-0568
+has a separate accepted disposition in the ledger.
+
+## Stored graph batch interfaces and ownership
+
+This batch covers the complete frozen source file and its direct
+arithmetic, lookup and erasure dependency closure. The existing original
+1,959-case and notebook evidence remains reusable.
+
+| Source owner | Native graph ownership and port contract |
+| --- | --- |
+| `ModDbl` | `modular_doubling_component`, MSB-first uint or Montgomery `x`, owns lower/sign and shared arithmetic work, returns the original logical output alias exchange |
+| `CModMulK` | `modular_multiplication_component`, positive through `ctrl` and MSB-first uint or Montgomery `x`, owns a result word, two shared scale-add calls followed by the original exact controlled exchange and release |
+| `SingleWindowModMul` | Window owner composes shared CAdd, XOR, clean QROAM, Add and lookup adjoint, `x` is a little-endian bit array, target and index are MSB-first, target rotation changes aliases |
+| `_DirtyOutOfPlaceMontgomeryModMulImpl` | Window traversal owner handles reversed input slices, owned carry prefix, retained index words and final reduction in the source order |
+| `DirtyOutOfPlaceMontgomeryModMul` | Output allocation/release shell retains RIGHT/LEFT product, index and reduced ports, with exact specialized dependency adjoints |
+
+The source QROAM adjoint is a model-only leaf. Existing executable lookup
+cleanup reverses the forward circuit and has a different resource count.
+The separately owned measurement-assisted erase implementation reports its
+decomposition separately from the source abstract cost. The stored window graph
+records an explicit dependency disposition at this boundary.
+The existing carry-overflow, exterior-input and final-reduction callback/gate
+counterexamples remain recorded. Concrete graphs and foreign symbolic
+admission retain separate acceptance decisions.
+
+## Complete definition disposition
+
+| Source definitions | Native ownership or retained boundary |
+| --- | --- |
+| `ModDbl`, `ModDbl.signature`, `ModDbl.build_composite_bloq` | `modular_doubling_component`, shared signed/controlled constants and original output/work exchange |
+| `ModDbl._validate_mod` | Concrete odd-modulus admission in the native graph and existing physical owner, symbolic admission remains separate |
+| `ModDbl.on_classical_vals` | Existing `simulation.classical_modular_multiplication`, exterior identity remains distinct from circuit domain |
+| `ModDbl.wire_symbol`, `ModDbl.build_call_graph` | Existing tutorial labels and independent declarations/QEC models |
+| `_moddbl_small`, `_moddbl_large` | Existing concrete catalog fixtures and notebook, normal doubling append now binds the stored graph |
+| `CModMulK`, `CModMulK.signature`, `CModMulK.build_composite_bloq`, `CModMulK._Add` | `modular_multiplication_component`, original two scale calls, negative inverse representative and exact controlled exchange |
+| `CModMulK.__attrs_post_init__` | Native concrete positive coprime-residue validation, symbolic construction remains declarative |
+| `CModMulK.build_call_graph`, `CModMulK.wire_symbol`, `_generalize_k` | Existing symbolic declarations, tutorial labels and placeholder constant generalization, separate from concrete primitive accounting |
+| `CModMulK.on_classical_vals` | Existing classical modular multiplication owner, preserve inactive and exterior identity |
+| `_modmul`, `_modmul_symb` | Existing concrete/symbolic fixtures and notebook, normal concrete multiply append binds the stored graph |
+| `SingleWindowModMul`, `SingleWindowModMul.signature`, `SingleWindowModMul.build_composite_bloq` | `single_window_component`, shared CAdd/XOR/lookup/Add/erase dependencies and explicit target rotation, specialized inverse uses exact arithmetic adjoints |
+| `SingleWindowModMul.__attrs_post_init__`, `SingleWindowModMul.qrom` | Existing `single_window_qroam_table`, concrete divisible windows and original correction dataset/block choice |
+| `SingleWindowModMul.on_classical_vals` | Existing `simulation.classical_montgomery_window`, original callback overflow boundary remains recorded |
+| `SingleWindowModMul.build_call_graph` | Existing source-shaped symbolic window model, model-only lookup erasure stays separate from emitted measurements |
+| `_DirtyOutOfPlaceMontgomeryModMulImpl`, `_DirtyOutOfPlaceMontgomeryModMulImpl.signature`, `_DirtyOutOfPlaceMontgomeryModMulImpl.build_composite_bloq`, `_DirtyOutOfPlaceMontgomeryModMulImpl._window` | `windowed_multiplication_component`, reversed input slices, shared window calls, carry lifetime, retained indices and original final additive reduction |
+| `_DirtyOutOfPlaceMontgomeryModMulImpl.__attrs_post_init__`, `_DirtyOutOfPlaceMontgomeryModMulImpl.build_call_graph` | Concrete carry-safe admission and existing independent source model, symbolic physical decomposition remains refused |
+| `DirtyOutOfPlaceMontgomeryModMul`, `DirtyOutOfPlaceMontgomeryModMul.signature`, `DirtyOutOfPlaceMontgomeryModMul.build_composite_bloq`, `DirtyOutOfPlaceMontgomeryModMul._mod_mul_impl`, `DirtyOutOfPlaceMontgomeryModMul.adjoint` | `montgomery_multiplication_component`, RIGHT/LEFT output ownership and source inlining of the shared window traversal, specialized inverse frees matching outputs |
+| `DirtyOutOfPlaceMontgomeryModMul.__attrs_post_init__` | Delegated shared carry-safe, odd-modulus and window admission |
+| `DirtyOutOfPlaceMontgomeryModMul._inversion_data`, `DirtyOutOfPlaceMontgomeryModMul._classical_action_window`, `DirtyOutOfPlaceMontgomeryModMul.on_classical_vals` | Existing Simulation Montgomery recurrence/value owners, preserve original Fermat assumption and callback/decomposed-circuit counterexamples |
+| `DirtyOutOfPlaceMontgomeryModMul.build_call_graph` | Existing source symbolic model and direction-specific declaration evidence |
+| `_dirtyoutofplacemontgomerymodmul_small`, `_dirtyoutofplacemontgomerymodmul_medium` | Existing concrete fixtures and notebook, native windowed append binds the shared stored traversal |
+
+All 45 original definitions have assigned owners. No source reference file is
+changed. The complete source-shaped forward root connections are checked for
+all five classes, including the wrapper's inlined traversal. The multiply root
+compares every call occurrence separately because distinct original scale
+constants can reduce to an identical shared native body. Full source physical
+streams, operands and fresh per-event feedback are checked for doubling and
+controlled constant multiplication. Previously accepted arithmetic dependencies
+retain their own complete source-stream evidence.
+
+## Executable lookup dependency and channel evidence
+
+`lookup.clean_lookup_component` owns scalar power-of-two clean bank allocation,
+RIGHT outputs, consumed LEFT banks and shared scratch lifetimes. It reuses the
+existing forward and measurement-assisted erase emitters. Generic multidataset,
+multiaxis and symbolic graph admission remain separate boundaries. Forward
+primitives and feedback are compared with the unchanged QROAM source for both
+unblocked and blocked tables. Every raw history of these small lookup/erase
+instruments preserves complete complex spectator states and returns all work
+zero. Existing broader lookup/erasure evidence remains reusable.
+
+Window and Montgomery graphs compose that measured dependency. The upstream
+adjoint is model-only, so the complete window primitive stream through that
+leaf has no upstream physical reference. The comparison records exact source
+root connections, accepted arithmetic primitive dependencies, independently
+verified forward lookup and native measured-erasure channel evidence at their
+respective boundaries. Physical parity with a missing upstream decomposition
+remains an explicit gap.
+
+All valid two-input residues on the recorded three-, four-, five- and six-bit
+Montgomery grids preserve the original decomposed circuit's complete complex
+amplitudes, spectator, retained index/reduction outputs and clean temporary
+work under three selected primitive measurement histories. Specialized inverse
+execution restores x/y and releases the matching product/history outputs.
+Single-window tests exhaust every raw history in the one-bit case and use
+three selected histories for the larger coherent grids. These trajectories
+remain distinct from an exhaustive enumeration of the full product's histories.
+The original five-bit reduction and composite-modulus counterexamples are
+checked directly against both the original decomposed and high-level callbacks.
+
+The normal doubling, controlled multiply and windowed tutorial operations keep
+`circuit.append(op)`. Forward doubling and controlled multiply bind the new
+graphs and retain the independently verified explicit inverse emitters. Windowed
+append uses the stored specialized traversal in both directions. Existing
+public logical output/work aliases remain the same in these examples.
+
+## Stored graph resource accounting
+
+Counts below are measured from bound graphs. Source analytical total T uses
+its default cost and is reported independently. Exact CSwap substitution uses
+seven T per bit for the controlled multiplier. Lookup erasure introduces
+physical bank measurements that the source model-only leaf does not emit.
+Each difference is reconciled by substituting the measured leaf cost in the
+otherwise unchanged source model.
+
+| Graph and parameters | CX | T/T† | Measurement events | Source model total T | Source model measurements | Native/source peak qubits |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| ModDbl, n=8, p=251 | 213 | 68 | 17 | 68 | 17 | 29/29 |
+| CModMulK, n=8, p=221, k=123 | 7792 | 2744 | 672 | 2720, or 2744 with exact CSwap | 672 | 44/44 |
+| SingleWindow, n=4, w=2, p=5 | 231 | 100 | 31 | 92 | 23 | 25/25 |
+| Montgomery product, n=6, w=2, p=7 | 1098 | 464 | 140 | 440 | 110 | 42/42 |
+
+The single-window measured erase contributes 8 T and 8 events versus source
+model zero in this fixture. The six-bit product's three measured erases each
+contribute 8 T and 10 events versus source model zero. Quantum work is returned
+clean except for the declared logical product/history outputs. Fresh classical
+SSA slots equal the measurement-event counts. Earlier explicit emitters' slot
+reuse and reverse-forward bank cleanup retain their independent historical
+measurements in the earlier table.
+
+## Final verification scope
+
+The final focused snapshot passes 94 cases, including the three normal append
+routes, and the complete source-file suite passes 11 cases. The initial
+concentrated run collected 10,517 cases and reported 10,516 passes with one
+historical reverse-forward erase measurement expectation failing. That
+expectation was updated for the requested measured erasure by independently
+counting the existing erase emitter and substituting its cost into the unchanged
+upstream model. The final concentrated snapshot, including the definition
+inventory and corrected cost assertion, passed 10,518 cases with no skips in
+481.12 seconds. The 35 existing overflow/remainder warnings remain recorded.
+
+All 14 changed Python files pass strict typing, Black, Ruff, Compiler scope,
+architecture, IR and protected API checks. The default suite's established
+public docstring coverage failure remains recorded. Its nine implicated modules
+and test are unchanged from `8e6eb3613`. Frozen source identities, Kickmix
+Simulator availability, resource substitution receipts and dependency findings
+are recorded in `g2-modular-mul-native-*` in the external evidence directory.
+Q-0576 remains open for the exact source failures, absent physical adjoint leaf
+and generic symbolic, strict-type, count-mode and foreign admission boundaries.

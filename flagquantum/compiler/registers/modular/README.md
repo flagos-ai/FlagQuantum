@@ -37,3 +37,13 @@ emitters for `adjoint=True`. Read
 `docs/development/MODULAR_SUBTRACTION_FILE_AUDIT.md` for residue-domain promises,
 source failures, complete definition ownership and separate primitive/model
 resource evidence.
+
+The complete modular multiplication graph family uses separate doubling,
+controlled multiplier, single-window, window traversal and output-allocation
+owners in the corresponding `*_component` modules. Shared clean-bank lifetime
+and measured erase composition belongs to `lookup.clean_lookup_component`.
+The three existing register multiplication/doubling examples keep their append
+entry and logical aliases. Read
+`docs/development/MODULAR_MULTIPLICATION_FILE_AUDIT.md` for all 45 source
+definitions, exact arithmetic dependencies, source failures and the model-only
+lookup adjoint's separate executable resource accounting.
