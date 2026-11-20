@@ -37,6 +37,7 @@ def test_opaque_program_bytes_hash_and_aliases(mode: str) -> None:
         2,
         parameters=(("characteristic", 2), ("degree", 2), ("order", 4)),
     )
+    inputs: tuple[tuple[int, ...], ...]
     if mode in {"split", "join"}:
         program = field_polynomial_component_program(
             layout, field, reverse=mode == "join"
