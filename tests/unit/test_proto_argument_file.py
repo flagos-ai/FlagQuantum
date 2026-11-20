@@ -8,11 +8,17 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pytest
 import sympy
 import torch
-from numpy.typing import NDArray
+
+try:
+    import numpy as np
+    from numpy.typing import NDArray
+except ModuleNotFoundError:
+    pytest.skip(
+        "NumPy is required for argument reference checks", allow_module_level=True
+    )
 
 from examples.algorithms.control_predicate_catalog import PredicateExample
 from flagquantum.compiler.formats import legacy_arguments as native
@@ -296,3 +302,50 @@ def test_complex_has_source_float32_precision_and_bytes(value: complex) -> None:
     data = native.serialize_complex_argument(value)
     assert data == proto.SerializeToString(deterministic=True)
     assert native.deserialize_complex_argument(data) == source.complex_from_proto(proto)
+
+
+@pytest.mark.parametrize(
+    "text", ("log2(n)", "ceiling(log2(n + 1))", "ceiling(log2(floor(n) + 1))")
+)
+def test_source_base_two_width_expression_preserves_wire_and_meaning(text: str) -> None:
+    from qualtran.protos.args_pb2 import IntOrSympy
+    from sympy.codegen.cfunctions import log2
+
+    wire = IntOrSympy(sympy_expr=text).SerializeToString(deterministic=True)
+    value = native.deserialize_integer_argument(wire)
+    assert native.serialize_integer_argument(value) == wire
+    assert isinstance(value, sympy.Expr)
+    assert value.has(log2)
+    source_decoder = import_module("qualtran.serialization.args")
+    original_decoded = source_decoder.int_or_sympy_from_proto(
+        IntOrSympy(sympy_expr=text)
+    )
+    assert str(original_decoded) == str(value)
+    assert not original_decoded.has(log2)
+    for n in (1, 2, 3, 7, 8, 15, 16, 31):
+        numerical = value.subs(sympy.Symbol("n"), n).evalf()
+        original = (
+            sympy.sympify(text, locals={"log2": log2})
+            .subs(sympy.Symbol("n"), n)
+            .evalf()
+        )
+        assert numerical == original
+
+
+@pytest.mark.parametrize(
+    "text",
+    (
+        "log2()",
+        "log2(n, 2)",
+        "log2(n, base=2)",
+        "log2.__call__(n)",
+        "log2(__import__('os'))",
+    ),
+)
+def test_base_two_parser_retains_call_and_code_execution_refusals(text: str) -> None:
+    from qualtran.protos.args_pb2 import IntOrSympy
+
+    with pytest.raises(SerializationError):
+        native.deserialize_integer_argument(
+            IntOrSympy(sympy_expr=text).SerializeToString()
+        )

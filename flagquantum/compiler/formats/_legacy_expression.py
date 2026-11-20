@@ -175,6 +175,10 @@ def parse_legacy_expression(text: str) -> Expr:
             and not node.keywords
         ):
             name = node.func.id
+            if name == "log2" and len(node.args) == 1:
+                from sympy.codegen.cfunctions import log2
+
+                return log2(evaluate(node.args[0]))
             if name in _CURVE_FUNCTIONS and len(node.args) == 2:
                 return sympy.Function(name)(*(evaluate(arg) for arg in node.args))
             if name == "Piecewise" and node.args:
