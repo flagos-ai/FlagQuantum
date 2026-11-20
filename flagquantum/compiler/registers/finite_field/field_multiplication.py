@@ -94,6 +94,12 @@ def _field_plu(
     return upper, lower, permutation
 
 
+def _constant_matrix(width: int, value: int, modulus: int) -> list[list[int]]:
+    """Share the polynomial-basis multiplier matrix between gate and graph owners."""
+    columns = [_product(value, 1 << i, modulus) for i in range(width)]
+    return [[(columns[j] >> i) & 1 for j in range(width)] for i in range(width)]
+
+
 class _FieldEmitter(_PolynomialEmitter):
     """Field reduction and linear maps over the shared polynomial gate sink."""
 
@@ -126,8 +132,7 @@ class _FieldEmitter(_PolynomialEmitter):
 
     def constant(self, qubits: tuple[int, ...], value: int) -> tuple[int, ...]:
         n = len(qubits)
-        columns = [_product(value, 1 << i, self.modulus) for i in range(n)]
-        matrix = [[(columns[j] >> i) & 1 for j in range(n)] for i in range(n)]
+        matrix = _constant_matrix(n, value, self.modulus)
         return self.linear(qubits, matrix)
 
     def shift(self, qubits: tuple[int, ...], count: int) -> tuple[int, ...]:
