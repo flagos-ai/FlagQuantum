@@ -175,3 +175,53 @@ its normal append and complete source/complex-state verification.
 python -m examples.algorithms.register_field_inverse
 python -m pytest tests/unit/test_field_inverse_component.py -q
 ```
+
+## Complete actual inverse-factory handoff
+
+Both original `BloqExample` factories now have explicit foreign-boundary
+consumers. The existing actual-source snapshot captures the concrete GF16
+factory's entire forward graph using caller-owned clean RIGHT ports `result`
+and `junk`. Its layout is `x[4], result[4], junk[4]`, with MSB words. Junk remains
+a logical output whose value depends on the input. All twelve physically used
+wires are logical ports, with zero private work and zero measurement events.
+
+The captured forward stream has 104 CX, 18 CCX and 12 binding SWAP. An independent
+flattening of the unchanged original graph verifies every primitive operand,
+per-wire dependency and returned x/result/junk alias after tracking the physical
+binding permutations. The original QEC model independently declares 104 Clifford
+and 18 Toffoli. Its static QubitCount is twelve. Neither source model includes
+physical binding SWAP or the retained external spectator.
+
+Complete coherent states cover all sixteen input words entangled with a
+spectator. All RIGHT words start clean. Both ordinary and reversed physical
+binding execute through JSON and `circuit.append(op)` with Qualtran, Cirq,
+Galois and Kickmix imports blocked during native execution. The complete complex
+output matches an independent Cirq statevector execution of the original
+flattened primitive graph and returned logical aliases.
+
+The original forward recipe still differs from its mathematical
+`on_classical_vals` callback because its direct linear-adjoint and Karatsuba
+dependencies have the previously recorded source defects. The test keeps this
+mismatch visible. It reuses the already accepted owned exact-adjoint and
+mathematical inverse evidence without changing the reference or substituting
+that corrected construction for the captured source graph.
+
+The original concrete factory's generic backward capture fails before native
+lowering in the same MeasureX quantum/classical arity mismatch independently
+witnessed in the multiplication factory batch. Constructor serialization still
+raises the original QGF TypeError. The symbolic factory rejects decomposition
+and physical capture until its extent is concrete. These failure stages are
+explicitly tested. The existing complete original 27-pass/3-skip/2-xfail suite,
+whole-definition audit, stored inverse schedule, full-complex result/junk and
+clean-owned-inverse evidence remain reused. Q-0516/Q-0517 stay open for their
+original source, generic measured-inverse, codec and symbolic boundaries.
+
+The concentrated inverse/Frobenius/linear/factory regression passes 275 cases
+without skips in 7.66 seconds. Local integration passes 17 cases and the separate
+Cirq 1.6.1 profile passes all three new actual-source consumers. Strict typing,
+Black, Ruff, Ecosystem scope, architecture, multi-level IR and public API checks
+pass. Two original source blobs and Qualtran 0.7.0/Kickmix 0.1 Simulator are
+reverified. Separate resource and failure evidence is recorded in
+`g2-field-inverse-foreign-evidence-20261121.json` and the corresponding focused,
+regression, integration, Cirq and quality logs. No production code changes in
+this follow-on batch.
