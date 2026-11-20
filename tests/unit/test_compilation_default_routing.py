@@ -14,7 +14,7 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, LinkErrorRates, compile, pipeline
 from flagquantum.compiler.lowering import pipeline as lowering_pipeline
-from flagquantum.compiler.topology import routing
+from flagquantum.compiler.topology import routing_strategy
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.topology.routing import (
     LINK_ERROR_ROUTING_STRATEGIES,
@@ -95,7 +95,9 @@ def test_auto_reuses_search_without_reusing_another_compilations_plan() -> None:
     )
     for index, (source, device) in enumerate(programs_and_devices):
         with patch.object(
-            routing, "plan_sabre_swaps", wraps=routing.plan_sabre_swaps
+            routing_strategy,
+            "plan_sabre_swaps",
+            wraps=routing_strategy.plan_sabre_swaps,
         ) as search:
             result = compile(source, coupling_map=device, optimize=False)
         # Every uncalibrated auto call prices SABRE exactly once, including
@@ -122,7 +124,9 @@ def test_calibrated_auto_does_not_search_uncalibrated_sabre() -> None:
         CouplingMap.line(4), {(0, 1): 0.01, (1, 2): 0.02, (2, 3): 0.001}
     )
     with patch.object(
-        routing, "plan_sabre_swaps", side_effect=AssertionError("uncalibrated search")
+        routing_strategy,
+        "plan_sabre_swaps",
+        side_effect=AssertionError("uncalibrated search"),
     ):
         result = compile(_program(), coupling_map=device)
     assert set(result.metadata["routing_strategy_selection"]["candidates"]) == set(

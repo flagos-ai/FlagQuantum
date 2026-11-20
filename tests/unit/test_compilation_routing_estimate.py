@@ -1,4 +1,7 @@
+import json
+import pickle
 import random
+from importlib import import_module
 
 import pytest
 import torch
@@ -24,6 +27,14 @@ def _workload() -> fq.Circuit:
     return circuit
 
 
+@pytest.mark.parametrize(
+    "entry_path",
+    (
+        "flagquantum.compiler.routing",
+        "flagquantum.compiler.topology.routing",
+        "flagquantum.compiler.topology.routing_strategy",
+    ),
+)
 @pytest.mark.parametrize("strategy", ROUTING_STRATEGIES)
 @pytest.mark.parametrize(
     "coupling",
@@ -37,6 +48,7 @@ def _workload() -> fq.Circuit:
 def test_routing_estimate_matches_materialized_plan(
     strategy: str,
     coupling: CouplingMap,
+    entry_path: str,
 ) -> None:
     """A price is the plan a strategy produces, not a bound on it.
 
@@ -46,7 +58,7 @@ def test_routing_estimate_matches_materialized_plan(
     device lacks the coupling, so the counting fields have to agree too.
     """
 
-    estimate = estimate_routing_cost(
+    estimate = import_module(entry_path).estimate_routing_cost(
         _workload(),
         coupling,
         strategy=strategy,
@@ -404,3 +416,50 @@ def test_an_edge_sequence_and_a_coupling_map_route_the_same_program() -> None:
         key: value for key, value in other.items() if key != "path_cache"
     }
     assert plan["strategy"] == other["strategy"]
+
+
+@pytest.mark.parametrize(
+    "entry_path",
+    ("flagquantum.compiler.routing", "flagquantum.compiler.topology.routing"),
+)
+def test_strategy_imports_preserve_records_and_serialized_evidence(
+    entry_path: str,
+) -> None:
+    from flagquantum.compiler.topology import routing_strategy
+
+    entry = import_module(entry_path)
+    assert entry.RoutingCostEstimate is routing_strategy.RoutingCostEstimate
+    assert entry.RoutingStrategySelection is routing_strategy.RoutingStrategySelection
+    assert entry.estimate_routing_cost is routing_strategy.estimate_routing_cost
+    assert entry.select_routing_strategy is routing_strategy.select_routing_strategy
+
+    selection = entry.select_routing_strategy(_workload(), CouplingMap.line(5))
+    canonical = routing_strategy.select_routing_strategy(
+        _workload(), CouplingMap.line(5)
+    )
+    assert json.dumps(selection.summary(), sort_keys=True) == json.dumps(
+        canonical.summary(), sort_keys=True
+    )
+    estimate = selection.candidates[selection.selected_strategy]
+    assert pickle.loads(pickle.dumps(estimate)) == estimate
+    # Existing pickles name the class in the original topology module.
+    legacy_class = b"cflagquantum.compiler.topology.routing\nRoutingCostEstimate\n."
+    assert pickle.loads(legacy_class) is routing_strategy.RoutingCostEstimate
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "_estimate_routing_cost",
+        "_estimate_swap_plan",
+        "_plan_sabre_for_topology",
+        "_select_routing_strategy",
+        "_count_sabre_orientation_swaps",
+        "_plan_sabre_trial",
+        "_select_sabre_trials",
+    ),
+)
+def test_retained_private_routing_helpers_are_canonical_aliases(name: str) -> None:
+    from flagquantum.compiler.topology import routing, routing_strategy
+
+    assert getattr(routing, name) is getattr(routing_strategy, name)
