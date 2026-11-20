@@ -30,12 +30,43 @@ from .signatures import Signature
 def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
-    Execution admits concrete bit, opaque, integer storage and binary fields.
+    Execution admits concrete bit, opaque, integer storage and binary fields,
+    including packed polynomials over those binary fields (Proposal 109).
     Canonical integer parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
     width = dtype.quantum_bits
+    if dtype.encoding == "finite_field_polynomial":
+        if (
+            type(width) is not int
+            or type(dtype.classical_bits) is not int
+            or dtype.classical_bits != 0
+            or not isinstance(dtype.parameters, tuple)
+            or not dtype.parameters
+            or any(
+                not isinstance(pair, tuple)
+                or len(pair) != 2
+                or not isinstance(pair[0], str)
+                for pair in dtype.parameters
+            )
+        ):
+            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+        name, degree = dtype.parameters[0]
+        coefficient_width = dict(dtype.parameters[1:]).get("degree")
+        if (
+            name != "polynomial_degree"
+            or type(degree) is not int
+            or degree < 0
+            or type(coefficient_width) is not int
+            or width != (degree + 1) * coefficient_width
+        ):
+            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+        coefficient = RegisterType(
+            "finite_field", coefficient_width, parameters=dtype.parameters[1:]
+        )
+        executable_register_width(coefficient)
+        return width
     if dtype.encoding == "finite_field":
         names = tuple(name for name, _ in dtype.parameters)
         base = ("characteristic", "degree", "order")
@@ -84,7 +115,7 @@ def logical_register_width(dtype: RegisterType) -> SymbolicInt:
     """Validate a logical quantum descriptor without claiming physical support."""
     if not isinstance(dtype, RegisterType):
         raise ValueError("a logical word needs a neutral RegisterType")
-    if dtype.encoding == "finite_field":
+    if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
         return executable_register_width(dtype)
     width = dtype.quantum_bits
     if (
