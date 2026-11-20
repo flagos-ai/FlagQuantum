@@ -5,6 +5,8 @@
 
 """In-place reversible signed encodings for big-endian words."""
 
+from typing import Literal
+
 from ....core.ir import Instruction
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
 from .bitwise import _validate_wires, controlled_xor_constant_ir
@@ -64,24 +66,35 @@ def _shift_negative_payload_ir(
     if type(measurement_bit) is not int or measurement_bit < 0:
         raise ValueError("Signed conversion requires a nonnegative measurement slot")
 
+    values = (1, 0 if adjoint else 1)
+    operations: list[Instruction] = []
+    for kind, wires in _signed_encoding_components(word, workspace):
+        if kind == "cx":
+            operations.append(Instruction("cx", wires))
+        elif kind == "and":
+            x, y, target = wires
+            operations.extend(and_compute_ir(x, y, target, values=values))
+        else:
+            x, y, target = wires
+            operations.extend(
+                and_uncompute_ir(x, y, target, measurement_bit, values=values)
+            )
+    return tuple(operations)
+
+
+def _signed_encoding_components(
+    word: tuple[int, ...], workspace: tuple[int, ...]
+) -> tuple[tuple[Literal["cx", "and", "erase"], tuple[int, ...]], ...]:
+    """Share the existing signed increment order between flat and typed paths."""
     sign = word[0]
     payload = word[:0:-1]
     controls = (sign, *workspace)
-    # Increment propagates through ones. Decrement borrows through zeros.
-    values = (1, 0 if adjoint else 1)
-    compute: list[Instruction] = []
-    erase: list[tuple[Instruction, ...]] = []
-    for i, carry in enumerate(workspace):
-        control, bit = controls[i], payload[i]
-        compute.extend(and_compute_ir(control, bit, carry, values=values))
-        erase.append(
-            (
-                Instruction("cx", (carry, payload[i + 1])),
-                *and_uncompute_ir(control, bit, carry, measurement_bit, values=values),
-            )
-        )
-    return (
-        *compute,
-        *(gate for block in reversed(erase) for gate in block),
-        Instruction("cx", (sign, payload[0])),
-    )
+    steps: list[tuple[Literal["cx", "and", "erase"], tuple[int, ...]]] = [
+        ("and", (controls[i], payload[i], carry)) for i, carry in enumerate(workspace)
+    ]
+    for i in reversed(range(len(workspace))):
+        carry = workspace[i]
+        steps.append(("cx", (carry, payload[i + 1])))
+        steps.append(("erase", (controls[i], payload[i], carry)))
+    steps.append(("cx", (sign, payload[0])))
+    return tuple(steps)
