@@ -51,7 +51,7 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
     measurements = []
     corrections = []
     parities = []
-    source_events = []
+    source_events: list[tuple[str, tuple[int, ...], int]] = []
     parity_bit = 20 + width
 
     class Recorder:
@@ -102,7 +102,9 @@ def test_erasure_matches_unmodified_source_calls(width: int, modulus: int) -> No
     # Normalize source MeasureX+discard to physical HMR; map each source Parity
     # result to the same explicitly reusable classical slot on both sides.
     lowered = actual.lower(parity_bit=parity_bit)
-    events = [("hmr", (wire,), bit) for wire, bit in actual.measurements]
+    events: list[tuple[str, tuple[int, ...], int]] = [
+        ("hmr", (wire,), bit) for wire, bit in actual.measurements
+    ]
     for instruction in lowered[3 * width :]:
         if instruction.name == "classical_xor":
             assignment = parse_classical_xor(instruction)
@@ -217,11 +219,12 @@ def test_append_dynamic_complex_superposition(width: int, modulus: int) -> None:
     state = torch.zeros(1 << count, dtype=torch.complex128)
     for a in range(1 << width):
         for b in range(1 << width):
-            state[((a << width) | b) << (2 * width)] = complex(a + 1, 2 * b - 3)
+            state[((a << width) | b) << (2 * width)] = torch.tensor(
+                complex(a + 1, 2 * b - 3), dtype=torch.complex128
+            )
     state /= state.norm()
-    circuit = DynamicCircuit(count, inputs=state, dtype=torch.complex128).append(
-        ComputeErase(width, modulus)
-    )
+    circuit = DynamicCircuit(count, inputs=state, dtype=torch.complex128)
+    circuit.append(ComputeErase(width, modulus))
     result = run_dynamic(circuit, shots=128, seed=29, strategy="trajectory")
     assert len(set(map(tuple, result.classical_bits.tolist()))) == 1 << width
     torch.testing.assert_close(
@@ -243,7 +246,7 @@ def test_kmx_execution_against_native_reference(
     all_shots = (1 << shots) - 1
     for a, b in [(0, 0), (1, 1), ((1 << width) - 1, 3)]:
         sim = km.Simulator(batch_size=shots, seed=123)
-        expected = []
+        expected: list[int] = []
         for value in (a, b):
             expected.extend(
                 all_shots if value >> i & 1 else 0 for i in reversed(range(width))
@@ -299,7 +302,7 @@ def test_qroam_consumer_accepts_replaced_measurement_primitives(
     from flagquantum.compiler.registers.primitives import measurement
     from flagquantum.core.ir import Instruction
 
-    arguments = dict(
+    expected = qroam.paired_lookup_ir(
         width=3,
         data_width=2,
         words=(3, 0, 2, 1),
@@ -307,8 +310,9 @@ def test_qroam_consumer_accepts_replaced_measurement_primitives(
         blocked=True,
         inverse=True,
     )
-    expected = qroam.paired_lookup_ir(**arguments)
-    calls = []
+    calls: list[tuple[str, int, int] | tuple[str, tuple[int, ...], tuple[int, ...]]] = (
+        []
+    )
 
     def replacement_measure(wire: int, bit: int) -> tuple[Instruction, ...]:
         calls.append(("measure", wire, bit))
@@ -338,6 +342,16 @@ def test_qroam_consumer_accepts_replaced_measurement_primitives(
 
     monkeypatch.setattr(measurement, "measure_x_clear_ir", replacement_measure)
     monkeypatch.setattr(qroam, "ParityPhase", ReplacementPhase)
-    assert qroam.paired_lookup_ir(**arguments).instructions == expected.instructions
+    assert (
+        qroam.paired_lookup_ir(
+            width=3,
+            data_width=2,
+            words=(3, 0, 2, 1),
+            measurement_bits=(0, 1, 2, 3),
+            blocked=True,
+            inverse=True,
+        ).instructions
+        == expected.instructions
+    )
     assert sum(call[0] == "measure" for call in calls) == 4
     assert any(call[0] == "phase" for call in calls)
