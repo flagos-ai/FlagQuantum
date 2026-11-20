@@ -28,8 +28,8 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.ftqc_reference
 def test_original_notebook_shaped_partition_and_join_keep_port_order():
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import QAny, Register
     from qualtran.bloqs.bookkeeping.partition import Partition
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -82,7 +82,7 @@ def test_original_notebook_shaped_partition_and_join_keep_port_order():
 
 @pytest.mark.ftqc_reference
 def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map():
-    import cirq
+    cirq = pytest.importorskip("cirq")
     from qualtran import BloqBuilder, Signature
     from qualtran.bloqs.bookkeeping import Partition
     from qualtran.bloqs.for_testing import TestMultiRegister
@@ -158,8 +158,8 @@ def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map():
 @pytest.mark.ftqc_reference
 def test_source_partition_shaped_ports_and_join():
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import QAny, QBit, Register
     from qualtran.bloqs.bookkeeping.partition import Partition
 
@@ -211,8 +211,8 @@ def test_unpartition_checks_names_widths_and_aliases():
 @pytest.mark.parametrize("widths", [(0, 0), (0, 3), (3, 0), (2, 3), (5, 2)])
 def test_split2_join2_match_source_physical_bindings_and_resources(widths):
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran.bloqs.bookkeeping import Join2, Split2
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -286,8 +286,8 @@ def test_split2_join2_symbolic_width_and_integer_boundaries():
 @pytest.mark.ftqc_reference
 def test_partition_inverse_preserves_spectator_complex_amplitudes():
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import BloqBuilder, QAny, QBit, Register, Side, Signature
     from qualtran.bloqs.basic_gates import CNOT
     from qualtran.bloqs.bookkeeping import Partition
@@ -335,8 +335,8 @@ def test_partition_inverse_preserves_spectator_complex_amplitudes():
 
 @pytest.mark.ftqc_reference
 def test_admitted_mixed_partition_preserves_word_types_and_physical_bindings():
-    import cirq
-    import numpy as np
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
     from qualtran import QGF, QBit, QUInt
     from qualtran import Register as SourceRegister
     from qualtran.bloqs.bookkeeping.partition import Partition
