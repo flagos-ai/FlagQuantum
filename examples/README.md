@@ -46,6 +46,15 @@ These examples do not use that alias:
   Expected JSON includes `"status": "passed"`, `"observables": 2` and
   `"syndrome_reproduced": 64`; add `--noise-profile correlated` to include Y faults.
 
+- [`qec/embedded_memory_export.py`](qec/embedded_memory_export.py) constructs a
+  noisy repetition-code memory, exports its original Stim text, then samples,
+  builds the strict DEM and decodes 64 fixed shots through the embedded
+  stabilizer engine. Run it in a wheel built with the embedded Stim profile:
+  `FQ_BUILD_EMBEDDED_STIM=1 python -m build --wheel --no-isolation`, install that
+  wheel without the `stim` extra, then run
+  `python -m examples.qec.embedded_memory_export`. The output reports 64 shots,
+  the observed logical failure count, and `sampling_source="stim_circuit"`.
+
 - [`qec/colour_distance_acceptance.py`](qec/colour_distance_acceptance.py)
   checks a triangular 6.6.6 colour patch using original noisy shots, an
   undecomposed strict DEM, Stim 1.16.0 reference mechanisms and bundled BP/OSD

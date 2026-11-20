@@ -1697,8 +1697,9 @@ The installed acceptance covers both logical observables, X/Z readout,
 three rounds and 64 original-circuit shots per configuration, with independent
 and correlated Pauli-noise profiles. Strict undecomposed DEM mechanisms are
 compared against Stim 1.16.0; BP/OSD corrections must reproduce every syndrome.
-Text export still requires the SDK; an embedded installation can consume the
-captured text without Stim or PyMatching. This bounded campaign proves neither
+An embedded installation can now export owned memory circuits and consume the
+resulting text without Stim or PyMatching. The standard build retains its SDK
+requirement. This bounded campaign proves neither
 a threshold nor logical suppression, decoder optimality or arbitrary-distance
 performance. See the [per-configuration evidence](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
 
@@ -1709,7 +1710,8 @@ with an exact bounded-width syndrome trellis after all existing CSS validation.
 Both logical readout bases pass three-round, 64-shot original noisy sampling,
 strict undecomposed DEM and bundled BP/OSD decoding, with all mechanisms checked
 against Stim 1.16.0. The model retains hyperedges and the matching decoder's
-refusal is unchanged. Text export still requires the Stim SDK. These observations
+refusal is unchanged. Embedded builds can export memory text without the Stim
+SDK; standard builds retain their SDK requirement. These observations
 are not a threshold or logical-suppression claim, and wider trellis frontiers
 retain the exact subset search. See the [per-distance results](QEC_COLOUR_DISTANCE_ACCEPTANCE.md).
 

@@ -660,6 +660,14 @@ std::optional<TextExperiment> parse_text_experiment(std::string_view text) {
     }
 }
 
+PyObject *validate_text_experiment(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t size;
+    if (!PyArg_ParseTuple(args, "s#", &text, &size)) return nullptr;
+    if (!parse_text_experiment({text, size_t(size)})) return nullptr;
+    Py_RETURN_NONE;
+}
+
 PyObject *prepare_text_experiment(PyObject *, PyObject *args) {
     const char *text;
     Py_ssize_t size;
@@ -1091,6 +1099,7 @@ PyMethodDef methods[] = {
     {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},
     {"close_shot_reader", close_shot_reader, METH_VARARGS, nullptr},
     {"prepare_text_experiment", prepare_text_experiment, METH_VARARGS, nullptr},
+    {"validate_text_experiment", validate_text_experiment, METH_VARARGS, nullptr},
     {"text_experiment_dem", text_experiment_dem, METH_VARARGS, nullptr},
     {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
     {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
