@@ -124,3 +124,45 @@ source blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Receipt pre
 `g2-negation-native-*` records this batch. Q-0211/Q-0212 remain open for the
 original signed one-bit failure, symbolic physical/generic foreign admission
 and original skipped count-mode boundary. Proposal 108 remains pending.
+
+## Complete foreign-consumer disposition after approved contracts
+
+The final consumer audit closes the complete implementation and original test
+files using the previously accepted native graph, exact adjoint, classical
+callback, notebook and resource evidence. Both actual factory objects preserve
+full library bytes at depths zero, one and two and reconstruct equally in the
+original. Explicit factories resolve concrete signed execution and symbolic
+metadata through existing owners. Physical symbolic widths retain the finite
+execution rejection. Both scalar control polarities and integer formats resolve
+their original wrapper references to the existing specialized native graph.
+
+Plain original SDK operations at widths 1, 2, 3 and 5 preserve integer metadata,
+full primitive/operand/feedback streams and output aliases. Widths through three
+also pass full complex superpositions with spectators, every raw measurement
+history and clean-work checks through `circuit.append(op)`. Original signed
+one-bit +1 encoding still fails and is retained separately from accepted native
+bit-pattern execution.
+
+The generic controlled SDK has an additional original failure. At width three,
+`cirq.decompose` returns a list retaining controlled And-adjoint leaves.
+Querying their original unitary recurses, as does native import of that same
+unresolved original object. A list of source operations is therefore not proof
+of a completely executable source decomposition. The already accepted native
+specialized Negate control instead retains its literal controlled complement and
+controlled-constant-load chain. Both control polarities have explicit source
+failure witnesses. No provider source or production implementation was changed.
+
+All source members now have a native owner or an explicit original/symbolic
+failure disposition. Q-0211 and Q-0212 are accepted with these recorded limits.
+The concentrated run passes 712 cases, with four existing paired NumPy overflow
+warnings. The local integration run passes 17 cases. Both Cirq versions pass
+20 focused cases. Strict typing, Black, Ruff and team scope pass. Production
+architecture/API evidence from the preceding batch is reused because all eight
+implementation owners are byte-identical. Five frozen source blobs and locked
+Qualtran/Kickmix Simulator are verified. Dependency diagnostics remain 685 for
+the repository and zero for this batch. Measured primitives and the original
+models remain the separate tables already recorded above.
+
+The Cirq 1.6.1 lane retains 1,512 upstream NumPy-2.5 array-shape deprecation
+warnings from its recursive controlled-unitary failure witnesses. The Cirq 1.7
+focused lane has no warnings. These warnings are retained in the receipt.
