@@ -1035,8 +1035,10 @@ is absent. Each private environment resolves compatible wheel bytes rather than
 reusing another job's installed packages. Missing Torch wheels retain the
 bounded mirror and official-index fallback. Self-hosted pip requests use a
 60-second socket timeout and at most two retries within the unchanged job limit.
-Supply-chain dependency installation uses the configured self-hosted PyPI mirror
-with the same availability check and official-index fallback. Vulnerability
+Supply-chain dependency installation selects the Aliyun mirror on self-hosted
+runners with the same availability check and official-index fallback. This
+job-specific selection avoids the repository-wide index variable, which may
+deliberately select official PyPI for other jobs. Vulnerability
 queries still contact PyPI directly. The 20-minute job limit, installed-environment
 audit, Bandit analysis, SBOM generation, and SBOM validation remain required.
 
