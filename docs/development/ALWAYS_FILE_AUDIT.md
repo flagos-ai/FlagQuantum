@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0313 | `always.ipynb` | `5e127210038748d4b79ad8cb012b63f263139363` | Closed by the full native tutorial. |
-| Q-0314 | `always.py` | `905f79a2fef8cf14ffd3f09098d4d93ea356a250` | Actual concrete external wrapper capture verified. Automatic resource declarations for undeclared children remain open. |
+| Q-0314 | `always.py` | `905f79a2fef8cf14ffd3f09098d4d93ea356a250` | Closed by generic native declaration delegation, actual foreign consumers and the accepted concrete source captures. |
 | Q-0315 | `always_test.py` | `2b712e48f42fdf79519c7a5493423815fe52872f` | Closed for the runnable original cases and notebook. |
 
 The Compiler wrapper passes the inherited control tuple back unchanged and
@@ -60,8 +60,8 @@ source Always query agree. The compiled atomic Allocate fixture returns
 one owned lease, with no primitive gates. A delegated cost provider's
 exception passes through unchanged, as in the locked source for atomic
 Allocate. Native cost delegation uses an explicit child declaration.
-Automatic cost declarations for arbitrary children and direct foreign
-object interoperability remain open.
+Generic resource delegation and actual foreign library consumers are closed below.
+Atomic undeclared-child failures retain the original source behavior.
 
 ## Actual foreign wrapper and local-output lifetime closure
 
@@ -94,15 +94,58 @@ restore the full unnormalized input. Each direction emits 20 CX, 6 H, 4 T,
 Add resource declaration and source query remain independent of that inventory.
 
 Source signature forwarding, actual factory/DocSpec identity, child display,
-adjoint swapping, actual typed control adders and successful/error cost
-provider delegation now have complete concrete interface evidence. Q-0314
-remains open for the explicitly recorded automatic declaration of arbitrary
-undeclared foreign children. Existing native cost delegation deliberately
-requires an explicit child declaration or provider. The source atomic-child
-resource failure and original serialization xfail remain recorded. No new
-foreign reflection registry or inferred zero cost is introduced.
+adjoint swapping and actual typed control adders have complete concrete
+interface evidence. The generic resource and actual library closure below
+completes Q-0314. The source atomic-child resource failure and original
+serialization xfail remain recorded.
 
 The final concentrated batch passed 142 cases with no warnings or skips.
 Formatting, lint, strict typing for the changed Python file, Compiler scope,
 architecture, multilevel IR and protected API checks all passed. Logs are
 retained under `ftqc-reference-env/g2-always-binding-*.log`.
+
+
+## Complete generic child delegation and foreign consumers
+
+The internal resource owner `_component_trace/always.py` retains a hashable
+native child independently of physical emitters. `AlwaysCall.callee_counts`
+delegates to that child's direct declaration through the existing shared
+accumulator and passes the same symbol allocator. Nested wrappers do not add
+an artificial wrapper-to-child edge. Duplicate entries accumulate in encounter
+order. Default adjoints restore the original identity after two inversions,
+and specialized child inverses can use the existing inverse callback.
+
+Unmodified plain/controlled Swap widths 1, 3 and symbolic n match both direct
+edges and the complete independent QEC category model. The existing generic
+cost query consumes the delegated graph with standard leaf costs. The original
+`TestBloqWithCallGraph` fixture verifies three successive allocator states
+through nested wrappers. Original Always(X), Always(And) and Always(Allocate)
+direct graph queries fail through their atomic children. Native providers
+propagate the exact exception object. A typed bodyless child can have an
+explicit terminal model while physical binding requires a body. Replacing its
+body with the existing native bit-gate function enables execution through the
+same stored call.
+
+Actual source libraries for Always(X/H) at depths 0, 1 and 2 preserve exact
+bytes and reconstruct equal upstream. Existing explicit factories resolve
+the already-bound native child once and return only the wrapper definition,
+avoiding duplicate child registration. Reversed binding with an entangled
+spectator matches all complex amplitudes; two appends restore the full input.
+The original `_always_and` and Add captures, typed controls, measured erasure
+histories, clean workspace and independent child models above remain accepted.
+Actual serialization success is separate from the original harness's expected
+serialization failure. No arbitrary foreign object enters native execution.
+
+The new resource wrapper adds zero physical primitive gates, measurements or
+work qubits. Primitive inventories above remain separate from graph estimates.
+The complete source parent Q-0314 is accepted with original atomic declaration
+failures retained, consistent with the unmodified source implementation.
+
+Validation receipts `g2-always-generic-*` retain 233 concentrated and 252 shared
+graph/control regressions, 17 integration cases and 21 Cirq 1.6.1 cases, all
+passing. The unchanged original non-notebook suite has 5 passes and its original
+serialization xfail, with 2 collection warnings. Shared graph tests retain 9
+upstream parser/collection warnings. Strict typing for both new Python files,
+Black, Ruff, team scope, architecture, multilevel IR and protected API checks
+pass. Frozen source blobs and unchanged execution owners are independently
+verified in the batch evidence receipt.

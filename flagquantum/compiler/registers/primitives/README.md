@@ -31,3 +31,10 @@ and caller storage survive binding without workspace or feedback. Symbolic
 signatures and direct models are available independently of physical dimensions.
 Run `python -m pytest tests/unit/test_swap_foreign_file.py -q` for original
 factories, foreign library resolution and the ordinary append workflow.
+
+`always.py` owns emitter control bypass and directional signatures;
+`always_component.py` stores one typed child call. Generic direct resource
+forwarding belongs to `compiler/_component_trace/always.py`, where native child
+identities and the caller's symbol allocator remain independent of emission.
+The complete source dispositions and primitive/model separation are recorded in
+[the Always audit](../../../../docs/development/ALWAYS_FILE_AUDIT.md).
