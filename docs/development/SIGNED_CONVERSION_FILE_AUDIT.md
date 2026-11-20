@@ -132,3 +132,57 @@ Three frozen source blobs, Qualtran 0.7.0 and the Kickmix 0.1 Simulator were
 verified. Dependency policy retains 687 whole-repository findings and zero
 findings in this batch. The prior default-suite docstring failure is reused as
 a separately recorded baseline, without a fresh whole-suite pass claim.
+
+## Complete file and sided SDK closure, November 20, 2026
+
+The four original definitions are the class, its signature, its declared call
+model and its example factory. Their owners are the existing typed conversion,
+Core metadata, Compiler model and example/test facilities described above.
+Both original test functions and all six autotester outcomes have a recorded
+disposition. Earlier open-parent statements describe historical intake.
+
+The last transport review uses the existing sided Program SDK adapters directly.
+`test_signed_conversion_foreign_file.py` maps the original source signature into
+an existing builder call to `signed_encoding_program`. Forward has LEFT x and
+RIGHT y. The original adjoint instead consumes y and returns x. The native
+inverse's internal x/y convention is explicitly mapped at this boundary.
+No conversion logic or SDK transport implementation is duplicated.
+
+Widths two, three and four in both directions export with reversed physical Qid
+placement, retain the same output word alias, then import through the same sided
+signature. The complete restored instruction tuple equals the original bound
+tuple, including every gate, operand, measurement slot and feedback condition.
+No slot renaming, gate sorting or count conversion is applied to this equality.
+CircuitIR JSON roundtrips preserve the same tuple. Every measurement history
+checks complete unnormalized complex amplitudes with an entangled spectator,
+all raw word inputs including negative zero, and clean carry storage.
+Previously accepted normal append, exact inverse-history pairs and original
+And/adjoint leaf comparisons are reused unchanged.
+
+The actual original factory also passes its original serialization check. Its
+opaque through-port emitter still rejects the sided root under its existing
+contract. Executable sided transport belongs to the existing Program adapter.
+The source root has no numerical callback or physical decomposition, so those
+original missing modes retain their explicit refusals. Native negative-zero
+behavior remains the separately documented reversible extension. None of these
+facts require an additional physical implementation to complete this source
+file's actual declarations and direct dependencies.
+
+The resource account remains 4(n-2) T/TDG, 7(n-2)+1 CX, 3(n-2) H, n-2 each of
+S, conditional CZ, measurement and reset, with n-2 clean carries. The inverse
+adds 4(n-2) X. The original model independently declares n-2 Toffoli. SDK
+roundtrip introduces zero additional instructions, work bits or measurements.
+The existing SELECT replacement evidence verifies both real resource consumers.
+
+The final affected-path regression passes 659 cases without skips or warnings,
+and all 17 local integration cases pass. The unchanged original suite reports
+three passes and three explicit decomposition-dependent skips. The Cirq 1.6.1
+lane passes the seven new transport/factory cases. Strict typing, Black, Ruff,
+Ecosystem scope, architecture, multi-level IR and public API checks pass.
+Three frozen source blobs and Qualtran 0.7.0/Kickmix 0.1 Simulator are verified.
+Seven accepted production/test owners are byte-identical to the batch base.
+The established default docstring-policy failure is reused after checking its
+ten files against the same base. Dependency policy retains 687 existing
+findings and zero changed-path findings. Q-0193 and Q-0194 are accepted with the
+source limitations above explicitly retained. Persistent evidence uses
+`ftqc-reference-env/g2-signed-foreign-`.
