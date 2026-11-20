@@ -23,3 +23,11 @@ exponent adjoint. Its clean work and reusable result slot are explicit. The
 [measured GQSP guide](../../../../docs/development/GQSP_MEASURED_CONTROL.md)
 contains the dynamic append example and distinguishes original Bloq leaf parity,
 direct Cirq semantics and modeled costs.
+
+`swap_component.py` owns ordinary/controlled word-exchange declarations and the
+stored plain Split/atomic-SWAP/Join body. Controlled execution delegates to the
+existing exact Fredkin component owner. Logical port order, MSB-first bit pairs
+and caller storage survive binding without workspace or feedback. Symbolic
+signatures and direct models are available independently of physical dimensions.
+Run `python -m pytest tests/unit/test_swap_foreign_file.py -q` for original
+factories, foreign library resolution and the ordinary append workflow.
