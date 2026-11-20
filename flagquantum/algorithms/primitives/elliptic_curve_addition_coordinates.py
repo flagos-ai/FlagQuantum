@@ -81,6 +81,15 @@ class EllipticCurveAdditionCoordinates:
     def source_signature(self) -> Signature:
         return addition_coordinates_signature(self.width)
 
+    def classical_values(
+        self, ctrl: int, a: int, b: int, x: int, y: int, lam: int
+    ) -> tuple[int, int, int, int, int, int]:
+        """Evaluate the source controlled coordinate callback."""
+        if ctrl == 1:
+            x = (x + 3 * a) % self.modulus
+            y = 0
+        return ctrl, a, b, x, y, lam
+
     def workspace_requirements(self) -> tuple[int, int]:
         """Reserve independent product history and controlled arithmetic work."""
         n = self.width

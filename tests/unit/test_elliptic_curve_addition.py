@@ -137,6 +137,7 @@ def test_six_stage_curve_pairs_exact_channel_and_locked_release(
         }
         before.append(pack(raw, ports, ir.n_wires))
         expected = source.on_classical_vals(**raw)
+        assert native.classical_values(**raw) == tuple(expected.values())
         data = raw.copy()
         for graph in graphs[:-1]:
             data.update(

@@ -6,6 +6,7 @@
 """Reversible slope selection with explicit inverse and multiplication history."""
 
 from dataclasses import dataclass
+from typing import cast
 
 from ...circuit import Circuit
 from ...compiler.registers.bits.controlled_register_xor import controlled_xor_ir
@@ -29,6 +30,10 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.montgomery_values import (
+    montgomery_inverse_value,
+    montgomery_product_values,
+)
 from .elliptic_curve_window_product import CurveWindowProduct
 
 
@@ -81,6 +86,28 @@ class EllipticCurveAdditionSlope:
     @property
     def source_signature(self) -> Signature:
         return addition_slope_signature(self.width)
+
+    def classical_values(
+        self, f1: int, ctrl: int, a: int, b: int, x: int, y: int, lam_r: int
+    ) -> tuple[int, int, int, int, int, int, int, int]:
+        """Evaluate the original high-level slope selection callback."""
+        x = (x - a) % self.modulus
+        if ctrl == 1:
+            y = (y - b) % self.modulus
+            if f1 == 1:
+                lam = lam_r
+                f1 = 0
+            else:
+                inverse = montgomery_inverse_value(int(x), self.width, self.modulus)
+                lam = cast(
+                    int,
+                    montgomery_product_values(
+                        int(y), inverse, self.width, self.modulus
+                    ),
+                )
+        else:
+            lam = 0
+        return f1, ctrl, a, b, x, y, lam, lam_r
 
     def workspace_requirements(self) -> tuple[int, int]:
         """Count clean quantum workspace and reusable classical measurement slots."""

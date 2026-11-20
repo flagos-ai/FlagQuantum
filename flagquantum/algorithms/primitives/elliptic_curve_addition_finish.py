@@ -78,6 +78,27 @@ class EllipticCurveAdditionFinish:
     def source_signature(self) -> Signature:
         return addition_finish_signature(self.width)
 
+    def classical_values(
+        self,
+        f1: int,
+        f2: int,
+        f3: int,
+        f4: int,
+        ctrl: int,
+        a: int,
+        b: int,
+        x: int,
+        y: int,
+    ) -> tuple[int, int, int, int]:
+        """Preserve the source infinity selection and opposite-point override."""
+        if f4 == 1:
+            x = a
+            y = b
+        if f1 and f2:
+            x = 0
+            y = 0
+        return a, b, x, y
+
     def workspace_requirements(self) -> tuple[int, int]:
         n = self.width
         q, c = controlled_modular_requirements(n)

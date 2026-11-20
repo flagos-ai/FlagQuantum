@@ -14,10 +14,7 @@ and restoration of `y` follows the source order. The caller separately provides
 `2n` zeroed scratch qubits and `2n - 1` reusable measurement slots. The
 source's all-ones modulus still fails the `p+1` constant load.
 
-The original fast classical and symbolic-cost selection (33 tests) and the
-unchanged 11-cell notebook have already executed. The remaining five stages,
-the combined resource trace and executable native tutorial are open. The full
-source-file rows remain open until the composed operation is verified.
+The original full test file and unchanged 11-cell notebook have executed. All six native stages and the composed primitive trace have evidence below. The implementation and test rows remain open for the listed source defects and wider-window physical boundaries.
 
 ### Stage one evidence
 
@@ -224,6 +221,41 @@ preserves the two source declarations, graphical signatures, one-level call
 graph and leaf counts. It also binds the verified small example and reports
 emitted operations. The six executable cells and both SVGs pass in a fresh
 kernel with reference packages forbidden. This closes the tutorial row.
-The full implementation and test rows stay open for the observed source
-defects, wider-window arithmetic and the remainder of the original slow
-test matrix.
+The implementation and test rows stay open for the observed source defects, wider-window physical arithmetic, independent symbolic aggregate resources and external execution boundaries. The original slow matrix is now covered as described below.
+
+
+## Complete classical callback file closure — 2026-11-21
+
+The top-level operation and all six stage owners now provide `classical_values`
+in source right-port order. Their Montgomery conversion, slope selections,
+coordinate overwrites, consumed slope and final flag overrides follow the frozen
+`on_classical_vals` methods. The callbacks reuse the native point and Montgomery
+owners. Physical `make_on`, signatures and workspace requirements retain their
+independent execution path and source release promises.
+
+The original slow matrix supplies all 504 input tuples at widths 7 and 8,
+modulus 17 and every dividing window. Each tuple compares all seven native
+callbacks against the unmodified source methods and the original one-level
+composition. A separate example runs with reference imports forbidden. Both
+source files are checked by Git blob identity before the matrix runs.
+The unchanged original suite reports 1,099 passed, one notebook deselected and
+one expected failure. The expected failure is the original serialization fixture
+policy for ECPoint, not a demonstrated serialization error. Existing native
+complex-state, measurement-history, workspace and primitive/model evidence is
+reused. Numerical callbacks emit no physical gates or workspace, so they add no
+primitive count and do not certify erasure.
+
+Actual ECAdd, ECAddR and ECWindowAddR factory intake covers forward, adjoint and
+additional-control objects. All nine shallow declarations enter the owned
+component library. Deeper paths expose the original NumPy uint8 serializer,
+controlled-And decomposition and missing scalar physical decomposition. The
+controlled window graph also exposes distinct Montgomery Split/Join source
+objects that serialize to the same owned declaration. This is a separate
+Ecosystem dependency with a recorded reproducer, not accepted physical execution.
+Receipts are `g2-ecc-foreign-intake-20261121.json` and
+`g2-ecc-live-collisions-20261121.json` in the reference evidence directory.
+
+Q-0457 and Q-0460 remain open. The callback matrix completes the original slow
+logical domain. It does not remove the modulus-5 dirty-release and coordinate
+counterexamples, wider-window primitive differences, independent symbolic
+aggregate model gap or external graph execution boundaries.

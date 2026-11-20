@@ -6,6 +6,7 @@
 """Subtract the squared slope and XOR the updated coordinate product."""
 
 from dataclasses import dataclass
+from typing import cast
 
 from ...circuit import Circuit
 from ...compiler.registers.bits.bitwise import xor_ir
@@ -17,6 +18,7 @@ from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.montgomery_values import montgomery_product_values
 from .elliptic_curve_window_product import CurveWindowProduct
 
 
@@ -60,6 +62,17 @@ class EllipticCurveAdditionProducts:
     @property
     def source_signature(self) -> Signature:
         return addition_products_signature(self.width)
+
+    def classical_values(self, x: int, y: int, lam: int) -> tuple[int, int, int]:
+        """Evaluate the source square and overwrite-product callback."""
+        square = montgomery_product_values(int(lam), int(lam), self.width, self.modulus)
+        x = (x - cast(int, square)) % self.modulus
+        if lam > 0:
+            y = cast(
+                int,
+                montgomery_product_values(int(x), int(lam), self.width, self.modulus),
+            )
+        return x, y, lam
 
     def workspace_requirements(self) -> tuple[int, int]:
         n = self.width

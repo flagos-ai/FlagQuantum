@@ -86,6 +86,17 @@ class EllipticCurveAdditionCleanup:
     def source_signature(self) -> Signature:
         return addition_cleanup_signature(self.width)
 
+    def classical_values(
+        self, ctrl: int, a: int, b: int, x: int, y: int, lam_r: int, lam: int
+    ) -> tuple[int, int, int, int, int, int]:
+        """Return source coordinate restoration after consuming the slope value."""
+        if ctrl == 1:
+            x = (a - x) % self.modulus
+            y = (y - b) % self.modulus
+        else:
+            x = (x + a) % self.modulus
+        return ctrl, a, b, x, y, lam_r
+
     def workspace_requirements(self) -> tuple[int, int]:
         n = self.width
         multiply = CurveWindowProduct(n, self.modulus, self.window)
