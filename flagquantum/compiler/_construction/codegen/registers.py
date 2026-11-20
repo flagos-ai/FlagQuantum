@@ -318,11 +318,7 @@ def schedule_register_program(
                 wires = bindings[unitary_data[0].id]
             matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
             needed = len(wires) - 2 + (control is not None) if len(wires) >= 4 else 0
-            scratch = (
-                tuple(range(position, position + needed))
-                if position + needed <= n_qubits
-                else ()
-            )
+            scratch = tuple(range(position, min(position + needed, clean_qubits)))
             shared = (
                 lower_spectral_powers(
                     operations, ordinal, bindings, matrix, wires, scratch
