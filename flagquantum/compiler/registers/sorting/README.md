@@ -52,3 +52,11 @@ primitive evidence remains tied to the frozen source. Bind using
 package guide. The complete complex/branch consumer is in
 `tests/unit/test_in_place_sort_component.py`, and the frozen object-library
 consumer is in `tests/unit/test_in_place_sort_foreign_file.py`.
+
+`symmetric_difference_component.py` composes the finite unsigned sorted-set
+oracle through the same merge, equality, Hamming, compaction and exact-adjoint
+owners. All four ports are THRU and occupied diff/flag targets are XOR updated.
+Run `tests/unit/test_symmetric_difference_component.py` and
+`tests/unit/test_symmetric_difference_foreign_file.py` for its shortest checks.
+The root source supplies no gate decomposition. See the local audit for original
+model omissions, signed/symbolic execution limits and temporary-wire scheduling.

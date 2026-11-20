@@ -1,6 +1,7 @@
 """Symmetric difference compaction, occupied outputs and reversible cleanup."""
 
 from collections import Counter
+from collections.abc import Iterator, Mapping
 from itertools import combinations, product
 
 import pytest
@@ -17,7 +18,14 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
-def layout(lhs, rhs, width, size):
+def layout(lhs: int, rhs: int, width: int, size: int) -> tuple[
+    tuple[tuple[int, ...], ...],
+    tuple[tuple[int, ...], ...],
+    tuple[tuple[int, ...], ...],
+    int,
+    tuple[int, ...],
+    tuple[int, ...],
+]:
     work, slots = symmetric_difference_requirements(lhs, rhs, width, size)
     words = tuple(
         tuple(range(i * width, (i + 1) * width)) for i in range(lhs + rhs + size)
@@ -33,7 +41,14 @@ def layout(lhs, rhs, width, size):
     )
 
 
-def encode(a, b, out, flag, width, work):
+def encode(
+    a: tuple[int, ...],
+    b: tuple[int, ...],
+    out: tuple[int, ...],
+    flag: int,
+    width: int,
+    work: int,
+) -> tuple[int, ...]:
     return (
         tuple(
             (word >> i) & 1 for word in (*a, *b, *out) for i in reversed(range(width))
@@ -43,7 +58,9 @@ def encode(a, b, out, flag, width, work):
     )
 
 
-def rows(lhs, rhs, width, size, work):
+def rows(
+    lhs: int, rhs: int, width: int, size: int, work: int
+) -> Iterator[tuple[tuple[int, ...], tuple[int, ...]]]:
     mask = (1 << width) - 1
     occupied = tuple((i + 1) & mask for i in range(size))
     for a, b in product(
@@ -80,7 +97,9 @@ def rows(lhs, rhs, width, size, work):
         (4, 2, 3, 4),
     ],
 )
-def test_all_set_pairs_targets_histories_and_self_inverse(lhs, rhs, width, size):
+def test_all_set_pairs_targets_histories_and_self_inverse(
+    lhs: int, rhs: int, width: int, size: int
+) -> None:
     bound = layout(lhs, rhs, width, size)
     before, after = zip(*rows(lhs, rhs, width, size, len(bound[4])), strict=True)
     gates = symmetric_difference_ir(*bound)
@@ -97,7 +116,9 @@ def test_all_set_pairs_targets_histories_and_self_inverse(lhs, rhs, width, size)
 @pytest.mark.parametrize(
     "lhs,rhs,width,size", [(1, 1, 1, 0), (1, 1, 1, 2), (2, 2, 2, 2)]
 )
-def test_append_complex_superposition_and_work_cleanup(lhs, rhs, width, size):
+def test_append_complex_superposition_and_work_cleanup(
+    lhs: int, rhs: int, width: int, size: int
+) -> None:
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.dynamic import DynamicCircuit
 
@@ -109,7 +130,8 @@ def test_append_complex_superposition_and_work_cleanup(lhs, rhs, width, size):
     vec = torch.arange(1, 2 * len(entries) + 1, dtype=torch.float64)
     amp = torch.complex(vec, 2 - 3 * vec)
     amp /= amp.norm()
-    initial, expected = {}, {}
+    initial: dict[int, complex] = {}
+    expected: dict[int, complex] = {}
     for i, ((before, after), spectator) in enumerate(product(entries, (0, 1))):
         for state, value in ((initial, before), (expected, after)):
             state[int("".join(map(str, (*value, spectator))), 2)] = complex(amp[i])
@@ -117,8 +139,8 @@ def test_append_complex_superposition_and_work_cleanup(lhs, rhs, width, size):
         data = torch.zeros(1 << qubits, dtype=torch.complex128)
         target = torch.zeros_like(data)
         for vector, amplitudes in ((data, initial), (target, expected)):
-            for index, value in amplitudes.items():
-                vector[index] = value
+            for index, amplitude in amplitudes.items():
+                vector[index] = torch.tensor(amplitude, dtype=torch.complex128)
         events = sum(gate.name == "measure" for gate in gates)
         for history in product((0, 1), repeat=events):
             torch.testing.assert_close(
@@ -137,7 +159,7 @@ def test_append_complex_superposition_and_work_cleanup(lhs, rhs, width, size):
 
 
 @pytest.mark.ftqc_reference
-def test_locked_model_and_native_network_gate_dependencies():
+def test_locked_model_and_native_network_gate_dependencies() -> None:
     pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QUInt
     from qualtran.bloqs.arithmetic.comparison import Equals, EqualsAConstant
@@ -181,7 +203,13 @@ def test_locked_model_and_native_network_gate_dependencies():
     merge_history, compact_history = work[12:16], work[16:22]
     eq, pool = work[22:25], work[29:]
 
-    def network(sorter, words, history, merge, adjoint):
+    def network(
+        sorter: BitonicMerge | BitonicSort,
+        words: tuple[tuple[int, ...], ...],
+        history: tuple[int, ...],
+        merge: bool,
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
         q, c = comparison_network_requirements(len(words[0]), len(history))
         return reference_network(
             sorter, words, history, pool[:q], slots[:c], merge=merge, adjoint=adjoint
@@ -252,13 +280,21 @@ def test_locked_model_and_native_network_gate_dependencies():
         ({"flag": 0}, "distinct nonnegative wires"),
     ],
 )
-def test_bad_binding(change, match):
+def test_bad_binding(change: Mapping[str, object], match: str) -> None:
     names = ("left", "right", "output", "flag", "workspace", "classical_bits")
     bound = dict(zip(names, layout(2, 2, 2, 2), strict=True))
     with pytest.raises(ValueError, match=match):
-        symmetric_difference_ir(**(bound | change))
+        values = bound | dict(change)
+        a, b, out, flag, work, slots = (values[name] for name in names)
+        assert isinstance(a, tuple) and isinstance(b, tuple) and isinstance(out, tuple)
+        assert (
+            isinstance(flag, int)
+            and isinstance(work, tuple)
+            and isinstance(slots, tuple)
+        )
+        symmetric_difference_ir(a, b, out, flag, work, slots)
 
 
-def test_word_domain_validation():
+def test_word_domain_validation() -> None:
     with pytest.raises(ValueError, match="exceeds the word domain"):
         symmetric_difference_requirements(3, 2, 1, 1)
