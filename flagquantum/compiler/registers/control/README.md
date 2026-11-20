@@ -144,3 +144,16 @@ Run `tests/unit/test_bookkeeping_control_file.py` for the complete base protocol
 and all ten original concrete descendants. The complete source-file disposition,
 reused execution evidence and independent storage boundaries are recorded in
 [the bookkeeping control audit](../../../../docs/development/BOOKKEEPING_CONTROL_FILE_AUDIT.md).
+
+`unary_component_calls.py` appends bounded iteration to an existing
+`ComponentProgramBuilder`. Pass one-bit selector handles and a leaf callback
+that returns its successor predicate. The leaf owns its other ports and local
+allocation/free calls. And predicate ports retain their real directional
+lifetimes, so the existing graph adjoint and binder can recycle child and parent
+work through one pool. Supply exact And and child inverse definitions to
+`adjoint_component_hierarchy`. The primitive-IR and typed-call consumers share
+the bounded traversal in `lookup/unary_iteration.py`.
+
+Run `tests/unit/test_unary_component_calls.py` for a complete native construction,
+generic inverse, append and all-branch example. It also checks exact source graph
+streams, typed-provider replacement and execution with SDK imports blocked.

@@ -246,3 +246,60 @@ modules, Black, Ruff, team scope, architecture, IR and protected API checks
 passed. Frozen source hashes and unchanged production owners are recorded in
 the external evidence receipt. The dependency-policy scan retains 666 existing
 repository findings and zero changed-path findings for this batch.
+
+## Typed shared-lifetime replay, November 21
+
+The new `control/unary_component_calls.py` composes bounded iteration into the
+existing `ComponentProgramBuilder`. Predicate computation and erasure use the
+existing directional `and_component_program` definitions. Child code retains
+its own ordinary Allocate/Free calls. The shared bounded walker now owns the
+control flow for both this typed consumer and the existing physical IR
+consumer. Default physical emission preserves its existing behavior.
+
+The existing `adjoint_component_hierarchy` reverses the complete native call
+graph with specialized And compute/erase definitions and exact unitary leaves.
+The normal binder then allocates from the common live workspace pool. This
+closes the preceding raw inverse allocation gap for the verified typed graph
+path. Source and native CompositeBloq/Program routes agree on each primitive,
+physical operand and per-wire order in both directions. Fresh native classical
+slots are matched to the source measurement keys only after checking the
+latest-write feedback lifetime. Source references use the unchanged original
+graph exporter in both directions.
+
+The direct forward Cirq generator reserves its full parent pool before visiting
+children. The original typed graph can release and recycle those wires sooner.
+These source entry points therefore have different allocation traces. Existing
+physical IR tests continue comparing the direct generator, while the new typed
+consumer compares the typed graph at the same granularity. The fixed-child
+physical callback still preserves its caller's explicitly dedicated storage.
+
+The complete private-child fixture from the preceding batch now executes as a
+native Program. All logical columns and every measurement branch match the
+original unnormalized complex amplitudes, including arbitrary phase-register
+values and padded addresses. Parent and child work returns to zero, all
+allocation/free events balance, outputs retain ownership and normal
+`Circuit.append(op)` plus CircuitIR roundtrip work. Native Programs replace the
+actual foreign snapshots behind the same `CircuitRegisterEmitter` consumer.
+Construction, generic adjoint, binding and append also pass while imports of
+Qualtran, Cirq and Kickmix are explicitly blocked.
+
+Additional exact graph streams cover selector width/extent pairs `(1, 2)`,
+`(3, 5)` and `(3, 8)`, each with zero or one enable bit and both directions.
+The larger cases compare raw primitive operands, feedback, returned ownership
+and independent source resources. Exhaustive quantum channels are certified on
+the two-bit/three-row private-child fixture. Dedicated native cases additionally
+verify nonzero interval bounds, two-entry folding, empty intervals and atomic
+rejection of invalid bounds before consuming builder inputs.
+
+Measured and modeled resource rows for the private-child fixture remain the
+preceding 4/8 T-family, 16/23 CX, 1/2 measurement and 2/3 clean-work rows. The
+independent source models retain 1/2 And, 16 Cliffords and logical peaks 7/9.
+Q-0597 remains open for the remaining multi-axis dynamic-storage, mixed-empty,
+unresolved-symbolic and dirty-borrow consumer obligations.
+
+This typed-call batch passed 761 concentrated cases, 17 local integration cases
+and 107 cases in the separate Cirq 1.6.1 lane. Strict typing of the three changed
+Python modules, Black, Ruff, team scope, architecture, IR and protected API
+checks passed. Three frozen source blobs and seven unchanged supporting owners
+are verified. The dependency scan retains 666 repository findings and zero
+changed-path findings. Model and measured resource rows remain separate above.
