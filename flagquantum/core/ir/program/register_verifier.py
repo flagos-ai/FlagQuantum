@@ -88,13 +88,26 @@ def executable_register_width(dtype: RegisterType) -> int:
 
     Execution admits concrete bit, opaque, integer storage and binary fields,
     including packed polynomials over those binary fields (Proposal 109).
-    Canonical integer parameters retain their metadata identity during binding.
+    Proposal 113 also admits unsigned one-bit fixed-point storage.
+    Canonical parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
     width = dtype.quantum_bits
     if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
         return _field_register_width(dtype, binary_only=True)
+    if dtype.encoding == "fixed_point":
+        logical_register_width(dtype)
+        parameters = dict(dtype.parameters)
+        if (
+            type(width) is int
+            and width == 1
+            and parameters["signed"] is False
+            and type(parameters["fractional_width"]) is int
+            and parameters["fractional_width"] in (0, 1)
+        ):
+            return width
+        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     if (
         dtype.encoding
         not in {"bit", "opaque", "uint", "signed", "ones_complement", "montgomery"}

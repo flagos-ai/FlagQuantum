@@ -56,8 +56,11 @@ def test_numerical_metadata_survives_logical_calls(
     assert verify_program_record(record) == ()
     assert record.functions[0].registers == (Register("word", dtype, shape),)
     assert logical_register_width(dtype) == dtype.quantum_bits
-    with pytest.raises(ValueError, match="unsupported executable"):
-        executable_register_width(dtype)
+    if dtype.encoding == "uint":
+        assert executable_register_width(dtype) == 4
+    else:
+        with pytest.raises(ValueError, match="unsupported executable"):
+            executable_register_width(dtype)
 
 
 def test_symbolic_widths_keep_finite_ownership_and_reject_symbolic_shapes() -> None:
