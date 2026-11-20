@@ -122,3 +122,11 @@ Run `python -m examples.algorithms.register_hamming_weight` for coherent count
 copying and complete work erasure through `circuit.append(PopulationCount())`.
 Run `python -m pytest tests/unit/test_hamming_weight_component.py -q` to check
 stored calls, gate dependencies, branch amplitudes, ownership and source models.
+
+`on_each_declaration.py` owns repeated-child constructor metadata, the default
+opaque target signature and direct child multiplicity. Its finite body delegates
+to `on_each_word_program`, preserving MSB-first Split/call/Join and caller-owned
+storage. Symbolic signatures and models remain available without physical binding.
+Source-admitted shaped or directional children retain metadata but fail finite
+construction. Run `python -m pytest tests/unit/test_on_each_foreign_file.py -q`
+for actual foreign-library resolution, typed SDK consumers and original failures.
