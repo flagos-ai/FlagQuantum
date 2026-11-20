@@ -6,6 +6,8 @@ import json
 import shlex
 import subprocess
 import sys
+from copy import deepcopy
+from typing import Any
 
 import pytest
 
@@ -206,7 +208,7 @@ def test_multi_device_submission_reserves_the_same_number_of_accelerators(
     monkeypatch.setattr(
         client,
         "_request",
-        lambda *args, **kwargs: {"type": "loki", "uid": "logs"},
+        lambda *args, **kwargs: pytest.fail("Submission must not query Grafana"),
     )
     monkeypatch.setattr(client, "_auth", lambda: {"AIRS-Token": "token"})
     captured = {}
@@ -227,4 +229,176 @@ def test_multi_device_submission_reserves_the_same_number_of_accelerators(
     assert captured["cpus"] >= 4
     assert "--nproc-per-node=4" in captured["command"]
     assert receipt["devices"] == 4
+    assert receipt["cluster_name"] == "cluster"
+    assert "datasource_uid" not in receipt
     assert receipt["execution_distribution_semantics"] == "sharded_across_ranks"
+
+
+@pytest.fixture
+def telemetry_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[NativeJiudingJobClient, dict[str, Any]]:
+    client = NativeJiudingJobClient(project="set.project", queue="queue")
+    monkeypatch.setattr(client, "_auth", lambda: {"AIRS-Token": "token"})
+    monkeypatch.setattr(
+        client, "workspace", lambda: {"queueId": "queue-id", "clusterName": "cluster"}
+    )
+    return client, {
+        "project": "set.project",
+        "endpoint": client.endpoint,
+        "queueId": "queue-id",
+        "jobId": "00000000-0000-0000-0000-000000000001",
+        "run_id": "0" * 32,
+        "created_ms": 1_000_000,
+        "requested_target": "jiuding:cpu",
+        "selected_target": "jiuding:cpu",
+        "datasource_uid": "retired-grafana-source",
+    }
+
+
+@pytest.mark.parametrize("camel_case", [False, True])
+def test_telemetry_pages_restore_old_receipt_and_decode_state(
+    telemetry_job: tuple[NativeJiudingJobClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    camel_case: bool,
+) -> None:
+    import torch
+
+    from flagquantum.remote.compute._workspace_executor import execute
+
+    client, receipt = telemetry_job
+    circuit = fq.Circuit(3).x(0)
+    value = execute(
+        {
+            "schema": SCHEMA,
+            "version": VERSION,
+            "operation": "statevector",
+            "request_id": "batch-program",
+            "target": "jiuding:cpu",
+            "program": circuit.to_ir().to_dict(),
+        },
+        target="jiuding:cpu",
+        device="cpu",
+    )
+    lines = [
+        line.replace("FQ_RESULT_run ", f"FQ_RESULT_{receipt['run_id']} ")
+        for line in chunks(value)
+    ]
+    pages = [lines[::2], [*lines[1::2], lines[0]]]
+    calls = []
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._native_job.time.time", lambda: 2000
+    )
+
+    def request(
+        path: str, body: dict[str, Any], headers: dict[str, str]
+    ) -> dict[str, Any]:
+        calls.append((path, deepcopy(body), headers))
+        return {
+            "code": 0,
+            "data": {
+                "entries": [{"message": line} for line in pages[len(calls) - 1]],
+                "hasMore" if camel_case else "has_more": len(calls) == 1,
+                "nextCursor" if camel_case else "next_cursor": "opaque-cursor",
+            },
+        }
+
+    monkeypatch.setattr(client, "_request", request)
+    result = client.read_result(receipt)
+    torch.testing.assert_close(result.state, fq.run(circuit).state)
+    assert len(calls) == 2
+    path, first, headers = calls[0]
+    assert path == "/api/v1/telemetry/logs/query"
+    assert headers == {"AIRS-Token": "token"}
+    assert first == {
+        "workload_id": receipt["jobId"],
+        "workload_type": 1,
+        "cluster_name": "cluster",
+        "time_range": {"from": 940_000, "to": 2_000_000},
+        "filter_options": {
+            "log_source": 1,
+            "keyword": f"FQ_RESULT_{receipt['run_id']}",
+        },
+        "pagination": {"limit": 4096, "direction": 2},
+    }
+    assert calls[1][1] == {
+        **first,
+        "pagination": {**first["pagination"], "cursor": "opaque-cursor"},
+    }
+
+
+@pytest.mark.parametrize(
+    ("response", "error"),
+    [
+        ({"code": 50001, "data": None}, "code 50001"),
+        ({"code": 0, "data": None}, "Malformed"),
+        ({"code": 0, "data": {"entries": [{}]}}, "Malformed"),
+        ({"code": 0, "data": {"entries": [{"message": "x" * 4097}]}}, "bounds"),
+        ({"code": 0, "data": {"entries": [], "has_more": True}}, "pagination"),
+        ({"code": 0, "data": {"entries": [], "has_more": False}}, "has no result yet"),
+    ],
+)
+def test_telemetry_failures_are_not_empty_successes(
+    telemetry_job: tuple[NativeJiudingJobClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    response: dict[str, Any],
+    error: str,
+) -> None:
+    client, receipt = telemetry_job
+    monkeypatch.setattr(client, "_request", lambda *args: response)
+    with pytest.raises(RuntimeError, match=error):
+        client.read_result(receipt)
+
+
+def test_telemetry_clamps_old_window_and_stops_repeated_cursor(
+    telemetry_job: tuple[NativeJiudingJobClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, receipt = telemetry_job
+    receipt["cluster_name"] = "submitted-cluster"
+    monkeypatch.setattr(
+        "flagquantum.remote.compute._native_job.time.time", lambda: 4_000_000
+    )
+    calls = []
+
+    def request(
+        path: str, body: dict[str, Any], headers: dict[str, str]
+    ) -> dict[str, Any]:
+        calls.append(deepcopy(body))
+        return {
+            "code": 0,
+            "data": {"entries": [], "has_more": True, "next_cursor": "same"},
+        }
+
+    monkeypatch.setattr(client, "_request", request)
+    with pytest.raises(RuntimeError, match="pagination did not advance"):
+        client.read_result(receipt)
+    assert len(calls) == 2
+    assert calls[0]["cluster_name"] == "submitted-cluster"
+    assert calls[0]["time_range"] == {
+        "from": 4_000_000_000 - 30 * 86400_000,
+        "to": 4_000_000_000,
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("project", "other.project"),
+        ("endpoint", "https://other"),
+        ("queueId", "other-queue"),
+    ],
+)
+def test_telemetry_checks_receipt_ownership_before_query(
+    telemetry_job: tuple[NativeJiudingJobClient, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: str,
+) -> None:
+    client, receipt = telemetry_job
+    receipt[field] = value
+    monkeypatch.setattr(
+        client, "_request", lambda *args: pytest.fail("Invalid receipt queried logs")
+    )
+    with pytest.raises(ValueError, match="belongs to another"):
+        client.read_result(receipt)
