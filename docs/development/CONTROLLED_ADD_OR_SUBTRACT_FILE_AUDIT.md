@@ -154,3 +154,64 @@ retirement gate and the native conditional append/inverse integration test
 (2 passed, 127 deselected). These scoped results do not certify the complete
 global suites. Dependency-policy findings are recorded separately for the
 whole repository and the changed paths.
+
+## Complete foreign consumer disposition (2026-11-20)
+
+This section supersedes the preceding foreign-object open disposition.
+All eight recursive source definitions, three factories, one DocSpec and nine
+recursive test definitions map to existing owners. Each actual signed,
+unsigned and symbolic factory preserves deterministic source library bytes at
+depths zero, one and two. Concrete factory declarations resolve through caller
+factories into the existing conditional_addition_program, with exact physical
+circuits and aliases against direct binding. The symbolic factory resolves a
+native declaration. Unresolved physical widths retain the existing refusal.
+The source encodes its boolean constructor argument as integer one in the wire
+format. The native library preserves that representation exactly.
+
+The existing typed SDK importer accepts both signed and unsigned original
+objects, both addition polarities and widths 1/1, 1/2, 2/3 and 3/3. SDK qubit names
+are reversed. Complete ordered instructions, feedback, returned aliases and JSON
+match direct native binding. Width-one inputs include complete complex
+spectator-entangled vectors and every carry measurement history with zero work.
+Existing stored hierarchy, precise inverse, full small branch and inverse-history
+coverage, both actual eight-bit five-mode factory checks, normal append and
+independent resource evidence is reused and rerun.
+
+The inherited positive outer-control SDK path also executes through the existing
+register importer. Its source direct register-generator hook is absent, so the
+independent reference reads the unchanged source composite. The comparison
+retains original atomic Toffoli leaves. Every wire's complete ordered operations,
+operands, measurements and feedback agree, with identical primitive counts.
+All four raw measurement histories preserve the full complex source tensor,
+including an entangled spectator, and clear both work qubits. Actual counts are
+eight T/T-dagger, four Toffoli, two measurements and two resets. The independent
+source model reports four Toffoli, two And, two measurements, five or seven
+Clifford according to polarity and seven peak qubits. The execution fixture has
+eight physical qubits including its spectator. No matrix atoms are introduced.
+
+The inherited negative outer-control SDK path remains an explicit failure.
+Its incremental decomposition reaches Controlled(And(uncompute=True)) whose
+original unitary protocol recurses between Qualtran and Cirq wrappers. Calling
+that original source object alone reproduces RecursionError. The native SDK
+import currently propagates the same failure. Merely obtaining a list from
+cirq.decompose does not certify execution of those leaves. This path is not
+claimed supported and remains part of the open generic SDK consumer work
+Q-0937. The source reference is unchanged.
+
+The root's narrow signed callback-versus-zero-extending gate conflict
+Q-0183.03 and its one-bit source model undercount remain explicit. Acceptance of
+this complete source file records the disposition of its own definitions and
+supported consumers. The inherited negative-control failure remains an open
+shared boundary. Evidence is stored under ftqc-reference-env/g2-conditional-foreign-*.
+
+Final verification passes 630 concentrated cases without warnings or skips and
+17 local integration cases. The unchanged original file reports 12 passed,
+one source counts-mode skip and two original marker/collection warnings.
+The consumer file passes 23 cases on Cirq 1.7 and 1.6.1. Cirq 1.6.1 retains
+1,508 NumPy 2.5 array-shape deprecation warnings, including repeated calls while
+reproducing the original recursion failure. Strict mypy, Black, Ruff, scope,
+architecture, multilevel IR and public API checks pass. Three frozen blobs,
+eight unchanged owners, locked versions and Kickmix Simulator are verified.
+The whole-repository dependency baseline remains separate from zero batch
+findings. Ten byte-identical files retain the established default docstring
+policy failure. Production owners receive no changes in this batch.
