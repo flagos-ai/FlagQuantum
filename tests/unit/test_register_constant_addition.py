@@ -74,19 +74,19 @@ def reference_arithmetic_gates(
     from qualtran.bloqs.basic_gates import CNOT, CZ, CHadamard, CYGate, Identity, XGate
     from qualtran.cirq_interop import BloqAsCirqGate
 
-    class Manager(cirq.QubitManager):
+    class Manager:
         def __init__(self) -> None:
             self.available = list(reversed(allocations))
             self.rank = {wire: i for i, wire in enumerate(allocations)}
 
-        def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
+        def qalloc(self, n: int, dim: int = 2) -> list[Any]:
             assert dim == 2
             return [cirq.LineQubit(self.available.pop()) for _ in range(n)]
 
-        def qborrow(self, n: int, dim: int = 2) -> list[cirq.Qid]:
+        def qborrow(self, n: int, dim: int = 2) -> list[Any]:
             return self.qalloc(n, dim)
 
-        def qfree(self, qubits: list[cirq.Qid]) -> None:
+        def qfree(self, qubits: list[Any]) -> None:
             if not reuse_allocations:
                 # Preserve dedicated caller output names across disjoint lifetimes.
                 return
@@ -151,7 +151,7 @@ def reference_arithmetic_gates(
             {
                 cirq.Y: "y",
                 cirq.Z: "z",
-                cirq.CY: "cy",
+                getattr(cirq, "CY", cirq.ControlledGate(cirq.Y)): "cy",
                 BloqAsCirqGate(CZ()): "cz",
                 BloqAsCirqGate(CYGate()): "cy",
                 BloqAsCirqGate(CHadamard()): "ch",
@@ -352,10 +352,10 @@ def reference_arithmetic_gates(
         or isinstance(op.gate, cirq.ResetChannel)
         or isinstance(op, cirq.ClassicallyControlledOperation),
     )
-    measurements = {}
+    measurements: dict[Any, int] = {}
     gates: list[Instruction] = []
     for op in upstream:
-        metadata = {}
+        metadata: dict[str, Any] = {}
         if isinstance(op, cirq.ClassicallyControlledOperation):
             (key,) = cirq.control_keys(op)
             metadata["conditions"] = ((measurements[key], 1),)
@@ -436,9 +436,8 @@ def test_append_complex_amplitudes_every_input_and_clean_work(
     expected = torch.zeros_like(state)
     mapped = (torch.arange(1 << width) + value) % (1 << width)
     expected[mapped << work_count] = amplitudes
-    circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128).append(
-        FieldOperation(n_qubits, gates)
-    )
+    circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(n_qubits, gates))
     result = run_dynamic(circuit, shots=64, seed=41, strategy="trajectory")
     torch.testing.assert_close(
         result.final_states.reshape(64, -1), expected.expand(64, -1), rtol=0, atol=1e-12
