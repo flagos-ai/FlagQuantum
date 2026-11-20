@@ -129,6 +129,17 @@ def test_source_hygiene_checkout_does_not_require_unneeded_git_lfs() -> None:
     assert all(not step.get("with", {}).get("lfs", False) for step in checkouts)
 
 
+def test_cpu_wheel_cache_defaults_to_the_shared_readable_runner_directory() -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/install-cpu-torch/action.yml").read_text()
+    )
+    script = action["runs"]["steps"][0]["run"]
+    assert (
+        "${FQ_CPU_WHEEL_CACHE:-/opt/flagquantum-runners/tools/public-wheels}" in script
+    )
+    assert "/root/" not in script
+
+
 @pytest.mark.parametrize("cache_state", ["absent", "hit", "miss"])
 @pytest.mark.parametrize("torch_spec", ["torch>=2.13,<2.14", "torch>=2.10,<2.11"])
 @pytest.mark.parametrize(

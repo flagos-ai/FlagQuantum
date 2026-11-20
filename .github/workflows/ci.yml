@@ -1918,6 +1918,7 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: ${{ matrix.torch }}
+          self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         with:
