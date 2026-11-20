@@ -15,6 +15,7 @@ from ...optimization.one_qubit_optimization import (
 from ...optimization.one_qubit_synthesis import _zyz_angles, synthesize_one_qubit_matrix
 from ...optimization.two_qubit_optimization import _block_product
 from ...optimization.two_qubit_synthesis import synthesize_two_qubit
+from ..mcx import one_clean_mcx
 from ..verification.profile import _fail
 
 
@@ -87,7 +88,7 @@ def _controlled_block(
     scratch: tuple[int, ...],
     global_phase: float = 0.0,
 ) -> tuple[Instruction, ...]:
-    if len(controls) < 2 or len(scratch) < len(controls) - 1:
+    if len(controls) < 2 or len(scratch) < min(len(controls) - 1, 2):
         if global_phase:
             target = gates[0].wires[0]
             flip = Instruction("x", (target,))
@@ -97,7 +98,14 @@ def _controlled_block(
             leaf for gate in gates for leaf in controlled_instruction(gate, controls)
         )
     flag, *workspace = scratch
-    predicate = _clean_mcx_instructions(controls, flag, workspace[: len(controls) - 2])
+    if len(scratch) >= len(controls) - 1:
+        predicate = _clean_mcx_instructions(
+            controls, flag, workspace[: len(controls) - 2]
+        )
+    else:
+        # Compute the predicate once using the existing borrowed-control ladder.
+        # Both clean bits and every borrowed control are restored afterward.
+        predicate = one_clean_mcx(controls, flag, workspace[0])
     # The clean flag already represents the whole condition, including when the
     # target is zero. Apply the block's global phase before uncomputing it.
     phase_gates = (
@@ -105,6 +113,7 @@ def _controlled_block(
         if global_phase
         else ()
     )
+
     return (
         *predicate,
         *(leaf for gate in gates for leaf in controlled_instruction(gate, (flag,))),
