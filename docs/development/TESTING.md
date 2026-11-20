@@ -580,9 +580,9 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
   proofs, running in parallel with the complete unit suite. The full integration
   selection is partitioned deterministically across eight jobs; the two launcher
-  proofs run only in shard zero. At most four runtime partitions are admitted
-  concurrently to reduce dispatch pressure on the shared A800 pool; this does not
-  reserve runners or guarantee availability. Each job retains the 60-minute limit;
+  proofs run only in shard zero. Available self-hosted runners determine
+  concurrency, without a matrix parallelism limit. Each job retains the
+  60-minute limit;
 - `cpu-core-3-12`: the required aggregation gate, reported to branch protection
   as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
@@ -1027,6 +1027,14 @@ Keep the A800 CPU routing label off an unqualified replacement host. Lock change
 also trigger qualification on trusted PRs. Coverage retains its already
 provisioned general CPU pool and the same locked environment. Test processes
 remain isolated and resource-budgeted.
+
+Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
+`/opt/flagquantum-runners/tools/public-wheels` directory when unset. Torch
+installation retains the historical A800 directory when the provisioned default
+is absent. Each private environment resolves compatible wheel bytes rather than
+reusing another job's installed packages. Missing Torch wheels retain the
+bounded mirror and official-index fallback. Self-hosted pip requests use a
+60-second socket timeout and at most two retries within the unchanged job limit.
 
 Source cache repair verifies Git objects and the exact workflow commit before
 any tests run; an incomplete cache falls back to the full source artifact. No

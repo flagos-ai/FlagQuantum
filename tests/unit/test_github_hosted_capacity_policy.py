@@ -333,7 +333,6 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     job = _document("ci.yml")["jobs"]["cpu-runtime"]
     assert job["strategy"] == {
         "fail-fast": False,
-        "max-parallel": 4,
         "matrix": {"shard": list(range(8))},
     }
     expensive_steps = [
