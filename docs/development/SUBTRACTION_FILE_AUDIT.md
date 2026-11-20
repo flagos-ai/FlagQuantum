@@ -124,3 +124,65 @@ the established docstring coverage failure. Its nine reported modules and
 failing test are byte-identical to base `bc082ff96`. Dependency policy reports
 688 whole-repository findings and none in changed paths. Evidence receipts use
 `g2-subtraction-native-*`. Q-0220/Q-0221 remain open for the explicit boundaries.
+
+## Complete declarations and foreign closure — 2026-11-20
+
+This section supersedes the earlier open-interface disposition for Q-0220 and
+Q-0221. All 28 definitions in the frozen source have an owned implementation
+or an explicit original-source failure. The previous ordinary graph, classical,
+notebook and original-test receipts remain accepted evidence.
+
+| Complete source responsibility | Owner and acceptance |
+|---|---|
+| Subtract default, validators, dtype accessor, signature and unsigned projections | `subtraction_declaration.py` retains signed/unsigned/Montgomery descriptors, default object identity, unequal-width validation, same-dtype accessor, Montgomery modulus and signed-to-unsigned projections. Original QBit/QAny/BQUInt refusal remains. |
+| Both direct models and symbolic constructors | Generic declarations own ordered child models. Catalogue delegates to those owners. Equal and unequal symbolic widths retain source expressions and original finite-physical refusal. |
+| Both classical callbacks and composite builders | Existing Simulation and native graph owners are reused. Scalar controlled calls derive the stored hierarchy and specialize Add as CAdd. Both control polarities are tested. |
+| Both wire-symbol callbacks | `drawer/subtraction_symbols.py` supplies original formulas and sided glyphs through the existing typed callback. Complete register-score geometry matches the original. |
+| All eight factories and both documentation specifications | Exact wire transport at depths 0/1/2. All finite factory resolutions bind identically to direct native programs. Symbolic leaves remain typed declarations. The actual symbolic composite resolves all eight stored calls and views. Existing notebook/documentation coverage is reused. |
+
+The positive controlled graph preserves every reachable source call and named
+operand down to already-accepted atomic dependencies. Negative control retains
+the original X/positive-body/X wrapper. CAdd owns its predicate word and measured
+carry cleanup. Unequal signed Subtract controls the original prefix fanout
+through atomic Toffoli, while casts and lifetime bookkeeping remain unconditional.
+A one-target fanout now calls CNOT directly, matching the source's absence of
+Split/Join at that width. This fixes a structural difference found by recursive
+call comparison. Wider fanout retains the original shared tree.
+
+All four source integer/mixed families and both directions/control polarities
+match original primitive counts, operands and measurement feedback through eight
+bits. Complete complex source tensors with a coherent spectator match every raw
+history at widths up to three, with clean prefix and carry storage. Tests use
+ordinary `circuit.append(op)`. Twenty-four plain SDK cases retain the same streams,
+and both positive-controlled SDK consumers match all 32 raw histories at width
+three. Typed signatures are translated from the actual original descriptors.
+
+| Concrete scenario | Measured emission | Independent source model |
+|---|---|---|
+| Positive signed 1-to-3 Subtract | 6 atomic CCX, 48 CX, 20 T/TDG, 15 H, 5 S, 5 measurement/CZ/reset each | 6 Toffoli, 5 And, 23 Clifford, 5 measurements, peak 12, default 44 T equivalents |
+| Negative signed 2-to-3 Subtract | 2 X, 2 atomic CCX, 48 CX, 20 T/TDG, 15 H, 5 S, 5 measurement/CZ/reset each | 2 Toffoli, 5 And, 25 Clifford, 5 measurements, peak 12, default 28 T equivalents |
+| Positive three-bit SubtractFrom | 45 CX, 20 T/TDG, 15 H, 5 S, 5 measurement/CZ/reset each | 5 And, 20 Clifford, 5 measurements, peak 12, default 20 T equivalents |
+
+Atomic CCX emissions exclude a Clifford+T expansion. The source's default
+four-T Toffoli model is separate from an exact seven-T expansion. The positive
+SDK emission counts equal native counts at this common granularity. Negative
+SDK export follows an original generic controlled measured-adjoint path whose
+unitary/import recursively fails. Both original failures remain regression
+witnesses. Native negative control is qualified against the unchanged source
+Bloq decomposition, independently of that failing SDK export.
+
+The symbolic composite's depth-zero source reconstruction loses its body and
+is unequal to the original. Depths one and two reconstruct equally. Native
+wire transport is exact at all three depths. Symbolic physical dimensions remain
+unbound, and original strict QUInt-to-QAny/count-mode fixture failures remain
+explicit. No patched reference is used to claim parity. Prior source 77 passed,
+4 skipped and 4 xfailed and complete notebook evidence are reused.
+
+Final batch acceptance has 810 concentrated and 19 integration passes. All 47
+foreign/drawing cases pass on both Cirq 1.7.0 and 1.6.1. The older SDK emits 1,514
+NumPy shape deprecation warnings. Strict typing covers nine changed Python
+files. Black, Ruff, scope, architecture, IR and public API baseline checks pass.
+The default-suite docstring failure baseline remains unchanged. Whole-repository
+dependency findings and zero batch findings are recorded in the external
+`g2-subtraction-foreign-evidence.json` receipt. Q-0220 and Q-0221 close with the
+original failures and symbolic physical boundary documented here.
