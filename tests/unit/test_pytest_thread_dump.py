@@ -38,6 +38,7 @@ def test_long_tests_dump_stacks_and_finish_with_coverage(
     environment = dict(
         os.environ,
         PYTEST_DISABLE_PLUGIN_AUTOLOAD="1",
+        PYTEST_ADDOPTS="",
         COVERAGE_CORE="sysmon",
         COVERAGE_FILE=str(tmp_path / ".coverage"),
     )
@@ -92,7 +93,9 @@ def test_invalid_timeout_is_rejected(
     tmp_path: Path, arguments: list[str], message: str
 ) -> None:
     (tmp_path / "pytest.ini").write_text("[pytest]\n")
-    environment = dict(os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+    environment = dict(
+        os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1", PYTEST_ADDOPTS=""
+    )
     result = subprocess.run(
         [
             sys.executable,
@@ -143,7 +146,7 @@ def test_diagnostic_errors_fail_the_owning_test(tmp_path: Path) -> None:
             "-q",
         ],
         cwd=ROOT,
-        env=dict(os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"),
+        env=dict(os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1", PYTEST_ADDOPTS=""),
         capture_output=True,
         text=True,
         timeout=30,
