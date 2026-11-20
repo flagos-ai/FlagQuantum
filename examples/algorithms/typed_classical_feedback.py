@@ -93,11 +93,47 @@ def main() -> None:
             torch.testing.assert_close(
                 result.final_states[0].flatten(), expected, rtol=0, atol=3e-15
             )
-    print(
-        "Signed, binary field and polynomial inputs preserve complex spectator states"
+    ternary = RegisterType(
+        "finite_field",
+        0,
+        2,
+        (("storage", "classical"), ("characteristic", 3), ("degree", 1), ("order", 3)),
     )
-    print("Emitted per binding: 2 classical initializers, 1 guarded X, 0 measurements")
-    print("Reads add 0 gates and 0 slots; quantum workspace is 0")
+    ternary_polynomial = RegisterType(
+        "finite_field_polynomial",
+        0,
+        4,
+        (
+            ("storage", "classical"),
+            ("polynomial_degree", 1),
+            ("characteristic", 3),
+            ("degree", 1),
+            ("order", 3),
+        ),
+    )
+    for dtype, words, activation in (
+        (ternary, (0, 1, 2), 2),
+        (ternary_polynomial, (0, 1, 2, 4, 5, 6, 8, 9, 10), 10),
+    ):
+        for value in words:
+            circuit = DynamicCircuit(2, inputs=initial, dtype=torch.complex128)
+            circuit.append(ClassicalWordFeedback(value, dtype, activation))
+            result = run_dynamic(circuit, shots=1, strategy="trajectory")
+            expected = (
+                initial.reshape(2, 2).flip(0).flatten()
+                if value == activation
+                else initial
+            )
+            torch.testing.assert_close(
+                result.final_states[0].flatten(), expected, rtol=0, atol=3e-15
+            )
+            assert Counter(g.name for g in circuit.to_ir().instructions) == {
+                "classical_xor": dtype.classical_bits,
+                "x": 1,
+            }
+    print("Signed, binary and nonbinary field words preserve complex spectator states")
+    print("Emitted per binding uses word-width classical initializers and 1 guarded X")
+    print("Reads add 0 gates and 0 slots; quantum workspace and measurements are 0")
     print("Frozen source wrapper has no physical decomposition or QEC estimate")
 
 

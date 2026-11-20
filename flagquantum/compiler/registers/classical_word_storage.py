@@ -10,8 +10,9 @@ def classical_word_bits(dtype: RegisterType, value: int) -> tuple[int, ...]:
     """Validate physical entry values and reuse existing equality-word encoding.
 
     Fixed-point storage carries its raw integer. Montgomery storage keeps its
-    original raw-width domain. Binary fields and polynomials carry unsigned
-    stored words. Numerical callbacks retain Simulation ownership.
+    original raw-width domain. Fields and polynomials carry unsigned stored
+    words, with every nonbinary coefficient checked against its field order.
+    Numerical callbacks retain Simulation ownership.
     """
     width = executable_classical_register_width(dtype)
     if dtype == classical_bit_type():
@@ -35,4 +36,17 @@ def classical_word_bits(dtype: RegisterType, value: int) -> tuple[int, ...]:
         dtype.encoding == "fixed_point" and parameters["signed"]
     ):
         encoding = "twos_complement"
-    return ControlRegister(width, (value,), encoding).bits()
+    bits = ControlRegister(width, (value,), encoding).bits()
+    if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
+        order = parameters["order"]
+        assert type(order) is int
+        coefficient_width = (order - 1).bit_length()
+        mask = (1 << coefficient_width) - 1
+        if any(
+            ((value >> offset) & mask) >= order
+            for offset in range(0, width, coefficient_width)
+        ):
+            raise ValueError(
+                "classical field coefficients must be below the field order"
+            )
+    return bits
