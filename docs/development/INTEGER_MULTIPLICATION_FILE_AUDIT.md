@@ -72,3 +72,17 @@ Q-0207 is a complete teaching asset. Q-0208 and Q-0209 remain open for
 missing original decomposition and its autotester modes, generic foreign
 construction, diagram callbacks, rebinding and serialization, and the
 fixed-point square and reciprocal contract differences documented above.
+
+## Stored Square direct dependency, November 20, 2026
+
+`arithmetic/integer_square_component.py` now composes the existing square through
+`bits/weighted_columns_component.py`. It preserves THRU unsigned `a`, RIGHT
+result creation and matching LEFT erasure. The column graph owns a fixed clean
+work block and uses the shared measured And primitive calls. Both directions
+keep source coherence and free restored owned storage. Contiguous indexing is
+its first nested consumer, with an append test replacing the flat square root.
+The full evidence and independent model/primitive accounts are recorded in
+CONTIGUOUS_INDEX_FILE_AUDIT.md. The unchanged multiplication file's eight-class
+inventory and original test evidence above are reused. Product, sum-of-squares
+and fixed-point stored composition remain distinct open work. This addition
+leaves Q-0208/Q-0209 open and makes no upstream square-decomposition claim.

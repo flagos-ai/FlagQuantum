@@ -26,3 +26,14 @@ execution route. See
 [the complete source audit](../../../../docs/development/SORTED_DUPLICATES_FILE_AUDIT.md).
 Run `python -m pytest tests/unit/test_sorted_duplicates_component.py -q` for
 source graph/branch conformance, valid two-word clean channels and defect witnesses.
+
+`contiguous_index_component.py` composes native square, two additions, XOR,
+two exact subtraction calls and square erasure. Its three unsigned words are
+THRU and MSB first. The square numerator and scratch are owned internally.
+Bind with the work count from `contiguous_index_requirements`, then append the
+bound operation as in the register package guide. Run
+`python -m pytest tests/unit/test_contiguous_index_component.py -q` for the
+seven stored arithmetic calls, operands/feedback, occupied-target amplitudes,
+spectator coherence and work restoration. The original root provides no
+decomposition, and its classical through-target mismatch remains recorded in
+[the complete source audit](../../../../docs/development/CONTIGUOUS_INDEX_FILE_AUDIT.md).

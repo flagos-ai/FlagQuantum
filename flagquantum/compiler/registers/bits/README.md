@@ -98,3 +98,13 @@ for exact native streams, source And leaves, complete complex amplitudes,
 measurement histories and clean work. The frozen conversion root supplies a
 signature and Toffoli model but no executable decomposition. See
 [the complete source audit](../../../../docs/development/SIGNED_CONVERSION_FILE_AUDIT.md).
+
+`weighted_columns_component.py` stores weighted polynomial reduction over
+MSB-first bit arrays. `bit_compression.py` owns the shared product/compression
+sequence. The typed graph allocates its work block once, retains each shared And
+compute/erase call and frees the restored block. The work block keeps physical
+operand bindings stable across independent product scheduling. Arithmetic square
+and sorting index compose this owner. Numerical execution and domain-specific
+term selection remain in their respective owners. Run
+`python -m pytest tests/unit/test_weighted_columns_component.py -q` for original
+And leaves, feedback, per-wire dependency order, resource and lifetime checks.

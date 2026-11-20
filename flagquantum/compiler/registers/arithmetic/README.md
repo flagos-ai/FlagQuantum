@@ -154,3 +154,14 @@ python -m pytest tests/unit/test_negation_component.py -q
 The append example checks plain negation, coherent negative control and the
 exact adjoint. [The complete negation audit](../../../../docs/development/NEGATION_FILE_AUDIT.md)
 records the source defect, separate model/primitive counts and remaining gaps.
+
+`integer_square_component.py` exposes the native sided integer-square Program.
+Forward preserves THRU unsigned `a` and creates RIGHT double-width `result`.
+Inverse consumes the matching LEFT image and frees its zeroed storage. The
+column owner controls product/carry work and shared measured And calls.
+Bind forward with output storage followed by scratch in the clean pool, and
+`allow_workspace_outputs=True`. For standalone inverse, identify the result
+storage using `input_ownership` so it can be freed. Nested callers transfer this
+ownership through the existing builder. Run
+`python -m pytest tests/unit/test_integer_square_component.py -q` for the source
+signature, logical output lifetimes, complex amplitudes and erasure histories.
