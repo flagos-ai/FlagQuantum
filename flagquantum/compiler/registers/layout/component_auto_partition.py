@@ -7,14 +7,14 @@
 
 from dataclasses import replace
 
-from ....core.ir.program import ProgramRecord
+from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import ssum
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_graph import _call_entry
 from .auto_partition import AutoPartition
-from .component_partition import partition_component_program
+from .component_partition import partition_component_program, partition_signature
 
 
 def auto_partition_signature(
@@ -71,8 +71,9 @@ def auto_partition_component_program(
     child call and are repacked unchanged. left_only exposes the child's right
     ports and consumes the packed inputs. The existing layout owns validation
     of names and unused slices. Only concrete admitted quantum types enter
-    Program. Invalid layouts, output sets and entry/name collisions raise
-    ValueError. No primitive gate or workspace is added by the partitions.
+    physical binding. Symbolic-width partitions remain typed declarations in
+    the stored call graph. Invalid layouts, output sets and entry/name
+    collisions raise ValueError. The partitions add no primitive gates or work.
     """
     child = _call_entry(record, entry)
     assert child.registers is not None
@@ -85,7 +86,7 @@ def auto_partition_component_program(
         raise ValueError("executable AutoPartition requires scalar packed ports")
     if not layout.left_only and any(reg.side != RegisterSide.THRU for reg in external):
         raise ValueError("repacking requires through packed ports")
-    groups = layout._concrete_layouts()
+    groups = layout._layouts()
     names = {f.name for f in record.functions}
     if name in names:
         raise ValueError("packed entry conflicts with an existing definition")
@@ -106,13 +107,23 @@ def auto_partition_component_program(
             for port, width in group
         )
         partitions.append(parts)
-        definitions.extend(
-            partition_component_program(parts, prefix + f"split{i}", False).functions
-        )
-        if not layout.left_only:
-            definitions.extend(
-                partition_component_program(parts, prefix + f"join{i}", True).functions
-            )
+        for reverse in ((False,) if layout.left_only else (False, True)):
+            partition_name = prefix + f"{'join' if reverse else 'split'}{i}"
+            if all(type(register.bitsize) is int for register in parts):
+                partition = partition_component_program(parts, partition_name, reverse)
+            else:
+                partition = ProgramRecord(
+                    (
+                        FunctionRecord(
+                            partition_name,
+                            (),
+                            registers=tuple(
+                                partition_signature(parts, reverse=reverse)
+                            ),
+                        ),
+                    )
+                )
+            definitions.extend(partition.functions)
     builder = ComponentProgramBuilder(public, definitions, name=name)
     inputs: dict[str, BindingCollection] = {}
     unused: dict[str, BindingCollection] = {}

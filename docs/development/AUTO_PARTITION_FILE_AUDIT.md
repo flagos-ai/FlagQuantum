@@ -6,7 +6,7 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Actual concrete external wrapper capture verified. Symbolic typed child decomposition and arbitrary one-sided packed execution remain open. |
+| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Actual concrete captures and symbolic-width typed call decomposition verified. Full executable storage admission remains open, including pending Proposal 116. |
 | Q-0319 | `auto_partition_test.py` | `adb86ad3fbfabf4f2aab180d3eecc6ffb9daebf5` | Closed for the original runnable scenarios. |
 | Q-0328 / Q-0329 | `partition.py` / `partition_test.py` | `8cebbb58095d172f3db564cdfc231537e6214957` / `c6c3236332577115ff6f09e17f340fe79825e1f4` | Reused for packed binding. Whole-file Partition acceptance continues separately. |
 
@@ -63,9 +63,9 @@ operands as the locked decomposition in both ordinary and left-only
 mode. The ordinary fixture retains a fourth unused bit. Both full
 complex states agree through append. Partition adds no gates or work.
 The independent source logical peaks are four and three respectively.
-The source can also construct the symbolic Partition–child–Partition
-graph. Direct external objects and symbolic typed decomposition remain
-open.
+The source and native typed programs now both retain the symbolic
+Partition–child–Partition graph, as detailed below. Actual foreign factories
+retain their original serialization failure before native resolution.
 
 ## Actual source wrappers and measured-child captures
 
@@ -101,8 +101,56 @@ lint, strict typing for the changed Python file, Compiler scope, architecture,
 multilevel IR and protected API checks passed. Frozen source blobs remain
 unchanged. Logs are retained under `ftqc-reference-env/g2-auto-partition-binding-*.log`.
 
-Q-0318's concrete external-object capture gap is now covered. Symbolic typed
-Program decomposition and arbitrary one-sided packed executable bindings remain
-open at their recorded admission owners. The source's original left-only
-finalization failure remains separate. No parent closure is inferred from
-finite through-port captures.
+Q-0318's concrete external-object capture and symbolic typed decomposition
+are covered. Full executable dtype admission, including pending Proposal 116,
+remains open. The source's original outer-left finalization failure stays
+separate. No parent closure is inferred from finite through-port captures.
+
+
+## Symbolic-width stored decomposition and source transport boundaries
+
+The existing typed AutoPartition owner now retains finite-port, symbolic-width
+Partition/child/Unpartition calls in Core Program. Concrete partition bodies
+still use the shared Split/Join builder. An unresolved-width partition is a
+typed declaration with the original directional signature and no invented
+physical body. The root retains the child call and every producer/consumer
+connection, including unused slices. Ordinary and left-only roots with n and
+2*n+1 widths match every source operation signature, predecessor and output
+position. The child is the existing native Always wrapper around a declared
+BitwiseNot terminal. No identity body replaces its unknown physical action.
+
+Standard Program QEC queries with explicit independent terminal estimates
+match the complete source model: n or 2*n+1 Clifford operations and zero
+partition categories. This is logical model evidence. Unresolved physical
+binding still fails because concrete widths and executable bodies are required.
+The existing actual measured Add and swap captures supply full complex,
+branch, work-cleanup and primitive evidence for concrete execution separately.
+No physical primitive, measurement or workspace is added by this extension.
+
+Both actual original factories fail in original `bloqs_to_proto` at depths
+0, 1 and 2 with NumPy's inhomogeneous-sequence ValueError before native input.
+The six failures are asserted against the unchanged source. Actual executable
+factory captures above remain valid and use the existing SDK boundary.
+Foreign serialization is not inferred from those successful captures.
+
+Expanded regression exposed one inherited assertion in the direct Partition
+test. Replacing the AutoPartition owner with its batch-base source reproduces
+the same failure. Forward construction checks executable part descriptors,
+whereas inverse logical Split/Join construction preserves signed fixed-point
+metadata and succeeds. Physical binding still rejects that descriptor under
+pending Proposal 116. The test now asserts each actual boundary. Production
+Partition and Core admission owners are unchanged.
+
+Q-0318 remains open for full executable dtype admission, including pending
+Proposal 116 signed/empty fixed-point words. Ordinary outer LEFT metadata
+continues to hit the original source finalization failure; native scalar
+repacking keeps its explicit admission check. Symbolic array dimensions remain
+the existing finite-indexed-port boundary. This batch closes symbolic word
+width decomposition only, without treating those unresolved boundaries as done.
+
+Validation is recorded in `g2-auto-symbolic-*`: 380 concentrated, 17 integration
+and 66 Cirq 1.6.1 cases pass. The two changed production/new-test files pass
+strict typing, formatting, Ruff, Compiler scope, architecture, IR and protected
+API checks. The retained direct Partition test is checked separately at its
+existing annotation boundary. Source hashes and unchanged physical execution
+owners are verified in the evidence receipt.
