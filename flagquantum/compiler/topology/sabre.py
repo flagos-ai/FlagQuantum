@@ -500,6 +500,7 @@ def _plan_sabre_trial(
     stalled = 0
     progress_swap_start = 0
     seen_layouts: set[tuple[int, ...]] = set()
+    frontier_lookahead: list[int] | None = None
 
     def exchange(left: int, right: int) -> None:
         left_logical = physical_to_logical[left]
@@ -524,7 +525,11 @@ def _plan_sabre_trial(
 
     def extended_layer(blocked_front: list[int]) -> list[int]:
         """Return blocked operations reachable from the front, in BFS order."""
-
+        nonlocal frontier_lookahead
+        # SWAPs change placement, not dependency reachability. Rebuild only when
+        # a source instruction executes and changes the frontier.
+        if frontier_lookahead is not None:
+            return frontier_lookahead
         extended: list[int] = []
         seen = set(front)
         queue: deque[int] = deque()
@@ -541,6 +546,7 @@ def _plan_sabre_trial(
                 if successor not in seen:
                     seen.add(successor)
                     queue.append(successor)
+        frontier_lookahead = extended
         return extended
 
     def best_swap(blocked_front: list[int]) -> tuple[int, int] | None:
@@ -610,6 +616,7 @@ def _plan_sabre_trial(
             index for index in front if not blocks[index] or separation(index) == 1
         ]
         if executable:
+            frontier_lookahead = None
             for index in executable:
                 front.remove(index)
                 placements[index] = tuple(
