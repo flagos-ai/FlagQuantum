@@ -303,3 +303,86 @@ Python modules, Black, Ruff, team scope, architecture, IR and protected API
 checks passed. Three frozen source blobs and seven unchanged supporting owners
 are verified. The dependency scan retains 666 repository findings and zero
 changed-path findings. Model and measured resource rows remain separate above.
+
+## Multi-axis and borrowed-child typed closure, November 21
+
+The existing typed traversal now has a complete nested consumer matching the
+original two-axis prefix-fold fixture. The outer row callback invokes a column
+traversal, returns its successor predicate and retains the successor column
+bindings for the next row. Row zero folds adjacent column pairs. All six
+retained X/Z leaves pass through the existing native atom calls. Split/Join
+retain the original bounded and opaque descriptors. The existing test adjoint
+resolver matches every view with its opposite typed signature, including all
+three Split/Join pairs. Production traversal, Program construction, exact
+adjoint, binder and workspace owners required no further changes.
+
+Both original CompositeBloq directions match native Program primitives,
+physical operands, per-wire ordering and feedback lifetimes. Every logical
+column and a dense complex superposition match in all measurement histories.
+Clean work returns to zero, allocation/free ownership balances, outputs retain
+their original wires and normal `Circuit.append(op)` plus JSON roundtrip pass.
+The original direct-generator allocation profile remains a separate entry
+point, as documented above.
+
+The borrowed-child consumer uses the original unary base class with a typed
+custom echo leaf. Its four-CNOT sequence restores the borrowed bit and toggles
+the target by the positive predicate. The source fixture supplies an explicit
+CompositeBloq with `Allocate(QBit(), dirty=True)` and the matching Free, as well
+as its direct `qborrow` generator. This preserves the source dirty declaration
+through the graph route. Native code uses the existing dirty Allocate/Free
+functions and the existing distinct clean and borrowed binder pools. The test
+oracle now accepts an optional independent borrowed pool. Existing callers
+retain their original allocation behavior.
+
+Both source graph directions match all primitive operands and feedback. All
+logical columns, both dirty values and both spectator values match every
+measurement branch. A dense complex state spans those joint columns and
+certifies borrowed/spectator coherences against an independent controlled-X
+permutation. Parent work returns to zero while the joint borrowed/spectator
+state is restored. Each of the three retained children borrows and returns the
+same physical dirty bit. The padded selector encoding follows the source's
+pruned final leaf. The source's declared input domain remains the bounded
+three-row interval.
+
+| Typed consumer, either direction | Measured T-family / CX / CZ / measurement | Clean / borrowed work | Independent source AND / Clifford / measurement / peak |
+| --- | --- | --- | --- |
+| Folded axes, no enable | 16 / 31 / 7 / 4 | 2 / 0 | 4 / 16 / 4 / 6 |
+| Folded axes, one enable | 20 / 38 / 8 / 5 | 3 / 0 | 5 / 16 / 5 / 8 |
+| Borrowed echo, no enable | 4 / 19 / 1 / 1 | 1 / 1 | 1 / 16 / 1 / 5 |
+| Borrowed echo, one enable | 8 / 26 / 2 / 2 | 2 / 1 | 2 / 16 / 2 / 7 |
+
+The borrowed fixture's extra spectator wire is excluded from the source peak.
+Full primitive inventories are recorded in the external
+`g2-unary-lifetimes-resources.json` receipt. Counts and model estimates retain
+their distinct decomposition levels.
+
+Q-0597 remains open for mixed empty/nonempty axes, unresolved symbolic physical
+execution and automatic foreign snapshot borrowing. The typed native borrowing
+consumer is accepted above. The existing foreign snapshot manager still owns
+clean-only storage and rejects `qborrow`; this batch preserves that explicit
+boundary. Proposals 116, 117 and 118 remain pending.
+
+An unchanged source conversion counterexample is retained explicitly. Running
+`decompose_from_cirq_style_method` on the same echo's `qborrow` generator
+produces `Allocate(..., dirty=False)`, whereas its explicit typed graph retains
+`dirty=True`. The reference source is unchanged. This conversion loses the
+borrowing declaration before physical binding, so typed graph and direct
+Cirq-generator lifetime claims must remain distinct.
+
+The batch passed 841 concentrated cases, 17 local integration cases and 112
+cases on Cirq 1.6.1, with no skips. Strict typing of all four changed Python
+files, Black, Ruff, team scope, architecture, multi-level IR and protected API
+checks passed. The frozen three source blobs and nine supporting production
+owners are unchanged. The dependency scan retains 666 existing findings and
+zero changed-path findings. Existing single-axis, private-clean-child,
+interval, root-override and notebook evidence is reused.
+
+The next-boundary intake additionally executes the unchanged source with an
+empty row, an empty column and an unresolved positive integer column extent,
+each with zero or one enable bit. Source decomposition and QEC modeling both
+raise AssertionError for mixed empty axes and TypeError for the unresolved
+extent. Native execution rejects the corresponding inputs with its existing
+explicit ValueError diagnostics. The six-case receipt is
+`g2-unary-remaining-intake.json`. These are verified source limitations rather
+than successful upstream execution examples. Automatic foreign snapshot dirty
+borrowing remains the concrete integration gap for the next batch.

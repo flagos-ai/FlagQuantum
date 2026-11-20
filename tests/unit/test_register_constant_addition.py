@@ -63,6 +63,7 @@ def reference_arithmetic_gates(
     keep_exchange_leaves: bool = False,
     keep_pauli_leaves: bool = False,
     scalar_phase_anchor: int | None = None,
+    borrowed_allocations: tuple[int, ...] | None = None,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -78,18 +79,31 @@ def reference_arithmetic_gates(
         def __init__(self) -> None:
             self.available = list(reversed(allocations))
             self.rank = {wire: i for i, wire in enumerate(allocations)}
+            self.borrowed = (
+                None
+                if borrowed_allocations is None
+                else list(reversed(borrowed_allocations))
+            )
 
         def qalloc(self, n: int, dim: int = 2) -> list[Any]:
             assert dim == 2
             return [cirq.LineQubit(self.available.pop()) for _ in range(n)]
 
         def qborrow(self, n: int, dim: int = 2) -> list[Any]:
-            return self.qalloc(n, dim)
+            if self.borrowed is None:
+                return self.qalloc(n, dim)
+            assert dim == 2
+            return [cirq.LineQubit(self.borrowed.pop()) for _ in range(n)]
 
         def qfree(self, qubits: list[Any]) -> None:
             if not reuse_allocations:
                 # Preserve dedicated caller output names across disjoint lifetimes.
                 return
+            if borrowed_allocations is not None:
+                borrowed = [q.x for q in qubits if q.x in borrowed_allocations]
+                assert self.borrowed is not None
+                self.borrowed.extend(reversed(borrowed))
+                qubits = [q for q in qubits if q.x not in borrowed_allocations]
             self.available.extend(reversed([q.x for q in qubits]))
             if cirq_style:
                 # Bloq-to-Cirq may temporarily allocate replacement RIGHT outputs
