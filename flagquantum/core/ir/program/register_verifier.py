@@ -183,11 +183,11 @@ def concrete_logical_register_width(dtype: RegisterType) -> int:
 
 
 def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
-    """Validate canonical owned classical integer storage without binding slots.
+    """Validate canonical owned classical storage without binding slots.
 
     Proposal 108 preserves CBit identity and constructor parameter ordering.
-    A quantum metadata view reuses the existing integer constructor validation.
-    It provides no physical admission for finite-field or polynomial storage.
+    A quantum metadata view reuses existing constructor validation. Proposal 110
+    admits concrete binary fields and polynomials through their quantum validators.
     """
     if (
         dtype == classical_bit_type()
@@ -201,7 +201,15 @@ def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
         or dtype.quantum_bits != 0
         or dtype.parameters[:1] != (("storage", "classical"),)
         or dtype.encoding
-        not in {"uint", "signed", "ones_complement", "montgomery", "fixed_point"}
+        not in {
+            "uint",
+            "signed",
+            "ones_complement",
+            "montgomery",
+            "fixed_point",
+            "finite_field",
+            "finite_field_polynomial",
+        }
     ):
         raise ValueError(f"unsupported classical register descriptor {dtype!r}")
     quantum_view = replace(

@@ -86,7 +86,12 @@ def test_invalid_metadata_fails_before_program_admission(dtype: RegisterType) ->
         executable_register_width(dtype)
     with pytest.raises(ValueError):
         logical_register_width(dtype)
-    assert verify_program_record(identity(dtype))
+    if dtype == INVALID[-1]:
+        # Proposal 110 admits this exact classical projection, while both
+        # quantum-width entry points above continue to reject it.
+        assert verify_program_record(identity(dtype)) == ()
+    else:
+        assert verify_program_record(identity(dtype))
 
 
 def test_split_join_preserves_nominal_type_and_linear_handles() -> None:
