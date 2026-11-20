@@ -13,6 +13,7 @@ from ...core.ir.program import FunctionRecord, Operation, ValueRef
 from ...core.ir.program.register_types import classical_bit_type
 from ...core.ir.program.register_verifier import (
     executable_register_width,
+    logical_classical_register_width,
     logical_register_width,
     register_port_types,
 )
@@ -103,8 +104,11 @@ def _function_connections(
 
 
 def _connection_width(dtype: RegisterType, logical_graph: bool) -> SymbolicInt:
-    if dtype == classical_bit_type():
-        return int(logical_graph)
+    if dtype == classical_bit_type() or dtype.parameters[:1] == (
+        ("storage", "classical"),
+    ):
+        width = logical_classical_register_width(dtype)
+        return width if logical_graph else 0
     return (
         logical_register_width(dtype)
         if logical_graph

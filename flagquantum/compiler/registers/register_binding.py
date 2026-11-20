@@ -61,9 +61,10 @@ def bind_register_program(
     """Bind quantum ports and work lifetimes to caller-supplied physical wires.
 
     Local connection order is scheduled before finite call expansion. Concrete
-    input/clean/borrowed wires are disjoint. External CBit ports use empty input
-    words and explicit bits in classical_inputs, aligned with flattened entries.
-    Quantum positions use None. Each initialized CBit gets a fresh constant slot.
+    input/clean/borrowed wires are disjoint. External classical ports use empty
+    input words and stored integers in classical_inputs, aligned with flattened
+    entries. Quantum positions use None. Each initialized bit gets a fresh
+    constant slot in MSB-first order. Reads preserve these slots.
     Explicitly allowing workspace outputs transfers their live physical wires
     to the caller through ordered outputs. The caller owns subsequent cleanup
     and borrowed-state restoration. Input release requires explicit caller pool
@@ -167,21 +168,32 @@ def bind_register_program(
         if initial is None:
             binder.wires[value] = wires
         else:
-            binder.bits[value] = binder.next_bit
-            binder.instructions.append(
-                ClassicalXor((), binder.next_bit, bool(initial)).instruction()
+            slots = tuple(range(binder.next_bit, binder.next_bit + len(initial)))
+            binder.instructions.extend(
+                ClassicalXor((), slot, bool(bit)).instruction()
+                for slot, bit in zip(slots, initial, strict=True)
             )
-            binder.next_bit += 1
+            if len(slots) == 1:
+                binder.bits[value] = slots[0]
+            else:
+                binder.words[value] = slots
+            binder.next_bit += len(slots)
     for position, operation in enumerate(operations):
         binder.emit(position, operation)
     outputs = tuple(
-        () if value in binder.bits else binder.wires[value] for value in returned
+        () if value in binder.bits or value in binder.words else binder.wires[value]
+        for value in returned
     )
     classical_outputs = (
         tuple(
-            (binder.bits[value],) if value in binder.bits else () for value in returned
+            (
+                (binder.bits[value],)
+                if value in binder.bits
+                else binder.words.get(value, ())
+            )
+            for value in returned
         )
-        if any(value in binder.bits for value in returned)
+        if any(value in binder.bits or value in binder.words for value in returned)
         else ()
     )
     if binder.live and not allow_workspace_outputs:
@@ -210,6 +222,7 @@ class _PhysicalBinding:
         self.wires: dict[ValueRef, tuple[int, ...]] = {}
         self.scalars: dict[ValueRef, float | Parameter | ParameterExpression] = {}
         self.bits: dict[ValueRef, int] = {}
+        self.words: dict[ValueRef, tuple[int, ...]] = {}
         self.instructions: list[Instruction] = []
         self.events: list[WorkspaceEvent] = []
         self.live: set[int] = set()
@@ -313,8 +326,14 @@ class _PhysicalBinding:
         elif opcode == "discard_classical_register":
             del self.bits[operation.operands[0]]
         elif opcode == "read_classical_register":
-            slot = self.bits[operation.operands[0]]
-            self.bits.update((value, slot) for value in operation.results)
+            before = operation.operands[0]
+            if before in self.words:
+                slots = self.words[before]
+                self.words[operation.results[0]] = slots
+                self.bits.update(zip(operation.results[1:], slots, strict=True))
+            else:
+                slot = self.bits[before]
+                self.bits.update((value, slot) for value in operation.results)
         elif opcode in {"bool_zero", "bool_one", "bool_xor", "parity_register"}:
             target = self.next_bit
             self.next_bit += 1
