@@ -151,13 +151,22 @@ def typed_inverse(record: ProgramRecord) -> ProgramRecord:
         "__fq_unary_and_11_dg": "__fq_unary_and_11",
     }
     # Split and Join preserve the original bounded selector descriptor.
-    views = [
-        function
+    views = {
+        function.name: Signature(function.registers)
         for function in record.functions
         if function.name.startswith("__fq_rebinding_")
-    ]
-    assert len(views) == 2
-    adjoints.update({views[0].name: views[1].name, views[1].name: views[0].name})
+        and function.registers is not None
+    }
+    for name, signature in views.items():
+        inverse = signature.adjoint()
+        matches = [
+            candidate
+            for candidate, candidate_signature in views.items()
+            if tuple(candidate_signature.lefts()) == tuple(inverse.lefts())
+            and tuple(candidate_signature.rights()) == tuple(inverse.rights())
+        ]
+        assert len(matches) == 1
+        adjoints[name] = matches[0]
     return adjoint_component_hierarchy(record, adjoints)
 
 
