@@ -112,3 +112,69 @@ passed 1037 cases and skipped the two pre-existing optional PennyLane S/T adapte
 checks because PennyLane is absent in this interpreter. Those adapters gain no
 new acceptance claim. Strict typing of the three changed Python files, formatting,
 lint, Compiler scope, architecture, multilevel IR and public API checks passed.
+
+## Generic declaration and actual foreign consumers — 2026-11-20
+
+The previous storage-admission descriptions above record the 2026-11-18 contract.
+Signed integers, ones-complement integers and positive-width unsigned fixed-point
+words are now executable through their separately approved shared owners.
+
+`compiler/registers/bits/on_each_declaration.py` owns the original single-child
+register count, width and name checks. It retains shape/direction metadata, the
+optional target type, default opaque target, symbolic signature and direct child
+multiplicity. An explicit Register preserves the zero-width logical port.
+Function names identify children in the enclosing native namespace. Physical
+construction delegates to the existing scalar QBit THRU component owner. Drawer
+continues owning source title and wire-symbol behavior, and Simulation continues
+owning classical codecs and phased child evaluation. No foreign Bloq enters the
+production declaration.
+
+All seven source definitions now have a named owner. Constructor/signature/model
+belong to the declaration, finite decomposition to the existing typed body,
+wire symbols and operation title to Drawer. The complete source tests, numerical
+codec behavior, symbolic model and all six presentation glyphs reuse their
+accepted evidence. Source shape/direction/QBit-target constructor admissions still
+have the original failed-decomposition witnesses. These metadata admissions do
+not assert executable bodies.
+
+The actual original OnEach library is serialized at depths zero, one and two for
+concrete/empty/symbolic default, unsigned, signed, ones-complement and unsigned
+fixed-point targets in their source-valid domains. Bytes roundtrip exactly and
+original reconstruction remains equal. Actual child references resolve through
+native factories. Finite programs retain the exact direct-body instructions and
+outputs, including noncontiguous physical placement and empty opaque/unsigned
+words with a spectator. Symbolic physical binding remains refused.
+
+Thirty actual typed SDK consumers cover five three-bit targets and X, H, S,
+S-adjoint, T and T-adjoint. Source SDK and native body agree gate for gate on
+wires (3, 0, 2), retain caller storage and introduce zero work or measurements.
+Every column of the complete four-wire operator agrees with the original tensor
+including the spectator. The independently captured actual source adjoint
+restores identity. Emission is three primitives per direction. The independent
+source model gives three Cliffords for X/H/S families or three T gates for T
+families, with logical peak width three. The spectator occupies a fourth declared
+physical wire and does not alter the source logical resource estimate.
+
+### Remaining protected storage requirements
+
+Unchanged source OnEach accepts and decomposes signed fixed-point three-bit
+words with fractional widths one and minus two. Empty unsigned fixed-point words
+at fractional widths zero and minus two decompose to Split/Join without children.
+The approved Proposal 115 explicitly retains physical rejection for signed and
+zero-width fixed-point descriptors. Native metadata and logical construction
+succeed while binding retains that refusal. The exact steps/errors are recorded
+in `ftqc-reference-env/g2-on-each-fixed-storage-intake.json`.
+
+Proposal 116 records this storage extension for explicit approval. Its pending
+draft changes no executable admission. Q-0246 remains open for these concrete
+storage requirements. Existing fixed-point control predicate boundaries remain
+separate. Original unsupported child decompositions, symbolic physical dimensions
+and serialized symbol-assumption loss remain documented source boundaries.
+
+The current batch passes 1,219 concentrated cases and 17 local integration
+cases. All 109 foreign/body/presentation cases also pass with Cirq 1.6.1, and
+all four unchanged source tests pass. Strict typing of both new Python files,
+Black, Ruff, Compiler scope, architecture, multilevel IR and the public API
+baseline pass. The 248 original resource-deprecation warnings in concentrated
+regression remain visible. No native physical support is claimed for the pending
+Proposal 116 cases.
