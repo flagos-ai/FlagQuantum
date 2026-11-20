@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 for_testing/large_bloq.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/for_testing/large_bloq.py
@@ -27,9 +27,9 @@ def large_fixture_ir(
 ) -> tuple[Instruction, ...]:
     """Build the source ladder with a controlled X as its atomic action."""
     depth = len(select) - 1
-    if depth < 1 or repetitions < 0:
+    if depth < 0 or repetitions < 0:
         raise ValueError(
-            "The fixture requires at least two select bits and nonnegative repetitions"
+            "The fixture requires at least one select bit and nonnegative repetitions"
         )
     if (
         len(workspace) != (depth if repetitions else 0)
@@ -42,11 +42,11 @@ def large_fixture_ir(
 
     gates: list[Instruction] = []
     for index in range(repetitions):
-        pattern = split_integer(index % depth, depth)
+        pattern = split_integer(index % depth, depth) if depth else ()
         steps = tuple(
             (prefix, bit, ancilla, (value, 1))
             for prefix, bit, ancilla, value in zip(
-                (select[0], *workspace[:-1]),
+                (select[0], *workspace[:-1])[:depth],
                 select[1:],
                 workspace,
                 pattern,
@@ -55,7 +55,7 @@ def large_fixture_ir(
         )
         for prefix, bit, ancilla, values in steps:
             gates.extend(and_compute_ir(prefix, bit, ancilla, values=values))
-        gates.append(Instruction("cx", (workspace[-1], target)))
+        gates.append(Instruction("cx", (workspace[-1] if depth else select[0], target)))
         for offset, (prefix, bit, ancilla, values) in enumerate(reversed(steps)):
             gates.extend(
                 and_uncompute_ir(
