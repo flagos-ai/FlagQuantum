@@ -7,6 +7,9 @@ Approved explicitly by the user on 2026-11-20 with the instruction
 words. Proposal 109 approved quantum binary-field polynomial ports. Their
 accepted scopes expressly exclude the classical field ports proposed here.
 
+The approved concrete scope is implemented. Acceptance and retained boundaries
+are recorded in `CLASSICAL_FIELD_FEEDBACK_AUDIT.md`.
+
 ## Verified requirement
 
 The complete frozen `qualtran/_infra/controlled.py` dispatches classical CGF

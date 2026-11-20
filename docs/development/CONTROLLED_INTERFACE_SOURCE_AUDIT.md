@@ -230,3 +230,8 @@ this separately protected extension and awaits approval. Original classical
 wrapper decomposition/model refusals remain explicit. The evidence is
 `g2-classical-field-intake.json`; these findings establish a remaining gap and
 supply no new parent acceptance.
+
+Proposal 110 was explicitly approved on 2026-11-20. The canonical classical
+binary field/poly execution dependency described in the preceding intake is
+implemented through the existing validators and feedback owner. Its accepted
+scope and remaining boundaries are in `CLASSICAL_FIELD_FEEDBACK_AUDIT.md`.

@@ -143,3 +143,8 @@ The example verifies all two-bit signed inputs, full complex amplitudes and
 spectator entanglement, and prints emitted resources independently from the
 source wrapper model refusal. The source-reference tests require the pinned
 reference environment and its existing notebook marker plugin.
+
+The classical binary field/poly admission boundary above is superseded by
+explicitly approved Proposal 110. `CLASSICAL_FIELD_FEEDBACK_AUDIT.md` records
+its concrete typed execution acceptance, retained source model refusal and
+remaining nonbinary/symbolic/conditional-write boundaries.
