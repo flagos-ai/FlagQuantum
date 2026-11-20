@@ -58,3 +58,113 @@ Batch verification passed 718 concentrated native/reference cases with no skips 
 Changed Python passed strict mypy, Black, Ruff, Compiler scope, architecture,
 multilevel IR and protected API checks. Supplemental compare/exchange and
 shared-control results are recorded in `g2-lists-file-control-dependencies.log`.
+
+## Stored execution batch interface (2026-11-20, in progress)
+
+Compiler sorting owns two missing typed composition layers. The shared
+permutation_index_component owner will expose rank-XOR and indexed-word-XOR
+Programs over THRU arrays table, words and ranks. Each word is MSB first. Count
+and word width remain concrete and follow permutation_index_requirements.
+Rank-XOR accepts occupied rank words and preserves table/source words. Its
+logical permutation meaning requires a distinct table containing every source.
+Indexed-word-XOR accepts occupied words and any rank bit pattern, with no entry
+selected outside the table range. Both return every owned predicate/carry clean.
+Their primitive sequence remains composed from the existing equality, encoded
+controlled XOR and measured multi-control-X owners.
+
+The in_place_sort_component owner will retain the source xs/pi THRU array
+signature for concrete unsigned words. Forward requires distinct input words
+and clean pi. Inverse requires sorted words with matching permutation pi and
+clears pi. A private sorted copy composes the existing bitonic hierarchy with
+padded sentinel keys, followed by the shared rank and word reconstruction
+components. Every allocation belongs to this hierarchy and returns clean.
+Signed, duplicate and occupied-pi root execution remain separate boundaries.
+No new Core admission or user entry is introduced. Users retain circuit.append.
+
+The frozen source SortInPlace has no executable body. Its exact signature,
+three direct declared cost edges and lack of root decomposition are independent
+from the paper construction. Dependency gates and measured feedback have their
+existing frozen-source comparisons. Whole-root primitive counts, complete
+complex amplitudes, applicable measurement histories and work cleanup will be
+verified against the existing native construction and independent logical
+permutation, without inventing an original root gate stream.
+
+### Stored implementation and measured closure
+
+`permutation_index_program(count, width, operation)` now retains both indexing
+operations through shared typed equality, encoded controlled XOR and measured
+MCX. `rank` XOR accepts occupied ranks. `words` XOR accepts occupied outputs and
+all rank bit patterns. All three-entry rank patterns, including the unused
+encoding three, preserve the independent indexed-word contract and clean work.
+The singleton retains explicit empty rank words. No physical emitter was copied.
+
+`in_place_sort_program(count, width, adjoint=False)` now composes a private sorted
+copy with those indexing children. The sorted copy owns padded key words and
+calls the existing bitonic Program and its exact adjoint. Sentinel high bits
+are prepared and unprepared explicitly. The root preserves the original bounded
+pi descriptor via Split/Join views, and both arrays remain THRU. The inverse
+reuses the same component stages in the existing paper construction's reverse
+order. The normal DynamicCircuit.append path consumes the bound operation.
+
+Five count/width pairs, including singleton, power-of-two and padded three-word
+cases, preserve the existing emitter's complete primitive counts in both
+directions. Every basis input in their distinct-word subspaces has a valid
+measured-And cleanup certificate. Both directions of the two-one-bit-word case
+preserve complete complex spectator amplitudes through every raw measurement
+history. Padded three-word/two-bit execution additionally preserves the complete
+complex distinct-word superposition and clean work under the existing sparse
+trajectory executor. That latter channel is sampled, with exhaustive valid-basis
+cleanup separately certified. No claim of enumerating all 2**108 histories is
+made for it.
+
+The indexing retained-call paths additionally match the existing emitter's
+every-wire gate order, all operands and feedback after full temporary-wire
+history matching and fresh measurement-slot normalization. Only temporary
+physical labels are renamed. The expanded small indexing paths pass complete
+complex/branch checks. For four three-bit words the shared expansion scheduler
+uses six clean bits versus two with retained calls. Primitive counts are equal.
+The expanded larger path is recorded as an allocation difference, with no
+larger-width physical placement or gate-order equivalence claimed. The root
+retains component calls and its measured peaks fit the existing work budget.
+
+Three two-bit words emit 1608 CX, 338 X, 396 H, 360 T, 324 T-dagger, 108 S,
+108 measurements, 108 feedback CZ and 108 resets per direction, with peak
+32 owned clean work bits. Independent frozen root estimates are 108 CSwap,
+162 And, 1998 Clifford, 162 measurements and peak twelve logical bits. These
+models cannot supply an executable root stream. Other measured pairs and
+retained/expanded indexing allocations are recorded in
+`g2-in-place-sort-resources.json` in the external evidence directory.
+
+### Actual source libraries and retained boundaries
+
+Eighteen unsigned/signed/opaque and concrete/symbolic root variants retain exact
+library bytes at depths zero, one and two. Original source reconstruction drops
+assumption-bearing symbol identity itself, while plain symbols and concrete
+objects roundtrip equal. Native codecs preserve the original wire text and
+bytes. Concrete unsigned one- and three-word factories resolve to the typed
+sort owner with exact bound circuits and aliases. Other concrete descriptors
+and symbolic word widths retain declaration-only resolution. Symbolic list
+extents still reject Program construction under Proposal 103 prerequisite 1.20.
+The source supplies no factories and its DocSpec has no examples.
+
+Signed root execution, duplicate inputs and occupied-pi sorting remain outside
+the existing unsigned distinct-word execution contract. The shared indexing
+operations' occupied XOR targets do not extend the sorting root contract.
+Q-0204 and Q-0204.05 remain open for those boundaries, symbolic array execution,
+and the original root's missing executable reference. The source zero-length
+QubitCount failure retains its existing audit. Existing Comparator/Xor frozen
+primitive and resource evidence is reused without changing reference code.
+
+Final batch checks pass 390 concentrated cases, 17 local integration cases and
+55 focused cases in each Cirq 1.7/1.6.1 lane, with no skips or warnings. All six
+changed Python files pass strict mypy, Black and Ruff. Existing sort test
+fixtures now carry complete annotations so typed consumers reuse the same
+independent permutations and resource oracle. Compiler scope, architecture,
+multilevel IR and protected API checks pass. Five frozen source blobs, all ten
+unchanged shared implementation owners, Qualtran 0.7.0 and Kickmix 0.1 with its
+Simulator are verified. The dependency scan retains 685 whole-repository
+findings and zero changed-file findings. The previous default docstring failure
+baseline's ten files are byte-identical to the batch base. This is concentrated
+batch validation, with that existing repository-wide baseline retained.
+See g2-in-place-sort-evidence.json and named logs in the external evidence
+folder. No parent completion is inferred from these accepted capabilities.

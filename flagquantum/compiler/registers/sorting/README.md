@@ -37,3 +37,18 @@ seven stored arithmetic calls, operands/feedback, occupied-target amplitudes,
 spectator coherence and work restoration. The original root provides no
 decomposition, and its classical through-target mismatch remains recorded in
 [the complete source audit](../../../../docs/development/CONTIGUOUS_INDEX_FILE_AUDIT.md).
+
+`permutation_index_component.py` stores occupied-target rank XOR and indexed
+word XOR through the shared equality and controlled-copy components.
+`in_place_sort_component.py` composes them with a padded bitonic sorted copy.
+Its concrete unsigned xs/pi arrays retain the frozen SortInPlace signature,
+including empty singleton rank words. Forward requires distinct words and clean
+pi. Inverse restores the original order and clears pi. Internal tables, keys,
+histories and predicates are owned by the components and return clean.
+The frozen root has a resource model without executable decomposition, so root
+primitive parity uses the existing native paper construction while its child
+primitive evidence remains tied to the frozen source. Bind using
+`in_place_sort_requirements` and append the bound operation through the register
+package guide. The complete complex/branch consumer is in
+`tests/unit/test_in_place_sort_component.py`, and the frozen object-library
+consumer is in `tests/unit/test_in_place_sort_foreign_file.py`.

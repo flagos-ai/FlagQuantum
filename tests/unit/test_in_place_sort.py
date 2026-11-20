@@ -1,7 +1,9 @@
 """Clean in-place sort and restoration on the distinct-word subspace."""
 
 from collections import Counter
+from collections.abc import Iterator
 from itertools import combinations, permutations, product
+from typing import Any
 
 import pytest
 import torch
@@ -15,9 +17,11 @@ from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
+WordArray = tuple[tuple[int, ...], ...]
+SortLayout = tuple[WordArray, WordArray, tuple[int, ...], tuple[int, ...]]
 
 
-def layout(count, width):
+def layout(count: int, width: int) -> SortLayout:
     rank_width, work, slots = in_place_sort_requirements(count, width)
     words = tuple(tuple(range(i * width, (i + 1) * width)) for i in range(count))
     first = count * width
@@ -29,7 +33,13 @@ def layout(count, width):
     return words, ranks, tuple(range(first, first + work)), tuple(range(slots))
 
 
-def pack(words, ranks, width, rank_width, work):
+def pack(
+    words: tuple[int, ...],
+    ranks: tuple[int, ...],
+    width: int,
+    rank_width: int,
+    work: int,
+) -> tuple[int, ...]:
     return (
         tuple(
             (word >> j) & 1
@@ -41,7 +51,9 @@ def pack(words, ranks, width, rank_width, work):
     )
 
 
-def samples(count, width, work):
+def samples(
+    count: int, width: int, work: int
+) -> Iterator[tuple[tuple[int, ...], tuple[int, ...]]]:
     r = (count - 1).bit_length()
     for table in combinations(range(1 << width), count):
         for perm in permutations(range(count)):
@@ -52,7 +64,7 @@ def samples(count, width, work):
             )
 
 
-def expected_budget(count, width):
+def expected_budget(count: int, width: int) -> tuple[int, int]:
     if count == 1:
         return 0, 0
     r = (count - 1).bit_length()
@@ -71,7 +83,9 @@ def expected_budget(count, width):
 @pytest.mark.parametrize(
     "count,width", [(1, 1), (2, 1), (2, 3), (3, 2), (4, 2), (5, 3)]
 )
-def test_distinct_lists_inverse_all_histories_and_resource(count, width):
+def test_distinct_lists_inverse_all_histories_and_resource(
+    count: int, width: int
+) -> None:
     bound = layout(count, width)
     before, after = zip(*samples(count, width, len(bound[2])), strict=True)
     t_count, measurement_count = expected_budget(count, width)
@@ -84,14 +98,15 @@ def test_distinct_lists_inverse_all_histories_and_resource(count, width):
 
 
 @pytest.mark.parametrize("count,width", [(2, 1), (3, 2)])
-def test_append_complex_amplitudes_and_clean_inverse(count, width):
+def test_append_complex_amplitudes_and_clean_inverse(count: int, width: int) -> None:
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.dynamic import DynamicCircuit
 
     bound = layout(count, width)
     rows = tuple(samples(count, width, len(bound[2])))
     size = len(rows[0][0]) + 1
-    inputs, outputs = {}, {}
+    inputs: dict[int, complex] = {}
+    outputs: dict[int, complex] = {}
     values = torch.arange(1, len(rows) * 2 + 1, dtype=torch.float64)
     amplitudes = torch.complex(values, 3 - values)
     amplitudes /= amplitudes.norm()
@@ -110,7 +125,7 @@ def test_append_complex_amplitudes_and_clean_inverse(count, width):
             expected_state = torch.zeros_like(initial_state)
             for target, source in ((initial_state, before), (expected_state, expected)):
                 for index, value in source.items():
-                    target[index] = value
+                    target[index] = torch.tensor(value, dtype=torch.complex128)
             events = expected_budget(count, width)[1]
             for history in product((0, 1), repeat=events):
                 torch.testing.assert_close(
@@ -129,7 +144,7 @@ def test_append_complex_amplitudes_and_clean_inverse(count, width):
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("count,width", [(2, 2), (3, 2)])
-def test_assembled_gate_stream_and_locked_sort_model(count, width):
+def test_assembled_gate_stream_and_locked_sort_model(count: int, width: int) -> None:
     pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, QUInt
     from qualtran.bloqs.arithmetic import Xor
@@ -168,7 +183,7 @@ def test_assembled_gate_stream_and_locked_sort_model(count, width):
     pool = tuple(head)
     q, c = comparison_network_requirements(key_width, len(history))
 
-    def cx_words(src, dst):
+    def cx_words(src: WordArray, dst: WordArray) -> tuple[Instruction, ...]:
         return tuple(
             Instruction("cx", (x, y))
             for a, b in zip(src, dst, strict=True)
@@ -211,8 +226,8 @@ def test_assembled_gate_stream_and_locked_sort_model(count, width):
         ({"ranks": ((0,), (3,))}, "distinct nonnegative wires"),
     ],
 )
-def test_layout_rejects_bad_bindings(change, match):
-    bound = dict(
+def test_layout_rejects_bad_bindings(change: dict[str, Any], match: str) -> None:
+    bound: dict[str, Any] = dict(
         zip(
             ("words", "ranks", "workspace", "classical_bits"), layout(2, 1), strict=True
         )
