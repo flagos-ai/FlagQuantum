@@ -86,3 +86,67 @@ CONTIGUOUS_INDEX_FILE_AUDIT.md. The unchanged multiplication file's eight-class
 inventory and original test evidence above are reused. Product, sum-of-squares
 and fixed-point stored composition remain distinct open work. This addition
 leaves Q-0208/Q-0209 open and makes no upstream square-decomposition claim.
+
+## Stored Product and SumOfSquares dependency, November 20, 2026
+
+`integer_product_component.py` preserves the source's THRU unsigned a/b words
+and RIGHT result of twice the larger input width. Its inverse consumes the
+matching LEFT product image. `sum_of_squares_component.py` preserves the
+row-major shaped THRU input and RIGHT result width
+`2 * width + (count - 1).bit_length()`. Its inverse consumes the matching image.
+Both use `column_result_component.py`, also used by Square. This owner handles
+only result allocation, typed Split/Join views and restoring input aliases.
+The existing weighted-column owner retains products, carries, measured And
+calls and scratch erasure. Physical binding flattens shaped ports row-major.
+Inverse callers transfer result ownership through `input_ownership`.
+
+This replaces duplicated Square composition. Twenty-four complete bound
+Square records, widths 1 through 12 in both directions, are exactly equal to
+base `e7ea0499d`, including instructions, aliases, feedback slots and workspace
+events. The first comparison detected a changed zero-gate view order before
+inverse result release. Restoring output Join before input Join preserves the
+original release positions. The final comparison passes without normalization.
+
+Stored and expanded Product/SumOfSquares primitive multisets, per-wire dependency
+order, operands and feedback match their accepted flat owners. Measurement SSA
+slots are renamed only after verifying each feedback reads its actual preceding
+measurement. Independent gates can have different global schedules. Existing
+unchanged And leaf comparisons and complete channel certificates are reused.
+The original Product and SumOfSquares roots supply signatures and models, with
+no executable decomposition, tensor or classical callback. This addition uses
+the already documented paper construction. It supplies no original-root
+primitive-order comparison.
+
+Complete coherent small inputs, entangled spectators and zero scratch are
+checked in both directions. Product uses widths 1x1 and 2x2. SumOfSquares uses
+three one-bit words and two two-bit words. The one-AND cases exhaust all four
+forward/inverse measurement history pairs. Larger cases use two trajectory
+seeds and reuse the accepted leaf/channel evidence. Normal `circuit.append(op)`
+round trips pass with the flat roots replaced by failing stubs. Shapes, inverse
+ownership, stored/expanded calls and invalid arguments are checked separately.
+
+| Stored operation | Observed primitives and owned storage | Original analytical model |
+| --- | --- | --- |
+| Product 4x6 | 168 T/Tdg, 410 CX, 42 measurements, 42 scratch plus 12 output | 42 Toffoli |
+| SumOfSquares three two-bit words | 32 T/Tdg, 95 CX, 8 measurements, 8 scratch plus 6 output | 9 Toffoli |
+
+These streams retain the flat implementation's physical counts. The sum model
+and actual measured construction differ and remain separately reported.
+`g2-column-results-evidence.json` records six scenarios, five immutable source
+blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator presence, and the 24 exact Square
+comparisons. Strict typing passes all five Python files. Black, Ruff,
+Integration scope, architecture, IR and public API checks pass. Dependency policy
+reports 687 existing whole-repository findings and zero batch-path findings.
+Concentrated regression passes 1,400 checks with one existing IPython warning
+and no skips. Local integration passes 17 checks. Final focused checks pass
+36 cases. Receipts use `g2-column-results-`. The earlier
+regression interrupted by the user is retained separately and excluded from
+acceptance. The known default docstring coverage failure is reused after
+verifying its ten implicated files against base `e7ea0499d`. This supplies no
+clean-default-suite claim. The unchanged eight-class catalogue and original 24 runnable cases
+and skipped decomposition modes remain reusable evidence.
+
+Q-0208/Q-0209 remain open for the fixed-point and reciprocal executable contract
+differences and generic foreign construction, drawing, rebinding and
+serialization recorded above. The next closure must inventory those complete
+remaining definitions before introducing further arithmetic dependencies.

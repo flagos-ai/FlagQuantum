@@ -165,3 +165,16 @@ storage using `input_ownership` so it can be freed. Nested callers transfer this
 ownership through the existing builder. Run
 `python -m pytest tests/unit/test_integer_square_component.py -q` for the source
 signature, logical output lifetimes, complex amplitudes and erasure histories.
+
+`integer_product_component.py` and `sum_of_squares_component.py` create and erase
+owned unsigned result images through the same column graph as Square. Product
+preserves two input words. SumOfSquares preserves its row-major shaped input.
+`column_result_component.py` owns only result lifetimes and typed views, with
+three current consumers. Product/carry scratch remains in the bit-column owner.
+The physical binder accepts each shaped input element as a separate wire tuple.
+Forward clean pools place result storage before scratch. Inverse result words
+must be identified in `input_ownership`. The existing append entry is exercised
+with both flat roots replaced. Run
+`python -m pytest tests/unit/test_column_result_components.py -q` for both owned
+result workflows. See the multiplication audit for unavailable source root
+expansions and separately reported primitive/model counts.
