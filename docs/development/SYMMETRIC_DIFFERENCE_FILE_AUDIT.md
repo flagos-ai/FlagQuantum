@@ -78,3 +78,66 @@ The symbolic follow-up passed 822 concentrated cases with no skips and one
 existing IPython fallback warning. Changed Python and extracted notebook cells
 passed strict typing, format, lint, scope, architecture, multilevel IR and API
 checks. Source model-only positive non-power-of-two merge fallback is now covered.
+
+## Stored execution interface and ownership
+
+The finite stored owner will retain S, T, diff and flag as THRU ports, using
+MSB-first unsigned words. Inputs are distinct ascending sets with left length
+at least right length. Diff and flag accept occupied XOR targets. A cardinality
+mismatch leaves both targets unchanged. The oracle is self-inverse.
+
+The root owns padded key copies, adjacent-equality flags and the success bit.
+Merge and compaction expose histories consumed by their exact adjoints. Hamming
+exposes its count and junk, consumed before duplicate tags are erased. Predicate
+work belongs to shared children. All owned quantum storage returns clean.
+The implementation composes existing typed owners and adds no public export.
+The source root provides a declaration/model only, so dependency primitive parity
+and native paper-construction execution will be certified separately.
+
+## Stored root delivery and comparison boundary
+
+`symmetric_difference_component.py` now composes the complete finite unsigned
+sorted-set oracle using the existing merge, equality, Hamming, compaction, XOR
+and controlled-X owners. Empty sets, impossible cardinality/parity, occupied
+diff/flag, padded unequal halves and exact reverse cleanup retain the previous
+native construction. The normal `circuit.append(op)` path is exercised.
+
+All three actual original factories preserve exact library bytes at depths zero,
+one and two. Concrete source reconstruction is equal. Both symbolic original
+reconstructions lose positive/integer symbol assumptions themselves, including
+the dtype width expression. The native transport preserves those original wire
+bytes. Concrete unsigned roots resolve through an explicitly supplied native
+factory. Signed/opaque variants retain metadata only. Symbolic array resolution
+retains the existing rejection.
+
+Thirteen finite shapes have exhaustive valid sorted-set basis-channel cleanup
+certificates, including occupied outputs and self-inverse recovery. One-bit
+pairs with zero/two outputs have full complex spectator amplitudes in every raw
+measurement history. The compacted 2+2 and padded 3+2 two-bit cases have full
+complex input superpositions on three seeded trajectories, separately from the
+exhaustive basis certificates. Their exponentially many raw histories were not
+enumerated.
+
+Every primitive category count matches the previous native flat construction.
+An attempted whole-network comparison using a single fixed permutation of clean
+wire names failed at three shapes because child lifetime reuse differs from the
+flat shared pool. That stronger wire/order comparison remains unaccepted.
+The diagnostic is preserved in `g2-symmetric-difference-static-wire-diagnostic.log`.
+Frozen child source primitive/operand/feedback evidence is reused unchanged.
+The absent source root decomposition prevents a whole-root upstream gate claim.
+Expanded root scheduling remains unqualified.
+
+The completed batch passed 722 concentrated cases, 17 local integration cases,
+and 34 focused cases on each of Cirq 1.7 and 1.6.1, without skips or warnings.
+Four touched Python files pass strict typing, Black and Ruff. Scope,
+architecture, multilevel IR and protected API checks pass. Six frozen source
+blobs and eleven unchanged production owners are verified. The whole dependency
+scan retains 685 findings with none in this batch. The ten-file pre-existing
+default docstring failure baseline remains byte-identical. These results do not
+certify the whole repository.
+
+The actual 4+2 four-bit/four-output factory emits 14,953 CX, 6,044 T/TDG and
+797 measurement/reset pairs, with peak 113 clean work wires. The original model
+separately declares 96 CSwap, 205 And, 2,276 Clifford, 205 measurements and peak
+55 logical wires. Both accounts retain their distinct meanings.
+Q-0205/Q-0206 remain open for the registered execution and source boundaries.
