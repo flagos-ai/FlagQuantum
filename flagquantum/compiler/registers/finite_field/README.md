@@ -73,3 +73,16 @@ self-adjoint bit order. Run
 `python -m examples.algorithms.register_field_polynomial_addition` and
 `tests/unit/test_field_polynomial_addition_component.py` for coherent append,
 original source and clean-spectator restoration checks.
+
+`monomial_component.py` and `constant_multiplication_component.py` retain stored
+shift and shared PLU calls. `polynomial_product_component.py` owns the recursive
+coefficient-array multiply-accumulate chains and clean high padding.
+`multiplication_component.py` owns quadratic RIGHT/THRU/LEFT products.
+`karatsuba_component.py` composes the shared polynomial, constant and shift
+owners into the source implementation and public allocation shell. Existing
+`product_erasure_program.py` supplies the measured inverse channel. Numerical
+codecs and independent source models retain their original owners. Run
+`python -m examples.algorithms.register_field_multiplication` for normal append
+and returned physical aliases. The multiplication audit records original
+linear-adjoint defects and unsupported domains separately from accepted native
+mathematical execution and resource models.

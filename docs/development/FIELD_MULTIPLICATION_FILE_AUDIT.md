@@ -144,3 +144,127 @@ branch acceptance.
 
 The module commits are `cecd0f01` for Simulation, `e15693de` for Compiler and
 `03726ce4` for the complete asset/catalogue/source-graph audit.
+
+## Complete stored-call dependency closure — 2026-11-20
+
+The complete eleven-class source file now has owned stored execution chains for
+its admitted concrete domains. The original 81-definition, nine-factory and
+seven-document inventory above remains authoritative. This batch reuses accepted
+numerical, catalogue, notebook, symbolic-model and original-test evidence.
+`g2-field-multiplication-stored-inventory.json` records the unchanged file blob
+`1338bb4b9f09a0a4b813a1124481e26ee3446cd8` and every class/member disposition.
+The source and five direct dependency/test blobs match the frozen intake.
+
+| Complete source owner | Stored native owner and dependency closure |
+| --- | --- |
+| `SynthesizeLRCircuit` | Existing `linear_component.py`, shared PLU and exact native adjoint |
+| `GF2ShiftLeft` and `GF2ShiftRight` | `monomial_component.py`, original sequential rotations, CX dependencies and gate-free returned aliases |
+| `GF2MulK` | `constant_multiplication_component.py`, shared `_constant_matrix` authority, one real stored PLU child |
+| `BinaryPolynomialMultiplication` | `polynomial_product_component.py`, recursive shared calls, source coefficient order and owned odd-width high padding |
+| `MultiplyPolyByOnePlusXk` | Same polynomial owner, overlapping CX ladders and shared recursive child |
+| `GF2Multiplication` | `multiplication_component.py`, RIGHT output or arbitrary THRU target, exact LEFT uncompute and both original Toffoli triangles |
+| `_GF2MulViaKaratsubaImpl` | `karatsuba_component.py`, real polynomial, scale-adjoint, shift and forward-scale children |
+| `GF2MulViaKaratsuba` | Same owner, allocated RIGHT result and original inline implementation shell |
+| `GF2MulMBUC` | Existing `product_erasure_program.py`, shared MeasureX/Parity/classical CZ/Discard chain |
+| `Parity` | Existing shared classical component, executable parity slots and numerical owner |
+
+`field_word.py` validates existing canonical descriptors against the explicit
+binary modulus. `_polynomial_component_calls.py` shares the CX/CCX leaves and
+coefficient-to-word view calls across polynomial, quadratic and Karatsuba owners.
+All field words remain MSB-first. Polynomial array index zero is the constant
+coefficient. A RIGHT result transfers to the caller as logical data. Only the
+original recursive padding is freed as clean scratch. There are no physical
+routing SWAPs in these stored graphs. The existing fixed-output binding remains
+a separate consumer choice.
+
+### Comparable source calls and coherent execution
+
+Unmodified original construction is walked through CX/CCX leaves, bookkeeping
+aliases and actual allocation/free connections. Positive and negative shifts,
+constant forward scaling, both quadratic modes and their exact inverse, and
+both recursive polynomial operations retain every wire's gate dependencies and
+operand ordering. Widths 1/2/3/4/5/8 cover field calls. Polynomial widths 1/2/3/5/8
+cover shifts 1/n/n+1 and explicit odd-width temporary lifetimes. Disjoint DAG
+rescheduling is allowed only when each wire's ordered operations agree.
+
+The original Karatsuba implementation builder also reconstructs the identical
+native stored program through an adapter for its actual children. This verifies
+root child order, operands, coefficient views and returned aliases. Its scale
+adjoint is explicitly mapped to the already accepted exact native inverse.
+This root-construction comparison does not establish unchanged-source physical
+agreement inside the defective linear-adjoint child. The unmodified GF(4)
+1*1 -> 0 witness remains independently asserted. Existing mathematical emitters
+match the complete new native instruction streams and output aliases, including
+odd-width scratch and the eight-bit case. No reference monkeypatch is used in
+the new comparisons.
+
+Every nonzero constant in fields through degree four is checked on complete
+complex states, entangled spectator, clean unused wire and exact restoration.
+Quadratic clean products and arbitrary-target accumulation cover all inputs
+through degree three, with full complex amplitudes and exact inverse restoration.
+Recursive polynomial tests include every target value through width three for
+the listed small cases and verify padding zero. Karatsuba append covers all
+operand pairs through degree three and preserves clean work. Previous wider
+sparse complex-state and native Kickmix evidence is included in regression.
+The append test replaces the old public physical product emitter with a raising
+stub while executing the unchanged consumer.
+
+Both multiplication algorithms compose directly with the existing measured
+product erasure. For degrees two and three, every measurement history matches
+the complete unnormalized logical complex state with entangled spectator.
+Retirement retains the projected physical outcome. The separately requested
+reset policy returns those wires to zero. All unmeasured padding remains zero.
+The source public Karatsuba adjoint continues to map to product erasure.
+
+### Emitted storage and source estimates
+
+| Width and modulus | Product | Emitted primitives | Peak live quantum | Extra clean padding | Classical SSA | Independent source model |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2, 7 | Quadratic | 4 CCX + 2 CX | 6 | 0 | 0 | 4 Toffoli + 2 Clifford |
+| 2, 7 | Karatsuba | 3 CCX + 9 CX | 6 | 0 | 0 | 3 Toffoli + 9 Clifford |
+| 3, 11 | Quadratic | 9 CCX + 3 CX | 9 | 0 | 0 | 9 Toffoli + 3 Clifford |
+| 3, 11 | Karatsuba | 7 CCX + 26 CX | 9 | 0 | 0 | 7 Toffoli + 26 Clifford |
+| 5, 37 | Karatsuba | 17 CCX + 83 CX | 16 | 1 | 0 | 17 Toffoli + 83 Clifford |
+| 8, 283 | Quadratic | 64 CCX + 24 CX | 24 | 0 | 0 | 64 Toffoli + 24 Clifford |
+| 8, 283 | Karatsuba | 27 CCX + 200 CX | 24 | 0 | 0 | 27 Toffoli + 200 Clifford |
+| 8, 283 | Owned product erasure | 64 guarded CZ + 8 H + 8 measurements + 8 classical XOR | 24 including consumed result | 0 | 16 fresh slots | 64 Clifford, zero declared measurements |
+
+The product has zero measurements and SSA slots. The owned erasure uses eight
+measurement and eight fresh parity slots. The existing flat emitter's nine
+reusable slots remain a distinct policy. The reset profile adds eight reset
+instructions. CCX is the emitted primitive boundary here. No T synthesis count
+is inferred from the source Toffoli category. Peak storage excludes the binder's
+unused reserve and includes the allocated logical result. Source wrapper
+bookkeeping and measurement omissions remain visible.
+
+### Validation and remaining gaps
+
+Final concentrated regression passes 2178 cases without skips. Focused new
+stored-chain tests pass 140 cases. Local construction/artifact integration passes
+17 cases. Strict typing passes all 14 touched implementation, example and test files. Black, Ruff, team scope, architecture, multi-level IR and public API checks
+pass. Qualtran 0.7.0 and Kickmix 0.1 with native Simulator are verified. Dependency
+policy retains 688 whole-repository findings with zero findings in this batch.
+The first concentrated run found an existing QROAM replacement test patching a
+removed module alias. Its replacement now targets the shared measurement owner,
+retaining its full instruction equality and call-count assertions. The final
+complete concentrated run passes. Prior whole-repository failures stay recorded
+in their original audit and are not superseded by this focused acceptance.
+
+Q-0519 and Q-0520 remain open for the unchanged linear-adjoint/Karatsuba defect,
+arbitrary internal h, automatic generic inverse/foreign/serialization admission,
+unresolved symbolic physical widths, wider-k admission and the incomplete
+original slow/autotester scope. The stored-call closure does not resolve those
+separately inventoried boundaries. No additional parent acceptance is claimed.
+
+Run the supported consumer and focused verification with the existing reference
+environment.
+
+```bash
+python -m examples.algorithms.register_field_multiplication
+python -m pytest tests/unit/test_field_scaling_component.py tests/unit/test_polynomial_product_component.py tests/unit/test_field_multiplication_component.py -q
+```
+
+The independent module commits are e34aef21c for typed shifts, a9a58dca3 for
+shared constant scaling, 5f5b21a87 for polynomial recursion, e4f35ef3b for
+quadratic ownership, f2467dc05 for Karatsuba/append/coherent verification and
+bd9eef5a3 for the shared measurement replacement test.
