@@ -33,7 +33,9 @@ def classical_control_component_program(
     The frozen wrapper itself supplies no physical decomposition. The entry
     must be THRU. Invalid graphs, unsupported classical writes, measurement,
     reset, channels or nonconcrete controls raise ValueError. Proposal 108 admits
-    canonical classical integer words through control_types. Existing omitted
+    canonical classical integer words through control_types. Proposal 110 adds
+    canonical binary fields and polynomials with the same stored-word contract.
+    Existing omitted
     control_types keep CBit controls and their exact graph construction.
     """
     diagnostics = verify_program_record(record)

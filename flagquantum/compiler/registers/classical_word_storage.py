@@ -1,4 +1,4 @@
-"""Bind canonical classical integer values to the shared MSB storage encoding."""
+"""Bind canonical classical stored words to the shared MSB storage encoding."""
 
 from ...core.ir.program.register_types import classical_bit_type
 from ...core.ir.program.register_verifier import executable_classical_register_width
@@ -10,7 +10,8 @@ def classical_word_bits(dtype: RegisterType, value: int) -> tuple[int, ...]:
     """Validate physical entry values and reuse existing equality-word encoding.
 
     Fixed-point storage carries its raw integer. Montgomery storage keeps its
-    original raw-width domain. Numerical callbacks retain Simulation ownership.
+    original raw-width domain. Binary fields and polynomials carry unsigned
+    stored words. Numerical callbacks retain Simulation ownership.
     """
     width = executable_classical_register_width(dtype)
     if dtype == classical_bit_type():

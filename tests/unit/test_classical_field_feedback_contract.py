@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.compiler.registers.component_feedback import (
-    classical_bit_feedback_function,
-)
 from flagquantum.compiler.registers.component_classical_control import (
     classical_control_component_program,
+)
+from flagquantum.compiler.registers.component_feedback import (
+    classical_bit_feedback_function,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction

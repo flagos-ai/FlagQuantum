@@ -17,16 +17,20 @@ from flagquantum.core.ir.program.register_types import (
     classical_signed_register_type,
     quantum_bit_type,
 )
-from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+
+SIGNED_WORD = classical_signed_register_type(2)
 
 
 @dataclass(frozen=True)
 class ClassicalWordFeedback:
-    """Apply X when the stored two-bit signed integer equals minus one."""
+    """Apply X when a stored classical word matches its activation."""
 
     value: int
+    dtype: RegisterType = SIGNED_WORD
+    activation: int = -1
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         child = bit_gate_function(
@@ -36,8 +40,8 @@ class ClassicalWordFeedback:
         )
         program = classical_control_component_program(
             ProgramRecord((child,)),
-            (((), (-1,)),),
-            control_types=(classical_signed_register_type(2),),
+            (((), (self.activation,)),),
+            control_types=(self.dtype,),
         )
         bound = bind_register_program(
             program, ((), (0,)), classical_inputs=(self.value, None)
@@ -60,7 +64,38 @@ def main() -> None:
             "classical_xor": 2,
             "x": 1,
         }
-    print("All signed inputs preserve complete amplitudes and spectator entanglement")
+    field = RegisterType(
+        "finite_field",
+        0,
+        2,
+        (("storage", "classical"), ("characteristic", 2), ("degree", 2), ("order", 4)),
+    )
+    polynomial = RegisterType(
+        "finite_field_polynomial",
+        0,
+        2,
+        (
+            ("storage", "classical"),
+            ("polynomial_degree", 1),
+            ("characteristic", 2),
+            ("degree", 1),
+            ("order", 2),
+        ),
+    )
+    for dtype in (field, polynomial):
+        for value in range(4):
+            circuit = DynamicCircuit(2, inputs=initial, dtype=torch.complex128)
+            circuit.append(ClassicalWordFeedback(value, dtype, 3))
+            result = run_dynamic(circuit, shots=1, strategy="trajectory")
+            expected = (
+                initial.reshape(2, 2).flip(0).flatten() if value == 3 else initial
+            )
+            torch.testing.assert_close(
+                result.final_states[0].flatten(), expected, rtol=0, atol=3e-15
+            )
+    print(
+        "Signed, binary field and polynomial inputs preserve complex spectator states"
+    )
     print("Emitted per binding: 2 classical initializers, 1 guarded X, 0 measurements")
     print("Reads add 0 gates and 0 slots; quantum workspace is 0")
     print("Frozen source wrapper has no physical decomposition or QEC estimate")
