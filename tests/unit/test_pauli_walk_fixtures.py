@@ -3,7 +3,6 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -39,6 +38,7 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+np = pytest.importorskip("numpy")
 
 
 def check_walk_channel(
@@ -237,9 +237,8 @@ def test_random_select_controlled_source_matrix(control: int | None) -> None:
     circuit = Circuit(4 + offset, inputs=initial, dtype=initial.dtype)
     circuit.append(
         selector.make_on(
-            selection=selection[::-1],
+            selection=((0,) if offset else ()) + selection,
             target=target,
-            control=(0,) if offset else (),
         )
     )
     reference = torch.as_tensor(source.tensor_contract().copy(), dtype=initial.dtype)

@@ -8,7 +8,12 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-import numpy as np
+import pytest
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip("Pauli walk fixtures require NumPy", allow_module_level=True)
 
 from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
@@ -17,6 +22,9 @@ from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import (
 )
 from flagquantum.algorithms.primitives.qubitization_walk import QubitizationWalk
 from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.compiler.registers.lookup.ordered_pauli_select import (
+    ordered_pauli_select_ir,
+)
 from flagquantum.compiler.registers.preparation.uniform_preparation import (
     uniform_preparation_ir,
 )
@@ -107,10 +115,29 @@ class RandomPauliFixture:
     def alphas(self) -> tuple[complex, ...]:
         return tuple(self.prepare.unitary()[:, 0] ** 2)
 
-    def selector(self, control: int | None = None) -> SelectPauliLCU:
-        return SelectPauliLCU(
-            self.prepare.bitsize, self.target_width, self.words, control
-        )
+    def selector(self, control: int | None = None) -> SelectBlockEncoding:
+        encoding = self.walk().block_encoding
+        assert isinstance(encoding, SelectBlockEncoding)
+        if control is None:
+            return encoding
+
+        def controlled(
+            value: int,
+            ports: Mapping[str, tuple[int, ...]],
+            work: tuple[int, ...],
+            readouts: tuple[int, ...],
+            adjoint: bool,
+        ) -> tuple[Instruction, ...]:
+            return ordered_pauli_select_ir(
+                self.words,
+                ports["selection"],
+                ports["target"],
+                control=ports["control"],
+                control_value=value,
+                adjoint=adjoint,
+            )
+
+        return encoding.with_control(control, controlled)
 
     def hamiltonian(self) -> Hamiltonian:
         return fixture_hamiltonian(self.words, self.alphas)
@@ -151,8 +178,12 @@ def _walk(
         adjoint: bool,
     ) -> tuple[Instruction, ...]:
         address = ports["selection"]
+        if little_endian:
+            return ordered_pauli_select_ir(
+                words, address, ports["target"], adjoint=adjoint
+            )
         return selector.make_bounded_on(
-            selection=address[::-1] if little_endian else address,
+            selection=address,
             target=ports["target"],
             workspace=work,
             classical_bits=readouts,
