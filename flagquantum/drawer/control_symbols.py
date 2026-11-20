@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 CtrlSpec and _ControlledBase.wire_symbol.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/_infra/controlled.py
+# Multi-control dispatch also follows bloqs/mcmt/multi_control_pauli.py.
 
 """Present grouped control activation values using native register metadata."""
 
@@ -9,7 +10,11 @@ import numpy as np
 
 from ..core.ir.program.registers import Register, RegisterSide
 from .register_score import RegisterStep
-from .register_score_data import SymbolClass, adjoint_wire_symbol
+from .register_score_data import (
+    RegisterWireSymbolSupplier,
+    SymbolClass,
+    adjoint_wire_symbol,
+)
 
 
 def control_register_wire_symbol(
@@ -73,3 +78,30 @@ def control_predicate_wire_symbol(
         RegisterSide.THRU: "TextBox",
     }
     return glyphs[register.side], {"text": text}
+
+
+def multi_control_wire_symbol(
+    step: "RegisterStep",
+    register: Register | None,
+    index: tuple[int, ...] | None,
+    *,
+    values: tuple[int, ...] | None,
+    target_register: Register,
+    target_symbol: RegisterWireSymbolSupplier,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Dispatch a single-target child glyph and ordered control polarities.
+
+    The caller supplies the owned child's register and glyph callback. None
+    activation denotes a symbolic control array, whose individual glyphs cannot
+    be resolved. The step name retains the original whole-operation title,
+    rendered as the native connector Text glyph. The source uses a TextBox title.
+    """
+    if register is None:
+        return "Text", {"text": step.name, "fontsize": 10}
+    if register.name == "target":
+        return target_symbol(step, target_register, ())
+    if values is None:
+        raise ValueError("Multi-control wire polarities are symbolic")
+    if index is None:
+        raise ValueError("Multi-control presentation requires an element index")
+    return control_register_wire_symbol(register, index, values)
