@@ -132,3 +132,22 @@ into the existing owned register Programs. Compiler retains arithmetic and
 measured cleanup. The bridge handles SDK allocation, output aliases and
 measurement keys. Use `tests/unit/test_multiplication_foreign_file.py` for the
 eight-class capture, physical rebinding, serialization and append workflow.
+
+## Live typed component graphs
+
+`cirq._register_graph.import_register_graph` converts a live typed source graph
+at the optional SDK boundary. Source serialization feeds the existing owned
+library resolver. Declared Allocate/Free and Split/Join map to the existing
+Compiler definitions, preserving clean versus borrowed origin and typed word
+ports. Other leaves use the existing Cirq conversion. No source constructor is
+loaded from a serialized name, and distinct live components with indistinguishable
+serialized declarations are refused.
+
+Use this graph path when the source declares borrowed lifetimes. The flat
+`CircuitRegisterEmitter` still describes clean workspace. Native Program
+binding accepts a separate borrowed pool, and normal `circuit.append(op)`
+consumes its lowered instructions. Run `tests/unit/test_cirq_register_graph.py`
+for original single-/three-axis examples, nested prefix folding, clean private
+children, dirty echo children, every small measurement branch and SDK-free
+execution after conversion. Compiler owns graph scheduling, allocation and
+binding, while the source resource models remain independent.

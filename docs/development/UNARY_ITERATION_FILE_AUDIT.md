@@ -386,3 +386,70 @@ explicit ValueError diagnostics. The six-case receipt is
 `g2-unary-remaining-intake.json`. These are verified source limitations rather
 than successful upstream execution examples. Automatic foreign snapshot dirty
 borrowing remains the concrete integration gap for the next batch.
+
+## Complete typed graph handoff, November 21
+
+`ecosystem/cirq/_register_graph.py` now imports the actual source component or
+stored CompositeBloq into an owned native Program. The source's unchanged
+flattening and serialization supply graph connections, ordered typed ports and
+constructor data. The existing native library decoder and resolver own
+reconstruction, scheduling and call binding. Allocate/Free map directly to the
+existing clean/dirty word functions. Split/Join map to their existing typed
+rebindings. Other leaves use the existing Cirq leaf converter and shared interop
+qubit manager. That manager also preserves source LEFT-port release and RIGHT
+allocation when wrapping measured And leaves. Compiler's existing namespace
+helper isolates local leaf definitions.
+
+The converter handles each distinct live leaf once. It never imports a
+constructor named in serialized data. If two unequal live leaves have the same
+serialized declaration, conversion refuses the ambiguous mapping rather than
+choosing one object's behavior. Missing source decompositions, unsupported
+serialization and leaf conversions retain their explicit errors. No public
+export, Core opcode, schema or static Cirq contract changes are introduced.
+The existing private source graph and approved Program workspace contracts own
+this conversion.
+
+The original one-axis test classes cover all four frozen width/target/control
+cases, including two and three controls. Both frozen three-axis shapes also
+pass exact graph primitive operands, per-wire order, feedback and separate
+source costs in both directions. The existing full-channel evidence for those
+larger original examples is reused. The complete tutorial, interval, root-fold,
+zero-selection, extra-port and resource-hook evidence above remains applicable.
+
+For custom nested-prefix, private-clean-child and borrowed-echo subclasses,
+every logical and spectator column, a dense complex superposition and every
+measurement branch pass in both actual source directions. Borrowed cases also
+span both unknown work values and their coherences with an external spectator.
+All primitive operands and feedback match the original graph exporter. Clean
+work returns to zero, each borrowed child returns its exact joint state,
+allocation/free events balance and outputs retain their original physical
+wires. Binding, append, JSON roundtrip and complete quantum trajectories execute
+with Qualtran, Cirq and Kickmix imports explicitly blocked after conversion.
+Stored typed identity graphs import without gates or lifetime events.
+
+Measured primitive inventories and independent source models retain the four
+nested/borrowed rows from the preceding batch. Original source examples compare
+actual live allocation peaks against QubitCount. In the width-three/four-target
+uncontrolled fixture, pruning leaves one of the two reserved clean wires unused.
+Its physical reservation has nine wires while both actual live allocation and
+source modeling peak at eight. This distinction is retained explicitly.
+
+This closes Q-0597's native dynamic child and automatic typed graph handoff
+obligations. Mixed empty axes and unresolved extents retain the source failures
+recorded above. The source-only Cirq generator's lost dirty declaration remains
+an upstream conversion counterexample. The flat named snapshot interface still
+requires clean workspace. Borrowed execution uses the actual typed graph and
+existing distinct borrowed pool. This is the ownership-preserving replacement
+for that consumer, with normal append retained.
+
+Final acceptance passes 849 concentrated cases, 17 local integration cases and
+177 cases on Cirq 1.6.1, with zero skips. The Cirq 1.6.1 lane retains 1,224
+warnings from the exercised original SDK tests. Strict typing of both new
+Python files, Black, Ruff, team scope, architecture, IR and protected API checks
+pass. Ten frozen source blobs and sixteen existing production owners are
+unchanged. Dependency policy retains 666 whole-repository findings and zero
+changed-path findings. The external `g2-register-graph-evidence.json` receipt
+also records 24 measured/model resource rows and each tested source peak.
+Constructor-reference leaves outside the exercised flattened primitives retain
+the existing resolver's explicit factory requirement. General controlled and
+classical provider breadth remains with its existing Q-0158 owner.
