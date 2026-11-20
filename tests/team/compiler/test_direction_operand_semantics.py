@@ -291,3 +291,34 @@ def test_direction_validator_refuses_an_unlinked_commuting_opcode() -> None:
         _validate_direction_legal_program(ordered_violation, native, graph)
     with pytest.raises(DirectionLegalizationError, match="violates topology"):
         _validate_direction_legal_program(unlinked, native, graph)
+
+
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
+def test_pulse_synthesis_keeps_the_declared_cx_direction_without_native_h(
+    pair: tuple[int, int],
+) -> None:
+    """A three-CX matrix must not acquire direction repair or an H requirement."""
+    from tests.unit.test_compilation_two_qubit_synthesis import (
+        _gap,
+        _random_su4,
+    )
+
+    source = torch.tensor(_random_su4(8100), dtype=torch.complex128)
+    program = CircuitIR(
+        2, (Instruction("opaque", pair, matrix=source.tolist()),), dtype="complex128"
+    )
+    result = legalize_circuit_for_target(
+        program,
+        backend="qasm",
+        snapshot=_snapshot(("rz", "sx", "cx")),
+        evaluated_at=_NOW,
+        coupling_map=DirectedCouplingMap(2, (pair,)),
+        max_direction_added_operations=0,
+    )
+    assert result.direction_legalization is not None
+    assert result.direction_legalization.reversed_cx_count == 0
+    assert {
+        item.wires for item in result.program.instructions if item.name == "cx"
+    } == {pair}
+    assert sum(item.name == "sx" for item in result.program.instructions) <= 10
+    assert _gap(result.program.instructions, source, pair) < 1e-12
