@@ -1,0 +1,42 @@
+schema = "flagquantum.nonbinary_classical_field_contract"
+version = "1.0"
+proposal = "docs/development/API_CHANGE_PROPOSAL_111_NONBINARY_CLASSICAL_FIELDS.md"
+approval = "explicit_user_approval_2026-11-20"
+implementation_status = "approved_pending_implementation"
+owner = "core"
+public_methods_added = []
+
+[admission]
+encodings = ["finite_field", "finite_field_polynomial"]
+storage = "classical"
+quantum_width = 0
+characteristic = "concrete_integer_at_least_two"
+degree = "positive_concrete_integer"
+order = "characteristic_power_degree"
+coefficient_width = "bit_length_of_order_minus_one"
+polynomial_width = "(polynomial_degree_plus_one)_times_coefficient_width"
+metadata_validation = "structural_Core_numerical_construction_Simulation"
+quantum_field_scope = "existing_binary_only"
+
+[read]
+opcode = "read_classical_register"
+results = "identical_type_successor_then_MSB_boolean_snapshots"
+coefficient_order = "highest_degree_first"
+array_order = "row_major"
+new_classical_slots = 0
+extra_read_gates = 0
+
+[entry]
+values = "built_in_unsigned_packed_words"
+invalid_encodings = "reject_each_coefficient_at_or_above_field_order"
+user_entry = "circuit.append(op)"
+
+[reference]
+polynomial_tensor_index_discrepancy = "retained"
+source_wrapper_decomposition = "absent"
+source_wrapper_model = "refusal_separately_recorded"
+
+[compatibility]
+fixture = "tests/fixtures/nonbinary_classical_field_compatibility.json"
+previous_artifacts = "exact_Program_repr_Circuit_json_hash_aliases_and_slots"
+classical_split_join = "existing_quantum_only_restriction"

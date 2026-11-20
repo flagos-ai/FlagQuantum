@@ -2,10 +2,9 @@
 
 ## Review status
 
-Draft awaiting explicit user approval. Proposal 110's implemented contract
-expressly restricts canonical field admission to binary fields. Core AGENTS and
-the public API protection policy require a separately approved contract for
-this extension. Production admission and execution remain at the approved scope.
+Approved explicitly by the user on 2026-11-20 with the instruction
+“批准，按 Proposal 111 实施”. Proposal 110 separately covers binary fields.
+The approved extension follows the contract-first ownership sequence below.
 
 ## Verified requirement and source chain
 
