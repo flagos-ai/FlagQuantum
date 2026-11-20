@@ -43,6 +43,8 @@ def validate_control_ports(
             "finite_field_polynomial": "unsigned",
         }.get(register.dtype.encoding)
         width = executable_register_width(register.dtype)
+        if register.dtype.encoding == "fixed_point" and width != 1:
+            raise ValueError("Fixed-point controls require single-bit storage")
         count += width * prod(register.shape)
         if (
             register.side != RegisterSide.THRU
