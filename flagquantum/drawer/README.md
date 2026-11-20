@@ -478,3 +478,12 @@ labels to `register_score_data(register_wire_symbol=...)`. It retains a/b
 formulas and directional glyphs. Compiler owns subtraction semantics and
 workspace. Run `python -m pytest tests/unit/test_subtraction_symbols.py -q` for
 original symbol and complete register-score geometry comparisons.
+
+## Symbolic register presentation
+
+Internal component scores preserve symbolic word widths as Core metadata.
+`component_register_score` lays out finite-shape logical calls, and the existing
+JSON, HTML and DOT exporters display those widths without allocating physical
+wires. `tests/unit/test_lifetime_symbols.py` compares actual pinned Allocate and
+Free factory geometry, width labels and closed lifetimes. Physical Program
+binding keeps its separate concrete descriptor validation.

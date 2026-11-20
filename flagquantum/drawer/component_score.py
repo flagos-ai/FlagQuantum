@@ -11,6 +11,7 @@ from ..compiler.registers.component_graph import _call_entry
 from ..core.ir.program import FunctionRecord, ProgramRecord, ValueRef
 from ..core.ir.program.registers import Register, RegisterSide
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 from .register_lanes import RegisterLaneManager
 from .register_score import RegisterScore, RegisterStep, layout_register_score
 
@@ -51,21 +52,22 @@ def component_register_score(
     occurs. Finite one-block logical graphs with quantum and classical words are
     admitted by the existing component traversal boundary. Zero-width scalar
     words retain a logical lane, and empty arrays have no elements. Symbolic
-    words and conditioned or parameterized calls are refused.
+    word widths remain display metadata. Array shapes must be concrete, and
+    conditioned or parameterized calls are refused.
     """
     root = _call_entry(record, entry)
     assert root.registers is not None
     block = root.blocks[0]
     functions = {function.name: function for function in record.functions}
     known: dict[ValueRef, str] = {}
-    widths: dict[str, int] = {}
+    widths: dict[str, SymbolicInt] = {}
     inputs = []
     for register, index, value in _ports(
         Signature(root.registers).lefts(), block.arguments
     ):
         name = _label(register.name, index)
         known[value] = name
-        widths[name] = int(register.bitsize)
+        widths[name] = register.bitsize
         inputs.append(name)
     live = set(inputs)
     steps = []
@@ -93,7 +95,7 @@ def component_register_score(
                 name = f"call{position}:" + _label(register.name, index)
                 while name in widths:
                     name = "_" + name
-                widths[name] = int(register.bitsize)
+                widths[name] = register.bitsize
             known[value] = name
             output_names.append(name)
         gate = None

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from html import escape
 from itertools import zip_longest
 
+from ..core.value_math import SymbolicInt
 from .register_score import RegisterScore, RegisterStep
 
 
@@ -18,7 +19,7 @@ class RegisterConnection:
     """One register edge between operation ordinals or a graph boundary."""
 
     register: str
-    width: int
+    width: SymbolicInt
     producer: int | None
     consumer: int | None
 

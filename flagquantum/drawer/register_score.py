@@ -22,6 +22,8 @@ from ..compiler._hybrid.model import HybridProgram, ValueId
 from ..compiler.registers.control.multi_control import multi_and_stages
 from ..core.ir.program.register_types import opaque_register_type
 from ..core.ir.program.registers import Register, RegisterSide
+from ..core.value_math import SymbolicInt
+from ..core.value_parameters import is_symbolic_value
 from .register_lanes import RegisterLaneManager, register_line_flavor
 
 
@@ -59,7 +61,7 @@ class RegisterLine:
     """A width-bearing register lane over an inclusive sequential interval."""
 
     register: str
-    width: int
+    width: SymbolicInt
     lane: int
     start: int
     end: int
@@ -85,7 +87,7 @@ class RegisterScore:
 def _register_groups(
     keys: Sequence[str],
     registers: Sequence[Register],
-    widths: Mapping[str, int],
+    widths: Mapping[str, SymbolicInt],
     through: Sequence[str] = (),
     *,
     side: RegisterSide = RegisterSide.THRU,
@@ -145,7 +147,7 @@ def _ordered_register_dependencies(
 
 
 def layout_register_score(
-    widths: Mapping[str, int],
+    widths: Mapping[str, SymbolicInt],
     inputs: Sequence[str],
     steps: Sequence[RegisterStep],
     *,
@@ -167,7 +169,10 @@ def layout_register_score(
     Independent roots follow first connection encounter order, as in the source.
     Isolated zero-port calls retain original call order.
     """
-    if any(type(width) is not int or width < 0 for width in widths.values()):
+    if any(
+        not is_symbolic_value(width) and (type(width) is not int or width < 0)
+        for width in widths.values()
+    ):
         raise ValueError("Register widths must be nonnegative integers")
     active = dict.fromkeys(inputs, -1)
     if len(active) != len(inputs) or active.keys() - widths.keys():
