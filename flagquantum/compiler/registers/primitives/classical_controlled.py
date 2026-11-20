@@ -8,6 +8,7 @@
 from dataclasses import replace
 
 from ....core.classical_control import instruction_condition_clauses
+from ....core.classical_dataflow import parse_classical_xor
 from ....core.ir import Instruction
 from ..control.control_predicate import ControlRegister, bind_control_registers
 
@@ -21,8 +22,9 @@ def classically_controlled_ir(
 
     Bits refer to earlier measurement or classical XOR results. The caller
     retains ownership of those slots. A preexisting child condition is
-    conjoined with the wrapper condition. The flat IR admits guarded quantum
-    gates and has no guarded measurement, reset, or classical write.
+    conjoined with the wrapper condition. Classical XOR writes may update
+    child-owned slots disjoint from the wrapper controls. Measurements and
+    resets retain their separate admission.
     """
     bits, values = bind_control_registers(controls, registers)
     if not bits:
@@ -31,10 +33,14 @@ def classically_controlled_ir(
     guard = frozenset(fixed.items())
     gates = []
     for instruction in instructions:
-        if instruction.name in {"measure", "reset", "classical_xor"}:
-            raise ValueError(
-                "Classical control cannot guard measurement, reset, or a classical write"
-            )
+        if instruction.name in {"measure", "reset"}:
+            raise ValueError("Classical control cannot guard measurement or reset")
+        if instruction.name == "classical_xor":
+            assignment = parse_classical_xor(instruction)
+            if assignment.target in fixed:
+                raise ValueError(
+                    "Classical child writes cannot overwrite wrapper controls"
+                )
         child_clauses = instruction_condition_clauses(instruction) or ((),)
         possible = {
             guard.union(clause)

@@ -31,12 +31,14 @@ def classical_control_component_program(
 
     This implements the source's classical action using native stored bodies.
     The frozen wrapper itself supplies no physical decomposition. The entry
-    must be THRU. Invalid graphs, unsupported classical writes, measurement,
+    must be THRU. Invalid graphs, unsupported classical effects, measurement,
     reset, channels or nonconcrete controls raise ValueError. Proposal 108 admits
     canonical classical integer words through control_types. Proposal 110 adds
     canonical binary fields and polynomials with the same stored-word contract.
     Proposal 111 admits nonbinary classical fields with coefficient-range checks.
-    Omitted control_types keep CBit controls and their exact graph construction.
+    Proposal 112 admits owned classical word replacements with immutable old
+    snapshots. Omitted control_types keep CBit controls and their exact graph
+    construction.
     """
     diagnostics = verify_program_record(record)
     if diagnostics:

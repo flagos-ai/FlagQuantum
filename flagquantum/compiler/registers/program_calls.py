@@ -110,8 +110,13 @@ def _expand(
         clauses = _remap_conditions(operation.condition_clauses, frame.values)
         if operation.condition_clauses and not clauses:
             # Aliased classical arguments can make every conjunction false.
-            # Such a conditional gate forwards its quantum values unchanged.
-            frame.values.update(zip(operation.results, operands, strict=True))
+            # Inactive owned writes forward only their old register operand.
+            forwarded = (
+                operands[:1]
+                if operation.opcode == "write_classical_register"
+                else operands
+            )
+            frame.values.update(zip(operation.results, forwarded, strict=True))
             continue
         results = tuple(
             ValueRef(block.name, next_index + index, value.kind)

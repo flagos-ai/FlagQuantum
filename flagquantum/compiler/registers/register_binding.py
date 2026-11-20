@@ -334,6 +334,8 @@ class _PhysicalBinding:
             else:
                 slot = self.bits[before]
                 self.bits.update((value, slot) for value in operation.results)
+        elif opcode == "write_classical_register":
+            self._write_classical_register(operation)
         elif opcode in {"bool_zero", "bool_one", "bool_xor", "parity_register"}:
             target = self.next_bit
             self.next_bit += 1
@@ -346,6 +348,49 @@ class _PhysicalBinding:
             self.bits[operation.results[-1]] = target
         else:
             self._primitive(operation)
+
+    def _write_classical_register(self, operation: Operation) -> None:
+        before, *values = operation.operands
+        replacement = tuple(self.bits[value] for value in values)
+        slots = replacement
+        if operation.condition_clauses:
+            old = self.words[before] if before in self.words else (self.bits[before],)
+            slots = tuple(range(self.next_bit, self.next_bit + len(old)))
+            self.next_bit += len(slots)
+            self.instructions.extend(
+                ClassicalXor((source,), target).instruction()
+                for source, target in zip(old, slots, strict=True)
+            )
+            # Distinct SSA snapshots may share a physical slot. Resolve their
+            # predicates before encoding the single-conjunction XOR grammar.
+            clauses: set[tuple[tuple[int, int], ...]] = set()
+            for clause in operation.condition_clauses:
+                expected: dict[int, int] = {}
+                for condition in clause:
+                    slot = self.bits[condition.value]
+                    value = int(condition.equals)
+                    if slot in expected and expected[slot] != value:
+                        break
+                    expected[slot] = value
+                else:
+                    clauses.add(tuple(sorted(expected.items())))
+            for clause_bits in sorted(clauses, key=lambda item: (len(item), item)):
+                for source, target in zip(replacement, slots, strict=True):
+                    assignment = ClassicalXor((source,), target).instruction()
+                    self.instructions.append(
+                        replace(
+                            assignment,
+                            metadata={
+                                **assignment.metadata,
+                                "conditions": clause_bits,
+                            },
+                        )
+                    )
+        result = operation.results[0]
+        if len(slots) == 1:
+            self.bits[result] = slots[0]
+        else:
+            self.words[result] = slots
 
     def _primitive(self, operation: Operation) -> None:
         wires = tuple(
