@@ -8,20 +8,23 @@
 from dataclasses import replace
 
 from ...core.ir.program import ProgramRecord, verify_program_record
+from ...core.ir.program.registers import RegisterType
 from ...core.ir.program.signatures import Signature
 from .component_feedback import _feedback_component_function
 
 
 def classical_control_component_program(
     record: ProgramRecord,
-    controls: tuple[tuple[tuple[int, ...], tuple[bool, ...]], ...],
+    controls: tuple[tuple[tuple[int, ...], tuple[int | bool, ...]], ...],
     entry: str = "main",
+    *,
+    control_types: tuple[RegisterType, ...] = (),
 ) -> ProgramRecord:
-    """Prepend CBit controls while retaining stored calls and existing conditions.
+    """Prepend classical controls while retaining stored calls and conditions.
 
     Reachable bodies receive one shared generated definition each. The root
     keeps its entry name, original children stay available, and unrelated
-    definitions remain shared. CBits are threaded linearly through every call.
+    definitions remain shared. Controls are threaded linearly through every call.
     Existing primitive conditions are conjoined with new read-only snapshots.
     Allocations and releases remain unconditional. Child work must be restored
     before release in every branch. All input records remain unchanged.
@@ -29,8 +32,9 @@ def classical_control_component_program(
     This implements the source's classical action using native stored bodies.
     The frozen wrapper itself supplies no physical decomposition. The entry
     must be THRU. Invalid graphs, unsupported classical writes, measurement,
-    reset, channels or nonconcrete controls raise ValueError. Wider classical
-    words retain their separate admission boundary.
+    reset, channels or nonconcrete controls raise ValueError. Proposal 108 admits
+    canonical classical integer words through control_types. Existing omitted
+    control_types keep CBit controls and their exact graph construction.
     """
     diagnostics = verify_program_record(record)
     if diagnostics:
@@ -70,7 +74,9 @@ def classical_control_component_program(
         )
     rebuilt = {
         name: replace(
-            _feedback_component_function(functions[name], controls, reachable),
+            _feedback_component_function(
+                functions[name], controls, reachable, control_types
+            ),
             name=target,
         )
         for name, target in reachable.items()

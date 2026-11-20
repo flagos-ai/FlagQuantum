@@ -9,16 +9,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import replace
-from itertools import count
+from itertools import count, product
 from math import prod
 
 from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import ConditionRef, FunctionRecord, Operation, ValueRef
 from ...core.ir.program.register_types import classical_bit_type, quantum_bit_type
+from ...core.ir.program.register_verifier import executable_classical_register_width
 from ...core.ir.program.registers import Register, RegisterType
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
+from .classical_word_storage import classical_word_bits
 from .component_builder import BindingCollection, ComponentProgramBuilder
 from .component_control import _control_names
 from .component_gate_function import bit_gate_function
@@ -88,23 +90,48 @@ def classical_bit_feedback_function(
 
 def _feedback_component_function(
     child: FunctionRecord,
-    controls: tuple[tuple[tuple[int, ...], tuple[bool, ...]], ...],
+    controls: tuple[tuple[tuple[int, ...], tuple[int | bool, ...]], ...],
     callees: Mapping[str, str],
+    control_types: tuple[RegisterType, ...] = (),
 ) -> FunctionRecord:
-    """Thread owned CBits through calls and conjoin snapshots on primitives."""
-    required = tuple(value for _, values in controls for value in values)
+    """Thread owned classical elements and conjoin their snapshots on primitives."""
+    dtypes = control_types or (classical_bit_type(),) * len(controls)
+    if len(dtypes) != len(controls):
+        raise ValueError("Feedback needs one classical dtype per control group")
+    for dtype in dtypes:
+        executable_classical_register_width(dtype)
     if any(
-        any(type(size) is not int or size < 1 for size in shape)
+        any(type(size) is not int or size < 0 for size in shape)
         or len(values) != prod(shape)
-        or any(type(value) is not bool for value in values)
-        for shape, values in controls
+        or (dtype == classical_bit_type() and any(type(v) is not bool for v in values))
+        for dtype, (shape, values) in zip(dtypes, controls, strict=True)
     ):
         raise ValueError("Feedback values must match the concrete CBit control shapes")
+    words = tuple(
+        (dtype, classical_word_bits(dtype, value))
+        for dtype, (_, values) in zip(dtypes, controls, strict=True)
+        for value in values
+    )
+    required = tuple(bit for _, bits in words for bit in bits)
+    alternatives = tuple(
+        (
+            (bits, (1,) * len(bits))
+            if dtype.encoding == "ones_complement" and not any(bits)
+            else (bits,)
+        )
+        for dtype, bits in words
+    )
+    patterns = tuple(
+        tuple(bit for bits in combination for bit in bits)
+        for combination in product(*alternatives)
+    )
     if child.registers is None or len(child.blocks) != 1:
         raise ValueError("Feedback requires a single typed register block")
     signature = classical_control_signature(
         Signature(child.registers),
-        tuple((classical_bit_type(), shape) for shape, _ in controls),
+        tuple(
+            (dtype, shape) for dtype, (shape, _) in zip(dtypes, controls, strict=True)
+        ),
     )
     block = child.blocks[0]
     if block.return_values is None or block.edges or block.terminator != "return":
@@ -134,7 +161,7 @@ def _feedback_component_function(
             default=-1,
         )
     )
-    inputs = tuple(ValueRef(block.name, next(next_index), "register") for _ in required)
+    inputs = tuple(ValueRef(block.name, next(next_index), "register") for _ in words)
     carried = inputs
     operations: list[Operation] = []
     snapshots = tuple(ValueRef(block.name, next(next_index), "bool") for _ in required)
@@ -153,20 +180,30 @@ def _feedback_component_function(
     }
     if any(op.opcode not in structural for op in block.operations):
         carried = tuple(
-            ValueRef(block.name, next(next_index), "register") for _ in required
+            ValueRef(block.name, next(next_index), "register") for _ in words
         )
-        operations.extend(
-            Operation("read_classical_register", (before,), (after, snapshot))
-            for before, after, snapshot in zip(inputs, carried, snapshots, strict=True)
+        offset = 0
+        for before, after, (_, bits) in zip(inputs, carried, words, strict=True):
+            end = offset + len(bits)
+            operations.append(
+                Operation(
+                    "read_classical_register",
+                    (before,),
+                    (after, *snapshots[offset:end]),
+                )
+            )
+            offset = end
+    guards = tuple(
+        tuple(
+            ConditionRef(snapshot, bool(value))
+            for snapshot, value in zip(snapshots, pattern, strict=True)
         )
-    guard = tuple(
-        ConditionRef(snapshot, value)
-        for snapshot, value in zip(snapshots, required, strict=True)
+        for pattern in patterns
     )
     for op in block.operations:
         if op.opcode == "call":
             returned = tuple(
-                ValueRef(block.name, next(next_index), "register") for _ in required
+                ValueRef(block.name, next(next_index), "register") for _ in words
             )
             operations.append(
                 replace(
@@ -177,7 +214,7 @@ def _feedback_component_function(
                 )
             )
             carried = returned
-        elif guard and op.opcode not in structural:
+        elif required and op.opcode not in structural:
             clauses = tuple(
                 tuple(
                     sorted(
@@ -190,6 +227,7 @@ def _feedback_component_function(
                     )
                 )
                 for clause in (op.condition_clauses or ((),))
+                for guard in guards
             )
             clauses = tuple(
                 sorted(
