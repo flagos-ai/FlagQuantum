@@ -64,7 +64,11 @@ def _snapshot(
     allow_empty_ports: bool = False,
 ) -> tuple[CircuitIR, int]:
     from qualtran._infra.adjoint import Adjoint
-    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.bloq import (
+        Bloq,
+        DecomposeNotImplementedError,
+        DecomposeTypeError,
+    )
     from qualtran._infra.controlled import Controlled, CtrlSpec
     from qualtran.bloqs.arithmetic.multiplication import (
         InvertRealNumber,
@@ -201,11 +205,13 @@ def _snapshot(
     phase_calls = 0
     square_calls = 0
     multiplication_calls = 0
+    through_binding_swaps = 0
     modular_tag = object()
 
     def leaf_operation(op: Any) -> Any:
-        """Use a source leaf's concrete operation only with unchanged ports."""
+        """Expand source leaves and bind changed THRU output aliases."""
         nonlocal modular_calls, phase_calls, square_calls, multiplication_calls
+        nonlocal through_binding_swaps
         if op.tags:
             return NotImplemented
         arithmetic = op.gate.bloq if isinstance(op.gate, BloqAsCirqGate) else op.gate
@@ -292,7 +298,39 @@ def _snapshot(
             ).reshape((*reg.shape, int(reg.bitsize)))
             offset += count
         replacement, outputs = leaf.as_cirq_op(qubit_manager=sdk_manager, **quregs)
-        if replacement is None or replacement == op:
+        if replacement == op:
+            # The source's default Cirq wrapper drops THRU output aliases.
+            # Export its actual graph and bind those aliases explicitly, just
+            # as the outer snapshot binds its named logical output ports.
+            try:
+                composite = leaf.decompose_bloq()
+            except (DecomposeNotImplementedError, DecomposeTypeError):
+                return NotImplemented
+            replacement, outputs = composite.to_cirq_circuit_and_quregs(
+                qubit_manager=sdk_manager, **quregs
+            )
+            outgoing_qubits = tuple(
+                q
+                for reg in registers
+                for q in np.asarray(outputs[reg.name], dtype=object).flat
+            )
+            if outgoing_qubits == tuple(op.qubits):
+                return NotImplemented
+            order = (
+                *op.qubits,
+                *(q for q in manager.allocated if q not in op.qubits),
+            )
+            canonical = (
+                *outgoing_qubits,
+                *(q for q in order if q not in outgoing_qubits),
+            )
+            swaps = restore_output_order_ir(tuple(order.index(q) for q in canonical))
+            through_binding_swaps += len(swaps)
+            return (
+                replacement,
+                tuple(cirq.SWAP(*(order[w] for w in gate.wires)) for gate in swaps),
+            )
+        if replacement is None:
             return NotImplemented
         if set(outputs) != set(quregs) or any(
             not np.array_equal(outputs[name], value) for name, value in quregs.items()
@@ -395,6 +433,7 @@ def _snapshot(
     # clean storage stays in the workspace partition, including returned ancillas.
     canonical = (*outgoing, *(q for q in order if q not in outgoing))
     swaps = restore_output_order_ir(tuple(order.index(q) for q in canonical))
-    return replace(
-        imported, instructions=(*imported.instructions, *swaps)
-    ).validate(), len(swaps)
+    return (
+        replace(imported, instructions=(*imported.instructions, *swaps)).validate(),
+        len(swaps) + through_binding_swaps,
+    )

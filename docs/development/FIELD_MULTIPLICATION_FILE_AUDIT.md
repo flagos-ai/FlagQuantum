@@ -407,3 +407,120 @@ Local integration, strict typing of the new file, Black, Ruff, Ecosystem scope,
 architecture, multi-level IR and protected API checks are recorded separately.
 The four new cases also run in the independent Cirq 1.6.1 profile. No production
 owner changed in this batch, and earlier full-work/measurement evidence is reused.
+
+## Complete actual factory graph handoff and output routing
+
+The nine original `BloqExample` factories in `gf2_multiplication.py` now have
+explicit consumer coverage. This batch reuses the complete definition audit,
+original slow/non-slow results, owned finite-field/polynomial components and
+measurement-based uncomputation evidence above.
+
+### Interface and ownership
+
+The existing Ecosystem named-emitter boundary captures original source objects.
+Array ports preserve source row-major coefficient order. QGF words preserve MSB
+bit order. RIGHT products use explicitly named caller-owned clean local storage.
+Private padding follows the existing clean-workspace partition. Native execution
+uses owned primitive IR and the usual `circuit.append(op)` entry.
+
+The frozen default `BloqAsCirqGate` decomposition exports its child circuit but
+ignores THRU output aliases. The previous snapshot fallback inherited that
+behavior. For example, the original constant-five factory's captured forward
+mapped input one to three while the original flattened typed graph and classical
+callback map it to five. The original three-step shift factories also lost their
+cyclic output permutations. Four regression cases fail against the previous
+snapshot implementation before the repair.
+
+The snapshot now reads actual returned ports when expanding a default wrapped
+THRU graph. A changed output permutation is bound with the existing Compiler
+`restore_output_order_ir` primitive. Unchanged ports retain the established
+expansion path. Nested and outer binding swaps are included in physical streams
+and reported independently from the original free-alias resource model. The
+frozen source and its serializer remain unchanged.
+
+### Complete factory disposition
+
+| Original factory | Actual handoff and verification | Physical private work / feedback | Binding overhead in each captured direction |
+| --- | --- | --- | --- |
+| `_gf16_multiplication` | Both directions, exact original flattened operands and output ownership, complete coherent x/y/THRU target words with spectator, JSON and SDK-blocked native append | 0 / 0 | 0 SWAP |
+| `_gf2_multiply_by_constant` | Both original directions, every complex input amplitude and spectator, reversed binding; retained source-adjoint defect | 0 / 0 | 1 SWAP |
+| `_gf2_poly_multiply_by_constant` | Same complete coverage through the actual polynomial constructor factory | 0 / 0 | 1 SWAP |
+| `_multiplypolybyoneplusxk` | Both directions, exact original per-wire stream, every f/g pair with two arbitrary target words and spectator, sparse complex amplitudes, clean padding and source inverse recovery | 1 / 0 | 0 SWAP |
+| `_binarypolynomialmultiplication` | Same complete actual factory and sparse-state coverage | 1 / 0 | 0 SWAP |
+| `_gf2shiftleft` | Both directions, exact original operands and output permutation, all complex word amplitudes, spectator, reversed binding and recovery | 0 / 0 | 4 SWAP |
+| `_gf2shiftright` | Same complete coverage for the reverse shift | 0 / 0 | 4 SWAP |
+| `_gf2mulviakaratsuba` | Forward capture matches the original graph after explicitly accounting for physical binding. All 1,024 input pairs with coherent spectator and complex amplitudes agree with the unchanged original graph. Its known mathematical product mismatch remains visible | 0 physically used / 0 | 8 forward SWAP |
+| `_gf2_multiplication_symbolic` | Original decomposition rejects unresolved width; physical capture rejects nonconcrete shapes. Symbolic declaration/model evidence above remains separate | No physical capture | No physical count |
+
+The polynomial sparse witnesses enumerate every f/g pair and two deterministic
+arbitrary accumulators per pair. They preserve their complete complex amplitudes
+and spectator correlations without materializing a 24-qubit dense vector. Earlier
+accepted arbitrary-THRU and small dense append evidence remains authoritative for
+its wider target and statevector scopes.
+
+The actual Karatsuba factory adjoint is GF2MulMBUC. Its original MeasureX generic
+Cirq wrapper fails before native lowering because it merges one quantum input
+and one classical output into an operation with quantum arity one. A direct
+original `MeasureX.as_cirq_op` reproduces the same error using source-allocated
+input storage. The existing owned MBU/Parity/Discard execution, all-small-branch
+and eight-bit evidence above is reused. This batch claims no successful generic
+Cirq capture of that original measured adjoint.
+
+### Separate actual primitive and source model accounts
+
+| Actual factory and captured direction | Measured primitive stream | Original analytical QEC declaration | Physical binding overhead |
+| --- | --- | --- | --- |
+| GF16 THRU product, either direction | 16 CCX + 8 CX | 16 Toffoli + 8 Clifford | 0 SWAP |
+| Either constant-five factory, either original direction | 2 CX + 1 SWAP | 2 Clifford | 1 SWAP |
+| Scaled polynomial factory, either direction | 17 CCX + 106 CX | 17 Toffoli + 106 Clifford | 0 SWAP |
+| Binary polynomial factory, either direction | 17 CCX + 88 CX | 17 Toffoli + 88 Clifford | 0 SWAP |
+| Either shift factory, either direction | 3 CX + 4 SWAP | 3 Clifford | 4 SWAP |
+| Karatsuba factory, original forward | 17 CCX + 83 CX + 8 SWAP | 17 Toffoli + 83 Clifford | 8 SWAP |
+
+All fifteen directional rows have the same original primitive operands, per-wire
+order and returned ownership after accounting explicitly for virtual aliases.
+The source's unused padding allocation declarations stay separate from physical
+snapshot storage. These successful captures contain no measurement events.
+
+### Retained whole-file boundaries
+
+The original SynthesizeLRCircuit adjoint still emits its forward body. Both
+constant-five factories therefore reproduce the original broken inverse rather
+than falsely claiming round-trip identity. The independent owned exact-adjoint
+components and previous mathematical checks remain separate. The Karatsuba
+forward graph retains the dependent product mismatch. Original QGF constructor
+serialization, generic measured-root dispatch, symbolic physical execution and
+the original remaining generic/autotester boundaries remain recorded under
+Q-0519/Q-0520. Parent acceptance counts are unchanged.
+
+### Shared verification dependency
+
+The expanded shared-boundary regression reproduced a pre-existing CY rejection
+in the measurement certificate using the exact previous snapshot implementation.
+The Boolean support proof now handles CY's control-dependent target flip. A new
+independent complete complex-state check verifies its imaginary phase in both
+measurement outcomes and rejects changed erasure predicates and dirty outputs.
+The actual LCU factory length assertion now uses native CY primitives. Both
+Cirq 1.6 ControlledGate(Y) and Cirq 1.7 CYPowGate lower to this same owned
+primitive. Eighteen CY operations account for exactly thirty-six fewer
+instructions than the historical Sdg/CX/S-expanded counts. Physical counts,
+source QEC declarations and branch/clean-work obligations remain distinct.
+
+### Accepted batch checks
+
+The final shared-boundary concentrated regression passes 1510 cases without
+skips in 203.07 seconds. It includes every existing direct named-emitter/snapshot
+consumer and the relevant owned field/polynomial/chemistry replacements. The
+independent Cirq 1.6.1 profile passes 121 cases, with 1752 dependency deprecation
+warnings retained. Local integration passes 17 cases. Strict typing passes all
+eight changed Python files through seven owned-surface checks and a separate
+source-aware strict check for the original PrepareOracle test subclass. Black,
+Ruff, Ecosystem scope, architecture, multi-level IR and public API checks pass.
+The accepted runtime reuses installed PennyLane 0.44.1 and OpenFermion reference
+paths to execute their existing consumer assertions.
+
+Evidence is stored in `g2-field-factory-accepted-evidence-20261121.json`, the
+fifteen-row exact-graph receipt, the accepted regression/integration/Cirq logs,
+and separate strict/format/scope/architecture/IR/API logs. Earlier failing runs
+are preserved as diagnostics. The original source blobs, Qualtran 0.7.0 and
+Kickmix 0.1 Simulator are reverified.

@@ -18,16 +18,23 @@ from tests.unit.test_field_multiplication import assert_gate_streams, reference_
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-@pytest.mark.parametrize("width,accumulate", tuple(product((2, 3), (False, True))))
+@pytest.mark.parametrize("width,accumulate", tuple(product((2, 3, 4), (False, True))))
 def test_actual_field_product_snapshot_full_complex_append_and_adjoint(
     width: int, accumulate: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from qualtran import QGF
-    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
+        GF2Multiplication,
+        _gf16_multiplication,
+    )
     from qualtran.resource_counting import QECGatesCost, get_cost_value
     from qualtran.serialization.bloq import bloqs_to_proto
 
-    source = GF2Multiplication(QGF(2, width), plus_equal_prod=accumulate)
+    source = (
+        _gf16_multiplication.make()
+        if width == 4 and accumulate
+        else GF2Multiplication(QGF(2, width), plus_equal_prod=accumulate)
+    )
     with pytest.raises(TypeError, match="QGF"):
         bloqs_to_proto(source, max_depth=0)
     emitter = import_register_emitter(
