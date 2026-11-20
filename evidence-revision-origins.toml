@@ -1148,3 +1148,16 @@ origin = "unreferenced_object"
 [[artifact.revision]]
 value = "29aa778ab5604059c5a4337f9b250c6c4b606d9c"
 origin = "unreferenced_object"
+
+
+# Verified on 2026-11-20: GitHub serves this complete object by commit ID,
+# while its original feat/compiler-cirq-native-cz-cleanup branch was removed
+# after squash merge and main does not contain that branch commit. The
+# observation remains the original failed CI run; its numerical values and
+# source pin are unchanged.
+[[artifact]]
+path = "docs/development/evidence/runtime-shard-duration-balance.json"
+
+[[artifact.revision]]
+value = "abde94db5cef007495cc1bce41ce36f673747cff"
+origin = "unreferenced_object"

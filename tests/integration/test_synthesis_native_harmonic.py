@@ -89,9 +89,9 @@ def test_untouched_source_native_reference_and_all_matrix_entries() -> None:
     assert isinstance(resources, ResourceEstimate)
     assert resources.n_qubits == 7
     # Sharing a clean predicate reduces gate count without changing the state.
-    # Keep the original resource ceilings alongside the full-column proof above.
-    assert resources.n_operations <= 387
-    assert resources.depth <= 335
+    # Keep main's resource ceilings alongside the full-column proof above.
+    assert resources.n_operations <= 203
+    assert resources.depth <= 173
 
 
 @pytest.mark.parametrize("scale,amplitudes", [(0.73, (0.6, -0.8)), (1.21, (-0.8, 0.6))])

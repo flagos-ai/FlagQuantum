@@ -1930,7 +1930,7 @@ jobs:
       - uses: ./.github/actions/install-cpu-torch
         with:
           torch-spec: ${{ matrix.torch }}
-      - run: python -m pip install pytest
+      - run: python -m pip install 'pytest>=7.0.0,<10'
       - run: python -m pip install --no-build-isolation -e . --no-deps
       - name: Verify dependency consistency and CPU frameworks
         run: |
@@ -2480,7 +2480,7 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report=
+            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
@@ -2491,7 +2491,7 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report=
+            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
@@ -2509,6 +2509,9 @@ jobs:
 
   coverage:
     needs: [prepare-source, coverage-plan, coverage-shard]
+    permissions:
+      contents: read
+      packages: read
     env:
       FQ_COVERAGE_SHARDS: ${{ needs.coverage-plan.outputs.count }}
     if: ${{ !cancelled() }}
@@ -2582,11 +2585,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - uses: ./.github/actions/isolated-python
-      - run: python -m pip install 'pytest-cov>=4.0.0,<8'
+          profile: coverage-py3.12
+          registry-token: ${{ github.token }}
+          require-cached: ${{ runner.environment == 'self-hosted' }}
+      - name: Verify the locked coverage tool
+        run: python -c "from coverage import Coverage; print(Coverage.__module__)"
       - uses: ./.github/actions/download-artifact
         id: coverage-data
         timeout-minutes: 6

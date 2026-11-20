@@ -80,7 +80,7 @@ def test_pruning_never_discards_a_trial_that_beats_its_limit(seed: int) -> None:
             assert bounded == unbounded
 
 
-def test_search_uses_at_most_four_trials_and_skips_already_local_program() -> None:
+def test_search_uses_at_most_five_trials_and_skips_already_local_program() -> None:
     coupling = CouplingMap.line(6)
     with patch.object(
         sabre, "_plan_sabre_trial", wraps=sabre._plan_sabre_trial
@@ -89,7 +89,7 @@ def test_search_uses_at_most_four_trials_and_skips_already_local_program() -> No
         assert trial.call_count == 1
         trial.reset_mock()
         sabre.plan_sabre_swaps(_program(6, 3), coupling)
-        assert trial.call_count == 4
+        assert trial.call_count == 5
         assert all(
             call.kwargs["committed_swap_limit"] > 0 for call in trial.call_args_list[1:]
         )
@@ -116,6 +116,7 @@ def test_ordered_device_ranks_trials_with_orientation_and_restoration(
         sabre._plan_sabre_trial(source, coupling, tie_rng=random.Random(trial))
         for trial in range(3)
     )
+    candidates.append(sabre._plan_sabre_trial(source, coupling, layer_lookahead=True))
     assert all(candidate is not None for candidate in candidates)
     minimum = min(cost(candidate) for candidate in candidates if candidate is not None)
     selected = routing._plan_sabre_for_topology(source, topology, tuple(range(6)))

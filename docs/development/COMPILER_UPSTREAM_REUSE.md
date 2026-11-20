@@ -33,11 +33,58 @@ alone does not constitute an audit of its numerical implementation.
 | KAK and supercontrolled basis synthesis | Qiskit Weyl coordinates and zero-to-three-entangler closed forms | `optimization/two_qubit_synthesis.py` | Existing mathematical/implementation adaptation, with native instructions and deterministic Python algebra. The historical originating Qiskit revision has not been established by this audit. This change adds explicit attribution; it does not claim a new synthesis port. |
 | Bounded search recovery | Qiskit `swap_map_trial`, `State::force_enable_closest_node` | `topology/sabre.py`, recovery branch in `plan_sabre_swaps` | Newly adapted control flow: undo the speculative SWAP suffix, remove its output records, choose the closest blocked operation, and bring its operands together along a shortest path. |
 | Repeated-search detection | Cirq `RouteCQC._route`, its `seen` set and forced shortest-path strategy | `topology/sabre.py`, `seen_layouts` | Newly adapted algorithmic mechanism. FQ tracks repeated full layouts between executed instructions; Cirq tracks repeated SWAP choices within a timestep. This is not a port of all RouteCQC. |
-| Full-CZ synthesis | Cirq's `_xx_interaction_via_full_czs`, `_xx_yy_interaction_via_full_czs`, `_xx_yy_zz_interaction_via_full_czs` | No new integration in this change | Reviewed candidate for native CZ synthesis and local single-qubit cleanup. Must be checked under FQ's ordering, global-phase and target contracts before adoption. |
-| Frontier-relative scoring | Qiskit `State::choose_best_swap` and layer-local score updates | Existing FQ rescoring remains | Not yet ported. A useful next performance change, but numerical tie behavior and unchanged placement semantics need tests. |
-| Multi-trial routing/layout | Qiskit's independent trials and best-result selection | Existing FQ deterministic route and reverse-layout search remain | Not yet equivalent. Restored-layout cost and explicit search budgets must drive candidate selection. |
-| Layer-by-layer lookahead and paired SWAPs | Cirq `_choose_optimal_swap`, `_choose_pair_of_swaps`, `_cost` | Existing FQ weighted extended-layer score remains | Not yet ported. DAG dependencies, barriers and classical accesses must remain authoritative. |
+| Full-CZ interaction formulas | Cirq's `_xx_interaction_via_full_czs`, `_xx_yy_interaction_via_full_czs`, `_xx_yy_zz_interaction_via_full_czs` | Not enabled | Rejected after both fixed-pulse and arbitrary-RX development probes increased instruction counts. The existing Qiskit-derived two-qubit constructor remains authoritative; see [retained comparisons](COMPILER_CZ_CIRQ_REUSE.md). |
+| Local cleanup after CZ synthesis | Cirq's `_merge_single_qubit_gates` and `single_qubit_matrix_to_pauli_rotations` | `optimization/_cz_local_cleanup.py`, called by `optimization/_cz_blocks.py` | Integrated in PR #1229. Native pending-per-wire accumulation emits shorter RX/RZ runs behind the existing complete-operator verifier; symbolic and protected inputs retain their established path. |
+| Frontier-relative scoring | Qiskit `State::choose_best_swap` and layer-local score updates | `topology/sabre.py` | Integrated in PR #1232; retained absolute-score tie behavior and the small-circuit path. See [relative scoring](COMPILER_SABRE_RELATIVE_SCORING.md). |
+| Multi-trial routing/layout | Qiskit's independent trials and best-result selection | `topology/sabre.py` | Integrated in PR #1233: original route plus three seeded trials, scored including restoration and directed operand repair. See [bounded trials](COMPILER_ROUTING_TRIALS.md). This is not the complete Qiskit layout pipeline. |
+| Layer-by-layer lookahead and paired SWAPs | Cirq `_choose_optimal_swap`, `_choose_pair_of_swaps`, `_cost` | `topology/_layer_lookahead.py` and `topology/sabre.py` | Adapted as one additional bounded candidate. See [layer lookahead](COMPILER_LAYER_LOOKAHEAD.md). Integrated in PR #1234 with source-conformance and native routing tests; it is an additional candidate, not all of RouteCQC. |
 | Two-qubit collection and re-synthesis | Upstream collect/consolidate/re-synthesize workflows | `optimization/_cz_blocks.py` | FQ-owned implementation of a shared pattern. It must not be described as copied Qiskit or Cirq code. |
+
+The integrated candidate is commit
+`858df9dbd5ba964e8e59b3383304547710a1dee5`. PRs #1229 and #1234 each passed
+239 checks with three optional checks skipped before merging. The candidate's
+installed-wheel smoke run
+[44585780031](https://github.com/flagos-ai/FlagQuantum/actions/runs/44585780031)
+also passed. These are source and CI integration facts, not a package-release
+or comparative-performance claim. Original failed attempts remain in their PRs.
+
+The prospective SDKBench runs
+[ordinary](https://github.com/sdkbench-org/sdkbench/actions/runs/44587635615) and
+[target-artifact](https://github.com/sdkbench-org/sdkbench/actions/runs/44587642527)
+completed on attempt 1 with this compiler and harness commit
+`9e3992d14342601662443b6720dd6757905c3f3b`. Each retained 30 application cases,
+90 accepted complete case/participant outcomes, 900 independently replayed blocks
+and 2,700 measured compilations. The immutable
+[ordinary report](https://github.com/sdkbench-org/sdkbench/blob/89c1448fedc75b785080ccfc9be5f7f145020133/docs/analysis/COMPILER_ORDINARY_RESULTS_20261120.md)
+and
+[target-artifact report](https://github.com/sdkbench-org/sdkbench/blob/89c1448fedc75b785080ccfc9be5f7f145020133/docs/analysis/COMPILER_TARGET_ARTIFACT_RESULTS_20261120.md)
+retain every case and participant pairing, raw archives, source/build identities,
+resource evidence and local replay checks. Both reports were integrated through
+SDKBench PR #9 after its 14 exact-head CI checks passed.
+
+These are bounded CPU engineering observations, not release certification or a
+global SDK ranking. Some cases use fewer FlagQuantum CZ gates; others use more.
+The reports also retain compilation-time and process-memory losses to Qiskit.
+The ordinary profile does not invoke target-CZ block resynthesis. Target-artifact
+time includes FlagQuantum target validation, provenance, artifact construction
+and serialization, while the other participants retain compiler workflows.
+Final identity placement is required throughout, but the target-artifact profile
+uses native restoration for FlagQuantum and the common external restoration for
+Qiskit/Cirq. These are complete delivered workflows, not identical internal
+algorithms or isolated synthesis timings.
+
+The two profiles use distinct draws and hosts: do not divide their metrics or
+attribute between-profile differences to a compiler pass. Six-qubit cases have
+complete-operator acceptance; widths 8/12 retain three-probe scope. Neither study
+contains an old-FlagQuantum source control. Host/build attestation and publication
+qualification remain separate; publication eligibility is false.
+
+The same-revision default-versus-explicit routing-policy control has a separate
+[declaration](https://github.com/sdkbench-org/sdkbench/blob/9ce37f85bef327603bc64f63eec7e0fddc9436ef/docs/analysis/COMPILER_ROUTING_POLICY_DECLARATION_20261120.md)
+and [retained execution](https://github.com/sdkbench-org/sdkbench/actions/runs/44623673659).
+The cross-SDK reports above do not supply that control. The approved default
+proposal's original before-merge time/memory requirement was unmet; subsequent
+qualification cannot retroactively establish it.
 
 The implementation still lacks several important upstream mechanisms. The
 presence of SABRE or KAK alone does not establish equivalent compilation quality.
