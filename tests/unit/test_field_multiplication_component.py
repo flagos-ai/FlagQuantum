@@ -342,3 +342,97 @@ def test_original_karatsuba_root_calls_and_operands_with_owned_exact_child(
     assert builder.finalize(outputs) == karatsuba_implementation_program(
         field_type, modulus=modulus
     )
+
+
+@pytest.mark.parametrize("width,modulus", FIELDS[1:4])
+def test_internal_karatsuba_arbitrary_target_complex_map_and_inverse(
+    width: int, modulus: int
+) -> None:
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.compiler.registers.finite_field.karatsuba_component import (
+        karatsuba_implementation_program,
+    )
+
+    bound, ports = bind_product(
+        karatsuba_implementation_program(dtype(width, modulus), modulus=modulus)
+    )
+    data = 3 * width
+    active = max([data, *(wire + 1 for event in bound.events for wire in event.wires)])
+    count = active + 1
+    state = torch.zeros(1 << count, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    field = _source_type(width, modulus).gf_type
+    factor = field(2) ** ((width + 1) // 2)
+    for f, g, h, spectator in product(
+        range(1 << width), range(1 << width), range(1 << width), (0, 1)
+    ):
+        values = (f, g, int(factor * field(h) + field(f) * field(g)))
+        src = ((f << (2 * width) | g << width | h) << (count - data)) | spectator
+        dst = spectator
+        for value, word in zip(values, bound.outputs, strict=True):
+            dst |= sum(
+                ((value >> (width - 1 - i)) & 1) << (count - 1 - wire)
+                for i, wire in enumerate(word)
+            )
+        state[src] = torch.tensor(
+            complex(f + h + 1, g - h - spectator), dtype=torch.complex128
+        )
+        expected[dst] = state[src]
+    norm = state.norm()
+    state /= norm
+    expected /= norm
+    operation = FieldOperation(count, bound.circuit.instructions)
+    circuit = Circuit(count, inputs=state, dtype=torch.complex128).append(operation)
+    torch.testing.assert_close(circuit.state().flatten(), expected, atol=1e-12, rtol=0)
+    inverse = Circuit(count).append(operation).adjoint().to_ir()
+    torch.testing.assert_close(
+        circuit.compose(inverse).state().flatten(), state, atol=1e-12, rtol=0
+    )
+    assert ports == {
+        name: tuple(range(i * width, (i + 1) * width))
+        for i, name in enumerate(("f", "g", "h"))
+    }
+    assert bound.classical_outputs == ()
+
+
+@pytest.mark.parametrize("width,modulus", FIELDS[1:])
+def test_internal_karatsuba_all_pairs_arbitrary_target_sparse_state(
+    width: int, modulus: int
+) -> None:
+    from flagquantum.compiler.registers.finite_field.karatsuba_component import (
+        karatsuba_implementation_program,
+    )
+    from tests.unit.test_binary_polynomial import execute_sparse
+
+    bound, _ = bind_product(
+        karatsuba_implementation_program(dtype(width, modulus), modulus=modulus)
+    )
+    data = 3 * width
+    active = max([data, *(wire + 1 for event in bound.events for wire in event.wires)])
+    pairs = torch.arange(1 << (2 * width), dtype=torch.int64)
+    mask = (1 << width) - 1
+    target = (pairs * 19 + 7) & mask
+    field = _source_type(width, modulus).gf_type
+    f = field((pairs >> width).numpy())
+    g = field((pairs & mask).numpy())
+    h = field(target.numpy())
+    result = torch.tensor(
+        (field(2) ** ((width + 1) // 2) * h + f * g).tolist(), dtype=torch.int64
+    )
+    indices = ((pairs << width) | target) << (active - data)
+    expected = torch.zeros_like(indices)
+    for value, word in zip(
+        (pairs >> width, pairs & mask, result), bound.outputs, strict=True
+    ):
+        for i, wire in enumerate(word):
+            expected |= ((value >> (width - 1 - i)) & 1) << (active - 1 - wire)
+    actual = execute_sparse(bound.circuit.instructions, indices, active)
+    assert torch.equal(actual, expected)
+    phase = pairs.to(torch.float64)
+    amplitudes = torch.complex(phase + 1, phase.remainder(31) - 15)
+    amplitudes /= amplitudes.norm()
+    actual_order, expected_order = actual.argsort(), expected.argsort()
+    assert torch.equal(actual[actual_order], expected[expected_order])
+    torch.testing.assert_close(
+        amplitudes[actual_order], amplitudes[expected_order], atol=0, rtol=0
+    )

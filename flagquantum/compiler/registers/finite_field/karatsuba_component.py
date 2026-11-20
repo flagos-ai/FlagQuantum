@@ -28,11 +28,12 @@ from .polynomial_product_component import (
 def karatsuba_implementation_program(
     dtype: RegisterType, *, modulus: int
 ) -> ProgramRecord:
-    """Preserve f/g and compute their product into an initially zero h.
+    """Preserve f/g and transform arbitrary h to x**ceil(n/2)*h + f*g.
 
     Native exact linear adjoints preserve the previously accepted mathematical
-    emitter. The frozen ignored-adjoint defect and arbitrary-h source boundary
-    remain explicit. Coefficient recursion owns and clears its high padding.
+    emitter. The source root has the same THRU interface, while its frozen
+    ignored-adjoint defect remains explicit. A zero h gives the clean product.
+    Coefficient recursion owns and clears its high padding.
     """
     width = field_word_width(dtype, modulus)
     builder = ComponentProgramBuilder(
