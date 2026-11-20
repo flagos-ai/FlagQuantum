@@ -25,7 +25,7 @@ from .control_predicate import ControlRegister
 def validate_control_ports(
     controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
 ) -> int:
-    """Validate finite integer ports and optional concrete activation clauses."""
+    """Validate admitted quantum words and concrete stored-bit activation clauses."""
     if not controls or (patterns is not None and len(controls) != len(patterns)):
         raise ValueError("control ports require one activation pattern per register")
     Signature(controls)
@@ -38,6 +38,8 @@ def validate_control_ports(
             "signed": "twos_complement",
             "ones_complement": "ones_complement",
             "montgomery": "unsigned",
+            "finite_field": "unsigned",
+            "finite_field_polynomial": "unsigned",
         }.get(register.dtype.encoding)
         width = executable_register_width(register.dtype)
         count += width * prod(register.shape)
@@ -56,6 +58,11 @@ def validate_control_ports(
             ):
                 raise ValueError("control port dtype, shape and activation must agree")
             pattern.bits()
+    if count != 1 and any(
+        register.dtype.encoding in {"finite_field", "finite_field_polynomial"}
+        for register in controls
+    ):
+        raise ValueError("Field storage supports only a single-bit control")
     if not count:
         raise ValueError("structured control requires a nonempty activation")
     return count
@@ -96,7 +103,9 @@ def control_predicate_program(
     after clearing. These logical outputs remain live across an intervening
     controlled call. Canonical integer storage retains its descriptor across
     split/join. Montgomery controls use stored residues and bounded unsigned
-    controls use their stored bit values. Unsupported descriptors raise ValueError.
+    controls use their stored bit values. Single-bit field and polynomial controls
+    bypass this multi-bit predicate in their caller. The frozen predicate refuses
+    wider field storage. Unsupported descriptors raise ValueError.
 
     With patterns=None binary activation retains a declaration requiring explicit
     resource/numerical bindings. For three or more controls, the locked source

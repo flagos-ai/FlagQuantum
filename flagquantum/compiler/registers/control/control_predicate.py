@@ -19,8 +19,10 @@ IntegerEncoding = Literal["unsigned", "twos_complement", "ones_complement"]
 class ControlRegister:
     """One row-major group of fixed-width integer activation values.
 
-    Unsigned includes raw bit, bounded integer, and Montgomery words. Supply
-    Montgomery values in their stored representation.
+    Unsigned includes raw bit, bounded integer, Montgomery and single-bit field
+    or polynomial storage. Supply activation values in stored representation.
+    Numerical field and polynomial objects are encoded by their codec owner
+    before constructing a pattern.
     """
 
     width: int
