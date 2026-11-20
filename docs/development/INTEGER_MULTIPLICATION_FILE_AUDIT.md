@@ -163,3 +163,56 @@ UNSIGNED_FIXED_POINT_STORAGE_AUDIT.md for evidence and separate observed/model
 counts. This dependency leaves SquareRealNumber's unused b port,
 InvertRealNumber's mixed THRU output scaling and the remaining generic foreign
 interfaces open. Original missing root decompositions remain recorded.
+
+## Stored SquareRealNumber dependency, November 20, 2026
+
+`fixed_point/fixed_point_square_component.py` closes the typed signature and
+owned-result dependency of SquareRealNumber. Its original two pure-fraction
+THRU inputs a and b both survive binding. The existing D24/D28 construction
+reads only a. The returned fixed-point result is RIGHT for compute and LEFT for
+matching image erasure. Shared column_result now accepts an explicit result
+descriptor, used by this fourth consumer. It retains the original uint default
+for the three integer consumers. The weighted-column owner retains all pair
+products, carry storage, measured And calls and zero-work release.
+
+Stored and expanded calls match the accepted flat paper construction's primitive
+multisets, per-wire order, operands and validated feedback-slot renaming at
+widths 3, 4, 5, 6, 8 and 10, in both directions. No gate addresses b. The original
+root provides its dual-input signature and analytical formula without an
+executable decomposition. Original leaf/channel evidence is reused. Independent
+gates can have different global schedules.
+
+Complete coherent a/b inputs, entangled spectator and zero scratch pass at
+widths three and four, including both inverse directions. Width three exhausts
+all sixteen forward/inverse measurement history pairs. Width four uses two
+trajectory seeds and the accepted complete leaf/channel certificates. Ordinary
+circuit.append(op) compute/erase passes with the flat root replaced by a failing
+stub. The odd/even truncation oracle is reused from the accepted flat module.
+
+Source models and observed counts remain separate. At width three, the native
+paper construction emits 8 T/Tdg, two measurements and two scratch bits, while
+the source model reports zero Toffoli. At width four it emits 28 T/Tdg, seven
+measurements and seven scratch bits, versus source four Toffoli. The discrepancy
+was already recorded for the flat executor and survives typed composition.
+
+The remaining fixed-point executable definitions are ScaleIntByReal and
+MultiplyTwoReals typed truncated call graphs, and InvertRealNumber's mixed THRU
+result contract. Generic foreign construction, drawing, rebinding and
+serialization retain their existing disposition. Q-0208 and Q-0209 remain open.
+
+Stored-square receipts use `ftqc-reference-env/g2-fixed-square-stored-`.
+Concentrated regression passes 3,170 checks with one existing IPython warning
+and zero skips. Local integration passes 17 checks. Final focused checks pass
+66 cases. Strict typing covers three files. Black, Ruff, scope, architecture,
+IR and public API checks pass. Four immutable source blobs, Qualtran 0.7.0 and
+Kickmix 0.1 Simulator are verified. Dependency policy reports 687 existing
+whole-repository findings and zero touched-path findings.
+
+Thirty-six complete bound integer Square/Product/SumOfSquares records match
+base d6b5b2448 exactly in both directions, including gates, aliases, measurement
+slots and allocation/release events. The comparison loads the original shared
+helper as well as the original three callers, so the extended helper itself is
+covered. Default docstring coverage failure evidence is reused after verifying
+the ten implicated files against that base. Default-suite completion remains
+open. Type-only test annotations were corrected after broad collection and are
+included in the final focused run.
