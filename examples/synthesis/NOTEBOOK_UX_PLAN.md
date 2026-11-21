@@ -28,7 +28,7 @@ Track three independent measures:
 | --- | --- | --- |
 | Preserve approved migration scope | 212 accepted workflows; all editorial links and historical successful full-cell process records resolve | Historical cell records are not current-HEAD execution claims |
 | Preserve original-source paths | All 222 rows replay on `40937f239`: 210 original executions, six original expected refusals and six approved alternative executions | Smoke/profile regressions remain separate from independent full-state acceptance |
-| Six editable learning lessons | All lesson cells and independent assertions run through the focused user-workflow selection | Keep their six-case teaching denominator separate from the 212 upstream workflows |
+| Six editable learning lessons | Replayed on `e9851545c` with independent amplitudes, cleanup, topology, seeded sampling, actual energies and three nonzero runtime-gradient bindings | Keep their six-case teaching denominator separate from the 212 upstream workflows |
 | Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Original degree-101/255 nozzle sequences still require the pending bounded effect admission |
 | Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Pending explicit preparation/binding capacity approval; public limits unchanged |
 | Original signed arithmetic budget | Native full-size execution now also fits 14 total qubits and zero extra work; all 16,384 arbitrary XOR columns and complex witnesses pass | Width-constrained Fourier route costs 89 logical instructions including preparation; default 20-qubit/47-instruction ripple route retained; native logical targets only |
@@ -96,12 +96,34 @@ Current inventory checks again resolve all 212 editorial links and preserved
 successful complete-cell records; only the changed workshop has a new full-cell
 execution claim in this batch.
 
+### Current teaching and validation follow-up
+
+The six learning Notebooks are re-executed at `e9851545c`: all 14 code cells and
+their independent assertions pass in the 32-test learning/catalog selection.
+This includes seeded finite-shot counts, logical-to-physical layout checking,
+actual variational objective evaluations and three nonzero reused-plan gradient
+bindings. These current results supersede the earlier "initial checks" wording;
+they do not imply that symbolic qfunc parameters or direct Program shot overrides
+have been admitted.
+
+The two census failures in the frozen default run exposed a tooling defect:
+`git ls-files` followed shared `core.worktree` configuration instead of the
+explicitly requested checkout. Documentation scans now bind that root only for
+their Git subprocess, leaving shared configuration and environment unchanged.
+A real temporary repository reproduces the wrong-tree read before the fix;
+regressions cover correct tracked/untracked files, paths containing spaces,
+configuration preservation and refusal when a tracked document is missing.
+The 199-test vocabulary/catalog selection and the vocabulary contract command
+pass without an external `GIT_WORK_TREE` override. The historical default run
+remains recorded as nine failures/six errors; this focused fix does not relabel
+that raw run or claim to resolve socket and evidence-origin failures.
+
 ## Delivery sequence
 
 | Batch | Deliverable | Acceptance | Status |
 | --- | --- | --- | --- |
 | UX-01 | Static screen of all 212 accepted workflows; separate navigation | Reproducible report tied to existing inventory; no evidence rewrite | Complete; all 212 cases reviewed |
-| UX-02 | Six learning-path Notebooks | All cells execute; independent amplitudes, cleanup, topology and optimizer checks | Initial independent checks passed |
+| UX-02 | Six learning-path Notebooks | All cells execute; independent amplitudes, cleanup, topology and optimizer checks | Complete; current six-lesson replay and independent assertions pass on `e9851545c` |
 | UX-03 | Review delegated construction by shared helper family | Expose useful public program at the point of use; preserve upstream workflow and numerical scope | Complete; useful central programs exposed and helper responsibilities explained |
 | UX-04 | Review direct Circuit uses and capability gaps | Identify reference versus application code; reuse existing high-level APIs first | Complete editorial inspection; Circuit/hybrid routes and remaining capabilities explicitly separated |
 | UX-05 | Review remaining visible-qfunc workflows and five-category navigation | Explain problem, quantum semantics, compilation, result and limits; changed workflows pass tests | Functions 31/31, Algorithms 45/45, Tutorials 49/49, Applications 69/69 and Community 18/18 replayed |
@@ -166,8 +188,9 @@ API admission when the protected surface would change.
 | 5 | Keep domain examples readable without hiding numerical substitutions | Existing fermion, state-family and signed arithmetic implementations | Preserve source-size chemistry/physics models; distinguish classical model generation, explicit Circuit kernels, native qfunc kernels, local references and hardware claims. |
 
 The two coloring workflows also expose an expensive repeated-specialization
-profile. Their original full searches remain acceptance work; timing limits are
-not resolved by reducing iterations, changing the objective or weakening checks.
+profile. Their accepted original full searches remain the required workload;
+timing limits are not resolved by reducing iterations, changing the objective
+or weakening checks.
 A local stage profile records actual synthesis, execution and named readout
 costs before any performance change is proposed.
 
@@ -192,7 +215,7 @@ The editorial denominator and these implementation steps are independent.
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
 | Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | The eight-row banded route now uses eight total qubits/two work bits, or seven/one under a tighter budget. The sixteen-row six-band source block uses eleven/three and passes its full 256-column unitary check. The original degree-33 Hamiltonian QSVT executes both native streams; the separate degree-101/255 nozzle sequences still exceed the protected 4096-effect cap. General QSVT APIs remain separate follow-ups. |
 | Named sampling | Bell and QSVT lessons use existing `fq.counts`/`fq.samples` on synthesized Circuit IR, selecting wires from named ports; the original joint draw is preserved for conditioning | Sealed Program output overrides still refuse. A direct named finite-shot convenience surface requires separate API admission; no competing sampler was introduced. |
-| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | Subsequent equal-modulus sum fusion and immutable-input shift borrowing execute the native signed workshop with 20 total qubits/six work bits/47 instructions, versus 14 Circuit qubits. Complete original-size coherent witnesses and all raw XOR targets pass. The tighter 14-qubit native budget still refuses; retain that resource gap explicitly. |
+| Signed numeric casts | `40937f239`: native signed workshop executes with 14 total qubits/zero extra work/89 instructions under explicit width constraints; all 16384 original XOR columns, complete coherent witnesses and native phase cleanup pass | Default remains 20 total qubits/six work bits/47 instructions. The Fourier alternative trades operation count for width and currently admits only native logical targets. Earlier cast/shift measurements below remain historical. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
 
 The signed workshop preflight retains all 256 input pairs and all 64 arbitrary
