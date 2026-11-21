@@ -75,19 +75,19 @@ def bind_inputs(
                     f"classical array {name!r} requires a built-in numeric list or tuple",
                 )
             elements += len(value)
-            if not 1 <= len(value) <= 4096 or elements > 4096:
+            if not 1 <= len(value) <= 16384 or elements > 16384:
                 _error(
                     definition.source,
                     definition.source.node,
                     "budget",
-                    "classical arrays require 1..4096 elements and at most 4096 in total",
+                    "classical arrays require 1..16384 elements and at most 16384 in total",
                 )
             bound[name] = tuple(
                 check(definition, definition.source.node, item) for item in value
             )
         else:
             elements += 1
-            if elements > 4096:
+            if elements > 16384:
                 _error(
                     definition.source,
                     definition.source.node,

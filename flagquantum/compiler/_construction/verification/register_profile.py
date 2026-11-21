@@ -26,6 +26,7 @@ from ..codegen.register_expansion import expand_register_calls, is_register_func
 from .profile import _fail, _positive_integer, verify_construction
 
 MAX_PREPARED_AMPLITUDES = 256
+MAX_FRESH_PREPARED_AMPLITUDES = 16384
 _MAX_INPLACE_AMPLITUDES = 4096
 MAX_TRANSFORM_WIDTH = 4
 
@@ -107,11 +108,15 @@ def _check_real_preparation(op: Operation, width: int) -> None:
     amplitudes = op.attributes["amplitudes"]
     bound = op.attributes["bound"]
     limit = (
-        _MAX_INPLACE_AMPLITUDES
-        if op.name == "qreg.inplace_prepare_amplitudes"
-        and "indices" in op.attributes
-        and not op.attributes.get("control_count")
-        else MAX_PREPARED_AMPLITUDES
+        MAX_FRESH_PREPARED_AMPLITUDES
+        if op.name == "qreg.prepare_amplitudes"
+        else (
+            _MAX_INPLACE_AMPLITUDES
+            if op.name == "qreg.inplace_prepare_amplitudes"
+            and "indices" in op.attributes
+            and not op.attributes.get("control_count")
+            else MAX_PREPARED_AMPLITUDES
+        )
     )
     if (
         not isinstance(amplitudes, tuple)

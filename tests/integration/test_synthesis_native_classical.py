@@ -146,7 +146,7 @@ def test_invalid_root_bindings_fail_before_lowering(bindings: object) -> None:
 
 
 @pytest.mark.parametrize(
-    "angles", [[], [True], [float("nan")], [[0.2]], "0.2", [0.1] * 4097]
+    "angles", [[], [True], [float("nan")], [[0.2]], "0.2", [0.1] * 16385]
 )
 def test_invalid_array_bindings(angles: object) -> None:
     with pytest.raises(ValueError, match="program.binding|budget"):
