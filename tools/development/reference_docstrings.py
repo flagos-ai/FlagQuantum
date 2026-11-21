@@ -8,6 +8,7 @@ import re
 import warnings
 
 from griffe import (
+    Alias,
     DocstringSection,
     DocstringSectionAdmonition,
     DocstringSectionAttributes,
@@ -25,7 +26,7 @@ from tools.development.docstrings import parse_references
 from tools.development.reference_links import Writable
 
 
-def split_docstring(obj: Object) -> tuple[str, list[DocstringSection]]:
+def split_docstring(obj: Object | Alias) -> tuple[str, list[DocstringSection]]:
     if obj.docstring is None:
         return "", []
     first, *parts = obj.docstring.parse("google")

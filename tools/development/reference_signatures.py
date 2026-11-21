@@ -7,7 +7,7 @@
 import re
 from collections.abc import Callable
 
-from griffe import Function, Object, Parameter, ParameterKind
+from griffe import Alias, Function, Object, Parameter, ParameterKind
 
 from tools.development.reference_links import Writable
 
@@ -44,7 +44,9 @@ def get_obj_instance_name(obj: Object) -> str:
     return BESPOKE_OBJECT_NAMES_FOR_CLASSES.get(obj.name, camel_to_snake(obj.name))
 
 
-def write_property_method_signature(f: Writable, obj: Object, method: Function) -> None:
+def write_property_method_signature(
+    f: Writable, obj: Object, method: Function | Alias
+) -> None:
     assert method.returns, method
     signature = f"{get_obj_instance_name(obj)}.{method.name} -> {method.returns}"
     f.write(f"```python\n{signature}\n```\n\n")
@@ -53,7 +55,7 @@ def write_property_method_signature(f: Writable, obj: Object, method: Function) 
 def write_generic_method_signature(
     f: Writable,
     obj: Object,
-    method: Function,
+    method: Function | Alias,
     first_arg_name: str | None = "self",
     caller_name: Callable[[Object], str] = get_obj_instance_name,
 ) -> None:
@@ -72,7 +74,7 @@ def write_generic_method_signature(
     f.write(f"```python\n{signature}\n```\n\n")
 
 
-def write_function_signature(f: Writable, function: Function) -> None:
+def write_function_signature(f: Writable, function: Function | Alias) -> None:
     parameters = list(function.parameters)
     if len(parameters) > 1:
         text = "\n" + ",\n".join(f"  {format_parameter(p)}" for p in parameters) + "\n"
@@ -84,7 +86,7 @@ def write_function_signature(f: Writable, function: Function) -> None:
     f.write(f"```python\n{signature}\n```\n\n")
 
 
-def write_method_signature(f: Writable, obj: Object, method: Function) -> None:
+def write_method_signature(f: Writable, obj: Object, method: Function | Alias) -> None:
     if method.overloads:
         return
     decorators = [
