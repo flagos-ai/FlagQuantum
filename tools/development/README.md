@@ -425,3 +425,9 @@ lint and coverage scopes, or omit the flag for package scopes. Use
 any phase makes the final command fail after all four phases run. See
 `DEVELOPMENT_CHECK_COMMANDS_AUDIT.md` for the original false-success and argument
 forwarding defects and the explicit native corrections.
+
+The source method-override report maps to existing Compiler `CallDeclaration`,
+`SymbolAllocator` and `RawCallees` typing. Package/developer strict checks audit
+its native declaration consumers. Compiler owns graph traversal and aggregation.
+See `CALL_GRAPH_DECLARATION_REPORT_AUDIT.md` for the complete source mapping,
+actual valid/invalid typing examples and original annotation-report defects.
