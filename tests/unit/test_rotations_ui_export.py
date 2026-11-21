@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from examples.algorithms import rotations_ui_export as native
+from examples.algorithms.phase_gradient_decomposition import gradient_child
 from tests.unit.test_component_ui_export import source_metadata
 from tests.unit.test_development_tools import REFERENCE
 from tests.unit.test_other_ui_export import _port_record as _shared_port_record
@@ -156,14 +157,30 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         )
         assert data["msd"] is not None
         assert data["msd"] == first_scores[key]
-        if identifier in {"cz_pow", "crz"}:
+        if identifier in {
+            "cz_pow",
+            "crz",
+            "phase_gradient_unitary",
+            "phase_gradient_state",
+            "add_scaled_val_into_phase_reg",
+        }:
             assert data["callees"]
             for child in data["callees"]:
                 assert (tmp_path / child["name"] / child["filename"]).is_file()
         else:
             assert data["callees"] == []
 
-    assert len(list(tmp_path.rglob("*.json"))) == 58
+    from examples.algorithms.component_ui_dependencies import dependency_graph
+
+    graph = dependency_graph(
+        native.INSTANCES,
+        owner=lambda v: native.name(v) + "/" + native.filename(v),
+        program=native.decomposition,
+        child_presentation=gradient_child,
+    )
+    assert len(list(tmp_path.rglob("*.json"))) == 1 + len(
+        {(native.name(v), native.filename(v)) for v in graph}
+    )
     assert native.filename("square_via_phase_gradient") == native.filename(
         "square_via_zpow_phasing"
     )

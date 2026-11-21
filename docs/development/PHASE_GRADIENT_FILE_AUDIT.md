@@ -174,3 +174,76 @@ independent source/native notebook and CPU integration evidence is reused;
 this batch changes tests and this audit only. The whole source file remains
 open for its documented source defects, with no new parent/child completion
 count.
+
+## Complete catalog dependency closure, 2026-11-22
+
+All five original factories retain their signatures and metadata. The concrete
+unitary, prepared state and scaled addition now expose executable typed Programs
+through `examples/algorithms/phase_gradient_decomposition.py`. Symbolic unitary
+widths and `AddIntoPhaseGrad` retain their original decomposition refusals.
+The original source and nine source/test/notebook/dependency blobs remain frozen.
+
+The Compiler owners are split by responsibility.
+
+- `primitives/pauli_rotation_component.py` supplies the existing single-bit phase
+  wrapper to both controlled rotations and gradient construction.
+- `phase/phase_gradient_component.py` owns the ordered Split, phase powers and
+  Join, and the Allocate, OnEach-H, gradient preparation graph.
+- `phase/scaled_phase_component.py` composes existing coefficient slicing,
+  Cast, fixed-point views and shared integer Add with its exact adjoint.
+- The example provider owns catalog qualification and drawing callbacks.
+  Complete child bodies must match before OnEach or PhaseGradientUnitary labels
+  are assigned. Changed H and phase constants reject qualification.
+
+The complete recursive source observer finds five exact graphs and twenty-one
+atomic/refusal contexts. All five comparable fresh source drawings agree.
+There are sixty-seven additional contextual children, including forty-four
+explicitly native-only arithmetic and rebinding helpers below the original
+atomic AddIntoPhaseGrad boundary. They carry no original decomposition-equality
+claim. The state keeps the original opaque Allocate/OnEach view and returns the
+fixed-point logical output. That output remains caller-owned and live.
+
+### Execution and independent resource evidence
+
+The normal entry remains `circuit.append(op)`. The actual catalog Programs
+match source unitary/state streams on noncontiguous MSB-first wires and an
+entangled spectator. Full complex tensors, output ownership, exact recovery,
+Program copying and lowered CircuitIR JSON round trips pass. Positive and
+negative scaled coefficients exercise all raw histories and their inverse
+histories. Dynamic trajectory append confirms normalized branch execution and
+zero clean carry work. The atomic native leaf also retains shifted and empty
+updates. Shared Program scheduling can reorder disjoint primitives. Fresh
+classical slot identities follow measurement order, so comparisons supply the
+explicit measured-wire-to-slot map and retain per-wire order and feedback.
+
+| Original factory | Measured primitives | Separate original QEC model | Physical peak / source width |
+| --- | --- | --- | --- |
+| PhaseGradientUnitary, width 4 | 4 phase | 2 Clifford, 1 T, 1 rotation, default T-equivalent 12 | 4 / 4 |
+| PhaseGradientState, width 4 | 4 H, 4 phase | 6 Clifford, 1 T, 1 rotation, default T-equivalent 12 | 4 / 4 |
+| AddScaledValIntoPhaseReg, width 2 | 3 H, 8 CX, 2 T, 2 Tdg, 1 S, 1 measurement, 1 conditional CZ, 1 reset | zero Toffoli and zero modeled T | 5 / 4 |
+
+Preparation allocates its four logical output wires at offset zero. The scaled
+fixture allocates one clean carry at offset zero and releases it at offset
+eighteen. Its coefficient 2 still saturates to the original 0.75 format. Its
+source model omits the concrete measured Add cost. The difference is retained
+explicitly, with original abstract estimates and native inventories separate.
+
+Existing complete file, symbolic resolution, controlled gradient, mixed-format,
+source-binding and source model evidence is reused. Q-0671's original atomic
+addition, mixed-dtype, small-width cost and zero-width boundaries remain open.
+Q-0120 remains open for other catalog groups. Pending Proposals 116 through 119
+retain their separate authorization requirements. Proposal 115 was already
+implemented and accepted before this catalog batch.
+
+Persistent receipts use `ftqc-reference-env/g2-phase-gradient-ui-*-20261122`.
+They include recursive inventory, source hashes, resources, focused and
+concentrated regressions, strict checks and publication verification.
+
+The final concentrated catalog run passes 827 cases with three existing
+unrelated deselections and fourteen existing notebook escape warnings. The
+SDK-restored execution/reference run passes all 242 cases without skips or
+warnings. Both local integration files pass all 29 cases. Eight changed Python
+files pass strict typing, Black and Ruff. Compiler/integration scope,
+architecture, multi-level IR, protected API and whitespace checks pass.
+A mistyped test filename caused an initial empty collection diagnostic, which
+is retained separately from the corrected passing execution run.

@@ -20,9 +20,6 @@ import numpy as np
 from sympy import Symbol
 
 from examples.algorithms.approximate_qft_catalog import approximate_qft_examples
-from examples.algorithms.basic_gate_child_decomposition import (
-    child_decomposition as _child_presentation,
-)
 from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
@@ -33,6 +30,13 @@ from examples.algorithms.phase_gradient_catalog import (
     GradientAdditionExample,
     GradientStateExample,
     GradientUnitaryExample,
+)
+from examples.algorithms.phase_gradient_decomposition import (
+    gradient_child as _child_presentation,
+)
+from examples.algorithms.phase_gradient_decomposition import (
+    gradient_program,
+    gradient_score,
 )
 from examples.algorithms.programmable_rotation_array_catalog import (
     ProgrammableRotationArrayExample,
@@ -860,6 +864,8 @@ def score(component: object) -> object:
     if isinstance(component, ComponentFunction):
         return component.score()
     result = rotation_gate_score(name(component), attributes(component))
+    if result is None:
+        result = gradient_score(name(component), attributes(component))
     return (
         result
         if result is not None
@@ -868,8 +874,13 @@ def score(component: object) -> object:
 
 
 def decomposition(component: object) -> ProgramRecord | None:
-    """Reuse controlled-rotation calls while retaining other source boundaries."""
-    return rotation_gate_program(name(component), attributes(component))
+    """Reuse complete controlled-rotation and phase-gradient source graphs."""
+    record = rotation_gate_program(name(component), attributes(component))
+    return (
+        record
+        if record is not None
+        else gradient_program(name(component), attributes(component))
+    )
 
 
 def documentation_name(documentation: ComponentDocumentation[object]) -> str:
@@ -887,7 +898,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Controlled rotations retain complete stored dependency graphs. "
+        "Controlled rotations and phase gradients retain complete stored dependency graphs. "
         "Other operations retain their atomic typed interfaces and separate evidence. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
