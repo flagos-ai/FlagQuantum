@@ -145,7 +145,7 @@ def test_complete_fresh_exports_preserve_directional_aliases(tmp_path: Path) -> 
     assert list(navigation) == ["Bookkeeping"]
     assert len(navigation["Bookkeeping"]) == 6
     assert len(list(tmp_path.rglob("docs.txt"))) == 10
-    assert len(list(tmp_path.rglob("*.json"))) == 12
+    assert len(list(tmp_path.rglob("*.json"))) == 63
     for identifier in native.INSTANCES:
         record = json.loads(
             (
@@ -154,7 +154,12 @@ def test_complete_fresh_exports_preserve_directional_aliases(tmp_path: Path) -> 
         )
         assert record["msd"] is not None
         assert record["msd"] == native.score(identifier)
-        assert record["callees"] == []
+        if identifier in {"auto_partition", "auto_partition_unused", "always_and"}:
+            assert record["callees"]
+            for child in record["callees"]:
+                assert (tmp_path / child["name"] / child["filename"]).is_file()
+        else:
+            assert record["callees"] == []
     split, join = native.signature("split"), native.signature("join")
     assert tuple(port.adjoint() for port in reversed(tuple(split))) == tuple(join)
     assert [port.name for port in split] == ["reg", "reg"]

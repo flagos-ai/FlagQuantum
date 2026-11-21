@@ -17,6 +17,17 @@ from typing import TypeAlias
 
 from sympy import Symbol, symbols
 
+from examples.algorithms.bookkeeping_decomposition import (
+    bookkeeping_child as _child_presentation,
+)
+from examples.algorithms.bookkeeping_decomposition import (
+    bookkeeping_program,
+    bookkeeping_score,
+)
+from examples.algorithms.component_ui_dependencies import (
+    ComponentFunction,
+    dependency_graph,
+)
 from flagquantum.compiler.registers.component_rebindings import (
     join_word_function,
     split_word_function,
@@ -27,6 +38,7 @@ from flagquantum.compiler.registers.layout.component_partition import (
 )
 from flagquantum.compiler.registers.layout.partition import partition_width
 from flagquantum.compiler.registers.layout.register_cast import cast_signature
+from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_types import (
     fixed_point_register_type,
     opaque_register_type,
@@ -48,6 +60,20 @@ from tools.development.component_ui_export import (
 from tools.development.notebook_autogen import NotebookSpec
 
 _Interface: TypeAlias = tuple[str, Signature, Mapping[str, object], str]
+
+
+_AUTO_PARTITION_LAYOUTS = {
+    "auto_partition": AutoPartition(
+        (("x", (("ctrl", 1), ("x", 1))), ("y", (("y", 1),)))
+    ),
+    "auto_partition_unused": AutoPartition(
+        (
+            ("x", (("ctrl", 1), ("x", 1), (None, 1))),
+            ("y", (("y", 1),)),
+            ("z", ((None, 2),)),
+        )
+    ),
+}
 
 
 def _instances() -> dict[str, _Interface]:
@@ -110,23 +136,7 @@ def _instances() -> dict[str, _Interface]:
         },
         partition_signature.__module__,
     )
-    layouts = (
-        (
-            "auto_partition",
-            AutoPartition((("x", (("ctrl", 1), ("x", 1))), ("y", (("y", 1),)))),
-        ),
-        (
-            "auto_partition_unused",
-            AutoPartition(
-                (
-                    ("x", (("ctrl", 1), ("x", 1), (None, 1))),
-                    ("y", (("y", 1),)),
-                    ("z", ((None, 2),)),
-                )
-            ),
-        ),
-    )
-    for identifier, layout in layouts:
+    for identifier, layout in _AUTO_PARTITION_LAYOUTS.items():
         ports = Signature(
             Register(
                 name,
@@ -208,7 +218,11 @@ def _instance(component: object) -> _Interface:
 
 
 def name(component: object) -> str:
-    return _instance(component)[0]
+    return (
+        "ComponentFunction"
+        if isinstance(component, ComponentFunction)
+        else _instance(component)[0]
+    )
 
 
 def signature(component: object) -> Signature:
@@ -216,15 +230,43 @@ def signature(component: object) -> Signature:
 
 
 def attributes(component: object) -> Mapping[str, object]:
-    return _instance(component)[2]
+    return (
+        component.attributes()
+        if isinstance(component, ComponentFunction)
+        else _instance(component)[2]
+    )
 
 
 def filename(component: object) -> str:
-    return component_filename(attributes(component))
+    return (
+        component.filename()
+        if isinstance(component, ComponentFunction)
+        else component_filename(attributes(component))
+    )
 
 
 def score(component: object) -> object:
-    return register_interface_score(signature(component), name(component))
+    if isinstance(component, ComponentFunction):
+        return component.score()
+    record_score = bookkeeping_score(
+        name(component),
+        signature(component),
+        _AUTO_PARTITION_LAYOUTS.get(str(component)),
+    )
+    return (
+        record_score
+        if record_score is not None
+        else register_interface_score(signature(component), name(component))
+    )
+
+
+def decomposition(component: object) -> ProgramRecord | None:
+    """Reuse complete native wrapper graphs and retain source atomic refusals."""
+    return bookkeeping_program(
+        name(component),
+        signature(component),
+        _AUTO_PARTITION_LAYOUTS.get(str(component)),
+    )
 
 
 def documentation_name(documentation: ComponentDocumentation[object]) -> str:
@@ -236,8 +278,9 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     owner = _instance(documentation.examples[0].make())[3]
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "This diagram shows the atomic typed interface. Complete decomposition "
-        "graphs, glyphs, execution and resource estimates retain separate evidence. "
+        "AutoPartition and Always retain complete stored wrapper graphs. "
+        "Original atomic operations retain their typed interfaces. "
+        "Execution primitives and resource models retain separate evidence. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
 
@@ -278,7 +321,12 @@ def export_example(destination: Path) -> None:
     export_component_ui(
         destination,
         sections(),
-        dict.fromkeys(INSTANCES, ()),
+        dependency_graph(
+            INSTANCES,
+            owner=lambda component: name(component) + "/" + filename(component),
+            program=decomposition,
+            child_presentation=_child_presentation,
+        ),
         name=name,
         attributes=attributes,
         filename=filename,

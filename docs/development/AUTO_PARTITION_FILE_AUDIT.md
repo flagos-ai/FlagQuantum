@@ -174,3 +174,51 @@ Partition views themselves contribute zero gates. This is part of the 232-case
 shaped batch documented in SPECIALIZED_CONTROL_FILE_AUDIT.md and the shared
 g2-specialized-shaped evidence receipt. Q-0318 remains open for its existing
 signed/empty fixed-point admission and unresolved physical boundaries.
+
+## Complete catalog wrapper dependency graphs, 2026-11-22
+
+The complete AutoPartition and Always catalog dependency group now reuses the
+existing Compiler partition, controlled Swap, and And Programs. All eleven
+original factory contexts retain their order, signatures, parameters, and
+fresh interface drawings. The two AutoPartition roots preserve the original
+five/seven ordered calls, including unused slices. Always retains its one
+ordered And call. The three source-success roots yield five exact recursive
+graphs and twenty-one original atomic/refusal contexts. Both controlled Swap
+descendants are qualified by complete structural matching. Changed primitive
+operands reject the labels. Fresh comparable source drawings agree.
+
+The published catalog adds fifty-one contextual children. Twenty-eight are
+explicit native-only Split/Join rebinding helpers, ten and sixteen beneath
+the two AutoPartition roots and two beneath Always. They carry native interface
+presentation without a source decomposition-equality claim. Eight other
+original factory roots retain their original atomic decomposition refusal.
+
+Selected catalog Programs bind through the existing register binder and execute
+with circuit.append(op). Full complex isometries match unchanged original
+tensor contractions for all three factories. AutoPartition classical action
+is NotImplemented, so its tensor contraction is the executable reference.
+Always's RIGHT And target remains a logical output. Existing accepted tests
+rerun all applicable measured Add/And cleanup histories, exact recovery,
+entangled spectators, noncontiguous bindings, and clean temporary workspace.
+
+Actual AutoPartition primitive histograms are 8 CX, 2 H, 4 T, and 3 Tdg for
+each root, with peak widths three/six and no allocation events. The independent
+original models each declare one controlled Swap, with seven T-equivalents.
+Always emits 6 CX, 2 H, 2 T, 2 Tdg, and 1 S, with one allocated logical target
+and peak width three. The original Always(And()) root QEC query fails because
+its direct graph delegates to atomic And. This refusal is retained. The
+independent original And child model declares one And and four T-equivalents.
+All three forward Programs have zero measurements. Primitive histograms and
+macro estimates are separate evidence.
+
+Receipts use g2-bookkeeping-ui-* under the external reference environment.
+Eight source blobs remain equal to the frozen manifest. Qualtran 0.7.0 and
+Kickmix 0.1 Simulator are verified. Production Compiler/Core/Simulation owners
+are unchanged. Existing signed/empty fixed-point, symbolic physical admission,
+original serialization and generic-source boundaries remain explicit.
+
+The batch verification retains 320 execution/reference passes with five existing
+protobuf warnings and 29 local integration passes. Strict typing covers five
+changed Python files. Black, Ruff, integration scope, architecture, multilevel
+IR and protected API checks pass. The full catalog regression passes 786 cases, with three existing deselections
+and fourteen existing notebook escape warnings recorded in the catalog receipt.

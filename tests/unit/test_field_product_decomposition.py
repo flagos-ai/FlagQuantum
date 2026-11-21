@@ -22,11 +22,13 @@ CONCRETE = tuple(native.INSTANCES)[:1] + tuple(native.INSTANCES)[2:9]
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def source_walk(identifier: str, source: Any) -> list[dict[str, Any]]:
+def source_walk(
+    identifier: str, source: Any, *, catalog: Any = native
+) -> list[dict[str, Any]]:
     """Observe every named source child, including the frozen inverse defect."""
     from qualtran import DecomposeNotImplementedError, DecomposeTypeError
 
-    record = native.decomposition(identifier)
+    record = catalog.decomposition(identifier)
     assert record is not None and verify_program_record(record) == ()
     functions = {f.name: f for f in record.functions}
     entry = record.functions[0].name
@@ -71,10 +73,10 @@ def source_walk(identifier: str, source: Any) -> list[dict[str, Any]]:
             source_calls=len(expected),
         )
         if name == entry:
-            drawing = native.score(identifier)
+            drawing = catalog.score(identifier)
         else:
             node = ComponentFunction(
-                identifier, name, record, identifier, native._child_presentation
+                identifier, name, record, identifier, catalog._child_presentation
             )
             assert node.presentation is not None, (identifier, name, source)
             label = _label(source)

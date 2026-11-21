@@ -149,3 +149,25 @@ upstream parser/collection warnings. Strict typing for both new Python files,
 Black, Ruff, team scope, architecture, multilevel IR and protected API checks
 pass. Frozen source blobs and unchanged execution owners are independently
 verified in the batch evidence receipt.
+
+## Complete Always catalog dependency graph, 2026-11-22
+
+The actual Always(And()) catalog factory now retains its existing native
+wrapper Program and ordered And child. Its fresh graph and drawing match the
+unchanged source. Two native-only rebinding helper interfaces are explicit.
+Selected catalog execution through circuit.append(op) matches the complete
+original tensor isometry. The RIGHT target remains a logical output.
+
+Actual primitives are 6 CX, 2 H, 2 T, 2 Tdg, and 1 S. One logical target is
+allocated at instruction offset zero, with peak three wires and no forward
+measurements. The original root QEC query raises DecomposeTypeError because
+Always delegates directly to atomic And.build_call_graph. The independent
+original And child model declares one And and four T-equivalents. The refusal,
+child estimate, and actual primitive histogram are retained separately.
+
+The complete shared batch evidence, eight original atomic factory refusals,
+source hashes and helper inventory are recorded in
+[AUTO_PARTITION_FILE_AUDIT.md](AUTO_PARTITION_FILE_AUDIT.md) and the external
+g2-bookkeeping-ui-* receipts. Existing measured erasure histories, clean
+temporary workspace and exact recovery tests pass again. Existing generic
+and serialization source boundaries remain explicit.
