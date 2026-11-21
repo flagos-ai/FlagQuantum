@@ -11,6 +11,7 @@ from flagquantum.compiler.routing import CouplingMap
 from flagquantum.compiler.topology import (
     routing_emission,
     routing_strategy,
+    sabre,
     topology_legalization,
 )
 from flagquantum.compiler.topology.topology_legalization import (
@@ -207,6 +208,32 @@ def test_auto_reuses_only_its_own_plan_with_unchanged_evidence(
         assert result.program.to_json() == reference.program.to_json()
         assert device.path_cache_info() == cache_before
         torch.testing.assert_close(_state(result.program), _state(program))
+
+
+def test_auto_retains_replanning_when_search_records_path_cache_activity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sabre, "STALLED_SWAP_LIMIT_PER_WIRE", 0)
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).ry(3, theta=0.21).cx(3, 1).to_ir()
+    with patch.object(
+        routing_emission,
+        "_plan_sabre_for_topology",
+        wraps=routing_emission._plan_sabre_for_topology,
+    ) as emission_search:
+        result = legalize_circuit_topology(
+            source, coupling_map=CouplingMap.line(4), snapshot=_snapshot()
+        )
+    reference = legalize_circuit_topology(
+        source,
+        coupling_map=CouplingMap.line(4),
+        snapshot=_snapshot(),
+        strategy="sabre",
+    )
+    assert result.strategy == "sabre"
+    assert result.program.to_json() == reference.program.to_json()
+    assert result.legalization_identity == reference.legalization_identity
+    assert emission_search.call_count == 1
+    assert result.program.metadata["routing"]["path_cache"]["delta"]["misses"] > 0
 
 
 def test_auto_preserves_a_replacement_router_and_its_failures() -> None:

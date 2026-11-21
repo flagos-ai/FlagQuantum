@@ -145,6 +145,12 @@ def legalize_circuit_topology(
                     ),
                 )
                 selected_strategy = selection.selected_strategy
+                # A release-valve search can record path-cache accesses that a
+                # cold emission must reproduce. Retain replanning in that case.
+                if any(
+                    selection.candidates[selected_strategy].path_cache_delta.values()
+                ):
+                    selected_plan = None
                 # Selection warms path caches. Emission retains its independent,
                 # cold topology so serialized evidence and identities stay stable.
                 deterministic_coupling = CouplingMap(
