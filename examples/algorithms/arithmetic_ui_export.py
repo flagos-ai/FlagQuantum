@@ -40,6 +40,10 @@ from examples.algorithms.sign_extension_decomposition import (
     sign_extension_score,
 )
 from examples.algorithms.sorting_catalog import sorting_examples
+from examples.algorithms.sorting_decomposition import (
+    sorting_catalog_program,
+    sorting_score,
+)
 from examples.algorithms.subtraction_catalog import subtraction_examples
 from examples.algorithms.subtraction_decomposition import (
     subtraction_catalog_program,
@@ -619,6 +623,8 @@ def score(component: object) -> object:
         )
     if decomposed is None:
         decomposed = sign_extension_score(name(component), ports)
+    if decomposed is None:
+        decomposed = sorting_score(name(component), ports, attributes(component))
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -643,7 +649,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Addition, subtraction, bitwise, negation and sign conversion instances retain their immediate child graphs. "
+        "Addition, subtraction, bitwise, negation, sign conversion and sorting instances retain their immediate child graphs. "
         "Other diagrams show atomic typed interfaces. Contextual child nodes "
         "preserve native helper boundaries. Symbolic child declarations have "
         "no executable body. Resource models retain separate evidence. "
@@ -691,10 +697,12 @@ def decomposition(component: object) -> ProgramRecord | None:
         record = controlled_addition_catalog_program(
             name(component), ports, attributes(component)
         )
+    if record is None:
+        record = sign_extension_catalog_program(name(component), ports)
     return (
         record
         if record is not None
-        else sign_extension_catalog_program(name(component), ports)
+        else sorting_catalog_program(name(component), ports, attributes(component))
     )
 
 

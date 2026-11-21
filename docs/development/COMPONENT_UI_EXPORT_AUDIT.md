@@ -1235,3 +1235,48 @@ three deselections and zero skips. Strict typing of three touched Python files,
 Black, Ruff, team scope, architecture, IR, API and whitespace checks pass. The
 isolated user-facing `python -m examples.algorithms.catalog_ui_export` entry
 succeeds. Existing executable Programs and physical owners remain authoritative.
+
+## Complete sorting source-family catalog graphs
+
+All six actual `arithmetic/sorting.py` factories now retain their immediate
+source graphs and contextual native dependencies. Concrete Comparator,
+ParallelComparators, BitonicMerge and BitonicSort use the exact existing
+executable Programs. Their complete ordered calls, operands and child register
+encodings, shapes and sides match unchanged source. Both symbolic-width
+factories also match their original graphs. Symbolic Comparator declares
+GreaterThan with unsigned operands and CSwap with opaque operands, preserving
+the original storage views. Symbolic four-word sort declares its two recursive
+sort calls and merge. These leaf declarations have no executable bodies and
+physical binding refuses them explicitly.
+
+All six fresh root diagrams match original geometry and glyphs. Existing
+workspace, swap and typed port symbols are reused, with source GreaterThan
+labels and default sorting titles composed locally. The isolated combined
+catalog entry produces 2159 JSON files, 234 documents and 2158 diagrams. The
+353 roots contain 50 immediate decompositions and 303 atomic interfaces, plus
+1805 contextual native children. This batch adds 806 child files. Qualified
+native descendant labels increase from 25 to 36.
+
+Existing physical sorting suites pass 208 cases. They retain complete primitive
+streams and measurement feedback, full small complex states with entangled
+spectators and branch histories, valid inverse restoration, zeroed temporary
+work, explicit logical history outputs, ordinary append entry and original
+seeded larger sorting cases. Presentation Programs are checked for literal
+equality with those owners. For C comparisons of n-bit words, emitted T/T-dagger
+count is C*(15*n-4), and measurement count is C*(2*n-1). Original analytical
+queries using the actual seven-T CSwap convention agree. The original model's
+default four-T CSwap convention instead gives C*(12*n-4). Both queries are
+retained independently from emitted primitive counts. Large dense branch
+simulation is outside the small-state evidence scope.
+
+Twenty-six of 44 original-success arithmetic root drawings are now qualified.
+Eighteen remain, along with recursive arithmetic source-glyph qualification and
+broader catalog dependencies in Q-0120. Original failure witnesses and previously
+registered contract/environment/dashboard boundaries remain explicit.
+
+Concentrated catalog regression passes 524 cases with fourteen existing warnings,
+three deselections and zero skips. Strict typing of three touched Python files,
+Black, Ruff, scope, architecture, IR, API and whitespace pass. A concurrent
+export run exhausted local disk space. Its log is retained outside the checkout.
+Only generated output from that interrupted run was reclaimed, then the full
+concentrated suite passed serially with failed-only temporary retention.
