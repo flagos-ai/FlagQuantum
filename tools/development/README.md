@@ -296,3 +296,13 @@ rendering functions. The default publishes the already authored native assets.
 Run `tests/unit/test_notebook_publication.py` for the complete source-order/TOC
 comparison, actual full-native publication and renderer integration. See
 `NOTEBOOK_PUBLICATION_FILE_AUDIT.md` for the explicit metadata-to-asset adaptation.
+
+`python -m tools.development.notebook_publication_check` runs that publication
+command and requires an empty Git status for the entire checkout. Generator
+failure bypasses the status query and retains its exit code. New generated
+outputs and unrelated working changes fail the check until the checkout owner
+has supplied the intended baseline. The check preserves the current ignore
+policy. Run `tests/unit/test_notebook_publication_check.py` for the actual
+unchanged source shell comparison and native full-library workflow. See
+`NOTEBOOK_PUBLICATION_CHECK_FILE_AUDIT.md` for process bounds and literal-path
+handling.
