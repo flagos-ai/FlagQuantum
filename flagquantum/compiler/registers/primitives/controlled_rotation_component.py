@@ -7,7 +7,7 @@
 from math import pi
 
 from ....core.ir import CircuitIR, Instruction
-from ....core.ir.program import FunctionRecord, ProgramRecord
+from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
@@ -16,21 +16,7 @@ from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from ..control.conjunction_program import and_component_program
 from .global_phase import _finite_angle
-
-RotationAngle = float | Parameter | ParameterExpression
-
-
-def _z_power_function(name: str, exponent: RotationAngle) -> FunctionRecord:
-    angle = (
-        exponent * pi
-        if isinstance(exponent, (Parameter, ParameterExpression))
-        else _finite_angle(exponent, pi)
-    )
-    return bit_gate_function(
-        name,
-        (Register("q", quantum_bit_type()),),
-        CircuitIR(1, (Instruction("phase", (0,), params={"theta": angle}),)),
-    )
+from .pauli_rotation_component import RotationAngle, z_power_function
 
 
 def controlled_z_power_program(exponent: RotationAngle) -> ProgramRecord:
@@ -41,7 +27,7 @@ def controlled_z_power_program(exponent: RotationAngle) -> ProgramRecord:
     """
     compute = and_component_program((1, 1), name="compute")
     erase = and_component_program((1, 1), name="erase", uncompute=True)
-    phase = _z_power_function("z_power", exponent)
+    phase = z_power_function("z_power", exponent)
     builder = ComponentProgramBuilder(
         Signature((Register("q", quantum_bit_type(), (2,)),)),
         (*compute.functions, *erase.functions, phase),
@@ -73,8 +59,8 @@ def controlled_rz_program(angle: RotationAngle) -> ProgramRecord:
     builder = ComponentProgramBuilder(
         Signature.build(ctrl=1, q=1),
         (
-            _z_power_function("positive", half),
-            _z_power_function("negative", -half),
+            z_power_function("positive", half),
+            z_power_function("negative", -half),
             cnot,
         ),
     )
