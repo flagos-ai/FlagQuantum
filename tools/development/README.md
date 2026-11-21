@@ -480,3 +480,13 @@ separate from repetition-model estimates. Run
 `tests/unit/test_component_tensor_report_notebook.py` for unchanged original
 cell comparisons, real spawn/kernel execution and exact complex-state checks.
 See `COMPONENT_TENSOR_REPORT_NOTEBOOK_AUDIT.md` for catalog and timing scope.
+
+`component_ui_export.py` exports navigation, Markdown class docs and every node
+of an explicitly supplied declared graph. Supply native domain metadata, wrapper
+filenames and Drawer data through the existing NotebookSpec catalog boundary.
+Run `python -m examples.algorithms.component_ui_export` for a complete WordSwap
+and CX dependency export. The matching notebook includes the existing logical
+modular-exponentiation score demonstration. See `COMPONENT_UI_EXPORT_AUDIT.md`
+for original import/hash defects, retained-file behavior and the remaining full
+native example-provider inventory. `tests/unit/test_component_ui_export.py`
+compares the complete source catalog and exercises actual native execution.
