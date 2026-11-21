@@ -56,9 +56,9 @@ admission: the separate frozen quality rule rejects this result.
 The target result adds four CZs without reducing delivered dependency depth.
 This is a new source/target input, not the prior QFT witness. The ordinary route
 looks better, demonstrating why ordinary-workflow depth alone cannot certify
-the target-artifact workflow. The evidence establishes a downstream quality
-regression; it does not identify the exact native block or synthesis decision
-responsible. No fixture exception, redraw or selector retuning was performed.
+the target-artifact workflow. The complete study establishes a downstream quality
+regression. The stage replay below identifies the realized local-rewrite
+difference; it does not establish globally optimal synthesis. No fixture exception, redraw or selector retuning was performed.
 
 ## Consequences and limits
 
@@ -84,3 +84,29 @@ option or default. The study ran locally with one numerical thread and a
 600-second outer process-group budget. The unchanged SDKBench generator,
 adapters, evaluator, caps and source revision are recorded in the frozen
 protocol and reports. No remote job or host configuration change was required.
+
+
+## Returned-stage replay of the inspected counterexample
+
+A [subsequent captured replay](evidence/sabre-depth-prospective-witness.json)
+executes the same complete target workflow and independent acceptance on the
+already-inspected counterexample, with the same frozen nonce and selector.
+It records the returned native optimization and routing evidence; it changes
+no optimizer, target, rule or input. This replay is not a second unseen draw.
+
+| Returned stage | Baseline | Candidate |
+| --- | ---: | ---: |
+| Reported inserted SWAP count | 8 | 8 |
+| Native CZs before block optimization | 56 | 56 |
+| Accepted collective rewrites | 2 | 0 |
+| Native CZs after block optimization | 52 | 56 |
+
+The baseline accepts two `5 -> 3` CZ rewrites on physical pairs `(1, 2)` and
+`(0, 4)`. Their input/output membership, operator residuals and phases are in
+the raw record. The candidate accepts no rewrite and records 24 local
+`not_lower_cz_cost` rejections; neither run records synthesis-unavailable,
+residual, or growth rejection. Both route with SABRE and identity initial/final
+layouts. The delivered count difference is therefore the loss of these realized
+local savings, rather than an increase in the recorded SWAP count or the native
+baseline CZ count. This does not prove that no different collector or synthesis
+algorithm could optimize the candidate route.
