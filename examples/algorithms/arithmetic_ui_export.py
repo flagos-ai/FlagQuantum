@@ -38,10 +38,17 @@ from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
 )
+from examples.algorithms.conditional_addition_decomposition import (
+    conditional_addition_catalog_program,
+    conditional_addition_score,
+)
 from examples.algorithms.control_child_decomposition import control_child_decomposition
 from examples.algorithms.controlled_addition_decomposition import (
     controlled_addition_catalog_program,
     controlled_addition_score,
+)
+from examples.algorithms.controlled_word_decomposition import (
+    controlled_word_child_decomposition,
 )
 from examples.algorithms.duplicate_decomposition import (
     duplicate_catalog_program,
@@ -649,6 +656,10 @@ def score(component: object) -> object:
             name(component), ports, attributes(component)
         )
     if decomposed is None:
+        decomposed = conditional_addition_score(
+            name(component), ports, attributes(component)
+        )
+    if decomposed is None:
         decomposed = sign_extension_score(name(component), ports)
     if decomposed is None:
         decomposed = sorting_score(name(component), ports, attributes(component))
@@ -731,6 +742,10 @@ def decomposition(component: object) -> ProgramRecord | None:
             name(component), ports, attributes(component)
         )
     if record is None:
+        record = conditional_addition_catalog_program(
+            name(component), ports, attributes(component)
+        )
+    if record is None:
         record = sign_extension_catalog_program(name(component), ports)
     if record is None:
         record = sorting_catalog_program(name(component), ports, attributes(component))
@@ -760,6 +775,7 @@ def _child_presentation(
         or control_child_decomposition(record, entry, parameters)
         or sorting_child_decomposition(record, entry)
         or permutation_child_decomposition(record, entry, parameters)
+        or controlled_word_child_decomposition(record, entry)
     )
 
 

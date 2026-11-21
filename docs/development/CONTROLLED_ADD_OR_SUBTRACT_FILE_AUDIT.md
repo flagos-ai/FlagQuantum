@@ -215,3 +215,57 @@ eight unchanged owners, locked versions and Kickmix Simulator are verified.
 The whole-repository dependency baseline remains separate from zero batch
 findings. Ten byte-identical files retain the established default docstring
 policy failure. Production owners receive no changes in this batch.
+
+## Complete recursive catalog dependency closure — 2026-11-22
+
+All three original factories now retain their successful concrete or symbolic
+root decomposition in the Arithmetic catalog. The Compiler-owned
+conditional_addition_graph owns complement/Add/complement and optional control
+X wiring, taking the existing addition and controlled complement definitions.
+The concrete component retains validation. The graph owns no work. Add retains
+carry allocation and measured erasure. Replacing the supplied addition changes
+the normally bound target, proving the dependency is used. All 42 concrete
+Programs across unsigned, signed and Montgomery words, seven width pairs and
+both polarities equal their complete pre-extraction Program objects.
+
+The symbolic-width complement retains a real call to its controlled repeated-X
+child, whose original decomposition refuses unresolved width. Example-owned
+presentation composes existing controlled-word, repetition, CNOT and partition
+glyphs. Exact whole-definition matching qualifies both complement and repeated-X
+children and rejects a changed CNOT body. Both source adjoint polarities retain
+the original ordered calls.
+
+Every original root drawing raises ValueError because Controlled(BitwiseNot)
+requires a Text title while BitwiseNot supplies TextBox. All three exceptions
+are explicitly tested. Native root diagrams use existing partition symbols and
+retain the complete graph. Fresh source-success descendant drawings agree.
+This is a native presentation decision with the original failure retained.
+
+Together with the complete duplicate dependency group, the batch records 32
+exact recursive graphs, 113 atomic/refusal contexts and 27 fresh non-root
+drawings. The whole Arithmetic canonical intake now has 374 exact graphs,
+1723 atomic/refusal contexts, zero graph or unqualified-descendant gaps and zero
+omitted source-success roots. The 22 unavailable roots all refuse in the
+unmodified source. Named inputs are compared as mappings while ordered calls,
+operands and measurement feedback remain exact.
+
+The 381 fresh execution/reference checks retain complex-amplitude, applicable
+measurement-branch, workspace and resource coverage. Concrete eight-bit signed
+and unsigned catalog streams each emit 28 T-family operations and seven
+measurements, separately matching the independent source model's 28 T
+equivalents and seven measurements. Complete histograms and source model fields
+remain separate in g2-arithmetic-tail-resources-20261122.json. The narrow signed
+callback conflict, one-bit model undercount and inherited negative outer-control
+SDK recursion above remain open. Symbolic widths retain graph/model support
+and their existing physical execution refusal.
+
+Batch verification passes 729 concentrated catalog checks with three existing
+deselections and 14 original notebook warnings, 25 focused source/graph cases,
+and 381 execution/reference cases with 100 existing protobuf bool warnings.
+Strict mypy covers eight changed Python files. Black, Ruff, integration and
+Compiler scope, architecture, multilevel IR, protected API and whitespace checks
+pass. Four frozen source/test blobs remain unchanged. Combined catalog counts
+are derived from the published export plus the exact 88-node Arithmetic delta,
+covered by full catalog file-equality regression. They are 3825 JSON files,
+3824 diagrams, 234 docs, 3471 contextual children, 73 decomposed roots,
+280 atomic interfaces and 345 qualified descendants. Q-0120 remains open.
