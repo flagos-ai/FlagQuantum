@@ -88,3 +88,13 @@ Start with `tests/unit/test_reference_testing_file.py::parallel_example` and
 `lower_fixture`, then run all five `CHECKS` through `check_example`. The report
 consumer in `tests/unit/test_component_report.py` demonstrates this workflow
 without importing pytest into the shared implementation.
+
+## Notebook execution
+
+`notebook_execution.execute_notebook_node` owns the existing optional Jupyter
+execution path shared by SDK notebook helpers and documentation exports. It
+returns the executed NotebookNode and conversion resources. Its optional file
+lock surrounds actual kernel/client startup, and the Jupyter setup context owns
+shutdown on success and failure. Numerical execution remains with the ordinary
+FlagQuantum circuit backend. Run the real complex-state append example in
+`tests/unit/test_notebook_execution.py` with Jupyter installed.
