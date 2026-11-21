@@ -431,3 +431,11 @@ The source method-override report maps to existing Compiler `CallDeclaration`,
 its native declaration consumers. Compiler owns graph traversal and aggregation.
 See `CALL_GRAPH_DECLARATION_REPORT_AUDIT.md` for the complete source mapping,
 actual valid/invalid typing examples and original annotation-report defects.
+
+`protobuf_command.py` generates Python protobuf modules and mypy stubs for
+explicit schema inputs. Supply `--schema-root`, `--output` and relative `.proto`
+paths, adding `--check` for a read-only comparison of the output directory.
+Install the documented optional compiler/plugin environment before invoking it.
+Existing production wire messages use their owned runtime descriptors. See
+`DEVELOPMENT_PROTOBUF_COMMAND_AUDIT.md` for complete source mapping, byte-for-byte
+generation evidence, source Bash failure and staging/write semantics.
