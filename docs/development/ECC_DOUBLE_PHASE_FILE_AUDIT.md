@@ -64,3 +64,27 @@ have native counterparts, plus the physical joint projection test.
 Q-0465 and Q-0467 close. Q-0466 stays open for the source's scalar gate
 decomposition, resource-query and basis-encoding boundaries, and the
 inherited wider-domain cleanup issues.
+
+## Parameter-preserving model traversal
+
+`source_callees(allocator)` follows the original fresh `Rx`/`Ry` allocation and
+returns two calls to one generic point phase operation with the complete width,
+curve, addition-window and multiplication-window parameters. The allocator is
+caller owned, so names already allocated in an enclosing query are respected.
+`source_call_graph()` expands that phase declaration through the existing
+symbolic graph engine. Its terminal multiplicities are twice the representative
+phase child's counts. Repeated queries are deterministic. `cost_attrs()` retains
+the source width column. The module-level grouped graph is still available.
+
+The regression compares both declaration levels against the unchanged source,
+including preallocated symbols and two window settings. The generic point is
+kept distinct from the two physical execution points. The full physical joint
+projection regression above is rerun with this batch. No additional primitive
+counts are inferred from these model edges, and the source resource-query,
+scalar decomposition and clean-domain boundaries remain open.
+
+Batch validation on 2026-11-21 passed 44 concentrated cases and 29 integration
+cases, strict typing for all three changed Python files, formatting, Algorithms
+scope, architecture, IR and public API checks. The Cirq 1.6.1 lane passed all
+20 selected model and physical phase cases with the native Kickmix extension
+present.

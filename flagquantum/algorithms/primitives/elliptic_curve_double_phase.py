@@ -5,16 +5,19 @@
 
 """Two consecutive point phase estimations over the same coordinate state."""
 
+from collections.abc import Hashable
 from dataclasses import dataclass
 from functools import cached_property
 
 from ...circuit import Circuit
 from ...compiler._component_trace.call_graph import (
+    SymbolAllocator,
     SymbolicCallGraph,
     symbolic_call_graph,
 )
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
 from .elliptic_curve_phase_estimation import EllipticCurvePhaseEstimation
 from .elliptic_curve_point import ECPoint
@@ -67,6 +70,37 @@ class EllipticCurveDoublePhase:
     @property
     def source_signature(self) -> Signature:
         return Signature(())
+
+    def source_callees(self, allocator: SymbolAllocator) -> dict[Hashable, SymbolicInt]:
+        """Declare two phase calls at the source's fresh generic point."""
+        point = ECPoint(
+            allocator.new_symbol("Rx"),
+            allocator.new_symbol("Ry"),
+            self.base_point.mod,
+            self.base_point.curve_a,
+        )
+        phase = EllipticCurvePhaseEstimation(
+            self.width, point, self.window, self.multiplication_window
+        )
+        return {phase: 2}
+
+    def source_call_graph(self) -> SymbolicCallGraph[Hashable]:
+        """Expand the generic phase child while preserving parameter identities."""
+
+        def calls(
+            node: Hashable, allocator: SymbolAllocator
+        ) -> dict[Hashable, SymbolicInt]:
+            if node == self:
+                return self.source_callees(allocator)
+            if isinstance(node, EllipticCurvePhaseEstimation):
+                return node.source_callees()
+            return {}
+
+        return symbolic_call_graph(self, calls)
+
+    def cost_attrs(self) -> list[tuple[str, SymbolicInt]]:
+        """Return the original resource table's width column."""
+        return [("n", self.width)]
 
     @cached_property
     def _stages(
