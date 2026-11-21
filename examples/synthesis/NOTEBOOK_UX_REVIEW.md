@@ -500,3 +500,29 @@ The generic equal-modulus sum fusion preserves arbitrary XOR targets and shared
 intermediates; read-only sign aliases remain separate from injective multiplier
 operands. All 16 Notebook stages replay, with no provenance or original-source
 changes. This capability follow-up does not change the 212 editorial denominator.
+
+## Frozen integration and replay checkpoint
+
+At implementation commit `e997d5cd8`, all 216 original Qmod paths and six
+approved alternatives matched their recorded stages in 460.174 seconds of total
+case time: 210 original execution smokes, six expected original frontend refusals
+and six successful alternative smokes. These are normalization/profile checks,
+not fresh independent full-state numerical acceptance.
+
+A cross-check of the 212 approved workflows found twelve early cases with
+integration evidence but without a uniform complete-cell process record. All
+twelve now replay at their original size in 195.962 seconds total, including the
+128-by-128 image and its 200000 shots, all 105 logical-cat grid points, and the
+original walk and oracle stages. Source hashes are unchanged. Every approved
+workflow now has an editorial link and a successful nonempty replay log. Records
+for the other workflows retain their own historical implementation commits;
+this is not a claim that all 212 executed on this Compiler commit.
+
+The frozen default run completed with 21179 passes, 801 skips, nine failures and
+six setup errors in 1023.78 seconds. Two vocabulary checks pass when Git receives
+the explicit linked-worktree root. Six launch failures and six MPS setup errors
+report restricted local socket/Gloo access, consistent with the separately
+recorded successful environment rechecks. One evidence-history check still
+rejects 99 origin declarations because shared private refs appear fetchable.
+Historical refs and origin declarations were not rewritten. The raw full run
+remains failed; focused and environment rechecks do not rename it green.
