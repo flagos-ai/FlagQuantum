@@ -1,13 +1,23 @@
 """Build real-amplitude loading and the two controlled cyclic differences."""
 
 import math
-from typing import Annotated
 
 import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.synth import H, Output, QArray, QBit, QNum, X, allocate, control, qfunc
+from flagquantum.synth import (
+    H,
+    Output,
+    QArray,
+    QBit,
+    QNum,
+    X,
+    allocate,
+    control,
+    prepare_amplitudes,
+    qfunc,
+)
 
 AXIS_BITS = 7
 PIXEL_BITS = 2 * AXIS_BITS
@@ -29,7 +39,7 @@ def walsh_angles(angles: torch.Tensor) -> torch.Tensor:
 
 
 def prepare_image(amplitudes: torch.Tensor) -> fq.Circuit:
-    """Prepare all 16384 real nonnegative amplitudes from the zero state."""
+    """Independent Circuit reference for all 16384 nonnegative image amplitudes."""
     if amplitudes.shape != (1 << PIXEL_BITS,) or amplitudes.dtype != torch.float64:
         raise ValueError("Expected 16384 float64 amplitudes")
     if not bool(torch.isfinite(amplitudes).all()) or bool((amplitudes < 0).any()):
@@ -62,29 +72,29 @@ def decrement(position: QNum) -> None:
 
 @qfunc
 def detect_edges(
-    x: Output[Annotated[QNum, 7]],
-    y: Output[Annotated[QNum, 7]],
+    amplitudes: list[float],
+    image: Output[QNum[14]],
     flags: Output[QArray[QBit]],
 ) -> None:
-    allocate(x)
-    allocate(y)
+    prepare_amplitudes(amplitudes, 0, image)
     allocate(3, flags)
     H(flags[0])
-    control(flags[0], lambda: decrement(x))
+    control(flags[0], lambda: decrement(image[7:14]))
     H(flags[0])
     H(flags[1])
-    control(flags[1], lambda: decrement(y))
+    control(flags[1], lambda: decrement(image[0:7]))
     H(flags[1])
     control(flags[0], lambda: X(flags[2]))
     control(flags[1], lambda: X(flags[2]))
     control(flags[0:2], lambda: X(flags[2]))
 
 
-def build_edges() -> synth.Program:
+def build_edges(amplitudes: list[float]) -> synth.Program:
     return synth.synthesize(
         detect_edges,
+        classical_inputs={"amplitudes": amplitudes},
         max_qubits=20,
         max_workspace=3,
-        max_operations=3000,
+        max_operations=35000,
         memory_limit_bytes=64 * 1024**2,
     )
