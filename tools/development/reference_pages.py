@@ -8,14 +8,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from griffe import Class, Module, Object
+from griffe import Alias, Class, Module, Object
 
 
 @dataclass
 class MajorClassPage:
     """Describe a class rendered on its own reference page."""
 
-    obj: Class | None = None
+    obj: Class | Alias | None = None
     section: str | None = None
     pref_path: str | None = None
 
@@ -38,7 +38,7 @@ class MemberType(Enum):
 
 @dataclass
 class ModulePageMember:
-    obj: Object
+    obj: Object | Alias
     pref_dotpath: str
     mytype: MemberType
 
@@ -47,7 +47,7 @@ class ModulePageMember:
 class ModulePage:
     """Describe a module page and its ordered member references."""
 
-    obj: Module | None = None
+    obj: Module | Alias | None = None
     section: str | None = None
     pref_path: str | None = None
     members: list[ModulePageMember] = field(default_factory=list)

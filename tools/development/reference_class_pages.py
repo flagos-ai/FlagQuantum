@@ -29,7 +29,7 @@ from tools.development.reference_signatures import write_method_signature
 
 
 def write_major_class_member(
-    f: Writable, obj: griffe.Class, obj2: griffe.Object | griffe.Alias
+    f: Writable, obj: griffe.Class | griffe.Alias, obj2: griffe.Object | griffe.Alias
 ) -> None:
     if obj2.is_private:
         return
@@ -58,7 +58,10 @@ def write_major_class_member(
 
 
 def write_major_class(
-    f: LinkingWriter, obj: griffe.Class, pref_dotpath: str, aliases_d: dict[str, str]
+    f: LinkingWriter,
+    obj: griffe.Class | griffe.Alias,
+    pref_dotpath: str,
+    aliases_d: dict[str, str],
 ) -> None:
     # Title
     f.write(f"# {obj.name}\n\n")

@@ -32,7 +32,10 @@ from tools.development.reference_signatures import write_function_signature
 
 
 def write_module_other_member(
-    f: LinkingWriter, obj: griffe.Object, pref_path: str, aliases_d: dict[str, str]
+    f: LinkingWriter,
+    obj: griffe.Object | griffe.Alias,
+    pref_path: str,
+    aliases_d: dict[str, str],
 ) -> None:
     first_line, rest = split_docstring(obj)
     f.write_nl(f"### `{obj.name}`\n")
@@ -41,7 +44,7 @@ def write_module_other_member(
     f.write(first_line)
     f.write("\n\n")
     if obj.kind is Kind.FUNCTION:
-        assert isinstance(obj, griffe.Function)
+        assert isinstance(obj, (griffe.Function, griffe.Alias))
         write_function_signature(f, obj)
     write_docstring_parts(f, rest, level=1)
 
@@ -72,7 +75,7 @@ def write_module_other_member(
 
 def write_module(
     f: LinkingWriter,
-    obj: griffe.Module,
+    obj: griffe.Module | griffe.Alias,
     pref_path: str,
     members: Sequence[ModulePageMember],
     aliases_d: dict[str, str],

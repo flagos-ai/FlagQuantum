@@ -40,12 +40,12 @@ def camel_to_snake(name: str) -> str:
     return re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name).lower()
 
 
-def get_obj_instance_name(obj: Object) -> str:
+def get_obj_instance_name(obj: Object | Alias) -> str:
     return BESPOKE_OBJECT_NAMES_FOR_CLASSES.get(obj.name, camel_to_snake(obj.name))
 
 
 def write_property_method_signature(
-    f: Writable, obj: Object, method: Function | Alias
+    f: Writable, obj: Object | Alias, method: Function | Alias
 ) -> None:
     assert method.returns, method
     signature = f"{get_obj_instance_name(obj)}.{method.name} -> {method.returns}"
@@ -54,10 +54,10 @@ def write_property_method_signature(
 
 def write_generic_method_signature(
     f: Writable,
-    obj: Object,
+    obj: Object | Alias,
     method: Function | Alias,
     first_arg_name: str | None = "self",
-    caller_name: Callable[[Object], str] = get_obj_instance_name,
+    caller_name: Callable[[Object | Alias], str] = get_obj_instance_name,
 ) -> None:
     parameters = list(method.parameters)
     if first_arg_name is not None:
@@ -86,7 +86,9 @@ def write_function_signature(f: Writable, function: Function | Alias) -> None:
     f.write(f"```python\n{signature}\n```\n\n")
 
 
-def write_method_signature(f: Writable, obj: Object, method: Function | Alias) -> None:
+def write_method_signature(
+    f: Writable, obj: Object | Alias, method: Function | Alias
+) -> None:
     if method.overloads:
         return
     decorators = [
