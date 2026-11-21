@@ -499,3 +499,12 @@ files with fresh typed interface diagrams and fourteen documentation files, and
 prints emitted primitive counts separately from QEC model categories. Its graph
 is an atomic interface view. Remaining catalog and decomposition coverage is
 listed in `COMPONENT_UI_EXPORT_AUDIT.md`.
+
+`python -m examples.algorithms.register_gate_ui_export` joins the complete fifteen
+Basic Gates notebook entries in their registered order. It exports fifty-one
+native instance interfaces, thirty-five documentation files and fifty-two JSON
+files. State/effect direction, integer values and grouped controls use their
+existing domain-owned records. Native control metadata retains shapes and
+activation values to distinguish instances that collide under the source UI's
+unsupported-array encoding. Decomposition graph and source-glyph coverage remain
+listed separately in `COMPONENT_UI_EXPORT_AUDIT.md`.

@@ -208,3 +208,53 @@ public API baseline and whitespace checks pass. Both full-source catalog
 export profiles still produce 3,317 byte-identical files per side after adding
 the documentation callbacks. Per-file hash/length manifests are retained in the
 external reference environment before reclaiming these completed export copies.
+
+## Complete Basic Gates native instance catalog
+
+`examples/algorithms/register_gate_ui_export.py` adds all six remaining Basic
+Gates entries and joins them with the previous nine in the existing catalog
+order. The complete group contains fifteen notebooks, thirty-five documentation
+groups and fifty-one actual source factories. It publishes fifty-two JSON files
+and thirty-five documentation files. Every instance gets a freshly generated
+native typed interface diagram. Large and symbolic examples only construct
+metadata and logical interfaces in this workflow.
+
+The six entries reuse `ConjunctionCall`, basis-state/effect resource identities,
+canonical integer `FunctionRecord` definitions, `SwapDeclaration`, approximate
+swap resource calls, `SwapWithZeroExample`, `MultiplexedSwapExample`,
+`PredicateExample` and `ControlledHadamardExample`. Integer ket/effect value and
+direction are read with `integer_basis_function_data`. The shared arbitrary
+Clifford model key alone would lose those instance parameters. Symbolic ordinary
+and controlled swap retain the source's positive-integer symbol assumptions.
+Approximate swap retains its distinct unconstrained symbol.
+
+All factory names, documentation grouping/order and ordered signature names,
+widths, shapes and sides match the complete frozen group. Forty-three instances
+also have exactly matching encoded source metadata and filenames. The remaining
+eight are control predicates and ControlledViaAnd examples. Their native metadata
+retains actual activation values, typed encoding, shape and register names.
+Source ndarray encoding produces `NOT_SERIALIZABLE`, making `ctrl_on_bits` and
+`ctrl_on_nd_bits` collide. The test preserves that source result and verifies
+that native filenames distinguish the two instances. This native parameter
+representation is an explicit adaptation of the example UI artifacts.
+
+The new workflow changes metadata composition only. Existing complete-source
+And, swap-network, control-predicate, ControlledViaAnd, integer/basis-vector and
+measurement tests are reused for primitive streams, complete complex amplitudes,
+measured histories, clean work and resource evidence. A concentrated batch of
+149 checks passes with zero skips and fourteen existing parser warnings. Strict
+typing of both added files, Black and Ruff pass. The prior full exporter/default
+compatibility and real-Jupyter evidence is reused because the exporter has not
+changed since that accepted batch.
+
+Q0120 remains open. Native instance metadata and fresh atomic interface drawings
+now cover the entire Basic Gates group. The other ten catalog sections contain
+202 documentation references and 308 examples. Complete per-instance declared
+decomposition graphs, source per-gate glyph parity and fresh native full-catalog
+diagrams also remain open. The parent-file acceptance count stays unchanged.
+
+The normal module entry was also executed in an isolated temporary working
+directory and produced all expected artifacts with fifty-one non-null diagrams.
+Integration scope, architecture, multi-level IR and public API baseline checks
+pass for this added provider module. The export workflow performs no numerical
+simulation and adds no execution or resource-model behavior.
