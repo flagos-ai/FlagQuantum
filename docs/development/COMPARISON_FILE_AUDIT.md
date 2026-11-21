@@ -200,3 +200,15 @@ checks cover all seven changed Python files. Black, Ruff, integration scope,
 architecture, multilevel IR, protected API baseline and whitespace checks pass.
 The batch closes the complete comparison-file recursive presentation. Other
 Arithmetic source families retain their own recursive presentation acceptance.
+
+## Recursive sorting consumers — 2026-11-22
+
+GreaterThan descendants now qualify through the existing unsigned comparison
+owner. Both operand widths select the candidate, and the complete reachable
+Program must match before source labels and comparison glyphs are supplied.
+This closes eleven contextual GreaterThan drawing gaps across the four concrete
+sorting catalog roots. Their recursively reached LessThanEqual, directional
+mixer, single-bit comparison and erasure definitions retain prior acceptance.
+The execution owner, phases, measurements, work ownership and primitive resource
+stream remain unchanged. See SORTING_FILE_AUDIT.md and the durable
+`g2-sorting-child-*20261122` receipts for whole-tree evidence.

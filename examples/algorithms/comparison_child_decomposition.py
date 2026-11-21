@@ -6,6 +6,7 @@
 
 from examples.algorithms.comparison_decomposition import comparison_symbols
 from flagquantum.compiler.registers.comparison.ordering_component import (
+    greater_than_program,
     less_equal_program,
 )
 from flagquantum.compiler.registers.comparison.tree_component import (
@@ -44,19 +45,27 @@ def comparison_child_decomposition(
                 ),
             )
         )
-    elif ports == ("x", "y", "target") and all(
+    elif ports in (("x", "y", "target"), ("a", "b", "target")) and all(
         type(register.bitsize) is int
         and register.bitsize > 0
         and register.dtype.encoding == "uint"
         and not register.shape_symbolic
         for register in registers[:2]
     ):
-        candidates.append(
-            (
-                "LessThanEqual",
-                less_equal_program(registers[0].bitsize, registers[1].bitsize),
+        if ports[0] == "x":
+            candidates.append(
+                (
+                    "LessThanEqual",
+                    less_equal_program(registers[0].bitsize, registers[1].bitsize),
+                )
             )
-        )
+        else:
+            candidates.append(
+                (
+                    "GreaterThan",
+                    greater_than_program(registers[0].bitsize, registers[1].bitsize),
+                )
+            )
     return next(
         (
             (label, template, comparison_symbols(template, label, {}))
