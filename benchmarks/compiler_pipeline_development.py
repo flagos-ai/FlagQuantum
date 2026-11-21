@@ -38,7 +38,7 @@ class Observation(TypedDict):
 
 class DevelopmentReport(TypedDict):
     evidence_class: str
-    compiler_commit: str
+    implementation_commit: str
     source_commit: str
     source_sha256: dict[str, str]
     runner_sha256: str
@@ -130,7 +130,7 @@ def main() -> None:
     sys.path.insert(0, str(harness / "src"))
     report: DevelopmentReport = {
         "evidence_class": "development",
-        "compiler_commit": _git(source, "rev-parse", "HEAD"),
+        "implementation_commit": _git(source, "rev-parse", "HEAD"),
         "source_commit": _HARNESS,
         "source_sha256": {
             name: hashlib.sha256((source / name).read_bytes()).hexdigest()

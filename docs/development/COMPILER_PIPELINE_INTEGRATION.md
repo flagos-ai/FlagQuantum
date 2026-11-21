@@ -108,6 +108,24 @@ the complete pinned Git tree. The retained macOS execution used an external
 must contain 120 application outcomes and four latency outcomes; a checkpoint
 from an interrupted run is not an accepted complete report.
 
+The initial integration CI rejected the unreviewed evidence field name
+`compiler_commit`. The reports and runner now use the existing vocabulary
+`implementation_commit`; the SDKBench revision remains `source_commit`.
+This is a field-name correction, not another measurement. All numerical values,
+source identities, output digests and recorded runner digests are unchanged.
+The recorded runner digests identify the original runner preserved in commit
+`3495f944c92948678d7bd86a31f76b3a445da8e0`; the current runner emits the corrected
+field name and consequently has a different digest. The revision vocabulary
+gate and its assertions remain unchanged.
+
+The correction passed the revision-field vocabulary test. A local run of all
+58 revision tests initially had two failures: a missing tracked example asset
+manifest in the sparse checkout, and 16 origin-declaration conflicts caused by
+revisions available through this development repository's additional refs.
+Restoring the manifest allowed the other 57 tests to pass. The complete-tree
+origin-declaration test remains unqualified locally and must pass in CI; its
+declarations and assertions were not changed.
+
 The supported user workflow remains the public circuit-to-compiler path shown
 in [the routing study](COMPILER_SABRE_DEPTH.md#existing-user-workflow). The
 integration is intended to reduce avoidable CPU compiler work and preserve
