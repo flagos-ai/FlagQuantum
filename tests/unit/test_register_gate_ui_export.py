@@ -142,6 +142,8 @@ def test_unregistered_instance_is_refused() -> None:
 
 
 DECOMPOSITION_EXAMPLES = (
+    "int_state",
+    "int_effect",
     "multi_and",
     "swap_small",
     "cswap_small",

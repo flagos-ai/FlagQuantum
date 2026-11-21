@@ -14,6 +14,10 @@ from examples.algorithms.control_predicate_catalog import PredicateExample
 from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
 )
+from flagquantum.compiler.registers.component_basis_vectors import (
+    integer_basis_function_data,
+    integer_basis_program,
+)
 from flagquantum.compiler.registers.control.component_predicate import (
     control_predicate_program,
 )
@@ -21,7 +25,7 @@ from flagquantum.compiler.registers.control.conjunction_program import (
     conjunction_program,
 )
 from flagquantum.compiler.registers.primitives.swap_component import SwapDeclaration
-from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.register_score import RegisterStep
@@ -35,6 +39,13 @@ from flagquantum.drawer.register_score_data import (
 
 def decomposition_program(component: object) -> ProgramRecord | None:
     """Select only complete concrete graphs owned by the existing Compiler."""
+    if isinstance(component, FunctionRecord):
+        data = integer_basis_function_data(component)
+        if data is not None:
+            assert component.registers is not None
+            return integer_basis_program(
+                component.name, component.registers[0].dtype, data[0], state=data[1]
+            )
     if isinstance(component, SwapDeclaration) and type(component.bitsize) is int:
         return component.program()
     if (
@@ -81,6 +92,10 @@ def decomposition_symbols(
             }
         assert index is not None
         function = functions[step.name]
+        if isinstance(component, FunctionRecord) and step.name.endswith(
+            ("_basis_0", "_basis_1")
+        ):
+            return _box(register, step.name[-1])
         if step.name == "swap_bit":
             if register.name == "ctrl":
                 return "Circle", {"filled": True}

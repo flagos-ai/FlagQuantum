@@ -831,3 +831,28 @@ Basic Gates source group comprises states/effects, relative controlled swap,
 SwapWithZero, multiplexed swap and ControlledViaAnd. Nine source-success
 instances remain in that group. Preserve all 33 recorded original failures and
 distinguish their native display extensions from upstream parity.
+
+
+## Complete integer state and effect child projection
+
+`integer_basis_program` in the existing Compiler basis-vector owner retains
+source MSB-first zero/one calls and the Join or Split boundary. The original
+canonical loader supplies each child's physical body. Caller outputs retain
+ownership until explicitly consumed; an effect requires owned clean release.
+Both 8-bit catalog instances now draw these immediate child graphs. Their
+ordered fresh source geometry and glyphs match after native identity/boundary
+normalization. No source fixture is used for these drawings.
+
+Widths one through four exhaust every integer in both directions. Ordered
+child wiring matches the unchanged original. Bound primitive streams and
+output mappings equal the canonical implementation exactly. Closed prepare /
+effect pairs return all storage to zero with 2 * popcount(value) physical X
+gates. Existing tensor and complex-amplitude evidence remains applicable.
+The original analytical model retains one ArbitraryClifford call per integer
+vector; its logical classification remains separate from physical X counts.
+
+The combined catalog now has thirteen immediate native decompositions and
+340 atomic interfaces. Seven original Basic Gates source-success examples
+remain in relative swap, SwapWithZero, multiplexed swap and ControlledViaAnd.
+Source leaf decomposition refusals, original rendering failures, dependency
+node publication and recursive coverage remain separately open.
