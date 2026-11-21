@@ -5,9 +5,12 @@ from typing import Any
 import pytest
 
 from examples.algorithms import arithmetic_ui_export as native
+from examples.algorithms.component_ui_dependencies import ComponentFunction
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.test_arithmetic_ui_export import originals as originals
+from tests.unit.test_basic_gate_child_decomposition import _label, _source_score
 from tests.unit.test_component_graph import _native_trace, _source, _source_trace
+from tests.unit.test_register_gate_ui_export import _canonical_score
 
 EXACT = (
     "permutation",
@@ -46,6 +49,24 @@ def test_complete_permutation_recursive_graph(
         assert _native_trace(record, name) == _source_trace(
             _source(Signature(function.registers or ())), composite
         )
+        if name != record.functions[0].name:
+            node = ComponentFunction(
+                identifier, name, record, identifier, native._child_presentation
+            )
+            assert node.presentation is not None, (identifier, source, name)
+            assert node.presentation[0] == _label(source)
+            actual = node.score()
+            assert isinstance(actual, dict)
+            try:
+                expected = _source_score(composite)
+            except ValueError as error:
+                assert type(source).__name__ == "PermutationCycle"
+                assert "should return a `Text` object" in str(error)
+            else:
+                assert _canonical_score(actual) == _canonical_score(expected), (
+                    identifier,
+                    source,
+                )
         children = {
             instance.i: instance.bloq for instance, _, _ in composite.iter_bloqsoqs()
         }

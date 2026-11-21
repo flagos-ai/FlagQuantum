@@ -268,3 +268,49 @@ now has 342 exact graphs, 1610 original atomic/refusal contexts and no successfu
 source/native declaration gaps. Two duplicate-detection graph gaps and three
 successful omitted ControlledAddOrSubtract roots remain. Catalog descendant
 glyph gaps listed above remain open independently of the permutation graph closure.
+
+## Complete permutation descendant presentation — 2026-11-22
+
+`examples/algorithms/permutation_child_decomposition.py` owns the catalog's
+permutation-specific constructor selection. The owning cycle values select the
+existing equality predicates and controlled-XOR deltas. Whole reachable
+Program definitions must match literally before source class labels or glyphs
+are used. The existing control provider retains ownership of mixed-polarity
+conjunction and measured-adjoint glyphs. Matching does not infer constructors
+from helper names or introduce an execution implementation.
+
+All six source-success factories retain 114 exact recursive graphs and 297
+original atomic/refusal contexts. Every one of the 108 non-root source-success
+contexts is qualified with its original class label. Fresh source drawings match
+for 102 contexts. The remaining six PermutationCycle descendants reproduce the
+original Controlled/XorK title ValueError. Their complete native graphs use the
+existing partition glyphs. The two cycle roots retain the previously documented
+native interface diagrams and available dependency graphs. Reference code is
+unchanged, with three source blobs reverified.
+
+The complete descendant drawing gap is closed for this source family, with the
+source drawing failures recorded as explicit exceptions. Root graph topology,
+typed Programs, primitive emissions, numerical execution and resource models
+are unchanged from accepted head dd5657078. Full Compiler/Core/execution owners,
+permutation Program constructors and all nine execution acceptance test files
+are verified unchanged. The preceding 197-pass execution receipt and separately
+recorded actual primitive/model resources are reused. No fresh execution rerun
+is claimed. Normal usage remains circuit.append(op).
+
+Measurement-feedback mutation and unrelated cycle-constant metadata both reject
+the enclosing cycle and equality class labels. These checks complement the
+existing all-small-polarities control conformance and feedback-mutation tests.
+Whole catalog totals remain 3737 JSON, 3736 diagrams, 234 documentation files,
+3383 contextual children, 70 decomposed roots and 283 atomic interfaces. Qualified
+contextual descendants increase from 252 to 336. Existing published export counts
+are reused with an exact zero-node topology delta and complete catalog regression.
+
+Final concentrated catalog regression passes 719 cases with three existing
+deselections and 14 existing notebook warnings. Focused recursive/provider/control
+regression passes 48 cases. Strict typing covers four changed Python files.
+Black, Ruff, integration scope, architecture, IR, public API baseline and whitespace
+checks pass. Receipts use `g2-permutation-glyph-*`. The next complete source group
+is duplicate detection. Its fresh named-input mapping audit has 22 exact graphs,
+88 original atomic/refusal contexts and zero graph gaps. Two half-comparison
+class labels still require qualification. Raw predecessor-grouped mapping order
+is retained as a witness, independently of named input semantics.

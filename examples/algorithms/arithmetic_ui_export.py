@@ -52,6 +52,9 @@ from examples.algorithms.integer_multiplication_catalog import (
 )
 from examples.algorithms.negation_catalog import negation_examples
 from examples.algorithms.permutation_catalog import permutation_examples
+from examples.algorithms.permutation_child_decomposition import (
+    permutation_child_decomposition,
+)
 from examples.algorithms.permutation_decomposition import (
     permutation_catalog_program,
     permutation_score,
@@ -756,6 +759,7 @@ def _child_presentation(
         or sign_extension_child_decomposition(record, entry)
         or control_child_decomposition(record, entry, parameters)
         or sorting_child_decomposition(record, entry)
+        or permutation_child_decomposition(record, entry, parameters)
     )
 
 
