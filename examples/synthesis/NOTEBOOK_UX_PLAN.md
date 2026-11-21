@@ -22,6 +22,24 @@ Track three independent measures:
 - Capability gaps: inspect actual code and missing public behavior. A hidden
   helper alone is a presentation issue, not proof that synth lacks a feature.
 
+## Current closure checkpoint
+
+| Requirement | Current evidence | Remaining work |
+| --- | --- | --- |
+| Preserve approved migration scope | 212 accepted workflows; all editorial links and historical successful full-cell process records resolve | Historical cell records are not current-HEAD execution claims |
+| Preserve original-source paths | All 222 rows replay on `f14dfad31`: 210 original executions, six original expected refusals and six approved alternative executions | Smoke/profile regressions remain separate from independent full-state acceptance |
+| Six editable learning lessons | All lesson cells and independent assertions run through the focused user-workflow selection | Keep their six-case teaching denominator separate from the 212 upstream workflows |
+| Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Original degree-101/255 nozzle sequences still require the pending bounded effect admission |
+| Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Pending explicit preparation/binding capacity approval; public limits unchanged |
+| Original signed arithmetic budget | Native full-size execution at 20 total qubits; complete arbitrary XOR and coherent checks | Continue investigating a reusable path to the independent Circuit's 14-qubit budget without weakening XOR semantics |
+| Repeated parameter evaluations | Existing Circuit plan reuse and gradients taught; repeated native-specialization readout validation reduced | Native symbolic angle binding remains a separate design/admission item |
+| Frozen default checks | 21202 passes, 801 skips, nine failures and six errors; no new failed/error nodes versus the prior baseline | Existing worktree, local-network and shared-history environment issues remain explicit; raw run is not green |
+
+The two pending capacity proposals do not authorize implementation by themselves.
+Continue safe internal resource/validation improvements while those decisions
+remain pending; do not substitute smaller original workloads or packed response
+matrices to claim their acceptance.
+
 ## Delivery sequence
 
 | Batch | Deliverable | Acceptance | Status |
@@ -458,3 +476,30 @@ passes 97 tests in 19.30 seconds. Every execution mode retains actual layer,
 profile, layout, resource and result checks. Protected API, Black, Ruff and
 local documentation links pass. The subsequent frozen default run is recorded
 separately; these focused passes do not relabel earlier environment failures.
+
+
+## Frozen validation after immediate identity reuse
+
+On `f14dfad3111fc73fc77285b66134476b9391134d`, all 222 original/alternative
+source rows match their recorded stages in 446.856 seconds of elapsed local
+replay time. Every recorded qubit, instruction, depth and execution-profile
+field matches the preceding frozen source replay. This is an execution smoke
+and profile regression, not a fresh independent full-state acceptance or a
+throughput promotion. The original six frontend refusals remain explicit.
+
+The default smoke/unit run completes with 21202 passes, 801 skips, nine failures
+and six setup errors in 1036.30 seconds. Exact failed/error-node comparison
+finds no new failures against `824ef0942`; its five vocabulary failures were
+already corrected before this Services change. Two census nodes pass in 0.58
+seconds with the worktree root supplied only to that focused subprocess. Six
+launch failures and six Gloo setup errors retain the sandbox loopback cause;
+the preceding separately allowed 103-test loopback recheck remains historical
+evidence, not a new run. The provenance gate still rejects 99 origin records
+because shared private refs are locally fetchable. No origin declaration,
+private ref, snapshot or test was rewritten to hide those failures.
+
+A fresh inventory/link/process-record cross-check finds all 212 accepted
+Notebooks, every editorial link and at least one preserved successful full-cell
+process record per case. Those historical rows retain their original source and
+implementation attribution. The default run stays failed; focused and
+environment rechecks do not convert it into a full green claim.
