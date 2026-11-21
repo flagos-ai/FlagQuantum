@@ -30,6 +30,7 @@ from ...compiler.registers.component_rebindings import (
     join_word_function,
     split_word_function,
 )
+from ...compiler.registers.layout.component_partition import partition_component_program
 from ...compiler.registers.layout.component_workspace import (
     allocate_word_function,
     free_word_function,
@@ -55,6 +56,7 @@ def _leaf_program(
 ) -> FunctionRecord | ProgramRecord:
     from qualtran._infra.gate_with_registers import get_named_qubits
     from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
+    from qualtran.bloqs.bookkeeping.partition import _PartitionBase
 
     if isinstance(source, (Allocate, Free)):
         dtype = registers[0].dtype
@@ -64,6 +66,9 @@ def _leaf_program(
             else free_word_function
         )
         return lifetime_factory(name, dtype, source.dirty)
+    if isinstance(source, _PartitionBase):
+        parts = registers[1:]
+        return partition_component_program(parts, name, reverse=not source.partition)
     if isinstance(source, (Split, Join)):
         rebinding_factory = (
             split_word_function if isinstance(source, Split) else join_word_function

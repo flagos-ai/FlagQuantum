@@ -58,3 +58,50 @@ no skips. Strict typing, formatting, team scope, architecture, IR
 contracts and public API checks passed.
 
 See [gate and branch validation](REGISTER_SELECT_SWAP_QROM.md).
+
+## Actual graph import through Partition
+
+The live graph importer now sends original `Partition` leaves to the existing
+Compiler `partition_component_program` owner. Original Partition's Cirq hook
+returns `None` with new register views. Treating that return as a circuit caused
+ordinary blocked SelectSwapQROM graph imports to fail before the lookup body.
+The adapter now preserves source part order, shapes and direction without
+introducing gates or a second partition implementation. A standalone shaped
+Partition and its inverse both preserve the exact physical views.
+
+Actual four-row, two-bit target source graphs import and execute through the
+owned Program binder, JSON roundtrip and `circuit.append(op)`. Forward and
+adjoint cases compare all populated complex amplitudes of coherent addresses,
+nonzero targets and a correlated spectator. The dirty forward case includes
+all sixteen states of the borrowed four-bit bank in the same coherent input.
+The bank is restored and remaining scratch is zero. The original forward
+allocates dirty bank words then declares clean Free nodes; its adjoint allocates
+clean words and declares dirty Free nodes. The importer retains those original
+lifetime declarations, and the binding and numerical checks distinguish them.
+
+| Original graph fixture | Actual imported primitives | Source model account |
+| --- | --- | --- |
+| Clean bank, either direction | 116 operations including 16 T/T-dagger, 32 CX, 32 H and zero measurements | 16 total T; direct model queried separately |
+| Dirty bank, either direction | 220 operations including 32 T/T-dagger, 56 CX, 64 H and zero measurements | 32 total T; direct model queried separately |
+
+These counts belong to the `[0,1,2,3]`, two-bit-target fixture. They do not
+replace the earlier one-bit-target, measured-QROM tutorial counts. For the new
+fixture there are no measurement histories to enumerate. Existing measured
+lookup and channel tests remain in the combined regression.
+
+The actual fully blocked one-dimensional graph still fails finalization for a
+missing `selection` Soquet. The mixed `(0,1)` two-dimensional block still fails
+with mismatched SwapWithZero register types, and the fully blocked two-axis
+graph lacks `selection0`. Tests compare the original decomposition errors with
+the importer errors. Those are preserved source boundaries, so Q-0484 remains
+open after this dependency repair.
+
+The same import branch covers the original `_PartitionBase` family, including
+concrete `Split2` and `Join2` and their adjoints. Four direct view checks prove
+that those subclasses retain zero gate and zero workspace behavior through
+the same owner. This avoids leaving sibling no-operation hooks broken.
+
+The batch passed 136 concentrated tests, 29 integration tests, strict typing,
+Black, Ruff, Ecosystem scope, architecture, IR and public API checks. The
+Cirq 1.6.1 lane passed 24 live-graph and partition cases with native Kickmix
+present. No source files were modified.
