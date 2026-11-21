@@ -450,3 +450,13 @@ source mappings and dependency licenses are documented in
 `DEVELOPMENT_CONTEXT_BUNDLE_AUDIT.md`. Run
 `tests/unit/test_development_context_bundle.py` for the complete unchanged source
 and actual pinned packer comparison. Use `--output` for an explicit destination.
+
+`component_quickstarter.html` generates an internal component scaffold with
+ordered register metadata, builder-based construction and a separate resource
+placeholder. Open it in a browser, define register names, width expressions and
+sides, then implement the generated body in its owning module. Supply physical
+input tuples and workspace ownership before using `circuit.append(op)`.
+`tests/unit/test_component_quickstarter.py` compares the complete original
+script and executes completed generated classes through existing native owners.
+See `COMPONENT_QUICKSTARTER_AUDIT.md` for source-template defects and the pending
+actual-browser review.

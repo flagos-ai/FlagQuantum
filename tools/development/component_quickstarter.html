@@ -1,0 +1,214 @@
+<!--
+Copyright 2023 Google LLC
+SPDX-License-Identifier: Apache-2.0
+Adapted from the complete Qualtran v0.7.0 dev_tools/bloq-quickstarter.html.
+Frozen revision bcb17bb25360ed68ce3bc084645db3e929799389.
+Native templates use existing FlagQuantum register and component owners.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlagQuantum component quickstarter</title>
+  <style>
+    body { max-width: 920px; margin: 32px auto; padding: 0 20px; font-family: system-ui, sans-serif; color: #172a39; }
+    h1 { font-size: 1.8rem; }
+    section { margin: 28px 0; }
+    .basics { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: center; }
+    .register { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; padding: 16px 0; border-bottom: 1px solid #d7e0e5; }
+    .register label { display: grid; gap: 5px; font-size: .9rem; }
+    .description { grid-column: 1 / -1; }
+    input, select, button { font: inherit; padding: 8px; min-width: 0; }
+    button { cursor: pointer; }
+    pre { overflow: auto; padding: 18px; background: #f4f7f8; border: 1px solid #d7e0e5; }
+    code { font-size: .85rem; }
+    #error { color: #9c2020; min-height: 1.5em; }
+    @media (max-width: 550px) { .basics, .register { grid-template-columns: 1fr; } }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"
+    integrity="sha512-hasIneQUHlh06VNBe7f6ZcHmeRTLIaQWFd43YriJ0UND19bvYRauxthDg8E4eVNPm9bRUhr5JGeqH7FRFXQu5g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+  <h1>FlagQuantum component quickstarter</h1>
+  <p>Describe the registers, then copy the generated Python scaffold into its owning module.</p>
+  <section>
+    <h2>Component</h2>
+    <div class="basics">
+      <label for="component_name">Class name</label>
+      <input id="component_name" value="RegisterOperation">
+      <label for="one_line_desc">Description</label>
+      <input id="one_line_desc" value="Describe the operation on these registers.">
+    </div>
+  </section>
+  <section id="registers">
+    <h2>Signature</h2>
+    <p>Thru ports are inputs and outputs. Left ports are consumed. Right ports are created.
+      Widths are Python expressions such as 4 or n. Define symbolic names in the owning module.</p>
+    <button type="button" id="add_register">Add register</button>
+  </section>
+  <section>
+    <h2>Python scaffold</h2>
+    <p>Implement the register body and resource declaration. Supply input wires in signature order.
+      Bindings use MSB-first words. Supply clean workspace for created outputs and explicit ownership
+      for released inputs. After implementation, use <code>circuit.append(op)</code> and
+      <code>op.bind().outputs</code> to inspect output wires.</p>
+    <p id="error" role="alert"></p>
+    <button type="button" id="regenerate">Regenerate</button>
+    <pre><code id="template_code" class="language-python"></code></pre>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+    integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    function addRegisterBoxes(reg_name = "", bitsize = "", desc = "") {
+      const container = document.createElement("div");
+      container.classList.add("register");
+      const number = document.querySelectorAll(".register").length + 1;
+      for (const [name, title, value] of [
+        ["reg_name", "Name", reg_name], ["bitsize", "Width", bitsize], ["desc", "Description", desc]
+      ]) {
+        const label = document.createElement("label");
+        label.textContent = title;
+        if (name === "desc") label.classList.add("description");
+        const input = document.createElement("input");
+        input.name = name;
+        input.id = `register_${number}_${name}`;
+        input.type = "text";
+        input.value = value;
+        input.addEventListener("change", generateCode);
+        input.addEventListener("keyup", generateCode);
+        label.appendChild(input);
+        container.appendChild(label);
+      }
+      const label = document.createElement("label");
+      label.textContent = "Side";
+      const side = document.createElement("select");
+      side.name = "side";
+      side.id = `register_${number}_side`;
+      for (const value of ["Thru", "Left", "Right"]) side.add(new Option(value));
+      side.addEventListener("change", generateCode);
+      label.appendChild(side);
+      container.insertBefore(label, container.lastChild);
+      document.getElementById("registers").appendChild(container);
+    }
+
+    function getRegisterInputs() {
+      return Array.from(document.querySelectorAll(".register"), group => ({
+        reg_name: group.querySelector('[name="reg_name"]').value,
+        bitsize: group.querySelector('[name="bitsize"]').value,
+        side: group.querySelector('[name="side"]').value,
+        desc: group.querySelector('[name="desc"]').value
+      }));
+    }
+
+    function generateCode() {
+      const className = document.getElementById("component_name").value;
+      const description = document.getElementById("one_line_desc").value;
+      const registers = getRegisterInputs();
+      const keywords = new Set("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield".split(" "));
+      const identifier = name => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && !keywords.has(name);
+      const importedNames = new Set("Circuit RawCallees SymbolAllocator ResourceCall BindingCollection ComponentProgramBuilder BoundRegisterProgram bind_register_program ProgramRecord Register RegisterSide RegisterType Signature dataclass".split(" "));
+      const error = document.getElementById("error");
+      const code = document.getElementById("template_code");
+      const names = registers.map(reg => reg.reg_name);
+      const inputNames = registers.filter(reg => reg.side !== "Right").map(reg => reg.reg_name);
+      const outputNames = registers.filter(reg => reg.side !== "Left").map(reg => reg.reg_name);
+      const invalidClass = !identifier(className) || importedNames.has(className);
+      const invalidRegisters = names.some(name => !identifier(name));
+      const repeatedInputs = new Set(inputNames).size !== inputNames.length;
+      const repeatedOutputs = new Set(outputNames).size !== outputNames.length;
+      const reservedInputs = inputNames.includes("self") || inputNames.includes("builder");
+      const emptyWidth = registers.some(reg => !reg.bitsize.trim());
+      if (invalidClass || invalidRegisters || repeatedInputs || repeatedOutputs || reservedInputs || emptyWidth) {
+        error.textContent = "Use Python identifiers that are distinct per side, nonempty widths, and input names other than self or builder.";
+        code.textContent = "";
+        return;
+      }
+      error.textContent = "";
+      const registerDocs = registers.map(reg => `    ${reg.reg_name}${reg.side === "Thru" ? "" : ` [${reg.side.toLowerCase()}]`}: ${reg.desc}`).join("\n");
+      const docstring = JSON.stringify(`${description}\n\nRegisters:\n${registerDocs}`);
+      const signature = registers.map(reg => `            Register(${JSON.stringify(reg.reg_name)}, RegisterType("opaque", (${reg.bitsize})), side=RegisterSide.${reg.side.toUpperCase()}),`).join("\n");
+      const arguments = registers.filter(reg => reg.side !== "Right").map(reg => `${reg.reg_name}: BindingCollection`);
+      const bodyArguments = [
+        "        self,",
+        "        builder: ComponentProgramBuilder,",
+        ...(arguments.length ? ["        *,", ...arguments.map(argument => `        ${argument},`)] : [])
+      ].join("\n");
+      const template = `from dataclasses import dataclass
+
+from flagquantum.circuit import Circuit
+from flagquantum.compiler._component_trace.call_graph import RawCallees, SymbolAllocator
+from flagquantum.compiler._component_trace.resource_generalization import ResourceCall
+from flagquantum.compiler.registers.component_builder import (
+    BindingCollection,
+    ComponentProgramBuilder,
+)
+from flagquantum.compiler.registers.register_binding import (
+    BoundRegisterProgram,
+    bind_register_program,
+)
+from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
+from flagquantum.core.ir.program.signatures import Signature
+
+
+@dataclass(frozen=True)
+class ${className}:
+    ${docstring}
+
+    inputs: tuple[tuple[int, ...], ...] = ()
+    clean: tuple[int, ...] = ()
+    borrowed: tuple[int, ...] = ()
+    input_ownership: tuple[tuple[int, bool], ...] = ()
+
+    @property
+    def signature(self) -> Signature:
+        return Signature((
+${signature}
+        ))
+
+    def build_registers(
+${bodyArguments}
+    ) -> dict[str, BindingCollection]:
+        raise NotImplementedError("Implement the register body and return named outputs.")
+
+    def program(self) -> ProgramRecord:
+        builder = ComponentProgramBuilder(self.signature)
+        return builder.finalize(self.build_registers(builder, **builder.inputs))
+
+    def declared_calls(self, symbols: SymbolAllocator) -> RawCallees[ResourceCall]:
+        raise NotImplementedError("Implement the independent resource declaration.")
+
+    def short_name(self) -> str:
+        return ${JSON.stringify(className)}
+
+    def bind(self) -> BoundRegisterProgram:
+        return bind_register_program(
+            self.program(), self.inputs, clean=self.clean, borrowed=self.borrowed,
+            input_ownership=self.input_ownership, allow_workspace_outputs=True,
+        )
+
+    def append_to(self, circuit: Circuit) -> Circuit:
+        return circuit.compose(self.bind().circuit)
+`;
+      code.textContent = template;
+      if (globalThis.hljs) code.innerHTML = hljs.highlight(template, {language: "python"}).value;
+    }
+
+    for (const id of ["component_name", "one_line_desc"]) {
+      const input = document.getElementById(id);
+      input.addEventListener("change", generateCode);
+      input.addEventListener("keyup", generateCode);
+    }
+    document.getElementById("add_register").addEventListener("click", () => {
+      addRegisterBoxes();
+      generateCode();
+    });
+    document.getElementById("regenerate").addEventListener("click", generateCode);
+    addRegisterBoxes("x", "1", "Input and output word.");
+    generateCode();
+  </script>
+</body>
+</html>
