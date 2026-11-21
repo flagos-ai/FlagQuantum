@@ -334,4 +334,17 @@ primitives. Domain views, styled check results and full summaries reuse the
 report owner. Run `tests/unit/test_component_report_notebook.py` for actual
 Jupyter execution, exact complex-state append behavior, deliberate count failure
 and unchanged-source view comparisons. See `COMPONENT_REPORT_NOTEBOOK_AUDIT.md`
-for the preserved source Other/factoring query counterexamples and explicit owner labels.
+for the preserved source Other/factoring query counterexamples and explicit owner
+labels.
+
+`python -m tools.development.pytest_command package -n0 -q` runs native tests.
+Use `development` for the development-tools and complete native unit-test
+directories. Both retain the source's initial automatic xdist flag and forward
+caller flags, including the final -n0 override. `changed HEAD -q` selects existing
+filename-associated tests against an explicit revision. Default revisions retain
+the source upstream/main, origin/main, main order. Native centralized unit-test
+names supplement the original same-directory suffix rule. This selection does
+not infer dependencies. Run `tests/unit/test_development_pytest_commands.py` for
+all three unchanged shell sources, real Git selection and actual native module
+commands. See `DEVELOPMENT_PYTEST_COMMANDS_AUDIT.md` for scope mappings, direct
+revision semantics and process bounds.
