@@ -8,6 +8,8 @@ execution belong to the topology and runtime domains.
 - `pipeline.py` resolves optimization levels and admitted passes, then delegates
   convergence to `PassManager` in `pass_manager.py`.
 - Individual rewrite modules own their numerical and measurement semantics.
+  The local-run pass reuses admitted numeric products only during its current
+  traversal; see [product reuse and validation](../../../docs/development/COMPILER_ONE_QUBIT_PRODUCT_REUSE.md).
 - `_cz_blocks.py` owns verified native CZ block proposals. Its private
   `_cz_local_cleanup.py` adapts Cirq local-run merging for arbitrary-angle
   RX/RZ targets; raw budgets and independent whole-block acceptance remain in
