@@ -73,3 +73,18 @@ Run `python -m examples.algorithms.component_example_catalog` to create a
 documented three-bit swap and verify its nine CX gates and complete complex
 state through `circuit.append(op)`. Run its source-differential checks with
 `python -m pytest tests/unit/test_component_examples.py -q`.
+
+## Register example checks
+
+`example_checks.py` owns the existing five register-example checks and their
+status records. `RegisterExample` explicitly supplies its program factory,
+physical lowerer, independent instruction counts and optional register-type
+edges. Tools and tests consume the same `check_example` function. Pytest
+skip/failure policy and classical Cartesian assertions remain in
+`tests/unit/register_example_checks.py`, which re-exports the shared records for
+its existing callers. Production execution never depends on these results.
+
+Start with `tests/unit/test_reference_testing_file.py::parallel_example` and
+`lower_fixture`, then run all five `CHECKS` through `check_example`. The report
+consumer in `tests/unit/test_component_report.py` demonstrates this workflow
+without importing pytest into the shared implementation.
