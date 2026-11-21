@@ -115,3 +115,73 @@ The test retains that raw source result and makes no clean-work acceptance claim
 for that layout. The single two-bit control-word cases above pass the complete
 clean-work checks. Q-0594 remains open for these source-domain boundaries and
 generic arbitrary-gate cases beyond the verified capture admission set.
+
+
+## Complete live graph and generic unitary consumers
+
+The complete source file now has an actual typed-graph consumer matrix, using
+its accepted UnaryIterationGate dependency. The constructor, make_on inference,
+control/selection/target/extra properties, source generator, nth-operation
+row-major mapping, diagram and string identity retain the earlier evidence.
+All owned execution still enters through circuit.append(op).
+
+The additional live graphs use T, Rx, Ry, fractional H, an explicit Rx matrix
+and a seeded general complex unitary matrix. Zero, one and two controls in one
+named word execute both original directions. Every small measurement history
+preserves the complete complex state, including relative and global phase, and
+returns all private storage to zero. Typed output aliases and allocation/free
+counts balance. Binding, append, JSON restoration and execution pass with all
+reference SDK imports forbidden after conversion. The frozen source hashes and
+Kickmix Simulator admission are checked by the reused source fixture.
+
+T, Rx, Ry and fractional-H graph streams match independently captured original
+flattened graphs per wire, including quantum operands, parameters and classical
+feedback. Matrix cases have the same complete opcode inventory and pass all
+complex branch checks. Their native per-leaf scalar-phase carrier can differ
+from the whole-circuit capture carrier. The original scalar phase has no quantum
+operand. Exact artificial carrier operand equality is outside this comparison.
+This boundary stays explicit instead of describing the two physical layouts as
+identical primitive streams.
+
+| One-control, two-target forward fixture | Actual graph primitives | Direct source capture primitives | Independent original QEC model |
+| --- | --- | --- | --- |
+| T | 61 total, 14 T/T-adjoint, 3 measurements | 27 total, 4 T/T-adjoint, 2 controlled phases, 1 measurement | 2 T, 3 And, 9 Cliffords, 3 measurements |
+| Rx(0.3) | 27 total, 4 T/T-adjoint, 2 controlled Rx, 1 measurement | Same inventory | 1 And, 7 Cliffords, 2 rotations, 1 measurement |
+| Seeded general complex matrix | 121 total, 20 T/T-adjoint, 5 measurements | 27 total, 4 T/T-adjoint, 2 matrix leaves, 1 measurement | 5 And, 11 Cliffords, 8 rotations, 5 measurements |
+
+Each column uses its actual source execution path. The complete graph expands
+controlled leaves while the direct capture retains admitted controlled phases
+or matrices. Declared rotations and And units remain model categories. Reserved
+physical slots and source live peaks retain their separate ownership meaning.
+
+An invertible opaque single-qubit unitary also executes both source directions
+through the existing captured SELECT consumer, JSON and every measured branch.
+Its lack of a source JSON namespace prevents protobuf graph transport. A
+three-bit single control word similarly fails original forward graph transport
+because flattened And activation arguments are numpy.uint8. The original
+adjoint graph serializes successfully. Both actual source directions still
+execute with clean work through owned snapshots for T, Rx and a general matrix.
+
+The shared snapshot owner now factors exact eigen phases before generic SDK
+controlled-unitary synthesis only when that factorization changes a leaf,
+requires no negative-control normalization and consists entirely of already
+admitted atoms. It reuses
+the existing typed importer convention. Source component recipes keep priority,
+and unchanged controlled scalar recipes retain their original decomposition.
+This resolves the Cirq 1.6.1 fractional-H inventory mismatch without changing
+the negative-control scalar source streams.
+
+Q-0594 remains open for the recorded separate-control dirty accumulator,
+unresolved symbolic extent, uncontrolled singleton and source transport
+boundaries. The generic matrix phase-carrier comparison boundary above is
+recorded separately. The existing traversal, owned gate representation and
+consumer entry remain the implementation owners.
+
+Final acceptance passes 1,687 concentrated cases, 29 local integration cases
+and 44 cases on Cirq 1.6.1. The latter retains 1,927 original SDK/NumPy
+deprecation warnings. Both changed Python files pass strict typing, Black and
+Ruff. Ecosystem scope, architecture, multilevel IR, protected API and diff checks
+pass. The first broad run exposed an absent optional OpenFermion reference in
+an isolated source-factory process. Adding the existing pinned reference path
+resolved that test without changing its code or the source. The complete original SelectedMajoranaFermion test file in the Cirq 1.6.1
+lane executes unchanged.

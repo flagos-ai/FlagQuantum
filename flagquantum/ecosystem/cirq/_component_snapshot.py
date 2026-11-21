@@ -373,14 +373,25 @@ def _snapshot(
                 with decomposition_manager.reserve_qubits((*op.qubits, *live_outputs)):
                     child = leaf_operation(op)
                     if child is NotImplemented:
-                        child = cirq.decompose_once(
-                            op,
-                            context=cirq.DecompositionContext(decomposition_manager),
-                            default=None,
-                        )
+                        # Keep exact eigen phases when they reduce directly to
+                        # admitted atoms. Other recipes retain SDK decomposition.
+                        eigen = tuple(_eigen_phase_operations(cirq, (op,)))
+                        normalized = tuple(_scalar_control_operations(cirq, eigen))
+                        if (
+                            eigen != (op,)
+                            and normalized == eigen
+                            and all(map(admitted, normalized))
+                        ):
+                            child = normalized
+                        else:
+                            child = cirq.decompose_once(
+                                op,
+                                context=cirq.DecompositionContext(
+                                    decomposition_manager
+                                ),
+                                default=None,
+                            )
                     if child is None:
-                        # Preserve every existing source decomposition. Normalize
-                        # exact eigen phases only for otherwise unsupported leaves.
                         normalized = tuple(
                             _scalar_control_operations(
                                 cirq, _eigen_phase_operations(cirq, (op,))
