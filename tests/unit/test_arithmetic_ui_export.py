@@ -125,7 +125,9 @@ def test_all_fresh_interfaces_and_documentation_only_sort(tmp_path: Path) -> Non
         sum(len(doc["examples"]) for docs in navigation.values() for doc in docs) == 74
     )
     assert len(list(tmp_path.rglob("docs.txt"))) == 45
-    assert len(list(tmp_path.rglob("*.json"))) == 75
+    children = list((tmp_path / "ComponentFunction").glob("*.json"))
+    assert children
+    assert len(list(tmp_path.rglob("*.json"))) == 75 + len(children)
     sorts = [
         doc
         for docs in navigation.values()
@@ -139,10 +141,60 @@ def test_all_fresh_interfaces_and_documentation_only_sort(tmp_path: Path) -> Non
         exported = json.loads(path.read_text())
         assert exported["msd"] is not None
         assert exported["msd"] == native.score(identifier)
-        assert exported["callees"] == []
+        record = native.decomposition(identifier)
+        assert bool(exported["callees"]) == (record is not None)
+        for link in exported["callees"]:
+            assert (tmp_path / link["name"] / link["filename"]).is_file()
     assert native.signature("cadd_large").n_qubits() == 2001
 
 
 def test_unregistered_identifier_is_refused() -> None:
     with pytest.raises(TypeError, match="registered native example"):
         native.score("unknown")
+
+
+def test_all_word_dependencies_retain_existing_compiler_edges() -> None:
+    from examples.algorithms.component_ui_dependencies import (
+        ComponentFunction,
+        dependency_graph,
+    )
+    from flagquantum.compiler._component_trace.program_call_graph import (
+        program_component_call_graph,
+    )
+
+    graph = dependency_graph(
+        native.INSTANCES,
+        owner=lambda component: native.name(component)
+        + "/"
+        + native.filename(component),
+        program=native.decomposition,
+    )
+    assert all(child in graph for children in graph.values() for child in children)
+    for identifier in (
+        "negate",
+        "negate_symb",
+        "xor",
+        "bitwise_not",
+        "bitwise_not_symb",
+    ):
+        record = native.decomposition(identifier)
+        assert record is not None
+        owner = native.name(identifier) + "/" + native.filename(identifier)
+        nodes = {
+            node.entry: node
+            for node in graph
+            if isinstance(node, ComponentFunction) and node.owner == owner
+        }
+        entry = record.functions[0].name
+        expected = program_component_call_graph(record, entry)
+        owned: dict[str, object] = {entry: identifier, **nodes}
+        actual = {
+            (name, child.entry)
+            for name, node in owned.items()
+            for child in graph[node]
+            if isinstance(child, ComponentFunction)
+        }
+        assert actual == expected.direct_calls.keys()
+        assert nodes.keys() == {
+            name for edge in expected.direct_calls for name in edge if name != entry
+        }

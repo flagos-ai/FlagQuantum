@@ -6,8 +6,8 @@
 """Export every Arithmetic example through native register metadata owners.
 
 Run ``python -m examples.algorithms.arithmetic_ui_export``. The report associates
-existing domain signatures with UI parameters. Its atomic interface drawings
-have no execution or resource-count semantics. Physical execution remains with
+existing domain signatures with UI parameters and stored word decompositions.
+Drawings have no execution or resource-count semantics. Physical execution remains with
 the existing compiler components and ordinary ``circuit.append(op)``.
 """
 
@@ -21,6 +21,10 @@ from sympy import Symbol
 
 from examples.algorithms.addition_catalog import addition_examples
 from examples.algorithms.comparison_catalog import comparison_examples
+from examples.algorithms.component_ui_dependencies import (
+    ComponentFunction,
+    dependency_graph,
+)
 from examples.algorithms.integer_multiplication_catalog import (
     integer_multiplication_examples,
 )
@@ -29,6 +33,7 @@ from examples.algorithms.permutation_catalog import permutation_examples
 from examples.algorithms.sorting_catalog import sorting_examples
 from examples.algorithms.subtraction_catalog import subtraction_examples
 from examples.algorithms.trigonometric_catalog import arcsine_example
+from examples.algorithms.word_arithmetic_decomposition import word_program, word_score
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.sorting.in_place_sort_declaration import (
     in_place_sort_signature,
@@ -39,7 +44,7 @@ from flagquantum.compiler.registers.sorting.sorted_duplicates import (
 from flagquantum.compiler.registers.sorting.symmetric_difference_declaration import (
     symmetric_difference_signature,
 )
-from flagquantum.core.ir.program import FunctionRecord
+from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.register_types import (
     ones_complement_register_type,
     opaque_register_type,
@@ -565,10 +570,14 @@ def _instance(component: object) -> _Interface:
 
 
 def name(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return "ComponentFunction"
     return _instance(component).operation
 
 
 def attributes(component: object) -> Mapping[str, object]:
+    if isinstance(component, ComponentFunction):
+        return component.attributes()
     return _instance(component).parameters
 
 
@@ -577,11 +586,18 @@ def signature(component: object) -> Signature:
 
 
 def filename(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return component.filename()
     return component_filename(attributes(component))
 
 
 def score(component: object) -> object:
+    if isinstance(component, ComponentFunction):
+        return component.score()
     ports = signature(component)
+    decomposed = word_score(name(component), ports)
+    if decomposed is not None:
+        return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
     builder = ComponentProgramBuilder(ports, (leaf,), name="ArithmeticInterface")
     record = builder.finalize(builder.call_dict(leaf.name, builder.inputs))
@@ -604,8 +620,10 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Diagrams show atomic typed interfaces. Complete decomposition glyphs "
-        "and resource models retain separate acceptance evidence. "
+        "Word bitwise and negation instances retain their immediate child graphs. "
+        "Other diagrams show atomic typed interfaces. Contextual child nodes "
+        "preserve native helper boundaries. Symbolic child declarations have "
+        "no executable body. Resource models retain separate evidence. "
         "Symbolic and large instances allocate no execution wires.\n"
     )
 
@@ -638,6 +656,11 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
     return (("Arithmetic", tuple(grouped.values())),)
 
 
+def decomposition(component: object) -> ProgramRecord | None:
+    """Select the existing word-arithmetic owner for catalog dependency traversal."""
+    return word_program(name(component), signature(component))
+
+
 def export_example(
     destination: Path,
     *,
@@ -650,7 +673,11 @@ def export_example(
     export_component_ui(
         destination,
         sections(),
-        dict.fromkeys(INSTANCES, ()),
+        dependency_graph(
+            INSTANCES,
+            owner=lambda component: name(component) + "/" + filename(component),
+            program=decomposition,
+        ),
         name=name,
         attributes=attributes,
         filename=filename,

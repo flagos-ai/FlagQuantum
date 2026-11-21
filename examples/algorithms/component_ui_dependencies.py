@@ -80,7 +80,10 @@ class ComponentFunction:
 
 
 def dependency_graph(
-    roots: Iterable[object], *, owner: Callable[[object], str]
+    roots: Iterable[object],
+    *,
+    owner: Callable[[object], str],
+    program: Callable[[object], ProgramRecord | None] = decomposition_program,
 ) -> dict[object, tuple[object, ...]]:
     """Publish every reachable typed function through the existing graph owner.
 
@@ -92,17 +95,17 @@ def dependency_graph(
     """
     graph: dict[object, tuple[object, ...]] = {}
     for root in roots:
-        program = decomposition_program(root)
-        if program is None:
+        record = program(root)
+        if record is None:
             graph[root] = ()
             continue
-        entry = program.functions[0].name
-        calls = program_component_call_graph(program, entry)
+        entry = record.functions[0].name
+        calls = program_component_call_graph(record, entry)
         names = dict.fromkeys(
             (entry, *(name for edge in calls.direct_calls for name in edge))
         )
         nodes = {
-            name: ComponentFunction(owner(root), name, program, root)
+            name: ComponentFunction(owner(root), name, record, root)
             for name in names
             if name != entry
         }

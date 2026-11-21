@@ -1016,3 +1016,48 @@ Basic Gates successful recursive presentation is qualified within its native
 context. Broader catalog decomposition and dependency coverage remains in
 Q-0120, together with original source failure witnesses and the recorded
 environment, dashboard and pending contract gaps.
+
+## Word bitwise and negation catalog decomposition
+
+The whole `arithmetic/bitwise.py` and `arithmetic/negate.py` catalog families
+now draw their five successful immediate decompositions. Concrete Xor,
+BitwiseNot and Negate Programs are the exact existing executable domain
+constructions. Symbolic BitwiseNot and Negate retain typed external child
+declarations, including the X repetition and AddK constant-one identities.
+Declarations have no blocks and cannot bind for execution. Symbolic Xor retains
+the original DecomposeTypeError and its atomic interface. Existing XorK
+physical/source evidence remains with the complete bitwise owner.
+
+The existing dependency projection now accepts a domain-owned Program supplier.
+Every reachable word-arithmetic helper becomes a contextual native child file.
+No new component registry or execution entry is introduced. Five ordered source
+call/operand traces and fresh drawings match after the established boundary
+dtype and SSA text normalization. Child metadata keeps native helper identity
+and default glyphs. Recursive arithmetic source-glyph qualification remains
+open and is separate from these immediate root comparisons.
+
+The isolated combined exporter produces 798 JSON files, 234 documents and 797
+non-null diagrams, including 444 contextual child files. Its 353 root diagrams
+now comprise 26 immediate decompositions and 327 atomic interfaces. All 22
+previously qualified Basic Gates child labels are retained. Concentrated
+catalog regression passes 475 cases with fourteen existing warnings, three
+deselections and zero skips. Strict typing of five files and Black, Ruff, team
+scope, architecture, IR, public API and whitespace checks pass.
+
+The complete native bitwise and negation physical component regressions pass
+189 cases. Concrete Programs are reused literally. These cover ordered original
+primitive streams, complete complex amplitudes, applicable measurement histories,
+clean workspace, ordinary append entry points and resource formulas. Bitwise
+operations allocate no workspace. Negation retains the accepted primitive
+T/T-dagger count 4 * (width - 1), with width - 1 measurements and resets,
+and independent source analytical models. Existing signed one-bit source
+encoding failure remains an explicit native-extension boundary. Drawing and
+dependency publication add no physical instructions or workspace.
+
+A fresh intake of all 74 arithmetic factories found 44 successful immediate
+drawings, eight decomposition type failures, thirteen missing decompositions,
+six ValueErrors and two large-rendering IndexErrors. One controlled-addition
+instance has 2008 immediate calls and its fresh layout is deferred under an
+explicit 1000-call intake bound. After these five roots, 39 successful root
+drawings remain. Q-0120 stays open for those source-file groups, recursive
+arithmetic drawings and broader catalog dependencies.
