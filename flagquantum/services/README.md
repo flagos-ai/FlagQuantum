@@ -180,3 +180,12 @@ python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py
 python tools/check_dependency_policy.py
 ```
+
+Plan inspection also retains the identity and program fingerprint from its
+current validated Runtime payload. Immediate cost/result checking uses those
+values after checking the actual instruction layers, rather than serializing
+and hashing the same plan again through its identity property. Every later
+inspection still validates the payload, raw controls, layers, layout and costs;
+a different result plan is independently inspected. An overridden identity
+property cannot associate a result from another valid plan. No identities or
+inspection results are cached between public calls.

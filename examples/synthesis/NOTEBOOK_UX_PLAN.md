@@ -116,9 +116,9 @@ The editorial denominator and these implementation steps are independent.
 | --- | --- | --- |
 | Amplitude construction | `b7d7d4383`: replace the Compiler's quadratic Walsh loop with an O(N log N), O(N)-storage butterfly; 69 preparation/conformance tests passed | The [bounded capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md) is pending explicit approval. The public 256-entry cap remains. The full-image native workflow is not yet claimed. |
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
-| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; General reusable QSVT APIs remain follow-ups; the separate checkpoint below covers the native CFD banded route. |
+| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | The eight-row banded route now uses eight total qubits/two work bits, or seven/one under a tighter budget. The sixteen-row six-band source block uses eleven/three and passes its full 256-column unitary check. The original degree-33 Hamiltonian QSVT executes both native streams; the separate degree-101/255 nozzle sequences still exceed the protected 4096-effect cap. General QSVT APIs remain separate follow-ups. |
 | Named sampling | Bell and QSVT lessons use existing `fq.counts`/`fq.samples` on synthesized Circuit IR, selecting wires from named ports; the original joint draw is preserved for conditioning | Sealed Program output overrides still refuse. A direct named finite-shot convenience surface requires separate API admission; no competing sampler was introduced. |
-| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | A subsequent equal-modulus sum fusion and read-only sign aliasing step now needs 25 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
+| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | Subsequent equal-modulus sum fusion and immutable-input shift borrowing execute the native signed workshop with 20 total qubits/six work bits/47 instructions, versus 14 Circuit qubits. Complete original-size coherent witnesses and all raw XOR targets pass. The tighter 14-qubit native budget still refuses; retain that resource gap explicitly. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
 
 The signed workshop preflight retains all 256 input pairs and all 64 arbitrary
@@ -430,3 +430,31 @@ complete corpus verification claim. The preceding frozen 222-path replay and
 raw default-suite failures retain their original commit attribution. This
 example-only batch changes no production compiler/runtime implementation.
 Black, Ruff, protected API and local documentation link checks pass.
+
+
+## Immediate execution-identity reuse checkpoint
+
+The original fifteen-bit minimum-coloring program exposed repeated plan
+identity reconstruction during named result reading. Services now retains the
+identity and program fingerprint already validated in the current inspection,
+after checking actual instruction layers against that fingerprint. Immediate
+resource/result association uses those values. Later public accesses inspect
+again; foreign result plans retain independent validation. This removes two
+redundant identity/hash reads without a persistent cache, new public value or
+Runtime/Compiler ownership change. A valid foreign plan cannot be associated by
+overriding its identity property.
+
+The focused plan/tamper, result association, native inspection, user-workflow and
+six-lesson selection passes 135 tests in 5.68 seconds. Nine alternating-order
+paired trials on the original 19975-instruction program measured result-check
+medians of 700.15 ms before and 544.97 ms after, with four Torch threads and one
+already executed local CPU result. This is a verification-stage diagnostic,
+not an end-to-end algorithm throughput claim. Baseline source and raw paired
+observations remain outside the repository with the local acceptance evidence.
+The protected effect/preparation capacities and pending proposals are unchanged.
+
+The broader MPS, density/reset, numeric reading and CFD block/QSVT selection
+passes 97 tests in 19.30 seconds. Every execution mode retains actual layer,
+profile, layout, resource and result checks. Protected API, Black, Ruff and
+local documentation links pass. The subsequent frozen default run is recorded
+separately; these focused passes do not relabel earlier environment failures.

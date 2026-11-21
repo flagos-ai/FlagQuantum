@@ -451,3 +451,25 @@ def test_inspection_never_plans_compiles_or_executes(
     assert checked.resources == compiler.estimate_resources(
         plan_execution_program(plan)
     )
+
+
+def test_identity_override_cannot_associate_a_different_valid_plan() -> None:
+    source = fq.Circuit(1).h(0)
+    plan = fq.plan(source, options=_options(memory_limit_bytes=1024**2))
+    other = fq.plan(source, options=_options(memory_limit_bytes=2 * 1024**2))
+    assert plan.identity != other.identity
+    assert plan.program_fingerprint == other.program_fingerprint
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+
+    class MisleadingIdentityPlan(ExecutionPlan):
+        @property
+        def identity(self) -> str:
+            return plan.identity
+
+    misleading = MisleadingIdentityPlan(
+        **{field.name: getattr(other, field.name) for field in fields(other)}
+    )
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(replace(result, plan=misleading))
+    assert checked.verify_result(result).n_operations == 1
