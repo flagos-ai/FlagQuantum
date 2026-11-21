@@ -9,14 +9,14 @@ index d1543133d..efec4dc40 100644
 +    decay: bool = False,
  ) -> SabrePlan | None:
      """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
- 
+
 @@ -501,6 +502,8 @@ def _plan_sabre_trial(
      progress_swap_start = 0
      seen_layouts: set[tuple[int, ...]] = set()
      frontier_lookahead: list[int] | None = None
 +    swap_decay = [1.0] * n_wires if decay else None
 +    decay_steps = 0
- 
+
      def exchange(left: int, right: int) -> None:
          left_logical = physical_to_logical[left]
 @@ -564,7 +567,7 @@ def _plan_sabre_trial(
@@ -59,5 +59,5 @@ index d1543133d..efec4dc40 100644
 +                swap_decay[left] += 0.001
 +                swap_decay[right] += 0.001
          stalled += 1
- 
+
      if executed != count:
