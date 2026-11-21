@@ -121,3 +121,24 @@ unchanged. The validation record retains the original document hashes, name
 mapping and exact historical benchmark source. Historical `runner_sha256` values
 continue to bind that source, while future runs emit the declared names. The
 repository revision vocabulary and its test are unchanged.
+
+## Integration update and unresolved worker exit
+
+The branch now includes verified main `6db1fbda8a168599e5c0f155b9fb14052cf01342`,
+including CI worker-exit diagnostics from PR #1275 and guarded target routing
+plan reuse from PR #1269. This is a normal merge, not a change to the matrix
+product implementation or its acceptance thresholds.
+
+The previous exact-head coverage shard 130 in run `44952823962` reported one
+worker as not properly terminated while executing
+`test_complete_native_source_and_circuit[2-0.1274075]`; 308 other tests passed.
+The available output does not establish its root cause. No test, timeout,
+resource limit or variance threshold is waived. Including the integrated worker
+diagnostics makes a subsequent failure observable instead of blindly repeating
+the same diagnostic surface. The original failure remains in the run history.
+
+The [post-merge standard-library check](evidence/compiler-matrix-products-main-sync.json)
+completes 2,400 deterministic packed-double comparisons on Python 3.12.14 at
+`466df8dbfb04196d5a50582cc35d2a9f8e21b2da`, with no mismatch. It is numerical
+regression evidence only, not a rerun of the workflow timing or a full CI pass.
+The reproduction commands above continue to apply.
