@@ -28,8 +28,9 @@ from examples.synthesis.applications.cfd.qls_for_hybrid_solvers.verify_block_enc
 from examples.synthesis.applications.cfd.qls_for_hybrid_solvers.verify_block_encoding.overview.quantum import (
     preparation,
 )
-from flagquantum.compiler import ResourceEstimate, estimate_resources
+from flagquantum.compiler import ResourceEstimate
 
+from .native import inverse_program
 from .phases import PhaseFit, fit, response
 
 
@@ -47,9 +48,11 @@ class Result:
     spectral_error: float
     full_state_error: float
     projection_probability: float
+    workspace_probability: float
     resources: ResourceEstimate
     build_seconds: float
     execute_seconds: float
+    readout_seconds: float
 
 
 def projector_signs(block: torch.Tensor, data_length: int) -> torch.Tensor:
@@ -126,15 +129,26 @@ def solve(large: bool) -> Result:
     phases = shifted_phases(fitted)
     block = unitary(enc)
     rhs = input_vector("nozzle_008_b" if large else "b_nozzle_small", enc.data_width)
-    circuit = build_circuit(enc, block, phases, rhs)
+    program = inverse_program(original, rhs, phases, large=large)
     build_duration = time.perf_counter() - start
 
     start = time.perf_counter()
-    actual = fq.run(circuit).statevector().flatten()
+    result = fq.run(program)
+    full_state = result.statevector().reshape(512, -1)
+    actual = full_state[:, 0]
+    work_probability = float(full_state[:, 1:].abs().square().sum())
+    if work_probability > 1e-24:
+        raise AssertionError("native QSVT did not return its work registers to zero")
     execute_duration = time.perf_counter() - start
     expected_state = independent_state(block, phases, rhs)
     torch.testing.assert_close(actual, expected_state, atol=1e-10, rtol=0)
     zero = actual[: rhs.numel()]
+    start = time.perf_counter()
+    names = ("branch", "selection", "flag") if large else ("branch", "selection")
+    success = program.probabilities(result, registers=names)[(0,) * len(names)]
+    if abs(success - float(zero.abs().square().sum())) > 1e-12:
+        raise AssertionError("named projection disagrees with the complete state")
+    readout_duration = time.perf_counter() - start
     sign = (-1) ** ((degree - 1) // 2)
     solution = zero * (sign * rhs.norm() / (enc.alpha * factor))
     u, sigma, vh = torch.linalg.svd(enc.target / enc.alpha)
@@ -154,8 +168,10 @@ def solve(large: bool) -> Result:
         float((solution - exact).norm()),
         float((solution - projected).abs().max()),
         float((actual - expected_state).abs().max()),
-        float(zero.abs().square().sum()),
-        estimate_resources(circuit),
+        success,
+        work_probability,
+        program.report["resources"],
         build_duration,
         execute_duration,
+        readout_duration,
     )

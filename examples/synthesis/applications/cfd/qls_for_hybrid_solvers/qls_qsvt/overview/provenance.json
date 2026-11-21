@@ -4,7 +4,7 @@
   "original_sha256": "f7845ed6450e4ad39dfc9bdfdfc4a210db5c1a7a8e8fcc0ca97dde32195d598e",
   "git_blob_sha1": "79ff266c19200329ddfa8f83b9fa2f970fa153cb",
   "scope": "All fourteen source stages, both original nozzle matrices and right-hand sides, degree-101 Pauli and degree-255 banded inverses, fresh phase fitting and the original solution thresholds.",
-  "native_semantic_adaptations": "Use the native Pauli and banded encodings, fit the symmetric phases in normalized block coordinates, and pack each exact phase stream into a bounded CPU simulator operation. The full-state reference evaluates the phase streams sequentially. The independent SVD reference checks the postselected solution.",
+  "native_semantic_adaptations": "Compose both complete 102/256-phase streams with native qfunc preparation, selected Pauli/banded blocks, adjoints and shared projector predicates. The independent sequential full-state and SVD references retain the original solution checks; a separate packed Circuit is reference-only.",
   "native_entrypoint": "examples.synthesis.applications.cfd.qls_for_hybrid_solvers.qls_qsvt.overview.main",
   "native_notebook": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/qls_qsvt/overview/walkthrough.ipynb",
   "acceptance_test": "tests/integration/test_synthesis_cfd_qsvt_notebook.py",

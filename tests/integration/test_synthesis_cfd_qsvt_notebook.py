@@ -25,7 +25,9 @@ def test_source_inverse(large: bool, degree: int, data: int) -> None:
     assert result.spectral_error < 1e-10
     assert result.full_state_error < 1e-10
     assert result.solution_l2 < 0.1
-    assert result.resources.n_qubits == 9
+    assert result.resources.n_qubits == (12 if large else 13)
+    assert result.workspace_probability < 1e-24
+    assert result.resources.n_operations == (87012 if large else 40447)
     assert 0 < result.projection_probability < 1
 
 
@@ -128,8 +130,8 @@ def test_native_six_band_signed_source_inputs_and_named_success(
         rtol=0,
     )
     assert torch.count_nonzero(state[:, 1:]) == 0
-    assert program.report["resources"].n_operations == 566
-    assert program.report["resources"].depth == 527
+    assert program.report["resources"].n_operations == 343
+    assert program.report["resources"].depth == 307
     probabilities = program.probabilities(result, registers=("selection", "flag"))
     assert probabilities[(0, 0)] == pytest.approx(
         float(state[:16, 0].abs().square().sum())
@@ -147,7 +149,7 @@ def test_native_six_band_budget_and_input_refusals() -> None:
     rhs /= rhs.norm()
     for limits in (
         {"max_qubits": 8, "max_workspace": 0},
-        {"max_operations": 565},
+        {"max_operations": 342},
     ):
         with pytest.raises(synth.SynthesisError):
             native.banded_program(matrix, rhs, **limits)
