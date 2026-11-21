@@ -68,6 +68,33 @@ evidence directory `notebook-ux-20261121/functions-replay.json`.
 | [tutorials/basics/quantum_programming/execution_tutorial_part2/overview](tutorials/basics/quantum_programming/execution_tutorial_part2/overview/walkthrough.ipynb) | Exposes Bell qfunc; distinguishes Circuit runtime binding from synth specialization | Passed |
 | [tutorials/basics/exponentiation/example_exponentiation/overview](tutorials/basics/exponentiation/example_exponentiation/overview/walkthrough.ipynb) | Exposes full-Hamiltonian Trotter call and actual named output | Passed |
 
+## Algorithms: 17 reviewed and replayed
+
+All original experiment sizes and existing numerical checks are retained.
+The five newly exposed programs and the twelve other reviewed workflows all
+executed every cell. Logs are indexed by `algorithms-replay.json`,
+`algorithms-foundations-replay.json` and `algorithms-blocks-replay.json`.
+
+| Notebook | Review outcome | Replay |
+| --- | --- | --- |
+| [algorithms/foundational/quantum_teleportation/overview](algorithms/foundational/quantum_teleportation/overview/walkthrough.ipynb) | Exposes send/teleport qfuncs and parameter binding; explains deferred measurement and retained environment | Passed |
+| [algorithms/quantum_primitives/swap_test/overview](algorithms/quantum_primitives/swap_test/overview/walkthrough.ipynb) | Exposes loading and overlap composition; distinguishes overlap magnitude from phase and finite sampling | Passed |
+| [algorithms/number_theory_and_cryptography/shor/overview](algorithms/number_theory_and_cryptography/shor/overview/walkthrough.ipynb) | Exposes period-finding qfunc and named fractional readout; preserves quantum modulus 21 and classical postprocessing | Passed |
+| [algorithms/number_theory_and_cryptography/hidden_shift/overview](algorithms/number_theory_and_cryptography/hidden_shift/overview/walkthrough.ipynb) | Exposes four-bit qfunc while preserving both sixteen-bit routes and GF(2) recovery | Passed |
+| [algorithms/search_and_optimization/grover/grover/overview](algorithms/search_and_optimization/grover/grover/overview/walkthrough.ipynb) | Exposes SAT marker and diffuser qfunc; preserves original adaptive searches and stop condition | Passed |
+| [algorithms/foundational/bernstein_vazirani](algorithms/foundational/bernstein_vazirani/walkthrough.ipynb) | Explains classical oracle specialization, quantum phase interference and binary-secret promise | Passed |
+| [algorithms/foundational/deutsch_jozsa](algorithms/foundational/deutsch_jozsa/walkthrough.ipynb) | Explains explicit algebraic reductions, constant phase and exact promised decision | Passed |
+| [algorithms/foundational/simon/overview](algorithms/foundational/simon/overview/walkthrough.ipynb) | Explains borrowed arithmetic input, retained outputs and independent GF(2) evidence requirements | Passed |
+| [algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/walkthrough.ipynb) | Explains reversible block reflection, nonmonotone amplification and concrete one-round scope | Passed |
+| [algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview/walkthrough.ipynb) | Explains integrand binding, signed QPE and validation-only exact expectation | Passed |
+| [algorithms/amplitude_amplification_and_estimation/quantum_counting/overview](algorithms/amplitude_amplification_and_estimation/quantum_counting/overview/walkthrough.ipynb) | Distinguishes qfunc counting from classical interval updates and probabilistic precision | Passed |
+| [algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/walkthrough.ipynb) | Explains Pauli lowering, static time specialization and observable versus complete-state error | Passed |
+| [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/walkthrough.ipynb) | Classical supporting derivation; explicitly not a quantum program; links actual QSVT execution | Passed |
+| [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp/overview/walkthrough.ipynb) | Mixed synth/Circuit construction; explains walk composition, phase residuals and postselection | Passed |
+| [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview/walkthrough.ipynb) | Circuit and dense response construction; opaque operations explicitly not basis-gate costs | Passed |
+| [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview/walkthrough.ipynb) | Mixed synth/Circuit construction; identifies integrated qfunc gap and retained flags | Passed |
+| [algorithms/amplitude_amplification/qsvt_fixed_point/overview](algorithms/amplitude_amplification/qsvt_fixed_point/overview/walkthrough.ipynb) | Explains bounded truth-table specialization, fresh phase fitting and checked qfunc cleanup | Passed |
+
 ## Separate FlagQuantum learning path
 
 The [six lessons](tutorials/learning_path/README.md) are new teaching material,
@@ -87,7 +114,13 @@ Named user readout does not require a physical-layout decoder.
 3. **Named finite-shot readout:** the execution tutorial uses a local low-level
    adapter for counts. Inspect existing runtime outputs before proposing a
    reusable named synth sampling interface.
-4. **Teaching navigation:** generated workflow links now name the original case
+4. **Block algorithm composition:** GQSP/qubitization manually compose Circuit
+   primitives; the QSVT evolution example classically assembles a dense response
+   matrix. These are valid executed FlagQuantum workflows, but not integrated
+   qfunc block-algorithm synthesis. Before adding an API, assess existing
+   algorithms/primitives and specify callback, control, inverse, selection and
+   budget semantics. Do not compare opaque matrix counts with basis-gate counts.
+5. **Teaching navigation:** generated workflow links now name the original case
    rather than displaying dozens of indistinguishable `overview` entries.
 
 These are scoped observations, not authorization to silently change protected
@@ -95,9 +128,9 @@ public APIs or replace original-scale acceptance with smaller demonstrations.
 
 ## Integration checkpoint: November 21, 2026
 
-Reviewed and freshly replayed: **43/212** existing Notebooks (20.3%). The separate
+Reviewed and freshly replayed: **60/212** existing Notebooks (28.3%). The separate
 six-lesson learning path also passed its initial full-cell numerical acceptance.
-The remaining 169 workflows are pending this editorial review, regardless of
+The remaining 152 workflows are pending this editorial review, regardless of
 historical migration acceptance.
 
 Validation on the local Python 3.12 CPU path:
@@ -121,3 +154,13 @@ Validation on the local Python 3.12 CPU path:
   rechecks, not a second full-suite passing run.
 
 No remote CI run or release certification is claimed by this checkpoint.
+
+## Algorithms validation checkpoint
+
+Seventeen additional Notebooks passed complete cell replay. The four affected
+algorithm regression suites plus the independent SWAP reference passed all
+131 tests in 35.82 seconds. Notebook format and generated catalog/audit checks
+are rerun before commit. A broader 632-node selection was intentionally stopped
+after 641.79 seconds, with 211 passes and no recorded failure, after entering
+unrelated large-state references. It is partial evidence, not a full corpus
+pass. The historical corpus and migration evidence remain unchanged.
