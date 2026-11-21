@@ -5,8 +5,9 @@
 
 """Compose bounded basis permutations from equality and controlled XOR calls."""
 
+from functools import partial
+
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import (
     bounded_unsigned_register_type,
     unsigned_register_type,
@@ -15,7 +16,8 @@ from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..bits.bitwise_component_control import controlled_bitwise_word_program
 from ..comparison.equality_component import equality_constant_program
-from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_builder import ComponentProgramBuilder
+from .permutation_graph import permutation_cycle_graph
 
 
 def _dtype(size: int, width: int) -> RegisterType:
@@ -45,29 +47,14 @@ def permutation_cycle_program(
         or any(type(value) is not int or not 0 <= value < size for value in cycle)
     ):
         raise ValueError("Permutation cycle requires distinct entries in range")
-    builder = ComponentProgramBuilder(Signature.build_from_dtypes(x=dtype))
-    marker: BindingCollection = builder.allocate()
-    word = builder.inputs["x"]
-    for index, value in enumerate(cycle):
-        result = builder.call_program(
-            equality_constant_program(width, value), {"x": word, "target": marker}
-        )
-        word, marker = result["x"], result["target"]
-        delta = value ^ cycle[(index + 1) % len(cycle)]
-        result = builder.call_program(
-            controlled_bitwise_word_program(
-                unsigned_register_type(width), "xor_constant", pattern=delta
-            ),
-            {"ctrl": marker, "x": word},
-        )
-        marker, word = result["ctrl"], result["x"]
-    result = builder.call_program(
-        equality_constant_program(width, cycle[0]), {"x": word, "target": marker}
+    return permutation_cycle_graph(
+        dtype,
+        cycle,
+        partial(equality_constant_program, width),
+        lambda delta: controlled_bitwise_word_program(
+            unsigned_register_type(width), "xor_constant", pattern=delta
+        ),
     )
-    marker = result["target"]
-    assert isinstance(marker, RegisterBinding)
-    builder.free(marker)
-    return builder.finalize({"x": result["x"]})
 
 
 def permutation_program(
