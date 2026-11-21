@@ -213,3 +213,12 @@ process passes all four import-policy tests and all 42 native physical-evidence
 tests. Historical reports retain their recorded runner hashes; they describe
 the runner revisions that actually produced them. Full synchronized CI remains
 required before merge.
+
+The [complete rerun after the import correction](evidence/compiler-cz-identity-prefix-import-validation.json)
+records implementation `90bd5c75f5b98d3109b10f5a71a877954f01db99` and the
+updated runner digest. All 60 pairs / 120 acceptances pass. Every normalized
+output hash, layout and non-timing/non-memory observation matches the prior
+integrated report for both variants. The report retains 84 post-warmup latency
+observations and four separate Python-allocation measurements. Another local
+workflow ran concurrently during part of this interval; these observations are
+shared-host diagnostics, not performance qualification or a speedup claim.
