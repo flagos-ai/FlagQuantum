@@ -51,17 +51,21 @@ def append_bounded_unary_calls(
     def emit_gate(gate: Instruction) -> None:
         size = len(gate.wires)
         name = "__fq_unary_" + gate.name
+        ports = ("q",) if size == 1 else ("ctrl", "target")
         function = bit_gate_function(
             name,
-            (Register("bits", quantum_bit_type(), (size,)),),
+            tuple(Register(port, quantum_bit_type()) for port in ports),
             CircuitIR(size, (Instruction(gate.name, tuple(range(size))),)),
         )
         outputs = builder.call_program(
             ProgramRecord((function,)),
-            {"bits": np.array([bindings[wire] for wire in gate.wires], dtype=object)},
+            dict(zip(ports, (bindings[wire] for wire in gate.wires), strict=True)),
             entry=name,
         )
-        bindings.update(zip(gate.wires, np.asarray(outputs["bits"]).flat, strict=True))
+        for wire, port in zip(gate.wires, ports, strict=True):
+            value = outputs[port]
+            assert isinstance(value, RegisterBinding)
+            bindings[wire] = value
 
     def emit_and(
         left: int, right: int, target: int, values: tuple[int, int], erase: bool
