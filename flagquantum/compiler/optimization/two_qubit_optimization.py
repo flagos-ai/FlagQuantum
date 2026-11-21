@@ -811,6 +811,9 @@ def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
             _write_replacement(replaced, positions, block)
             continue
         for run in _two_qubit_sub_runs(positions, output):
+            # An all-two-qubit block is its own fallback and already declined.
+            if run == positions:
+                continue
             narrower = solve(run, pair)
             if narrower is not None:
                 _write_replacement(replaced, run, narrower)
