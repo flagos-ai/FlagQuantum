@@ -359,3 +359,60 @@ separate. Recursive glyph publication remains the next presentation boundary.
 The presentation adapter now directly reuses the executable OutOfPlaceAdder
 owner. Its previous extra graph-copy step is removed. The frozen Kickmix
 addition/comparison file checks pass all 26 cases with zero skips.
+
+## Complete recursive addition presentation, November 22
+
+The addition.py file's seven concrete catalog roots now qualify every recursive
+source-success child drawing. Its complete walk contains 13 exact ordered graphs
+and 61 atomic/refusal contexts. These counts preserve owning root contexts.
+The symbolic refusals retain the earlier source evidence. Original source code
+and its drawing failures remain unchanged.
+
+The Arithmetic exporter supplies a domain-owned child presentation callback to
+the existing dependency publisher. Its addition provider identifies Add,
+Always(Add), XorK and both OutOfPlaceAdder directions only after full reachable
+native definition matching. Declared constant metadata supplies XorK's encoded
+pattern. The provider reuses the existing executable constructors and Drawer
+symbols. It introduces no alternative executable or resource implementation.
+Stored dependency identities, graph edges and publication filenames are retained.
+Other domains continue to use their existing provider.
+
+The fresh source comparison exposed a real distinction between the AddK root's
+Always label and the Add child inside Always. The latter requires the existing
+addition wire glyph, including its blank vertical label and a+b output port.
+That callback is now reused for the matching Always body. XorK's individual X
+children reuse the Pauli X glyph. All seven roots' recursive source-success
+children are checked against fresh source diagrams. The frozen source still
+raises IndexError for the width-100 Add child. The native drawing remains
+available and that original failure is retained explicitly. Twelve small
+OutOfPlaceAdder cases additionally cover both directions and output widths.
+A mutated T phase in either reachable Add or Always body fails qualification.
+
+The Arithmetic dependency inventory contains 2832 contextual native functions.
+Its qualified labels increase from 16 to 39, making 61 in the combined catalog.
+The 23 additional matching definitions include addition dependencies reused by
+other Arithmetic roots. Literal constructor matching is recorded separately
+from the fresh source drawing checks of the complete addition file. The combined
+catalog retains 3569 JSON files, 234 documentation files and 3568 diagrams.
+Physical gate streams, full complex branch and workspace evidence, and separate
+analytical models reuse the preceding 788-case execution and 26-case locked
+Kickmix acceptance because this batch changes presentation only. Other recursive
+Arithmetic glyphs and EqualsAConstant's nominal Join view remain open.
+
+The concentrated catalog regression first failed with ENOSPC. Its original log
+is retained as g2-addition-child-catalog-disk-failure-20261122.log. Only the
+current failed export outputs and an older confirmed reproducible pytest export
+directory were removed, releasing 188344893 logical file bytes. No source,
+reference checkout or user archive was deleted. The source OutOfPlaceAdder
+operation label is retained in both directions because its adjoint is a
+constructor flag rather than the generic Adjoint wrapper. The six matching
+comparison child drawings and their source labels also pass fresh comparison.
+
+After cleanup the concentrated catalog run passes 586 checks, with three
+pre-existing deselections and fourteen existing notebook escape warnings. The
+final 32-case focused run includes all twelve comparison roots and all qualified
+recursive children encountered there. Strict typing of five changed Python
+files, Black, Ruff, integration scope, architecture, IR, public API and whitespace
+checks pass. The earlier 788 execution and 26 Kickmix checks remain the physical
+acceptance evidence. Primitive counts and analytical resource estimates remain
+reported by their original owners.

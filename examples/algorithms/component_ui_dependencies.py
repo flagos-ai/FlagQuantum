@@ -26,6 +26,11 @@ from tools.development.component_ui_export import (
     register_interface_score,
 )
 
+ChildPresentation = tuple[str, ProgramRecord, RegisterWireSymbolSupplier]
+ChildPresentationProvider = Callable[
+    [ProgramRecord, str, object], ChildPresentation | None
+]
+
 
 @dataclass(frozen=True)
 class ComponentFunction:
@@ -43,11 +48,15 @@ class ComponentFunction:
     program: ProgramRecord = field(compare=False, hash=False, repr=False)
     component: object = field(default=None, compare=False, hash=False, repr=False)
 
+    child_presentation: ChildPresentationProvider = field(
+        default=child_decomposition, compare=False, hash=False, repr=False
+    )
+
     @cached_property
     def presentation(
         self,
     ) -> tuple[str, ProgramRecord, RegisterWireSymbolSupplier] | None:
-        return child_decomposition(self.program, self.entry, self.component)
+        return self.child_presentation(self.program, self.entry, self.component)
 
     @property
     def function(self) -> FunctionRecord:
@@ -84,6 +93,7 @@ def dependency_graph(
     *,
     owner: Callable[[object], str],
     program: Callable[[object], ProgramRecord | None] = decomposition_program,
+    child_presentation: ChildPresentationProvider = child_decomposition,
 ) -> dict[object, tuple[object, ...]]:
     """Publish every reachable typed function through the existing graph owner.
 
@@ -105,7 +115,7 @@ def dependency_graph(
             (entry, *(name for edge in calls.direct_calls for name in edge))
         )
         nodes = {
-            name: ComponentFunction(owner(root), name, record, root)
+            name: ComponentFunction(owner(root), name, record, root, child_presentation)
             for name in names
             if name != entry
         }

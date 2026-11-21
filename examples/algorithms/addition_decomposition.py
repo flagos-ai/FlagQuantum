@@ -19,6 +19,7 @@ from flagquantum.compiler.registers.arithmetic.out_of_place_addition_component i
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.drawer.basis_symbols import pauli_basis_wire_symbol
 from flagquantum.drawer.bitwise_symbols import bitwise_wire_symbol
 from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.conjunction_symbols import and_wire_symbol
@@ -82,6 +83,8 @@ def addition_symbols(
             if function.registers[0].shape:
                 return and_wire_symbol(step, register, index)
             return controlled_not_wire_symbol(step, register, index)
+        if ports == ("q",):
+            return pauli_basis_wire_symbol(step, register, index, gate="x")
         if ports == ("x",):
             constant = parameters["k"]
             assert type(constant) is int

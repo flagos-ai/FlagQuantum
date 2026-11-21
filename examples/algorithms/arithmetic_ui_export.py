@@ -20,13 +20,18 @@ from pathlib import Path
 from sympy import Symbol
 
 from examples.algorithms.addition_catalog import addition_examples
+from examples.algorithms.addition_child_decomposition import (
+    addition_child_decomposition,
+)
 from examples.algorithms.addition_decomposition import addition_program, addition_score
+from examples.algorithms.basic_gate_child_decomposition import child_decomposition
 from examples.algorithms.comparison_catalog import comparison_examples
 from examples.algorithms.comparison_decomposition import (
     comparison_catalog_program,
     comparison_score,
 )
 from examples.algorithms.component_ui_dependencies import (
+    ChildPresentation,
     ComponentFunction,
     dependency_graph,
 )
@@ -732,6 +737,14 @@ def decomposition(component: object) -> ProgramRecord | None:
     )
 
 
+def _child_presentation(
+    record: ProgramRecord, entry: str, root: object
+) -> ChildPresentation | None:
+    return child_decomposition(record, entry, root) or addition_child_decomposition(
+        record, entry, attributes(root)
+    )
+
+
 def export_example(
     destination: Path,
     *,
@@ -748,6 +761,7 @@ def export_example(
             INSTANCES,
             owner=lambda component: name(component) + "/" + filename(component),
             program=decomposition,
+            child_presentation=_child_presentation,
         ),
         name=name,
         attributes=attributes,
