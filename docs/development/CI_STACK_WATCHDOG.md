@@ -156,3 +156,10 @@ read-only inspection on `jp-mc550-122` found the container absent and Docker
 29.5.3 responsive on kernel 5.15.0-119-generic. This establishes later state,
 not the timeout's root cause or a resolution of cleanup reliability. No service
 or container was restarted or modified. Exact-head Linux CI remains required.
+
+Main synchronization uses the already declared `source_commit` evidence field
+inside its own record, preserving the repository revision-field vocabulary.
+
+A Git-object walk of all 1,001 tracked JSON evidence artifacts, substituting the
+changed working artifact, matches all 20 declared revision field names. This
+checks vocabulary only; full provenance and exact-head CI remain separate gates.

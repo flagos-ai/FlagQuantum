@@ -307,7 +307,6 @@
     },
     "change": "Use the supported hookwrapper protocol and parse the built-in timeout numerically, including the string 0 used by pytest 7."
   },
-  "main_sync_commit": "02bacc099cdcd1ac08510c8cf944df6e018c94c9",
   "inherited_options_fix": {
     "failure": "CPU-runtime child pytest inherited parent PYTEST_ADDOPTS, including -n and --dist, while plugin autoload was disabled. It failed argument parsing before executing the child test.",
     "observed_jobs": [
@@ -363,5 +362,8 @@
     "log": "+ /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python -m pytest -m smoke or unit -q\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ntestpaths: tests\ncollected 93 items / 14 deselected / 79 selected\n\ntests/unit/test_ci_coverage_plan.py .............                        [ 16%]\ntests/unit/test_ci_cpu_budget.py .................................       [ 58%]\ntests/unit/test_ci_offline_environment.py .......................        [ 87%]\ntests/unit/test_lane_dependency_policy.py ..........                     [100%]\n\n====================== 79 passed, 14 deselected in 6.09s =======================\n",
     "qualification": "Sparse selection only; full exact-head Linux CI required."
   },
-  "main_sync_checks": "Black, Ruff, strict mypy for both Python files, and git diff --check passed."
+  "main_sync_checks": "Black, Ruff, strict mypy for both Python files, and git diff --check passed.",
+  "main_sync": {
+    "source_commit": "02bacc099cdcd1ac08510c8cf944df6e018c94c9"
+  }
 }
