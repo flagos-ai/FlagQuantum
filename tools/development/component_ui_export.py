@@ -6,6 +6,7 @@
 
 import hashlib
 import json
+import posixpath
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
@@ -116,6 +117,7 @@ def export_component_ui(
     documentation_text: Callable[
         [ComponentDocumentation[object]], str
     ] = _documentation_text,
+    relative_example_paths: bool = False,
 ) -> None:
     """Publish navigation, class documentation and all supplied graph nodes.
 
@@ -128,7 +130,20 @@ def export_component_ui(
     other provider failures and filesystem failures propagate, retaining earlier files.
     Explicit documentation providers support domains whose operations share a
     native IR or resource-call class. Defaults retain class names and docstrings.
+    Relative example paths can route a documentation group to a component in
+    another folder, including composite examples and qualified documentation.
     """
+
+    def example_path(
+        component: object, documentation: ComponentDocumentation[object]
+    ) -> str:
+        leaf = filename(component)
+        if relative_example_paths:
+            return posixpath.relpath(
+                f"{name(component)}/{leaf}", documentation_name(documentation)
+            )
+        return leaf
+
     navigation = {
         section: {
             spec.title: [
@@ -138,7 +153,7 @@ def export_component_ui(
                         {
                             "name": example.name,
                             "example_docstring": example.description,
-                            "filename": filename(example.make()),
+                            "filename": example_path(example.make(), documentation),
                         }
                         for example in documentation.examples
                     ],

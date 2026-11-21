@@ -406,3 +406,41 @@ def test_actual_module_entry(tmp_path: Path) -> None:
     assert "Measured primitive counts {'cx': 6}" in result.stdout
     assert "Model primitive estimates {'cx': 6}" in result.stdout
     assert len(list((tmp_path / "component_ui_export").rglob("*.json"))) == 3
+
+
+def test_relative_example_paths_use_actual_node_and_document_owners(
+    tmp_path: Path,
+) -> None:
+    component = example.make_swap()
+    documentation = ComponentDocumentation(
+        component_type=object,
+        examples=(ComponentExample(lambda: component, "swap", object),),
+    )
+    spec = NotebookSpec(
+        title="Qualified word exchange",
+        module=example,
+        component_specs=[documentation],
+    )
+    native.export_component_ui(
+        tmp_path,
+        (("Register components", (spec,)),),
+        {component: ()},
+        name=lambda _: "WordSwap",
+        attributes=example.component_attributes,
+        filename=example.filename,
+        score=example.score,
+        documentation_name=lambda _: "registers.WordSwap",
+        documentation_text=lambda _: "Owned word exchange documentation",
+        relative_example_paths=True,
+    )
+    navigation = json.loads((tmp_path / "navigation.json").read_text())
+    row = navigation["Register components"]["Qualified word exchange"][0]
+    assert row["name"] == "registers.WordSwap"
+    target = row["examples"][0]["filename"]
+    assert target == "../WordSwap/" + example.filename(component)
+    assert json.loads((tmp_path / row["name"] / target).read_text())[
+        "msd"
+    ] == example.score(component)
+    assert (
+        tmp_path / row["name"] / "docs.txt"
+    ).read_text() == "Owned word exchange documentation"
