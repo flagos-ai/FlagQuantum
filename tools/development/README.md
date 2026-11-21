@@ -317,3 +317,12 @@ the original spelling. Run `tests/unit/test_documentation_cleanup.py` for the
 complete unchanged source comparison, real 120-notebook publication cleanup and
 CLI ownership refusals. See `DOCUMENTATION_CLEANUP_FILE_AUDIT.md` for the
 adaptation of the original docs-branch assumptions.
+
+`examples/notebooks/component_bibliography.ipynb` composes existing class discovery
+and reference parsing into a development report. Run its cells to display owned
+algorithm-class references, parsing failures and URL backreferences. Python
+module and qualified class names label native backreferences. The development
+notebook remains outside the scientific publication catalog. Run
+`tests/unit/test_component_bibliography_notebook.py` for complete unchanged-source
+cell comparisons and actual native Jupyter execution. See
+`COMPONENT_BIBLIOGRAPHY_NOTEBOOK_AUDIT.md` for the explicit discovery adaptation.
