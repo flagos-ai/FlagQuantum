@@ -366,8 +366,11 @@ under the existing native strict policy. Use
 `python -m tools.development.typecheck_command development` or replace
 `development` with `package`. Extra mypy arguments pass through in order.
 The developer scope supports the `tools` namespace with explicit package bases.
-See `DEVELOPMENT_TYPECHECK_COMMANDS_AUDIT.md` for the complete source wrapper
-comparison and the still-open original configuration migration parent.
+The explicit `retained-source path/to/source.py` mode uses the complete imported
+profile and optional locked Duet/NumPy plugins. Supply explicit targets and the
+isolated audit environment. See `DEVELOPMENT_TYPECHECK_COMMANDS_AUDIT.md` for
+wrapper comparison and `DEVELOPMENT_MYPY_PROFILE_AUDIT.md` for full configuration,
+plugin behavior, dependency setup and the separate native strict policy.
 
 `format_command.py` preserves the complete changed/all Python file selection and
 check/apply orchestration of the frozen formatter. Run

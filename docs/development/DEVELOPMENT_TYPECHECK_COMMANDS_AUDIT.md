@@ -34,26 +34,17 @@ The wrappers do not certify that the entire target currently passes strict mypy.
 
 ## Complete source configuration disposition
 
-The frozen `dev_tools/conf/mypy.ini` was inspected in full and blob-verified.
-Its migration parent Q-0049 remains open. The following dispositions explain the
-current commands and identify the remaining dependency-policy work.
+The frozen `dev_tools/conf/mypy.ini` is now delivered in full as
+`tools/development/retained_source_mypy.ini`, through explicit `retained-source`
+audit mode with explicit targets and optional locked plugins. Q-0049 is closed
+by `DEVELOPMENT_MYPY_PROFILE_AUDIT.md`, which records each setting, complete
+parsed equality, actual source/native diagnostics and policy-control witnesses.
 
-| Source setting | Native disposition |
-| --- | --- |
-| `show_error_codes=true` | Current mypy default, demonstrated by actual `[return-value]` diagnostics. |
-| `duet.typing` plugin | Foreign async framework plugin. Native developer orchestration uses subprocess and existing helpers. No plugin added. Applicability across remaining migrated sources remains open. |
-| `numpy.typing.mypy_plugin` | No plugin added. Algorithms NumPy dependency ownership remains an explicit unresolved cross-policy issue. |
-| `allow_redefinition=true` | Native strict policy retains the existing default. Source-wide relaxation requires a concrete native requirement. |
-| `check_untyped_defs=true` | Included by native `--strict`. |
-| `disable_error_code=override` | Native override checks remain enabled under existing strict policy. Source subclass suppression is not copied. |
-| `__main__` silent imports and missing stubs | Existing native missing-import policy retained. No per-module silent import suppression added. |
-| Google and enumerated third-party silent imports and missing stubs | Existing global missing-import policy retained. Source per-module import traversal suppression is not copied. |
-| SymPy `follow_untyped_imports=true` | Source-specific traversal policy remains unported pending native dependency scope review. |
-| Protobuf skip imports including stubs | Source suppression remains unported. Native generated-schema typing scope must be assessed before changing approved policy. |
-
-The source and native strict policy deliberately have different diagnostics.
-Whole profile equivalence is not claimed. Closing the two wrapper sources does
-not close the source configuration parent or the full-library strict typing gap.
+Package and development modes keep the existing strict project policy. Their
+diagnostics differ from the imported-source profile. The optional audit profile
+owns source reproduction, including disabled override checks, silent imports,
+SymPy traversal and Protobuf stub suppression. The audit does not certify
+full-library native strict typing or resolve production NumPy ownership.
 
 ## Verification
 
