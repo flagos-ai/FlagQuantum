@@ -176,3 +176,12 @@ integration tests deselected. Final withdrawal checks are recorded in the
 additional control record. Neither selection is complete-checkout default-tier
 certification; exact-head CI remains required before merging. The independent
 CI stack-watchdog repair remains separate from this rejection decision.
+
+The subsequent CI vocabulary gate rejected the newly named `main_commit`
+metadata field. It is recorded as the existing `source_commit` field instead;
+the revision and numerical evidence are unchanged, and the vocabulary gate is
+not expanded.
+
+A Git-object walk of all 1,002 tracked JSON evidence artifacts, with the changed
+working artifact substituted, matches all 20 declared revision field names.
+This verifies field vocabulary, not full provenance or full CI acceptance.
