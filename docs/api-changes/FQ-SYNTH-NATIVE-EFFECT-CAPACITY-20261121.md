@@ -83,3 +83,22 @@ the frontend. No source flag or public serialized field is added.
 Conformance covers exact effect boundaries, default refusal, repeated capture,
 and QPE before/after larger regions. Domain implementation lands separately from
 the Services integration.
+
+
+## Implementation outcome on November 21, 2026
+
+Compiler admission and exact closed-fragment normalization are implemented in
+`62694e9a8`, with the Python-only Services selection in `0f8e252c4`. Specialized
+QPE/Qmod/direct-register limits remain unchanged. Nested helper traversal retains
+its separate bounded visit guard; a larger effect budget does not authorize
+unbounded helper expansion. The 2152-test Compiler/QPE run and ten additional
+nested/public-flow checks pass.
+
+The original full inverses execute native streams in `36ee861ad`: 102 phases
+use thirteen total/four work qubits and 40447 logical instructions; 256 phases
+use twelve/three and 87012. Both original solution errors remain below 0.1,
+complete complex-state errors below 1e-10 and work probabilities below 1e-24.
+The fourteen-cell Notebook and named readout also execute. No packed response
+matrix, shortened phase sequence or larger operation cap enters acceptance.
+Full regression outcomes and intrusive diagnostic spans remain separately
+recorded in the delivery ledger; these counts do not certify hardware efficiency.

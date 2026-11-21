@@ -93,3 +93,17 @@ result = fq.run(program)
 Approval requested: admit only the two bounded capacity increases above and
 their image-workflow implementation. Subsequent parameter reuse or QSVT APIs
 are separate decisions.
+
+
+## Implementation outcome on November 21, 2026
+
+The approved fresh-native/root-binding extension is implemented in `5d85ee53a`;
+helper, Qmod and in-place boundaries retain their earlier limits. The example
+above describes the original proposal and is now supported within the approved
+ceilings. The complete original image executes native preparation and coherent
+differences in `ca9a528ec`, with twenty total qubits, three work bits and 33130
+logical instructions. All seventeen code cells and complete complex-state,
+cleanup and 200000-draw checks pass. Focused capacity, binding and protected
+contract tests preserve the specified failure and snapshot semantics.
+Local observations are retained in the delivery ledger; process RSS is not the
+Runtime planned-state buffer limit, and no speedup or hardware claim is made.

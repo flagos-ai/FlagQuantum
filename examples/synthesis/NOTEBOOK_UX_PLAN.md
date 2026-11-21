@@ -27,18 +27,86 @@ Track three independent measures:
 | Requirement | Current evidence | Remaining work |
 | --- | --- | --- |
 | Preserve approved migration scope | 212 accepted workflows; all editorial links and historical successful full-cell process records resolve | Historical cell records are not current-HEAD execution claims |
-| Preserve original-source paths | All 222 rows replay on `40937f239`: 210 original executions, six original expected refusals and six approved alternative executions | Smoke/profile regressions remain separate from independent full-state acceptance |
+| Preserve original-source paths | All 222 expected stages match on `0f8e252c4` after one separately retained Vlasov recheck; zero resource/profile differences from `40937f239` | Raw batch retains its one execution failure; 210 original smokes, six expected original refusals and six approved alternative smokes stay separate from full-state acceptance |
 | Six editable learning lessons | Replayed on `e9851545c` with independent amplitudes, cleanup, topology, seeded sampling, actual energies and three nonzero runtime-gradient bindings | Keep their six-case teaching denominator separate from the 212 upstream workflows |
-| Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Original degree-101/255 nozzle sequences still require the pending bounded effect admission |
-| Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Pending explicit preparation/binding capacity approval; public limits unchanged |
+| Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Both complete original 102/256-phase native streams now execute; full-state and clean-work checks pass |
+| Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Approved fresh preparation/root binding capacity implemented; full-size native execution and all 17 cells pass |
 | Original signed arithmetic budget | Native full-size execution now also fits 14 total qubits and zero extra work; all 16,384 arbitrary XOR columns and complex witnesses pass | Width-constrained Fourier route costs 89 logical instructions including preparation; default 20-qubit/47-instruction ripple route retained; native logical targets only |
 | Repeated parameter evaluations | Existing Circuit plan reuse and gradients taught; repeated native-specialization readout validation reduced | Native symbolic angle binding remains a separate design/admission item |
-| Frozen default checks | 21239 passes, 801 skips, nine failures and six errors; no new failed/error nodes versus the prior baseline | Existing worktree, local-network and shared-history environment issues remain explicit; raw run is not green |
+| Current default checks | 21261 passes, 801 skips, seven failures and six errors in 1094.26 seconds; no new failed/error nodes; two census failures resolved | Remaining local socket/Gloo restrictions and historical evidence-origin failures remain explicit; raw run is not green |
 
-The two pending capacity proposals do not authorize implementation by themselves.
-Continue safe internal resource/validation improvements while those decisions
-remain pending; do not substitute smaller original workloads or packed response
-matrices to claim their acceptance.
+The user approved both bounded capacity proposals on November 21, 2026.
+Implementation keeps specialized QPE/Qmod/in-place/helper capacities and all
+resource guards separate. No smaller original workload or packed response matrix
+is used to claim native acceptance. Earlier pending-capacity entries below are
+historical checkpoints, superseded by this approved implementation.
+
+### Approved native capacity closeout
+
+Fresh native amplitude/probability preparation admits 2 through 16384 entries.
+Root classical arrays and their aggregate, including scalars, admit 16384 bound
+elements. Helper arrays retain 4096 elements; Qmod and in-place/controlled
+preparation keep their original limits. Ordinary native programs admit 16384
+expanded effects separately from 4096 structural nodes. Capturing QPE restores
+the old whole-program cap; direct register/Qmod callers retain the default.
+Source AST, loops, helper expansion, matrix, instruction and memory limits remain.
+
+The original image now prepares all 16384 amplitudes and computes both coherent
+finite differences in one displayed native qfunc. It retains 200000 finite draws,
+20 total qubits, three clean work bits and 33130 logical instructions (depth
+32886). Complete complex-state error is below `9e-16`, with work probability
+below `4e-31`. The former Circuit preparation is an independent reference only.
+
+Both original nozzle inverses also execute native programs. Classical helpers
+fit all phases and derive tables; native qfunc composes preparation, selected
+blocks, their adjoints and shared projector predicates with exact cleanup.
+
+| Original case | Phases | Total/work qubits | Instructions | Depth | Complete-state absolute error |
+| --- | --- | --- | --- | --- | --- |
+| Eight-row Pauli inverse | 102 | 13/4 | 40447 | 35575 | `7.60e-15` |
+| Sixteen-row six-band inverse | 256 | 12/3 | 87012 | 81109 | `2.13e-14` |
+
+Both work probabilities are zero in the retained numerical run. The independent
+sequential full-state reference includes every non-success branch and absolute
+phase; the SVD reference and original solution L2 threshold of 0.1 also pass.
+No response/SELECT matrix replaces the executed native streams.
+
+The Compiler reuses exact rotation merging, identity removal and self-inverse
+cancellation at closed composition boundaries, before the next bounded emission.
+A generic signed-binary-place modular update replaces repeated unit increments;
+all 513 admitted constants over complete widths one through six and additional
+coherent controlled updates pass. The six-band source block improves from
+566/depth527 to 343/depth307 without changing its matrix or memory ceiling.
+These logical counts establish neither hardware costs nor runtime speedup.
+
+The final Compiler/QPE selection passes 2152 tests; separate nested-helper and
+public-flow checks pass ten tests. The application selection passes 84 tests with
+one catalog metadata failure; after synchronizing only descriptive provenance,
+the 23-test catalog/audit selection passes. Original source hashes and reviewed
+upstream cell hashes remain unchanged. All seventeen image and fourteen nozzle
+code cells replay on the formatted sources with independent numerical assertions.
+Protected API, documentation/navigation, Ruff/Python formatting and focused typing
+of two Compiler modules pass. Black did not inspect Notebook cells because its
+optional Jupyter dependencies are absent; Ruff checks their imports and syntax.
+
+Instrumented compilation spans and process lifetime RSS are retained separately
+from ordinary execution/readout timings. The image diagnostic records 59.066 s
+instrumented compile, 4.147 s execution, 3.061 s named readout and 560693248 bytes
+lifetime peak RSS. The nozzle diagnostics record 95.488/198.224 s intrusive
+compile observations and 976125952 bytes lifetime peak. Separate ordinary nozzle
+replays record 14.437/28.684 s total host build, 5.166/6.865 s execution and
+3.705/8.064 s named readout. These concurrent local observations are baselines,
+not isolated performance or speedup claims. The Runtime memory limit bounds
+planned state buffers, not total process RSS.
+
+The 222-path batch retains one Vlasov execution failure; an unchanged-source,
+unchanged-resource independent run with a 240-second observer deadline passes
+(the batch observer used 180 seconds). Final expected stages match for every row,
+with zero qubit/instruction/depth differences. No raw batch result is overwritten.
+The default raw run records 21261 passes, 801 skips, seven failures and six errors;
+exact node comparison finds no new failures/errors and two resolved census nodes.
+Remaining socket/Gloo permission and historical evidence-origin checks are still
+failed, not waived or relabeled green. Current records are in the delivery ledger.
 
 ### Original-width signed sum closure
 

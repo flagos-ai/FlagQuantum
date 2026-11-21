@@ -17,6 +17,17 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Approved experimental native synthesis admits fresh real preparation vectors
+  and aggregate root classical bindings up to 16384 elements, and ordinary native
+  composition up to 16384 effects with a separate structural guard. Helper,
+  in-place, Qmod and QPE limits retain their reviewed boundaries. Full original
+  image preparation and both 102/256-phase nozzle inverses now execute native
+  qfunc programs with explicit resource ceilings and independent full-state
+  checks. See the [preparation](../api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md)
+  and [composition](../api-changes/FQ-SYNTH-NATIVE-EFFECT-CAPACITY-20261121.md)
+  proposals. This is local CPU development evidence, not release or hardware
+  performance certification.
+
 - Native `flagquantum.compiler.compile` now defaults to `routing_strategy="auto"`
   when a topology is supplied. It chooses among deployable routing strategies
   and records the selection, while preserving calibration restrictions and final
