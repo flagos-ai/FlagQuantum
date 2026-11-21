@@ -164,3 +164,25 @@ print("Restored logical output layout")
 
 Expected: the message prints. This ordinary workflow is unchanged; the diagnostic
 examines the additional target-artifact stages rather than adding a user option.
+
+
+## Synchronization after the pipeline integration
+
+The measurements above remain bound to their original complete source
+`2d78133a1f5a7d234acbb128724ccf2674e2eeb8`. PR #1268 subsequently merged as
+main `a7d84a605080c511d4a07037ef2b4f3b90a645d1`, after 243 successful checks
+and three optional skips. This study branch merged that exact main revision to
+keep its integration checks current. The historical observations have not been
+relabeled as measurements of the combined compiler.
+
+The first quality run found the new record-limit note inside the generated
+Known Limitations region. Commit
+`a0a862f316ab97ec7e684792a31f247c04a70ca3` moved the same text outside it;
+the generated region matches unchanged main. An initial coverage worker also
+terminated after a five-minute timeout in the existing logical-cat notebook
+fixture; that trace alone does not establish its root cause. A subsequent
+supply-chain job failed because `pip-audit` timed out while querying PyPI after
+60 seconds. That incomplete audit is not a passing security result. Original
+runs and failures remain visible. No check, timeout, dependency restriction,
+acceptance threshold or evidence requirement is weakened; the synchronized
+head requires complete CI again.
