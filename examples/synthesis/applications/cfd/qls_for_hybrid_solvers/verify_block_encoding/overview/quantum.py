@@ -15,7 +15,6 @@ from flagquantum.synth import (
     QArray,
     QBit,
     QNum,
-    R,
     X,
     allocate,
     apply,
@@ -24,6 +23,7 @@ from flagquantum.synth import (
     phase,
     prepare_amplitudes,
     qfunc,
+    select_rotation,
     within,
 )
 
@@ -109,14 +109,23 @@ def native_pauli_program(
 
 @qfunc
 def banded_term(angles: list[float], term: int, flag: QBit, data: QNum[3]) -> None:
-    # R(2*acos(d), pi/2) Z dilates the real diagonal value d.
+    # RY(2*acos(d)) Z dilates each real signed diagonal value d.
     phase(flag, math.pi)
-    # The frontend captures each callback during static loop expansion.
-    for column in range(8):
-        control(
-            data == column,
-            lambda: R(angles[8 * term + column], math.pi / 2, flag),  # noqa: B023
-        )
+    select_rotation(
+        "Y",
+        [
+            angles[8 * term],
+            angles[8 * term + 1],
+            angles[8 * term + 2],
+            angles[8 * term + 3],
+            angles[8 * term + 4],
+            angles[8 * term + 5],
+            angles[8 * term + 6],
+            angles[8 * term + 7],
+        ],
+        data,
+        flag,
+    )
     if term == 0:
         data += 1
     if term == 2:
@@ -149,8 +158,8 @@ def native_banded_program(
     matrix: torch.Tensor,
     rhs: torch.Tensor,
     *,
-    max_qubits: int = 9,
-    max_workspace: int = 3,
+    max_qubits: int = 8,
+    max_workspace: int = 2,
     max_operations: int = 512,
 ) -> tuple[synth.Program, float]:
     """Compose the real source tridiagonal dilation with logical registers."""

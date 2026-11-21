@@ -354,7 +354,33 @@ original/alternative paths match recorded stages in 563.656 seconds of total
 case time, and all six lessons plus three focused applications replay in
 25.254 seconds on that frozen implementation.
 
-The final related CFD, exact-number and learning-path selection passes103 tests
-in15.45 seconds, and the ten-cell Notebook replays after its final named-success
+The final related CFD, exact-number and learning-path selection passes 103 tests
+in 15.45 seconds, and the ten-cell Notebook replays after its final named-success
 readout edit. The generated audit report and all local documentation links
 remain consistent.
+
+## Banded multiplexing and constrained tradeoff checkpoint
+
+Reusing existing `select_rotation` replaces eight separate numeric predicate
+controls per band with one bounded rotation table. The current three-bit source
+helper supplies eight checked classical angle lookups; it admits no new table
+syntax, capacity or compiler API. The previous 9-qubit/454-instruction native
+implementation and its measurements remain recorded above.
+
+For the same matrix, scale and source seeds, the current default uses eight
+total qubits, two clean work bits, 104 logical instructions and depth 89.
+A seven-qubit constraint selects one work bit, 156 instructions and depth 131.
+Both workspace choices retain all eight independent full-state column checks,
+absolute phases and restored clean work bits. The six-qubit or zero-work
+request and an insufficient operation budget still refuse. These are measured
+logical resources; no execution-speed ratio is inferred.
+
+The initial multiplex preflight has maximum absolute state error 2.79e-16 and
+zero measured work-bit probability. Early test failures retained the preceding
+resource tuple/workspace reshape, and incorrectly assumed that one work bit
+must fail; the actual lower-workspace alternative is now independently tested.
+No production capacity, semantic check or numerical threshold was weakened.
+
+The final related selection passes 112 tests, the 23 catalog/audit tests pass,
+and all ten Notebook cells replay with both resource constraints. Black, Ruff
+and local documentation-link checks pass.

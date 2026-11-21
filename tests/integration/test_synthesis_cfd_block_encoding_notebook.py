@@ -121,15 +121,20 @@ def test_original_data_and_stage_pins() -> None:
 
 
 @pytest.mark.parametrize("column", range(8))
-def test_native_banded_complete_columns_and_clean_workspace(column: int) -> None:
+@pytest.mark.parametrize("workspace", [1, 2])
+def test_native_banded_complete_columns_and_clean_workspace(
+    column: int, workspace: int
+) -> None:
     matrix = model.source_matrix()
     vector = torch.eye(8, dtype=torch.float64)[column]
-    program, scale = quantum.native_banded_program(matrix, vector)
-    state = fq.run(program).statevector().reshape(64, 8)
+    program, scale = quantum.native_banded_program(
+        matrix, vector, max_workspace=workspace
+    )
+    state = fq.run(program).statevector().reshape(64, 1 << workspace)
     reference, reference_scale = quantum.banded_encoding(matrix, vector)
     assert scale == reference_scale
-    assert program.circuit.n_wires == 9
-    assert program.report["workspace_qubits"] == 3
+    assert program.circuit.n_wires == 6 + workspace
+    assert program.report["workspace_qubits"] == workspace
     assert not any(gate.name == "any" for gate in program.circuit.instructions)
     torch.testing.assert_close(
         state[:, 0], fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
@@ -145,7 +150,7 @@ def test_native_banded_signed_coherent_state_and_named_success(seed: int) -> Non
     matrix, vector = model.source_matrix(), model.right_hand_side(seed)
     program, scale = quantum.native_banded_program(matrix, vector)
     result = fq.run(program)
-    state = result.statevector().reshape(64, 8)
+    state = result.statevector().reshape(64, 4)
     reference, _ = quantum.banded_encoding(matrix, vector)
     torch.testing.assert_close(
         state[:, 0], fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
@@ -163,9 +168,9 @@ def test_native_banded_signed_coherent_state_and_named_success(seed: int) -> Non
     assert float(state[:, 1:].abs().square().sum()) < 1e-24
     resources = program.report["resources"]
     assert (resources.n_qubits, resources.n_operations, resources.depth) == (
-        9,
-        454,
-        420,
+        8,
+        104,
+        89,
     )
 
 
@@ -173,9 +178,9 @@ def test_native_banded_signed_coherent_state_and_named_success(seed: int) -> Non
     "limits",
     [
         {"max_qubits": 6, "max_workspace": 0},
-        {"max_qubits": 8, "max_workspace": 3},
-        {"max_qubits": 9, "max_workspace": 2},
-        {"max_operations": 450},
+        {"max_qubits": 6, "max_workspace": 2},
+        {"max_qubits": 8, "max_workspace": 0},
+        {"max_operations": 100},
     ],
 )
 def test_native_banded_retains_checked_resource_refusals(
@@ -185,6 +190,24 @@ def test_native_banded_retains_checked_resource_refusals(
         quantum.native_banded_program(
             model.source_matrix(), model.right_hand_side(37), **limits
         )
+
+
+def test_native_banded_tighter_qubit_budget_uses_more_instructions() -> None:
+    matrix, vector = model.source_matrix(), model.right_hand_side(37)
+    program, _ = quantum.native_banded_program(matrix, vector, max_qubits=7)
+    resources = program.report["resources"]
+    assert (resources.n_qubits, resources.n_operations, resources.depth) == (
+        7,
+        156,
+        131,
+    )
+    assert program.report["workspace_qubits"] == 1
+    state = fq.run(program).statevector().reshape(64, 2)
+    reference, _ = quantum.banded_encoding(matrix, vector)
+    torch.testing.assert_close(
+        state[:, 0], fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
+    )
+    assert float(state[:, 1:].abs().square().sum()) < 1e-24
 
 
 def test_native_banded_refuses_another_matrix_profile() -> None:

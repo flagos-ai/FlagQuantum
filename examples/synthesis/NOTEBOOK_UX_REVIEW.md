@@ -549,8 +549,15 @@ operation and execution-memory refusals remain distinct and checked.
 
 
 The CFD banded source now has a second executable native route as well as its
-independent Circuit reference. All eight columns, source seeds37/91, full flag
+independent Circuit reference. All eight columns, source seeds 37/91, full flag
 branches, absolute phases and three clean work bits pass. Native resources are
-nine qubits/454 logical instructions/depth420 for either seed; the reference
-retains six qubits. All29 CFD tests and all ten original Notebook stages pass;
-the editorial212/212 denominator and original source identities are unchanged.
+nine qubits/454 logical instructions/depth 420 for either seed; the reference
+retains six qubits. All 29 CFD tests and all ten original Notebook stages pass;
+the editorial 212/212 denominator and original source identities are unchanged.
+
+
+The subsequent rotation-table reuse uses eight qubits/two work bits/104 logical
+instructions (depth 89). Tightening the total-qubit limit to seven selects one
+work bit/156 instructions (depth 131). Both complete-state implementations
+retain the original matrix and scale; the older 454-instruction record remains
+historical. Neither change alters the approved migration denominator.
