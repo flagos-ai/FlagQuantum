@@ -376,3 +376,12 @@ selected files or using `--all` for tracked files. Optional Flynt 0.78 owns
 f-string conversion. Existing Ruff import sorting and Black own native source
 formatting. See `DEVELOPMENT_FORMAT_COMMANDS_AUDIT.md` for dependency setup,
 configuration differences and retained source edge cases.
+
+`lint_command.py` runs the native package or changed-file lint scopes using the
+existing Ruff policy. Use `python -m tools.development.lint_command changed HEAD`
+for a first comparison. Changed mode retains first-revision-only arguments.
+The explicit `retained-source` mode accepts paths and Pylint flags under the
+complete imported-source profile, including the existing optional copyright
+checker and documentation-parameter checks. It requires the accepted optional
+Pylint environment. See `DEVELOPMENT_LINT_COMMANDS_AUDIT.md` for ownership,
+complete profile mapping, source defects and diagnostic comparisons.
