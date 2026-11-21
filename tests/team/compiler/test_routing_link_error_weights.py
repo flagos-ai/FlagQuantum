@@ -556,3 +556,42 @@ def test_a_path_cache_too_small_to_hold_a_route_is_refused(capacity: int) -> Non
         )
 
     assert "zero or at least two" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "module_path",
+    (
+        "flagquantum.compiler",
+        "flagquantum.compiler.routing",
+        "flagquantum.compiler.topology.routing",
+        "flagquantum.compiler.topology.routing_cost",
+        "flagquantum.compiler.topology.link_error_rates",
+    ),
+)
+def test_calibration_imports_preserve_class_lookup_and_weighted_routes(
+    module_path: str,
+) -> None:
+    import pickle
+    from importlib import import_module
+
+    from flagquantum.compiler.topology import link_error_rates, routing_cost
+
+    cls = import_module(module_path).LinkErrorRates
+    assert cls is link_error_rates.LinkErrorRates
+    assert routing_cost._quantized is link_error_rates._quantized
+    assert pickle.loads(pickle.dumps(cls)) is cls
+    assert (
+        pickle.loads(b"cflagquantum.compiler.topology.routing_cost\nLinkErrorRates\n.")
+        is cls
+    )
+    device = cls(_CHORDED_LINE, _CHORDED_CALIBRATION)
+    reference = _chorded_device()
+    assert device == reference
+    forward = device.lowest_error_path(0, 3)
+    assert forward == reference.lowest_error_path(0, 3)
+    assert device.lowest_error_path(3, 0) == tuple(reversed(forward))
+    assert device.path_cache_info()["hits"] == 1
+    assert device.route_error(forward) == reference.route_error(forward)
+    # Live path-cache locks have never been part of a serializable instance.
+    with pytest.raises(TypeError, match="lock"):
+        pickle.dumps(device)
