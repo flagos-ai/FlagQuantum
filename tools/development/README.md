@@ -37,3 +37,12 @@ for documentation tooling. Run `tests/unit/test_development_docstrings.py` in th
 locked G2 environment to compare both original tests and all 340 frozen classes.
 See `docs/development/DEVELOPMENT_DOCSTRINGS_FILE_AUDIT.md` for dependency review,
 replacement rules and the preserved source parsing boundaries.
+
+`component_discovery.py` discovers Python classes and existing Testing example
+records. Supply a package prefix for an explicit source root and a domain class
+predicate for class discovery. For a first example, call `module_examples` with
+`Path("component_example_catalog.py")` and `package="examples.algorithms"`.
+Discovery leaves the example factory unexecuted. The default root is the tracked
+native algorithms package. Both native and original test filename conventions
+are recognized. Run `tests/unit/test_development_discovery.py` to verify the
+complete source finder and native catalog paths.
