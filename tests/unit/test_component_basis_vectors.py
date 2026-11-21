@@ -8,6 +8,7 @@ import torch
 
 from flagquantum.compiler.registers.component_basis_vectors import (
     integer_basis_function,
+    integer_basis_program,
 )
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.register_binding import bind_register_program
@@ -84,3 +85,67 @@ def test_incremental_definition_reuses_constructor_conflict_rules() -> None:
     invalid: Any = 1
     with pytest.raises(ValueError, match="boolean"):
         integer_basis_function("ket", RegisterType("bit", 1), 0, state=invalid)
+
+
+@pytest.mark.parametrize("width", (1, 2, 3, 4))
+def test_complete_integer_child_graphs_and_physical_roundtrip(width: int) -> None:
+    from qualtran.bloqs.basic_gates import IntEffect, IntState
+
+    from tests.unit.test_component_graph import _native_trace, _source, _source_trace
+
+    dtype = RegisterType("opaque", width) if width > 1 else RegisterType("bit", 1)
+    for value in range(1 << width):
+        programs = []
+        for state, original in (
+            (True, IntState(value, width)),
+            (False, IntEffect(value, width)),
+        ):
+            name = "prepare" if state else "effect"
+            program = integer_basis_program(name, dtype, value, state=state)
+            signature = Signature(program.functions[0].registers or ())
+            assert verify_program_record(program) == ()
+            assert _native_trace(program, name) == _source_trace(
+                _source(signature), original.decompose_bloq()
+            )
+            canonical = ProgramRecord(
+                (integer_basis_function(name, dtype, value, state=state),)
+            )
+            inputs = () if state else (tuple(range(width)),)
+            native = bind_register_program(
+                program,
+                inputs,
+                entry=name,
+                clean=tuple(range(width)) if state else (),
+                allow_workspace_outputs=state,
+                input_ownership=(
+                    () if state else tuple((wire, False) for wire in range(width))
+                ),
+            )
+            previous = bind_register_program(
+                canonical,
+                inputs,
+                entry=name,
+                clean=tuple(range(width)) if state else (),
+                allow_workspace_outputs=state,
+                input_ownership=(
+                    () if state else tuple((wire, False) for wire in range(width))
+                ),
+            )
+            assert native.outputs == previous.outputs
+            assert native.circuit.instructions == previous.circuit.instructions
+            programs.append(program)
+        builder = ComponentProgramBuilder(Signature(()))
+        result = builder.call_program(programs[0], {}, entry="prepare")
+        builder.call_program(programs[1], result, entry="effect")
+        closed = bind_register_program(
+            builder.finalize({}), (), clean=tuple(range(width))
+        )
+        initial = torch.zeros(1 << width, dtype=torch.complex128)
+        initial[0] = 1
+        torch.testing.assert_close(
+            forced_branch(initial, closed.circuit.instructions, ()), initial
+        )
+        assert closed.outputs == ()
+        assert Counter(g.name for g in closed.circuit.instructions) == (
+            {"x": 2 * value.bit_count()} if value else {}
+        )

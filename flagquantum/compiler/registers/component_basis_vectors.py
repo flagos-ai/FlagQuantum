@@ -6,10 +6,23 @@
 
 """Construct typed integer basis preparation and checked-release functions."""
 
-from ...core.ir.program import BlockRecord, FunctionRecord, Operation, ValueRef
+from dataclasses import replace
+
+from ...core.ir.program import (
+    BlockRecord,
+    FunctionRecord,
+    Operation,
+    ProgramRecord,
+    ValueRef,
+)
+from ...core.ir.program.register_bindings import RegisterBinding
+from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.register_verifier import executable_register_width
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
+from ...core.ir.program.signatures import Signature
+from .component_builder import ComponentProgramBuilder
 from .layout.int_vector import int_state_ir
+from .layout.register_bits import split_integer
 
 
 def integer_basis_function_data(function: FunctionRecord) -> tuple[int, bool] | None:
@@ -114,3 +127,37 @@ def integer_basis_function(
             ),
         ),
     )
+
+
+def integer_basis_program(
+    name: str, dtype: RegisterType, value: int, *, state: bool = True
+) -> ProgramRecord:
+    """Retain each MSB-first zero/one child and the source Split/Join boundary.
+
+    The canonical integer constructor validates the same storage and value
+    domain. Its existing one-bit loader and clean-release body supply each
+    directional child. Outputs belong to the caller across the state/effect
+    interval. An effect requires the same explicit clean-release promise as
+    integer_basis_function and neither resets nor measures storage.
+    """
+    canonical = integer_basis_function(name, dtype, value, state=state)
+    bit = quantum_bit_type()
+    width = executable_register_width(dtype)
+    digits = split_integer(value, width)
+    leaves = []
+    for digit in sorted(set(digits)):
+        leaf = integer_basis_function(f"{name}_basis_{digit}", bit, digit, state=state)
+        assert leaf.registers is not None
+        leaves.append(
+            replace(leaf, registers=(Register("q", bit, side=leaf.registers[0].side),))
+        )
+    assert canonical.registers is not None
+    builder = ComponentProgramBuilder(Signature(canonical.registers), leaves, name=name)
+    if state:
+        bits = [builder.call_dict(f"{name}_basis_{digit}", {})["q"] for digit in digits]
+        return builder.finalize({"val": builder.join(bits, dtype)})
+    word = builder.inputs["val"]
+    assert isinstance(word, RegisterBinding)
+    for digit, wire in zip(digits, builder.split(word), strict=True):
+        builder.call_dict(f"{name}_basis_{digit}", {"q": wire})
+    return builder.finalize({})
