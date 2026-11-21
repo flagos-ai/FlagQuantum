@@ -376,3 +376,101 @@ separate primitive/model rows are retained in
 `g2-poly-foreign-evidence-20261121.json`. An initial Cirq-profile command selected
 a misspelled test path and collected nothing. The corrected accepted log is
 `g2-poly-foreign-cirq16-accepted-20261121.log`.
+
+## Complete polynomial catalog dependency closure — 2026-11-22
+
+The complete `gf2_poly_add.py`, `gf2_poly_add_k.py` and
+`gf_poly_split_and_join.py` factory groups now use existing native signatures,
+packed execution owners and catalog dependency presentation. All six original
+factories remain represented. The two concrete addition roots expose their
+complete ordered calls. The two symbolic additions retain their original
+`DecomposeTypeError`, and both view roots retain the original atomic refusal.
+
+`examples/algorithms/field_polynomial_decomposition.py` owns Program selection,
+whole-definition qualification and drawing composition. It resolves existing
+polynomial metadata through the Simulation codec, uses the existing
+`field_polynomial_addition_program` with the typed packed descriptor, and reuses
+field addition and Drawer glyphs. Coefficients remain descending by degree and
+field bits remain MSB-first. Core, Compiler, Simulation, binding and existing
+execution-test owners are unchanged from `8cbe5ca13`. Users continue with
+`circuit.append(op)`.
+
+### Recursive source comparison and native view helpers
+
+Fresh walks through the original composite instance indices compare every
+ordered call, named operand, output, register width, shape and side. The two
+concrete roots plus six coefficient additions yield eight exact graphs. All
+eight fresh comparable drawings agree. Twenty-four source atomic/refusal
+contexts retain their original status. Five complete GF2AddK descendants and
+one GF2Addition descendant receive qualified class labels only after literal
+whole-definition matching. Changed X primitives and reversed CX operands reject
+those labels.
+
+The field catalog publishes 333 contextual children, an increase of 54. Thirty
+new child contexts correspond to original reachable definitions. Twenty-four
+additional native rebinding helpers lie underneath source-atomic GFPolySplit and
+GFPolyJoin calls. Their identities are recorded separately. Those helpers keep
+the existing typed packed-to-coefficient representation and emit no physical
+gates. Source class decomposition equality is not claimed for the original
+atomic views. Their existing independent source `as_cirq_op`, typed port/alias
+and complete complex-state identity checks are rerun.
+
+### Primitive measurements and independent resource models
+
+| Concrete source factory | Measured atomic primitive stream | Separate original QEC model | Separate original total-T estimate |
+| --- | --- | --- | --- |
+| Degree-four GF(8) constant addition | 7 X | 7 Clifford | 0 |
+| Degree-four GF(8) register addition | 15 CX | 15 Clifford | 0 |
+
+Both streams contain zero CCX, explicit T-family, measurement, classical-output
+or allocation/free events. There is one coherent branch. Atomic view operations
+retain the previously verified zero-primitive physical identity. The symbolic
+models and physical width refusal stay separate.
+
+The accepted actual-factory execution checks cover the entire 15-bit constant
+input space with a coherent spectator, and a sparse coherent subspace of the
+30-bit register addition containing every source word, two arbitrary targets
+and both spectator values. Exact destination indices and full complex
+amplitudes are compared. Small complete dense all-pairs append and SDK-blocked
+execution checks remain part of the rerun. This batch does not certify a dense
+31-qubit allocation. Clean spare wires and inverse recovery remain separate
+from logical output ownership.
+
+### Verification and retained complete-file boundaries
+
+Concentrated polynomial execution/reference regression passes 324 cases without
+skips or warnings. Focused recursive graph/refusal/mutation checks pass eight
+cases. Local integration passes 29 cases. Strict typing covers all four changed
+Python files. Black, Ruff, integration scope, architecture, multi-level IR and
+public API checks pass. Ten frozen polynomial package/source/test/notebook blobs
+match their ledger Git hashes. Qualtran 0.7.0 and Kickmix 0.1 Simulator are
+verified. Eleven previously accepted execution-test files are unchanged.
+
+The initial resource receipt incorrectly counted only CX toward Clifford for
+the constant factory. The corrected receipt counts X and CX separately and
+compares their total against the original Clifford model; its initial diagnostic
+is retained. Production execution and gate counts required no change.
+
+Original generic admission/autotester/serialization, count omissions and
+symbolic/nonbinary physical-execution boundaries remain registered under
+Q-0527/Q-0529/Q-0530/Q-0531/Q-0533/Q-0534. This catalog closure does not close
+those file parents or Q-0120. Parent acceptance counts remain unchanged.
+Receipts use `g2-field-polynomial-ui-*-20261122` under the reference evidence
+directory.
+
+The final complete field/polynomial catalog audit visits all 22 original catalog
+factory contexts. Every one of the 14 original source-success roots has a stored
+native graph; all eight original symbolic/atomic root refusals remain explicit.
+Across those concrete factory contexts the shared original observer records
+100 exact recursive graphs, 224 original atomic/refusal contexts and three
+explicitly distinct native exact linear inverses. This inventory includes the
+duplicate constant-multiplication factory context and does not infer uniqueness
+from those context counts. No successful catalog root is omitted.
+
+The complete catalog regression passes 771 cases with three existing selection
+exclusions and fourteen existing notebook escape warnings in 390.64 seconds.
+Combined inventory is 4158 JSON files, 4157 diagrams, 234 documents, 3804
+contextual children, 86 decomposed roots, 267 atomic interfaces and 433 qualified
+descendants. The three qualified native exact inverse exceptions across earlier
+field groups remain explicitly distinct from source equality. Whitespace
+checks pass, and unrelated untracked application work stays outside this commit.

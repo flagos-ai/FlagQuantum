@@ -37,6 +37,11 @@ from examples.algorithms.field_polynomial_catalog import (
     polynomial_addition_examples,
     polynomial_view_examples,
 )
+from examples.algorithms.field_polynomial_decomposition import (
+    field_polynomial_child,
+    field_polynomial_program,
+    field_polynomial_score,
+)
 from examples.algorithms.field_power_decomposition import (
     field_power_child,
     field_power_program,
@@ -374,6 +379,10 @@ def score(component: object) -> object:
         decomposed = field_power_score(
             name(component), signature(component), attributes(component)
         )
+    if decomposed is None:
+        decomposed = field_polynomial_score(
+            name(component), signature(component), attributes(component)
+        )
     if decomposed is not None:
         return decomposed
     return register_interface_score(signature(component), name(component))
@@ -388,10 +397,14 @@ def decomposition(component: object) -> ProgramRecord | None:
         record = field_product_catalog_program(
             name(component), signature(component), attributes(component)
         )
+    if record is None:
+        record = field_power_program(
+            name(component), signature(component), attributes(component)
+        )
     return (
         record
         if record is not None
-        else field_power_program(
+        else field_polynomial_program(
             name(component), signature(component), attributes(component)
         )
     )
@@ -400,6 +413,8 @@ def decomposition(component: object) -> ProgramRecord | None:
 def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
+    if name(root) in {"GF2PolyAdd", "GF2PolyAddK"}:
+        return field_polynomial_child(record, entry, signature(root), attributes(root))
     if name(root) in {"GF2Square", "GF2Inverse"}:
         return field_power_child(record, entry, signature(root), attributes(root))
     return field_product_child_decomposition(
@@ -416,7 +431,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     owner = _instance(documentation.examples[0].make())[3]
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Concrete binary addition, multiplication, square and inverse retain complete stored decompositions. "
+        "Concrete field and polynomial arithmetic retain complete stored decompositions. "
         "Other diagrams show atomic typed interfaces. Execution and resource "
         "estimates retain separate evidence. "
         "Karatsuba's linear inverse retains the native exact graph and a dagger label. "
