@@ -1015,7 +1015,7 @@ def test_nonreducing_cz_blocks_keep_resource_rejection_precedence() -> None:
         ]
 
 
-def test_general_cz_raw_form_respects_the_pruning_resource_bound() -> None:
+def test_general_cz_raw_form_respects_its_instruction_bound() -> None:
     for seed in range(12):
         rng = random.Random(seed)
         instructions: list[Instruction] = []
@@ -1044,51 +1044,58 @@ def test_general_cz_raw_form_respects_the_pruning_resource_bound() -> None:
         _equivalent(source, CircuitIR(2, proposal))
 
 
-def test_nonreducing_cz_pruning_keeps_the_tight_budget_synthesis_path(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize(
+    ("instructions", "maximum_czs"),
+    [
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+            ),
+            0,
+            id="refocused-pi-x",
+        ),
+        pytest.param(
+            (
+                Instruction("rz", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+                Instruction("rz", (1,), {"theta": 0.379}),
+            ),
+            0,
+            id="refocused-pi-x-with-frame",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi / 2}),
+                Instruction("cz", (0, 1)),
+            ),
+            1,
+            id="quarter-turn-pauli-product",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (1,), {"theta": 0.379}),
+                Instruction("cz", (0, 1)),
+            ),
+            2,
+            id="mixed-wire-two-cz-reduction",
+        ),
+    ],
+)
+def test_reducing_cz_blocks_preserve_complete_operators(
+    instructions: tuple[Instruction, ...], maximum_czs: int
 ) -> None:
-    source = _nonreducing_cz_source()
-    original = _cz_blocks.synthesize_two_qubit
-    calls = 0
-
-    def observed(
-        matrix: object,
-        *,
-        qubits: tuple[int, int],
-        entangler: str,
-        z_rotation: str,
-        pulse_opcode: str,
-    ) -> tuple[Instruction, ...] | None:
-        nonlocal calls
-        calls += 1
-        return original(
-            matrix,
-            qubits=qubits,
-            entangler=entangler,
-            z_rotation=z_rotation,
-            pulse_opcode=pulse_opcode,
-        )
-
-    monkeypatch.setattr(_cz_blocks, "synthesize_two_qubit", observed)
-    reasons: list[str] = []
-    assert (
-        _cz_blocks._candidate(
-            source.instructions,
-            (0, 1),
-            max_output_operations=256,
-            on_rejection=reasons.append,
-        )
-        is None
+    source = CircuitIR(2, instructions)
+    proposal = _cz_blocks._candidate(
+        source.instructions, (0, 1), max_output_operations=256
     )
-    assert calls == 0 and reasons == ["not_lower_cz_cost"]
-    reasons.clear()
-    assert (
-        _cz_blocks._candidate(
-            source.instructions,
-            (0, 1),
-            max_output_operations=0,
-            on_rejection=reasons.append,
-        )
-        is None
-    )
-    assert calls == 1 and reasons == ["instruction_growth_rejected"]
+    assert proposal is not None
+    assert sum(item.name == "cz" for item in proposal) <= maximum_czs
+    _equivalent(source, CircuitIR(2, proposal))
