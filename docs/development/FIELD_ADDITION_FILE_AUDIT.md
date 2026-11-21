@@ -166,3 +166,57 @@ Cirq 1.6.1 passes all nine new factory consumers. Strict typing, Black, Ruff,
 Ecosystem scope, architecture, multi-level IR and API checks pass. Six unchanged
 source/test blobs and Qualtran 0.7.0/Kickmix 0.1 Simulator are reverified. Separate
 primitive and model rows are in `g2-field-linear-foreign-evidence-20261121.json`.
+
+## Complete stored catalog graphs and direct dependencies — 2026-11-22
+
+The complete gf2_addition.py and gf2_add_k.py catalog groups now use the existing
+Compiler field_addition_program. Concrete factory graphs retain exact ordered
+Split/CNOT/Join and Split/X/Join calls, operands, field identities and freshly
+computed source drawings. The four original factories, DocSpecs, filenames and
+symbol assumptions are retained. The two symbolic factories keep their original
+DecomposeTypeError. Existing CNOT, X and typed Split/Join symbols are reused.
+
+The UI graph publishes eight contextual dependency nodes under the two concrete
+roots. These are original atomic/refusal children, with native interface
+presentation. They introduce no additional decomposable source-class labels.
+All 22 field/polynomial factories retain their original metadata. The duplicate
+constant-multiplier factories still share their original filename. Independent
+whole-field intake records successful omitted roots for subsequent complete
+multiplication, Frobenius, inverse and polynomial batches.
+
+The exact catalog Programs equal the existing executable owner objects. The
+Compiler, Core, Simulation, binding and accepted execution-test files are
+byte-identical to published 2203ce443. Fresh verification reruns 282 concentrated
+cases, including all source constants through eight bits, original classical
+domains, complete complex vectors and entangled spectators, noncontiguous MSB
+bindings, returned aliases, zero-work/zero-measurement paths and normal append
+restoration. The single coherent branch is the complete measurement-branch
+scope. Twenty source graph/drawing cases cover widths 1, 2, 3 and 8 and zero,
+all-ones and sparse constants. Twenty-nine local integration cases pass.
+
+Actual catalog GF(16) register addition emits four CX, while constant one emits
+one X. The independent source model reports four and one Clifford respectively.
+Both streams have zero T, measurement and workspace events. Full primitive
+histograms and analytical model fields remain separately recorded in
+ftqc-reference-env/g2-field-addition-ui-source-intake-20261122.json. The original
+source bookkeeping/count, generic construction and serialization boundaries
+above remain open under Q-0510/Q-0511/Q-0513/Q-0514. Their parent completion is
+not inferred from catalog graph acceptance.
+
+Strict mypy covers four Python files. Black, Ruff, integration scope,
+architecture, multilevel IR, protected API and whitespace checks pass. Seven
+frozen source/test/notebook/converter blobs match their ledger identities.
+Locked Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. The initial new
+trace harness attempted an integer-only reference constructor on a field port.
+The corrected harness reuses its static source identity observer directly,
+preserving the original QGF descriptor. The published child inventory includes
+all four independently named rebinding definitions in register addition and
+both rebinding definitions in constant addition, plus CNOT and X.
+
+The complete catalog regression passes 749 cases with three existing
+deselections and 14 original notebook warnings. Every combined file equals its
+independently generated domain export, and every contextual child link resolves.
+Combined totals are derived from the preceding published export plus eight
+exact new field children. They are 3833 JSON files, 3832 diagrams, 234 docs,
+3479 contextual children, 75 decomposed roots, 278 atomic interfaces and
+345 qualified decomposable descendants. Q-0120 remains open for broader groups.

@@ -143,7 +143,9 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
     assert native.filename("gf2_multiply_by_constant") == native.filename(
         "gf2_poly_multiply_by_constant"
     )
-    assert len(list(tmp_path.rglob("*.json"))) == 22
+    children = list((tmp_path / "ComponentFunction").glob("*.json"))
+    assert len(children) == 8
+    assert len(list(tmp_path.rglob("*.json"))) == 22 + len(children)
     for identifier in native.INSTANCES:
         record = json.loads(
             (
@@ -152,7 +154,12 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
         )
         assert record["msd"] is not None
         assert record["msd"] == native.score(identifier)
-        assert record["callees"] == []
+        if identifier in {"gf16_addition", "gf16_add_k"}:
+            assert record["callees"]
+            for child in record["callees"]:
+                assert (tmp_path / child["name"] / child["filename"]).is_file()
+        else:
+            assert record["callees"] == []
     split, join = native.signature("gf_poly_split"), native.signature("gf_poly_join")
     assert tuple(port.adjoint() for port in reversed(tuple(split))) == tuple(join)
     assert [port.name for port in split] == ["reg", "reg"]

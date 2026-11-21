@@ -7,7 +7,8 @@
 
 Run ``python -m examples.algorithms.field_ui_export``. Existing numerical codecs
 and native catalogs own field identity, coefficient order and signatures. This
-UI workflow draws atomic interfaces without allocating simulation state.
+UI workflow draws stored addition graphs and atomic interfaces without
+allocating simulation state.
 """
 
 import sys
@@ -18,7 +19,15 @@ from typing import TypeAlias
 
 from sympy import Symbol, symbols
 
+from examples.algorithms.component_ui_dependencies import (
+    ComponentFunction,
+    dependency_graph,
+)
 from examples.algorithms.field_addition_catalog import field_addition_examples
+from examples.algorithms.field_addition_decomposition import (
+    field_addition_catalog_program,
+    field_addition_score,
+)
 from examples.algorithms.field_inverse_catalog import field_inverse_example
 from examples.algorithms.field_multiplication_catalog import (
     field_multiplication_examples,
@@ -28,6 +37,7 @@ from examples.algorithms.field_polynomial_catalog import (
     polynomial_view_examples,
 )
 from examples.algorithms.field_square_catalog import field_square_examples
+from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.core.value_math import SymbolicInt
 from flagquantum.simulation.finite_field_addition import binary_field_encoding
@@ -318,6 +328,8 @@ def _instance(component: object) -> _Interface:
 
 
 def name(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return "ComponentFunction"
     return _instance(component)[0]
 
 
@@ -326,15 +338,33 @@ def signature(component: object) -> Signature:
 
 
 def attributes(component: object) -> Mapping[str, object]:
+    if isinstance(component, ComponentFunction):
+        return component.attributes()
     return _instance(component)[2]
 
 
 def filename(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return component.filename()
     return component_filename(attributes(component))
 
 
 def score(component: object) -> object:
+    if isinstance(component, ComponentFunction):
+        return component.score()
+    decomposed = field_addition_score(
+        name(component), signature(component), attributes(component)
+    )
+    if decomposed is not None:
+        return decomposed
     return register_interface_score(signature(component), name(component))
+
+
+def decomposition(component: object) -> ProgramRecord | None:
+    """Traverse stored field addition through its authoritative Compiler owner."""
+    return field_addition_catalog_program(
+        name(component), signature(component), attributes(component)
+    )
 
 
 def documentation_name(documentation: ComponentDocumentation[object]) -> str:
@@ -346,8 +376,9 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     owner = _instance(documentation.examples[0].make())[3]
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "This diagram shows the atomic typed interface. Complete decomposition "
-        "graphs, glyphs, execution and resource estimates retain separate evidence. "
+        "Concrete binary addition retains its complete stored decomposition. "
+        "Other diagrams show atomic typed interfaces. Execution and resource "
+        "estimates retain separate evidence. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
 
@@ -388,7 +419,11 @@ def export_example(destination: Path) -> None:
     export_component_ui(
         destination,
         sections(),
-        dict.fromkeys(INSTANCES, ()),
+        dependency_graph(
+            INSTANCES,
+            owner=lambda component: name(component) + "/" + filename(component),
+            program=decomposition,
+        ),
         name=name,
         attributes=attributes,
         filename=filename,
