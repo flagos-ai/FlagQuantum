@@ -147,3 +147,56 @@ The default smoke/unit lane retains the existing
 skips. Its test and nine reported production modules are unchanged from the
 batch base. Batch regression and strict checks are recorded separately in
 `g2-comparison-native-*` reference receipts.
+
+## Recursive comparison presentation contract, November 22
+
+The next complete comparison.py dependency closure contains 62 already exact
+source-success ordered graphs and 344 atomic/refusal contexts across twelve
+concrete roots. Twenty-nine non-root contexts still lack qualified source glyphs.
+Tree comparison flags remain RIGHT-owned on compute and LEFT-consumed on reverse.
+Unsigned words retain MSB-first views. Control arrays remain row-major QBit words
+with declared polarities. Predicate junk/target ownership remains with the shared
+control owner, including exact measurement feedback. Sign extension consumes a
+narrow signed word and returns its wider image; truncation consumes that image
+and releases the correct redundant prefix. Existing Compiler constructors own
+execution and resources. Separate native example providers own tree, control and
+sign presentation. Qualification requires matching every reachable definition,
+operand, phase and feedback instruction. Generic fallback remains for unmatched
+bodies. The EqualsAConstant nominal unsigned/source QAny Join difference stays
+explicitly recorded. Original source graphs and refusals remain frozen.
+
+The three domain providers close all twenty-nine recorded non-root glyph gaps.
+The complete twelve-root walk retains 62 exact ordered graphs and 344 original
+atomic/refusal contexts. All fifty non-root source-success graph contexts now
+match fresh source score payloads and source class labels, including both
+constructor directions of BiQubitsMixer and SingleQubitCompare. Source generic
+Adjoint wrappers retain the dagger label. The twelve root diagrams reuse their
+preceding accepted source evidence. The symbolic/decomposition refusals and the
+EqualsAConstant nominal Join-view boundary remain explicit.
+
+The focused presentation checks pass 45 cases. The combined physical regression
+passes 857 cases covering complete complex isometries, spectators, applicable
+measurement histories, exact erasure, clean work ownership and independent
+source models. All twelve actual primitive histograms equal the previous
+published execution baseline. Actual T-family/measurement pairs are 32/8 for
+LessThanConstant, 44/11 for LessThanEqual, 8/0 for the mixer, 4/0 for the single-bit
+comparison, 28/7 for GreaterThan, 12/3 for each equality case, 28/7 for controlled
+linear comparison, and 12/0 for each of the four half comparisons. Full primitive
+histograms and separately declared analytical counts remain in the resource
+receipt. The half-comparison forward graphs expose live sum work, so their zero
+measurement figure describes that forward stream, while round-trip erasure is
+verified separately. Drawing qualification adds zero primitive operations.
+
+The Arithmetic inventory now qualifies 204 contextual descendants, an increase
+of 116 matching definitions across reused comparison/tree/control/sign owners.
+The complete catalog retains 3569 JSON files, 234 documentation files, 3568
+diagrams, 3215 contextual children, 68 root graphs and 285 atomic interfaces.
+Contextual constructor matches outside the comparison file are recorded
+separately from this file's fresh source drawing acceptance.
+
+The concentrated catalog regression passes 679 checks with three existing
+notebook-related deselections and fourteen existing escape warnings. Strict
+checks cover all seven changed Python files. Black, Ruff, integration scope,
+architecture, multilevel IR, protected API baseline and whitespace checks pass.
+The batch closes the complete comparison-file recursive presentation. Other
+Arithmetic source families retain their own recursive presentation acceptance.

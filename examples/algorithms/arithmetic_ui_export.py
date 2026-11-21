@@ -26,6 +26,9 @@ from examples.algorithms.addition_child_decomposition import (
 from examples.algorithms.addition_decomposition import addition_program, addition_score
 from examples.algorithms.basic_gate_child_decomposition import child_decomposition
 from examples.algorithms.comparison_catalog import comparison_examples
+from examples.algorithms.comparison_child_decomposition import (
+    comparison_child_decomposition,
+)
 from examples.algorithms.comparison_decomposition import (
     comparison_catalog_program,
     comparison_score,
@@ -35,6 +38,7 @@ from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
 )
+from examples.algorithms.control_child_decomposition import control_child_decomposition
 from examples.algorithms.controlled_addition_decomposition import (
     controlled_addition_catalog_program,
     controlled_addition_score,
@@ -54,6 +58,7 @@ from examples.algorithms.permutation_decomposition import (
 )
 from examples.algorithms.sign_extension_decomposition import (
     sign_extension_catalog_program,
+    sign_extension_child_decomposition,
     sign_extension_score,
 )
 from examples.algorithms.sorting_catalog import sorting_examples
@@ -746,6 +751,9 @@ def _child_presentation(
         child_decomposition(record, entry, root)
         or word_child_decomposition(record, entry, parameters)
         or addition_child_decomposition(record, entry, parameters)
+        or comparison_child_decomposition(record, entry)
+        or sign_extension_child_decomposition(record, entry)
+        or control_child_decomposition(record, entry, parameters)
     )
 
 
