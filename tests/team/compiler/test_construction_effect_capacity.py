@@ -1,13 +1,27 @@
 """Ordinary native composition has a distinct bounded expanded-effect budget."""
 
+from dataclasses import replace
+
 import pytest
 
+from flagquantum.compiler._construction.codegen.register_expansion import (
+    expand_register_calls,
+)
 from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
+from flagquantum.compiler._hybrid.model import (
+    QUANTUM_EFFECT,
+    Operation,
+    Region,
+    Value,
+    ValueId,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python_program import program_definition
+from tests.team.compiler.test_construction_register_calls import chain, identity
 
 pytestmark = pytest.mark.unit
 
@@ -71,3 +85,47 @@ def test_static_loop_and_source_limits_are_not_effect_capacity() -> None:
                 "@qfunc\ndef main(q:Output[QNum[1]]):\n    allocate(q)\n    for i in range(257):\n        hadamard_transform(q)\n"
             )
         )
+
+
+@pytest.mark.parametrize("depth,expected", [(13, 4097), (14, None)])
+def test_nested_const_helpers_use_the_expanded_effect_guard(
+    depth: int, expected: int | None
+) -> None:
+    root, helpers = chain(depth, repeat=2)
+    leaf = helpers[0]
+    block = leaf.body.blocks[0]
+    effect, word = block.arguments
+    following = Value(ValueId("leaf.phase", 0), QUANTUM_EFFECT)
+    leaf = replace(
+        leaf,
+        body=Region(
+            (
+                replace(
+                    block,
+                    operations=(
+                        Operation(
+                            "qreg.phase",
+                            (effect, word),
+                            (following,),
+                            {"callee": "identity"},
+                        ),
+                        Operation("qreg.return", (following, word)),
+                    ),
+                ),
+            )
+        ),
+    )
+    functions = (capture(identity, {"x": 1}), leaf, *helpers[1:])
+    if expected is None:
+        with pytest.raises(HybridVerificationError, match="visit budget"):
+            verify_register_program(root, functions, max_effects=16384)
+        return
+    assert verify_register_program(root, functions, max_effects=16384) is root
+    expanded = expand_register_calls(root, functions, max_effects=16384)
+    effects = sum(
+        bool(op.results) and op.results[0].type == QUANTUM_EFFECT
+        for op in expanded.body.blocks[0].operations
+    )
+    assert effects == expected
+    with pytest.raises(HybridVerificationError, match="budget"):
+        verify_register_program(root, functions)
