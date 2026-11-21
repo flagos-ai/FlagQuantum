@@ -23,3 +23,18 @@ operations. Reported counts refer to this simulator representation.
 A sequential response checks every complex amplitude. The physical block
 projection recovers the evolved vector, which is compared against the matrix
 exponential using the source's absolute L₂ tolerance of `1e-7`.
+
+
+The Notebook also executes the visible native `main` in [quantum.py](quantum.py).
+Its four-term Pauli block and both full phase streams compose through named
+ports, within/apply, controlled borrowed helpers and adjoints. It neither packs
+the final response nor admits a dense block matrix. For seeds 132 and 247 and a
+signed coherent input, every amplitude agrees with the independent sequential
+reference within 1e-10 without global-phase alignment. All 16 signal-block
+columns independently verify the source bit order.
+
+Current native resources are ten qubits (six outputs plus four clean work bits),
+3077 logical instructions and depth 2729 for seed 132. The explicit budgets are
+ten qubits, four work bits, 3500 operations and 1 MiB of statevector memory.
+Insufficient workspace, qubit and operation budgets refuse synthesis. Counts
+are not directly comparable with the packed six-qubit Circuit representation.

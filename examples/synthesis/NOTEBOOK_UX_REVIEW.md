@@ -474,3 +474,13 @@ and its complete-cell retry passed. Original failing logs are retained.
 The solver/ML follow-up regression recorded **100 passes in 95.47 seconds**.
 No remote CI or release claim is made. All original workloads, random choices,
 independent references and approved migration denominators are preserved.
+
+
+The Hamiltonian-QSVT follow-up retains all original 12 stages and visibly executes
+both full phase streams through native Pauli blocks. All 26 focused tests and
+12 cells pass. Full states for two source seeds and a signed input, all 16 signal
+columns, absolute phases, named success probability, four clean work bits and
+three budget refusals are covered. The 212/212 editorial denominator is unchanged;
+the native route's ten qubits are recorded separately from the six-qubit packed
+Circuit. Raw preflight, initial refusal and corrected acceptance logs remain in
+the local `notebook-ux-20261121` evidence directory.

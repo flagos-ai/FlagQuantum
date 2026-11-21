@@ -116,7 +116,7 @@ The editorial denominator and these implementation steps are independent.
 | --- | --- | --- |
 | Amplitude construction | `b7d7d4383`: replace the Compiler's quadratic Walsh loop with an O(N log N), O(N)-storage butterfly; 69 preparation/conformance tests passed | The [bounded capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md) is pending explicit approval. The public 256-entry cap remains. The full-image native workflow is not yet claimed. |
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
-| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. Banded construction and general QSVT composition remain explicit follow-ups; no new public abstraction. |
+| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; banded construction and general reusable QSVT APIs remain follow-ups. |
 | Named sampling | Existing bounded readers and sampling adapters remain authoritative | Reuse their bit-order and conditional-denominator contracts in application workflows; introduce no competing sampler. |
 | Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
@@ -160,3 +160,23 @@ changes. Keep resource limits and original-case numerical checks unchanged.
 Run the catalog checks after navigation changes, then repository default checks
 at each integration checkpoint. Record raw failures and distinguish environmental
 rechecks from a passing complete run.
+
+## Native QSVT composition checkpoint
+
+The original Hamiltonian-evolution Notebook now visibly executes the 33/34-angle
+native sequence. Its signal uses the original four Pauli terms, within/apply,
+controlled helpers and adjoints, reusing existing public semantics. All 16
+signal columns and three complete evolution states (seeds 132/247 and a signed
+coherent vector) pass without phase alignment. Four work bits return to zero
+within 1e-24 probability. Time 22, block scale 0.75, response scale 0.9999 and
+the original 1e-7 evolution threshold remain unchanged.
+
+Actual seed-132 native resources are ten qubits, 3077 logical instructions and
+depth 2729. The bounded native route allows 3500 operations and 1 MiB; it refuses
+zero workspace, six total qubits or a 3000-operation limit. A preliminary dense
+signal admitted 25958 operations on nine qubits; that diagnostic remains outside
+the shipped implementation. The packed six-qubit Circuit remains an independent
+route with a different instruction vocabulary, not an efficiency comparator.
+The 26 scenario tests and all 12 Notebook stages pass. An initial column-probe
+used unsupported classical-name basis assignment; it was changed to the existing
+explicit amplitude-preparation API without changing compiler semantics.
