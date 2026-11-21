@@ -184,3 +184,14 @@ files together with test_reference_page_links.py after edits. The full frozen
 340-class docstring corpus is compared in test_reference_docstrings.py. See
 REFERENCE_RENDERING_FILE_AUDIT.md for preserved source quirks and explicit native
 object-name mappings.
+
+`reference_class_pages.py`, `reference_module_pages.py` and `reference_toc.py`
+render owned class/module pages and a callback-selected table of contents.
+All three consume the accepted page/context, signature, docstring and link
+owners. Start with
+`tests/unit/test_reference_page_renderers.py::test_full_class_page_and_alias_members`
+to render an append-method page and verify unchanged-file timestamps. The same
+test file covers category grouping, actual inherited/alias members and TOC
+failure cleanup. Package discovery and policy remain with the pending walker.
+See REFERENCE_PAGE_RENDERERS_FILE_AUDIT.md for full source closure and output
+failure semantics.
