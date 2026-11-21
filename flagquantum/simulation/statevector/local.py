@@ -268,10 +268,10 @@ def _apply_gate_matrix(
     uses_diagonal_kernel: bool,
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
-    """Apply a built matrix through the supported single-wire or layout kernel.
+    """Apply a built matrix through the supported single-qubit or layout kernel.
 
     A proven diagonal may use elementwise multiplication. The optional CPU
-    single-wire route takes precedence because it avoids layout permutations.
+    single-qubit route takes precedence because it avoids layout permutations.
     """
 
     if _use_elementwise_single_wire(state, wires):
