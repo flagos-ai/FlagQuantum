@@ -30,8 +30,9 @@ def pytest_configure(config: pytest.Config) -> None:
         raise pytest.UsageError("--fq-stack-dump-after must be finite and nonnegative")
     if not seconds:
         return
-    if config.pluginmanager.hasplugin("faulthandler") and config.getini(
-        "faulthandler_timeout"
+    if (
+        config.pluginmanager.hasplugin("faulthandler")
+        and float(config.getini("faulthandler_timeout") or 0.0) > 0
     ):
         raise pytest.UsageError(
             "--fq-stack-dump-after requires faulthandler_timeout=0; "
@@ -70,11 +71,12 @@ def _dump_stacks(nodeid: str, seconds: float, output: TextIO) -> None:
         frames.clear()
 
 
-@pytest.hookimpl(wrapper=True, trylast=True)
-def pytest_runtest_protocol(item: pytest.Item) -> Generator[None, object, object]:
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_protocol(item: pytest.Item) -> Generator[None, None, None]:
     seconds = item.config.getoption("--fq-stack-dump-after")
     if not seconds:
-        return (yield)
+        yield
+        return
     watchdog = threading.Timer(
         seconds, _dump_stacks, args=(item.nodeid, seconds, item.config.stash[OUTPUT])
     )
@@ -82,7 +84,7 @@ def pytest_runtest_protocol(item: pytest.Item) -> Generator[None, object, object
     watchdog.daemon = True
     watchdog.start()
     try:
-        return (yield)
+        yield
     finally:
         watchdog.cancel()
         watchdog.join(timeout=5)

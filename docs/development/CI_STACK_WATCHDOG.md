@@ -102,7 +102,10 @@ Expected result: 11 passes. Cases cover a slow pass, a slow assertion failure,
 fast completion, setup failure, per-test timer cancellation, invalid intervals,
 conflicting native timers and two real xdist workers. Assertions verify both
 diagnostic visibility and retained pytest outcomes; subprocesses have explicit
-30-second limits. The local run also passed with two outer xdist workers, sysmon
+30-second limits. All 11 cases passed with pytest 7.4.4 and 9.2.0. The plugin
+accepts the string-valued zero timeout override used by older pytest versions;
+the isolated test runner explicitly fixes its root directory so node IDs remain
+comparable. The local run also passed with two outer xdist workers, sysmon
 coverage and the replacement watchdog itself active. Its limited instrumentation
 reported 47% line coverage of this tooling module; this is not a claim of complete
 coverage or a substitute for the behavioral cases.

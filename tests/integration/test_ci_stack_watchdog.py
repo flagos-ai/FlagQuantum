@@ -32,6 +32,8 @@ def _run(
             "-c",
             driver,
             "test_example.py",
+            "--rootdir",
+            str(directory),
             "-c",
             os.devnull,
             "-p",
