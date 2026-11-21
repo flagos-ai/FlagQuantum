@@ -1,7 +1,10 @@
 # Bounded native static-composition capacity proposal
 
-Status: proposed; explicit user approval pending. No implementation or contract
-snapshot change is authorized by this document.
+Status: approved for implementation by the user on November 21, 2026.
+Approval: the user replied “批准” to the explicit request to approve both this
+proposal and the companion capacity proposal. The approval covers the bounded
+changes and acceptance requirements below; it does not declare acceptance or
+production release readiness.
 
 ## Observed requirement
 
