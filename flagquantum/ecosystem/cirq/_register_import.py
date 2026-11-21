@@ -131,6 +131,19 @@ def _register_operations(
                 if tree is None:
                     # Match the SDK wrapper's tensor-backed unitary fallback only
                     # after its declared decomposition has declined the operation.
+                    source_leaf = getattr(gate, "bloq", gate)
+                    while getattr(source_leaf, "ctrl_spec", None) is not None:
+                        source_leaf = source_leaf.subbloq
+                    unitary_hook = getattr(source_leaf, "_has_unitary_", None)
+                    if (
+                        hasattr(source_leaf, "signature")
+                        and callable(unitary_hook)
+                        and unitary_hook() is False
+                    ):
+                        raise ValueError(
+                            "Source leaf explicitly declares no unitary and has "
+                            f"no executable decomposition: {gate}"
+                        )
                     matrix = cirq.unitary(gate, default=None)
                     if matrix is None:
                         yield operation
