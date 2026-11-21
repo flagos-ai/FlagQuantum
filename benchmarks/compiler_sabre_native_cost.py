@@ -12,6 +12,7 @@ import hashlib
 import itertools
 import json
 import random
+import struct
 import subprocess
 import sys
 import time
@@ -58,33 +59,28 @@ class Report(TypedDict):
     quality_regressions: list[dict[str, object]]
 
 
-def _native_preview(
-    source: CircuitIR, coupling: CouplingMap, plan: sabre.SabrePlan
-) -> tuple[CircuitIR, int]:
-    if plan.initial_logical_to_physical != tuple(range(source.n_wires)):
-        raise ValueError("Preview requires identity input placement")
+def _native_previews(
+    source: CircuitIR,
+    coupling: CouplingMap,
+) -> Callable[[sabre.SabrePlan], tuple[CircuitIR, int]]:
     if any(
         item.metadata or item.matrix is not None or not 1 <= len(item.wires) <= 2
         for item in source.instructions
     ):
         raise ValueError("Preview requires unannotated numeric one/two-qubit gates")
-    physical: list[Instruction] = []
-    cursor = 0
-    for count, index in enumerate(plan.sequence):
-        while cursor < len(plan.swaps) and plan.swap_placements[cursor] == count:
-            physical.append(Instruction("swap", plan.swaps[cursor]))
-            cursor += 1
-        physical.append(
-            replace(source.instructions[index], wires=plan.placements[index])
+    # Source indices have meaning only in this closure. No value survives a
+    # selection call or can be reused for another source or target.
+    lowered: dict[tuple[int, tuple[int, ...]], tuple[Instruction, ...]] = {}
+
+    def lower(index: int, wires: tuple[int, ...]) -> tuple[Instruction, ...]:
+        key = (index, wires)
+        if key in lowered:
+            return lowered[key]
+        item = (
+            Instruction("swap", wires)
+            if index == -1
+            else replace(source.instructions[index], wires=wires)
         )
-    if cursor != len(plan.swaps):
-        raise ValueError("Preview plan contains unemitted SWAPs")
-    physical.extend(
-        Instruction("swap", (left, right))
-        for left, right, _ in sabre.plan_restore_swaps(plan, coupling)
-    )
-    native: list[Instruction] = []
-    for item in physical:
         leaves = (
             (item,)
             if item.name in _BASIS
@@ -97,22 +93,41 @@ def _native_preview(
         )
         if leaves is None or any(gate.name not in _BASIS for gate in leaves):
             raise ValueError("Unsupported preview lowering")
-        native.extend(leaves)
-    result = replace(source, instructions=tuple(native))
-    if any(
-        _numeric_matrix(
-            item,
-            (
-                (item.wires[0], (item.wires[0] + 1) % source.n_wires)
-                if len(item.wires) == 1
-                else item.wires
-            ),
+        for gate in leaves:
+            pair = (
+                (gate.wires[0], (gate.wires[0] + 1) % source.n_wires)
+                if len(gate.wires) == 1
+                else (gate.wires[0], gate.wires[1])
+            )
+            if _numeric_matrix(gate, pair) is None:
+                raise ValueError("Preview does not support symbolic or batched values")
+        lowered[key] = tuple(leaves)
+        return lowered[key]
+
+    def preview(plan: sabre.SabrePlan) -> tuple[CircuitIR, int]:
+        if plan.initial_logical_to_physical != tuple(range(source.n_wires)):
+            raise ValueError("Preview requires identity input placement")
+        physical: list[tuple[int, tuple[int, ...]]] = []
+        cursor = 0
+        for count, index in enumerate(plan.sequence):
+            while cursor < len(plan.swaps) and plan.swap_placements[cursor] == count:
+                physical.append((-1, plan.swaps[cursor]))
+                cursor += 1
+            physical.append((index, plan.placements[index]))
+        if cursor != len(plan.swaps):
+            raise ValueError("Preview plan contains unemitted SWAPs")
+        physical.extend(
+            (-1, (left, right))
+            for left, right, _ in sabre.plan_restore_swaps(plan, coupling)
         )
-        is None
-        for item in native
-    ):
-        raise ValueError("Preview does not support symbolic or batched values")
-    return result, len(physical)
+        return replace(
+            source,
+            instructions=tuple(
+                leaf for index, wires in physical for leaf in lower(index, wires)
+            ),
+        ), len(physical)
+
+    return preview
 
 
 def _blocks(
@@ -126,7 +141,11 @@ def _blocks(
     )
 
 
-def _cz_lower_bound(native: CircuitIR) -> int:
+def _cz_lower_bound(
+    native: CircuitIR,
+    *,
+    matrix_costs: dict[bytes, int] | None = None,
+) -> int:
     estimate = sum(item.name == "cz" for item in native.instructions)
     basis = _prepared_basis("cz")
     for pair, positions in _blocks(native):
@@ -137,7 +156,17 @@ def _cz_lower_bound(native: CircuitIR) -> int:
         matrix = _product(block, pair, matrix_reader=_numeric_matrix)
         if matrix is None:
             raise ValueError("Unsupported numeric block")
-        after = basis.entangler_count(_weyl_decomposition(_swap_register(matrix)))
+        key = b"".join(
+            struct.pack("!dd", value.real, value.imag)
+            for row in matrix
+            for value in row
+        )
+        if matrix_costs is not None and key in matrix_costs:
+            after = matrix_costs[key]
+        else:
+            after = basis.entangler_count(_weyl_decomposition(_swap_register(matrix)))
+            if matrix_costs is not None:
+                matrix_costs[key] = after
         estimate -= max(0, before - after)
     return estimate
 
@@ -192,10 +221,8 @@ def _select(
     incumbent = _ORIGINAL(program, coupling, baseline, cost=cost)
     if cost is not None or not incumbent.swaps:
         return incumbent
-    native, routed_count = _native_preview(program, coupling, incumbent)
-    incumbent_cost = _cost(_realize(native, routed_count + native_budget))
-    shortlist: tuple[sabre.SabrePlan, CircuitIR, int] | None = None
-    best_estimate = incumbent_cost[0]
+    candidates: list[sabre.SabrePlan] = []
+    seen = {incumbent}
     swap_limit = sabre._restored_swap_count(incumbent, coupling)
     for seed, layers in ((0, False), (1, False), (2, False), (None, True)):
         candidate = sabre._plan_sabre_trial(
@@ -211,8 +238,20 @@ def _select(
             or sabre._restored_swap_count(candidate, coupling) > swap_limit
         ):
             continue
-        preview, count = _native_preview(program, coupling, candidate)
-        estimate = _cz_lower_bound(preview)
+        if candidate not in seen:
+            seen.add(candidate)
+            candidates.append(candidate)
+    if not candidates:
+        return incumbent
+    preview_plan = _native_previews(program, coupling)
+    native, routed_count = preview_plan(incumbent)
+    incumbent_cost = _cost(_realize(native, routed_count + native_budget))
+    shortlist: tuple[sabre.SabrePlan, CircuitIR, int] | None = None
+    best_estimate = incumbent_cost[0]
+    matrix_costs: dict[bytes, int] = {}
+    for candidate in candidates:
+        preview, count = preview_plan(candidate)
+        estimate = _cz_lower_bound(preview, matrix_costs=matrix_costs)
         if estimate < best_estimate:
             shortlist, best_estimate = (candidate, preview, count), estimate
     if shortlist is None:
