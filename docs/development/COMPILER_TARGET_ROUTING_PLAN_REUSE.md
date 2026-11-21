@@ -138,3 +138,29 @@ python -m pytest -q tests/integration/test_native_block_physical_evidence.py
 
 Expected: all 38 physical-evidence scenarios pass, including routed native
 optimization, independent verification and rejection of modified evidence.
+
+
+## Integration after the compiler pipeline merge
+
+PR #1268 merged as main `a7d84a605080c511d4a07037ef2b4f3b90a645d1`
+after 243 successful checks and three optional skips. This branch then merged
+that exact main revision without conflicts. The combined source is
+`9b9fa76a11632d740a6cbdac180da319b9002a50`; earlier independent observations above
+are retained with their original scope and are not relabeled as combined runs.
+
+The [combined raw report](evidence/compiler-target-routing-plan-reuse-integrated.json)
+uses the unchanged runner and SDKBench pin above. All 60 application pairs pass
+independent acceptance with identical normalized output digests and evaluator
+metrics. It retains 120 application observations and 84 measured latency
+observations. Local replanning/reuse medians are 193.470/193.225 ms for
+Ising-8/line and 740.696/734.947 ms for QFT-12/line. They are shared-host
+observations, not stable speedups; unrelated focused tests overlapped the
+application phase. Numerical acceptance, resource caps and the deferred formal
+qualification policy remain unchanged. No machine was reconfigured or rebooted.
+
+The combined focused selection passes 926 tests with four optional tests skipped,
+covering compiler routing, classical feedback, IR encoding, native optimization,
+artifact evidence, directed topology and the CPU workflow. The first local
+attempt lacked sparse-checkout test files and did not collect the intended
+selection; restoring the actual tracked fixtures enabled the complete run.
+Full repository gates must pass again on the synchronized PR head before merge.
