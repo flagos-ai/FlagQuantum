@@ -1,12 +1,64 @@
-# Conservative CZ synthesis cost pruning
+# Rejected CZ synthesis cost pruning
+
+**Status: rejected for integration.** The production precheck from
+`c446adc9802655e40f50b1ad5984054097bf0567` has been restored to the unchanged main
+implementation. The final change retains operator and resource-bound tests plus
+the positive and adverse evidence below. It adds no compiler optimization.
+
+The initial complete-workflow observations were small, unqualified differences.
+Subsequent controls found predictable extra decomposition work in reducing
+blocks. That tradeoff does not justify the added private synthesis coupling on
+the present evidence. No input-specific exception, threshold adjustment, new
+synthesis entry or cache was introduced to rescue the proposal.
+
+## Reducing-block controls and rejection decision
+
+The [additional control record](evidence/cz-cost-pruning-reduction-controls.json)
+retains the immutable baseline/candidate sources, exact driver, six inputs,
+outputs, timing samples and separate Python allocation observations. A NumPy
+operator implementation independent of the Weyl classifier checks each returned
+proposal up to one operator-wide phase at absolute tolerance `1e-10`.
+
+| Inspected block | Input / output CZs | Weyl calls, baseline / candidate | Stage median, baseline / candidate |
+| --- | ---: | ---: | ---: |
+| Refocused pi-X | 2 / 0 | 1 / 2 | 182 / 280 us |
+| Refocused pi-X with frame rotations | 2 / 0 | 1 / 2 | 211 / 310 us |
+| Quarter-turn Pauli product | 2 / 1 | 1 / 2 | 357 / 462 us |
+| Mixed-wire reduction | 3 / 2 | 1 / 2 | 477 / 594 us |
+| Generic two-CZ control | 2 / unchanged | 1 / 1 | 203 / 129 us |
+| Generic three-CZ control | 3 / unchanged | 1 / 1 | 322 / 204 us |
+
+The four accepted reductions retain identical proposals. The two generic controls
+retain identical non-reduction refusals. The precheck helps the latter by
+avoiding leaf construction; it repeats the same Weyl work before ordinary
+synthesis in the reducing cases. The first two reducing controls also increase
+the observed Python allocation peak by 616 bytes each; the other controls have
+smaller observed peaks. Every sample is retained rather than selecting one side
+of this tradeoff.
+
+These are inspected stage-level development controls on a shared macOS host,
+with three initial calls per variant, two alternating warmup rounds and twenty
+retained rounds. They are not whole-compilation, qualified Linux, held-out or
+cross-SDK performance results. The deterministic extra work and these adverse
+observations motivate rejection; no claim that the complete SDK is slower by
+these ratios follows. The complete-workflow results below remain unchanged.
+
+The first diagnostic omitted the compiler source path and failed during import.
+After restoring that environment, it completed. Two initial labels incorrectly
+called reducing examples non-reducing; the output CZ counts established the
+mistake. That original record is retained, and the frozen-source rerun uses
+descriptive labels and adds the two generic controls without changing inputs or
+observations in the original record.
+
+## Historical prototype
 
 Native CZ block analysis can avoid complete leaf synthesis when the existing
-Weyl classifier says that the block cannot reduce CZ count. The implementation
+Weyl classifier says that the block cannot reduce CZ count. The rejected prototype
 uses a conservative raw-size bound to preserve instruction-growth rejection
 precedence. It changes no public API, synthesis formula, tolerance, native budget,
 routing strategy or accepted rewrite criterion.
 
-This is a `single_device_fast_path` compiler optimization. It reuses the existing
+This was a `single_device_fast_path` compiler proposal. It reused the existing
 Qiskit-derived `_BasisDecomposer.entangler_count` and Weyl engine, whose notices
 remain in `optimization/two_qubit_synthesis.py`. It is not a new algorithm port.
 Cirq-derived local cleanup, complete-operator residual acceptance and independent
@@ -110,14 +162,16 @@ python -m pytest tests/unit/test_compilation_two_qubit_synthesis.py \
   tests/integration/test_native_block_physical_evidence.py -q
 ```
 
-Expected: 219 passing tests. The new scenarios preserve rejection priority at
+The final withdrawal selection passes 222 tests. The retained scenarios preserve rejection priority at
 budgets below, at and above the actual raw proposal size; compare seeded general
 forms against the runtime's complete operators and the conservative bound; and
-ensure generous budgets avoid non-reducing synthesis while a tight budget still
-executes the original growth-rejection path. Existing symbolic, annotation,
+verify the four reducing controls against complete operators. The implementation-
+specific test requiring the rejected early-return path was removed with that
+path; no scientific assertion or resource threshold was weakened. Existing symbolic, annotation,
 reversed-operand, topology, layout and tamper scenarios remain unchanged.
 
-The local default-tier command passes the sparse checkout's selected 177 unit
-tests, with 42 integration tests deselected. The explicit 219-test selection
-above includes those integration tests. Neither is a complete-checkout default
-tier certification; exact-head CI remains required before merging.
+The original sparse default-tier selection passed 177 unit tests with 42
+integration tests deselected. Final withdrawal checks are recorded in the
+additional control record. Neither selection is complete-checkout default-tier
+certification; exact-head CI remains required before merging. The independent
+CI stack-watchdog repair remains separate from this rejection decision.
