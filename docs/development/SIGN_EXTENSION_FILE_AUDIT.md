@@ -138,3 +138,17 @@ storage is the visible wider word, with zero hidden scratch, T and measurement.
 The independent original model charges one coarse Clifford per fanout, or two
 for the combined roundtrip with peak sixteen. SDK transport adds zero gates or
 storage and retains these separate accounts.
+
+## Recursive sign-view presentation, November 22
+
+The Arithmetic dependency publisher now qualifies consumed/returned sign views
+against sign_extension_program through a domain-owned example callback. It
+requires scalar matching signed encodings, concrete unequal positive widths,
+and LEFT input/RIGHT output ownership. The selected SignExtend or SignTruncate
+body must match every reachable native definition. Existing subtraction and
+fanout drawing callbacks render the body. Both matching dependencies inside the
+controlled comparison pass fresh source glyph and complete ordered-call checks.
+Changing the reachable prefix CX operands rejects qualification in both
+directions. The executable owner retains its accepted exact complex action,
+redundant-prefix validation, workspace cleanup and resource evidence. The
+presentation callback adds no gates or storage.
