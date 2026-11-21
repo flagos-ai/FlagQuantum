@@ -1,7 +1,9 @@
 # Development helpers
 
 This package owns buffered generated-file output, development command logging
-and checkout-root discovery. It depends only on Python's standard library.
+and checkout-root discovery. File, process, repository and coverage helpers use
+only Python's standard library. Docstring rendering uses optional Sphinx and attrs
+development dependencies.
 Framework, Compiler, Runtime and Simulation packages must not import it.
 
 Scripts import `WriteIfDifferent` from `tools.development.files`, `run` and
@@ -28,3 +30,10 @@ pass a concrete destination directory. It preserves the frozen ignore profile
 and indentation heuristics. The existing repository coverage policy remains its
 own authority. See `docs/development/DEVELOPMENT_COVERAGE_FILE_AUDIT.md` for the
 source limits and the explicit 15-second Git-query timeouts.
+
+`docstrings.py` renders Google-style class documentation and structured references.
+Its reference environment uses Sphinx 7.4.7 and attrs 26.1.0. Install these only
+for documentation tooling. Run `tests/unit/test_development_docstrings.py` in the
+locked G2 environment to compare both original tests and all 340 frozen classes.
+See `docs/development/DEVELOPMENT_DOCSTRINGS_FILE_AUDIT.md` for dependency review,
+replacement rules and the preserved source parsing boundaries.
