@@ -348,3 +348,15 @@ not infer dependencies. Run `tests/unit/test_development_pytest_commands.py` for
 all three unchanged shell sources, real Git selection and actual native module
 commands. See `DEVELOPMENT_PYTEST_COMMANDS_AUDIT.md` for scope mappings, direct
 revision semantics and process bounds.
+
+`python -m tools.development.coverage_command package HEAD -n0 -q` runs native
+package tests and then checks annotated touched-line coverage against the merge
+base. Add `--no-analyze` to retain coverage collection while omitting analysis
+and annotation cleanup. `changed HEAD` selects existing associated tests and
+their changed Python directories. The changed form retains the source's ignored
+extra arguments. Analysis cleans untracked `*.py,cover` artifacts using the
+original Git pattern, including pre-existing ignored annotations. Run
+`tests/unit/test_development_coverage_commands.py` for complete unchanged-shell
+comparisons and real native pytest-cov/annotation/analyzer workflows. See
+`DEVELOPMENT_COVERAGE_COMMANDS_AUDIT.md` for failure order, the original ignored
+annotation-conversion status, unrelated-history behavior and native path mappings.
