@@ -470,3 +470,13 @@ their timestamps. Run `tests/unit/test_development_requirement_locks.py` for the
 complete source orchestration and actual offline eight-profile comparison.
 See `DEVELOPMENT_REQUIREMENT_LOCKS_AUDIT.md` for bootstrap versions, configuration
 scope, write-failure semantics and the separate whole-environment acceptance.
+
+`examples/notebooks/component_tensor_report.ipynb` runs the complete tensor
+report workflow against an explicit three-CNOT-graph catalog. It uses the existing
+Compiler graph traversal, Simulation factorized tensor suppliers and deadline
+process owner. All six original width/timing views remain available, including
+all-timeout input. Actual stage durations and observed primitive counts are
+separate from repetition-model estimates. Run
+`tests/unit/test_component_tensor_report_notebook.py` for unchanged original
+cell comparisons, real spawn/kernel execution and exact complex-state checks.
+See `COMPONENT_TENSOR_REPORT_NOTEBOOK_AUDIT.md` for catalog and timing scope.
