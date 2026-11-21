@@ -144,7 +144,7 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
         "gf2_poly_multiply_by_constant"
     )
     children = list((tmp_path / "ComponentFunction").glob("*.json"))
-    assert len(children) == 221
+    assert len(children) == 279
     assert len(list(tmp_path.rglob("*.json"))) == 22 + len(children)
     for identifier in native.INSTANCES:
         record = json.loads(
@@ -165,6 +165,8 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
             "gf2shiftright",
             "gf2mulviakaratsuba",
             "gf2shiftleft",
+            "gf16_square",
+            "gf16_inverse",
         }:
             assert record["callees"]
             for child in record["callees"]:

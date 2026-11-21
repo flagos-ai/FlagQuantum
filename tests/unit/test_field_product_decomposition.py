@@ -59,7 +59,7 @@ def source_walk(identifier: str, source: Any) -> list[dict[str, Any]]:
             original.append((right[0], dict(right[1]), right[2]))
         exact = observed == original
         if not exact:
-            assert identifier == "gf2mulviakaratsuba"
+            assert identifier in {"gf2mulviakaratsuba", "gf16_inverse"}
             assert type(source).__name__ == "SynthesizeLRCircuit" and source.is_adjoint
             assert (
                 _source_trace(SourceCalls, source.adjoint().decompose_bloq())

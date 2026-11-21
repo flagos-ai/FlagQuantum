@@ -225,3 +225,56 @@ reverified. Separate resource and failure evidence is recorded in
 `g2-field-inverse-foreign-evidence-20261121.json` and the corresponding focused,
 regression, integration, Cirq and quality logs. No production code changes in
 this follow-on batch.
+
+## Complete inverse catalog dependency closure — 2026-11-22
+
+The existing typed Itoh--Tsujii Program now supplies the concrete GF16 factory's
+complete catalog decomposition and reachable dependencies. The root's ten
+ordered calls, named operands and outputs match the original source. Recursive
+walks retain addition, Frobenius, Karatsuba, linear synthesis, polynomial product,
+constant multiplication and monomial dependencies. Across this root there are
+13 exact source graphs, 40 original atomic/refusal contexts and two explicit
+ignored-adjoint exceptions. Every comparable fresh source drawing agrees.
+
+The two exceptions are existing native exact SynthesizeLRCircuit inverses, one
+under the square adjoint and one under the Karatsuba dependency. The original
+source emits its forward linear body for either adjoint flag. Native exact
+inverse drawings are labeled `SynthesizeLRCircuit†`; source equality is not
+claimed there. One nominal Join retains native finite-field identity over the
+original QAny view. Width, side, physical calls and operands agree.
+
+The presentation owner is `examples/algorithms/field_power_decomposition.py`.
+It reuses existing Compiler Programs, whole-definition matching, product
+presentations and Drawer glyphs. Source class labels require complete structural
+matches and reject changed primitive operands. Numerical execution owners,
+Core, Simulation and binding are unchanged from `4d0292339`.
+
+Fresh atomic pre-T-decomposition measurement is 104 CX and 18 CCX, matching the
+separate source QEC declaration of 104 Clifford and 18 Toffoli. There are zero
+explicit T-family and measurement primitives. The separate analytical total-T
+estimate is 72. Four allocation/free events retain their exact wire identities
+and instruction offsets in the resource receipt. RIGHT result and junk are
+logical outputs, while temporary recursive padding is released clean. The
+existing complete complex-amplitude result/junk/spectator checks, append
+execution, exact restoration and native Kickmix cases are rerun unchanged.
+
+The shared square/inverse concentrated regression passes 439 checks without
+skips or warnings. Seven frozen source/test/notebook assets are rehashed and
+Qualtran 0.7.0 plus Kickmix 0.1 Simulator verified. The catalog adds 58 contextual
+children across these two complete source groups, including 15 qualified
+children. Thirteen have exact original source graphs and two are the explicitly
+labeled native inverses. Existing erasure, generic dispatch, source arithmetic,
+serialization and symbolic physical-execution boundaries above remain open.
+Parent acceptance counts are unchanged.
+
+The complete catalog regression passes 763 cases with three existing selection
+exclusions and fourteen existing notebook escape warnings in 397.04 seconds.
+Local integration passes 29 cases. Strict typing covers all five changed Python
+files; Black, Ruff, integration scope, architecture, multi-level IR, public API
+and whitespace checks pass. The final shared recursive observer passes 14 cases.
+The concentrated 439-case execution/reference suite is rerun after observer
+consolidation. Combined catalog inventory is 4104 JSON files, 4103 diagrams,
+234 documents, 3750 contextual children, 84 decomposed roots, 269 atomic
+interfaces and 427 qualified descendants. Three qualified descendants across
+all field groups are explicitly labeled native exact linear inverses.
+Receipts use `g2-field-power-ui-*-20261122` in the reference evidence directory.

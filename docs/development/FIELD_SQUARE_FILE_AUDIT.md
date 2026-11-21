@@ -236,3 +236,50 @@ the pinned Qualtran/Kickmix runtime are verified. Directional actual primitive,
 logical peak and independent source model rows are retained separately in
 `g2-field-linear-foreign-evidence-20261121.json`. Q-0522/Q-0523 remain open for the
 original mathematical-adjoint, bookkeeping/generic/autotester and codec scope.
+
+## Complete square catalog dependency closure — 2026-11-22
+
+The complete square notebook group now projects the existing typed Frobenius
+Program into the normal field UI exporter. The concrete GF16 factory retains
+Split, its full SynthesizeLRCircuit child and Join in source order. Both
+reachable decomposable definitions and their fresh original drawings agree.
+Three atomic bookkeeping/primitive contexts preserve original refusals. The
+symbolic factory retains the original `DecomposeTypeError`.
+
+`examples/algorithms/field_power_decomposition.py` owns only Program selection,
+whole-definition qualification and drawing composition. Compiler owns the
+existing Frobenius/inverse graphs, Simulation owns the field matrix, and existing
+product presentations own their dependency glyphs. No execution owner changes
+are introduced. The normal `circuit.append(op)` workflow remains exercised by
+the accepted component and complete-file checks.
+
+Fresh atomic CX measurement is 2, with no CCX, explicit T-family, measurement or
+workspace events. The separate frozen QEC model reports 2 Clifford, 0 Toffoli
+and total-T estimate 0. Virtual output aliases remain explicit. This root has
+one coherent execution branch. Existing complete complex-state, entangled
+spectator, noncontiguous binding, append and exact reversal evidence is rerun.
+
+The shared square/inverse batch passes 439 concentrated execution/reference
+checks without skips or warnings, including native Kickmix file checks.
+The final shared recursive observer is reused from the product source walk.
+Mutating primitive operands rejects complete qualified child labels. Seven
+source/test/notebook blobs are rehashed against the frozen ledger. Qualtran
+0.7.0 and Kickmix 0.1 Simulator are verified. Numerical owners remain unchanged
+from `4d0292339`.
+
+Square matrix-power, ignored-adjoint, generic admission, count and serialization
+boundaries documented above stay open. Source equality is claimed for the
+concrete forward factory and its comparable descendants. Broader mathematical
+exact-adjoint evidence retains its own scope.
+
+The complete catalog regression passes 763 cases with three existing selection
+exclusions and fourteen existing notebook escape warnings in 397.04 seconds.
+Local integration passes 29 cases. Strict typing covers all five changed Python
+files; Black, Ruff, integration scope, architecture, multi-level IR, public API
+and whitespace checks pass. The final shared recursive observer passes 14 cases.
+The concentrated 439-case execution/reference suite is rerun after observer
+consolidation. Combined catalog inventory is 4104 JSON files, 4103 diagrams,
+234 documents, 3750 contextual children, 84 decomposed roots, 269 atomic
+interfaces and 427 qualified descendants. Three qualified descendants across
+all field groups are explicitly labeled native exact linear inverses.
+Receipts use `g2-field-power-ui-*-20261122` in the reference evidence directory.
