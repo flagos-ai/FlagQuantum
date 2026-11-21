@@ -68,3 +68,7 @@ The class keeps its established `routing_cost` module identity so serialized
 class references resolve through the original path. Instances continue to own
 thread locks and do not support pickle serialization. Compiler owns the private
 helper alias under the same removal condition and target version described above.
+
+Final-layout restoration walks each leaf's unique tree path once. See the
+[restoration traversal invariant](../../../docs/development/COMPILER_RESTORE_PATH_REUSE.md)
+before changing token movement or removing an active tree leaf.
