@@ -92,6 +92,8 @@ def word_symbols(record: ProgramRecord, operation: str) -> RegisterWireSymbolSup
             return partition_wire_symbol(step, register, index)
         function = functions[step.name]
         ports = tuple(r.name for r in function.registers or ())
+        if operation in {"OnEach", "XorK"} and ports == ("q",):
+            return x_symbol(step, register, index)
         if operation == "BitwiseNot" and ports == ("q",):
             return on_each_wire_symbol(
                 replace(step, name=f"X⨂{width}"),

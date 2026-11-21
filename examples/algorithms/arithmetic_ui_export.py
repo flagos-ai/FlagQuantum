@@ -68,6 +68,7 @@ from examples.algorithms.subtraction_decomposition import (
 )
 from examples.algorithms.trigonometric_catalog import arcsine_example
 from examples.algorithms.word_arithmetic_decomposition import word_program, word_score
+from examples.algorithms.word_child_decomposition import word_child_decomposition
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.sorting.in_place_sort_declaration import (
     in_place_sort_signature,
@@ -740,8 +741,11 @@ def decomposition(component: object) -> ProgramRecord | None:
 def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
-    return child_decomposition(record, entry, root) or addition_child_decomposition(
-        record, entry, attributes(root)
+    parameters = attributes(root)
+    return (
+        child_decomposition(record, entry, root)
+        or word_child_decomposition(record, entry, parameters)
+        or addition_child_decomposition(record, entry, parameters)
     )
 
 

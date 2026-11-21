@@ -207,3 +207,67 @@ CX, NOT emits width X and the eight-bit constant-87 factory emits five X.
 All own zero workspace, measurement and T. Original independent QEC models
 report corresponding Clifford multiplicities. A symbolic n-Clifford formula
 is retained separately from the unavailable unresolved physical stream.
+
+## Recursive bitwise presentation contract, November 22
+
+The next presentation closure covers complete concrete Xor, XorK and BitwiseNot
+bodies together with their OnEach(X) direct dependency. The domain owner remains
+Compiler bits, while the catalog callback belongs to examples/algorithms. Word
+ports retain their supplied dtype, scalar shape and MSB-first Split/Join order.
+All logical words are THRU, no clean quantum work is owned, and no measurement
+or classical slot is introduced. Declared XorK constants supply their encoded
+pattern. Constructor matching must retain the complete reachable body before
+reusing a source glyph. Unknown bodies retain the native generic presentation.
+Existing physical, coherent, ownership and independent resource acceptance is
+reused. Symbolic declarations and original refusal depths remain explicit.
+
+The domain child provider now matches the existing Xor, XorK, BitwiseNot and
+OnEach(X) constructors. XorK qualification moves out of the addition provider
+into this bitwise owner, eliminating its former cross-domain presentation
+placement. AddK's completed recursive checks continue through the same Arithmetic
+exporter callback. Concrete scalar words retain their nominal dtypes. The
+whole reachable definition is compared before its glyph supplier is selected.
+Changing a repeated X to Z rejects both the complement and OnEach labels.
+
+Fresh source graphs and score payloads match for the complete three-class
+bitwise file across widths 1, 2, 3 and 8 with opaque, unsigned and signed words.
+Signed constants use -1 and the other encodings use the largest represented
+unsigned pattern. Symbolic complement still has a successful immediate graph
+whose OnEach child refuses decomposition at unresolved width. The existing
+symbolic XOR root refusal and zero-width admission differences remain recorded.
+The focused combined word/addition checks pass 70 cases. A separate physical
+regression passes 411 cases, including source blob checks, full complex actions,
+normal append, reversible aliases, child replacement and independent resource
+widths. No measured branch is introduced by these bitwise operations.
+
+The combined catalog qualifies 88 contextual descendants, adding 27 matching
+word definitions to the preceding addition closure. Its identities and graph
+edges retain 3569 JSON files, 234 documentation files, 3568 diagrams and 3215
+contextual child nodes. Counts are contextual definitions, not distinct source
+classes. The next comparison-file intake retains 62 exact recursive graphs,
+of which 29 non-root graph contexts still need glyph qualification. Those
+remaining contexts are explicitly inventoried by source type, typed ports and
+owner. They comprise tree comparison, conjunction/control and sign-view owners.
+
+Actual constant-87 XorK emits five X, width-four Xor emits four CX and width-four
+BitwiseNot emits four X. All own zero clean workspace, measurement slots and T.
+Independent source models retain their corresponding Clifford multiplicities
+and width-dependent peak storage. Presentation qualification adds zero physical
+operations. Symbolic estimates remain separate from unavailable unresolved
+physical streams.
+
+The initial complete catalog export failed ENOSPC. Its original log is retained
+as g2-word-child-catalog-disk-failure-20261122.log. After removing current failed
+outputs, the older pytest native/source export directory was confirmed idle by
+lsof and identified from the existing catalog protocol test and durable source
+profile log. Only those reproducible generated outputs were removed, releasing
+336567580 logical bytes from the older directory. Reference checkouts and
+working trees were preserved. Cleanup evidence is recorded separately.
+
+The bounded retry passes the full 636-case concentrated catalog regression,
+with three existing deselections and fourteen existing notebook escape warnings.
+Strict typing of five changed Python files, Black, Ruff, integration scope,
+architecture, multilevel IR, protected API baseline and whitespace checks pass.
+The complete bitwise-file source-call and fresh-drawing acceptance is closed.
+The explicitly recorded zero-width, symbolic physical and other Arithmetic
+presentation boundaries retain their own separate acceptance criteria.

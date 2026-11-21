@@ -15,7 +15,6 @@ from flagquantum.compiler.registers.arithmetic.addition_component import (
 from flagquantum.compiler.registers.arithmetic.out_of_place_addition_component import (
     out_of_place_addition_program,
 )
-from flagquantum.compiler.registers.bits.bitwise_component import bitwise_word_program
 from flagquantum.compiler.registers.component_definition_match import (
     matches_component_definition,
 )
@@ -32,8 +31,7 @@ def addition_child_decomposition(
 ) -> tuple[str, ProgramRecord, RegisterWireSymbolSupplier] | None:
     """Reuse glyphs only for an identical complete reachable definition.
 
-    Port domains select existing constructors. Constant values come from the
-    owning catalog's declared metadata. Literal matching retains every SSA
+    Port domains select existing constructors. Literal matching retains every SSA
     operand, phase, measurement and feedback instruction before qualification.
     """
     function = next(f for f in record.functions if f.name == entry)
@@ -75,19 +73,6 @@ def addition_child_decomposition(
                     ),
                 )
             )
-    elif ports == ("x",) and type(parameters.get("k")) is int:
-        constant = parameters["k"]
-        assert type(constant) is int
-        candidates.append(
-            (
-                "XorK",
-                bitwise_word_program(
-                    registers[0].dtype,
-                    "xor_constant",
-                    pattern=constant % (1 << registers[0].bitsize),
-                ),
-            )
-        )
     return next(
         (
             (
