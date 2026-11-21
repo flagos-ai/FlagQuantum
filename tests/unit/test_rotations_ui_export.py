@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from examples.algorithms import rotations_ui_export as native
-from examples.algorithms.phase_gradient_decomposition import gradient_child
 from tests.unit.test_component_ui_export import source_metadata
 from tests.unit.test_development_tools import REFERENCE
 from tests.unit.test_other_ui_export import _port_record as _shared_port_record
@@ -163,6 +162,9 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
             "phase_gradient_unitary",
             "phase_gradient_state",
             "add_scaled_val_into_phase_reg",
+            "rz_via_phase_gradient",
+            "zpow_const_via_phase_grad",
+            "zpow_const_via_phase_grad_symb_prec",
         }:
             assert data["callees"]
             for child in data["callees"]:
@@ -176,7 +178,7 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         native.INSTANCES,
         owner=lambda v: native.name(v) + "/" + native.filename(v),
         program=native.decomposition,
-        child_presentation=gradient_child,
+        child_presentation=native._child_presentation,
     )
     assert len(list(tmp_path.rglob("*.json"))) == 1 + len(
         {(native.name(v), native.filename(v)) for v in graph}

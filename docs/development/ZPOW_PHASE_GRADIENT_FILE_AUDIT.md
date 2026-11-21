@@ -102,3 +102,64 @@ source decomposition rejection. Negative forward exponents fail the original
 unsigned conversion and the native admission check. These cases remain explicit
 boundaries under Q-0688. The previously accepted 40-bit body, original tensor
 tests, independent notebook and symbolic model evidence are reused.
+
+## Complete stored catalog dependency group
+
+The native catalog now retains the complete original five-call root in a typed
+Program. Compiler owns execution composition. The example provider owns labels,
+source-title fallbacks and presentation qualification. Existing Cast, controlled
+word XOR, conditional Add/Sub and phase-addition owners remain authoritative.
+Users append the resulting bound operation through `circuit.append(op)`.
+Words are MSB first. Input words remain caller owned. Angle allocation and
+measured carries are owned and released by their respective components.
+
+The recursive observer verifies complete ordered calls, register descriptors,
+operands and qualified child definitions against unchanged source. Mutating CX
+operands rejects source labels. Native helpers below original atomic arithmetic
+refusals are inventoried separately. Shared Program scheduling can reorder
+disjoint primitives and allocates classical slots in measurement order. Exact
+primitive comparison maps each measured wire to that slot before checking every
+wire's gate order and feedback.
+
+Both concrete operations and their exact inverses were tested on the full
+complex logical tensors at widths two and three, with reversed/noncontiguous
+bindings and an entangled spectator. Every forward and inverse raw measurement
+history preserves the complete complex amplitudes and returns all work to zero.
+The normal DynamicCircuit append path, Program ownership copy and lowered
+CircuitIR JSON round trip pass. Existing larger-width, source-binding and SDK
+execution evidence is reused in the concentrated regression.
+
+Symbolic precision retains its logical five-call graph and bodyless typed
+children at original decomposition refusals. Symbolic physical binding and
+unresolved symbolic angles retain their recorded refusal boundaries. The source
+reference is unchanged. This catalog closure leaves the parent source boundary
+items open.
+
+The batch receipts under `ftqc-reference-env` use the prefix
+`g2-phase-rotations-ui-` and date `20261122`. The inventory records eight exact
+recursive graphs, 25 original atomic contexts and 75 native-only helpers across
+three source-success factory contexts. Three source drawing failures arise from
+the original controlled BitwiseNot/XorK title type. Fresh comparable drawings
+remain exact. Native fallback drawings are explicit.
+
+Concrete ZPow contributes two exact graphs and six atomic contexts. Symbolic
+precision contributes one exact graph and four atomic contexts. Both roots
+retain their original XorK title failure. The concrete controlled-XOR child
+has an exact fresh source drawing. Symbolic-angle decomposition is refused.
+The 40-bit factory uses exactly 469 CX, 117 H, 78 T, 78 T-dagger, 39 S,
+39 measurements, 39 conditional CZ and 39 resets. Forty angle/carry allocation
+and release events retain the caller's data and gradient, with peak width 120.
+The source model separately declares 38 Toffoli, 4 Clifford and width 81.
+The existing 40-bit sparse coherence certificate is reused alongside the new
+stored-Program exact primitive and feedback comparison.
+
+Batch acceptance returned 838 concentrated catalog passes, three existing
+deselections and 14 existing notebook syntax warnings; 326 execution/SDK passes;
+and 29 relevant local integration passes. Strict typing of seven changed Python
+files, Black, Ruff, ownership scope, architecture, IR and API checks pass.
+Fourteen frozen source assets match their inventory blobs. The first catalog
+run exhausted disk during reproducible export; its diagnostic is retained and
+the successful run followed HTTP-cache and partial-export cleanup. An additional
+broad integration probe passed 163 cases before local Gloo address resolution
+failed. That environment diagnostic remains separate from the passing relevant
+integration suite.

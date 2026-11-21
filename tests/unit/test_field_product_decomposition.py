@@ -86,17 +86,27 @@ def source_walk(
             row["qualified"] = label
             drawing = node.score()
         assert isinstance(drawing, dict)
-        expected_score = _source_score(composite)
-        if exact:
-            assert _canonical_score(drawing) == _canonical_score(expected_score), (
-                identifier,
-                source,
-                name,
-            )
-            row["drawing"] = "source_exact"
+        try:
+            expected_score = _source_score(composite)
+        except ValueError as error:
+            assert type(source).__name__ in {
+                "ControlledAddOrSubtract",
+                "ZPowConstViaPhaseGradient",
+            }
+            assert "should return a `Text` object" in str(error)
+            row["drawing"] = "original_controlled_title_refusal"
+            row["drawing_error"] = str(error)
         else:
-            assert _canonical_score(drawing) != _canonical_score(expected_score)
-            row["drawing"] = "native_exact_inverse_original_defect_retained"
+            if exact:
+                assert _canonical_score(drawing) == _canonical_score(expected_score), (
+                    identifier,
+                    source,
+                    name,
+                )
+                row["drawing"] = "source_exact"
+            else:
+                assert _canonical_score(drawing) != _canonical_score(expected_score)
+                row["drawing"] = "native_exact_inverse_original_defect_retained"
         rows.append(row)
         children = {b.i: b.bloq for b, _, _ in composite.iter_bloqsoqs()}
         pending.extend(

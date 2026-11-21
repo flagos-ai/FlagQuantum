@@ -21,6 +21,7 @@ from sympy import Symbol
 
 from examples.algorithms.approximate_qft_catalog import approximate_qft_examples
 from examples.algorithms.component_ui_dependencies import (
+    ChildPresentation,
     ComponentFunction,
     dependency_graph,
 )
@@ -32,11 +33,14 @@ from examples.algorithms.phase_gradient_catalog import (
     GradientUnitaryExample,
 )
 from examples.algorithms.phase_gradient_decomposition import (
-    gradient_child as _child_presentation,
-)
-from examples.algorithms.phase_gradient_decomposition import (
+    gradient_child,
     gradient_program,
     gradient_score,
+)
+from examples.algorithms.phase_gradient_rotation_decomposition import (
+    phase_rotation_child,
+    phase_rotation_program,
+    phase_rotation_score,
 )
 from examples.algorithms.programmable_rotation_array_catalog import (
     ProgrammableRotationArrayExample,
@@ -866,6 +870,8 @@ def score(component: object) -> object:
     result = rotation_gate_score(name(component), attributes(component))
     if result is None:
         result = gradient_score(name(component), attributes(component))
+    if result is None:
+        result = phase_rotation_score(name(component), attributes(component))
     return (
         result
         if result is not None
@@ -876,10 +882,20 @@ def score(component: object) -> object:
 def decomposition(component: object) -> ProgramRecord | None:
     """Reuse complete controlled-rotation and phase-gradient source graphs."""
     record = rotation_gate_program(name(component), attributes(component))
+    if record is None:
+        record = gradient_program(name(component), attributes(component))
     return (
         record
         if record is not None
-        else gradient_program(name(component), attributes(component))
+        else phase_rotation_program(name(component), attributes(component))
+    )
+
+
+def _child_presentation(
+    record: ProgramRecord, entry: str, root: object
+) -> ChildPresentation | None:
+    return gradient_child(record, entry, root) or phase_rotation_child(
+        record, entry, attributes(root)
     )
 
 
