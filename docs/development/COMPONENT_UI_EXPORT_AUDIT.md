@@ -567,3 +567,52 @@ starting. The ignored, rebuildable local mypy cache was removed, recovering
 approximately 49 MiB. The probe then passed. The running component regression
 completed successfully. Subsequent Rotations intake records actual missing
 OpenFermion factory dependencies as open evidence.
+
+## Complete Other instance group
+
+`examples.algorithms.other_ui_export` covers all fourteen original Other
+notebooks, twenty-one documentation references and thirty-eight actual factory
+instances. Existing QromTable and clean-QROAM signature owners supply lookup
+metadata and directional retained banks. Native preparation, reflection,
+controlled Pauli, rotation, QSP-complement and guided-Hamiltonian declarations
+supply the remaining nominal interfaces. Original symbols and assumptions are
+compared as actual objects, including the original literal `integers` assumption
+in SelectSwapQROM factories. No executable storage admission changes here.
+
+All actual factory port names, nominal encodings, widths, bounds, shapes and
+lifetimes match. Declaration order also matches except the two Hubbard GQSP
+factories. Frozen QubitizationWalkOperator.selection_registers constructs a set
+union, so its order changes across processes. The native provider retains its
+existing explicit Hubbard layout and compares complete descriptors by name.
+The source is unchanged. This order difference is retained as an adaptation.
+
+Thirty-seven factory metadata encodings and filenames match exactly. Raw nested
+arrays, complex coefficients, parameter expressions and symbol assumptions are
+checked before encoding. The indexed target callback and the shared-target gate
+array use actual native dispatch descriptions. Both original and native encoders
+retain their unsupported-object sentinel for those callbacks and arrays. The
+callback's four Pauli choices and the original T/H/Z/X sequence are checked.
+The Pauli SELECT instance preserves each native Pauli string and its complex
+coefficient explicitly. Its source encoder discards the foreign DensePauliString
+objects as four sentinels. This one intentional metadata and filename extension
+is tested separately, without manufacturing foreign objects in native code.
+
+Actual isolated `python -m examples.algorithms.other_ui_export` produces
+thirty-eight JSON files including navigation, nineteen documentation files and
+thirty-seven fresh non-null atomic diagrams. Three QROMBase document references
+share their first file. Two identical sparse-alias factories share one filename,
+matching the original exporter retention behavior. Provider coverage now reaches
+168 of 237 documentation references and 269 of 359 factories. Remaining providers
+are the complete Rotations and Chemistry groups, with 69 references and 90
+factories. Full per-instance decomposition graphs, per-gate source glyphs and
+fresh whole-catalog execution remain open.
+
+Concentrated component-family regression passes 1219 checks with fourteen
+existing notebook escape warnings and zero skips. Focused actual-factory checks
+pass 41 cases. Existing execution evidence covers complete complex amplitudes,
+measurement branches, clean workspace, original gate operands and feedback,
+lookup and rotation round trips, and separately measured primitive and analytical
+resource accounts. This catalog owns metadata and interfaces. Strict typing of
+two files, Black, Ruff, Integration scope, architecture, IR, API and whitespace
+checks pass. The reference availability check confirms Qualtran 0.7.0 and the
+locked Kickmix extension 0.1 with Simulator present and binary hash recorded.

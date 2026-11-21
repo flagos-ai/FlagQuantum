@@ -563,3 +563,11 @@ signatures. Nested metadata retains original gate flags, coefficient tuples,
 explicit entry arrays, bounds and packed-oracle parameters. The three abstract
 documentation groups retain their empty example lists. All original parameter
 encodings and filenames match, and all twenty-six atomic diagrams are fresh.
+
+`python -m examples.algorithms.other_ui_export` publishes the complete Other
+notebook group through existing native lookup, preparation, Pauli and
+signal-processing owners. It includes fourteen notebooks, twenty-one document
+references and thirty-eight factory instances. Three QROMBase references share
+one documentation file, and the two identical sparse-alias factories retain one
+instance file. Diagrams show atomic nominal ports. The UI audit records the
+native Pauli metadata extension and unordered source Hubbard register union.
