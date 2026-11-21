@@ -258,3 +258,65 @@ directory and produced all expected artifacts with fifty-one non-null diagrams.
 Integration scope, architecture, multi-level IR and public API baseline checks
 pass for this added provider module. The export workflow performs no numerical
 simulation and adds no execution or resource-model behavior.
+
+## Complete Arithmetic native instance catalog
+
+`examples/algorithms/arithmetic_ui_export.py` covers all fourteen Arithmetic
+notebook entries, forty-five documentation groups and seventy-four actual
+frozen factories. Run `python -m examples.algorithms.arithmetic_ui_export`.
+The normal module entry publishes seventy-five JSON files, forty-five
+individual documentation files and seventy-four fresh typed interface diagrams.
+The SortInPlace group retains its original empty example list and documentation.
+Its presence does not manufacture an executable source factory.
+
+Existing addition, negation, subtraction, multiplication, comparison, sorting,
+permutation and trigonometric catalogs remain authoritative for their signatures.
+Function-owned conversion, bitwise, conditional-arithmetic and triangular-index
+signatures follow the existing teaching notebooks. Set difference and sorted
+list duplication use their existing compiler signature functions. A private
+read-only UI association connects names and parameters with these heterogeneous
+owners. It does not introduce a common execution superclass or another IR.
+
+Every factory name, document group, instance order and ordered port matches the
+unchanged reference. Port verification includes nominal type, symbolic expression
+and assumptions, array shape, LEFT/RIGHT/THRU lifetime, bounded integer iteration
+length, and fixed-point fractional width and signedness. The conditional
+add/subtract control port retains the actual original QBit type, correcting the
+one-bit QUInt interface spelling in its existing teaching notebook for this UI
+provider. The earlier notebook execution remains separately recorded.
+
+Seventy-one instances preserve byte-equivalent encoded metadata and filenames.
+The three conditional add/subtract instances additionally retain signed versus
+unsigned operand encoding. The source encoder discards that nominal type and
+produces the same filename for the signed and unsigned eight-bit factories.
+The native export keeps them separate. The unmodified source collision is an
+explicit test witness. Symbolic permutation cycle shapes retain the original
+serializer representation and bound assumptions. The symbolic subtraction
+composite remains a CompositeBloq report node inside the Subtract documentation
+group, as in the source.
+
+These diagrams show atomic typed interfaces. Complete per-instance decomposition
+graphs and source per-gate glyph parity remain open. This metadata workflow emits
+no physical gates and does not calculate primitive resources. Existing complete
+source-file tests supply the reusable gate-stream, full complex-amplitude,
+measurement-history, clean-work and analytical resource evidence. Their measured
+primitive counts and source models retain their separate original reports.
+
+The batch regression exposed two stale expectations in the existing conditional
+arithmetic foreign-file tests. The original controlled erase still raises a
+RecursionError when asked for its unitary. The native importer now diagnoses the
+same unsupported leaf with its existing explicit ValueError before that source
+recursion. Both original failure and native refusal are asserted independently.
+No importer or execution behavior changes in this batch.
+
+Native providers now cover eighty of 237 documentation references and 125 of
+359 example factories. The remaining nine sections contain 157 documentation
+references and 234 factories. Q0120 remains open for those providers, complete
+decomposition drawings and the fresh whole-catalog run. Existing source diagram
+replay and prior full-exporter/Jupyter evidence remain applicable.
+
+The concentrated regression passes all 374 checks with zero skips and 37 visible
+existing parser, notebook-presentation and source-protobuf warnings. Strict
+checking of the provider and both touched test files, Black, Ruff, Integration
+scope, architecture, multi-level IR, public API baseline and whitespace checks
+pass. The actual module entry also passes in an isolated temporary directory.

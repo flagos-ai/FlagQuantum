@@ -508,3 +508,12 @@ existing domain-owned records. Native control metadata retains shapes and
 activation values to distinguish instances that collide under the source UI's
 unsupported-array encoding. Decomposition graph and source-glyph coverage remain
 listed separately in `COMPONENT_UI_EXPORT_AUDIT.md`.
+
+Run `python -m examples.algorithms.arithmetic_ui_export` for the complete
+Arithmetic UI instance group. It exports fourteen notebook entries, forty-five
+document groups and seventy-four fresh atomic typed interfaces. The output
+retains symbolic assumptions, nominal encodings, shaped ports and register
+lifetimes. Signed conditional arithmetic has distinct filenames where the source
+metadata encoder collides. Complete decomposition drawings remain tracked in
+`docs/development/COMPONENT_UI_EXPORT_AUDIT.md`. Existing arithmetic components
+continue to own execution through `circuit.append(op)` and resource estimates.
