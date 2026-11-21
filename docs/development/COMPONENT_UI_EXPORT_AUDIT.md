@@ -1108,3 +1108,53 @@ resource evidence. Fresh dense execution remains uncovered.
 Ten of the arithmetic intake's 44 successful root drawings are now qualified.
 Thirty-four successful roots, the explicitly bounded large CAdd layout, recursive
 arithmetic presentation and other catalog dependencies remain in Q-0120.
+
+## Complete subtraction source-family catalog graphs
+
+All eight `arithmetic/subtraction.py` catalog instances are accounted for. Five
+concrete Subtract/SubtractFrom Programs reuse their executable domain owners
+literally. Two symbolic equal-width instances retain typed external child
+declarations and draw the original complete immediate layer. Symbolic Subtract
+uses the existing `symbolic_subtraction_steps` catalog sequence for signed casts,
+OnEach(X), Add and restoring casts. SubtractFrom uses its source-defined
+complement/Add/complement sequence. The original CompositeBloq factory still
+raises ValueError when asked to decompose again, and retains its atomic UI
+interface. Symbolic declarations have no execution body and fail binding.
+
+All seven successful factories match complete ordered source calls, operands,
+shapes, sides and child dtype encodings. Fresh source drawings match geometry,
+wire glyphs and titles with only the established SSA/boundary text normalization.
+Unequal-width signed extension retains MultiTargetCNOT control/target glyphs,
+allocation/free arrows and the distinct Cast versus Split/Join presentations.
+Existing Add, bitwise, repeated-X and partition callbacks supply symbols.
+
+The isolated combined exporter publishes 1241 JSON files, 234 documents and
+1240 non-null diagrams. Its 353 roots contain 40 immediate decompositions and
+313 atomic interfaces, alongside 887 contextual native child files. This batch
+adds 232 child files. An additional nested fanout matches the existing qualified
+constructor, giving 23 qualified child operation labels. Recursive arithmetic
+source-glyph coverage beyond these root drawings remains open.
+
+The complete subtraction physical component regression passes 64 cases,
+including original ordered primitives and feedback, full complex states with an
+entangled spectator, every small measurement history, zeroed work, output
+ownership and source resource models. Exact concrete Program equality connects
+the UI to those execution owners. Observed T/T-dagger gates equal
+4 * (right_width - 1), with right_width - 1 measurements and resets, while source
+analytical formulas retain separate evidence. The measured peak-width model
+remains 3 * right_width - 1 for Subtract. Large instances retain accepted stream
+and resource evidence; fresh dense large execution remains uncovered.
+
+A concentrated regression exhausted filesystem space while retaining successful
+temporary exports. Its diagnostic log is retained. Only this batch's interrupted
+temporary output was reclaimed. The repeat enables pytest's failed-only temporary
+retention policy so passing fixtures are removed as they finish. The repeated
+concentrated suite passes 506 cases, with fourteen existing warnings, three
+deselections and zero skips. Strict typing of three Python files, Black, Ruff,
+team scope, architecture, IR, public API and whitespace checks pass. Source
+files, reference data and evidence logs remain.
+
+Seventeen of the arithmetic intake's 44 successful root drawings are now
+qualified. Twenty-seven successful roots, the bounded large CAdd layout,
+recursive arithmetic presentation and other catalog dependencies remain open in
+Q-0120, alongside the previously registered source failures and external gaps.

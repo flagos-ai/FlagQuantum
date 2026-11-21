@@ -33,6 +33,10 @@ from examples.algorithms.negation_catalog import negation_examples
 from examples.algorithms.permutation_catalog import permutation_examples
 from examples.algorithms.sorting_catalog import sorting_examples
 from examples.algorithms.subtraction_catalog import subtraction_examples
+from examples.algorithms.subtraction_decomposition import (
+    subtraction_catalog_program,
+    subtraction_score,
+)
 from examples.algorithms.trigonometric_catalog import arcsine_example
 from examples.algorithms.word_arithmetic_decomposition import word_program, word_score
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
@@ -599,6 +603,8 @@ def score(component: object) -> object:
     decomposed = word_score(name(component), ports)
     if decomposed is None:
         decomposed = addition_score(name(component), ports, attributes(component))
+    if decomposed is None:
+        decomposed = subtraction_score(name(component), ports)
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -623,7 +629,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Addition, word bitwise and negation instances retain their immediate child graphs. "
+        "Addition, subtraction, bitwise and negation instances retain their immediate child graphs. "
         "Other diagrams show atomic typed interfaces. Contextual child nodes "
         "preserve native helper boundaries. Symbolic child declarations have "
         "no executable body. Resource models retain separate evidence. "
@@ -660,13 +666,15 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
 
 
 def decomposition(component: object) -> ProgramRecord | None:
-    """Select the existing word-arithmetic owner for catalog dependency traversal."""
+    """Select existing arithmetic owners for catalog dependency traversal."""
     ports = signature(component)
     record = word_program(name(component), ports)
+    if record is None:
+        record = addition_program(name(component), ports, attributes(component))
     return (
         record
         if record is not None
-        else addition_program(name(component), ports, attributes(component))
+        else subtraction_catalog_program(name(component), ports)
     )
 
 
