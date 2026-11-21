@@ -271,3 +271,14 @@ Run `tests/unit/test_incremental_coverage_command.py` and
 `tests/unit/test_development_coverage.py` for the complete source entry and real
 Git-checkout workflow. See `INCREMENTAL_COVERAGE_COMMAND_FILE_AUDIT.md` for source
 argument and diagnostic semantics.
+
+`notebook_catalog.notebook_sections()` returns the explicit 110-notebook library
+publication catalog in its 11 source section orders. It resolves authored native
+assets under the current checkout's `examples/notebooks`, or a supplied build
+root. Missing paths stay visible to the caller. The catalog does not import or
+execute numerical examples. Each original notebook title, path override and
+component-document reference has an explicit audited native destination.
+Run `tests/unit/test_notebook_catalog.py` to check path ownership and assets, or
+use the locked reference environment for the original 110-spec/237-document
+comparison and native module-symbol resolution. See `NOTEBOOK_CATALOG_FILE_AUDIT.md`
+for rendering boundaries and the separately open top-level orchestration.

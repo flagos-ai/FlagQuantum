@@ -1,0 +1,1229 @@
+[
+  {
+    "section": "Basic Gates",
+    "title": "T Gate",
+    "module": "qualtran.bloqs.basic_gates.t_gate",
+    "notebook": "qualtran/bloqs/basic_gates/t_gate.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.t_gate.TGate"
+    ],
+    "native_notebook": "examples/notebooks/register_t_gate.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Toffoli",
+    "module": "qualtran.bloqs.basic_gates.toffoli",
+    "notebook": "qualtran/bloqs/basic_gates/toffoli.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.toffoli.Toffoli"
+    ],
+    "native_notebook": "examples/notebooks/register_toffoli.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Hadamard",
+    "module": "qualtran.bloqs.basic_gates.hadamard",
+    "notebook": "qualtran/bloqs/basic_gates/hadamard.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.hadamard.Hadamard",
+      "qualtran.bloqs.basic_gates.hadamard.CHadamard"
+    ],
+    "native_notebook": "examples/notebooks/register_hadamard.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "CNOT",
+    "module": "qualtran.bloqs.basic_gates.cnot",
+    "notebook": "qualtran/bloqs/basic_gates/cnot.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.cnot.CNOT"
+    ],
+    "native_notebook": "examples/notebooks/register_cnot.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Z, S, and CZ",
+    "module": "qualtran.bloqs.basic_gates.z_basis",
+    "notebook": "qualtran/bloqs/basic_gates/diag_gates.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.z_basis.ZGate",
+      "qualtran.bloqs.basic_gates.s_gate.SGate",
+      "qualtran.bloqs.basic_gates.z_basis.CZ"
+    ],
+    "native_notebook": "examples/notebooks/register_diagonal_gates.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Y Gate",
+    "module": "qualtran.bloqs.basic_gates.y_gate",
+    "notebook": "qualtran/bloqs/basic_gates/y_gate.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.y_gate.YGate",
+      "qualtran.bloqs.basic_gates.y_gate.CYGate"
+    ],
+    "native_notebook": "examples/notebooks/register_y_gate.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "And",
+    "module": "qualtran.bloqs.mcmt.and_bloq",
+    "notebook": "qualtran/bloqs/mcmt/and_bloq.ipynb",
+    "documents": [
+      "qualtran.bloqs.mcmt.and_bloq.And",
+      "qualtran.bloqs.mcmt.and_bloq.MultiAnd"
+    ],
+    "native_notebook": "examples/notebooks/register_and.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "States and Effects",
+    "module": "qualtran.bloqs.basic_gates.z_basis",
+    "notebook": "qualtran/bloqs/basic_gates/states_and_effects.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.z_basis.ZeroState",
+      "qualtran.bloqs.basic_gates.z_basis.ZeroEffect",
+      "qualtran.bloqs.basic_gates.z_basis.OneState",
+      "qualtran.bloqs.basic_gates.z_basis.OneEffect",
+      "qualtran.bloqs.basic_gates.z_basis.IntState",
+      "qualtran.bloqs.basic_gates.z_basis.IntEffect",
+      "qualtran.bloqs.basic_gates.x_basis.PlusState",
+      "qualtran.bloqs.basic_gates.x_basis.PlusEffect",
+      "qualtran.bloqs.basic_gates.x_basis.MinusState",
+      "qualtran.bloqs.basic_gates.x_basis.MinusEffect"
+    ],
+    "native_notebook": "examples/notebooks/register_states_effects.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Measurement",
+    "module": "qualtran.bloqs.basic_gates.z_basis",
+    "notebook": "qualtran/bloqs/basic_gates/measurement.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.z_basis.MeasureZ",
+      "qualtran.bloqs.basic_gates.x_basis.MeasureX"
+    ],
+    "native_notebook": "examples/notebooks/register_measurement.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Basic Swaps",
+    "module": "qualtran.bloqs.basic_gates.swap",
+    "notebook": "qualtran/bloqs/basic_gates/swap.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.swap.TwoBitSwap",
+      "qualtran.bloqs.basic_gates.swap.TwoBitCSwap",
+      "qualtran.bloqs.basic_gates.swap.Swap",
+      "qualtran.bloqs.basic_gates.swap.CSwap"
+    ],
+    "native_notebook": "examples/notebooks/register_swap.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Swap Networks",
+    "module": "qualtran.bloqs.swap_network",
+    "notebook": "qualtran/bloqs/swap_network/swap_network.ipynb",
+    "documents": [
+      "qualtran.bloqs.swap_network.cswap_approx.CSwapApprox",
+      "qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero",
+      "qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap"
+    ],
+    "native_notebook": "examples/notebooks/swap_network.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Global Phase",
+    "module": "qualtran.bloqs.basic_gates.global_phase",
+    "notebook": "qualtran/bloqs/basic_gates/global_phase.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.global_phase.GlobalPhase"
+    ],
+    "native_notebook": "examples/notebooks/register_global_phase.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Identity Gate",
+    "module": "qualtran.bloqs.basic_gates.identity",
+    "notebook": "qualtran/bloqs/basic_gates/identity.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.identity.Identity"
+    ],
+    "native_notebook": "examples/notebooks/register_identity.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Control Specification (And)",
+    "module": "qualtran.bloqs.mcmt.ctrl_spec_and",
+    "notebook": "qualtran/bloqs/mcmt/ctrl_spec_and.ipynb",
+    "documents": [
+      "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd"
+    ],
+    "native_notebook": "examples/notebooks/control_predicate.ipynb"
+  },
+  {
+    "section": "Basic Gates",
+    "title": "Multi control bloq via single control bloq and `And` ladder",
+    "module": "qualtran.bloqs.mcmt.controlled_via_and",
+    "notebook": "qualtran/bloqs/mcmt/controlled_via_and.ipynb",
+    "documents": [
+      "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd"
+    ],
+    "native_notebook": "examples/notebooks/controlled_via_and.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Sparse",
+    "module": "qualtran.bloqs.chemistry.sparse",
+    "notebook": "qualtran/bloqs/chemistry/sparse/sparse.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.sparse.prepare.PrepareSparse",
+      "qualtran.bloqs.chemistry.sparse.select_bloq.SelectSparse"
+    ],
+    "native_notebook": "examples/notebooks/register_sparse_chemistry.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Single Factorization",
+    "module": "qualtran.bloqs.chemistry.sf.single_factorization",
+    "notebook": "qualtran/bloqs/chemistry/sf/single_factorization.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationOneBody",
+      "qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationBlockEncoding"
+    ],
+    "native_notebook": "examples/notebooks/register_single_factorization.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Double Factorization",
+    "module": "qualtran.bloqs.chemistry.df.double_factorization",
+    "notebook": "qualtran/bloqs/chemistry/df/double_factorization.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationOneBody",
+      "qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationBlockEncoding"
+    ],
+    "native_notebook": "examples/notebooks/register_double_factorization.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Tensor Hypercontraction",
+    "module": "qualtran.bloqs.chemistry.thc",
+    "notebook": "qualtran/bloqs/chemistry/thc/thc.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.thc.prepare.UniformSuperpositionTHC",
+      "qualtran.bloqs.chemistry.thc.prepare.PrepareTHC",
+      "qualtran.bloqs.chemistry.thc.select_bloq.SelectTHC"
+    ],
+    "native_notebook": "examples/notebooks/register_thc_chemistry.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "First Quantized Hamiltonian",
+    "module": "qualtran.bloqs.chemistry.pbc.first_quantization",
+    "notebook": "qualtran/bloqs/chemistry/pbc/first_quantization/first_quantization.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare.PrepareFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare.SelectFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t.PrepareTFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv.PrepareUVFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.select_t.SelectTFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.SelectUVFirstQuantization",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta.PrepareZetaState"
+    ],
+    "native_notebook": "examples/notebooks/register_first_quantization.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "First Quantized Hamiltonian with Quantum Projectile",
+    "module": "qualtran.bloqs.chemistry.pbc.first_quantization.projectile",
+    "notebook": "qualtran/bloqs/chemistry/pbc/first_quantization/projectile/projectile.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare.PrepareFirstQuantizationWithProj",
+      "qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare.SelectFirstQuantizationWithProj"
+    ],
+    "native_notebook": "examples/notebooks/register_first_quantization_projectile.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Trotter Bloqs",
+    "module": "qualtran.bloqs.chemistry.trotter.grid_ham",
+    "notebook": "qualtran/bloqs/chemistry/trotter/grid_ham/trotter.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt.PolynmomialEvaluationInverseSquareRoot",
+      "qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt.NewtonRaphsonApproxInverseSquareRoot",
+      "qualtran.bloqs.chemistry.trotter.grid_ham.qvr.QuantumVariableRotation",
+      "qualtran.bloqs.chemistry.trotter.grid_ham.kinetic.KineticEnergy",
+      "qualtran.bloqs.chemistry.trotter.grid_ham.potential.PairPotential",
+      "qualtran.bloqs.chemistry.trotter.grid_ham.potential.PotentialEnergy"
+    ],
+    "native_notebook": "examples/notebooks/register_grid_trotter.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Trotterization",
+    "module": "qualtran.bloqs.chemistry.trotter.trotterized_unitary",
+    "notebook": "qualtran/bloqs/chemistry/trotter/trotterized_unitary.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.trotter.trotterized_unitary.TrotterizedUnitary"
+    ],
+    "native_notebook": "examples/notebooks/register_trotter_product.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Ising Trotter Bloqs",
+    "module": "qualtran.bloqs.chemistry.trotter.ising",
+    "notebook": "qualtran/bloqs/chemistry/trotter/ising/ising.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingXUnitary",
+      "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingZZUnitary"
+    ],
+    "native_notebook": "examples/notebooks/register_ising_trotter.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Trotterized Hubbard",
+    "module": "qualtran.bloqs.chemistry.trotter.hubbard",
+    "notebook": "qualtran/bloqs/chemistry/trotter/hubbard/hubbard.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile",
+      "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingPlaquette",
+      "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTileHWP",
+      "qualtran.bloqs.chemistry.trotter.hubbard.interaction.Interaction",
+      "qualtran.bloqs.chemistry.trotter.hubbard.interaction.InteractionHWP"
+    ],
+    "native_notebook": "examples/notebooks/register_hubbard_trotter.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Qubitized Hubbard",
+    "module": "qualtran.bloqs.chemistry.hubbard_model.qubitization",
+    "notebook": "qualtran/bloqs/chemistry/hubbard_model/qubitization/hubbard_model.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard",
+      "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard"
+    ],
+    "native_notebook": "examples/notebooks/register_hubbard_qubitization.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Qubitized Hubbard Select",
+    "module": "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard",
+    "notebook": "qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard",
+      "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator",
+      "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ"
+    ],
+    "native_notebook": "examples/notebooks/register_hubbard_select.ipynb"
+  },
+  {
+    "section": "Chemistry",
+    "title": "Givens Rotations",
+    "module": "qualtran.bloqs.chemistry.quad_fermion.givens_bloq",
+    "notebook": "qualtran/bloqs/chemistry/quad_fermion/givens_bloq.ipynb",
+    "documents": [
+      "qualtran.bloqs.chemistry.quad_fermion.givens_bloq.RealGivensRotationByPhaseGradient",
+      "qualtran.bloqs.chemistry.quad_fermion.givens_bloq.ComplexGivensRotationByPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/register_gradient_givens.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Addition",
+    "module": "qualtran.bloqs.arithmetic.addition",
+    "notebook": "qualtran/bloqs/arithmetic/addition.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.addition.Add",
+      "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder",
+      "qualtran.bloqs.arithmetic.addition.AddK"
+    ],
+    "native_notebook": "examples/notebooks/register_addition.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Controlled Addition",
+    "module": "qualtran.bloqs.arithmetic.controlled_addition",
+    "notebook": "qualtran/bloqs/arithmetic/controlled_addition.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.controlled_addition.CAdd"
+    ],
+    "native_notebook": "examples/notebooks/register_controlled_addition.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Negation",
+    "module": "qualtran.bloqs.arithmetic.negate",
+    "notebook": "qualtran/bloqs/arithmetic/negate.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.negate.Negate"
+    ],
+    "native_notebook": "examples/notebooks/register_negation.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Subtraction",
+    "module": "qualtran.bloqs.arithmetic.subtraction",
+    "notebook": "qualtran/bloqs/arithmetic/subtraction.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.subtraction.Subtract",
+      "qualtran.bloqs.arithmetic.subtraction.SubtractFrom"
+    ],
+    "native_notebook": "examples/notebooks/register_subtraction.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Controlled Add-or-Subtract",
+    "module": "qualtran.bloqs.arithmetic.controlled_add_or_subtract",
+    "notebook": "qualtran/bloqs/arithmetic/controlled_add_or_subtract.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract"
+    ],
+    "native_notebook": "examples/notebooks/register_conditional_arithmetic.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Multiplication",
+    "module": "qualtran.bloqs.arithmetic.multiplication",
+    "notebook": "qualtran/bloqs/arithmetic/multiplication.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct",
+      "qualtran.bloqs.arithmetic.multiplication.Product",
+      "qualtran.bloqs.arithmetic.multiplication.Square",
+      "qualtran.bloqs.arithmetic.multiplication.SumOfSquares",
+      "qualtran.bloqs.arithmetic.multiplication.ScaleIntByReal",
+      "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals",
+      "qualtran.bloqs.arithmetic.multiplication.SquareRealNumber",
+      "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber"
+    ],
+    "native_notebook": "examples/notebooks/register_multiplication.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Comparison",
+    "module": "qualtran.bloqs.arithmetic.comparison",
+    "notebook": "qualtran/bloqs/arithmetic/comparison.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.comparison.LessThanConstant",
+      "qualtran.bloqs.arithmetic.comparison.GreaterThan",
+      "qualtran.bloqs.arithmetic.comparison.GreaterThanConstant",
+      "qualtran.bloqs.arithmetic.comparison.Equals",
+      "qualtran.bloqs.arithmetic.comparison.EqualsAConstant",
+      "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer",
+      "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare",
+      "qualtran.bloqs.arithmetic.comparison.LessThanEqual",
+      "qualtran.bloqs.arithmetic.comparison.CLinearDepthGreaterThan",
+      "qualtran.bloqs.arithmetic.comparison.LinearDepthHalfGreaterThan",
+      "qualtran.bloqs.arithmetic.comparison.LinearDepthHalfGreaterThanEqual",
+      "qualtran.bloqs.arithmetic.comparison.LinearDepthHalfLessThan",
+      "qualtran.bloqs.arithmetic.comparison.LinearDepthHalfLessThanEqual"
+    ],
+    "native_notebook": "examples/notebooks/register_comparison.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Integer Conversions",
+    "module": "qualtran.bloqs.arithmetic.conversions",
+    "notebook": "qualtran/bloqs/arithmetic/conversions/conversions.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement",
+      "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend",
+      "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate"
+    ],
+    "native_notebook": "examples/notebooks/register_conversions.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Sorting",
+    "module": "qualtran.bloqs.arithmetic.sorting",
+    "notebook": "qualtran/bloqs/arithmetic/sorting.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.sorting.Comparator",
+      "qualtran.bloqs.arithmetic.sorting.ParallelComparators",
+      "qualtran.bloqs.arithmetic.sorting.BitonicMerge",
+      "qualtran.bloqs.arithmetic.sorting.BitonicSort"
+    ],
+    "native_notebook": "examples/notebooks/register_sorting.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Indexing",
+    "module": "qualtran.bloqs.arithmetic.conversions.contiguous_index",
+    "notebook": "qualtran/bloqs/arithmetic/conversions/contiguous_index.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex"
+    ],
+    "native_notebook": "examples/notebooks/triangular_register_index.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Permutations",
+    "module": "qualtran.bloqs.arithmetic.permutation",
+    "notebook": "qualtran/bloqs/arithmetic/permutation.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.permutation.Permutation",
+      "qualtran.bloqs.arithmetic.permutation.PermutationCycle"
+    ],
+    "native_notebook": "examples/notebooks/register_permutation.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Bitwise Operations",
+    "module": "qualtran.bloqs.arithmetic.bitwise",
+    "notebook": "qualtran/bloqs/arithmetic/bitwise.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.bitwise.Xor",
+      "qualtran.bloqs.arithmetic.bitwise.BitwiseNot"
+    ],
+    "native_notebook": "examples/notebooks/register_bitwise.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "Trigonometric Functions",
+    "module": "qualtran.bloqs.arithmetic.trigonometric",
+    "notebook": "qualtran/bloqs/arithmetic/trigonometric/trigonometric.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin"
+    ],
+    "native_notebook": "examples/notebooks/register_trigonometric.ipynb"
+  },
+  {
+    "section": "Arithmetic",
+    "title": "List Functions",
+    "module": "qualtran.bloqs.arithmetic.lists",
+    "notebook": "qualtran/bloqs/arithmetic/lists/lists.ipynb",
+    "documents": [
+      "qualtran.bloqs.arithmetic.lists.sort_in_place.SortInPlace",
+      "qualtran.bloqs.arithmetic.lists.symmetric_difference.SymmetricDifference",
+      "qualtran.bloqs.arithmetic.lists.has_duplicates.HasDuplicates"
+    ],
+    "native_notebook": "examples/notebooks/register_lists.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Modular Addition",
+    "module": "qualtran.bloqs.mod_arithmetic.mod_addition",
+    "notebook": "qualtran/bloqs/mod_arithmetic/mod_addition.ipynb",
+    "documents": [
+      "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd",
+      "qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK",
+      "qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd",
+      "qualtran.bloqs.mod_arithmetic.mod_addition.CModAddK",
+      "qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd"
+    ],
+    "native_notebook": "examples/notebooks/modular_addition.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Modular Subtraction",
+    "module": "qualtran.bloqs.mod_arithmetic.mod_subtraction",
+    "notebook": "qualtran/bloqs/mod_arithmetic/mod_subtraction.ipynb",
+    "documents": [
+      "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg",
+      "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg",
+      "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModSub",
+      "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModSub"
+    ],
+    "native_notebook": "examples/notebooks/modular_subtraction.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Modular Multiplication",
+    "module": "qualtran.bloqs.mod_arithmetic.mod_multiplication",
+    "notebook": "qualtran/bloqs/mod_arithmetic/mod_multiplication.ipynb",
+    "documents": [
+      "qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl",
+      "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK",
+      "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul"
+    ],
+    "native_notebook": "examples/notebooks/modular_multiplication.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Modular Divison",
+    "module": "qualtran.bloqs.mod_arithmetic.mod_division",
+    "notebook": "qualtran/bloqs/mod_arithmetic/mod_division.ipynb",
+    "documents": [
+      "qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse"
+    ],
+    "native_notebook": "examples/notebooks/modular_inverse.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Factoring RSA",
+    "module": "qualtran.bloqs.cryptography.rsa",
+    "notebook": "qualtran/bloqs/cryptography/rsa/rsa.ipynb",
+    "documents": [
+      "qualtran.bloqs.cryptography.rsa.rsa_phase_estimate.RSAPhaseEstimate",
+      "qualtran.bloqs.cryptography.rsa.rsa_mod_exp.ModExp"
+    ],
+    "native_notebook": "examples/notebooks/register_rsa_phase_estimation.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Elliptic Curve Addition",
+    "module": "qualtran.bloqs.cryptography.ecc.ec_add",
+    "notebook": "qualtran/bloqs/cryptography/ecc/ec_add.ipynb",
+    "documents": [
+      "qualtran.bloqs.cryptography.ecc.ec_add.ECAdd"
+    ],
+    "native_notebook": "examples/notebooks/register_elliptic_curve_addition.ipynb"
+  },
+  {
+    "section": "Modular Arithmetic",
+    "title": "Elliptic Curve Cryptography",
+    "module": "qualtran.bloqs.cryptography.ecc",
+    "notebook": "qualtran/bloqs/cryptography/ecc/ecc.ipynb",
+    "documents": [
+      "qualtran.bloqs.cryptography.ecc.find_ecc_private_key.FindECCPrivateKey",
+      "qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r.ECPhaseEstimateR",
+      "qualtran.bloqs.cryptography.ecc.ec_add_r.ECAddR",
+      "qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR"
+    ],
+    "native_notebook": "examples/notebooks/register_elliptic_curve_cryptography.ipynb"
+  },
+  {
+    "section": "GF Arithmetic",
+    "title": "GF($2^m$) Multiplication",
+    "module": "qualtran.bloqs.gf_arithmetic.gf2_multiplication",
+    "notebook": "qualtran/bloqs/gf_arithmetic/gf2_multiplication.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.GF2Multiplication",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.GF2MulK",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.MultiplyPolyByOnePlusXk",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.BinaryPolynomialMultiplication",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.GF2ShiftRight",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.GF2ShiftLeft",
+      "qualtran.bloqs.gf_arithmetic.gf2_multiplication.GF2MulViaKaratsuba"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_multiplication.ipynb"
+  },
+  {
+    "section": "GF Arithmetic",
+    "title": "GF($2^m$) Addition",
+    "module": "qualtran.bloqs.gf_arithmetic.gf2_addition",
+    "notebook": "qualtran/bloqs/gf_arithmetic/gf2_addition.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_arithmetic.gf2_addition.GF2Addition"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_addition.ipynb"
+  },
+  {
+    "section": "GF Arithmetic",
+    "title": "GF($2^m$) Add Constant",
+    "module": "qualtran.bloqs.gf_arithmetic.gf2_add_k",
+    "notebook": "qualtran/bloqs/gf_arithmetic/gf2_add_k.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_arithmetic.gf2_add_k.GF2AddK"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_add_constant.ipynb"
+  },
+  {
+    "section": "GF Arithmetic",
+    "title": "GF($2^m$) Square",
+    "module": "qualtran.bloqs.gf_arithmetic.gf2_square",
+    "notebook": "qualtran/bloqs/gf_arithmetic/gf2_square.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_arithmetic.gf2_square.GF2Square"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_square.ipynb"
+  },
+  {
+    "section": "GF Arithmetic",
+    "title": "GF($2^m$) Inverse",
+    "module": "qualtran.bloqs.gf_arithmetic.gf2_inverse",
+    "notebook": "qualtran/bloqs/gf_arithmetic/gf2_inverse.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_arithmetic.gf2_inverse.GF2Inverse"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_inverse.ipynb"
+  },
+  {
+    "section": "Polynomials over Galois Fields",
+    "title": "Polynomials over GF($p^m$) - Split and Join",
+    "module": "qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join",
+    "notebook": "qualtran/bloqs/gf_poly_arithmetic/gf_poly_split_and_join.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join.GFPolySplit",
+      "qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join.GFPolyJoin"
+    ],
+    "native_notebook": "examples/notebooks/field_polynomial_views.ipynb"
+  },
+  {
+    "section": "Polynomials over Galois Fields",
+    "title": "Polynomials over GF($2^m$) - Add Constant",
+    "module": "qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k",
+    "notebook": "qualtran/bloqs/gf_poly_arithmetic/gf2_poly_add_k.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k.GF2PolyAddK"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_polynomial_add_constant.ipynb"
+  },
+  {
+    "section": "Polynomials over Galois Fields",
+    "title": "Polynomials over GF($2^m$) - Addition",
+    "module": "qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add",
+    "notebook": "qualtran/bloqs/gf_poly_arithmetic/gf2_poly_add.ipynb",
+    "documents": [
+      "qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add.GF2PolyAdd"
+    ],
+    "native_notebook": "examples/notebooks/binary_field_polynomial_addition.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Basic Rotation Gates",
+    "module": "qualtran.bloqs.basic_gates.rotation",
+    "notebook": "qualtran/bloqs/basic_gates/rotation.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.rotation.ZPowGate",
+      "qualtran.bloqs.basic_gates.rotation.CZPowGate",
+      "qualtran.bloqs.basic_gates.rotation.Rz",
+      "qualtran.bloqs.basic_gates.rotation.CRz",
+      "qualtran.bloqs.basic_gates.rotation.XPowGate",
+      "qualtran.bloqs.basic_gates.rotation.YPowGate"
+    ],
+    "native_notebook": "examples/notebooks/register_rotation.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "SU2 Rotation",
+    "module": "qualtran.bloqs.basic_gates.su2_rotation",
+    "notebook": "qualtran/bloqs/basic_gates/su2_rotation.ipynb",
+    "documents": [
+      "qualtran.bloqs.basic_gates.su2_rotation.SU2RotationGate"
+    ],
+    "native_notebook": "examples/notebooks/register_su2_rotation.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Quantum Variable Rotation",
+    "module": "qualtran.bloqs.rotations.quantum_variable_rotation",
+    "notebook": "qualtran/bloqs/rotations/quantum_variable_rotation.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow",
+      "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/quantum_variable_rotation.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Phasing via Cost function",
+    "module": "qualtran.bloqs.rotations.phasing_via_cost_function",
+    "notebook": "qualtran/bloqs/rotations/phasing_via_cost_function.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFunction"
+    ],
+    "native_notebook": "examples/notebooks/phasing_via_cost_function.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Rotations via Phase Gradients",
+    "module": "qualtran.bloqs.rotations.phase_gradient",
+    "notebook": "qualtran/bloqs/rotations/phase_gradient.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.phase_gradient.PhaseGradientUnitary",
+      "qualtran.bloqs.rotations.phase_gradient.PhaseGradientState",
+      "qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad",
+      "qualtran.bloqs.rotations.phase_gradient.AddScaledValIntoPhaseReg"
+    ],
+    "native_notebook": "examples/notebooks/phase_gradient.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Z Rotations via Hamming Weight Phasing",
+    "module": "qualtran.bloqs.rotations.hamming_weight_phasing",
+    "notebook": "qualtran/bloqs/rotations/hamming_weight_phasing.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing",
+      "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/hamming_weight_phasing.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "ZPow Rotation via Phase Gradient",
+    "module": "qualtran.bloqs.rotations.zpow_via_phase_gradient",
+    "notebook": "qualtran/bloqs/rotations/zpow_via_phase_gradient.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/zpow_via_phase_gradient.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Rz Rotation via Phase Gradient",
+    "module": "qualtran.bloqs.rotations.rz_via_phase_gradient",
+    "notebook": "qualtran/bloqs/rotations/rz_via_phase_gradient.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/rz_via_phase_gradient.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Programmable Rotation Gate Array",
+    "module": "qualtran.bloqs.rotations.programmable_rotation_gate_array",
+    "notebook": "qualtran/bloqs/rotations/programmable_rotation_gate_array.ipynb",
+    "documents": [
+      "qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArray"
+    ],
+    "native_notebook": "examples/notebooks/programmable_rotation_gate_array.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Two Bit FFFT Gate",
+    "module": "qualtran.bloqs.qft.two_bit_ffft",
+    "notebook": "qualtran/bloqs/qft/two_bit_ffft.ipynb",
+    "documents": [
+      "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT"
+    ],
+    "native_notebook": "examples/notebooks/two_bit_fermionic_fourier.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Approximate QFT",
+    "module": "qualtran.bloqs.qft.approximate_qft",
+    "notebook": "qualtran/bloqs/qft/approximate_qft.ipynb",
+    "documents": [
+      "qualtran.bloqs.qft.approximate_qft.ApproximateQFT"
+    ],
+    "native_notebook": "examples/notebooks/approximate_qft.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Textbook QFT",
+    "module": "qualtran.bloqs.qft.qft_text_book",
+    "notebook": "qualtran/bloqs/qft/qft_text_book.ipynb",
+    "documents": [
+      "qualtran.bloqs.qft.qft_text_book.QFTTextBook"
+    ],
+    "native_notebook": "examples/notebooks/textbook_qft.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Phase Gradient QFT",
+    "module": "qualtran.bloqs.qft.qft_phase_gradient",
+    "notebook": "qualtran/bloqs/qft/qft_phase_gradient.ipynb",
+    "documents": [
+      "qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient"
+    ],
+    "native_notebook": "examples/notebooks/phase_gradient_qft.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Optimal resource states for Phase Estimation by A. Luis and J. Pe\u0159ina",
+    "module": "qualtran.bloqs.phase_estimation.lp_resource_state",
+    "notebook": "qualtran/bloqs/phase_estimation/lp_resource_state.ipynb",
+    "documents": [
+      "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep",
+      "qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState"
+    ],
+    "native_notebook": "examples/notebooks/luis_perina_phase_window.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Textbook Quantum Phase Estimation",
+    "module": "qualtran.bloqs.phase_estimation.text_book_qpe",
+    "notebook": "qualtran/bloqs/phase_estimation/text_book_qpe.ipynb",
+    "documents": [
+      "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState",
+      "qualtran.bloqs.phase_estimation.text_book_qpe.TextbookQPE"
+    ],
+    "native_notebook": "examples/notebooks/textbook_phase_estimation.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Kaiser Window State for Quantum Phase Estimation",
+    "module": "qualtran.bloqs.phase_estimation.kaiser_window_state",
+    "notebook": "qualtran/bloqs/phase_estimation/kaiser_window_state.ipynb",
+    "documents": [
+      "qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState"
+    ],
+    "native_notebook": "examples/notebooks/kaiser_phase_window.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Qubitization Walk Operator",
+    "module": "qualtran.bloqs.qubitization.qubitization_walk_operator",
+    "notebook": "qualtran/bloqs/qubitization/qubitization_walk_operator.ipynb",
+    "documents": [
+      "qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator"
+    ],
+    "native_notebook": "examples/notebooks/qubitization_walk.ipynb"
+  },
+  {
+    "section": "Rotations",
+    "title": "Qubitization Phase Estimation",
+    "module": "qualtran.bloqs.phase_estimation.qubitization_qpe",
+    "notebook": "qualtran/bloqs/phase_estimation/qubitization_qpe.ipynb",
+    "documents": [
+      "qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE"
+    ],
+    "native_notebook": "examples/notebooks/qubitization_phase_estimation.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Block Encoding Interface",
+    "module": "qualtran.bloqs.block_encoding",
+    "notebook": "qualtran/bloqs/block_encoding/block_encoding.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.block_encoding_base.BlockEncoding"
+    ],
+    "native_notebook": "examples/notebooks/block_encoding_interface.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Unitary",
+    "module": "qualtran.bloqs.block_encoding.unitary",
+    "notebook": "qualtran/bloqs/block_encoding/unitary.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.unitary.Unitary"
+    ],
+    "native_notebook": "examples/notebooks/register_unitary_block_encoding.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Tensor Product",
+    "module": "qualtran.bloqs.block_encoding.tensor_product",
+    "notebook": "qualtran/bloqs/block_encoding/tensor_product.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.tensor_product.TensorProduct"
+    ],
+    "native_notebook": "examples/notebooks/register_tensor_product_block_encoding.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Product",
+    "module": "qualtran.bloqs.block_encoding.product",
+    "notebook": "qualtran/bloqs/block_encoding/product.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.product.Product"
+    ],
+    "native_notebook": "examples/notebooks/register_product_block_encoding.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Phase",
+    "module": "qualtran.bloqs.block_encoding.phase",
+    "notebook": "qualtran/bloqs/block_encoding/phase.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.phase.Phase"
+    ],
+    "native_notebook": "examples/notebooks/register_phase_block_encoding.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Linear Combination",
+    "module": "qualtran.bloqs.block_encoding.linear_combination",
+    "notebook": "qualtran/bloqs/block_encoding/linear_combination.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.linear_combination.LinearCombination"
+    ],
+    "native_notebook": "examples/notebooks/register_linear_combination.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Sparse Matrix",
+    "module": "qualtran.bloqs.block_encoding.sparse_matrix",
+    "notebook": "qualtran/bloqs/block_encoding/sparse_matrix.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix"
+    ],
+    "native_notebook": "examples/notebooks/register_sparse_matrix_block_encoding.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Sparse Matrix Hermitian",
+    "module": "qualtran.bloqs.block_encoding.sparse_matrix_hermitian",
+    "notebook": "qualtran/bloqs/block_encoding/sparse_matrix_hermitian.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.sparse_matrix_hermitian.SparseMatrixHermitian"
+    ],
+    "native_notebook": "examples/notebooks/register_hermitian_sparse_matrix.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "Chebyshev Polynomial",
+    "module": "qualtran.bloqs.block_encoding.chebyshev_polynomial",
+    "notebook": "qualtran/bloqs/block_encoding/chebyshev_polynomial.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial",
+      "qualtran.bloqs.block_encoding.chebyshev_polynomial.ScaledChebyshevPolynomial"
+    ],
+    "native_notebook": "examples/notebooks/register_chebyshev.ipynb"
+  },
+  {
+    "section": "Block Encoding",
+    "title": "LCU Select/Prepare Oracles",
+    "module": "qualtran.bloqs.block_encoding.lcu_block_encoding",
+    "notebook": "qualtran/bloqs/block_encoding/lcu_block_encoding.ipynb",
+    "documents": [
+      "qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding",
+      "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding",
+      "qualtran.bloqs.multiplexers.select_base.SelectOracle",
+      "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle",
+      "qualtran.bloqs.multiplexers.black_box_select.BlackBoxSelect",
+      "qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare"
+    ],
+    "native_notebook": "examples/notebooks/register_lcu_block_encoding.ipynb"
+  },
+  {
+    "section": "Optimization",
+    "title": "kXOR: Instance load Oracles",
+    "module": "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance",
+    "notebook": "qualtran/bloqs/optimization/k_xor_sat/load_kxor_instance.ipynb",
+    "documents": [
+      "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes"
+    ],
+    "native_notebook": "examples/notebooks/kxor_instance_loading.ipynb"
+  },
+  {
+    "section": "Optimization",
+    "title": "Planted Noisy kXOR - Kikuchi Guiding State",
+    "module": "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state",
+    "notebook": "qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state.ipynb",
+    "documents": [
+      "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState",
+      "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState"
+    ],
+    "native_notebook": "examples/notebooks/kikuchi_guiding_state.ipynb"
+  },
+  {
+    "section": "Optimization",
+    "title": "Planted Noisy kXOR: Kikuchi Adjacency List",
+    "module": "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list",
+    "notebook": "qualtran/bloqs/optimization/k_xor_sat/kikuchi_adjacency_list.ipynb",
+    "documents": [
+      "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.KikuchiNonZeroIndex"
+    ],
+    "native_notebook": "examples/notebooks/kikuchi_adjacency_list.ipynb"
+  },
+  {
+    "section": "Optimization",
+    "title": "Planted Noisy kXOR: Kikuchi Adjacency Matrix",
+    "module": "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix",
+    "notebook": "qualtran/bloqs/optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb",
+    "documents": [
+      "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix.KikuchiMatrixEntry"
+    ],
+    "native_notebook": "examples/notebooks/kikuchi_adjacency_matrix.ipynb"
+  },
+  {
+    "section": "Optimization",
+    "title": "Planted Noisy kXOR: Block-encoding the Kikuchi Matrix",
+    "module": "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding",
+    "notebook": "qualtran/bloqs/optimization/k_xor_sat/kikuchi_block_encoding.ipynb",
+    "documents": [
+      "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian"
+    ],
+    "native_notebook": "examples/notebooks/kikuchi_block_encoding.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Split / Join",
+    "module": "qualtran.bloqs.bookkeeping.split",
+    "notebook": "qualtran/bloqs/bookkeeping/split.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.split.Split",
+      "qualtran.bloqs.bookkeeping.join.Join"
+    ],
+    "native_notebook": "examples/notebooks/register_split_join.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Split2 / Join2",
+    "module": "qualtran.bloqs.bookkeeping.partition",
+    "notebook": "qualtran/bloqs/bookkeeping/split2.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.partition.Split2",
+      "qualtran.bloqs.bookkeeping.partition.Join2"
+    ],
+    "native_notebook": "examples/notebooks/register_split2_join2.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Alloc / Free",
+    "module": "qualtran.bloqs.bookkeeping.allocate",
+    "notebook": "qualtran/bloqs/bookkeeping/allocate.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.allocate.Allocate",
+      "qualtran.bloqs.bookkeeping.free.Free"
+    ],
+    "native_notebook": "examples/notebooks/register_allocate_free.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Partition",
+    "module": "qualtran.bloqs.bookkeeping.partition",
+    "notebook": "qualtran/bloqs/bookkeeping/partition.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.partition.Partition",
+      "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition"
+    ],
+    "native_notebook": "examples/notebooks/register_partition.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Cast",
+    "module": "qualtran.bloqs.bookkeeping.cast",
+    "notebook": "qualtran/bloqs/bookkeeping/cast.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.cast.Cast"
+    ],
+    "native_notebook": "examples/notebooks/register_cast.ipynb"
+  },
+  {
+    "section": "Bookkeeping",
+    "title": "Always",
+    "module": "qualtran.bloqs.bookkeeping.always",
+    "notebook": "qualtran/bloqs/bookkeeping/always.ipynb",
+    "documents": [
+      "qualtran.bloqs.bookkeeping.always.Always"
+    ],
+    "native_notebook": "examples/notebooks/register_always.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Prepare Uniform Superposition",
+    "module": "qualtran.bloqs.state_preparation.prepare_uniform_superposition",
+    "notebook": "qualtran/bloqs/state_preparation/prepare_uniform_superposition.ipynb",
+    "documents": [
+      "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition"
+    ],
+    "native_notebook": "examples/notebooks/prepare_uniform_superposition.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Apply to Lth Target",
+    "module": "qualtran.bloqs.multiplexers.apply_gate_to_lth_target",
+    "notebook": "qualtran/bloqs/multiplexers/apply_gate_to_lth_target.ipynb",
+    "documents": [
+      "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit"
+    ],
+    "native_notebook": "examples/notebooks/apply_gate_to_lth_target.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Apply Lth Bloq",
+    "module": "qualtran.bloqs.multiplexers.apply_lth_bloq",
+    "notebook": "qualtran/bloqs/multiplexers/apply_lth_bloq.ipynb",
+    "documents": [
+      "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq"
+    ],
+    "native_notebook": "examples/notebooks/apply_lth_bloq.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "QROM",
+    "module": "qualtran.bloqs.data_loading.qrom",
+    "notebook": "qualtran/bloqs/data_loading/qrom.ipynb",
+    "documents": [
+      "qualtran.bloqs.data_loading.qrom_base.QROMBase",
+      "qualtran.bloqs.data_loading.qrom.QROM"
+    ],
+    "native_notebook": "examples/notebooks/register_qrom.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "SelectSwapQROM",
+    "module": "qualtran.bloqs.data_loading.select_swap_qrom",
+    "notebook": "qualtran/bloqs/data_loading/select_swap_qrom.ipynb",
+    "documents": [
+      "qualtran.bloqs.data_loading.qrom_base.QROMBase",
+      "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM"
+    ],
+    "native_notebook": "examples/notebooks/register_select_swap_qrom.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Advanced QROM (aka QROAM) using clean ancilla",
+    "module": "qualtran.bloqs.data_loading.qroam_clean",
+    "notebook": "qualtran/bloqs/data_loading/qroam_clean.ipynb",
+    "documents": [
+      "qualtran.bloqs.data_loading.qrom_base.QROMBase",
+      "qualtran.bloqs.data_loading.qroam_clean.QROAMClean"
+    ],
+    "native_notebook": "examples/notebooks/register_qroam_clean.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Reflections",
+    "module": "qualtran.bloqs.reflections",
+    "notebook": "qualtran/bloqs/reflections/reflections.ipynb",
+    "documents": [
+      "qualtran.bloqs.reflections.prepare_identity.PrepareIdentity",
+      "qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare"
+    ],
+    "native_notebook": "examples/notebooks/prepared_state_reflections.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Multi-Paulis",
+    "module": "qualtran.bloqs.mcmt",
+    "notebook": "qualtran/bloqs/mcmt/multi_control_multi_target_pauli.ipynb",
+    "documents": [
+      "qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT",
+      "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX"
+    ],
+    "native_notebook": "examples/notebooks/multi_paulis.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Generic Select",
+    "module": "qualtran.bloqs.multiplexers.select_pauli_lcu",
+    "notebook": "qualtran/bloqs/multiplexers/select_pauli_lcu.ipynb",
+    "documents": [
+      "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU"
+    ],
+    "native_notebook": "examples/notebooks/select_pauli_lcu.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "State Preparation via Alias Sampling",
+    "module": "qualtran.bloqs.state_preparation.state_preparation_alias_sampling",
+    "notebook": "qualtran/bloqs/state_preparation/state_preparation_alias_sampling.ipynb",
+    "documents": [
+      "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling",
+      "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling"
+    ],
+    "native_notebook": "examples/notebooks/state_preparation_alias_sampling.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "State Preparation Using Rotations",
+    "module": "qualtran.bloqs.state_preparation.state_preparation_via_rotation",
+    "notebook": "qualtran/bloqs/state_preparation/state_preparation_via_rotation.ipynb",
+    "documents": [
+      "qualtran.bloqs.state_preparation.state_preparation_via_rotation.StatePreparationViaRotations"
+    ],
+    "native_notebook": "examples/notebooks/state_preparation_via_rotation.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Generalized Quantum Signal Processing",
+    "module": "qualtran.bloqs.qsp.generalized_qsp",
+    "notebook": "qualtran/bloqs/qsp/generalized_qsp.ipynb",
+    "documents": [
+      "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP"
+    ],
+    "native_notebook": "examples/notebooks/generalized_signal_processing.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Hamiltonian Simulation by Generalized Quantum Signal Processing",
+    "module": "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp",
+    "notebook": "qualtran/bloqs/hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb",
+    "documents": [
+      "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP"
+    ],
+    "native_notebook": "examples/notebooks/hamiltonian_simulation_by_gqsp.ipynb"
+  },
+  {
+    "section": "Other",
+    "title": "Guided Hamiltonian Problem",
+    "module": "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian",
+    "notebook": "qualtran/bloqs/hamiltonian_simulation/guided_hamiltonian.ipynb",
+    "documents": [
+      "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian",
+      "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation"
+    ],
+    "native_notebook": "examples/notebooks/guided_hamiltonian.ipynb"
+  }
+]
