@@ -68,3 +68,18 @@ larger state vectors nor symbolic runtime angles nor arbitrary Python execution.
 
 Approval requested: the ordinary-root capacity increase and source-workflow
 implementation above, with specialized profiles retained.
+
+## Approved internal boundary
+
+Compiler register verification, expansion and selection accept a private explicit
+effect ceiling. Existing callers default to 4096, preserving the combined node
+budget. Native ordinary capture requests 16384 effects and retains a separate
+4096-node structural/expression limit. Source AST, loop and helper call limits
+remain unchanged. Services forwards this ceiling only for already checked Python
+programs; Qmod and direct register callers retain the default. Capturing any QPE
+call restores the existing whole-program 4096 admission before the graph leaves
+the frontend. No source flag or public serialized field is added.
+
+Conformance covers exact effect boundaries, default refusal, repeated capture,
+and QPE before/after larger regions. Domain implementation lands separately from
+the Services integration.
