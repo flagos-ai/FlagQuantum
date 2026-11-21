@@ -22,6 +22,10 @@ from sympy import Symbol
 from examples.algorithms.addition_catalog import addition_examples
 from examples.algorithms.addition_decomposition import addition_program, addition_score
 from examples.algorithms.comparison_catalog import comparison_examples
+from examples.algorithms.comparison_decomposition import (
+    comparison_catalog_program,
+    comparison_score,
+)
 from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
@@ -637,6 +641,8 @@ def score(component: object) -> object:
         decomposed = duplicate_score(name(component), ports)
     if decomposed is None:
         decomposed = permutation_score(name(component), ports, attributes(component))
+    if decomposed is None:
+        decomposed = comparison_score(name(component), ports, attributes(component))
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -661,7 +667,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Addition, subtraction, bitwise, negation, sign conversion, sorting, duplicate detection and permutation instances retain their immediate child graphs. "
+        "Addition, subtraction, bitwise, negation, sign conversion, sorting, duplicate detection, permutation and comparison instances retain their immediate child graphs. "
         "Other diagrams show atomic typed interfaces. Contextual child nodes "
         "preserve native helper boundaries. Symbolic child declarations have "
         "no executable body. Resource models retain separate evidence. "
@@ -715,10 +721,14 @@ def decomposition(component: object) -> ProgramRecord | None:
         record = sorting_catalog_program(name(component), ports, attributes(component))
     if record is None:
         record = duplicate_catalog_program(name(component), ports)
+    if record is None:
+        record = permutation_catalog_program(
+            name(component), ports, attributes(component)
+        )
     return (
         record
         if record is not None
-        else permutation_catalog_program(name(component), ports, attributes(component))
+        else comparison_catalog_program(name(component), ports, attributes(component))
     )
 
 
