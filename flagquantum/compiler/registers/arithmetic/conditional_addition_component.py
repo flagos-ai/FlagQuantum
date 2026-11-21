@@ -5,16 +5,12 @@
 
 """Compose conditional sum/difference through shared typed arithmetic calls."""
 
-from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.register_verifier import executable_register_width
-from ....core.ir.program.registers import Register, RegisterType
-from ....core.ir.program.signatures import Signature
+from ....core.ir.program.registers import RegisterType
 from ..bits.bitwise_component_control import controlled_bitwise_word_program
-from ..component_builder import ComponentProgramBuilder
-from ..component_gate_function import bit_gate_function
 from .addition_component import addition_component_program
+from .conditional_addition_graph import conditional_addition_graph
 
 
 def conditional_addition_program(
@@ -42,22 +38,6 @@ def conditional_addition_program(
         right_dtype=target_dtype,
     )
     complement = controlled_bitwise_word_program(target_dtype, "bitwise_not")
-    bit = quantum_bit_type()
-    flip = bit_gate_function(
-        "conditional_x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
+    return conditional_addition_graph(
+        addition, complement, add_when_control_is_on=add_when_control_is_on
     )
-    builder = ComponentProgramBuilder(
-        Signature.build_from_dtypes(ctrl=bit, a=a_dtype, b=target_dtype), (flip,)
-    )
-    control, a, b = (builder.inputs[name] for name in ("ctrl", "a", "b"))
-    if add_when_control_is_on:
-        control = builder.call_dict(flip.name, {"q": control})["q"]
-    outputs = builder.call_program(complement, {"ctrl": control, "x": b})
-    control, b = outputs["ctrl"], outputs["x"]
-    outputs = builder.call_program(addition, {"a": a, "b": b}, entry="conditional_add")
-    a, b = outputs["a"], outputs["b"]
-    outputs = builder.call_program(complement, {"ctrl": control, "x": b})
-    control, b = outputs["ctrl"], outputs["x"]
-    if add_when_control_is_on:
-        control = builder.call_dict(flip.name, {"q": control})["q"]
-    return builder.finalize({"ctrl": control, "a": a, "b": b})
