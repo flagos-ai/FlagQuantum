@@ -199,3 +199,17 @@ using the existing exact GF(2) operator checks. Its reported logical two-qubit
 depth counts CX and SWAP equally, whereas the diagnostic selector expands each
 SWAP to weight three. That generic depth is not the delivered native CZ metric,
 and must not be substituted for the application measurements above.
+
+
+## Cold-process import validation
+
+The synchronized head's coverage shard rejected the collector runner's
+package-level submodule import. The import worked when executing the runner,
+but the existing benchmark import guard checks attributes of a freshly imported
+package without loading its children. The runner now imports both owning modules
+by their complete paths, so it no longer relies on package attributes populated
+by an earlier import. The guard and production compiler are unchanged. A fresh
+process passes all four import-policy tests and all 42 native physical-evidence
+tests. Historical reports retain their recorded runner hashes; they describe
+the runner revisions that actually produced them. Full synchronized CI remains
+required before merge.

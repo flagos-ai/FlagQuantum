@@ -19,8 +19,8 @@ from typing import Any
 from unittest.mock import patch
 
 import flagquantum
-from flagquantum.compiler.artifacts import artifact_compilation
-from flagquantum.compiler.lowering import native_block_optimization
+import flagquantum.compiler.artifacts.artifact_compilation as artifact_compilation
+import flagquantum.compiler.lowering.native_block_optimization as native_block_optimization
 
 _BASE = "2d78133a1f5a7d234acbb128724ccf2674e2eeb8"
 _HARNESS = "9aa9260920984e2ca05bcb293abb885fccd9c144"
