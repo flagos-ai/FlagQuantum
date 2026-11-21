@@ -46,3 +46,27 @@ Discovery leaves the example factory unexecuted. The default root is the tracked
 native algorithms package. Both native and original test filename conventions
 are recognized. Run `tests/unit/test_development_discovery.py` to verify the
 complete source finder and native catalog paths.
+
+`library_call_graph.py` consumes lazy example records and delegates a shared
+weighted graph traversal to Compiler. Supply the domain's declaration callback,
+terminal predicate and existing resource generalizers, or use
+`resource_library_call_graph` for the built-in native resource policy. The result is native
+adjacency, preserving isolated roots and shared nodes. Run
+`tests/unit/test_library_call_graph.py` for the native profile and complete frozen
+393-example graph comparison. See `LIBRARY_CALL_GRAPH_FILE_AUDIT.md` for the
+concrete-root policy, fresh allocator behavior and model/physical distinction.
+
+A small model-only library query can reuse the existing resource example.
+
+```python
+from examples.algorithms.resource_call_graphs import declared_example
+from flagquantum.testing.component_examples import ComponentExample
+from tools.development.library_call_graph import library_call_graph
+
+root, declarations = declared_example()
+example = ComponentExample(lambda: root, "declared_program", type(root))
+graph = library_call_graph(
+    [example], lambda node, symbols: declarations.get(node, {})
+)
+assert len(graph[root]) == 3
+```
