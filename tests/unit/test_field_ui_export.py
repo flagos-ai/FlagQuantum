@@ -144,7 +144,7 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
         "gf2_poly_multiply_by_constant"
     )
     children = list((tmp_path / "ComponentFunction").glob("*.json"))
-    assert len(children) == 8
+    assert len(children) == 221
     assert len(list(tmp_path.rglob("*.json"))) == 22 + len(children)
     for identifier in native.INSTANCES:
         record = json.loads(
@@ -154,7 +154,18 @@ def test_complete_fresh_outputs_and_original_duplicate_factories(
         )
         assert record["msd"] is not None
         assert record["msd"] == native.score(identifier)
-        if identifier in {"gf16_addition", "gf16_add_k"}:
+        if identifier in {
+            "gf16_addition",
+            "gf16_add_k",
+            "gf16_multiplication",
+            "gf2_multiply_by_constant",
+            "gf2_poly_multiply_by_constant",
+            "multiplypolybyoneplusxk",
+            "binarypolynomialmultiplication",
+            "gf2shiftright",
+            "gf2mulviakaratsuba",
+            "gf2shiftleft",
+        }:
             assert record["callees"]
             for child in record["callees"]:
                 assert (tmp_path / child["name"] / child["filename"]).is_file()

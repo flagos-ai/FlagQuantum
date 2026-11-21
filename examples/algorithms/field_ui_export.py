@@ -7,7 +7,7 @@
 
 Run ``python -m examples.algorithms.field_ui_export``. Existing numerical codecs
 and native catalogs own field identity, coefficient order and signatures. This
-UI workflow draws stored addition graphs and atomic interfaces without
+UI workflow draws stored addition/product graphs and atomic interfaces without
 allocating simulation state.
 """
 
@@ -20,6 +20,7 @@ from typing import TypeAlias
 from sympy import Symbol, symbols
 
 from examples.algorithms.component_ui_dependencies import (
+    ChildPresentation,
     ComponentFunction,
     dependency_graph,
 )
@@ -36,6 +37,11 @@ from examples.algorithms.field_polynomial_catalog import (
     polynomial_addition_examples,
     polynomial_view_examples,
 )
+from examples.algorithms.field_product_decomposition import (
+    field_product_child_decomposition,
+    field_product_score,
+)
+from examples.algorithms.field_product_definitions import field_product_catalog_program
 from examples.algorithms.field_square_catalog import field_square_examples
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
@@ -355,15 +361,34 @@ def score(component: object) -> object:
     decomposed = field_addition_score(
         name(component), signature(component), attributes(component)
     )
+    if decomposed is None:
+        decomposed = field_product_score(
+            name(component), signature(component), attributes(component)
+        )
     if decomposed is not None:
         return decomposed
     return register_interface_score(signature(component), name(component))
 
 
 def decomposition(component: object) -> ProgramRecord | None:
-    """Traverse stored field addition through its authoritative Compiler owner."""
-    return field_addition_catalog_program(
+    """Traverse stored field arithmetic through its authoritative Compiler owners."""
+    record = field_addition_catalog_program(
         name(component), signature(component), attributes(component)
+    )
+    return (
+        record
+        if record is not None
+        else field_product_catalog_program(
+            name(component), signature(component), attributes(component)
+        )
+    )
+
+
+def _child_presentation(
+    record: ProgramRecord, entry: str, root: object
+) -> ChildPresentation | None:
+    return field_product_child_decomposition(
+        record, entry, signature(root), attributes(root)
     )
 
 
@@ -376,9 +401,11 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     owner = _instance(documentation.examples[0].make())[3]
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Concrete binary addition retains its complete stored decomposition. "
+        "Concrete binary addition and multiplication retain their complete stored decompositions. "
         "Other diagrams show atomic typed interfaces. Execution and resource "
         "estimates retain separate evidence. "
+        "Karatsuba's linear inverse retains the native exact graph and a dagger label. "
+        "Its frozen-source ignored-adjoint exception is recorded in FIELD_MULTIPLICATION_FILE_AUDIT.md. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
 
@@ -423,6 +450,7 @@ def export_example(destination: Path) -> None:
             INSTANCES,
             owner=lambda component: name(component) + "/" + filename(component),
             program=decomposition,
+            child_presentation=_child_presentation,
         ),
         name=name,
         attributes=attributes,

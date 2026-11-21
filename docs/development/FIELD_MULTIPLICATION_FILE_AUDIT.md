@@ -524,3 +524,96 @@ fifteen-row exact-graph receipt, the accepted regression/integration/Cirq logs,
 and separate strict/format/scope/architecture/IR/API logs. Earlier failing runs
 are preserved as diagnostics. The original source blobs, Qualtran 0.7.0 and
 Kickmix 0.1 Simulator are reverified.
+
+## Complete multiplication catalog dependency closure — 2026-11-22
+
+The complete locked `gf2_multiplication.py` notebook group now uses the existing
+Compiler product owners through the normal field catalog exporter. All nine
+original factories retain their metadata. Eight concrete factory contexts
+represent seven distinct instances, including the duplicated constant factory.
+The symbolic product retains its original `DecomposeTypeError`.
+
+`field_product_definitions.py` selects the existing quadratic, constant,
+polynomial, monomial and Karatsuba owners from typed signatures and original
+parameters. It qualifies complete reachable definitions by structural equality.
+`field_product_decomposition.py` composes existing partition, Split/Join,
+allocation, CX/CCX and adjoint glyphs. The exporter uses these stored Programs
+and dependency presentations. No Compiler, Core, Simulation, binding or numerical
+owner changes are part of this batch. Users continue with `circuit.append(op)`.
+
+### Recursive graph and drawing evidence
+
+Every reachable source definition is visited through the original composite's
+instance indices. Ordered calls, named operands, outputs, register width, shape
+and side are compared against the stored Program. Across factory contexts there
+are 75 exact graphs, 149 original atomic/refusal contexts and one retained
+ignored-adjoint defect. All 75 comparable fresh source drawings agree.
+
+The field catalog publishes 221 contextual children, an increase of 213. Its 67
+qualified non-root definitions include 66 original graph matches and one native
+exact linear inverse. Labels are qualified only after whole-definition matching.
+Mutation of CX primitives and CCX operand order rejects affected qualified
+labels. Atomic source refusals retain their interface presentation.
+
+The one native inverse is explicitly named `SynthesizeLRCircuit†`. The frozen
+source ignores its adjoint flag and emits the forward body in both directions.
+The existing native exact inverse and its drawing therefore differ at this
+Karatsuba descendant. Its original source remains unchanged. This batch does
+not claim source equality for that descendant.
+
+Five nominal Join views retain native finite-field descriptors where the
+original signature uses `QAny`. Their widths, operands, side and physical calls
+agree. This type-view adaptation is separate from the inverse defect.
+`GF2ShiftRight` uses multiplication by x**k, and `GF2ShiftLeft` uses x**(-k),
+matching the frozen source.
+
+### Primitive counts and independent models
+
+These fresh measurements use atomic CX/CCX before T decomposition. Virtual
+aliases and returned register ownership are retained. Earlier generic capture
+SWAP overhead above uses a different physical materialization basis.
+
+| Factory context | Measured CX | Measured CCX | Original model Clifford | Original model Toffoli | Original total-T estimate |
+| --- | --- | --- | --- | --- | --- |
+| GF16 product | 8 | 16 | 8 | 16 | 64 |
+| Either constant-five factory | 2 | 0 | 2 | 0 | 0 |
+| One-plus polynomial product | 106 | 17 | 106 | 17 | 68 |
+| Binary polynomial product | 88 | 17 | 88 | 17 | 68 |
+| Right shift | 3 | 0 | 3 | 0 | 0 |
+| Karatsuba product | 83 | 17 | 83 | 17 | 68 |
+| Left shift | 3 | 0 | 3 | 0 | 0 |
+
+Every measured stream contains zero explicit T-family and measurement gates.
+The source total-T estimates are analytical values. Allocation/free event
+receipts record wire identities and instruction offsets. RIGHT product results
+are logical outputs. Temporary padding cleanup remains a separate ownership
+obligation. Existing complete complex-amplitude, applicable branch, append,
+spectator and temporary-work checks are rerun without changing their owners.
+
+### Batch verification and retained boundaries
+
+The focused graph tests pass 10 cases. Concentrated field execution/reference
+regression passes 262 cases without skips or warnings. Local integration passes
+29 cases. Strict typing passes all five changed Python files. Black, Ruff,
+integration scope, architecture, multi-level IR and public API checks pass.
+Four original source/test/notebook assets match their frozen Git blob hashes.
+Qualtran 0.7.0 and Kickmix 0.1 with Simulator are verified. The nine accepted
+execution-test files and production execution owners are unchanged from
+`de6e8f22c`.
+
+The first complete catalog regression stopped with ENOSPC. Its terminal failure
+log is preserved. Only the failed generated export and three verified old,
+untracked, regenerable mypy caches were removed before retrying. Cache cleanup
+has a separate receipt. No source or archived experiment was removed.
+
+Receipts use the `g2-field-product-ui-*-20261122` prefix under the reference
+evidence directory. Existing source erasure, serialization, generic dispatch and
+SDK boundaries remain under Q-0519/Q-0520. Q-0120 and parent acceptance counts
+remain open and unchanged. This catalog closure adds no acceptance claim for
+those retained source boundaries.
+
+The recovered complete catalog regression passes 759 cases with three existing
+selection exclusions and fourteen existing notebook escape warnings in 388.67
+seconds. Combined inventory is 4046 JSON files, 4045 diagrams, 234 documents,
+3692 contextual children, 82 decomposed roots and 271 atomic interfaces. The 412
+qualified descendants include the explicitly distinct native exact inverse.
