@@ -162,3 +162,14 @@ ordered Markdown links, per-file atomic exports and batch failure summaries.
 Rendering completes before destination writes. Each destination replacement
 is atomic, and cross-file replacement can leave one updated destination. Markdown image resource files retain the original
 exporter's separate-resource limitation. See NOTEBOOK_EXECUTION_FILE_AUDIT.md.
+
+`reference_pages.py` owns internal module/class documentation records.
+`reference_links.py` owns Markdown reference links and alias descriptions, while
+`reference_context.py` supplies the current mappings to each writer. For a
+minimal edit path, run
+`tests/unit/test_reference_page_links.py::test_native_page_links_reuse_existing_equal_content_writer`.
+It writes a native circuit documentation reference through WriteIfDifferent and
+checks that an unchanged second render preserves the timestamp. Optional Griffe
+and Markdown anchor dependencies follow the frozen documentation environment.
+See REFERENCE_PAGE_LINKS_FILE_AUDIT.md for the cross-document source cache defect
+and the remaining renderer/package-walker scope.
