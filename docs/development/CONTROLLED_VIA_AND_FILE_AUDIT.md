@@ -144,3 +144,25 @@ whole dependency audit retains 687 findings and zero in changed paths. Native
 Kickmix 0.1 Simulator and Qualtran 0.7.0 were verified. Receipts are
 `g2-field-control-*` in the reference workspace. Existing generic foreign
 serialization, nonbinary and symbolic physical execution boundaries remain.
+
+## Recursive controlled-X presentation, November 22
+
+The Arithmetic publisher's shared control child provider qualifies the complete
+MultiControlX -> ControlledViaAnd(X) -> CtrlSpecAnd -> MultiAnd chain, including
+measured erasure. QBit control arrays retain their row-major activation order.
+Uniform activation and declared owning equality/control metadata supply finite
+constructor candidates. Qualification compares the complete reachable native
+body, including every phase, feedback condition and operand. It reuses the
+existing basic-gate predicate/conjunction providers and the existing controlled
+and Pauli Drawer primitives. The controlled-X wrapper is selected from the
+actual native parent call, retaining its exact definitions and sharing.
+
+All activation bit patterns at control counts two, three and four pass complete
+recursive source-call and fresh-drawing comparison. Mutating measured feedback
+rejects MultiControlX, ControlledViaAnd, CtrlSpecAnd-adjoint and MultiAnd-adjoint
+qualification. The original six predicate/conjunction adjoint contexts in the
+comparison file now have their actual source labels. The twelve concrete
+comparison roots require no synthesized alternative implementation. This
+qualification covers their controlled-X dependency, while other source control
+forms keep their existing providers or native generic presentation. Existing
+shared control numerical/resource acceptance remains with its Compiler owner.
