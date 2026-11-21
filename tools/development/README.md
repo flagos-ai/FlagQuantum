@@ -173,3 +173,14 @@ checks that an unchanged second render preserves the timestamp. Optional Griffe
 and Markdown anchor dependencies follow the frozen documentation environment.
 See REFERENCE_PAGE_LINKS_FILE_AUDIT.md for the cross-document source cache defect
 and the remaining renderer/package-walker scope.
+
+`reference_signatures.py` formats static Python call signatures from Griffe
+objects, preserving source decorator and overload behavior.
+`reference_docstrings.py` renders canonical Griffe Google-style sections and
+reuses the accepted reference parser. Start with
+`tests/unit/test_reference_signatures.py::test_native_signature_uses_existing_reference_link_writer`
+for the full signature-to-linked-file path. Run the signature and docstring
+files together with test_reference_page_links.py after edits. The full frozen
+340-class docstring corpus is compared in test_reference_docstrings.py. See
+REFERENCE_RENDERING_FILE_AUDIT.md for preserved source quirks and explicit native
+object-name mappings.
