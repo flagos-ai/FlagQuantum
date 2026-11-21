@@ -757,3 +757,44 @@ The preceding Chemistry execution-family regression passes 1098 checks.
 Strict typing of both new files, Black, Ruff, Integration scope, architecture,
 IR, public API baseline and whitespace checks pass. The isolated complete
 catalog module entry is also exercised.
+
+## Complete catalog navigation ownership
+
+The combined catalog now routes every one of its 359 factory references to an
+existing component record. The existing `filename` string supports a POSIX
+relative path from its documentation folder. Shared exporter opt-in
+`relative_example_paths=True` obtains that path from the supplied component
+name and filename callbacks. Its default keeps source-compatible domain export
+bytes. A cross-folder WordSwap workflow exercises this shared routing directly.
+Node attributes, filenames, score payloads and dependency references retain
+their existing providers and encoding.
+
+Arithmetic and Block Encoding accept the existing documentation-name callback
+at their developer export entry. The combined catalog supplies
+`arithmetic.Product` and `block_encoding.Product` for the two distinct Product
+classes. Both authored domain documents are present. Their examples point to
+`../Product/<original-hash>.json`. The Subtract composite example similarly
+points to `../CompositeBloq/<original-hash>.json`. All remaining navigation
+paths resolve, including the original repeated factory names and scoped
+projectile identities. Default standalone exports retain both original naming
+witnesses for immutable source comparisons.
+
+The fresh combined entry now produces 354 JSON files, 234 distinct qualified
+class documents and 353 non-null atomic interfaces. All 110 notebook titles,
+237 document references and 359 factory display names retain source order.
+The two Product documentation labels are deliberate native ownership
+adaptations. The complete menu also checks original example docstrings.
+An actual-factory audit found three missing ModExp descriptions, now supplied
+by the native modular catalog. All 359 example descriptions equal the frozen
+source. Native records continue to own their lazy factories and descriptions.
+
+Concentrated regression passes 407 checks with fourteen existing parser
+warnings and zero skips. Three checks are deselected in that run. The two full
+source-catalog export profiles are separately rerun and pass with forty-four
+existing reference warnings. They compare all 3317 output files, including the
+authenticated actual-source score replay. The earlier actual Jupyter execution
+evidence is reused. Strict typing of eight changed Python files, Black, Ruff,
+Integration scope, architecture, IR, public API baseline and whitespace checks
+pass. The actual isolated combined module and complete description audit pass.
+Full native dependency decompositions, per-gate glyph parity and fresh native
+dependency-node coverage remain open under Q-0120.

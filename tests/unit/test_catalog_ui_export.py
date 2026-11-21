@@ -1,4 +1,4 @@
-"""Combined catalog publication, first-file behavior and frozen navigation gap."""
+"""Combined catalog publication, domain documentation and source navigation witnesses."""
 
 import importlib
 import json
@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 
+from examples.algorithms import arithmetic_ui_export, block_encoding_ui_export
 from examples.algorithms import catalog_ui_export as native
 from tests.unit.test_chemistry_ui_export import originals as originals
 from tests.unit.test_component_ui_export import source_metadata
@@ -32,7 +33,7 @@ def test_fresh_all_groups_and_first_file_outputs(tmp_path: Path) -> None:
         Path("navigation.json"),
     }
     assert len(list(combined.rglob("*.json"))) == 354
-    assert len(list(combined.rglob("docs.txt"))) == 233
+    assert len(list(combined.rglob("docs.txt"))) == 234
     for path, expected in expected_files.items():
         assert (combined / path).read_bytes() == expected
         if path.suffix == ".json":
@@ -41,7 +42,7 @@ def test_fresh_all_groups_and_first_file_outputs(tmp_path: Path) -> None:
             assert data["callees"] == []
 
 
-def test_complete_navigation_and_original_composite_folder_gap(
+def test_complete_navigation_and_original_naming_witnesses(
     tmp_path: Path, originals: tuple[Any, dict[str, Any]]
 ) -> None:
     native.export_example(tmp_path)
@@ -55,12 +56,22 @@ def test_complete_navigation_and_original_composite_folder_gap(
         for spec in specs:
             actual_docs = navigation[section][spec.title]
             assert [row["name"] for row in actual_docs] == [
-                doc.bloq_cls.__name__ for doc in spec.bloq_specs
+                (
+                    ("arithmetic." if section == "Arithmetic" else "block_encoding.")
+                    + "Product"
+                    if doc.bloq_cls.__name__ == "Product"
+                    else doc.bloq_cls.__name__
+                )
+                for doc in spec.bloq_specs
             ]
             for row, doc in zip(actual_docs, spec.bloq_specs, strict=True):
                 documents += 1
+                assert (tmp_path / row["name"] / "docs.txt").is_file()
                 assert [e["name"] for e in row["examples"]] == [
                     e.name for e in doc.examples
+                ]
+                assert [e["example_docstring"] for e in row["examples"]] == [
+                    e.docstring for e in doc.examples
                 ]
                 for example in row["examples"]:
                     factories += 1
@@ -83,8 +94,57 @@ def test_complete_navigation_and_original_composite_folder_gap(
     composite = subtraction._sub_symp_decomposition.make()
     assert type(composite).__name__ == "CompositeBloq"
     filename = metadata["bloq_filename"](composite)
-    assert missing == [("Subtract", "sub_symp_decomposition", filename)]
+    assert missing == []
     assert (tmp_path / "CompositeBloq" / filename).is_file()
+    composite_reference = next(
+        example
+        for row in navigation["Arithmetic"]["Subtraction"]
+        for example in row["examples"]
+        if example["name"] == "sub_symp_decomposition"
+    )
+    assert composite_reference["filename"] == "../CompositeBloq/" + filename
+    for domain, section in (
+        ("arithmetic", "Arithmetic"),
+        ("block_encoding", "Block Encoding"),
+    ):
+        document = next(
+            doc
+            for docs in navigation[section].values()
+            for doc in docs
+            if doc["name"] == domain + ".Product"
+        )
+        assert all(
+            example["filename"].startswith("../Product/")
+            for example in document["examples"]
+        )
+
+    # Default domain exports retain the exact frozen navigation witnesses.
+    compatibility = tmp_path / "source-compatible"
+    arithmetic_ui_export.export_example(compatibility)
+    original_menu = json.loads((compatibility / "navigation.json").read_text())
+    original_composite = next(
+        example
+        for doc in original_menu["Arithmetic"]["Subtraction"]
+        for example in doc["examples"]
+        if example["name"] == "sub_symp_decomposition"
+    )
+    assert original_composite["filename"] == filename
+    assert not (compatibility / "Subtract" / filename).exists()
+    arithmetic_doc = (compatibility / "Product/docs.txt").read_text()
+    block_encoding_ui_export.export_example(compatibility)
+    assert (compatibility / "Product/docs.txt").read_text() == arithmetic_doc
+    assert (tmp_path / "arithmetic.Product/docs.txt").read_text() == arithmetic_doc
+    block_doc = next(
+        doc
+        for _, specs in block_encoding_ui_export.sections()
+        for spec in specs
+        for doc in spec.component_specs
+        if block_encoding_ui_export.documentation_name(doc) == "Product"
+    )
+    assert (
+        tmp_path / "block_encoding.Product/docs.txt"
+    ).read_text() == block_encoding_ui_export.documentation_text(block_doc)
+    assert (tmp_path / "block_encoding.Product/docs.txt").read_text() != arithmetic_doc
 
 
 def test_rerun_preserves_nodes_and_refreshes_complete_navigation(

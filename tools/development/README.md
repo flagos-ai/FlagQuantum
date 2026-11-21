@@ -595,3 +595,12 @@ references. Existing node and documentation files retain first-file behavior.
 The audit records the original cross-domain Product documentation collision and
 Subtract composite navigation gap. Its 353 fresh diagrams are atomic interfaces;
 complete dependency decomposition graphs retain separate acceptance evidence.
+
+The combined catalog routes all 359 example references through relative
+filenames to their actual component records. Product documentation is qualified
+as `arithmetic.Product` and `block_encoding.Product`, giving both classes their
+own document. It produces 234 documents, 353 fresh atomic diagrams and 354 JSON
+files. Standalone domain exports keep their source-compatible default naming.
+All original example descriptions are retained, including the three ModExp
+factory docstrings. Shared exporter `relative_example_paths=True` uses the
+existing name and filename callbacks for cross-folder documentation groups.

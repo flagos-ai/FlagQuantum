@@ -5,11 +5,13 @@
 """Export all native catalog interfaces through their existing domain owners.
 
 Run ``python -m examples.algorithms.catalog_ui_export``. The catalog retains
-source metadata collisions and atomic interface scope. Complete decompositions
+source node metadata collisions and atomic interface scope. Complete decompositions
 and per-gate glyphs have separate acceptance evidence.
 """
 
 import json
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 
 from examples.algorithms import (
@@ -24,15 +26,43 @@ from examples.algorithms import (
     register_gate_ui_export,
     rotations_ui_export,
 )
+from flagquantum.testing.component_examples import ComponentDocumentation
 
-EXPORTERS = (
+
+def _product_documentation_name(
+    domain: str,
+    provider: Callable[[ComponentDocumentation[object]], str],
+    documentation: ComponentDocumentation[object],
+) -> str:
+    label = provider(documentation)
+    # The two original Product classes belong to different domains.
+    return f"{domain}.{label}" if label == "Product" else label
+
+
+EXPORTERS: tuple[Callable[[Path], None], ...] = (
     register_gate_ui_export.export_example,
     chemistry_ui_export.export_example,
-    arithmetic_ui_export.export_example,
+    partial(
+        arithmetic_ui_export.export_example,
+        documentation_name=partial(
+            _product_documentation_name,
+            "arithmetic",
+            arithmetic_ui_export.documentation_name,
+        ),
+        relative_example_paths=True,
+    ),
     modular_ui_export.export_example,
     field_ui_export.export_example,
     rotations_ui_export.export_example,
-    block_encoding_ui_export.export_example,
+    partial(
+        block_encoding_ui_export.export_example,
+        documentation_name=partial(
+            _product_documentation_name,
+            "block_encoding",
+            block_encoding_ui_export.documentation_name,
+        ),
+        relative_example_paths=True,
+    ),
     optimization_ui_export.export_example,
     bookkeeping_ui_export.export_example,
     other_ui_export.export_example,
@@ -45,7 +75,9 @@ def export_example(destination: Path) -> None:
     Each domain owns its identities, metadata, documentation and fresh scores.
     Their generated navigation fragments are combined after the domain exports.
     A failed domain leaves the earlier files and its current partial navigation,
-    matching the existing sequential developer publication boundary.
+    matching the existing sequential developer publication boundary. Product
+    documentation is domain-qualified. Relative paths route examples to their
+    actual component folders while retaining their original node filenames.
     """
     navigation: dict[str, object] = {}
     for export in EXPORTERS:

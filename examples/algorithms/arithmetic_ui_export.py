@@ -12,7 +12,7 @@ the existing compiler components and ordinary ``circuit.append(op)``.
 """
 
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -638,7 +638,14 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
     return (("Arithmetic", tuple(grouped.values())),)
 
 
-def export_example(destination: Path) -> None:
+def export_example(
+    destination: Path,
+    *,
+    documentation_name: Callable[
+        [ComponentDocumentation[object]], str
+    ] = documentation_name,
+    relative_example_paths: bool = False,
+) -> None:
     """Publish the complete Arithmetic catalog with fresh typed port diagrams."""
     export_component_ui(
         destination,
@@ -650,6 +657,7 @@ def export_example(destination: Path) -> None:
         score=score,
         documentation_name=documentation_name,
         documentation_text=documentation_text,
+        relative_example_paths=relative_example_paths,
     )
 
 
