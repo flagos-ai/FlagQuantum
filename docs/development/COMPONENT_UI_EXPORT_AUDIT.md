@@ -981,3 +981,38 @@ or interrupted temporary outputs created by this continuation were reclaimed,
 with source and evidence logs retained. The complete concentrated regression
 then passed. Q-0120 remains open for broader catalog dependencies and recursive
 source identity/glyph parity, alongside the previously recorded source failures.
+
+## Recursive Basic Gates source presentation
+
+The complete successful Basic Gates source call chains now qualify descendant
+CSwap, CSwapApprox, MultiTargetCNOT, MultiAnd and CtrlSpecAnd presentations,
+including their measured adjoints. Compiler definition matching ignores only
+reachable function names and unreachable definitions. Port metadata, helper
+sharing, SSA, call order, operands, phases, feedback, allocation and physical
+context remain literal. Only matching stored bodies reuse existing constructor
+Programs and source-specific Drawer symbols. Unknown functions retain native
+presentation and contextual owner/entry identities.
+
+The unchanged locked source supplies 39 decomposable definitions across eighteen
+successful roots, including twenty-one descendants. Every ordered call and
+operand connection matches, and all twenty-one recursive drawings match fresh
+source geometry and symbols after the previously documented SSA/boundary dtype
+normalization. Original atomic decomposition exceptions and large-rendering
+IndexError witnesses are retained. Three native large-swap extensions are
+checked separately. No cross-root filename equivalence is claimed.
+
+The isolated combined module retains 737 JSON files, 234 documents and 736
+diagrams. Twenty-two child files carry qualified operation labels, including
+the additional fanout child under a native large-swap extension. The twenty-one
+source-success descendant drawings remain the original-success comparison set. Concentrated regression passes 463 cases with fourteen existing
+warnings, three deselections and zero skips. Strict typing of five files, Black,
+Ruff, team scope, architecture, IR and public API checks pass. Accepted 185-case
+execution/control/unary evidence is reused through complete literal stored-body
+identity. No new dense execution of large display fixtures is claimed. Drawing
+adds no physical instruction, measurement or workspace. Actual primitive counts
+and analytical source resource models remain separately owned evidence.
+
+Basic Gates successful recursive presentation is qualified within its native
+context. Broader catalog decomposition and dependency coverage remains in
+Q-0120, together with original source failure witnesses and the recorded
+environment, dashboard and pending contract gaps.
