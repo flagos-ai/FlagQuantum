@@ -215,3 +215,56 @@ serialization exceptions, source round-trip assumption loss and original
 execution rejects unknown cycle values and symbolic widths. Accepted declaration
 and model support is independent of this restriction. The frozen reference is
 unchanged. Receipts use g2-permutation-foreign-*.
+
+## Complete finite cycle graph closure — 2026-11-22
+
+`permutation_graph.py` owns the finite marker/equality/controlled-XOR sequence.
+The executable cycle owner retains domain validation and supplies its existing
+child implementations. Symbolic catalog consumers supply the original typed
+refusal declarations to the same graph. The word is MSB-first THRU storage.
+The cycle owns one clean marker, equality owns its predicate workspace, and both
+return their workspace clean under the accepted concrete execution contracts.
+Unknown cycle values retain their original decomposition refusal.
+
+All six source-success permutation factories now retain complete recursive
+source graphs, including both concrete and symbolic-bound PermutationCycle roots.
+The sparse symbolic-bound Permutation has real cycle bodies instead of empty
+child declarations. Three frozen source blobs are verified unchanged. Thirty-two
+complete concrete Programs equal published baseline b76ea2eb0 exactly. A supplied
+XOR replacement reaches normal Program binding through the shared cycle graph.
+Existing user entry remains circuit.append(op).
+
+The original concrete and symbolic-bound cycle drawings raise ValueError with
+"should return a `Text` object" despite successful decomposition. Root cycle
+catalog diagrams retain the explicit native interface drawing independently of
+the available dependency graph. Original unknown-cycle roots remain atomic.
+PermutationCycle, equality, controlled-XOR and mixed-polarity control descendant
+glyph qualification remains a separate catalog presentation gap. The nominal
+unsigned-to-QAny equality Join view remains documented in the comparison audit.
+
+| Concrete factory | Actual T-family | Actual measurements | Independent source model T-family / measurements |
+| --- | --- | --- | --- |
+| Permutation | 20 | 5 | 20 / 5 |
+| Sparse permutation | 132 | 33 | 132 / 33 |
+| PermutationCycle | 16 | 4 | 16 / 4 |
+
+Full primitive histograms and analytical model objects are recorded separately in
+`g2-permutation-cycle-resources-20261122.json`. Physical/refusal/source-resource
+regression passes 197 cases with eight existing serialization warnings. It
+covers exact primitive operands and feedback, complete complex states, applicable
+measurement branches, workspace zero, source models and SDK boundaries. Accepted
+execution evidence is reused alongside the fresh unchanged-Program comparison.
+
+The first catalog regression stopped on ENOSPC. Its generated directory was
+removed and two old regenerable mypy caches were cleared. Source trees and logs
+are retained. The cleanup receipt is
+`g2-permutation-cycle-cache-cleanup-20261122.json`.
+
+Final catalog rerun passes 718 cases, with three existing deselections and 14
+existing notebook warnings. Focused graph/provider checks pass 19 cases. Strict
+typing covers six changed Python files. Black, Ruff, Compiler/integration scope,
+architecture, IR, API baseline and whitespace checks pass. Full Arithmetic intake
+now has 342 exact graphs, 1610 original atomic/refusal contexts and no successful
+source/native declaration gaps. Two duplicate-detection graph gaps and three
+successful omitted ControlledAddOrSubtract roots remain. Catalog descendant
+glyph gaps listed above remain open independently of the permutation graph closure.

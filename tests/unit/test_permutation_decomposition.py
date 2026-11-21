@@ -103,7 +103,13 @@ def test_concrete_catalog_reuses_exact_owner(identifier: str) -> None:
 )
 def test_symbolic_cycle_definitions_remain_nonexecuting(identifier: str) -> None:
     record = native.decomposition(identifier)
-    assert record is not None and all(not f.blocks for f in record.functions[1:])
+    assert record is not None
+    leaves = [f for f in record.functions[1:] if not f.blocks]
+    assert leaves
+    if identifier == "permutation_symb_with_cycles":
+        assert all(not f.blocks for f in record.functions[1:])
+    else:
+        assert any(f.blocks for f in record.functions[1:])
     with pytest.raises(ValueError):
         bind_register_program(record, ((0,),))
 
@@ -130,4 +136,15 @@ def test_original_refusals_remain_explicit_atomic_boundaries(
     else:
         with pytest.raises(ValueError, match="should return a `Text` object"):
             get_musical_score_data(source.decompose_bloq())
-    assert native.decomposition(identifier) is None
+    if identifier in {"permutation_symb", "permutation_cycle_symb"}:
+        assert native.decomposition(identifier) is None
+    else:
+        assert native.decomposition(identifier) is not None
+        assert (
+            permutation_score(
+                native.name(identifier),
+                native.signature(identifier),
+                native.attributes(identifier),
+            )
+            is None
+        )
