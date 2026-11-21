@@ -192,6 +192,24 @@ owners. Start with
 `tests/unit/test_reference_page_renderers.py::test_full_class_page_and_alias_members`
 to render an append-method page and verify unchanged-file timestamps. The same
 test file covers category grouping, actual inherited/alias members and TOC
-failure cleanup. Package discovery and policy remain with the pending walker.
+failure cleanup. Package discovery and policy belong to reference_package.py.
 See REFERENCE_PAGE_RENDERERS_FILE_AUDIT.md for full source closure and output
 failure semantics.
+
+`reference_package.py` owns Griffe traversal, alias qualification, page grouping
+and link/context construction. `reference_docs.make_reference_docs` connects
+those records to the accepted page renderers with native domain captions. Start
+with `tests/unit/test_reference_package.py::test_complete_generation_outputs_and_new_destination_fix`
+for a runnable package-to-files example and new destination creation. The same
+file compares the complete frozen 41-page package, its 42 generated outputs and
+concurrent ordinary/native parser behavior. The source's unordered submember
+regions are compared by named content while every other byte remains exact.
+
+The current whole-FlagQuantum walk succeeds. Full rendering retains the source
+setter-decorator refusal at Circuit.n_qubits and can leave partial outputs.
+See REFERENCE_PACKAGE_FILE_AUDIT.md for this explicit capability boundary,
+module-cycle handling and per-visitor property normalization.
+
+Reference tests import optional parsers at execution time. Ordinary test collection
+with `-m "not ftqc_reference"` works without Griffe. Explicit reference selection
+requires the locked documentation dependencies and fails if they are missing.
