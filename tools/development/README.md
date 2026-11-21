@@ -578,3 +578,12 @@ forty-nine original factories are compared with their actual parameters and
 nominal descriptors. Frozen metadata collisions keep the first exported file.
 The audit records deterministic native walk port order and explicit signed
 Pauli metadata separately from source-equivalent parameter encodings.
+
+Run `python -m examples.algorithms.chemistry_ui_export` for all thirteen Chemistry
+notebooks, thirty-nine documentation references and forty-one factory references.
+Existing sparse, factorization, THC, first-quantization, grid, Trotter, Hubbard and
+Givens owners supply parameters and nominal ports. Internal projectile-scoped
+identifiers preserve the original repeated example display names. All metadata
+encodings and filenames match actual source factories. This completes native
+instance-provider coverage across the catalog. Decomposition graphs, per-gate
+glyph parity and fresh combined-catalog execution retain separate open evidence.

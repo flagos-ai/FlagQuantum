@@ -665,3 +665,46 @@ measurement-branch, work-zero, source operand/feedback, phase/window/Fourier and
 walk evidence is reused through those owners. Observed primitive counts and
 analytical resource estimates remain separate. Strict typing of two files,
 Black, Ruff, Integration scope, architecture, IR, API and whitespace checks pass.
+
+## Complete Chemistry instance group
+
+`examples.algorithms.chemistry_ui_export` maps all thirteen Chemistry notebooks,
+thirty-nine document references and forty-one actual factory references to
+existing native sparse, single/double factorization, THC, first-quantization,
+grid, Trotter, Hubbard and Givens owners. Forty scoped identities preserve all
+thirty-eight original unqualified example names. Projectile PREPARE and SELECT
+use separate internal identifiers while retaining their original displayed
+names. Repeated SelectHubbard references share one source class, identity and
+first-file output. The source's `PolynmomialEvaluationInverseSquareRoot` spelling
+is retained as catalog metadata.
+
+Every actual nominal port descriptor, declaration order, recursive parameter
+tree, scalar encoding and filename matches the frozen factory. Original symbol
+assumptions are retained. Native seeded preprocessing regenerates sparse and
+THC alias columns, signs, normalization and block exponents. The explicit THC
+block exponent two gives three retained junk cells per target. The PairPotential
+example regenerates all four 65536-entry coefficient banks with the existing
+native inverse-square-root table owner. The complete arrays are compared before
+encoding and hashing. No reference package is imported by this provider.
+
+The actual isolated module entry exports forty-one JSON files including
+navigation, thirty-eight documentation files and forty fresh non-null atomic
+interfaces. Complete native coverage reaches 237 of 237 document references
+and 359 of 359 factory references. Each original factory reference is compared
+in document order, including repeated SelectHubbard and scoped projectile names.
+Full per-instance decomposition graphs, source per-gate glyph parity and fresh
+combined-catalog execution remain open under Q-0120.
+
+The provider emits metadata and atomic interface drawings. Existing execution
+owners retain gate operands, measurement feedback, complex amplitudes,
+applicable measurement branches and clean work. Observed primitive counts and
+analytical resource models remain separate in their existing evidence. Large
+catalog declarations allocate no physical simulation storage. No new executable
+storage admission or protected API change is introduced.
+
+Concentrated regression across these component families and previously delivered
+UI groups passes 1098 checks, with fourteen existing notebook-parser warnings
+and zero skips. All forty-three focused Chemistry checks pass. Strict typing
+of both new files, Black, Ruff, Integration scope, architecture, IR, public API
+baseline and whitespace checks pass. Qualtran 0.7.0 and Kickmix 0.1 Simulator
+availability and the accepted binary identity are rechecked.
