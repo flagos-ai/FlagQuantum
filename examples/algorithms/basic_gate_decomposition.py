@@ -11,7 +11,11 @@ It neither expands physical instructions nor evaluates resource estimates.
 """
 
 from examples.algorithms.control_predicate_catalog import PredicateExample
-from examples.algorithms.swap_network_catalog import SwapWithZeroExample
+from examples.algorithms.controlled_via_and import ControlledHadamardExample
+from examples.algorithms.swap_network_catalog import (
+    MultiplexedSwapExample,
+    SwapWithZeroExample,
+)
 from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
     ControlledSwapCall,
@@ -26,6 +30,9 @@ from flagquantum.compiler.registers.control.component_predicate import (
 from flagquantum.compiler.registers.control.conjunction_program import (
     conjunction_program,
 )
+from flagquantum.compiler.registers.lookup.multiplexed_swap_component import (
+    multiplexed_swap_program,
+)
 from flagquantum.compiler.registers.lookup.swap_with_zero_component import (
     swap_with_zero_program,
 )
@@ -36,6 +43,7 @@ from flagquantum.compiler.registers.primitives.swap_component import SwapDeclara
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.drawer.component_score import component_register_score
+from flagquantum.drawer.control_symbols import control_predicate_wire_symbol
 from flagquantum.drawer.register_score import RegisterStep
 from flagquantum.drawer.register_score_data import (
     MusicalScoreData,
@@ -47,6 +55,10 @@ from flagquantum.drawer.register_score_data import (
 
 def decomposition_program(component: object) -> ProgramRecord | None:
     """Select only complete concrete graphs owned by the existing Compiler."""
+    if isinstance(component, ControlledHadamardExample):
+        return component.program()
+    if isinstance(component, MultiplexedSwapExample) and not component.adjoint:
+        return multiplexed_swap_program(component.layout)
     if isinstance(component, SwapWithZeroExample):
         return swap_with_zero_program(
             component.widths, component.word, component.shape, adjoint=component.adjoint
@@ -99,6 +111,58 @@ def decomposition_symbols(
     def supply(
         step: RegisterStep, register: Register | None, index: tuple[int, ...] | None
     ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+        if isinstance(component, ControlledHadamardExample):
+            if step.name.endswith(("_compute", "_erase")):
+                return control_predicate_wire_symbol(
+                    step,
+                    register,
+                    index,
+                    values=tuple(group.values for group in component.groups),
+                    uncompute=step.name.endswith("_erase"),
+                )
+            if step.name == "ch":
+                if register is None:
+                    return "Text", {"text": "", "fontsize": 10}
+                return (
+                    ("Circle", {"filled": True})
+                    if register.name == "ctrl"
+                    else ("TextBox", {"text": "H"})
+                )
+        if isinstance(component, MultiplexedSwapExample):
+            if step.name.startswith("__fq_unary_and_"):
+                polarities = step.name.removeprefix("__fq_unary_and_")[:2]
+                if register is None:
+                    return "Text", {"text": "", "fontsize": 10}
+                if register.name == "ctrl":
+                    assert index is not None
+                    return "Circle", {"filled": polarities[index[0]] == "1"}
+                return _box(register, "∧")
+            if step.name == "__fq_unary_x":
+                return (
+                    ("Text", {"text": "X", "fontsize": 10})
+                    if register is None
+                    else ("ModPlus", {})
+                )
+            if step.name == "__fq_unary_cx":
+                if register is None:
+                    return "Text", {"text": "", "fontsize": 10}
+                return (
+                    ("Circle", {"filled": True})
+                    if register.name == "ctrl"
+                    else ("ModPlus", {})
+                )
+            if tuple(r.name for r in functions[step.name].registers or ()) == (
+                "ctrl",
+                "x",
+                "y",
+            ):
+                if register is None:
+                    return "Text", {"text": "", "fontsize": 10}
+                return (
+                    ("Circle", {"filled": True})
+                    if register.name == "ctrl"
+                    else ("TextBox", {"text": f"×({register.name})"})
+                )
         if register is None:
             if isinstance(component, SwapWithZeroExample) and tuple(
                 r.name for r in functions[step.name].registers or ()

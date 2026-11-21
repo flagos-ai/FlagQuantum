@@ -908,3 +908,43 @@ match fresh drawings, and three native large-swap displays retain original
 IndexError witnesses. MultiplexedCSwap and ControlledViaAnd account for the
 remaining three successful instances. Dependency-node publication and recursive
 coverage remain open, so Q-0120 remains open.
+
+## Complete controlled-H and multiplexed-exchange immediate graphs
+
+The ControlledViaAnd example now exposes a typed Program through the existing
+`control_component_via_predicate` owner. Its immediate calls retain CtrlSpecAnd,
+positive CHadamard and the exact measured predicate adjoint. CH uses the existing
+controlled-H primitive owner. Both actual source catalog drawings match fresh
+ordered glyphs and geometry, including integer and signed control labels.
+The bits, integers and nested fixtures bind to the accepted source streams.
+Feedback SSA slot names are normalized only after checking each measured wire's
+latest live slot. Small bits and nested fixtures verify every measurement history
+against the original complex operator, including clean work.
+
+`multiplexed_swap_component.py` composes the shared bounded unary traversal and
+exact controlled-word exchange. The unary helper retains scalar X q and CNOT
+ctrl/target ports. Selectors split on first use, while one-bit selectors remain
+scalar as in the original import. Multi-control reductions use the existing
+And/MultiAnd Program and measured adjoint. Caller-owned target arrays and output
+are threaded in row-major order. Final joins retain native bounded descriptors,
+where original joins return QAny, following the explicit SwapWithZero adaptation.
+The physical builder's existing singleton-first-axis refusal is retained.
+
+Nine configurations cover the actual five-row/two-bit catalog instance, padded
+widths, one/two/three controls, multiple axes and controlled singleton axes.
+Complete ordered source connections match. Bound streams preserve source
+operands and feedback lifetimes through the existing physical owner. Small
+configurations exhaust all measurement histories, full complex states and clean
+work. The actual large catalog instance reuses accepted physical execution
+evidence through stream identity instead of allocating a dense large operator.
+Observed T/T-dagger count is 7 * rows * word_width + 4 * conjunction_count;
+observed measurement count equals conjunction_count. Original CSwap, And and
+Clifford analytical classifications remain separate from emitted primitives.
+
+All eighteen originally successful Basic Gates source instances now match fresh
+immediate drawings. Three native large-swap displays retain original IndexError
+witnesses. The combined catalog has twenty-one immediate decompositions and
+332 atomic interfaces, exporting 354 JSON files, 234 documents and 353 diagrams.
+All 33 original decomposition/rendering failures remain recorded. Recursive
+native graph expansion and dependency-node publication remain open, so Q-0120
+is still open. No broader catalog closure is implied by immediate drawings.
