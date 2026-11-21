@@ -1,6 +1,7 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 reference_docs.py.
+# Command entry adapted from dev_tools/build-reference-docs.py.
 
 """Generate template-driven reference pages through optional TensorFlow-docs."""
 
@@ -81,3 +82,12 @@ def build_reference_docs(
     package = "flagquantum" if root_module is None else root_module.__name__
     apply_fixups(root, package)
     generate_ref_toc(root, package)
+
+
+def main() -> None:
+    """Build template reference pages for the current native checkout."""
+    build_reference_docs()
+
+
+if __name__ == "__main__":
+    main()

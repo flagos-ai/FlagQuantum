@@ -1,6 +1,8 @@
 # Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 make_reference_docs/_make.py.
+# Command entry adapted from dev_tools/build-reference-docs-2.py.
 
 """Generate reference pages using the existing static package and page owners."""
 
@@ -11,6 +13,7 @@ from tools.development.reference_module_pages import render_module
 from tools.development.reference_package import walk_and_configure
 from tools.development.reference_pages import MajorClassPage, ModulePage, Page
 from tools.development.reference_toc import render_toc
+from tools.development.repository import get_git_root
 
 TOP_SECTIONS = [
     "flagquantum",
@@ -68,3 +71,12 @@ def make_reference_docs(
             render_module(out_dir=output, page=page, render_context=context)
         else:
             raise ValueError(page)
+
+
+def main() -> None:
+    """Build the configured static reference for the current checkout."""
+    make_reference_docs(get_git_root())
+
+
+if __name__ == "__main__":
+    main()
