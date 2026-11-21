@@ -322,3 +322,40 @@ operation, and twelve Clifford with two measurements for the inverse. Both
 source peak estimates are seven qubits. Interchange adds zero instructions,
 quantum storage or measurement slots. Existing source count discrepancies stay
 recorded independently of these measured streams.
+
+## Complete out-of-place wire graph closure, November 22
+
+The native OutOfPlaceAdder component now records the existing shared
+out_of_place_addition_components sequence as typed CX/And wire calls. The
+previous hand-built Split/Join/allocation adapter is removed. The already
+qualified shared wire reconstruction owns earliest-layer order, lazy word
+views and owned sum allocation/consumption in both directions. Numerical gate
+recipes, parameters, MSB-first ports, truncation and exact measured erasure
+remain with their existing owners. Callers still use circuit.append(op).
+
+The source stream test now requires the complete ordered native trace to equal
+the frozen source trace for all twenty width/output/direction cases. The former
+canonical edge comparison that ignored instance IDs is removed. Widths 1, 2, 3,
+5 and 8 cover both output-width options and both directions. Existing complete
+small complex isometries, entangled spectators, every applicable erasure
+history, valid sum cleanup, ownership errors and independent source resource
+formulas retain their existing assertions.
+
+This closes six recursive comparison dependency mismatches, comprising the
+controlled comparator's forward/inverse adders and four half-comparison adders.
+Recursing through all twelve concrete comparison catalog roots now finds 62
+exact source-success graphs and 344 atomic/refusal contexts, with no remaining
+ordered-call graph mismatch. These counts retain owning root contexts. They do
+not imply 62 distinct upstream classes or qualification of recursive glyphs.
+Original source files and source atomic/decomposition failures are unchanged.
+
+The concentrated execution, comparison, root drawing and live-width regression
+passes 788 cases. Strict typing of three changed Python files, Black, Ruff,
+Compiler scope, architecture, IR, public API and whitespace checks pass. All
+twelve concrete comparison factory primitive histograms equal the published
+baseline exactly. Actual primitives and independent analytical estimates remain
+separate. Recursive glyph publication remains the next presentation boundary.
+
+The presentation adapter now directly reuses the executable OutOfPlaceAdder
+owner. Its previous extra graph-copy step is removed. The frozen Kickmix
+addition/comparison file checks pass all 26 cases with zero skips.

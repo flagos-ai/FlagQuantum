@@ -2,7 +2,6 @@
 
 from collections import Counter
 from itertools import product
-from typing import Any
 
 import pytest
 import torch
@@ -64,43 +63,12 @@ def test_source_physical_dependencies_outputs_and_resource_model(
     source = OutOfPlaceAdder(
         width, include_most_significant_bit=include_msb, is_adjoint=adjoint
     )
-    # Cirq conversion schedules independent XORs before Allocate. Canonical
-    # dependency order preserves their port edges without requiring instance IDs.
-    # Frozen Cirq omits one-bit Split/Join; native integer ports keep those
-    # zero-cost type views. Multi-bit words have identical comparable edges.
-    if width > 1:
-        native_trace = _native_trace(graph)
-        source_trace = _source_trace(_source(Signature([])), source.decompose_bloq())
-        identities: dict[tuple[object, ...], int] = {}
-
-        def canonical(trace: list[object]) -> Counter[int]:
-            predecessors: dict[str, int] = {}
-            counts: Counter[int] = Counter()
-
-            def references(value: Any) -> Any:
-                if isinstance(value, tuple):
-                    if (
-                        len(value) == 3
-                        and isinstance(value[0], str)
-                        and value[0] in predecessors
-                    ):
-                        return (predecessors[value[0]], value[1], value[2])
-                    return tuple(references(item) for item in value)
-                return value
-
-            for row in trace:
-                assert isinstance(row, tuple)
-                name, inputs, outputs = row
-                key = (
-                    tuple(sorted(references(inputs))),
-                    tuple(output[0] for output in outputs),
-                )
-                identity = identities.setdefault(key, len(identities))
-                predecessors[name] = identity
-                counts[identity] += 1
-            return counts
-
-        assert canonical(native_trace) == canonical(source_trace)
+    # The shared wire reconstruction retains source SDK layers, including
+    # one-bit ports, independent allocations and both direction-specific orders.
+    assert _native_trace(graph) == _source_trace(
+        _source(Signature(graph.functions[0].registers or ())),
+        source.decompose_bloq(),
+    )
     calls = Counter(op.callee for op in graph.functions[0].blocks[0].operations)
     assert calls["sum_and"] == width - 1 + int(include_msb)
     assert calls["sum_cx"] == sum(

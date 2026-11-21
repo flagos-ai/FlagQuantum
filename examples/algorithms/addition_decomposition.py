@@ -16,7 +16,6 @@ from flagquantum.compiler.registers.arithmetic.constant_addition_component impor
 from flagquantum.compiler.registers.arithmetic.out_of_place_addition_component import (
     out_of_place_addition_program,
 )
-from flagquantum.compiler.registers.component_graph import copy_component_program
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
@@ -42,10 +41,9 @@ def addition_program(
 ) -> ProgramRecord | None:
     """Reuse existing Add, OutOfPlaceAdder and encoded AddK constructions.
 
-    Symbolic source refusals retain atomic catalog interfaces. OutOfPlaceAdder
-    uses the existing source-ordered graph copy to renumber independent input
-    XORs and workspace acquisition in visitation order. Native physical owners
-    remain authoritative for execution and allocation.
+    Symbolic source refusals retain atomic catalog interfaces. Concrete graphs
+    reuse their executable owners, including OutOfPlaceAdder's shared source
+    wire reconstruction. Physical owners retain execution and allocation.
     """
     if operation not in {"Add", "OutOfPlaceAdder", "AddK"}:
         return None
@@ -60,7 +58,7 @@ def addition_program(
             width, other, left_dtype=ports[0].dtype, right_dtype=ports[1].dtype
         )
     if operation == "OutOfPlaceAdder":
-        return copy_component_program(out_of_place_addition_program(width))
+        return out_of_place_addition_program(width)
     constant = parameters["k"]
     if type(constant) is not int:
         return None
