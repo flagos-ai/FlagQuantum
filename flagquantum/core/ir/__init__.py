@@ -663,6 +663,17 @@ class CircuitIR:
 
 
 def _encode_value(value: Any) -> Any:
+    # Exact built-ins cannot carry a symbolic, mapping, or tensor protocol.
+    if value is None:
+        return None
+    value_type = type(value)
+    if (
+        value_type is str
+        or value_type is int
+        or value_type is float
+        or value_type is bool
+    ):
+        return value
     if isinstance(value, Parameter):
         return {"$parameter": value.name}
     if isinstance(value, ParameterExpression):
