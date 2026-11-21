@@ -27,13 +27,13 @@ Track three independent measures:
 | Requirement | Current evidence | Remaining work |
 | --- | --- | --- |
 | Preserve approved migration scope | 212 accepted workflows; all editorial links and historical successful full-cell process records resolve | Historical cell records are not current-HEAD execution claims |
-| Preserve original-source paths | All 222 rows replay on `f14dfad31`: 210 original executions, six original expected refusals and six approved alternative executions | Smoke/profile regressions remain separate from independent full-state acceptance |
+| Preserve original-source paths | All 222 rows replay on `40937f239`: 210 original executions, six original expected refusals and six approved alternative executions | Smoke/profile regressions remain separate from independent full-state acceptance |
 | Six editable learning lessons | All lesson cells and independent assertions run through the focused user-workflow selection | Keep their six-case teaching denominator separate from the 212 upstream workflows |
 | Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Original degree-101/255 nozzle sequences still require the pending bounded effect admission |
 | Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Pending explicit preparation/binding capacity approval; public limits unchanged |
 | Original signed arithmetic budget | Native full-size execution now also fits 14 total qubits and zero extra work; all 16,384 arbitrary XOR columns and complex witnesses pass | Width-constrained Fourier route costs 89 logical instructions including preparation; default 20-qubit/47-instruction ripple route retained; native logical targets only |
 | Repeated parameter evaluations | Existing Circuit plan reuse and gradients taught; repeated native-specialization readout validation reduced | Native symbolic angle binding remains a separate design/admission item |
-| Frozen default checks | 21202 passes, 801 skips, nine failures and six errors; no new failed/error nodes versus the prior baseline | Existing worktree, local-network and shared-history environment issues remain explicit; raw run is not green |
+| Frozen default checks | 21239 passes, 801 skips, nine failures and six errors; no new failed/error nodes versus the prior baseline | Existing worktree, local-network and shared-history environment issues remain explicit; raw run is not green |
 
 The two pending capacity proposals do not authorize implementation by themselves.
 Continue safe internal resource/validation improvements while those decisions
@@ -78,6 +78,23 @@ The same exhaustive check is retained in the focused compiler tests.
 All 16 workshop code cells run successfully. These changes supersede the
 earlier fourteen-bit native refusals recorded in the historical milestones
 below; previous raw evidence is retained unchanged.
+
+The implementation is committed as `40937f239`. The related selection passes
+283 tests; the broader Compiler selection passes 2028 tests before eight further
+exhaustive source-block cases were added. The final focused selection, including
+those exhaustive cases, passes 89 tests. Black/Ruff, the protected public API,
+documentation generation/links and focused typing of the two kernel/matcher
+modules pass. A separate coverage-instrumented process exited with code 139
+before emitting output; no coverage percentage is claimed.
+
+All 222 original/alternative replay rows completed in 469.192 seconds without
+any recorded stage or resource/profile differences from `f14dfad31`. The default
+run completed in 1055.46 seconds: 21239 passed, 801 skipped, nine failed and six
+errors. Its exact failed/error node set is unchanged. The raw run remains failed;
+previous environment explanations are retained rather than suppressing tests.
+Current inventory checks again resolve all 212 editorial links and preserved
+successful complete-cell records; only the changed workshop has a new full-cell
+execution claim in this batch.
 
 ## Delivery sequence
 

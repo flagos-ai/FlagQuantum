@@ -35,6 +35,35 @@ This is a width/operation trade-off, not a runtime or hardware-gate advantage.
 The current route accepts native logical targets; basis conversion and routing
 refuse until absolute-phase preservation is admitted for those targets.
 
+```python
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QNum, qfunc
+
+
+@qfunc
+def signed_addition(
+    x: Output[QNum[3]],
+    y: Output[QNum[5, True, 1]],
+    result: Output[QNum[6, True, 1]],
+) -> None:
+    x |= 5
+    y |= -7.5
+    result |= x + y
+
+
+program = synth.synthesize(
+    signed_addition,
+    max_qubits=14,
+    max_workspace=0,
+    max_operations=89,
+    memory_limit_bytes=1024**2,
+)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("x", "y", "result"))))
+# The sole outcome is (5, -7.5, -2.5), with probability approximately one.
+```
+
 Compiler checks cover all 256 inputs and 64 arbitrary XOR targets, inverses,
 shared negatives, unequal moduli, and smaller complete coherent witnesses with
 absolute phase and clean workspace. This is a general modular arithmetic rule,
