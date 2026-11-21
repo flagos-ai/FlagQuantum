@@ -1158,3 +1158,41 @@ Seventeen of the arithmetic intake's 44 successful root drawings are now
 qualified. Twenty-seven successful roots, the bounded large CAdd layout,
 recursive arithmetic presentation and other catalog dependencies remain open in
 Q-0120, alongside the previously registered source failures and external gaps.
+
+## Complete controlled-addition source-family catalog graphs
+
+Both actual `arithmetic/controlled_addition.py` CAdd factories now retain their
+complete immediate graph and all native dependencies. Existing executable
+`controlled_addition_program` remains the source of truth. The three-bit and
+1000-bit factories match original ordered calls and operands, including explicit
+control Split/Join, typed Cast, And computation and measured erasure. Both
+control polarities match fresh small source drawings using existing Add, And
+and partition callbacks. The complete small catalog drawing matches.
+
+The previous 2008-call large layout intake boundary is resolved. Unmodified
+Qualtran's actual 1000-bit drawing raises IndexError. The native graph draws
+successfully and retains that source failure witness. It is a native display
+extension. The isolated combined module produces 1337 JSON files, 234 documents
+and 1336 non-null diagrams. The 353 roots now contain 42 immediate decompositions
+and 311 atomic interfaces, plus 983 contextual native child files. This batch
+adds 96 child files. Previous 23 qualified child operation labels remain.
+Concentrated regression passes 510 cases with fourteen existing warnings, three
+deselections and zero skips. Strict typing of three Python files, Black, Ruff,
+team scope, architecture, IR, public API and whitespace checks pass.
+
+The complete controlled-addition physical component suite passes 149 cases. It
+retains both control polarities, exact adjoints, original streams/feedback, full
+complex amplitudes, every small measurement history, zeroed work, ordinary
+append execution and outer-control callbacks. The actual 1000-bit factory binds
+and measures primitive resource categories. T/T-dagger count is 7996,
+measurement and reset counts are each 1999, clean work is 1999 wires and total
+width is 4000. The independent source analytical model agrees in those
+categories. Actual primitive accounting and model queries remain separate
+evidence. Fresh dense 1000-bit simulation remains uncovered.
+
+Eighteen of the arithmetic intake's 44 source-success root drawings are now
+qualified. Twenty-six source-success roots, recursive arithmetic child glyphs
+and broader catalog dependency coverage remain in Q-0120. The complete intake
+now has three original rendering IndexErrors and no deferred CAdd layout.
+Contextual native child identities and previously registered source failures,
+pending contracts and environment/dashboard gaps remain explicit.

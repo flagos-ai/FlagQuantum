@@ -26,6 +26,10 @@ from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
 )
+from examples.algorithms.controlled_addition_decomposition import (
+    controlled_addition_catalog_program,
+    controlled_addition_score,
+)
 from examples.algorithms.integer_multiplication_catalog import (
     integer_multiplication_examples,
 )
@@ -605,6 +609,10 @@ def score(component: object) -> object:
         decomposed = addition_score(name(component), ports, attributes(component))
     if decomposed is None:
         decomposed = subtraction_score(name(component), ports)
+    if decomposed is None:
+        decomposed = controlled_addition_score(
+            name(component), ports, attributes(component)
+        )
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -671,10 +679,14 @@ def decomposition(component: object) -> ProgramRecord | None:
     record = word_program(name(component), ports)
     if record is None:
         record = addition_program(name(component), ports, attributes(component))
+    if record is None:
+        record = subtraction_catalog_program(name(component), ports)
     return (
         record
         if record is not None
-        else subtraction_catalog_program(name(component), ports)
+        else controlled_addition_catalog_program(
+            name(component), ports, attributes(component)
+        )
     )
 
 
