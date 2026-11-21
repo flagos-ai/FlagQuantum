@@ -105,3 +105,15 @@ Before production admission, further work must establish affordable end-to-end
 cost against a contemporaneous production control, broader unsupported-case and
 failure behavior, and frozen prospective evidence. Formal host qualification
 remains deferred; no machine reboot or kernel upgrade is needed for this work.
+
+## Local verification boundary
+
+The default tier was attempted in the sparse local checkout. Its first run
+reported 1,604 passed, 13 failed and 80 deselected: the failures referred to
+absent CI action/workflow files and duration-hint reference files. After restoring
+those tracked inputs, all 19 tests in the affected transport/sharding files pass.
+Restoring the duration references also adds test modules to collection; a second
+default-tier attempt stopped with seven missing helper/document collection errors.
+Neither run is represented as a passing complete default tier. The focused 135-test
+compiler/integration result and 120 paired independent acceptances above are
+separate completed checks. Full-checkout CI remains required before integration.
