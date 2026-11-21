@@ -478,7 +478,7 @@ def _emit_arithmetic(
             if set(variable) <= immutable_inputs and len(variable) + shift <= width:
                 # Only immutable root bits may outlive a rematerialized operand.
                 # The terminal XOR reader accepts repeated zero/sign controls;
-                # one owned zero wire supplies every padding position.
+                # one owned zero qubit supplies every padding position.
                 zero = allocate(1, op)
                 result = (
                     zero * (width - len(variable) - shift) + variable + zero * shift
