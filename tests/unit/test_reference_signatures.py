@@ -1,17 +1,21 @@
 """Full frozen signature renderer comparisons and native object naming."""
 
+from __future__ import annotations
+
 import csv
 import hashlib
 import io
 from itertools import product
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import griffe
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
-from tools.development import reference_signatures as native
+
+if TYPE_CHECKING:
+    import griffe
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -33,6 +37,10 @@ def test_signature_source_blob() -> None:
 
 
 def test_all_parameter_kinds_annotations_defaults_and_naming() -> None:
+    import griffe
+
+    from tools.development import reference_signatures as native
+
     source = original()
     for kind, annotation, default in product(
         griffe.ParameterKind, [None, "int", "list[str]"], [None, "0", "None"]
@@ -67,6 +75,8 @@ def method(
     returns: str | None = None,
     decorators: list[str] | None = None,
 ) -> griffe.Function:
+    import griffe
+
     parameters = (
         []
         if first is None
@@ -93,6 +103,10 @@ def method(
 
 
 def test_complete_function_and_generic_method_rendering() -> None:
+    import griffe
+
+    from tools.development import reference_signatures as native
+
     source = original()
     obj = griffe.Class("Circuit")
     for count, returns in product(range(3), [None, "Circuit"]):
@@ -145,6 +159,10 @@ def test_complete_function_and_generic_method_rendering() -> None:
 def test_all_supported_method_dispatch(
     decorators: list[str], first: str | None
 ) -> None:
+    import griffe
+
+    from tools.development import reference_signatures as native
+
     source = original()
     function = method(first=first, count=2, returns="int", decorators=decorators)
     obj = griffe.Class("Circuit")
@@ -164,6 +182,10 @@ def test_all_supported_method_dispatch(
     [["unsupported"], ["property", "staticmethod"], ["functools.cached_property"]],
 )
 def test_original_decorator_rejections_preserved(decorators: list[str]) -> None:
+    import griffe
+
+    from tools.development import reference_signatures as native
+
     errors = []
     for owner in [original(), native]:
         with pytest.raises(ValueError) as error:
@@ -175,6 +197,9 @@ def test_original_decorator_rejections_preserved(decorators: list[str]) -> None:
 
 
 def test_native_signature_uses_existing_reference_link_writer(tmp_path: Path) -> None:
+    import griffe
+
+    from tools.development import reference_signatures as native
     from tools.development.files import WriteIfDifferent
     from tools.development.reference_links import LinkingWriter
     from tools.development.reference_pages import MajorClassPage

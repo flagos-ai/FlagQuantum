@@ -1,5 +1,7 @@
 """Complete frozen reference page, context, link and alias source comparisons."""
 
+from __future__ import annotations
+
 import csv
 import hashlib
 import importlib.util
@@ -8,22 +10,19 @@ import sys
 import types
 from importlib import metadata
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import griffe
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE
 from tools.development.files import WriteIfDifferent
-from tools.development.reference_context import RenderContext
-from tools.development.reference_links import LinkingWriter, get_aliases_str
-from tools.development.reference_pages import (
-    MajorClassPage,
-    MemberType,
-    ModulePage,
-    ModulePageMember,
-    Page,
-)
+
+if TYPE_CHECKING:
+
+    from tools.development.reference_pages import (
+        Page,
+    )
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -77,6 +76,15 @@ def test_frozen_blobs_and_optional_dependency_versions() -> None:
 def test_complete_page_records(
     original: dict[str, Any], tmp_path: Path, major: bool, path: str
 ) -> None:
+    import griffe
+
+    from tools.development.reference_pages import (
+        MajorClassPage,
+        MemberType,
+        ModulePage,
+        ModulePageMember,
+    )
+
     original_type = (
         original["_page"].MajorClassPage if major else original["_page"].ModulePage
     )
@@ -125,12 +133,16 @@ def test_complete_page_records(
 def test_complete_alias_formatter(
     original: dict[str, Any], aliases: dict[str, str]
 ) -> None:
+    from tools.development.reference_links import get_aliases_str
+
     assert get_aliases_str("fq.Circuit", aliases_d=aliases) == original[
         "_components.aliases"
     ].get_aliases_str("fq.Circuit", aliases_d=aliases)
 
 
 def mappings() -> tuple[dict[str, str], dict[str, tuple[Page, str | None]]]:
+    from tools.development.reference_pages import MajorClassPage, ModulePage
+
     page = ModulePage(pref_path="flagquantum.compiler")
     major = MajorClassPage(pref_path="flagquantum.Circuit")
     return (
@@ -153,6 +165,8 @@ def mappings() -> tuple[dict[str, str], dict[str, tuple[Page, str | None]]]:
     "root", [Path("reference"), Path("nested/reference"), Path("/")]
 )
 def test_complete_link_writer_and_context(original: dict[str, Any], root: Path) -> None:
+    from tools.development.reference_context import RenderContext
+
     aliases, targets = mappings()
     source_stream = io.StringIO()
     native_stream = io.StringIO()
@@ -197,6 +211,9 @@ def test_complete_link_writer_and_context(original: dict[str, Any], root: Path) 
 def test_original_cross_document_cache_defect_and_native_mapping_updates(
     original: dict[str, Any],
 ) -> None:
+    from tools.development.reference_links import LinkingWriter
+    from tools.development.reference_pages import ModulePage
+
     source_type = original["_linking_writer"].LinkingWriter
     aliases = {"shared": "shared"}
     source_map: dict[str, tuple[Page, str | None]] = {
@@ -229,6 +246,8 @@ def test_original_cross_document_cache_defect_and_native_mapping_updates(
 
 
 def test_native_page_links_reuse_existing_equal_content_writer(tmp_path: Path) -> None:
+    from tools.development.reference_context import RenderContext
+
     path = tmp_path / "circuit.md"
     aliases, targets = mappings()
     context = RenderContext(

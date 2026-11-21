@@ -1,5 +1,7 @@
 """Complete source class/module/TOC renderer dependency closure."""
 
+from __future__ import annotations
+
 import csv
 import hashlib
 import importlib.util
@@ -7,25 +9,19 @@ import io
 import sys
 import types
 from pathlib import Path
-from typing import Any, TextIO
+from typing import TYPE_CHECKING, Any, TextIO
 
-import griffe
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
-from tools.development import (
-    reference_class_pages,
-    reference_module_pages,
-    reference_toc,
-)
-from tools.development.reference_context import RenderContext
-from tools.development.reference_pages import (
-    MajorClassPage,
-    MemberType,
-    ModulePage,
-    ModulePageMember,
-    Page,
-)
+
+if TYPE_CHECKING:
+    import griffe
+
+    from tools.development.reference_pages import (
+        Page,
+    )
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -92,6 +88,8 @@ def test_renderer_blobs() -> None:
 
 
 def circuit_class() -> griffe.Class:
+    import griffe
+
     cls = griffe.Class(
         "Circuit",
         docstring=griffe.Docstring("A circuit.\n\nPreserves full complex amplitudes."),
@@ -124,6 +122,8 @@ def circuit_class() -> griffe.Class:
 
 
 def context(original: dict[str, Any] | None, page: Any) -> Any:
+    from tools.development.reference_context import RenderContext
+
     aliases = {"Circuit": "native.Circuit", "native.Circuit": "native.Circuit"}
     if original is None:
         return RenderContext(
@@ -145,6 +145,9 @@ def context(original: dict[str, Any] | None, page: Any) -> Any:
 def test_full_class_page_and_alias_members(
     original: dict[str, Any], tmp_path: Path
 ) -> None:
+    from tools.development import reference_class_pages
+    from tools.development.reference_pages import MajorClassPage
+
     cls = circuit_class()
     source_page = original["_page"].MajorClassPage(
         obj=cls, section="native", pref_path="native.Circuit"
@@ -183,6 +186,15 @@ def test_full_class_page_and_alias_members(
 def test_full_module_page_categories(
     original: dict[str, Any], tmp_path: Path, categories: tuple[str, ...]
 ) -> None:
+    import griffe
+
+    from tools.development import reference_module_pages
+    from tools.development.reference_pages import (
+        MemberType,
+        ModulePage,
+        ModulePageMember,
+    )
+
     module = griffe.Module(
         "native", docstring=griffe.Docstring("A native module.\n\nDetailed overview.")
     )
@@ -229,6 +241,11 @@ def test_full_module_page_categories(
 
 
 def test_minor_class_documented_and_inherited_members(original: dict[str, Any]) -> None:
+    import griffe
+
+    from tools.development import reference_module_pages
+    from tools.development.reference_pages import MajorClassPage
+
     base = griffe.Class("Base")
     base.set_member(
         "inherited",
@@ -262,6 +279,9 @@ def test_minor_class_documented_and_inherited_members(original: dict[str, Any]) 
 def test_toc_full_selection_order_and_errors(
     original: dict[str, Any], tmp_path: Path
 ) -> None:
+    from tools.development import reference_toc
+    from tools.development.reference_pages import MajorClassPage, ModulePage
+
     cls = circuit_class()
     sources = [
         original["_page"].ModulePage(pref_path="native.empty", section="native"),
@@ -307,6 +327,9 @@ def test_toc_full_selection_order_and_errors(
 def test_toc_failure_closes_native_output(
     original: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from tools.development import reference_toc
+    from tools.development.reference_pages import MajorClassPage
+
     opened: list[TextIO] = []
     path_open = Path.open
 

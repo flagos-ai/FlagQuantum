@@ -1,5 +1,7 @@
 """Complete Griffe section renderer and immutable source corpus comparisons."""
 
+from __future__ import annotations
+
 import csv
 import hashlib
 import importlib.util
@@ -7,13 +9,15 @@ import io
 import sys
 import types
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import griffe
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
-from tools.development import reference_docstrings as native
+
+if TYPE_CHECKING:
+    import griffe
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -60,6 +64,8 @@ def test_docstring_source_blob() -> None:
 
 
 def sections() -> list[griffe.DocstringSection]:
+    import griffe
+
     return [
         griffe.DocstringSectionText("  Text and `Circuit`.  "),
         griffe.DocstringSectionParameters(
@@ -132,6 +138,8 @@ def rendered(
 
 @pytest.mark.parametrize("level", [-1, 0, 1, 3])
 def test_all_section_functions_and_full_dispatch(original: Any, level: int) -> None:
+    from tools.development import reference_docstrings as native
+
     parts = sections()
     for part in parts:
         assert rendered(native, [part], level) == rendered(original, [part], level)
@@ -141,6 +149,10 @@ def test_all_section_functions_and_full_dispatch(original: Any, level: int) -> N
 
 
 def test_original_section_errors_preserved(original: Any) -> None:
+    import griffe
+
+    from tools.development import reference_docstrings as native
+
     invalid_examples = griffe.DocstringSectionExamples([])
     setattr(
         invalid_examples, "value", [(griffe.DocstringSectionKind.parameters, "invalid")]
@@ -176,6 +188,10 @@ def test_original_section_errors_preserved(original: Any) -> None:
     ],
 )
 def test_summary_and_remaining_parts(original: Any, text: str | None) -> None:
+    import griffe
+
+    from tools.development import reference_docstrings as native
+
     obj = griffe.Class(
         "Example", docstring=griffe.Docstring(text) if text is not None else None
     )
@@ -188,6 +204,10 @@ def test_summary_and_remaining_parts(original: Any, text: str | None) -> None:
 def test_entire_frozen_class_documentation_corpus(
     original: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import griffe
+
+    from tools.development import reference_docstrings as native
+
     package = types.ModuleType("_development_reference")
     monkeypatch.setitem(sys.modules, package.__name__, package)
     monkeypatch.setitem(
@@ -210,6 +230,10 @@ def test_entire_frozen_class_documentation_corpus(
 def test_nontext_first_section_rejection(
     original: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import griffe
+
+    from tools.development import reference_docstrings as native
+
     monkeypatch.setattr(
         griffe.Docstring,
         "parse",
