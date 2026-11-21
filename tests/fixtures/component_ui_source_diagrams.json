@@ -1,0 +1,15 @@
+{
+  "source_commit": "bcb17bb25360ed68ce3bc084645db3e929799389",
+  "notebook_blob": "19959bb58f2218499ca2b927802ef79fa94cd88d",
+  "artifact": "component_ui_source_diagrams.jsonl.gz",
+  "sha256": "d29f2e28abd70f0297c83ea7f3922576780dd9fbdd52ec94b48ba65724b70c58",
+  "node_records": 3083,
+  "source_all_files": 3317,
+  "copyright": "Copyright 2023 Google LLC",
+  "license": "Apache-2.0",
+  "origin": "Real original ui-export.ipynb source leg completed before900-second native replay timeout. Obsolete ModExp import alias and repeated-factory replay explicit. Original source unchanged.",
+  "profile": "Only actual musical-score dictionaries/null are retained. Metadata,navigation,graph,hashes and docs are recomputed from frozen source during comparison. First source filename wins across documented source collisions.",
+  "replay_scope": "Recorded authentic source diagrams; not fresh native full-library diagram computation or complete native provider coverage.",
+  "actual_test_snapshot_sha256": "ecd50ec1230fe403d04162f9aed9e1c8d077268727aee024262cb083b0c90fbc",
+  "gzip": "Deterministic filename-empty,mtime0 JSONL in sorted source-relative path order."
+}

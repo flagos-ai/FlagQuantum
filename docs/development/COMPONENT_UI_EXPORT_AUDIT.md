@@ -85,9 +85,11 @@ source-document mapping. That mapping is reused. It maps authored native assets
 and imported owners, not all original example instances to executable native
 metadata providers. The generic UI exporter accepts a complete supplied catalog.
 Its full reference-catalog test checks the original/native graph and all emitted
-files with an explicitly supplied deterministic diagram provider. The original
-node loop, metadata, hashes, navigation and documentation remain the reference.
-Real all-node diagram construction is a separate bounded external diagnostic.
+files with two supplied diagram profiles. One supplies deterministic test data.
+The second replays authenticated actual source diagrams from the completed
+source leg. The original node loop, metadata, hashes, navigation and documentation
+remain the reference. Fresh all-node diagram construction has a separate bounded
+external diagnostic.
 The real native runnable example checks the complete supplied WordSwap closure.
 These two scopes are distinct.
 
@@ -99,7 +101,7 @@ physical execution evidence is reused where applicable.
 
 ## Verification
 
-The concentrated regression passed 107 cases with zero skips and 72 visible
+The concentrated regression passed 108 cases with zero skips and 94 visible
 source/parser warnings. Strict typing passed for all three changed Python files.
 Black, Ruff, Integration scope, architecture, IR, API and diff checks passed.
 The supplied-diagram full-catalog profile produced 3,317 byte-identical files
@@ -121,3 +123,26 @@ all original cells, including the explicit obsolete-import correction, all
 reference-catalog output files, original encoder/hash/control collision,
 real native notebook, exact entangled complex append, observed/model counts,
 retained-file behavior, diagram failures, cancellation and metadata failures.
+
+## Authenticated actual diagram replay
+
+The completed source leg contains 3,083 unique node JSON records after the
+source filename collisions. Class documentation and navigation bring the total
+to 3,317 files. The deterministic gzip fixture
+`tests/fixtures/component_ui_source_diagrams.jsonl.gz` retains each node path and
+its actual diagram dictionary or null. Its adjacent manifest records the frozen
+commit, notebook blob, copyright, license, extraction and replay scope. The test
+hardcodes SHA256
+`d29f2e28abd70f0297c83ea7f3922576780dd9fbdd52ec94b48ba65724b70c58`
+and verifies all fixture keys against the actual complete source graph. Only
+diagram fields come from this fixture. Metadata, class documentation, navigation,
+filenames and adjacency are recomputed from frozen source.
+
+Both profiles produce all 3,317 files with exact source/native byte equality.
+The real-diagram replay has 98,815,922 payload bytes per exporter. The supplied
+synthetic-diagram profile has 69,467,868 bytes per exporter. This closes exporter
+comparison for recorded real diagrams. Fresh full-native diagram execution and
+237-reference/234-class/359-example native provider coverage remain open.
+The fixture is 837,499 bytes and avoids repeating the 900-second decomposition
+run. External manifests retain full output hashes before completed temporary
+output copies are reclaimed.

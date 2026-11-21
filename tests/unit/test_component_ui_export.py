@@ -1,6 +1,7 @@
 """Complete UI source export with the full reference catalog and native owners."""
 
 import ast
+import gzip
 import hashlib
 import importlib
 import json
@@ -112,8 +113,9 @@ def test_all_scalar_encodings_hashes_and_wrapper_collision() -> None:
     assert native.ComponentUIEncoder().encode(object()) == '"NOT_SERIALIZABLE"'
 
 
+@pytest.mark.parametrize("diagram_profile", ["supplied", "recorded_source"])
 def test_full_catalog_export_protocol_with_supplied_scores(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, diagram_profile: str
 ) -> None:
     import matplotlib.pyplot as plt
     from qualtran import BloqExample, DecomposeNotImplementedError, DecomposeTypeError
@@ -151,6 +153,37 @@ def test_full_catalog_export_protocol_with_supplied_scores(
     monkeypatch.setattr(original_graph, "_build_call_graph", capture)
     monkeypatch.chdir(tmp_path)
     namespace: dict[str, Any] = {}
+    recorded: dict[str, Any] = {}
+    if diagram_profile == "recorded_source":
+        archive = ROOT / "tests/fixtures/component_ui_source_diagrams.jsonl.gz"
+        receipt = json.loads(
+            (ROOT / "tests/fixtures/component_ui_source_diagrams.json").read_text()
+        )
+        assert receipt["source_commit"] == "bcb17bb25360ed68ce3bc084645db3e929799389"
+        assert receipt["notebook_blob"] == "19959bb58f2218499ca2b927802ef79fa94cd88d"
+        assert (
+            receipt["sha256"]
+            == "d29f2e28abd70f0297c83ea7f3922576780dd9fbdd52ec94b48ba65724b70c58"
+        )
+        assert hashlib.sha256(archive.read_bytes()).hexdigest() == receipt["sha256"]
+        with gzip.open(archive, "rt", encoding="utf-8") as stream:
+            for line in stream:
+                entry = json.loads(line)
+                assert isinstance(entry["path"], str) and set(entry) == {"path", "msd"}
+                assert entry["msd"] is None or isinstance(entry["msd"], dict)
+                recorded[entry["path"]] = entry["msd"]
+        assert len(recorded) == receipt["node_records"] == 3083
+        assert any(value is not None for value in recorded.values())
+        assert any(value is None for value in recorded.values())
+
+    def recorded_score(component: object) -> object:
+        key = (
+            namespace["bloq_name"](component)
+            + "/"
+            + namespace["bloq_filename"](component)
+        )
+        return recorded[key]
+
     try:
         for index, cell in enumerate(original_cells()):
             tree = ast.parse(cell)
@@ -160,9 +193,19 @@ def test_full_catalog_export_protocol_with_supplied_scores(
                 # generation has a separate bounded external diagnostic.
                 final_loop = tree.body.pop()
                 exec(compile(tree, f"{ORIGINAL}:{index}", "exec"), namespace)
-                namespace["bloq_score"] = lambda component: {
-                    "supplied_diagram": type(component).__name__
-                }
+                if recorded:
+                    keys = {
+                        namespace["bloq_name"](component)
+                        + "/"
+                        + namespace["bloq_filename"](component)
+                        for component in namespace["call_graph"].nodes
+                    }
+                    assert keys == set(recorded)
+                    namespace["bloq_score"] = recorded_score
+                else:
+                    namespace["bloq_score"] = lambda component: {
+                        "supplied_diagram": type(component).__name__
+                    }
                 tree.body = [final_loop]
             exec(compile(tree, f"{ORIGINAL}:{index}", "exec"), namespace)
     finally:
