@@ -326,3 +326,12 @@ notebook remains outside the scientific publication catalog. Run
 `tests/unit/test_component_bibliography_notebook.py` for complete unchanged-source
 cell comparisons and actual native Jupyter execution. See
 `COMPONENT_BIBLIOGRAPHY_NOTEBOOK_AUDIT.md` for the explicit discovery adaptation.
+
+`examples/notebooks/component_report.ipynb` runs the existing five checks on a
+real two-bit WordSwap Program and labels results by native package owner. It
+prints the six measured CX primitives separately from the six declared CX
+primitives. Domain views, styled check results and full summaries reuse the
+report owner. Run `tests/unit/test_component_report_notebook.py` for actual
+Jupyter execution, exact complex-state append behavior, deliberate count failure
+and unchanged-source view comparisons. See `COMPONENT_REPORT_NOTEBOOK_AUDIT.md`
+for the preserved source Other/factoring query counterexamples and explicit owner labels.
