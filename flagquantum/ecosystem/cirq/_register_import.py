@@ -35,6 +35,7 @@ from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
 from ._register_definition import _expand_native_definitions
 from ._register_export import _register_shape
+from ._source_graph_operations import source_graph_operations
 from .conversion import (
     _check_cirq_symbol_identity,
     _cirq,
@@ -122,9 +123,11 @@ def _register_operations(
                     raise ValueError(
                         "Cirq register decomposition is cyclic or too deep"
                     )
-                tree = cirq.decompose_once(
-                    operation, context=context, flatten=False, default=None
-                )
+                tree = source_graph_operations(operation, manager)
+                if tree is None:
+                    tree = cirq.decompose_once(
+                        operation, context=context, flatten=False, default=None
+                    )
                 if tree is None:
                     # Match the SDK wrapper's tensor-backed unitary fallback only
                     # after its declared decomposition has declined the operation.
