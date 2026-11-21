@@ -26,6 +26,7 @@ _ORIGINAL = sabre._select_sabre_trials
 
 class DevelopmentReport(TypedDict):
     evidence_class: str
+    implementation_commit: str
     suite: str
     compiler_sha256: str
     runner_sha256: str
@@ -191,6 +192,12 @@ def main() -> None:
     rows: list[dict[str, object]] = []
     report: DevelopmentReport = {
         "evidence_class": "development",
+        "implementation_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(sabre.__file__).resolve().parents[3],
+            text=True,
+            timeout=10,
+        ).strip(),
         "suite": args.suite,
         "compiler_sha256": hashlib.sha256(
             Path(sabre.__file__).read_bytes()
