@@ -70,3 +70,35 @@ graph = library_call_graph(
 )
 assert len(graph[root]) == 3
 ```
+
+`component_report.py` builds, styles and summarizes the five-check component
+report. Supply the domain's existing checker and class predicate. It reuses
+Testing example metadata and status records, with no decomposition or numerical
+logic in the tool. Pass a reusable list of examples for both report traversals.
+The original one-shot iterable exhaustion and empty-input `KeyError` are recorded
+in `COMPONENT_REPORT_FILE_AUDIT.md`. Explicit examples override the original two
+slow-Hubbard-example exclusions.
+
+For a runnable register-program report, use the existing three-X fixture.
+
+```python
+from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.testing.component_examples import ComponentExample
+from flagquantum.testing.example_checks import RegisterExample, check_example
+from tests.unit.test_reference_testing_file import lower_fixture, parallel_example
+from tools.development.component_report import get_report, summarize_results
+
+fixture = RegisterExample(parallel_example, lower_fixture, lambda: {"x": 3})
+example = ComponentExample(parallel_example, "parallel", ProgramRecord)
+report = get_report(
+    [ProgramRecord],
+    [example],
+    check=lambda example, kind: check_example(fixture, kind),
+    is_component=lambda cls: cls is ProgramRecord,
+)
+assert summarize_results(report)["pass"].tolist() == [1] * 5
+```
+
+The fixture import is confined to this developer example. The reporting tool
+itself has no test-package dependency. Run `tests/unit/test_component_report.py`
+and `tests/unit/test_reference_testing_file.py` after changing this workflow.
