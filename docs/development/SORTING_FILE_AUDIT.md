@@ -223,3 +223,74 @@ ValueError for invalid lengths where the original constructor uses AssertionErro
 Unknown symbolic dimensions retain metadata and direct models while finite
 execution rejects them. The original merge SDK wrapper arity failure and source
 symbol-assumption loss remain explicit. Receipts use g2-sorting-foreign-*.
+
+## Complete concrete recursive presentation — 2026-11-22
+
+All four concrete catalog roots now retain complete recursively qualified source
+calls and fresh drawings. The frozen source and native definitions have 100
+exact ordered graphs, including 96 non-root source-success contexts, and 749
+atomic/refusal contexts. Every source-success descendant has its source class
+label and an exactly matching fresh musical-score payload. The six original
+sorting catalog factories retain their previously accepted immediate graphs.
+
+The existing Comparator, ParallelComparators, BitonicMerge and BitonicSort
+Compiler constructors remain authoritative. A domain-owned child provider reads
+finite port dimensions and the first named comparator operand indices, then
+requires literal equality of the entire reachable native definition. Shared
+GreaterThan presentation belongs to the comparison provider. No function-name
+heuristic, replacement executable body or alternate physical recipe is used.
+
+A two-word parallel block and a two-word sort have identical bodies. A
+BitonicSort label for that body requires an exact recursive sort parent with
+both child positions referring to it. Standalone ambiguous bodies retain their
+unqualified presentation. Tests cover this boundary, multiple observed parallel
+offsets and altered measured feedback in all four complete wrappers.
+
+| Concrete catalog root | Actual emitted T-family | Actual measurements | Source default 4-T CSwap estimate | Source exact 7-T CSwap estimate |
+| --- | --- | --- | --- | --- |
+| Comparator, width 3 | 41 | 5 | 32 | 41 |
+| ParallelComparators, 7 words, offset 2, width 3 | 123 | 15 | 96 | 123 |
+| BitonicMerge, half length 4, width 7 | 1212 | 156 | 960 | 1212 |
+| BitonicSort, 8 words, width 4 | 1344 | 168 | 1056 | 1344 |
+
+Full primitive histograms and independent source cost objects are preserved in
+`g2-sorting-child-resources-20261122.json`. Every execution owner is byte-identical
+to published baseline cd26f66a8. Presentation contributes zero physical gates.
+The concentrated execution suite reruns source operands/feedback, complete small
+complex tensors, applicable raw measurement histories, spectator entanglement,
+forward logical histories, inverse history erasure and zero temporary work.
+Forward logical sorting histories remain outputs until the separately verified
+inverse consumes them.
+
+The whole Arithmetic intake covers all 74 original catalog factories, recording
+308 exact contextual graphs, 1521 original atomic/refusal contexts, seven native
+declaration traversal boundaries, two duplicate-detection graph gaps and 27 roots
+without a native UI decomposition. These are contextual graph counts on baseline cd26f66a8 with this presentation
+batch applied. The complete receipt is
+`g2-arithmetic-recursive-intake-complete-20261122.json`.
+The latter roots retain separately accepted executable/declaration owners where
+available. Five of those 27 roots have successful original decompositions and 22 have
+original atomic/refusal outcomes. This UI inventory preserves their separately
+accepted executable/declaration owners where available.
+
+The symbolic comparator's GreaterThan child and the symbolic four-word sort's
+BitonicSort and BitonicMerge children still have native declaration-only bodies.
+Their original source decompositions succeed. The recorded IndexError comes
+from attempting to traverse those native empty blocks. This is a native
+recursive-graph gap, separate from original decomposition refusals. Symbolic
+root drawings retain their immediate acceptance and finite execution rejection.
+They are excluded from the 100 concrete recursive graph claim. Remaining
+permutation, duplicate detection, symbolic dependency coverage, nominal type
+views and pending contract proposals stay in the shared G2 ledger.
+
+Acceptance passes 694 concentrated catalog checks, 708 execution/reference
+checks and 15 focused presentation checks. Strict typing covers four changed
+Python files. Black, Ruff, Integration scope, architecture, multilevel IR,
+public API and whitespace checks pass. The catalog retains three existing
+selection exclusions and fourteen notebook escape warnings. Execution retains
+six original serialization deprecation warnings. Export runs are serialized
+within the available disk budget. Combined catalog topology stays at 3569 JSON,
+234 documentation files and 3568 diagrams, with 3215 contextual children,
+68 decomposed roots and 285 atomic interfaces. Qualified contextual descendants
+increase from 204 to 234. Other families' constructor matches retain separate
+fresh-source acceptance boundaries.

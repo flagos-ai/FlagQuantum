@@ -62,6 +62,7 @@ from examples.algorithms.sign_extension_decomposition import (
     sign_extension_score,
 )
 from examples.algorithms.sorting_catalog import sorting_examples
+from examples.algorithms.sorting_child_decomposition import sorting_child_decomposition
 from examples.algorithms.sorting_decomposition import (
     sorting_catalog_program,
     sorting_score,
@@ -754,6 +755,7 @@ def _child_presentation(
         or comparison_child_decomposition(record, entry)
         or sign_extension_child_decomposition(record, entry)
         or control_child_decomposition(record, entry, parameters)
+        or sorting_child_decomposition(record, entry)
     )
 
 
