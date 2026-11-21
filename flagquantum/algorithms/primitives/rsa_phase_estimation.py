@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from dataclasses import dataclass
 from math import ceil, log2
 
@@ -14,6 +15,7 @@ from numpy.random import RandomState
 
 from ...circuit import Circuit
 from ...compiler._component_trace.call_graph import (
+    SymbolAllocator,
     SymbolicCallGraph,
     symbolic_call_graph,
 )
@@ -25,7 +27,16 @@ from ...dynamic import DynamicCircuit
 from .measure_qft import MeasureQFT
 from .modular_exponentiation import ModularExponentiation, shor_factoring_parameters
 
-PhaseCall = tuple[str, SymbolicInt]
+PhaseCall = tuple[str, SymbolicInt] | tuple[str, SymbolicInt, SymbolicInt, SymbolicInt]
+
+
+def generalize_rsa_multiplier_call(call: Hashable) -> Hashable:
+    """Replace only a controlled modular multiplier's factor, as in the source."""
+    if isinstance(call, tuple) and len(call) == 4 and call[0] == "CModMulK":
+        from sympy import Symbol
+
+        return (call[0], call[1], Symbol("k_exp"), call[3])
+    return call
 
 
 @dataclass(frozen=True)
@@ -82,18 +93,15 @@ class RSAPhaseEstimation:
     def phase_width(self) -> SymbolicInt:
         return 2 * self.width
 
-    def source_call_graph(self) -> SymbolicCallGraph[PhaseCall]:
-        """Keep the declared n-wire Fourier child and 2n multiplier repetitions."""
-        root = ("RSAPhaseEstimate", self.width)
-        return symbolic_call_graph(
-            root,
-            {
-                root: {
-                    ("MeasureQFT", self.width): 1,
-                    ("CModMulK", self.width): self.phase_width,
-                }
-            },
-        )
+    def source_callees(self, allocator: SymbolAllocator) -> dict[Hashable, SymbolicInt]:
+        """Declare the original generic factor and smaller Fourier model width."""
+        factor = allocator.new_symbol("k")
+        multiplier: PhaseCall = ("CModMulK", self.width, factor, self.modulus)
+        return {("MeasureQFT", self.width): 1, multiplier: self.phase_width}
+
+    def source_call_graph(self) -> SymbolicCallGraph[Hashable]:
+        """Retain complete source identities without instantiating physical gates."""
+        return symbolic_call_graph(self, {self: self.source_callees(SymbolAllocator())})
 
     def _modular_exponentiation(self) -> ModularExponentiation:
         return ModularExponentiation(

@@ -61,3 +61,46 @@ the previous worked factoring tutorial also passed again.
 Q-0468, Q-0470 and Q-0474 close. Q-0473 remains open for the recorded
 source width/model and inherited modulus-fit boundaries, and the
 unverified large physical circuits.
+
+## Complete source model identities and factor generalization
+
+The source file's constructor, empty signature, factory, physical composite,
+multiplier declaration, grouped call graph, `_K` and `_generalize_k` behavior,
+and two example factories now have native owners or explicit dispositions.
+The constructor and factory reuse `shor_factoring_parameters`; physical
+construction continues through `ModularExponentiation` and `MeasureQFT`.
+`source_callees(allocator)` retains the exact generic multiplier key, including
+unsigned width, newly allocated factor and modulus. Its allocator belongs to
+the caller. `source_call_graph()` now retains the full root identity and these
+parameterized children. The example notebook displays those parameters.
+
+`generalize_rsa_multiplier_call` changes only the multiplier factor to the
+source symbol `k_exp`. It uses the existing symbolic graph engine to combine
+identical generalized calls while retaining different widths and moduli.
+The regression compares both original example factories and preallocated
+symbol names, then generalizes the eight actual multiplier calls from the
+width-four, modulus-15 source composite. A second consumer verifies separate
+width/modulus leaves and their additive cost. No new registry or execution
+protocol is introduced. The original documentation specification maps to this
+audit and the existing runnable notebook.
+
+The immutable source file matches inventory blob
+`9416620d05f37aa4fde717d498c185ff2d9eb8d0`. Original non-notebook tests report
+five passes, four skips and one expected failure. The skipped lanes cover
+symbolic decomposition, source counts availability and type incompatibility
+between the initializer's QAny and the multiplier's QUInt. Prior full notebook
+evidence remains recorded above. These source outcomes are not native passes.
+
+The source's declared `n`-bit Fourier model remains separate from its physical
+`2n`-bit readout. The new parameterized model does not resolve that discrepancy
+or change physical primitive counts. Fresh resource receipts reproduce the
+19-wire and 25-wire native circuits and both original gate-cost declarations
+in the table above. The existing full-complex phase projections and modular
+measurement-channel regressions are rerun for this batch. Q-0473 remains open
+for the recorded source and physical-width boundaries.
+
+Batch validation on 2026-11-21 passed 45 concentrated cases, 29 integration
+cases and the six-cell, four-SVG native notebook in an isolated kernel with
+reference imports blocked. Strict typing for all three Python files, Black,
+Ruff, Algorithms scope, architecture, IR and public API checks passed. The
+Cirq 1.6.1 lane passed 11 model and physical cases with native Kickmix present.

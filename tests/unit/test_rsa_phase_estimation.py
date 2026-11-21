@@ -45,7 +45,11 @@ def test_original_constructor_and_symbolic_declared_calls() -> None:
         assert tuple(native.source_signature) == tuple(source.signature) == ()
         calls = source.build_call_graph(SympySymbolAllocator())
         modeled = {
-            (type(b).__name__, b.n if hasattr(b, "n") else b.dtype.bitsize): count
+            (
+                (type(b).__name__, b.n)
+                if hasattr(b, "n")
+                else (type(b).__name__, b.dtype.bitsize, b.k, b.mod)
+            ): count
             for b, count in calls.items()
         }
         assert native.source_call_graph().leaf_counts == modeled
