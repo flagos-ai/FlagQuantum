@@ -1161,3 +1161,14 @@ path = "docs/development/evidence/runtime-shard-duration-balance.json"
 [[artifact.revision]]
 value = "abde94db5cef007495cc1bce41ce36f673747cff"
 origin = "unreferenced_object"
+
+
+# Independent compiler acceptance uses this unchanged SDKBench source. The
+# directory scope covers subsequent application evidence with the same harness.
+[[artifact]]
+path = "docs/development/evidence/"
+
+[[artifact.revision]]
+value = "9aa9260920984e2ca05bcb293abb885fccd9c144"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"
