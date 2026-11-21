@@ -403,6 +403,13 @@ def _identity(identifier: str) -> object:
     return identifier
 
 
+_EXAMPLE_DESCRIPTIONS = {
+    "modexp_small": "A small-exponent modular exponentiation demo.",
+    "modexp": "An example modular exponentiation to factor 13 * 17.",
+    "modexp_symb": "Modular exponentiation with symbolic attributes.",
+}
+
+
 def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
     grouped: dict[str, NotebookSpec] = {}
     for title, stem, _, identifiers in DOCUMENTS:
@@ -418,7 +425,12 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
             ComponentDocumentation(
                 component_type=object,
                 examples=tuple(
-                    ComponentExample(partial(_identity, identifier), identifier, object)
+                    ComponentExample(
+                        partial(_identity, identifier),
+                        identifier,
+                        object,
+                        description=_EXAMPLE_DESCRIPTIONS.get(identifier),
+                    )
                     for identifier in identifiers
                 ),
                 import_line="from examples.algorithms.modular_ui_export import sections",

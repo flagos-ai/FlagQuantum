@@ -51,6 +51,12 @@ def test_entire_source_group_and_document_factory_order(
         assert [
             [example.name for example in doc.examples] for doc in target.component_specs
         ] == [[example.name for example in doc.examples] for doc in source.bloq_specs]
+        assert [
+            [example.description for example in doc.examples]
+            for doc in target.component_specs
+        ] == [
+            [example.docstring for example in doc.examples] for doc in source.bloq_specs
+        ]
 
 
 @pytest.mark.parametrize("identifier", tuple(native.INSTANCES))
