@@ -87,14 +87,18 @@ def test_concrete_program_is_exact_existing_executable_owner(identifier: str) ->
 
 
 @pytest.mark.parametrize("identifier", SYMBOLIC)
-def test_symbolic_graph_retains_only_nonexecuting_child_declarations(
+def test_symbolic_graph_retains_source_refusal_leaves_and_physical_rejection(
     identifier: str,
 ) -> None:
     record = subtraction_catalog_program(
         native.name(identifier), native.signature(identifier)
     )
     assert record is not None
-    assert all(not function.blocks for function in record.functions[1:])
+    declared = [f for f in record.functions[1:] if not f.blocks]
+    expected = {("a", "b"), ("q",)}
+    if identifier == "sub_symb":
+        expected.add(("reg", "reg"))
+    assert {tuple(r.name for r in f.registers or ()) for f in declared} == expected
     with pytest.raises(ValueError):
         bind_register_program(record, ((0,), (1,)))
 

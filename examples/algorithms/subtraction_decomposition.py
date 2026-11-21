@@ -9,6 +9,7 @@ from functools import partial
 from typing import cast
 
 from examples.algorithms.subtraction_catalog import symbolic_subtraction_steps
+from examples.algorithms.word_arithmetic_decomposition import word_program
 from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
 from flagquantum.compiler._component_trace.resource_generalization import OnEachCall
 from flagquantum.compiler.registers.arithmetic.subtraction_component import (
@@ -85,8 +86,8 @@ def subtraction_catalog_program(
     """Retain executable concrete owners and declared symbolic children.
 
     Signed symbolic Subtract reuses the existing source-ordered catalog steps.
-    SubtractFrom retains complement/Add/complement. Symbolic declarations supply
-    typed ports and have no execution body. CompositeBloq keeps the original UI
+    SubtractFrom retains complement/Add/complement and reuses the symbolic
+    complement graph. Source refusal leaves retain typed declarations. CompositeBloq keeps the original UI
     decomposition failure boundary and its atomic interface.
     """
     if operation not in {"Subtract", "SubtractFrom"}:
@@ -100,15 +101,14 @@ def subtraction_catalog_program(
         )
     if operation == "Subtract":
         return _symbolic_subtract(ports)
-    complement = FunctionRecord(
-        "BitwiseNot", (), registers=tuple(Signature.build_from_dtypes(x=dtype))
-    )
+    complement = word_program("BitwiseNot", Signature.build_from_dtypes(x=dtype))
+    assert complement is not None
     addition = FunctionRecord("Add", (), registers=tuple(ports))
-    builder = ComponentProgramBuilder(ports, (complement, addition))
+    builder = ComponentProgramBuilder(ports, (addition,))
     a, b = builder.inputs["a"], builder.inputs["b"]
-    b = builder.call_dict(complement.name, {"x": b})["x"]
+    b = builder.call_program(complement, {"x": b})["x"]
     result = builder.call_dict(addition.name, {"a": a, "b": b})
-    b = builder.call_dict(complement.name, {"x": result["b"]})["x"]
+    b = builder.call_program(complement, {"x": result["b"]})["x"]
     return builder.finalize({"a": result["a"], "b": b})
 
 

@@ -186,3 +186,54 @@ The default-suite docstring failure baseline remains unchanged. Whole-repository
 dependency findings and zero batch findings are recorded in the external
 `g2-subtraction-foreign-evidence.json` receipt. Q-0220 and Q-0221 close with the
 original failures and symbolic physical boundary documented here.
+
+## Complete recursive word dependency closure — 2026-11-22
+
+Symbolic SubtractFrom now reuses the existing BitwiseNot graph in both complement
+positions. Its original Add declaration remains a source refusal. Symbolic
+Subtract retains the accepted Cast/OnEach/Add/Cast order. Concrete Subtract and
+SubtractFrom continue to reuse their existing executable owners verbatim.
+
+All twelve source-success bitwise, negate and subtraction catalog roots retain
+34 exact ordered recursive graphs, 22 qualified non-root class labels and 105
+original atomic/refusal contexts. Twenty non-root source drawings match fresh
+native payloads exactly. The two Add(width=64) descendants under Subtract and
+SubtractFrom reproduce an IndexError in the frozen source musical-score builder.
+They keep exact ordered graphs and labels, with the original drawing failures
+recorded separately. Original source remains unchanged. Previous Add(width=100)
+drawing failure evidence belongs to the earlier addition-file closure.
+
+The two formerly empty symbolic BitwiseNot definitions are closed. Whole
+Arithmetic traversal now records 320 exact graphs, 1537 original atomic/refusal
+contexts and two remaining declaration-only source-success contexts under
+PermutationCycle. The two duplicate-detection graph gaps and five source-success
+omitted roots retain separate ownership. The existing symbolic XOR failure and
+malformed CompositeBloq failure are still exercised directly.
+
+| Concrete catalog root | Actual T-family | Actual measurements | Independent source T-family / measurements |
+| --- | --- | --- | --- |
+| Negate, 8-bit signed | 28 | 7 | 28 / 7 |
+| Xor and BitwiseNot | 0 | 0 | 0 / 0 |
+| Subtract, width 4 | 12 | 3 | 12 / 3 |
+| Subtract, width 64 | 252 | 63 | 252 / 63 |
+| Subtract, widths 4 and 16 | 60 | 15 | 60 / 15 |
+| SubtractFrom, width 4 | 12 | 3 | 12 / 3 |
+| SubtractFrom, width 64 | 252 | 63 | 252 / 63 |
+
+Full emitted primitive histograms and independently evaluated source model
+objects are stored in `g2-symbolic-word-resources-20261122.json`. Every Compiler,
+Core and execution owner is byte-identical to published baseline 4cbfcd225.
+Presentation adds zero physical operations. The focused execution regression
+reruns original primitive operands and feedback, full small complex states,
+spectator entanglement, applicable measurement histories, exact adjoints and
+zero workspace. Unresolved widths keep metadata/models and physical rejection.
+
+Final batch acceptance has 711 concentrated catalog passes, three existing
+deselections and 14 existing notebook warnings. Execution/reference regression
+has 718 passes. Focused recursion/provider regression has 108 passes. Strict
+typing covers seven changed Python files. Black, Ruff, integration scope,
+architecture, IR, API baseline and whitespace checks pass. Eight frozen source
+blobs are verified. The two original 64-bit Add drawing failures remain explicit.
+Combined export counts derive from the preceding published export plus the exact
+two-node increase and complete catalog file-equality regression, recorded in
+`g2-symbolic-word-inventory-20261122.json`.
