@@ -135,3 +135,67 @@ selects 317 passing tests and runtime tier selects 58 passing tests. These are
 limited local selections, not the full repository tiers. Black, Ruff, public API
 snapshot, architecture, English, document links and whitespace checks must pass
 before publication; full repository validation remains required CI.
+
+
+## Verification with the merged compiler pipeline
+
+PR #1268 merged at main `a7d84a605080c511d4a07037ef2b4f3b90a645d1` after
+243 successful checks and three optional skips. This branch merged that exact
+revision without conflicts. The combined production source is
+`7619bbe25f034570ad01c495cab6a4bbfb0744b9`; target-plan reuse remains excluded.
+Earlier reports retain their original source pins and numerical observations.
+
+The unchanged collector-control runner produced a
+[new complete report](evidence/compiler-cz-identity-prefix-integrated.json):
+all 60 pairs / 120 independent acceptances pass, with the same one-case CZ
+improvement and 59 unchanged CZ/depth pairs. Two warmups and 21 alternating
+samples per variant give local historical-collector/prefix medians of
+165.695/165.690 ms for Ising-8/line and 619.430/619.457 ms for QFT-12/grid.
+These almost equal shared-host observations do not prove zero overhead or a
+stable speedup. The previous campaigns ran different source trees and intervals;
+their medians must not be divided to attribute a pipeline speedup. Separate
+traced Python peaks are 2,896,522/2,984,180 bytes for Ising and
+10,116,749/10,116,631 bytes for QFT (control/prefix). The Ising observation
+increases by 87,658 bytes; these are single traced runs, not process-RSS or
+qualified memory comparisons.
+
+The combined focused suite passes 962 tests with four optional skips. It covers
+classical feedback, scalar encoding, target lowering, generic and native block
+optimization, routing, complete artifact evidence, directed topology and the
+CPU workflow. An earlier collection attempt lacked tracked synthesis examples;
+restoring those sparse-checkout fixtures enabled the full selection. These
+focused tests are not the full repository tiers; synchronized-head CI is required.
+
+## Rechecking the previously rejected depth tie policy
+
+The [earlier depth study](COMPILER_SABRE_DEPTH.md) rejected an equal-SWAP
+candidate because the six-qubit grid QFT target output increased from 65 to
+67 CZs. That historical decision and raw report remain intact. Prefix splitting
+changes the downstream interaction, so the complete application study was
+rerun at the combined source above. The diagnostic runner now records its
+existing-vocabulary `implementation_commit` as well as source/runner digests;
+this adds measurement provenance, not a production compiler setting.
+
+The [new application report](evidence/sabre-depth-after-identity-prefix.json)
+retains 120 workflow/input pairs / 240 independent acceptances across both
+ordinary-restored and target-artifact workflows. It has six lexicographic
+CZ-count/depth improvements, 114 unchanged pairs and no observed regression.
+The QFT target witness now changes from 65 CZs / depth 48 to 63 CZs / depth 38;
+its ordinary counterpart changes from 75 / 52 to 75 / 42. All existing endpoint
+layouts and acceptance thresholds are unchanged.
+
+This is a diagnostic override of the existing trial selector, not a registered
+formal profile or an enabled default. Inputs use the already-inspected nonce;
+these are not unseen draws. The selector also extends the trial's pruning bound
+by one to retain equal-cost candidates, so search overhead needs measurement.
+Quality on these inspected applications does not qualify latency, memory,
+held-out behavior or SDK rankings. The policy remains disabled pending those
+checks; there is no special-case treatment of the QFT witness.
+
+
+The [rerun generic control](evidence/sabre-generic-depth-after-identity-prefix.json)
+also completes all 80 seeded CX cases at widths 6/8/12/16 on line/grid devices,
+using the existing exact GF(2) operator checks. Its reported logical two-qubit
+depth counts CX and SWAP equally, whereas the diagnostic selector expands each
+SWAP to weight three. That generic depth is not the delivered native CZ metric,
+and must not be substituted for the application measurements above.
