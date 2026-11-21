@@ -1,6 +1,6 @@
 # Notebook editorial review ledger
 
-This ledger records human editorial inspection and fresh cell execution,
+This ledger records case-by-case editorial inspection and fresh cell execution,
 separately from historical source migration acceptance. A row marked reviewed
 does not certify every capability demonstrated by the paper or upstream platform.
 Unlisted accepted Notebooks remain pending editorial review.
@@ -73,7 +73,7 @@ evidence directory `notebook-ux-20261121/functions-replay.json`.
 | [community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview](community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/walkthrough.ipynb) | The editable qfunc below specifies an all-ones control over a logical array. | Passed |
 | [community/hackathons/iquhack_2025/challenge_template/overview](community/hackathons/iquhack_2025/challenge_template/overview/walkthrough.ipynb) | The editable starter allocates a logical array and requests uniform superposition. | Passed |
 | [community/hackathons/iquhack_2025/gaussian_reference/overview](community/hackathons/iquhack_2025/gaussian_reference/overview/walkthrough.ipynb) | The editable direct qfunc supplies normalized Gaussian probabilities to native state preparation. | Passed |
-| [community/hackathons/iquhack_2025/winning_gaussian/overview](community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb) | The tuned product rotations, controlled adjustment and truncated Fourier schedule are built by the explicit [Circuit builder](workflow.py). | Passed |
+| [community/hackathons/iquhack_2025/winning_gaussian/overview](community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb) | The tuned product rotations, controlled adjustment and truncated Fourier schedule are built by the explicit [Circuit builder](community/hackathons/iquhack_2025/winning_gaussian/overview/workflow.py). | Passed |
 | [community/hackathons/iquhack_2025/workshop/overview](community/hackathons/iquhack_2025/workshop/overview/walkthrough.ipynb) | The editable arithmetic qfunc below requests coherent output computation from two three-bit inputs. | Passed |
 | [community/paper_implementation_project/bb84/bb84_implementation/overview](community/paper_implementation_project/bb84/bb84_implementation/overview/walkthrough.ipynb) | The editable root below prepares eight signals with classically bound message and basis arrays. | Passed |
 
@@ -125,7 +125,7 @@ its time grid, term set or samples.
 | [algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview/walkthrough.ipynb) | The sampled native qfunc route uses bounded table-driven point translation. | Passed |
 | [algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/walkthrough.ipynb) | The editable `poisson` qfunc expresses state loading, spatial transforms, controlled spectral evolution, reciprocal rotation and automatic inverse regions. | Passed |
 | [algorithms/quantum_differential_equations_solvers/lchs/overview](algorithms/quantum_differential_equations_solvers/lchs/overview/walkthrough.ipynb) | The 128-dimensional comparison is classical numerical analysis. | Passed |
-| [algorithms/quantum_differential_equations_solvers/time_marching/overview](algorithms/quantum_differential_equations_solvers/time_marching/overview/walkthrough.ipynb) | The reusable `magnus` qfunc in [quantum.py](quantum.py) requests the static phase-stream slice. | Passed |
+| [algorithms/quantum_differential_equations_solvers/time_marching/overview](algorithms/quantum_differential_equations_solvers/time_marching/overview/walkthrough.ipynb) | The reusable `magnus` qfunc in [quantum.py](algorithms/quantum_differential_equations_solvers/time_marching/overview/quantum.py) requests the static phase-stream slice. | Passed |
 | [algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/walkthrough.ipynb) | The visible factory below converts the model's Pauli description to observables, then defines a qfunc that requests probability preparation and two product formulas per time slice. | Passed |
 | [algorithms/quantum_linear_solvers/hhl/overview](algorithms/quantum_linear_solvers/hhl/overview/walkthrough.ipynb) | The visible roots specify state loading, eigenphase precision, reciprocal rotations and the compute/use/uncompute region. | Passed |
 | [algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/walkthrough.ipynb) | The original-size Notebook constructs all sixteen Pauli terms in a native Circuit block, fits fresh phases, and applies a projected response using the shared Circuit QSVT machinery. | Passed |
@@ -152,10 +152,10 @@ additional workflows retain all original code stages and numerical scope.
 | [tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/walkthrough.ipynb) | The visible roots compose the coin and reversible movement, with six position bits on the ring or two five-bit coordinates on the torus. | Passed |
 | [tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview](tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview/walkthrough.ipynb) | The editable root below passes a static power callback to QPE. | Passed |
 | [tutorials/basics/entanglement](tutorials/basics/entanglement/walkthrough.ipynb) | `Output` declares newly allocated logical qubits; `allocate` initializes them in zero. | Passed |
-| [tutorials/basics/grover_graph_coloring/overview](tutorials/basics/grover_graph_coloring/overview/walkthrough.ipynb) | The editable root below prepares all five two-bit color variables and composes the shared [predicate and diffuser](../main.py). | Passed |
+| [tutorials/basics/grover_graph_coloring/overview](tutorials/basics/grover_graph_coloring/overview/walkthrough.ipynb) | The editable root below prepares all five two-bit color variables and composes the shared [predicate and diffuser](tutorials/basics/grover_graph_coloring/main.py). | Passed |
 | [tutorials/basics/optimization/learning_optimization/overview](tutorials/basics/optimization/learning_optimization/overview/walkthrough.ipynb) | The cost is a real phase expression over coherent two-bit integers. | Passed |
 | [tutorials/basics/prepare_state](tutorials/basics/prepare_state/walkthrough.ipynb) | The 32 nonnegative entries are target probabilities, not amplitudes. | Passed |
-| [tutorials/basics/qmci_pi_estimation/overview](tutorials/basics/qmci_pi_estimation/overview/walkthrough.ipynb) | The editable preparation root below allocates coordinates at a checked static bit width and composes the shared [prepare and reflect helpers](operations.py). | Passed |
+| [tutorials/basics/qmci_pi_estimation/overview](tutorials/basics/qmci_pi_estimation/overview/walkthrough.ipynb) | The editable preparation root below allocates coordinates at a checked static bit width and composes the shared [prepare and reflect helpers](tutorials/basics/qmci_pi_estimation/overview/operations.py). | Passed |
 | [tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/walkthrough.ipynb) | The control Hadamards surround a coherent controlled four-qubit QFT. | Passed |
 | [tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/walkthrough.ipynb) | The two-bit controller coherently chooses identity, QFT or inverse QFT. | Passed |
 | [tutorials/basics/quantum_programming/classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/walkthrough.ipynb) | The classical expression `x**2 + 1` describes the function; the three-bit Hadamard input requests all eight arguments coherently. | Passed |
@@ -164,16 +164,16 @@ additional workflows retain all original code stages and numerical scope.
 | [tutorials/basics/quantum_programming/synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/walkthrough.ipynb) | Both runs compute the same coherent `x**2 + 1` function. | Passed |
 | [tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/walkthrough.ipynb) | The visible qfunc roots allocate three data bits and one of eight fractional phase widths, then invoke coherent QPE on the supplied 8-by-8 unitary. | Passed |
 | [tutorials/technology_demonstrations/arithmetic_expressions/overview](tutorials/technology_demonstrations/arithmetic_expressions/overview/walkthrough.ipynb) | The three input bits describe all eight `(x,y)` pairs. | Passed |
-| [tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/walkthrough.ipynb) | The visible native root retains the original ten logical bits and four phases, while [program.py](program.py) defines the source-specific block, projector phases and inverse sequence. | Passed |
-| [tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/walkthrough.ipynb) | The root allocates six data bits, three block bits and a QSVT auxiliary, then composes the shared [QSVT sequence](program.py). | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/walkthrough.ipynb) | The visible native root retains the original ten logical bits and four phases, while [program.py](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/program.py) defines the source-specific block, projector phases and inverse sequence. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/walkthrough.ipynb) | The root allocates six data bits, three block bits and a QSVT auxiliary, then composes the shared [QSVT sequence](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/program.py). | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/walkthrough.ipynb) | The commented source is expressed entirely in native FlagQuantum. | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/walkthrough.ipynb) | The native helper reconstructs the literal commented boxes, including their register wiring and half-turn rotations. | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/walkthrough.ipynb) | The qfunc requests a coherent conditional increment/decrement on six position bits. | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/walkthrough.ipynb) | This reconstruction deliberately retains the source cascade, including X on bit zero inside every cascade step. | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/walkthrough.ipynb) | This is a FlagQuantum qfunc reconstruction of the commented source circuit; no external SDK is executed. | Passed |
 | [tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/walkthrough.ipynb) | The historical source is commented code, now reconstructed with FlagQuantum allocation, coherent control and modular arithmetic. | Passed |
-| [tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview](tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/walkthrough.ipynb) | The visible root below requests one coin-controlled modular shift using shared [reversible helpers](quantum.py). | Passed |
-| [tutorials/technology_demonstrations/hamiltonian_evolution/overview](tutorials/technology_demonstrations/hamiltonian_evolution/overview/walkthrough.ipynb) | The native builders in [benchmark.py](benchmark.py) bind a fresh 551-term, twelve-qubit water Hamiltonian into qfunc evolution requests. | Passed |
+| [tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview](tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/walkthrough.ipynb) | The visible root below requests one coin-controlled modular shift using shared [reversible helpers](tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/quantum.py). | Passed |
+| [tutorials/technology_demonstrations/hamiltonian_evolution/overview](tutorials/technology_demonstrations/hamiltonian_evolution/overview/walkthrough.ipynb) | The native builders in [benchmark.py](tutorials/technology_demonstrations/hamiltonian_evolution/overview/benchmark.py) bind a fresh 551-term, twelve-qubit water Hamiltonian into qfunc evolution requests. | Passed |
 | [tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/walkthrough.ipynb) | The same familiar arithmetic builds different reversible programs for unsigned, signed and fractional registers. | Passed |
 | [tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/walkthrough.ipynb) | The visible qfuncs combine arithmetic phases, coherent feasibility conditions and static repeated layers. | Passed |
 | [tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/walkthrough.ipynb) | The editable qfunc below expresses the negative cut count and the shared RX mixer across all four layers. | Passed |
@@ -196,6 +196,92 @@ additional workflows retain all original code stages and numerical scope.
 | [tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/walkthrough.ipynb) | The editable root below uses the regenerated seven-vertex diagonal Hamiltonian and all ten QAOA layers. | Passed |
 
 | [tutorials/technology_demonstrations/hhl/hhl_example/overview](tutorials/technology_demonstrations/hhl/hhl_example/overview/walkthrough.ipynb) | The visible qfunc composes RHS preparation, finite QPE, a reciprocal rotation table and inverse QPE. | Passed |
+
+## Applications: 69 reviewed and replayed
+
+The initial image workflow remains in the cross-category table. These additional
+workflows retain the complete application stages and numerical scope.
+
+| Notebook | Review outcome | Replay |
+| --- | --- | --- |
+
+| [applications/optimization/max_clique/overview](applications/optimization/max_clique/overview/walkthrough.ipynb) | The visible quantum program prepares seven decision bits and composes three cost/mixer layers. | Passed |
+| [applications/optimization/max_independent_set/overview](applications/optimization/max_independent_set/overview/walkthrough.ipynb) | The visible qfunc combines the eight-bit independent-set cost with three mixing layers. | Passed |
+| [applications/optimization/max_k_vertex_cover/overview](applications/optimization/max_k_vertex_cover/overview/walkthrough.ipynb) | The visible qfunc composes three layers for ten decision bits. | Passed |
+| [applications/optimization/set_partition/overview](applications/optimization/set_partition/overview/walkthrough.ipynb) | The qfunc requests a phase for the squared difference between two subsets of the original ten integer weights, followed by three mixer layers. | Passed |
+
+| [applications/benchmarking/quantum_volume/overview](applications/benchmarking/quantum_volume/overview/walkthrough.ipynb) | The visible builder allocates the chosen three-to-six-bit target and composes fresh static pair-unitary helpers. | Passed |
+| [applications/benchmarking/randomized_benchmarking/overview](applications/benchmarking/randomized_benchmarking/overview/walkthrough.ipynb) | The displayed model builder captures a static Clifford helper and applies its checked adjoint before named readout. | Passed |
+| [applications/cybersecurity/link_monitoring/overview](applications/cybersecurity/link_monitoring/overview/walkthrough.ipynb) | The visible qfunc prepares twelve resource decisions with node one fixed using X and applies H and mixers only to the remaining nodes. | Passed |
+| [applications/cybersecurity/patching_management/patch_min_vertex_cover/overview](applications/cybersecurity/patching_management/patch_min_vertex_cover/overview/walkthrough.ipynb) | The visible preview composes three phase/mixer layers over eight resource bits. | Passed |
+| [applications/cybersecurity/whitebox_fuzzing/overview](applications/cybersecurity/whitebox_fuzzing/overview/walkthrough.ipynb) | The visible qfunc allocates two six-bit coordinates, prepares uniform inputs and composes the shared mark/diffuse helpers for the requested bounded number of rounds. | Passed |
+| [applications/finance/credit_card_fraud/overview](applications/finance/credit_card_fraud/overview/walkthrough.ipynb) | The visible native overlap qfunc allocates three feature bits, applies the Pauli embedding and composes a checked adjoint for the other row. | Passed |
+| [applications/finance/option_pricing/overview](applications/finance/option_pricing/overview/walkthrough.ipynb) | The visible root prepares a five-bit asset distribution, applies the shared payoff rotation helper and composes a bounded Grover family. | Passed |
+| [applications/finance/portfolio_optimization/overview](applications/finance/portfolio_optimization/overview/walkthrough.ipynb) | The visible qfunc allocates three unsigned three-bit holdings and three modeled slack bits, then composes three arithmetic cost/mixer layers. | Passed |
+| [applications/logistics/facility_location/overview](applications/logistics/facility_location/overview/walkthrough.ipynb) | The visible preview prepares twelve assignment decisions and five cost/mixer layers, using the shared cost helper for supply and empty-facility penalties. | Passed |
+| [applications/logistics/task_scheduling_problem/overview](applications/logistics/task_scheduling_problem/overview/walkthrough.ipynb) | The visible schedule qfunc allocates the model's bounded decision width, prepares a superposition and applies eight polynomial phase/mixer layers. | Passed |
+| [applications/logistics/traveling_salesman_problem/overview](applications/logistics/traveling_salesman_problem/overview/walkthrough.ipynb) | The visible ansatz prepares sixteen assignment bits and composes all eight cost/mixer layers. | Passed |
+| [applications/logistics/vehicle_routing_problem/overview](applications/logistics/vehicle_routing_problem/overview/walkthrough.ipynb) | The visible qfunc prepares sixteen decisions and twelve cost/mixer layers from freshly generated departure, arrival and intercity distances. | Passed |
+| [applications/optimization/set_cover/overview](applications/optimization/set_cover/overview/walkthrough.ipynb) | The preview exposes three cost/mixer layers over eight selection bits and fifteen slack bits. | Passed |
+
+| [applications/finance/autocallable_options/partial_exponential_state_preparation/overview](applications/finance/autocallable_options/partial_exponential_state_preparation/overview/walkthrough.ipynb) | The visible native composition prepares the five-bit exponential amplitudes, uses a private attenuation bit and applies bounded interval marking and inverse preparation. | Passed |
+| [applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview](applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview/walkthrough.ipynb) | The visible native root loads three years of bounded return fields, encodes the payoff reference and composes the contract's reversible preparation. | Passed |
+| [applications/finance/brownian_chebyshev_polynomials/overview](applications/finance/brownian_chebyshev_polynomials/overview/walkthrough.ipynb) | The visible native root composes bounded, explicitly quantized Brownian/ Chebyshev helpers and returns named time and price fields. | Passed |
+| [applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/walkthrough.ipynb) | The visible probe builder prepares the input and composes four-bit QPE for the rebuilt portfolio operator. | Passed |
+| [applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview](applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview/walkthrough.ipynb) | The visible builder regenerates the matrix evolution, prepares its encoded forcing vector, composes six-bit QPE and applies all 64 reciprocal rotations inside within/apply. | Passed |
+| [applications/finance/rainbow_options/rainbow_options_bruteforce_method/overview](applications/finance/rainbow_options/rainbow_options_bruteforce_method/overview/walkthrough.ipynb) | The visible native root loads two asset registers, composes a joint payoff rotation and the requested Grover iterations. | Passed |
+| [applications/finance/rainbow_options/rainbow_options_direct_method/overview](applications/finance/rainbow_options/rainbow_options_direct_method/overview/walkthrough.ipynb) | The visible qfunc allocates two asset fields, a five-bit auxiliary selector and an indicator, then composes exponential loading and reflection helpers. | Passed |
+| [applications/finance/rainbow_options/rainbow_options_integration_method/overview](applications/finance/rainbow_options/rainbow_options_integration_method/overview/walkthrough.ipynb) | The visible qfunc composes two-asset loading, a five-bit exponential reference and an indicator integration predicate. | Passed |
+| [applications/finance/value_at_risk/overview](applications/finance/value_at_risk/overview/walkthrough.ipynb) | The visible native root loads 128 asset probabilities, XORs a strict threshold predicate into an indicator and composes the bounded reflection family. | Passed |
+| [applications/optimization/adapt_qaoa/overview](applications/optimization/adapt_qaoa/overview/walkthrough.ipynb) | The visible adaptive qfunc prepares eight bits and composes cost layers with statically selected mixer kinds. | Passed |
+| [applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/walkthrough.ipynb) | This workflow constructs three exact 13-bit Circuit candidates for the same 162-term cost and three layers. | Passed |
+| [applications/optimization/minimum_dominating_set/overview](applications/optimization/minimum_dominating_set/overview/walkthrough.ipynb) | The preview shows six decision bits, fourteen modeled slack bits and six cost/mixer layers. | Passed |
+| [applications/optimization/qaoa_in_qaoa/overview](applications/optimization/qaoa_in_qaoa/overview/walkthrough.ipynb) | The visible community qfunc prepares up to six decision bits and two weighted cut/mixer layers. | Passed |
+| [applications/optimization/rectangles_packing/rectangles_packing_grid/overview](applications/optimization/rectangles_packing/rectangles_packing_grid/overview/walkthrough.ipynb) | The visible program builder captures the regenerated 102-term placement Observable, prepares seventeen decisions and composes ten cost/mixer layers. | Passed |
+| [applications/optimization/robust_posture_optimization/overview](applications/optimization/robust_posture_optimization/overview/walkthrough.ipynb) | The visible Y-readout qfunc allocates two bits, composes the source rotations and applies S then H exactly as specified. | Passed |
+| [applications/optimization/variational_quantum_imaginary_time_evolution/overview](applications/optimization/variational_quantum_imaginary_time_evolution/overview/walkthrough.ipynb) | The visible qfunc composes six ordered Pauli rotations after a four-bit uniform preparation. | Passed |
+
+| [applications/chemistry/lih_chemistry/overview](applications/chemistry/lih_chemistry/overview/walkthrough.ipynb) | The displayed ansatz factory prepares the tapered Hartree-Fock occupation and composes ordered Pauli factors for ten excitation operators. | Passed |
+| [applications/chemistry/molecular_energy_curve/overview](applications/chemistry/molecular_energy_curve/overview/walkthrough.ipynb) | The visible qfunc prepares the one-bit tapered reference and applies its variational Pauli evolution. | Passed |
+| [applications/chemistry/molecule_eigensolver/overview](applications/chemistry/molecule_eigensolver/overview/walkthrough.ipynb) | The visible four-bit qfunc composes explicit single-qubit rotations and a three-layer entangler on the declared reference occupation. | Passed |
+| [applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial/overview](applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial/overview/walkthrough.ipynb) | The displayed Circuit kernel initializes the fourteen-bit tapered Hartree-Fock word and composes thirty ordered excitation rotations. | Passed |
+| [applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview/walkthrough.ipynb) | The visible qfunc allocates eight spin-orbital bits, prepares occupied modes with signed adjacent Givens rotations and calls the retained Trotter evolution helper. | Passed |
+| [applications/physical_systems/hhl_lanchester/overview](applications/physical_systems/hhl_lanchester/overview/walkthrough.ipynb) | The visible native builder prepares the padded forcing vector, composes six-bit phase estimation and reciprocal rotations, then uncomputes within/apply. | Passed |
+| [applications/physical_systems/ising_model/overview](applications/physical_systems/ising_model/overview/walkthrough.ipynb) | The visible qfunc prepares six spin bits and five cost/mixer layers using the shared Ising cost helper. | Passed |
+
+| [applications/cfd/double_slit_experiment/quantum_double_slit_experiment/overview](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/overview/walkthrough.ipynb) | The displayed Circuit factory prepares the source field and composes all 192 projector angles with alternating block/adjoint calls. | Passed |
+| [applications/cfd/heat_eq_qsvt/overview](applications/cfd/heat_eq_qsvt/overview/walkthrough.ipynb) | The visible native iterate qfunc loads the padded temperature field, composes the block or its adjoint and uses within/apply for projector phases. | Passed |
+| [applications/cfd/qlbm/overview](applications/cfd/qlbm/overview/walkthrough.ipynb) | The visible qfunc allocates named position, direction and magnitude fields, prepares the stated amplitudes and composes thirteen static lattice steps from the generated active-velocity schedule. | Passed |
+| [applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview](applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/walkthrough.ipynb) | The visible loader qfunc prepares seven coefficient bits, loads a reduced amplitude table into the upper slice and applies H on explicitly uniform lower bits. | Passed |
+| [applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview](applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/walkthrough.ipynb) | The displayed Circuit walk composes the matrix encoding, coefficient loader and controlled odd powers. | Passed |
+| [applications/cfd/qls_for_hybrid_solvers/qls_qsvt/overview](applications/cfd/qls_for_hybrid_solvers/qls_qsvt/overview/walkthrough.ipynb) | The displayed Circuit builder packs the two projector phase streams into an exact simulator matrix and composes it with input preparation and H gates. | Passed |
+| [applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview](applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/walkthrough.ipynb) | The visible banded factory constructs explicit FlagQuantum Circuit kernels; the projection wrapper chooses Pauli or banded encoding and executes it. | Passed |
+| [applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/walkthrough.ipynb) | The visible qfunc prepares seven assignment bits and five Pauli cost/mixer layers. | Passed |
+| [applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview/walkthrough.ipynb) | The visible qfunc prepares two logical angle bits, composes the checked coin inside within/apply, shifts the selected move and applies the oracle. | Passed |
+| [applications/chemistry/qpe_for_molecules/overview](applications/chemistry/qpe_for_molecules/overview/walkthrough.ipynb) | The visible builder composes the original grouped Strang evolution powers under phase controls, followed by inverse QFT. | Passed |
+| [applications/chemistry/quantum_drude_oscillator/overview](applications/chemistry/quantum_drude_oscillator/overview/walkthrough.ipynb) | The visible builder selects the complete four-bit or six-bit native ansatz for two or three oscillators, with twelve or forty finite angle parameters. | Passed |
+| [applications/chemistry/quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/walkthrough.ipynb) | The visible qfunc allocates three site bits and applies ten first-order product-formula steps for the supplied time. | Passed |
+| [applications/chemistry/second_quantized_hamiltonian/overview](applications/chemistry/second_quantized_hamiltonian/overview/walkthrough.ipynb) | The visible native qfunc allocates four bits and composes three rotation/ entangler layers. | Passed |
+| [applications/chemistry/tensor_hypercontraction/overview](applications/chemistry/tensor_hypercontraction/overview/walkthrough.ipynb) | The displayed clock/walk factory composes explicit FlagQuantum PREPARE, SELECT, inverse and clock Circuit blocks. | Passed |
+
+| [applications/automotive/cooling_systems_optimization/overview](applications/automotive/cooling_systems_optimization/overview/walkthrough.ipynb) | The displayed thermal factory composes a seven-bit Circuit from normalized pair blocks and a selector preparation. | Passed |
+| [applications/physical_systems/quantum_chaos/quantum_sawtooth_map/overview](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/overview/walkthrough.ipynb) | The visible qfunc starts at signed momentum minus two, composes QFT within/apply and applies both quadratic phases for each static kick. | Passed |
+| [applications/plasma/vlasov_ampere/overview](applications/plasma/vlasov_ampere/overview/walkthrough.ipynb) | The displayed Circuit factory composes the original 17-bit encoding on an 18-bit signal register and applies all 252 phase rotations with 251 alternating block/adjoint applications. | Passed |
+| [applications/plasma/vlasov_ampere/vlasov_ampere_qiskit/overview](applications/plasma/vlasov_ampere/vlasov_ampere_qiskit/overview/walkthrough.ipynb) | The displayed block factory constructs the 17-bit finite-difference encoding from velocity, force, current and boundary helpers. | Passed |
+
+| [applications/optimization/electric_grid_optimization/overview](applications/optimization/electric_grid_optimization/overview/walkthrough.ipynb) | The qfunc below exposes twelve source/consumer decisions and six modeled slack bits across four layers. | Passed |
+| [applications/optimization/integer_linear_programming/overview](applications/optimization/integer_linear_programming/overview/walkthrough.ipynb) | The visible qfunc allocates three unsigned two-bit integers and two modeled slack outputs, prepares a uniform superposition and composes three arithmetic phase/mixer layers. | Passed |
+| [applications/optimization/kidney_exchange/kidney_exchange_problem/overview](applications/optimization/kidney_exchange/kidney_exchange_problem/overview/walkthrough.ipynb) | The qfunc below prepares nine donor/patient decision bits and all five cost/mixer layers. | Passed |
+| [applications/telecom/network_traffic_optimization/overview](applications/telecom/network_traffic_optimization/overview/walkthrough.ipynb) | The visible qfunc prepares all twenty-four flow decisions and five cost/mixer layers. | Passed |
+| [applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/walkthrough.ipynb) | The visible qfunc prepares thirteen location bits and three binary slack bits, then composes all four source cost/mixer layers. | Passed |
+| [applications/telecom/resiliency_planning/overview](applications/telecom/resiliency_planning/overview/walkthrough.ipynb) | The visible qfunc allocates twenty-four decisions and composes twenty cost/mixer layers with the source correlated-failure penalty helper. | Passed |
+| [applications/telecom/resiliency_planning/resiliency_planning_amd/overview](applications/telecom/resiliency_planning/resiliency_planning_amd/overview/walkthrough.ipynb) | The visible qfunc retains the same twenty-four decisions and twenty source cost/mixer layers as the shared resiliency program. | Passed |
+
+| [applications/physical_systems/maxwell_equation/maxwell_2d_simulation/overview](applications/physical_systems/maxwell_equation/maxwell_2d_simulation/overview/walkthrough.ipynb) | The displayed block factory composes conductor predicates and periodic finite-difference helpers on the original twelve data bits plus block storage. | Passed |
+
+| [applications/optimization/max_induced_k_color_subgraph/overview](applications/optimization/max_induced_k_color_subgraph/overview/walkthrough.ipynb) | The visible qfunc prepares two six-bit color arrays and composes all eight cost/mixer layers. | Passed |
+
+| [applications/optimization/min_graph_coloring/overview](applications/optimization/min_graph_coloring/overview/walkthrough.ipynb) | The qfunc below allocates fifteen color decisions, prepares their uniform superposition and composes six cost/mixer layers. | Passed |
 
 ## Separate FlagQuantum learning path
 
@@ -276,11 +362,87 @@ after 641.79 seconds, with 211 passes and no recorded failure, after entering
 unrelated large-state references. It is partial evidence, not a full corpus
 pass. The historical corpus and migration evidence remain unchanged.
 
+## Applications verification notes
+
+Application teaching notes expose the central native qfunc or explicit Circuit
+kernel and explain classical modeling, compiler responsibilities, named readout,
+interpretation, a concrete change to try and scope limits. Preview definitions
+and the shared optimizer implementation are distinguished explicitly; editing
+only a preview must not be described as changing a helper-owned full search.
+Mixed Circuit/synth kernels and large compile-only stages keep those labels.
+
+Canonical public imports were normalized without changing quantum operations.
+The local binding check verified 368 moved references were the identical objects
+already imported by their shared example modules. Custom example aliases such
+as the benchmark's `Sequence` type remain in their owning module. Notebook
+format and undefined-name checks apply after this import-only normalization.
+Complete-cell numerical logs and the binding-check report remain separate.
+
+The initial plain-Python Randomized Benchmarking replay rejected valid Notebook
+top-level `await`. Its complete source-cached asynchronous replay passed using
+`PyCF_ALLOW_TOP_LEVEL_AWAIT`; the original executor failure is retained. The two
+coloring searches and Maxwell retain original sizes, angles, optimizer budgets,
+phase rows and numerical assertions. A 1200-second local timeout is not a
+semantic pass: one 7200-second complete retry is used where that initial budget
+is insufficient. Both raw attempts are retained and only a successful full
+replay enters the editorial count. Coloring timing wrappers only record the
+canonical builder's calls and return its unchanged result.
+
+
+## Applications validation checkpoint
+
+All 68 revised Application Notebooks retain their original cell-stage layout.
+An ordered-AST comparison confirms that merging the visible program previews
+into existing cells preserves every executed statement and its order; original
+provenance records and source hashes are unchanged. The static stage/provenance
+selection passed **39 tests in 0.96 seconds**. Eight initial cell-count/location
+failures are retained in the earlier run record; they were corrected in Notebook
+organization without weakening the tests. Canonical public imports were checked
+against **368 identical bindings** from the existing example helpers.
+
+The current full default run recorded **21033 passes, 801 skips, 43 failures and
+73 errors in 1390.86 seconds**. It inherited `GIT_WORK_TREE`, which also affected
+Git repositories created inside test fixtures. A scoped rerun without that
+variable passed **103 of 104** exact failed/error nodes in 63.83 seconds. The
+remaining node is the existing evidence-history check: the shared checkout has
+private historical refs that conflict with declarations for a public clone. No
+revision declarations were rewritten. A separate localhost-enabled launch/MPS
+rerun passed **103 tests in 0.83 seconds**. The eight relative helper links
+introduced in this editorial ledger were rebased to their actual Notebook
+directories, and the repository link check passed. These rechecks do not relabel
+the original full default run as passing.
+
+The first randomized-benchmarking replay used a synchronous executor that
+rejected the Notebook's valid top-level `await`. Its complete asynchronous
+replay passed with the same original programs, lengths, shots and seed. The two
+coloring searches and the full Maxwell walk exceeded the initial 1200-second
+process limit. Their one-time 7200-second replays passed without reducing the
+workload: minimum coloring in 2692.162 seconds, maximum induced coloring in
+1927.368 seconds and Maxwell in 1840.380 seconds. Every original iteration,
+objective and all 1372 Maxwell walk selections were retained. Only successful
+complete runs enter the editorial denominator.
+
+Compiler and readout performance follow-ups are separate local changes, each
+with its own conformance record. On commit `4346ad249`, all **216 original Qmod
+paths and six separately approved alternatives** were freshly replayed in
+484.349 seconds of total case time. All 222 matched their recorded stages:
+210 original execution smokes passed, six originals retained their expected
+frontend refusal, and the six approved alternatives passed. These execution
+smokes check normalization/profile contracts; they do not replace independent
+full-state numerical acceptance or turn a refused original into a pass. Original
+source identities and historical resource baselines remain unchanged.
+
+The final catalog/audit selection passed **23 tests in 4.67 seconds**. Notebook
+format validation passed for all 68 changed Application files. The 69 Compiler
+preparation tests and 200 Services execution/readout tests passed separately,
+including absolute-phase, port-order, mutable-plan, density-matrix, exact-MPS
+and numeric-reading checks. The protected API migration baseline passed.
+
 ## Current editorial checkpoint
 
-**144/212 (67.9%)** accepted workflows have now been inspected and
-freshly replayed; **68** remain. Counts by category: Functions 31,
-Algorithms 45, Tutorials 49, Applications 1,
+**212/212 (100.0%)** accepted workflows have now been inspected and
+freshly replayed; **0** remain. Counts by category: Functions 31,
+Algorithms 45, Tutorials 49, Applications 69,
 Community 18. The six new lessons are separate from this denominator.
 
 Per-Notebook complete-cell exit status and elapsed time are retained in
