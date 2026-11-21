@@ -162,7 +162,8 @@ python -m pytest tests/unit/test_compilation_two_qubit_synthesis.py \
   tests/integration/test_native_block_physical_evidence.py -q
 ```
 
-The final withdrawal selection passes 222 tests. The retained scenarios preserve rejection priority at
+The withdrawal selection passed 222 tests before synchronization with main.
+After incorporating main `02bacc099cdcd1ac08510c8cf944df6e018c94c9`, all 225 selected tests pass. The retained scenarios preserve rejection priority at
 budgets below, at and above the actual raw proposal size; compare seeded general
 forms against the runtime's complete operators and the conservative bound; and
 verify the four reducing controls against complete operators. The implementation-
