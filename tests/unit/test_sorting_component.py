@@ -80,12 +80,7 @@ def bind_one_bit_case(
     kind: str,
 ) -> tuple[BoundRegisterProgram, BoundRegisterProgram, int, int]:
     graph, _, words, histories = sorting_case(kind)
-    pool = (
-        words,
-        words + histories,
-        *range(words + 1, words + histories),
-        words + histories + 1,
-    )
+    pool = tuple(range(words, words + histories + 2))
     inputs = tuple((i,) for i in range(words))
     forward = bind_register_program(
         graph, inputs, clean=pool, allow_workspace_outputs=True
@@ -167,6 +162,17 @@ def test_comparator_source_gate_stream_feedback_and_cost(
     ports = {"a": inputs[0], "b": inputs[1]} | ({"out": history} if adjoint else {})
     outputs = {"a": inputs[0], "b": inputs[1]} | ({} if adjoint else {"out": history})
     plan = tuple(w for e in bound.events if e.kind == "allocate" for w in e.wires)
+    if width == 8:
+        # Native dependency layers visit four independent pair mixers before
+        # their parents. Original SDK expansion allocates in subtree postorder.
+        # Each mixer owns three wires. Logical history and final flags stay fixed.
+        offset = 0 if adjoint else 1
+        triples = tuple(plan[offset + 3 * i : offset + 3 * i + 3] for i in range(7))
+        plan = (
+            *plan[:offset],
+            *(wire for i in (0, 1, 4, 2, 3, 5, 6) for wire in triples[i]),
+            *plan[offset + 21 :],
+        )
     expected = reference_arithmetic_gates(
         source.decompose_bloq(),
         ports,

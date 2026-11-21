@@ -41,9 +41,8 @@ class BitonicWords:
         histories = tuple(range(4, 4 + count))
         if self.inverse:
             inputs += tuple((i,) for i in histories)
-        # The first comparison releases its flags before the next history is
-        # allocated. Order the pool so logical outputs stay contiguous.
-        pool = (4, 4 + count, *range(5, 4 + count), 5 + count)
+        # Shared comparison components release work before the next history.
+        pool = tuple(range(4, 6 + count))
         bound = bind_register_program(
             graph,
             inputs,

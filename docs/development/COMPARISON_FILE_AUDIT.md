@@ -61,7 +61,7 @@ consistency.
 | `_bi_qubits_mixer` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
 | `SingleQubitCompare`, `SingleQubitCompare.signature`, `SingleQubitCompare.decompose_from_registers`, `SingleQubitCompare.adjoint`, `SingleQubitCompare.__pow__`, `SingleQubitCompare.build_call_graph` | tree_component, comparison_tree, comparison_resource_model |
 | `_sq_cmp` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
-| `_equality_with_zero` | prefix_zero_program and shared conjunction |
+| `_equality_with_zero` | ordering_component source wire calls and shared conjunction, with component_wire_graph lazy typed views |
 | `LessThanEqual`, `LessThanEqual.signature`, `LessThanEqual.registers`, `LessThanEqual.with_registers`, `LessThanEqual.apply`, `LessThanEqual.wire_symbol`, `LessThanEqual.on_classical_vals`, `LessThanEqual._circuit_diagram_info_`, `LessThanEqual.__pow__`, `LessThanEqual._decompose_via_tree`, `LessThanEqual.decompose_from_registers`, `LessThanEqual.build_call_graph`, `LessThanEqual._has_unitary_`, `LessThanEqual.adjoint` | ordering_component, less_equal, classical_comparison, comparison_resource_model |
 | `_leq_symb` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
 | `_leq` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |

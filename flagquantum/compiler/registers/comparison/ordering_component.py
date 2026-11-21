@@ -5,141 +5,121 @@
 
 """Compose finite-width comparison trees with directional flag ownership."""
 
-import numpy as np
-
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
-from ....core.ir.program.registers import Register, RegisterSide
+from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
-from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
+from ..component_wire_graph import WireCall, wire_component_program
 from ..control.conjunction_program import and_component_program, conjunction_program
+from ._component_gates import comparison_bit_functions
 from .less_equal import _tree, less_equal_requirements
 from .tree_component import mixer_program, single_qubit_comparison_program
 
 
 def less_equal_program(width: int, right_width: int | None = None) -> ProgramRecord:
-    """XOR unsigned x<=y into a dirty target with all work cleaned.
-
-    The existing source tree traversal owns its stage order. Mixer and final
-    comparison flags remain live until the recorded reverse cleanup.
-    """
+    """XOR unsigned x<=y with source lazy words and exact reverse cleanup."""
     right_width = width if right_width is None else right_width
     less_equal_requirements(width, right_width)
-    n = min(width, right_width)
-    difference = abs(width - right_width)
-    bit, word = quantum_bit_type(), unsigned_register_type(width)
-    right_word = unsigned_register_type(right_width)
-    x_gate = bit_gate_function(
-        "compare_x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
+    n, difference = min(width, right_width), abs(width - right_width)
+    bit = quantum_bit_type()
+    ports = {
+        "x": tuple(range(width)),
+        "y": tuple(range(width, width + right_width)),
+        "target": (width + right_width,),
+    }
+    signature = Signature.build_from_dtypes(
+        x=unsigned_register_type(width),
+        y=unsigned_register_type(right_width),
+        target=bit,
     )
-    cx = bit_gate_function(
-        "compare_cx",
-        (Register("ctrl", bit), Register("target", bit)),
-        CircuitIR(2, (Instruction("cx", (0, 1)),)),
-    )
-    builder = ComponentProgramBuilder(
-        Signature.build_from_dtypes(x=word, y=right_word, target=bit), (x_gate, cx)
-    )
-    x, y = builder.inputs["x"], builder.inputs["y"]
-    assert isinstance(x, RegisterBinding) and isinstance(y, RegisterBinding)
-    xs, ys = builder.split(x), builder.split(y)
-    target = builder.inputs["target"]
-    prefix: dict[str, BindingCollection] | None = None
+    x, cx = (ProgramRecord((function,)) for function in comparison_bit_functions())
+    calls: list[WireCall] = []
+    cleanup: list[WireCall] = []
+    cursor = width + right_width + 1
+    prefix: int | None = None
     if difference:
-        controls = xs[:-n] if width > right_width else ys[:-n]
-        prefix = builder.call_program(
-            prefix_zero_program(difference),
-            {"ctrl": controls},
-            entry="prefix_zero" if difference > 1 else "main",
-        )
-        if width > right_width:
-            xs[:-n] = prefix["ctrl"]
+        prefix = cursor
+        cursor += 1
+        controls = ports["x"][:-n] if width > right_width else ports["y"][:-n]
+        if difference == 1:
+            zero_calls: list[WireCall] = [
+                (x, {"q": controls}),
+                (cx, {"ctrl": controls, "target": (prefix,)}),
+            ]
+            zero_inverse = list(reversed(zero_calls))
         else:
-            ys[:-n] = prefix["ctrl"]
-            target = builder.call_dict("compare_x", {"q": target})["q"]
-            copied = builder.call_dict(
-                "compare_cx", {"ctrl": prefix["target"], "target": target}
+            operands = {"ctrl": controls, "target": (prefix,)}
+            if difference > 2:
+                operands["junk"] = tuple(range(cursor, cursor + difference - 2))
+                cursor += difference - 2
+            if difference == 2:
+                zero = and_component_program((0, 0), name="prefix_zero")
+                inverse = and_component_program(
+                    (0, 0), name="prefix_zero_erase", uncompute=True
+                )
+            else:
+                zero = conjunction_program((0,) * difference, name="prefix_zero")
+                inverse = conjunction_program(
+                    (0,) * difference, name="prefix_zero_erase", uncompute=True
+                )
+            zero_calls, zero_inverse = [(zero, operands)], [(inverse, operands)]
+        calls.extend(zero_calls)
+        cleanup.extend(reversed(zero_inverse))
+        if right_width > width:
+            calls.extend(
+                (
+                    (x, {"q": ports["target"]}),
+                    (cx, {"ctrl": (prefix,), "target": ports["target"]}),
+                )
             )
-            prefix["target"], target = copied["ctrl"], copied["target"]
-    x_suffix, y_suffix = xs[-n:], ys[-n:]
-    stages: list[tuple[tuple[int, ...], tuple[int, ...], BindingCollection]] = []
-    two_bits = unsigned_register_type(2)
+    xs, ys = ports["x"][-n:], ports["y"][-n:]
+    mixer, unmixer = mixer_program(), mixer_program(adjoint=True)
     for xi, yi in _tree(tuple(range(n)), tuple(range(n))):
-        result = builder.call_program(
-            mixer_program(),
-            {
-                "x": builder.join(x_suffix[list(xi)], two_bits),
-                "y": builder.join(y_suffix[list(yi)], two_bits),
-            },
-        )
-        a, b = result["x"], result["y"]
-        assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
-        x_suffix[list(xi)], y_suffix[list(yi)] = builder.split(a), builder.split(b)
-        stages.append((xi, yi, result["ancilla"]))
-    flags = builder.call_program(
-        single_qubit_comparison_program(), {"a": xs[-1], "b": ys[-1]}
-    )
-    xs[-1], ys[-1] = flags["a"], flags["b"]
-    if prefix is None:
-        target = builder.call_dict("compare_x", {"q": target})["q"]
-        copied = builder.call_dict(
-            "compare_cx", {"ctrl": flags["greater_than"], "target": target}
-        )
-        target, flags["greater_than"] = copied["target"], copied["ctrl"]
-    else:
-        combined = builder.call_program(
-            and_component_program((1, 0), name="prefix_and"),
-            {"ctrl": np.array([prefix["target"], flags["greater_than"]], dtype=object)},
-            entry="prefix_and",
-        )
-        copied = builder.call_dict(
-            "compare_cx", {"ctrl": combined["target"], "target": target}
-        )
-        target = copied["target"]
-        combined["target"] = copied["ctrl"]
-        erased = builder.call_program(
-            and_component_program((1, 0), name="prefix_and_erase", uncompute=True),
-            combined,
-            entry="prefix_and_erase",
-        )
-        prefix["target"], flags["greater_than"] = np.asarray(erased["ctrl"])
-    flags.update(a=xs[-1], b=ys[-1])
-    restored = builder.call_program(
-        single_qubit_comparison_program(adjoint=True), flags
-    )
-    xs[-1], ys[-1] = restored["a"], restored["b"]
-    for xi, yi, ancilla in reversed(stages):
-        result = builder.call_program(
-            mixer_program(adjoint=True),
-            {
-                "x": builder.join(x_suffix[list(xi)], two_bits),
-                "y": builder.join(y_suffix[list(yi)], two_bits),
-                "ancilla": ancilla,
-            },
-        )
-        a, b = result["x"], result["y"]
-        assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
-        x_suffix[list(xi)], y_suffix[list(yi)] = builder.split(a), builder.split(b)
-    if prefix is not None:
-        erased = builder.call_program(
-            prefix_zero_program(difference, adjoint=True),
-            prefix,
-            entry="prefix_zero" if difference > 1 else "main",
-        )
-        if width > right_width:
-            xs[:-n] = erased["ctrl"]
-        else:
-            ys[:-n] = erased["ctrl"]
-    return builder.finalize(
-        {
-            "x": builder.join(xs, word),
-            "y": builder.join(ys, right_word),
-            "target": target,
+        operands = {
+            "x": tuple(xs[i] for i in xi),
+            "y": tuple(ys[i] for i in yi),
+            "ancilla": tuple(range(cursor, cursor + 3)),
         }
-    )
+        cursor += 3
+        calls.append((mixer, operands))
+        cleanup.append((unmixer, operands))
+    compare_ports = {
+        "a": (xs[-1],),
+        "b": (ys[-1],),
+        "less_than": (cursor,),
+        "greater_than": (cursor + 1,),
+    }
+    cursor += 2
+    calls.append((single_qubit_comparison_program(), compare_ports))
+    cleanup.append((single_qubit_comparison_program(adjoint=True), compare_ports))
+    if prefix is None:
+        calls.extend(
+            (
+                (x, {"q": ports["target"]}),
+                (
+                    cx,
+                    {"ctrl": compare_ports["greater_than"], "target": ports["target"]},
+                ),
+            )
+        )
+    else:
+        operands = {
+            "ctrl": (prefix, compare_ports["greater_than"][0]),
+            "target": (cursor,),
+        }
+        calls.append((and_component_program((1, 0), name="prefix_and"), operands))
+        cleanup.append(
+            (
+                and_component_program((1, 0), name="prefix_and_erase", uncompute=True),
+                operands,
+            )
+        )
+        calls.append((cx, {"ctrl": (cursor,), "target": ports["target"]}))
+    calls.extend(reversed(cleanup))
+    return wire_component_program(signature, ports, ports, calls)
 
 
 def greater_than_program(
@@ -169,44 +149,3 @@ def greater_than_program(
     if not adjoint:
         target = builder.call_dict("greater_x", {"q": target})["q"]
     return builder.finalize({"a": result["x"], "b": result["y"], "target": target})
-
-
-def prefix_zero_program(width: int, *, adjoint: bool = False) -> ProgramRecord:
-    """Retain source prefix zero flags, including the one-bit modified control."""
-    if type(width) is not int or width < 1 or type(adjoint) is not bool:
-        raise ValueError(
-            "Prefix comparison requires a positive width and boolean direction"
-        )
-    if width > 1:
-        return conjunction_program((0,) * width, name="prefix_zero", uncompute=adjoint)
-    bit = quantum_bit_type()
-    side = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
-    builder = ComponentProgramBuilder(
-        Signature((Register("ctrl", bit, (1,)), Register("target", bit, side=side))),
-        (
-            bit_gate_function(
-                "prefix_x",
-                (Register("q", bit),),
-                CircuitIR(1, (Instruction("x", (0,)),)),
-            ),
-            bit_gate_function(
-                "prefix_cx",
-                (Register("ctrl", bit), Register("target", bit)),
-                CircuitIR(2, (Instruction("cx", (0, 1)),)),
-            ),
-        ),
-    )
-    control = np.asarray(builder.inputs["ctrl"])[0]
-    target = builder.inputs["target"] if adjoint else builder.allocate(dtype=bit)
-    if not adjoint:
-        control = builder.call_dict("prefix_x", {"q": control})["q"]
-    copied = builder.call_dict("prefix_cx", {"ctrl": control, "target": target})
-    control, target = copied["ctrl"], copied["target"]
-    if adjoint:
-        control = builder.call_dict("prefix_x", {"q": control})["q"]
-        assert isinstance(target, RegisterBinding)
-        builder.free(target)
-    outputs: dict[str, BindingCollection] = {"ctrl": np.array([control], dtype=object)}
-    if not adjoint:
-        outputs["target"] = target
-    return builder.finalize(outputs)

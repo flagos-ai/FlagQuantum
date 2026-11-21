@@ -78,7 +78,12 @@ def check_source(
     plan = allocation_order(bound)
     if tree and "y" in ports:
         difference = abs(len(ports["x"]) - len(ports["y"]))
-        if difference > 2:
+        if difference == 1:
+            # The exact SDK graph schedules SingleQubitCompare before the
+            # independent prefix CX. The direct generator allocates the prefix
+            # first, followed by less/greater flags. Preserve both witnesses.
+            plan = (plan[2], *plan[:2], *plan[3:])
+        elif difference > 2:
             plan = (
                 plan[difference - 2],
                 *plan[: difference - 2],
@@ -594,3 +599,29 @@ def test_actual_concrete_factories_existing_native_checks(factory: str) -> None:
             kind,
         )
         assert result.status is CheckStatus.PASS, result.message
+
+
+@pytest.mark.parametrize("mixer", (False, True))
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_complete_tree_graphs_both_directions_match_source(
+    mixer: bool, adjoint: bool
+) -> None:
+    from qualtran.bloqs.arithmetic.comparison import BiQubitsMixer, SingleQubitCompare
+
+    from flagquantum.compiler.registers.comparison.tree_component import (
+        mixer_program,
+        single_qubit_comparison_program,
+    )
+    from flagquantum.core.ir.program.signatures import Signature
+    from tests.unit.test_component_graph import _native_trace, _source, _source_trace
+
+    factory = mixer_program if mixer else single_qubit_comparison_program
+    source: Any = BiQubitsMixer() if mixer else SingleQubitCompare()
+    if adjoint:
+        source = source.adjoint()
+    native = factory(adjoint=adjoint)
+    assert native.functions[0].registers is not None
+    ports = Signature(native.functions[0].registers)
+    assert _native_trace(native) == _source_trace(
+        _source(ports), source.decompose_bloq()
+    )

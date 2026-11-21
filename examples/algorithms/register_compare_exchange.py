@@ -31,7 +31,7 @@ class OffsetComparisons:
         bound = bind_register_program(
             parallel_comparison_program(5, 2, 1, adjoint=self.inverse),
             inputs,
-            clean=(7, 8) if self.inverse else (5, 7, 6, 8),
+            clean=(7, 8) if self.inverse else (5, 6, 7, 8),
             allow_workspace_outputs=not self.inverse,
             input_ownership=((5, False), (6, False)) if self.inverse else (),
         )
