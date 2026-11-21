@@ -343,13 +343,23 @@ def _same(left: Matrix, right: Matrix) -> bool:
 def _matmul(left: Matrix, right: Matrix) -> Matrix:
     """The product that applies `right` first."""
 
-    return [
-        [
-            sum(left[row][inner] * right[inner][column] for inner in range(4))
-            for column in range(4)
-        ]
-        for row in range(4)
-    ]
+    result: Matrix = []
+    for index in range(4):
+        row = left[index]
+        result.append(
+            [
+                sum(
+                    (
+                        row[0] * right[0][column],
+                        row[1] * right[1][column],
+                        row[2] * right[2][column],
+                        row[3] * right[3][column],
+                    )
+                )
+                for column in range(4)
+            ]
+        )
+    return result
 
 
 def _scalar_angle(value: Any) -> float | None:
