@@ -131,3 +131,23 @@ Run that file with the existing tensor-node, dense-component and width-policy
 tests. See `TENSOR_REPORT_FILE_AUDIT.md` for the original blocking defects and
 native lifecycle corrections. Width estimates and observed timing fields remain
 separate from physical gate counts and algorithmic resource estimates.
+
+`notebook_autogen.py` renders existing ComponentDocumentation records into a
+NotebookSpec. Supply the domain's graphical-signature and call-graph Python
+code callbacks. The tool merges cells by their stored cq.autogen ID, keeps
+existing notebook cell IDs and authored cells, and delegates equal-content
+writes to WriteIfDifferent. Use factories that assign the named example before
+returning it. The source parser omits terminal return expressions.
+
+For the shortest complete path, run
+`tests/unit/test_notebook_tools.py::test_runnable_native_cells_use_append_and_existing_drawer`.
+It generates and executes a WordSwap notebook using ordinary circuit.append(op),
+the existing circuit Drawer and the same component's Compiler call graph.
+`notebook_cleaning.clean_notebooks(Path("checkout"), do_clean=False)` reports
+tracked notebook cleanup without writing. Set do_clean=True to apply it. Output
+and execution counts are removed while generated-cell identifiers survive.
+
+Run `tests/unit/test_notebook_tools.py` together with the existing docstring,
+metadata/discovery and development-file tests after a change. See
+`NOTEBOOK_TOOLS_FILE_AUDIT.md` for source parser limits and explicit fixes to the
+original diff-status and temporary-file cleanup defects.
