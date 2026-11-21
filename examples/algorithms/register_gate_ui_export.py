@@ -19,6 +19,7 @@ from sympy import Symbol
 
 from examples.algorithms import basic_gate_ui_export as basic
 from examples.algorithms.and_notebook import and_signature
+from examples.algorithms.basic_gate_decomposition import decomposition_score
 from examples.algorithms.control_predicate_catalog import (
     PredicateExample,
     predicate_examples,
@@ -410,7 +411,10 @@ def signature(component: object) -> Signature:
 
 
 def score(component: object) -> object:
-    """Draw typed ports only, preserving array grouping and lifetime direction."""
+    """Draw owned decompositions, falling back to the existing atomic interface."""
+    decomposed = decomposition_score(component)
+    if decomposed is not None:
+        return decomposed
     if component in _BASIC_COMPONENTS:
         return basic.score(component)
     ports = signature(component)
@@ -433,7 +437,8 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     return (
         f"# {name(component)}\n\nNative owner `{type(component).__module__}.{type(component).__name__}`.\n\n"
         f"Register interface `{signature(component)}`.\n\n"
-        "This export shows the atomic typed interface. Execution, numerical effects, "
+        "This export draws available native typed decompositions and uses the atomic "
+        "typed interface for the remaining components. Execution, numerical effects, "
         "workspace and resource estimates use the existing domain owners. "
         "Large and symbolic examples are displayed without physical simulation.\n"
     )

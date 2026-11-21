@@ -798,3 +798,36 @@ Integration scope, architecture, IR, public API baseline and whitespace checks
 pass. The actual isolated combined module and complete description audit pass.
 Full native dependency decompositions, per-gate glyph parity and fresh native
 dependency-node coverage remain open under Q-0120.
+
+
+## Native swap and predicate decomposition projections
+
+The complete swap.py, and_bloq.py and ctrl_spec_and.py presentation paths now
+select their existing native typed Programs through
+`examples/algorithms/basic_gate_decomposition.py`. The Compiler remains the owner
+of the concrete child calls, operands, lifetime directions and physical bodies.
+The adapter supplies source wire glyphs through the existing Drawer callback.
+It adds no compiler graph representation or resource evaluator.
+
+Nine actual source factories match fresh decomposition scores in ordered glyphs,
+connection-seeded port order, layout, horizontal lifetimes and vertical labels.
+Native SSA identities and boundary dtype text are normalized for comparison.
+Those factories include every concrete control pattern and both symbolic-value
+patterns, including the nd-array control whose source filename collides. The
+comparison executes each source instance directly. The source JSON encoder's
+NumPy boolean sentinel is retained as a separate failure witness, while native
+JSON stores actual boolean glyphs.
+
+Both 64-bit Swap and CSwap native graphs also render. The original source raises
+IndexError for these drawings. This native extension is recorded separately from
+the nine comparable successful scores. Symbolic word sizes, symbolic control
+counts and atomic And keep the existing atomic interface. Source refusal
+evidence and physical execution/resource evidence remain applicable.
+
+Eleven of the 353 unique catalog diagrams now project immediate native calls.
+The remaining 342 diagrams retain atomic interfaces. Dependency-node publication
+and recursive graph coverage remain open, so Q-0120 remains open. The next
+Basic Gates source group comprises states/effects, relative controlled swap,
+SwapWithZero, multiplexed swap and ControlledViaAnd. Nine source-success
+instances remain in that group. Preserve all 33 recorded original failures and
+distinguish their native display extensions from upstream parity.

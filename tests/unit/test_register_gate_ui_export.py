@@ -7,6 +7,7 @@ import types
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 from examples.algorithms import basic_gate_ui_export as basic
@@ -138,3 +139,94 @@ def test_full_basic_gate_export_has_all_fresh_interfaces(tmp_path: Path) -> None
 def test_unregistered_instance_is_refused() -> None:
     with pytest.raises(TypeError, match="registered native instance"):
         native.name(object())
+
+
+DECOMPOSITION_EXAMPLES = (
+    "multi_and",
+    "swap_small",
+    "cswap_small",
+    "ctrl_on_int",
+    "ctrl_on_bits",
+    "ctrl_on_nd_bits",
+    "ctrl_on_multiple_values",
+    "ctrl_on_symbolic_cv",
+    "ctrl_on_symbolic_cv_multi",
+)
+
+
+def _canonical_score(score: dict[str, Any]) -> dict[str, Any]:
+    # Native SSA and boundary dtype spellings deliberately retain native identity.
+    result = dict(score)
+    ports = []
+    for original in score["soqs"]:
+        port = dict(original)
+        identity = port.pop("ident")
+        if identity.startswith("dang,"):
+            port["symb_attributes"] = {"text": "boundary", "fontsize": 8}
+        ports.append(port)
+    result["soqs"] = ports
+    return result
+
+
+@pytest.mark.parametrize("identifier", DECOMPOSITION_EXAMPLES)
+def test_fresh_source_decomposition_geometry_glyphs_and_order(
+    originals: tuple[Any, dict[str, Any]], identifier: str
+) -> None:
+    from qualtran.drawing import get_musical_score_data
+
+    from examples.algorithms.basic_gate_decomposition import decomposition_program
+
+    source = get_musical_score_data(originals[1][identifier].decompose_bloq())
+    source_data = {
+        "max_x": source.max_x,
+        "max_y": source.max_y,
+        **{
+            key: [item.json_dict() for item in getattr(source, key)]
+            for key in ("soqs", "hlines", "vlines")
+        },
+    }
+
+    # The source UI encoder loses NumPy bools as NOT_SERIALIZABLE. Compare the
+    # actual glyph values here and retain the serializer defect separately.
+    def source_scalar(value: object) -> object:
+        assert isinstance(value, np.generic)
+        return value.item()
+
+    expected = json.loads(json.dumps(source_data, default=source_scalar))
+    actual = native.score(EXAMPLES[identifier])
+    assert isinstance(actual, dict)
+    assert _canonical_score(actual) == _canonical_score(expected)
+    program = decomposition_program(EXAMPLES[identifier])
+    assert program is not None
+    operations = program.functions[0].blocks[0].operations
+    assert len(operations) == sum(
+        originals[1][identifier].decompose_bloq().bloq_counts().values()
+    )
+    assert all(operation.opcode == "call" for operation in operations)
+
+
+def test_control_archive_collision_uses_fresh_instance_decompositions(
+    originals: tuple[Any, dict[str, Any]],
+) -> None:
+    metadata = source_metadata()
+    source = originals[1]["ctrl_on_int"].decompose_bloq()
+    from qualtran.drawing import get_musical_score_data
+
+    encoded = json.dumps(get_musical_score_data(source), cls=metadata["BloqEncoder"])
+    assert "NOT_SERIALIZABLE" in encoded
+    assert "NOT_SERIALIZABLE" not in json.dumps(native.score(EXAMPLES["ctrl_on_int"]))
+    assert native.score(EXAMPLES["ctrl_on_bits"]) != native.score(
+        EXAMPLES["ctrl_on_nd_bits"]
+    )
+
+
+@pytest.mark.parametrize("identifier", ("swap_large", "cswap_large"))
+def test_source_large_swap_rendering_failure_and_native_graph(
+    originals: tuple[Any, dict[str, Any]], identifier: str
+) -> None:
+    from qualtran.drawing import get_musical_score_data
+
+    with pytest.raises(IndexError, match="index out of range"):
+        get_musical_score_data(originals[1][identifier].decompose_bloq())
+    score = native.score(EXAMPLES[identifier])
+    assert isinstance(score, dict) and score["max_x"] == 68

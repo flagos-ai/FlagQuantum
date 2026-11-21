@@ -604,3 +604,11 @@ files. Standalone domain exports keep their source-compatible default naming.
 All original example descriptions are retained, including the three ModExp
 factory docstrings. Shared exporter `relative_example_paths=True` uses the
 existing name and filename callbacks for cross-folder documentation groups.
+
+
+The Basic Gates catalog projects existing native Swap/CSwap, MultiAnd and
+CtrlSpecAnd typed decompositions through
+`examples.algorithms.basic_gate_decomposition`. Source-compatible glyph callbacks
+retain native graph ownership. All other providers keep their current interface
+scores. The component UI audit records original rendering failures and remaining
+dependency publication work.
