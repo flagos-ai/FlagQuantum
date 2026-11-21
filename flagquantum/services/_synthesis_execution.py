@@ -393,12 +393,15 @@ class CheckedExecution:
 
     def verify_result(self, result: ExecutionResult) -> ResourceEstimate:
         """Verify association and actual executable costs without planning or running."""
-        self._check(self.plan)
+        program = self._check(self.plan)
         if not isinstance(result.plan, ExecutionPlan):
             raise ExecutionContractError(
                 "execution.identity", "result has no matching executable plan"
             )
-        program = self._check(result.plan)
+        # A normal execution returns the same sealed plan. Reuse this call's
+        # inspection only; a later call still reads every mutable control again.
+        if result.plan is not self.plan:
+            program = self._check(result.plan)
         state = result.state
         expected_dtype = (
             torch.complex128

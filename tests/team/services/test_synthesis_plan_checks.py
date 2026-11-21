@@ -254,6 +254,36 @@ def test_changed_raw_controls_cannot_hide_behind_the_sealed_payload() -> None:
         inspect_execution(replace(plan, state_mode="density_matrix"))
 
 
+def test_repeated_result_checks_revalidate_shared_plan_controls() -> None:
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+    assert result.plan is plan
+    assert checked.verify_result(result).n_operations == 1
+    assert checked.verify_result(result).n_operations == 1
+
+    assert plan.runtime_config is not None
+    plan.runtime_config["drawing_style"] = "changed_after_readout"
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(result)
+
+
+def test_distinct_equivalent_result_plan_retains_its_own_checks() -> None:
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+    replay = ExecutionPlan.from_json(plan.to_json())
+    assert replay is not plan
+    replayed_result = replace(result, plan=replay)
+    assert checked.verify_result(replayed_result).n_operations == 1
+
+    assert replay.runtime_config is not None
+    replay.runtime_config["drawing_style"] = "changed_foreign_plan"
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(replayed_result)
+    assert checked.verify_result(result).n_operations == 1
+
+
 @pytest.mark.parametrize("damage", ["program", "fingerprint", "decision", "extension"])
 @pytest.mark.parametrize("boundary", ["inspection", "resources", "result"])
 def test_each_boundary_revalidates_changed_sealed_payload(
