@@ -34,14 +34,28 @@ def candidate(
         f"y: Output[QNum[{signed_width},True,1]], result: Output[QNum]):\n"
         f"    allocate(x)\n    allocate(y)\n    result |= {expression}\n"
     )
-    _, functions = capture_program(entry)
+    root, functions = capture_program(entry)
     graph = functions[0]
-    first, second = graph.body.blocks[0].arguments
     output_width = graph.body.blocks[0].operations[-1].operands[0].type.parameters[0]
     base = width + signed_width
+    registers = {"x": tuple(range(width)), "y": tuple(range(width, base))}
+    declarations = {
+        op.results[0].id: op.attributes["name"]
+        for op in root.body.blocks[0].operations
+        if op.name == "qreg.declare"
+    }
+    call = next(
+        op for op in root.body.blocks[0].operations if op.name == "qreg.compute"
+    )
+    bindings = {
+        argument.id: registers[declarations[actual.id]]
+        for argument, actual in zip(
+            graph.body.blocks[0].arguments, call.operands[2:], strict=True
+        )
+    }
     return _emit_arithmetic(
         functions,
-        {first.id: tuple(range(width)), second.id: tuple(range(width, base))},
+        bindings,
         tuple(range(base, base + output_width)),
         entry=graph.name,
         n_qubits=64,
@@ -60,8 +74,8 @@ def test_original_workshop_all_inputs_and_nonzero_xor_targets(
     selected = candidate(3, 5, scheduling, optimized=True)
     assert selected.peak_workspace <= original.peak_workspace
     assert len(selected.circuit.instructions) < len(original.circuit.instructions)
-    assert selected.peak_workspace == 25
-    assert len(selected.circuit.instructions) == 264
+    assert selected.peak_workspace == 11
+    assert len(selected.circuit.instructions) == 49
     registers = (tuple(range(3)), tuple(range(3, 8)), tuple(range(8, 14)))
     for x, y, target in product(range(8), range(32), range(64)):
         signed = y - 32 if y & 16 else y

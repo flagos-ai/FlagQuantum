@@ -50,3 +50,14 @@ def amplitude_assignment(
 def exponential_transform(probabilities: list[float], x: Output[QArray[QBit]]) -> None:
     prepare_state(probabilities, 0, x)
     qft(x)
+
+
+@qfunc
+def signed_addition(
+    x: Output[QNum[3]],
+    y: Output[QNum[5, True, 1]],
+    result: Output[QNum[6, True, 1]],
+) -> None:
+    x |= 5
+    y |= -7.5
+    result |= x + y

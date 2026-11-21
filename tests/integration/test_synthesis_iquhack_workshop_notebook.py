@@ -61,3 +61,32 @@ def test_all_original_workflow_stages_unexecuted() -> None:
     assert all(
         cell["execution_count"] is None and cell["outputs"] == [] for cell in code
     )
+
+
+def test_signed_native_preflight_preserves_original_budget_refusal() -> None:
+    from examples.synthesis.community.hackathons.iquhack_2025.workshop.overview.quantum import (
+        signed_addition,
+    )
+    from flagquantum import synth
+
+    program = synth.synthesize(
+        signed_addition,
+        max_qubits=25,
+        max_workspace=11,
+        max_operations=1000,
+        memory_limit_bytes=1024**3,
+    )
+    resources = program.report["resources"]
+    assert resources.n_qubits == 25
+    assert resources.n_operations == 53
+    assert resources.depth == 24
+    assert program.report["workspace_qubits"] == 11
+    # The accepted original workload still executes its separate 14-qubit
+    # Circuit; compiling a wider native candidate does not replace that proof.
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(
+            signed_addition,
+            max_qubits=14,
+            max_workspace=0,
+            memory_limit_bytes=1024**3,
+        )

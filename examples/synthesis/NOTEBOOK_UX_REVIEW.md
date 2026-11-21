@@ -491,3 +491,12 @@ Hamiltonian-QSVT examples. The 98 related checks cover exact versus empirical
 results, seeded counts, joint-shot correlation, the accepted-shot denominator,
 requested bit order and the sealed synthesis boundary. All changed cells replay;
 no new sampling algorithm or public export was introduced.
+
+
+The signed workshop's native compilation preflight now uses 25 total qubits,
+11 work bits and 53 instructions including basis preparation. Its original
+fourteen-qubit Circuit remains the executable original-budget reference.
+The generic equal-modulus sum fusion preserves arbitrary XOR targets and shared
+intermediates; read-only sign aliases remain separate from injective multiplier
+operands. All 16 Notebook stages replay, with no provenance or original-source
+changes. This capability follow-up does not change the 212 editorial denominator.

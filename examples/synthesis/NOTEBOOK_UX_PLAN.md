@@ -118,7 +118,7 @@ The editorial denominator and these implementation steps are independent.
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
 | Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; banded construction and general reusable QSVT APIs remain follow-ups. |
 | Named sampling | Bell and QSVT lessons use existing `fq.counts`/`fq.samples` on synthesized Circuit IR, selecting wires from named ports; the original joint draw is preserved for conditioning | Sealed Program output overrides still refuse. A direct named finite-shot convenience surface requires separate API admission; no competing sampler was introduced. |
-| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
+| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | A subsequent equal-modulus sum fusion and read-only sign aliasing step now needs 25 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
 
 The signed workshop preflight retains all 256 input pairs and all 64 arbitrary
@@ -217,3 +217,34 @@ existing Circuit route is executable and demonstrated, not a promise that native
 qfunc already reuses symbolic parameters. The signed-addition original-budget gap
 remains measured and open. These capability gaps do not revoke the 212 accepted
 original workflow reproductions or their explicitly labeled Circuit paths.
+
+## Equal-modulus arithmetic checkpoint
+
+The signed workshop exposed an avoidable intermediate: the verified numeric graph
+expresses addition as `a - (0 - b)`, with both subtraction results in the same
+word modulus. The arithmetic candidate now writes that sum directly through the
+existing XOR carry kernel, retaining arbitrary nonzero output semantics. Only
+matching moduli and an exact zero negation qualify. Required shared dependencies
+remain live; a narrower intermediate modulus or nonzero base keeps its original
+subtraction lowering. No new source syntax, profile or public signature is added.
+
+The read-only XOR adder also accepts repeated physical sign controls across
+logical input positions. It never writes an operand; multiplication and in-place
+kernels retain injective operand requirements. The root-input borrow restriction,
+target/scratch disjointness, inverse and clean-workspace checks remain enforced.
+
+For the original 3-bit unsigned / 5-bit signed-half-unit workshop domain,
+both schedules now use 11 work bits and 49 arithmetic instructions, versus the
+previously recorded 25 / 264. The visible preparation of 5 and -7.5 adds four
+instructions: public synthesis reports 25 total qubits, 53 instructions and depth
+24. The fourteen-qubit / zero-workspace request still refuses. This is a
+compilation preflight; the original fourteen-qubit Circuit supplies the executed
+full-domain coherent witness. Historical measurements remain in the earlier
+checkpoint and raw evidence, and no runtime speedup is inferred from gate counts.
+
+The 63 focused cases cover every original input pair and arbitrary XOR target,
+shared negatives, unequal moduli, expression variants, three aliased-addend
+complete-state witnesses and the retained multiplier refusal. The Compiler and
+related arithmetic/control integration selection passes 2187 tests. The revised
+workshop retains and replays all 16 original stages; current default and original
+source smoke checkpoints are run separately before final integration reporting.

@@ -209,6 +209,40 @@ def _bitwise(
             yield Instruction(("x", "cx", "ccx")[len(ports) - 1], ports)
 
 
+def _terminal_addends(
+    operations: Sequence[Operation],
+) -> tuple[ValueId, ValueId] | None:
+    if len(operations) < 2:
+        return None
+    final = operations[-2]
+    if final.results[0].id != operations[-1].operands[0].id:
+        return None
+    if final.name == "qint.add":
+        return final.operands[0].id, final.operands[1].id
+    if final.name != "qint.subtract_mod":
+        return None
+    definitions = {op.results[0].id: op for op in operations[:-1]}
+    negative = definitions.get(final.operands[1].id)
+    if (
+        negative is None
+        or negative.name != "qint.subtract_mod"
+        or negative.results[0].type != final.results[0].type
+    ):
+        return None
+    zero = definitions.get(negative.operands[0].id)
+    if zero is None or zero.name != "arith.constant" or zero.attributes["value"] != 0:
+        return None
+    # Equal moduli make a - (0 - b) exactly (a + b) mod 2**width.
+    # Keep both original operand maps within that width; no numeric narrowing.
+    width = final.results[0].type.parameters[0]
+    addends = final.operands[0], negative.operands[1]
+    if any(
+        value.type != INDEX and value.type.parameters[0] > width for value in addends
+    ):
+        return None
+    return addends[0].id, addends[1].id
+
+
 def _emit_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
@@ -264,13 +298,28 @@ def _emit_arithmetic(
     ensuring: set[ValueId] = set()
     returned = block.operations[-1].operands[0].id
     final = block.operations[-2] if len(block.operations) > 1 else None
+    terminal_addends = _terminal_addends(block.operations)
     direct_output = (
         implementation == "arithmetic"
         and output_mode == "value"
-        and final is not None
-        and final.name == "qint.add"
-        and final.results[0].id == returned
+        and terminal_addends is not None
     )
+    needed: set[ValueId] | None = None
+    if (
+        direct_output
+        and terminal_addends is not None
+        and final is not None
+        and final.name == "qint.subtract_mod"
+    ):
+        # The terminal writer bypasses the modular negation. Retain any shared
+        # dependency still read by an addend, including a separately used negation.
+        needed = set()
+        pending = list(terminal_addends)
+        while pending:
+            key = pending.pop()
+            if key not in needed:
+                needed.add(key)
+                pending.extend(analysis.values[key].dependencies)
     rules: list[tuple[ValueId, str]] = []
     phase_product = (
         final
@@ -395,11 +444,12 @@ def _emit_arithmetic(
                 continue
             bits = bound_inputs[variable.id][-width:]
             if signs[position] and width > len(bits):
-                # Only copy-based readers accept repeated sign controls. Adder
-                # and multiplier kernels require injective operand maps.
+                # Copy-based readers and the read-only terminal XOR writer
+                # accept sign aliases. In-place kernels still require copies.
                 if any(
                     block.operations[use].name
                     not in {"qint.bitwise", "qint.subtract_mod", "qint.return"}
+                    and not (direct_output and block.operations[use] is final)
                     for use in analysis.values[op.results[0].id].uses
                 ):
                     return None
@@ -616,8 +666,10 @@ def _emit_arithmetic(
 
     for position, op in enumerate(block.operations[:-1]):
         key = op.results[0].id
-        if op.name == "arith.constant" or (
-            (phase_product is not None or direct_output) and key == returned
+        if (
+            (needed is not None and key not in needed)
+            or op.name == "arith.constant"
+            or ((phase_product is not None or direct_output) and key == returned)
         ):
             continue
         ensure(key)
@@ -678,10 +730,10 @@ def _emit_arithmetic(
                 counts[event.value] = counts.get(event.value, 0) + 1
     else:
         if direct_output:
-            assert final is not None
-            for dependency in analysis.values[returned].dependencies:
+            assert final is not None and terminal_addends is not None
+            for dependency in terminal_addends:
                 ensure(dependency)
-            left, right = operands(final)
+            left, right = (encoding(key) for key in terminal_addends)
             target = tuple(output)[-unsigned_width(bound(returned)) :]
             disjoint = carry_free_add(final)
             scratch_count = 0 if left == right or disjoint else len(target) - 1
@@ -708,7 +760,16 @@ def _emit_arithmetic(
             )
             occupied.difference_update(scratch)
             counts[returned] = 1
-            rules.append((returned, "terminal_xor_add"))
+            rules.append(
+                (
+                    returned,
+                    (
+                        "terminal_modular_sum"
+                        if needed is not None
+                        else "terminal_xor_add"
+                    ),
+                )
+            )
         else:
             emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
         # Restoration order is not dependency order. Clean descendants first so a
@@ -918,7 +979,7 @@ def schedule_arithmetic(
     else:
         normalization = normalize_arithmetic(analyze_lifetimes(functions, entry=entry))
     operations = normalization.program.body.blocks[0].operations
-    eligible = operations[-2].name == "qint.add" if len(operations) > 1 else False
+    eligible = _terminal_addends(operations) is not None
     eligible |= any(
         op.name == "qint.multiply"
         and (
