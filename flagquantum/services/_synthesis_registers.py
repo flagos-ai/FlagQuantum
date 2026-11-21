@@ -59,6 +59,7 @@ def synthesize_registers(
         target=target,
         objective=objective,
         include_boolean=source_format in {"python", "qmod"},
+        _max_effects=16384 if source_format == "python" else 4096,
     )
     report: dict[str, object] = {
         "function": program.name,
