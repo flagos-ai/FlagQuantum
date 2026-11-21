@@ -834,15 +834,18 @@ def restore_swaps(
         )
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
-        while logical_to_physical[leaf] != leaf:
-            physical = logical_to_physical[leaf]
-            step = _restore_path(physical, leaf, tree, active)[1]
+        physical = logical_to_physical[leaf]
+        # The active tree stays fixed until this token reaches its leaf. Walk
+        # its unique path once; SWAPs move tokens, not the remaining tree edges.
+        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
+        for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
             logical_to_physical[other] = physical
             physical_to_logical[step] = leaf
             physical_to_logical[physical] = other
             swaps.append((physical, step) if physical < step else (step, physical))
+            physical = step
         active[leaf] = False
     return tuple(swaps)
 

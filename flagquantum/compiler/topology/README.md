@@ -44,3 +44,7 @@ corresponding legality, layout restoration and rejection assertions.
 SABRE reuses dependency lookahead only within one unchanged frontier. See the
 [lifetime invariant and development evidence](../../../docs/development/COMPILER_FRONTIER_LOOKAHEAD_REUSE.md)
 before changing frontier advancement or speculative SWAP recovery.
+
+Final-layout restoration walks each leaf's unique tree path once. See the
+[restoration traversal invariant](../../../docs/development/COMPILER_RESTORE_PATH_REUSE.md)
+before changing token movement or removing an active tree leaf.
