@@ -311,6 +311,7 @@ def select_register_program(
     target: Target = _DEFAULT_TARGET,
     objective: Literal["width", "depth"] = "width",
     include_boolean: bool = False,
+    _max_effects: int = 4096,
 ) -> Selection:
     """Check complete fresh-register programs through the same candidate consumer."""
     if (
@@ -323,8 +324,8 @@ def select_register_program(
         raise ValueError("objective must be width or depth")
     # Keep capacity exhaustion in the selector's existing incomplete-search
     # diagnostic rather than mistaking a resource budget for invalid semantics.
-    verify_register_program(program, functions)
-    expanded = expand_register_calls(program, functions)
+    verify_register_program(program, functions, max_effects=_max_effects)
+    expanded = expand_register_calls(program, functions, max_effects=_max_effects)
     pending = [expanded]
     symbols = {function.name: function for function in functions}
     visited: set[str] = set()
@@ -383,6 +384,7 @@ def select_register_program(
             max_operations=budget.operations,
             scheduling=strategy,
             _clean_qubits=clean_qubits,
+            _max_effects=_max_effects,
         )
 
     def build_boolean() -> RegisterCandidate:
@@ -393,6 +395,7 @@ def select_register_program(
             max_operations=budget.operations,
             boolean_values=True,
             _clean_qubits=clean_qubits,
+            _max_effects=_max_effects,
         )
 
     return _select_candidates(

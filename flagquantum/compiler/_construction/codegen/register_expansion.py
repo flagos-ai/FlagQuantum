@@ -6,6 +6,7 @@ from dataclasses import replace
 
 from ..._hybrid.model import HybridProgram, IRType, Operation, Value, ValueId
 from ..verification.profile import _fail
+from ..verification.register_budget import check_register_budget
 
 
 def is_register_function(program: HybridProgram) -> bool:
@@ -21,9 +22,11 @@ def expand_register_calls(
     functions: Sequence[HybridProgram],
     *,
     max_nodes: int = 4096,
+    max_effects: int = 4096,
 ) -> HybridProgram:
     """Substitute only after the caller has verified every definition and role."""
     block = program.body.blocks[0]
+    visit_limit = max_nodes if max_effects <= 4096 else max_nodes + max_effects
     if not any(
         op.name in {"qreg.call", "qreg.control_call"} for op in block.operations
     ):
@@ -66,7 +69,7 @@ def expand_register_calls(
                 computations[index] = active_computations.pop(op.operands[1])
         for index, op in reversed(tuple(enumerate(operations))):
             visits += 1
-            if visits > max_nodes:
+            if visits > visit_limit:
                 _fail(
                     "register.budget",
                     "register call expansion exceeds visit budget",
@@ -119,7 +122,7 @@ def expand_register_calls(
     def emit(op: Operation, bindings: dict[Value, Value]) -> None:
         nonlocal effect, visits
         visits += 1
-        if visits > max_nodes:
+        if visits > visit_limit:
             _fail("register.budget", "register call expansion exceeds visit budget", op)
         actual = tuple(bindings.get(v, v) for v in op.operands[1:])
         if op.name == "qreg.local":
@@ -205,11 +208,10 @@ def expand_register_calls(
         body=replace(program.body, blocks=(replace(block, operations=tuple(emitted)),)),
     )
     arithmetic = tuple(f for f in functions if not is_register_function(f))
-    nodes = sum(
-        len(b.arguments) + len(b.operations)
-        for f in (expanded, *arithmetic)
-        for b in f.body.blocks
+    check_register_budget(
+        (expanded, *arithmetic),
+        max_nodes=max_nodes,
+        max_effects=max_effects,
+        expanded=True,
     )
-    if nodes > max_nodes:
-        _fail("register.budget", "expanded register model exceeds node budget")
     return expanded
