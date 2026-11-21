@@ -517,3 +517,53 @@ and the algorithm whose docstring was corrected. Black, Ruff, Integration
 scope, architecture, IR, public API baseline and whitespace checks pass. Full
 per-instance decomposition graphs, source glyph parity and a fresh whole-catalog
 run remain open alongside the four remaining provider groups.
+
+## Complete block-encoding native instance catalog
+
+`examples/algorithms/block_encoding_ui_export.py` covers all ten Block Encoding
+notebooks, sixteen documentation references and twenty-six original factories.
+It composes existing Unitary, tensor-product, product, phase, linear-combination,
+sparse/Hermitian-sparse, Chebyshev and scaled-Chebyshev owners. Existing Hubbard
+named/packed catalogs supply SELECT, LCU and packed PREPARE interfaces. The
+source BlockEncoding, SelectOracle and PrepareOracle documentation groups retain
+empty factory lists and map to the corresponding native structural owners.
+
+Every actual factory signature matches names, nominal dtypes, widths, shapes,
+iteration bounds, lifetimes and declaration order. All twenty-six complete
+parameter dictionaries, original JSON encodings and filenames match. Recursive
+comparisons check explicit matrix arrays before the original encoder replaces
+them with its unsupported-object sentinel. Compound blocks preserve child gate
+flags, source coefficient tuples, normalization, error and work-width metadata.
+Concrete factories retain original integer literal metadata where filenames
+would otherwise distinguish equal floating-point values.
+
+Three symbolic composition and sparse-access families use existing native
+signature functions, preserving original symbols and assumptions independently
+of concrete executable constructors. The symbolic TensorProduct and Product
+instances retain independent ancilla widths and source sum/max rules. Native
+Hubbard catalog signatures preserve bounded named ports and their packed views.
+
+Run `python -m examples.algorithms.block_encoding_ui_export`. Its actual isolated
+entry produces twenty-seven JSON files including navigation, sixteen
+documentation files and twenty-six fresh non-null atomic interface diagrams.
+Native provider coverage reaches 147 of 237 documentation references and 231 of
+359 original factories. Whole-instance decomposition graphs, per-gate source
+glyphs and whole-catalog fresh execution remain open.
+
+The concentrated complete component-family regression passes 1822 checks with
+zero skips and eighteen existing parser/protobuf warnings. It includes original
+gate operands and feedback, LCU full complex amplitudes and measurement branches,
+workspace cleanup, explicit sparse entries and Hermitian projections, polynomial
+round trips, named/packed oracle replacement and separately recorded emitted
+primitive and analytical model counts. Those accepted component owners retain
+physical execution and resource semantics. The UI provider supplies interface
+metadata. Strict typing of both added Python files, Black, Ruff, Integration
+scope, architecture, IR, API and whitespace checks pass. The reference
+availability receipt verifies Qualtran 0.7.0 and Kickmix extension 0.1 with its
+Simulator present and its compiled binary hash recorded.
+
+A transient filesystem exhaustion prevented a separate environment probe from
+starting. The ignored, rebuildable local mypy cache was removed, recovering
+approximately 49 MiB. The probe then passed. The running component regression
+completed successfully. Subsequent Rotations intake records actual missing
+OpenFermion factory dependencies as open evidence.

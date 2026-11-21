@@ -554,3 +554,12 @@ array lifetimes remain available in metadata. The original encoder maps two
 distinct symbolic GuidingState instances to one filename. The export preserves
 that collision and first-file retention, with both individual interface scores
 covered separately by tests.
+
+Run `python -m examples.algorithms.block_encoding_ui_export` for the complete
+Block Encoding group, covering ten notebooks, sixteen documentation references
+and twenty-six factories. Concrete interfaces come from existing composition
+and oracle owners. Symbolic examples use those owners' existing declaration
+signatures. Nested metadata retains original gate flags, coefficient tuples,
+explicit entry arrays, bounds and packed-oracle parameters. The three abstract
+documentation groups retain their empty example lists. All original parameter
+encodings and filenames match, and all twenty-six atomic diagrams are fresh.
