@@ -1,0 +1,126 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from locked Qualtran v0.7.0 rotations/phase_gradient.py.
+
+"""Retain scaled phase slices and explicit native arithmetic below atomic leaves."""
+
+from ....core.ir.program import ProgramRecord
+from ....core.ir.program.register_bindings import RegisterBinding
+from ....core.ir.program.register_types import (
+    fixed_point_register_type,
+    quantum_bit_type,
+)
+from ....core.ir.program.registers import RegisterType
+from ..arithmetic.addition_component import addition_component_program
+from ..component_builder import ComponentProgramBuilder
+from ..layout.component_cast import cast_word_function
+from .phase_addition import source_phase_add_signature
+from .scaled_phase_addition import scaled_phase_add_terms
+
+
+def phase_add_component_program(
+    input_width: int, gradient_width: int, *, right_shift: int = 0, sign: int = 1
+) -> ProgramRecord:
+    """Implement the atomic source leaf using shared integer Add and its inverse.
+
+    Fractional ports are MSB-first. Retained input bits update the gradient
+    prefix. Shared Add owns and erases carry workspace. This graph is native
+    execution below an original source decomposition refusal.
+    """
+    if type(right_shift) is not int or right_shift < 0:
+        raise ValueError("Phase addition right shift must be a nonnegative integer")
+    if type(sign) is not int or sign not in (-1, 1):
+        raise ValueError("Phase addition sign must be -1 or 1")
+    if (
+        type(input_width) is not int
+        or type(gradient_width) is not int
+        or min(input_width, gradient_width) < 1
+    ):
+        raise ValueError("Phase addition requires two positive register widths")
+    builder = ComponentProgramBuilder(
+        source_phase_add_signature(input_width, gradient_width)
+    )
+    x, phase = builder.inputs["x"], builder.inputs["phase_grad"]
+    assert isinstance(x, RegisterBinding) and isinstance(phase, RegisterBinding)
+    active = min(input_width, max(0, gradient_width - right_shift))
+    if not active:
+        return builder.finalize(builder.inputs)
+    prefix = active + right_shift
+    bits, target = builder.split(x), builder.split(phase)
+    left = builder.join(bits[:active], RegisterType("uint", active))
+    right = builder.join(target[:prefix], RegisterType("uint", prefix))
+    result = builder.call_program(
+        addition_component_program(active, prefix, adjoint=sign == -1),
+        {"a": left, "b": right},
+    )
+    a, b = result["a"], result["b"]
+    assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
+    bits[:active], target[:prefix] = builder.split(a), builder.split(b)
+    return builder.finalize(
+        {
+            "x": builder.join(
+                bits, fixed_point_register_type(input_width, input_width)
+            ),
+            "phase_grad": builder.join(
+                target, fixed_point_register_type(gradient_width, gradient_width)
+            ),
+        }
+    )
+
+
+def scaled_phase_add_program(
+    input_width: int,
+    input_fraction_bits: int,
+    gradient_width: int,
+    coefficient: float,
+    coefficient_width: int,
+    coefficient_fraction_bits: int,
+) -> ProgramRecord:
+    """Call each source slice in coefficient-bit order, preserving all other bits.
+
+    The input fractional metadata is retained. Temporary views use Cast in
+    both directions. Each atomic addition owns its own clean carry lifetime.
+    """
+    terms = scaled_phase_add_terms(
+        input_width,
+        input_fraction_bits,
+        gradient_width,
+        coefficient,
+        coefficient_width,
+        coefficient_fraction_bits,
+    )
+    dtype = fixed_point_register_type(input_width, input_fraction_bits)
+    builder = ComponentProgramBuilder(
+        source_phase_add_signature(
+            input_width, gradient_width, input_fraction_bits=input_fraction_bits
+        )
+    )
+    x, phase = builder.inputs["x"], builder.inputs["phase_grad"]
+    assert isinstance(x, RegisterBinding)
+    bits = builder.split(x)
+    for part, shift in terms:
+        width = len(bits[part])
+        fraction = fixed_point_register_type(width, width)
+        word = bits[part][0] if width == 1 else builder.join(bits[part])
+        source = quantum_bit_type() if width == 1 else RegisterType("opaque", width)
+        cast = cast_word_function("slice_cast", source, fraction)
+        word = builder.call_program(
+            ProgramRecord((cast,)), {"reg": word}, entry=cast.name
+        )["reg"]
+        result = builder.call_program(
+            phase_add_component_program(
+                width,
+                gradient_width,
+                right_shift=shift,
+                sign=-1 if coefficient < 0 else 1,
+            ),
+            {"x": word, "phase_grad": phase},
+        )
+        cast = cast_word_function("slice_uncast", fraction, source)
+        word = builder.call_program(
+            ProgramRecord((cast,)), {"reg": result["x"]}, entry=cast.name
+        )["reg"]
+        assert isinstance(word, RegisterBinding)
+        bits[part] = [word] if width == 1 else builder.split(word)
+        phase = result["phase_grad"]
+    return builder.finalize({"x": builder.join(bits, dtype), "phase_grad": phase})
