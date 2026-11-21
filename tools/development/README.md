@@ -439,3 +439,14 @@ Install the documented optional compiler/plugin environment before invoking it.
 Existing production wire messages use their owned runtime descriptors. See
 `DEVELOPMENT_PROTOBUF_COMMAND_AUDIT.md` for complete source mapping, byte-for-byte
 generation evidence, source Bash failure and staging/write semantics.
+
+`python -m tools.development.context_bundle --repomix /path/to/installed/repomix`
+packs twenty groups of existing native component owners and all docs Markdown.
+Render reference pages and notebook Markdown with the existing tools first.
+For a fresh generated-doc build, use `documentation_cleanup` on its explicit
+owned generated directory. Stale Markdown remains included by the packer's
+selection rule. Optional Node and Repomix installation, output-format behavior,
+source mappings and dependency licenses are documented in
+`DEVELOPMENT_CONTEXT_BUNDLE_AUDIT.md`. Run
+`tests/unit/test_development_context_bundle.py` for the complete unchanged source
+and actual pinned packer comparison. Use `--output` for an explicit destination.
