@@ -226,11 +226,11 @@ def test_the_table_covers_every_opcode_it_claims_and_no_non_unitary_one() -> Non
 def test_every_rule_reproduces_its_source_through_the_runtime() -> None:
     """The gate matrices are the only authority a rule can be checked against.
 
-    Nineteen of the twenty entries are exact and `cphase` is not, which is
+    Every opcode family except `cphase` is exact, which is
     asserted in both directions: a rule that started carrying a phase fails the
     exact branch, and `cphase` losing its phase fails the inexact branch. The two
     arity-3 entries are covered here like any other, which is the point of
-    checking a rule against the runtime matrix rather than against a source.
+    checking every candidate rule against the runtime matrix.
     """
 
     exact = sorted(set(EQUIVALENCE_RULES) - _PHASE_CARRYING_RULES)
@@ -241,18 +241,19 @@ def test_every_rule_reproduces_its_source_through_the_runtime() -> None:
     for opcode in sorted(EQUIVALENCE_RULES):
         source = _source(opcode)
         n_wires = len(source.wires)
-        leaves = EQUIVALENCE_RULES[opcode][0].build(source)
-        product = _product(leaves, n_wires) @ _unitary(source).conj().mT
-        identity = torch.eye(product.shape[0], dtype=torch.complex128)
-        if opcode not in _PHASE_CARRYING_RULES:
-            torch.testing.assert_close(product, identity, rtol=0.0, atol=1e-12)
-            continue
-        torch.testing.assert_close(
-            product, product[0, 0] * identity, rtol=0.0, atol=1e-12
-        )
-        # A phase-carrying rule is listed as one exactly because its phase is
-        # not one; a change that made it exact must fail here, not pass.
-        assert abs(product[0, 0] - 1.0) > 1e-9, opcode
+        for rule in EQUIVALENCE_RULES[opcode]:
+            leaves = rule.build(source)
+            product = _product(leaves, n_wires) @ _unitary(source).conj().mT
+            identity = torch.eye(product.shape[0], dtype=torch.complex128)
+            if opcode not in _PHASE_CARRYING_RULES:
+                torch.testing.assert_close(product, identity, rtol=0.0, atol=1e-12)
+                continue
+            torch.testing.assert_close(
+                product, product[0, 0] * identity, rtol=0.0, atol=1e-12
+            )
+            # A phase-carrying rule is listed as one exactly because its phase is
+            # not one; a change that made it exact must fail here, not pass.
+            assert abs(product[0, 0] - 1.0) > 1e-9, opcode
 
 
 def test_the_table_carries_the_parameters_the_caller_owns() -> None:
@@ -866,3 +867,135 @@ def test_the_registration_surface_is_what_the_module_exports() -> None:
     assert "validate_equivalence_rule" in module.__all__
     assert "EquivalenceRuleError" in module.__all__
     assert issubclass(EquivalenceRuleError, CompilationError)
+
+
+@pytest.mark.parametrize("opcode,maximum", [("rzz", 9), ("crz", 10), ("cphase", 11)])
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0), (0, 2), (2, 0)])
+@pytest.mark.parametrize("angle", [0.0, 1e-12, 0.7137, math.pi, -2.5])
+def test_parity_rotations_translate_directly_to_cz(
+    opcode: str, maximum: int, pair: tuple[int, int], angle: float
+) -> None:
+    source = Instruction(opcode, pair, {"theta": angle})
+    leaves = translate(
+        source, can_run=_can_run("rx", "rz", "cz"), z_rotation="rz", pulse_opcode="rx"
+    )
+    assert leaves is not None
+    assert len(leaves) <= maximum
+    assert sum(item.name == "cz" for item in leaves) == 2
+    n_wires = max(pair) + 1
+    expected = _register_matrix(source, n_wires)
+    actual = _product(leaves, n_wires)
+    phase = torch.vdot(actual.flatten(), expected.flatten()) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-12, rtol=0)
+    assert abs(abs(phase) - 1) < 1e-12
+
+
+@pytest.mark.parametrize("opcode", ["rzz", "crz", "cphase"])
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
+def test_direct_cz_words_preserve_batched_shared_angle_gradients(
+    opcode: str, pair: tuple[int, int]
+) -> None:
+    theta = torch.tensor([0.37, -0.61], dtype=torch.float64, requires_grad=True)
+    metadata = {"conditions": ((0, 1),), "source_instruction_index": 7}
+    source = Instruction(opcode, pair, {"theta": theta}, metadata=metadata)
+    leaves = translate(
+        source, can_run=_can_run("rx", "rz", "cz"), z_rotation="rz", pulse_opcode="rx"
+    )
+    assert leaves is not None
+    assert all(item.metadata == metadata for item in leaves)
+    assert source.params["theta"] is theta
+    # A coherent preparation and readout are sensitive to relative phases.
+    state = torch.tensor([1, 2j, -3, 4 + 1j], dtype=torch.complex128)
+    state = state / torch.linalg.vector_norm(state)
+    probe = torch.tensor([2 - 1j, -1, 3j, 1 + 2j], dtype=torch.complex128)
+    probe = probe / torch.linalg.vector_norm(probe)
+    source_losses: list[torch.Tensor] = []
+    output_losses: list[torch.Tensor] = []
+    for batch in range(2):
+        expected = _register_matrix(
+            Instruction(opcode, pair, {"theta": theta[batch]}), 2
+        )
+        scalar_leaves = tuple(
+            Instruction(
+                item.name,
+                item.wires,
+                {
+                    key: (
+                        value[batch]
+                        if isinstance(value, torch.Tensor) and value.ndim
+                        else value
+                    )
+                    for key, value in item.params.items()
+                },
+            )
+            for item in leaves
+        )
+        actual = _product(scalar_leaves, 2)
+        source_losses.append(torch.vdot(probe, expected @ state).abs().square())
+        output_losses.append(torch.vdot(probe, actual @ state).abs().square())
+    expected_loss = torch.stack(source_losses).sum()
+    actual_loss = torch.stack(output_losses).sum()
+    torch.testing.assert_close(expected_loss, actual_loss, atol=1e-12, rtol=0)
+    expected_gradient = torch.autograd.grad(expected_loss, theta, retain_graph=True)[0]
+    actual_gradient = torch.autograd.grad(actual_loss, theta)[0]
+    assert torch.count_nonzero(expected_gradient) == 2
+    torch.testing.assert_close(expected_gradient, actual_gradient, atol=1e-12, rtol=0)
+
+
+@pytest.mark.parametrize("opcode", ["rzz", "crz", "cphase"])
+def test_direct_cz_words_keep_symbolic_expressions_until_binding(opcode: str) -> None:
+    from flagquantum import Circuit
+    from flagquantum.core.parameters import Parameter
+
+    theta = 2 * Parameter("theta") + 0.1
+    source = Instruction(opcode, (1, 0), {"theta": theta})
+    leaves = translate(
+        source, can_run=_can_run("rx", "rz", "cz"), z_rotation="rz", pulse_opcode="rx"
+    )
+    assert leaves is not None
+    for value in (0.0, 0.37, -0.61):
+        original = Circuit.from_ir(CircuitIR(2, (source,))).bind_parameters(
+            {"theta": value}
+        )
+        converted = Circuit.from_ir(CircuitIR(2, leaves)).bind_parameters(
+            {"theta": value}
+        )
+        expected = _product(original.to_ir().instructions, 2)
+        actual = _product(converted.to_ir().instructions, 2)
+        phase = torch.vdot(actual.flatten(), expected.flatten()) / 4
+        torch.testing.assert_close(expected, phase * actual, atol=1e-12, rtol=0)
+
+
+@pytest.mark.parametrize("opcode,added", [("rzz", 8), ("crz", 9), ("cphase", 10)])
+def test_direct_cz_legalization_obeys_exact_growth_budget(
+    opcode: str, added: int
+) -> None:
+    source = CircuitIR(2, (Instruction(opcode, (0, 1), {"theta": 0.37}),))
+    snapshot = _snapshot(tuple(_gate(name) for name in ("rx", "rz", "cz")))
+    result = legalize_native_gates(
+        source, snapshot=snapshot, evaluated_at=_NOW, max_added_operations=added
+    )
+    assert len(result.program.instructions) == added + 1
+    assert result.decompositions[0].replacement_opcodes == tuple(
+        item.name for item in result.program.instructions
+    )
+    with pytest.raises(NativeGateLegalizationError, match="max_added_operations"):
+        legalize_native_gates(
+            source, snapshot=snapshot, evaluated_at=_NOW, max_added_operations=added - 1
+        )
+
+
+@pytest.mark.parametrize("opcode", ["rzz", "crz", "cphase"])
+def test_direct_cz_candidate_respects_fixed_pulse_constraints(opcode: str) -> None:
+    source = Instruction(opcode, (1, 0), {"theta": 0.37})
+
+    def can_run(item: Instruction) -> bool:
+        return item.name in {"rz", "cz"} or (
+            item.name == "rx" and item.params["theta"] == math.pi / 2
+        )
+
+    leaves = translate(source, can_run=can_run, z_rotation="rz", pulse_opcode="rx")
+    assert leaves is not None and all(can_run(item) for item in leaves)
+    expected, actual = _register_matrix(source, 2), _product(leaves, 2)
+    phase = torch.vdot(actual.flatten(), expected.flatten()) / 4
+    torch.testing.assert_close(expected, phase * actual, atol=1e-12, rtol=0)
