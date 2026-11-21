@@ -490,3 +490,12 @@ modular-exponentiation score demonstration. See `COMPONENT_UI_EXPORT_AUDIT.md`
 for original import/hash defects, retained-file behavior and the remaining full
 native example-provider inventory. `tests/unit/test_component_ui_export.py`
 compares the complete source catalog and exercises actual native execution.
+
+Run `python -m examples.algorithms.basic_gate_ui_export` for native instance
+providers spanning nine Basic Gates notebooks, fourteen operation documents and
+sixteen examples. Shared native resource classes retain distinct operation names
+through explicit documentation callbacks. The example publishes seventeen JSON
+files with fresh typed interface diagrams and fourteen documentation files, and
+prints emitted primitive counts separately from QEC model categories. Its graph
+is an atomic interface view. Remaining catalog and decomposition coverage is
+listed in `COMPONENT_UI_EXPORT_AUDIT.md`.

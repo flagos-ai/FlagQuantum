@@ -146,3 +146,65 @@ comparison for recorded real diagrams. Fresh full-native diagram execution and
 The fixture is 837,499 bytes and avoids repeating the 900-second decomposition
 run. External manifests retain full output hashes before completed temporary
 output copies are reclaimed.
+
+## Native basic-gate instance providers
+
+`examples/algorithms/basic_gate_ui_export.py` composes nine complete native
+notebook entries, fourteen documentation groups and all sixteen corresponding
+frozen example factories. The entries cover T, Toffoli, H and controlled H,
+CNOT, Z/S/CZ, Y/CY, both measurement bases, global phase and identity. Multiple
+operations share `PhaseCall`, `CliffordCall` or `ZeroCostCall`. Explicit tool-layer
+documentation callbacks give them individual names and owned documentation.
+The existing class-documentation defaults remain available to other exporters.
+
+The provider uses existing resource identities, register signatures,
+`ComponentProgramBuilder`, `component_register_score` and `register_score_data`.
+Every instance produces a fresh native interface diagram. No recorded diagram
+fixture or upstream object is needed by this runnable export. The graph contains
+sixteen isolated atomic interfaces. Complete decomposition dependency graphs,
+source per-gate glyphs and source class-docstring reproduction are separate
+coverage gaps. The original diagram replay remains evidence for exporter
+serialization, with its previously recorded scope.
+
+All sixteen names, parameter dictionaries, parameter-derived filenames,
+ordered signature widths/shapes/sides and independent QEC cost categories are
+compared with actual unmodified frozen factories. The thirteen concrete
+unitary instances also compare complete complex operators and complex input
+states through ordinary `circuit.append(op)`. Symbolic identity retains its
+model and signature and requires a concrete width to execute. No auxiliary
+quantum storage is allocated by this group.
+
+Both measurement bases compare each unnormalized branch with the original
+basis effects and verify that the consumed physical wire is zero. Calling the
+source measurement's ordinary tensor contraction raises its existing
+information-discard error. This failure is retained. Branch-phase evidence uses
+its basis effects instead. Physical clearing retains the classical outcome.
+The source logical signature consumes q and produces c.
+
+Emitted IR instruction counts and model categories use separate report rows.
+T, H, CNOT, Z, S, CZ, Y and CY each emit one corresponding primitive. Toffoli
+emits one CCX and its model counts one Toffoli. Controlled H emits one CH,
+while its source QEC estimate is four Cliffords and two rotations. Z measurement
+emits measure plus conditioned X. X measurement prepends H. Each model counts
+one measurement. Global phase emits two X and two phase instructions on an
+arbitrary carrier with zero logical model cost. Concrete identity emits one I
+per bit with zero model cost. These are explicit existing execution/model
+boundaries, including scalar carrier and physical measurement clearing.
+
+Run `python -m examples.algorithms.basic_gate_ui_export`. Expected artifacts are
+seventeen JSON files and fourteen individual documentation files across fourteen
+operation folders. All sixteen diagrams are regenerated locally. Retained-file
+behavior, fresh navigation and explicit documentation-provider failure are
+verified. The remaining six Basic Gates notebook entries contain twenty-one
+documentation groups and thirty-five examples. Q0120 stays open for these,
+other catalog sections, complete native decomposition providers and fresh
+full-catalog diagram execution.
+
+This batch passes 235 concentrated checks. One pre-existing optional PennyLane
+identity test is skipped because PennyLane is absent. Ninety-four existing
+source/parser warnings remain visible. Strict typing of all three affected
+Python files, Black, Ruff, Integration scope, architecture, multi-level IR,
+public API baseline and whitespace checks pass. Both full-source catalog
+export profiles still produce 3,317 byte-identical files per side after adding
+the documentation callbacks. Per-file hash/length manifests are retained in the
+external reference environment before reclaiming these completed export copies.
