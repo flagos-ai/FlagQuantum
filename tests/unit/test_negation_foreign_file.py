@@ -162,7 +162,7 @@ def test_controlled_sdk_preserves_original_unresolved_measured_adjoint(
     assert unresolved
     with pytest.raises(RecursionError):
         cirq.unitary(unresolved[0])
-    with pytest.raises(RecursionError):
+    with pytest.raises(ValueError, match="Source leaf explicitly declares no unitary"):
         import_cirq_register_gate(
             operation, signature=native_signature(source.signature)
         )

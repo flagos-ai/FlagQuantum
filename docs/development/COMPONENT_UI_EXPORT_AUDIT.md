@@ -1440,8 +1440,10 @@ model under the same convention.
 | sq_cmp | 4 | 0 | 4 | 0 |
 
 All 44 original-success arithmetic root drawings are qualified. The explicit
-EqualsAConstant unsigned/QAny Join view, recursive arithmetic glyphs and seven
-existing duplicate/permutation SDK primitive-path failures remain open. Q-0120
+EqualsAConstant unsigned/QAny Join view and recursive arithmetic glyphs remain
+open. The seven duplicate/permutation SDK primitive-path failures are closed by
+the concrete SDK gate boundary correction documented in
+SOURCE_GRAPH_REGISTER_DECOMPOSITION_AUDIT.md. Q-0120
 and full G2 acceptance remain pending. This batch closes the four immediate
 graph differences and does not change parent acceptance counts.
 

@@ -13,8 +13,19 @@ from ...compiler.registers.primitives.circuit_binding import restore_output_orde
 from .conversion import _cirq
 
 
+def _has_sdk_gate_body(source: Any) -> bool:
+    from qualtran import GateWithRegisters
+    from qualtran._infra.controlled import _ControlledBase
+
+    # Generic control wrappers can synthesize a control over measured children.
+    # Their typed graph owns valid feedback. Concrete SDK gates own their bodies.
+    return isinstance(source, GateWithRegisters) and not isinstance(
+        source, _ControlledBase
+    )
+
+
 def source_graph_operations(operation: Any, manager: Any) -> tuple[Any, ...] | None:
-    """Prefer the source's typed graph over its independent Cirq gate wrapper."""
+    """Expand typed wrappers while preserving concrete SDK gate bodies."""
     source = getattr(operation.gate, "bloq", operation.gate)
     if not callable(getattr(source, "decompose_bloq", None)):
         return None
@@ -26,14 +37,16 @@ def source_graph_operations(operation: Any, manager: Any) -> tuple[Any, ...] | N
     )
     from qualtran._infra.gate_with_registers import split_qubits
 
-    if not isinstance(source, Bloq) or any(
-        reg.side.value != 3 for reg in source.signature
+    if (
+        not isinstance(source, Bloq)
+        or _has_sdk_gate_body(source)
+        or any(reg.side.value != 3 for reg in source.signature)
     ):
         return None
     try:
         graph = (
             source if isinstance(source, CompositeBloq) else source.decompose_bloq()
-        ).flatten()
+        ).flatten(pred=lambda node: not _has_sdk_gate_body(node.bloq))
     except (DecomposeNotImplementedError, DecomposeTypeError):
         return None
     inputs = split_qubits(source.signature, operation.qubits)
