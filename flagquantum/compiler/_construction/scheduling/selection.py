@@ -457,6 +457,22 @@ def _select_candidates(
         else:
             try:
                 arithmetic = build_candidate()
+                construction_seconds = perf_counter() - start
+                segments = (
+                    arithmetic.segments
+                    if isinstance(arithmetic, RegisterCandidate)
+                    else (arithmetic,)
+                )
+                if (target.basis is not None or target.couplings) and any(
+                    rule == "terminal_borrowed_fourier_sum"
+                    for segment in segments
+                    for _, rule in segment.implementation_rules
+                ):
+                    raise TargetError(
+                        "target.unsupported",
+                        "borrowed Fourier sums require a native logical "
+                        "target; phase-preserving target conversion is not admitted",
+                    )
                 # Contiguous fresh pool: trim unused trailing capacity, not costs.
                 circuit = replace(
                     arithmetic.circuit,

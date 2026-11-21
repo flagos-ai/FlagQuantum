@@ -1,17 +1,21 @@
 """Exact arithmetic with retained or dependency-aware cleanup/recomputation.
 
 Only verified raw-word expressions enter here. Both schedules compute into an
-arbitrary XOR target and restore every supplied zero workspace qubit. The same
-X/CX/CCX kernels serve forward and inverse computation without hidden phase.
+arbitrary XOR target and restore every supplied zero workspace qubit. Default
+X/CX/CCX kernels serve forward and inverse computation without hidden phase. A
+width-constrained affine sum may use an untruncated Fourier writer that borrows
+and restores a root input word without clean workspace.
 """
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+from ....core._composition import inverted_instruction
 from ....core.ir import CircuitIR, Instruction
 from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
@@ -31,6 +35,7 @@ from ..analysis.lifetimes import LifetimeAnalysis, analyze_lifetimes
 from ..analysis.ranges import unsigned_width
 from ..verification.bindings import OutputMode, verify_bindings
 from ..verification.profile import _fail, _positive_integer, uint_type
+from .borrowed_sum import borrowed_sum_instructions
 
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]
@@ -117,7 +122,26 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
     """Reverse the selected clean value circuit and its actual allocation events."""
     computes = Counter(e.value for e in candidate.events if e.action == "compute")
     cleans = Counter(e.value for e in candidate.events if e.action == "uncompute")
-    if not _self_adjoint_gates(candidate.circuit.instructions) or computes != cleans:
+    gates = candidate.circuit.instructions
+    borrowed_sum = any(
+        rule == "terminal_borrowed_fourier_sum"
+        for _, rule in candidate.implementation_rules
+    )
+    fourier_gates = borrowed_sum and all(
+        gate.matrix is None
+        and not gate.metadata
+        and (
+            (gate.name in {"h", "cx", "swap"} and not gate.params)
+            or (
+                gate.name == "cphase"
+                and set(gate.params) == {"theta"}
+                and isinstance(gate.params["theta"], float)
+                and math.isfinite(gate.params["theta"])
+            )
+        )
+        for gate in gates
+    )
+    if not (_self_adjoint_gates(gates) or fourier_gates) or computes != cleans:
         _fail("register.adjoint", "cleanup requires a clean exact value candidate")
     events = tuple(
         replace(event, action="uncompute" if event.action == "compute" else "compute")
@@ -127,7 +151,11 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
         candidate,
         circuit=replace(
             candidate.circuit,
-            instructions=tuple(reversed(candidate.circuit.instructions)),
+            instructions=(
+                tuple(inverted_instruction(gate) for gate in reversed(gates))
+                if fourier_gates
+                else tuple(reversed(gates))
+            ),
         ),
         events=events,
         recomputations=(
@@ -821,6 +849,45 @@ def _logical_cost(candidate: ArithmeticCandidate) -> tuple[int, int, int]:
     return candidate.peak_workspace, resource.n_operations, resource.depth
 
 
+def _borrowed_sum_candidate(
+    normalization: ArithmeticNormalization,
+    inputs: Mapping[ValueId, Sequence[int]],
+    output: Sequence[int],
+    *,
+    n_qubits: int,
+    scheduling: Schedule,
+    max_operations: int,
+) -> ArithmeticCandidate | None:
+    analysis = analyze_lifetimes(
+        (normalization.program,), entry=normalization.program.name
+    )
+    operations = analysis.program.body.blocks[0].operations
+    addends = _terminal_addends(operations)
+    if addends is None:
+        return None
+    gates = borrowed_sum_instructions(
+        analysis, inputs, addends, output, max_operations=max_operations
+    )
+    if gates is None:
+        return None
+    returned = operations[-1].operands[0].id
+    # The entire oracle restores its borrowed roots internally. These paired
+    # events describe an external XOR write without owned storage or scratch.
+    return ArithmeticCandidate(
+        CircuitIR(n_wires=n_qubits, instructions=gates),
+        scheduling,
+        analysis,
+        (
+            ScheduleEvent("compute", returned, (), (), 0, len(gates)),
+            ScheduleEvent("uncompute", returned, (), (), 0, 0),
+        ),
+        0,
+        0,
+        implementation="arithmetic",
+        implementation_rules=((returned, "terminal_borrowed_fourier_sum"),),
+    )
+
+
 def _schedule_normalized_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
@@ -1031,15 +1098,35 @@ def schedule_arithmetic(
             output_mode=output_mode,
         )
     except HybridVerificationError as error:
-        if conservative is None or not all(
+        if not all(
             d.code.startswith("construction.lowering.") for d in error.diagnostics
         ):
             raise
-        return replace(
-            conservative,
-            conservative=conservative,
-            implementation_errors=error.diagnostics,
+        # A Fourier writer trades operations for width. Probe it only after the
+        # ripple candidate exhausts work; the existing Pareto guard still applies
+        # whenever the conservative circuit fits. Other failures are not hidden.
+        optimized = (
+            _borrowed_sum_candidate(
+                normalization,
+                inputs,
+                output,
+                n_qubits=n_qubits,
+                scheduling=scheduling,
+                max_operations=max_operations,
+            )
+            if all(
+                d.code == "construction.lowering.workspace" for d in error.diagnostics
+            )
+            else None
         )
+        if optimized is None:
+            if conservative is None:
+                raise
+            return replace(
+                conservative,
+                conservative=conservative,
+                implementation_errors=error.diagnostics,
+            )
     new_cost = _logical_cost(optimized)
     if conservative is None:
         assert refusal is not None

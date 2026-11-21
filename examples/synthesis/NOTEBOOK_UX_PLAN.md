@@ -31,7 +31,7 @@ Track three independent measures:
 | Six editable learning lessons | All lesson cells and independent assertions run through the focused user-workflow selection | Keep their six-case teaching denominator separate from the 212 upstream workflows |
 | Native block composition | Full degree-33 Hamiltonian QSVT; eight-row CFD Pauli/banded blocks; full 256-column sixteen-row six-band block | Original degree-101/255 nozzle sequences still require the pending bounded effect admission |
 | Original-size image preparation | Butterfly preparation lowering and full-size private reference evidence retained | Pending explicit preparation/binding capacity approval; public limits unchanged |
-| Original signed arithmetic budget | Native full-size execution at 20 total qubits; complete arbitrary XOR and coherent checks | Continue investigating a reusable path to the independent Circuit's 14-qubit budget without weakening XOR semantics |
+| Original signed arithmetic budget | Native full-size execution now also fits 14 total qubits and zero extra work; all 16,384 arbitrary XOR columns and complex witnesses pass | Width-constrained Fourier route costs 89 logical instructions including preparation; default 20-qubit/47-instruction ripple route retained; native logical targets only |
 | Repeated parameter evaluations | Existing Circuit plan reuse and gradients taught; repeated native-specialization readout validation reduced | Native symbolic angle binding remains a separate design/admission item |
 | Frozen default checks | 21202 passes, 801 skips, nine failures and six errors; no new failed/error nodes versus the prior baseline | Existing worktree, local-network and shared-history environment issues remain explicit; raw run is not green |
 
@@ -39,6 +39,45 @@ The two pending capacity proposals do not authorize implementation by themselves
 Continue safe internal resource/validation improvements while those decisions
 remain pending; do not substitute smaller original workloads or packed response
 matrices to claim their acceptance.
+
+### Original-width signed sum closure
+
+The original workshop now runs its displayed native `signed_addition` under
+`max_qubits=14, max_workspace=0, memory_limit_bytes=1024**2`. It keeps both input
+formats and the six-bit signed half-unit output. The result remains
+`5 + (-7.5) = -2.5`. No gates, wire maps or bitstring decoding enter user code.
+
+The Compiler recognizes full masks and lossless unsigned static shifts of
+distinct root inputs feeding a terminal modular sum. When the usual ripple
+writer exceeds the requested work/width ceiling, a Fourier writer temporarily
+borrows and restores one input and uses the arbitrary output high bit to retain
+overflow. It preserves `target ^= result` for every target, with no assumed
+zero target, approximation or truncated QFT angles. Temporary SSA operands,
+overlap, unproved widths and basis/routing conversion do not enter this route.
+Its cleanup uses actual gate adjoints, including the controlled phase angles.
+
+| Route | Total qubits | Extra work | Logical instructions including preparation | Depth |
+| --- | --- | --- | --- | --- |
+| Retained default ripple | 20 | 6 | 47 | 23 |
+| Requested original-width Fourier | 14 | 0 | 89 | 51 |
+
+This is a width/operation trade-off. Logical counts do not establish hardware
+cost or runtime performance. The ordinary default and existing adoption guard
+remain intact; constrained register composition selects the alternative only
+when the ripple candidate exceeds the requested ceiling. Candidate slots and
+construction operation caps are unchanged.
+
+Acceptance includes all 256 original input pairs times all 64 arbitrary XOR
+targets, absolute complex amplitudes, two complete coherent witnesses, smaller
+complete signed/unsigned and shifted-sum unitaries, operation-budget rejection,
+the existing alias-double rule, and native compute/phase/uncompute with clean
+local storage. The full original compiled writer was separately checked in
+eight invariant source blocks, in 64-column batches: maximum absolute error
+below `1.8e-15`, without phase alignment or a dense fourteen-bit response matrix.
+The same exhaustive check is retained in the focused compiler tests.
+All 16 workshop code cells run successfully. These changes supersede the
+earlier fourteen-bit native refusals recorded in the historical milestones
+below; previous raw evidence is retained unchanged.
 
 ## Delivery sequence
 

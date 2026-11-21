@@ -42,6 +42,7 @@ from .arithmetic import (
     BoundArithmetic,
     Schedule,
     ScheduleEvent,
+    _borrowed_sum_candidate,
     _copy,
     adjoint_value_candidate,
 )
@@ -700,6 +701,25 @@ def schedule_register_program(
                         max_operations=remaining,
                         scheduling=scheduling,
                     )
+                    if (
+                        not phase
+                        and segment.peak_workspace > max(0, clean_qubits - position)
+                        and segment.normalization is not None
+                    ):
+                        constrained = _borrowed_sum_candidate(
+                            segment.normalization,
+                            inputs,
+                            output,
+                            n_qubits=n_qubits,
+                            scheduling=scheduling,
+                            max_operations=remaining,
+                        )
+                        if constrained is not None:
+                            segment = replace(
+                                constrained,
+                                normalization=segment.normalization,
+                                conservative=segment,
+                            )
                     if segment_refusal is not None:
                         segment = replace(
                             segment,

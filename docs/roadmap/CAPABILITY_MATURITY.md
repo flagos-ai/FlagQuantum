@@ -692,6 +692,26 @@ views, array writes, formatted arithmetic and mutable-helper control/inverse
 remain explicit gaps. No additional native corpus coverage is credited merely
 for this primitive.
 
+## Work-free native affine sums
+
+Maturity remains `development_evidence`. When the default ripple sum exceeds a
+requested work/width ceiling, a verified affine sum of distinct root inputs may
+borrow and restore one operand using an untruncated Fourier XOR writer. It uses
+one arbitrary output overflow bit and no extra clean work. Full masks, unsigned
+power-of-two shifts and one-bit signed extension are recognized from verified
+SSA; temporary operands, aliases and unproved widths are not admitted.
+
+The original signed workshop now executes at 14 total qubits with 89 logical
+instructions, including preparation. Its default remains 20 qubits with 47
+instructions. This resource trade-off is not a runtime or hardware-performance
+claim. Only native logical targets are admitted for the Fourier writer; basis
+conversion and routing remain refused until absolute phase is established.
+Tests cover every original arbitrary XOR target, full complex coherence,
+smaller complete signed/unsigned unitary domains, inverse cleanup and a native
+compute/phase/uncompute workflow. See
+`tests/team/compiler/test_construction_borrowed_sum.py` and
+`tests/integration/test_synthesis_iquhack_workshop_notebook.py`.
+
 ## Native modular walk updates
 
 Maturity: `development_evidence`. Native bounded static modular increments and

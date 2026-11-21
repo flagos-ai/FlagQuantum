@@ -10,9 +10,8 @@ The runnable reference exercises retain all 64 terms of the coherent
 arithmetic example, the seeded 32-entry probability array and the five-bit
 exponential warm-up. The signed exercise computes `5 + (-7.5) = -2.5`.
 It uses a 14-qubit Circuit with sign extension and controlled increments
-in units of one half. In preflight, the direct signed qfunc required a wider
-working register than the local statevector budget. The Circuit exercise
-checks all 256 input pairs in one coherent witness.
+in units of one half. The visible native qfunc now also runs at that fourteen-bit
+width. The Circuit exercise checks all 256 input pairs in one coherent witness.
 
 The November 21, 2026 native preflight retains the same input formats:
 `QNum[3]`, `QNum[5, True, 1]` and result `QNum[6, True, 1]`. Immutable input-bit
@@ -20,17 +19,30 @@ borrowing first reduced retained lowering from 36 work bits / 286 instructions
 to 25 / 264, with recomputation changing from 25 / 304 to 25 / 264. Those
 historical measurements remain unchanged.
 
-Equal-width modular-sum fusion now emits the terminal XOR result directly,
+The earlier equal-width modular-sum fusion emitted the terminal XOR result directly,
 while read-only sign aliases avoid copying an extended signed word. Both
-schedules use **11 work bits and 49 arithmetic instructions**. The visible
-native preparation of `5` and `-7.5` adds four instructions, so its compile-only
-report is **25 total qubits, 53 instructions and depth 24**. A fourteen-qubit /
-zero-workspace native request still refuses. The original-budget Circuit
-execution remains in place; the Notebook does not execute a 25-qubit state.
+schedules then used **11 work bits and 49 arithmetic instructions**. Preparation
+added four instructions: **25 total qubits, 53 instructions and depth 24**.
+Those are historical compile-only measurements. Subsequent immutable shift
+borrowing reduced the default to **20 total qubits, six work bits, 47 instructions
+and depth 23**; that fewer-instruction default remains unchanged.
+
+With `max_qubits=14, max_workspace=0`, a bounded Fourier XOR writer instead
+borrows and restores a root input word and uses the arbitrary output high bit
+to retain overflow. The Notebook executes this **14-qubit, zero-extra-work,
+89-instruction, depth-51** route, including the four preparation instructions.
+This is a width/operation trade-off, not a runtime or hardware-gate advantage.
+The current route accepts native logical targets; basis conversion and routing
+refuse until absolute-phase preservation is admitted for those targets.
+
 Compiler checks cover all 256 inputs and 64 arbitrary XOR targets, inverses,
 shared negatives, unequal moduli, and smaller complete coherent witnesses with
 absolute phase and clean workspace. This is a general modular arithmetic rule,
-not an optimization keyed to this Notebook or these constants.
+not an optimization keyed to this Notebook or these constants. The work-free
+writer additionally passes all 16,384 original complex unitary columns, two
+complete random complex states, smaller signed/unsigned and shifted sums, and
+a native compute/phase/uncompute program with clean local storage. Exact QFT
+angles are retained; no angle truncation or clean-target assumption is used.
 
 The amplitude exercise uses native indexed rotations to load `x²` on the
 indicator, with `x = word / 32`. It draws the 2,048 shots observed in the
