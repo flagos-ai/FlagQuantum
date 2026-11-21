@@ -956,6 +956,15 @@ def _apply_fixed_permutation(
         return tensor.transpose(first, second).reshape(state.shape)
     if name == "cx":
         return _apply_cx_permutation(state, wires, n_wires)
+    if name == "ccx":
+        first, second, target = wires
+        selection: list[int | slice] = [slice(None)] * (n_wires + 1)
+        selection[first + 1] = selection[second + 1] = 1
+        selected = tuple(selection)
+        target_axis = target + 1 - int(first < target) - int(second < target)
+        output = tensor.clone()
+        output[selected] = tensor[selected].flip(target_axis)
+        return output.reshape(state.shape)
     raise ValueError(f"unsupported fixed permutation gate {name!r}")
 
 
