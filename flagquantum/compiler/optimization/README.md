@@ -11,7 +11,9 @@ execution belong to the topology and runtime domains.
 - `_cz_blocks.py` owns verified native CZ block proposals. Its private
   `_cz_local_cleanup.py` adapts Cirq local-run merging for arbitrary-angle
   RX/RZ targets; raw budgets and independent whole-block acceptance remain in
-  `_cz_blocks.py`. See the [source and evidence record](../../../docs/development/COMPILER_CZ_CIRQ_REUSE.md).
+  `_cz_blocks.py`. The stage then reuses structural commutation to merge
+  generated rotations across CZ gates; see [admission and tests](../../../docs/development/COMPILER_CZ_COMMUTING_ROTATIONS.md).
+  See also the [source and evidence record](../../../docs/development/COMPILER_CZ_CIRQ_REUSE.md).
 
 Dependencies may include Core IR and operator semantics, compiler register and
 lowering primitives required by a rewrite, and the circuit math those transforms
