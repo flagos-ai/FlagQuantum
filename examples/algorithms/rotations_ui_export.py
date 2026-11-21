@@ -20,6 +20,13 @@ import numpy as np
 from sympy import Symbol
 
 from examples.algorithms.approximate_qft_catalog import approximate_qft_examples
+from examples.algorithms.basic_gate_child_decomposition import (
+    child_decomposition as _child_presentation,
+)
+from examples.algorithms.component_ui_dependencies import (
+    ComponentFunction,
+    dependency_graph,
+)
 from examples.algorithms.hamming_phasing_catalog import HammingPhasingExample
 from examples.algorithms.hubbard_qubitization_resources import notebook_signature
 from examples.algorithms.phase_gradient_catalog import (
@@ -31,6 +38,10 @@ from examples.algorithms.programmable_rotation_array_catalog import (
     ProgrammableRotationArrayExample,
 )
 from examples.algorithms.qvr_catalog import QvrExample
+from examples.algorithms.rotation_gate_decomposition import (
+    rotation_gate_program,
+    rotation_gate_score,
+)
 from examples.algorithms.rz_phase_gradient_catalog import GradientRzExample
 from examples.algorithms.sparse_chemistry_resources import sparse_integral_fixture
 from examples.algorithms.square_cost_phasing_catalog import SquareCostPhasingExample
@@ -74,6 +85,7 @@ from flagquantum.algorithms.primitives.thc_chemistry_prepare import PrepareTHCCh
 from flagquantum.compiler.registers.lookup.source_qroam_clean import (
     optimal_qroam_clean_log_block_size,
 )
+from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_types import (
     opaque_register_type,
     quantum_bit_type,
@@ -817,7 +829,11 @@ def _instance(component: object) -> _Interface:
 
 
 def name(component: object) -> str:
-    return _instance(component)[0]
+    return (
+        "ComponentFunction"
+        if isinstance(component, ComponentFunction)
+        else _instance(component)[0]
+    )
 
 
 def signature(component: object) -> Signature:
@@ -825,15 +841,35 @@ def signature(component: object) -> Signature:
 
 
 def attributes(component: object) -> Mapping[str, object]:
-    return _instance(component)[2]
+    return (
+        component.attributes()
+        if isinstance(component, ComponentFunction)
+        else _instance(component)[2]
+    )
 
 
 def filename(component: object) -> str:
-    return component_filename(attributes(component))
+    return (
+        component.filename()
+        if isinstance(component, ComponentFunction)
+        else component_filename(attributes(component))
+    )
 
 
 def score(component: object) -> object:
-    return register_interface_score(signature(component), name(component))
+    if isinstance(component, ComponentFunction):
+        return component.score()
+    result = rotation_gate_score(name(component), attributes(component))
+    return (
+        result
+        if result is not None
+        else register_interface_score(signature(component), name(component))
+    )
+
+
+def decomposition(component: object) -> ProgramRecord | None:
+    """Reuse controlled-rotation calls while retaining other source boundaries."""
+    return rotation_gate_program(name(component), attributes(component))
 
 
 def documentation_name(documentation: ComponentDocumentation[object]) -> str:
@@ -851,8 +887,8 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "This diagram shows the atomic typed interface. Complete decomposition "
-        "graphs, glyphs, execution and resource estimates retain separate evidence. "
+        "Controlled rotations retain complete stored dependency graphs. "
+        "Other operations retain their atomic typed interfaces and separate evidence. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
 
@@ -893,7 +929,12 @@ def export_example(destination: Path) -> None:
     export_component_ui(
         destination,
         sections(),
-        dict.fromkeys(INSTANCES, ()),
+        dependency_graph(
+            INSTANCES,
+            owner=lambda component: name(component) + "/" + filename(component),
+            program=decomposition,
+            child_presentation=_child_presentation,
+        ),
         name=name,
         attributes=attributes,
         filename=filename,

@@ -156,9 +156,14 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         )
         assert data["msd"] is not None
         assert data["msd"] == first_scores[key]
-        assert data["callees"] == []
+        if identifier in {"cz_pow", "crz"}:
+            assert data["callees"]
+            for child in data["callees"]:
+                assert (tmp_path / child["name"] / child["filename"]).is_file()
+        else:
+            assert data["callees"] == []
 
-    assert len(list(tmp_path.rglob("*.json"))) == 48
+    assert len(list(tmp_path.rglob("*.json"))) == 58
     assert native.filename("square_via_phase_gradient") == native.filename(
         "square_via_zpow_phasing"
     )

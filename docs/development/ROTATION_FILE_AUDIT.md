@@ -120,3 +120,59 @@ complete source complex tensor after numerical binding, alongside the existing
 symbolic Rz case. Original analytical resource declarations remain independently
 compared. This refresh changes stale test expectations and adds execution
 coverage without changing the rotation implementation or frozen reference.
+
+## Complete controlled-rotation catalog graphs, 2026-11-22
+
+The six actual rotation.py catalog factories retain four original atomic
+refusals and both source-success roots. CZPowGate stores the exact ordered
+And / ZPowGate / And-adjoint calls. CRz stores its two signed half-angle
+ZPowGate calls interleaved with CNOT. Complete operand identities and both
+fresh source drawings match. The two roots contain six original atomic child
+contexts. Ten contextual children include four explicitly native-only And
+lowering/rebinding helpers. Existing atomic source leaves keep native interface
+presentation without a source decomposition-equality claim.
+
+Compiler owner primitives/controlled_rotation_component.py composes existing
+And Programs, bit-gate wrapping, owned parameters, and ComponentProgramBuilder.
+Its two entry functions expose q[2] for CZPowGate and scalar ctrl/q for CRz.
+Each element is one bit, and arrays retain row-major/MSB order. CZPowGate owns
+one clean temporary through shared And allocation and measured erasure. CRz
+uses through ports with no work. Existing invalid concrete-angle admission is
+reused, including boolean, nonfinite, and huge-integer rejection.
+
+For numeric angles, bound gate streams equal the existing independently
+source-validated emitters. Full complex vectors include entangled spectators
+and noncontiguous logical bindings. Every forward erasure outcome and every
+forward/inverse history matches the full source tensor, including absolute
+branch phase and zero temporary work. Selected Programs execute through
+circuit.append(op), with the established DynamicCircuit/run_dynamic route
+for measured CZPowGate. CRz's actual symbolic factory retains its original
+parameter name, resolves through Circuit.bind_parameters, and matches original
+Cirq decomposition amplitudes and an independent derivative. Program copy
+and lowered CircuitIR JSON round trip preserve these calls and parameters.
+
+Actual CZPowGate primitives are 3 H, 6 CX, 2 T, 2 Tdg, 1 S, 1 phase,
+1 measurement, 1 conditional CZ, and 1 reset. Its temporary allocation is at
+instruction zero and its free at offset eighteen. The independent original
+QEC model declares one And, one Clifford, one rotation, and one measurement.
+Its default source T-equivalent estimate is fifteen, separate from the four
+explicit native T-family instructions. Actual CRz is two phases and two CX,
+with zero workspace and measurement. Its source model declares two Clifford
+and two rotations, with a separate default T-equivalent estimate of twenty-two.
+Logical peak widths match original QubitCount at three and two respectively.
+
+Source hashes, original root inventory, complete graph/drawing comparison,
+primitive/model inventories, and environment checks are retained in external
+g2-controlled-rotation-ui-* receipts. Frozen source code remains unchanged.
+The separate su2_rotation.py registerless GlobalPhase child requires the
+pending Proposal 119 internal scalar effect. Existing SU2 flat execution,
+phase, inversion and model evidence remains separately accepted.
+
+The final catalog regression passes 809 cases, with three existing deselections
+and fourteen existing notebook escape warnings. The SDK-restored concentrated
+regression passes 301 cases without skips or warnings, and local integration
+passes 29 cases. Strict typing covers five changed Python files. Black, Ruff,
+integration and Compiler scope, architecture, multilevel IR, protected API and
+whitespace checks pass. An initial catalog ENOSPC failure is retained in its
+receipt. Verified regenerable temporary exports were removed before the
+passing rerun. Original source and historical evidence logs remain available.
