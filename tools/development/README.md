@@ -525,3 +525,12 @@ expressions and shaped control ports. Physical execution, measured primitive
 counts and analytical resource models remain with the existing native owners.
 Complete decomposition graph coverage is tracked in
 `docs/development/COMPONENT_UI_EXPORT_AUDIT.md`.
+
+Run `python -m examples.algorithms.field_ui_export` for the complete GF
+Arithmetic and Polynomials over Galois Fields catalogs. Eight notebook entries,
+fifteen documentation groups and twenty-two factories produce twenty-one fresh
+atomic interface diagrams. Actual field polynomial metadata, symbolic widths
+and coefficient-view lifetimes remain with existing native owners. The Drawer
+metadata path handles symbolic display independently of executable admission.
+Complete decomposition graph coverage remains in
+`docs/development/COMPONENT_UI_EXPORT_AUDIT.md`.

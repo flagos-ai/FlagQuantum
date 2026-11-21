@@ -367,3 +367,62 @@ The concentrated modular batch passes 800 checks with zero skips and fourteen
 existing notebook-parser warnings. Strict typing of both added files, Black,
 Ruff, Integration scope, architecture, multi-level IR, public API baseline and
 whitespace checks pass. The isolated actual module entry also passes.
+
+## Complete field and polynomial native instance catalogs
+
+`examples/algorithms/field_ui_export.py` covers all five GF Arithmetic notebooks
+and all three Polynomials over Galois Fields notebooks. The two complete groups
+contain fifteen documentation references and twenty-two actual original example
+factories. Run `python -m examples.algorithms.field_ui_export`. The normal module
+entry produces twenty-two JSON files, fifteen documentation files and twenty-one
+fresh diagrams. Both original GF2MulK factories describe the same field and
+constant, so they intentionally share their original node file.
+
+Existing field addition, multiplication, square, inverse and polynomial catalogs
+remain authoritative for signatures. Binary field codecs supply the actual
+irreducible polynomials and field identity. Polynomial codecs retain descending
+coefficient order and reconstruct the original concrete constant polynomial.
+The original symbolic constant example retains its zero polynomial over GF(2)
+independently of the symbolic coefficient field. Exact dictionary comparisons
+before encoding preserve symbol assumptions and actual polynomial objects.
+Original JSON encoding and filenames match every factory. Unsupported Galois
+polynomials retain the source encoder's NOT_SERIALIZABLE spelling, separately
+from the full native neutral descriptor identity.
+
+Port checks cover finite-field characteristic, degree, order and irreducible
+polynomial, the defining polynomial's own coefficient-field identity, packed
+polynomial degree, symbolic bit width, shape and lifetime. GFPolySplit and
+GFPolyJoin retain their duplicate logical `reg` names with different LEFT and
+RIGHT shapes. Their source register-list order reverses as the view direction
+changes. Packed and shaped coefficient representations share fifteen bits in
+the concrete degree-four GF(8) example. Existing view tests retain gate-free
+wire reuse, complete complex amplitudes and coefficient-order evidence.
+
+Six original symbolic field or polynomial instances are valid display metadata
+but are rejected by the existing executable descriptor validator. This UI
+provider therefore uses the existing Drawer RegisterStep and layout_register_score
+metadata path directly. It preserves nominal port records, array elements,
+symbolic widths and disjoint input/output-only lifetimes without constructing
+an executable Program. Concrete and symbolic interfaces use the same display
+path. This does not change the executable descriptor admission contract.
+
+The diagrams remain atomic interfaces. Complete per-instance decomposition
+and source per-gate glyph parity stay open. Existing complete field source-file,
+polynomial, packed-view, linear-map and encoding tests supply reused primitive
+streams, full complex-amplitude, relevant measurement-history, clean-work and
+analytical model evidence. This catalog workflow emits no physical gates and
+adds no resource estimator. Source tensor/coefficient-index defects and their
+separate accepted/native domains retain the existing file audit records.
+
+Native providers now cover 115 of 237 documentation references and 182 of 359
+factories. Six catalog sections retain 122 documentation references and 177
+factories. Q0120 remains open for those providers, complete decomposition/glyph
+coverage and fresh full-catalog execution. Prior exporter and Jupyter evidence
+is reused because the export tool has not changed.
+
+The field/polynomial concentrated regression passes 936 checks with zero skips
+and fourteen existing notebook-parser warnings. Strict checking of both added
+files, Black, Ruff, Integration scope, architecture, multi-level IR, public API
+baseline and whitespace checks pass. The isolated actual module entry passes.
+All twenty-two factories have a non-null metadata drawing, with twenty-one
+unique node files because the original constant-multiplier factories coincide.
