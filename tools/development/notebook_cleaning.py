@@ -1,11 +1,14 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 dev_tools/qualtran_dev_tools/clean_notebooks.py.
+# Command entry adapted from dev_tools/clean-notebooks.py.
 
 """Clear tracked notebook outputs and metadata while retaining generated-cell IDs."""
 
+import argparse
 import os
 import subprocess
+from collections.abc import Sequence
 from importlib import import_module
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -13,6 +16,7 @@ from tempfile import NamedTemporaryFile
 from nbformat import NotebookNode
 
 from tools.development import process
+from tools.development.repository import get_git_root
 
 # nbformat exposes untyped optional I/O; validate nodes at this boundary.
 nbformat = import_module("nbformat")
@@ -79,3 +83,15 @@ def clean_notebooks(sourceroot: Path, do_clean: bool = True) -> int:
         for path in dirty:
             print(" ", str(path))
     return len(dirty)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Check tracked package notebooks, applying cleanup only with --apply."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--apply", action=argparse.BooleanOptionalAction, default=False)
+    args = parser.parse_args(argv)
+    return clean_notebooks(get_git_root() / "flagquantum", do_clean=args.apply)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
