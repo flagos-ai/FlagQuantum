@@ -76,6 +76,7 @@ from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
 from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
+from .reversible_cpu import _apply_toffoli_cpu
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
 from .two_qubit_matrix_dispatch import _try_apply_preferred_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache
@@ -945,6 +946,8 @@ def _apply_fixed_permutation(
     name: str,
     wires: Sequence[int],
     n_wires: int,
+    *,
+    inplace: bool = False,
 ) -> torch.Tensor:
     """Apply fixed basis permutations without constructing gate matrices."""
 
@@ -957,14 +960,7 @@ def _apply_fixed_permutation(
     if name == "cx":
         return _apply_cx_permutation(state, wires, n_wires)
     if name == "ccx":
-        first, second, target = wires
-        selection: list[int | slice] = [slice(None)] * (n_wires + 1)
-        selection[first + 1] = selection[second + 1] = 1
-        selected = tuple(selection)
-        target_axis = target + 1 - int(first < target) - int(second < target)
-        output = tensor.clone()
-        output[selected] = tensor[selected].flip(target_axis)
-        return output.reshape(state.shape)
+        return _apply_toffoli_cpu(state, wires, n_wires, inplace=inplace)
     raise ValueError(f"unsupported fixed permutation gate {name!r}")
 
 

@@ -839,8 +839,10 @@ def _execute_statevector_program(
             or (name == "ccx" and output.device.type == "cpu")
         ):
             output = _apply_fixed_permutation(
-                output, name, instruction.wires, circuit.n_qubits
+                output, name, instruction.wires, circuit.n_qubits, inplace=owns_output
             )
+            if name == "ccx":
+                owns_output = True
         elif not carries_matrix and name == "y":
             output = _apply_single_qubit_fixed(
                 output, name, instruction.wires[0], circuit.n_qubits
