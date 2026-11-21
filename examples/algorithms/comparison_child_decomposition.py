@@ -4,9 +4,14 @@
 
 """Qualify stored comparison trees through their existing executable owners."""
 
+from typing import Literal, cast
+
 from examples.algorithms.comparison_decomposition import (
     comparison_symbols,
     symbolic_greater_than_program,
+)
+from flagquantum.compiler.registers.comparison.half_component import (
+    half_comparison_program,
 )
 from flagquantum.compiler.registers.comparison.ordering_component import (
     greater_than_program,
@@ -49,6 +54,28 @@ def comparison_child_decomposition(
                 ),
             )
         )
+    elif (
+        ports == ("a", "b", "c", "target")
+        and type(registers[0].bitsize) is int
+        and registers[0].bitsize > 0
+        and registers[0].dtype.encoding in {"uint", "signed"}
+    ):
+        for relation, label in (
+            ("gt", "LinearDepthHalfGreaterThan"),
+            ("ge", "LinearDepthHalfGreaterThanEqual"),
+            ("lt", "LinearDepthHalfLessThan"),
+            ("le", "LinearDepthHalfLessThanEqual"),
+        ):
+            candidates.append(
+                (
+                    label,
+                    half_comparison_program(
+                        registers[0].dtype,
+                        cast(Literal["gt", "ge", "lt", "le"], relation),
+                        adjoint=registers[2].side == RegisterSide.LEFT,
+                    ),
+                )
+            )
     elif ports in (("x", "y", "target"), ("a", "b", "target")) and all(
         type(register.bitsize) is int
         and register.bitsize > 0

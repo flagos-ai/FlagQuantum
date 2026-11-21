@@ -179,3 +179,46 @@ skips, one source xfail and two unknown-slow-marker warnings. Changed Python
 passes strict mypy, Black and Ruff, with Compiler scope, architecture, multilevel
 IR and protected API checks. Parent Q-0201/Q-0202 remain open for the explicitly
 retained source failures and symbolic-length execution boundary.
+
+## Complete recursive catalog dependency closure — 2026-11-22
+
+The concrete and symbolic-width source-success factories now expose all 22
+reachable ordered graphs and 88 original atomic/refusal contexts. Both
+LinearDepthHalfLessThan descendants qualify through the existing half-comparison
+owner, including forward and reverse port sides. Every decomposable child has a
+whole-definition source class match and a fresh source-equal drawing. The
+symbolic-length root retains its original decomposition refusal.
+
+The earlier two apparent raw trace gaps were named-input dictionary insertion
+order. The original iterator groups inputs by their producing predecessor.
+Comparison now matches named inputs by name, retaining ordered calls and every
+producer, port, index, output alias and measurement feedback value. The external
+recursive receipt retains raw_named_mapping_order_equal=false for both roots.
+The frozen source remains unchanged.
+
+The combined complete has_duplicates.py and controlled_add_or_subtract.py batch
+has 32 exact graphs, 113 atomic/refusal contexts and 27 fresh matching non-root
+drawings. Its 381 execution/reference checks rerun complete complex amplitudes,
+applicable measurement histories, workspace and primitive/model evidence.
+The duplicate alias permutation and invalid three-word erasure precondition
+remain witnessed. Clean-work acceptance applies to the already verified valid
+two-word channels. Four-word resource counts alone do not certify a clean
+mathematical duplicate channel.
+
+The concrete four-word unsigned catalog stream has 44 T-family operations and
+11 measurements. The independent frozen model reports 44 T equivalents and 11
+measurements. Full primitive histograms and model categories are separate in
+ftqc-reference-env/g2-arithmetic-tail-resources-20261122.json. Existing signed SDK
+and symbolic execution boundaries above remain recorded. Parent Q-0201/Q-0202
+remain open for those source and execution boundaries.
+
+Batch verification passes 729 concentrated catalog checks with three existing
+deselections and 14 original notebook warnings, 25 focused source/graph cases,
+and 381 execution/reference cases with 100 existing protobuf bool warnings.
+Strict mypy covers eight changed Python files. Black, Ruff, integration and
+Compiler scope, architecture, multilevel IR, protected API and whitespace checks
+pass. Four frozen source/test blobs remain unchanged. Combined catalog counts
+are derived from the published export plus the exact 88-node Arithmetic delta,
+covered by full catalog file-equality regression. They are 3825 JSON files,
+3824 diagrams, 234 docs, 3471 contextual children, 73 decomposed roots,
+280 atomic interfaces and 345 qualified descendants. Q-0120 remains open.
