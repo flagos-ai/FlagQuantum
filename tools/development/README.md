@@ -6,6 +6,34 @@ coverage helpers use only Python's standard library. Docstring rendering uses
 optional Sphinx and attrs development dependencies.
 Framework, Compiler, Runtime and Simulation packages must not import it.
 
+## Layout and dependency ownership
+
+Developer helpers run from the repository checkout. Import them with
+`from tools.development import process`, or invoke documented commands with
+`python -m tools.development.<command>`. This internal namespace needs no separate
+developer-package installation. The framework wheel and algorithm workflows have
+their own package installation contract.
+
+The complete developer README from Qualtran v0.7.0
+`bcb17bb25360ed68ce3bc084645db3e929799389` (Q-0035) maps to these native owners.
+
+| Original responsibility | Native location and use |
+| --- | --- |
+| Developer scripts, modules and configuration | This directory holds internal source maintenance, documentation and analysis tools. |
+| `conf/` tool configuration | Root `pyproject.toml` and `.pre-commit-config.yaml` own native policy. Sibling `coverage.ini`, `retained_source_lint.ini` and `retained_source_mypy.ini` own their documented source-audit scopes. |
+| Runtime and additional developer dependency declarations | Root `pyproject.toml` owns production requirements and optional development extras. Optional source-audit subsets and frozen versions are recorded in each owner audit. |
+| Pinned environment specifications | The external `ftqc-reference-env` workspace holds unchanged source locks and isolated audit targets. Auditing a subset leaves whole-lock acceptance with its separate ledger parent. |
+| Reference-generation templates | `templates/` contains native documentation assets consumed by `reference_templates.py` and `reference_template_pages.py`. |
+| CLI scripts and reusable developer library installation | Commands and reusable helpers share the source-checkout `tools.development` namespace. Examples below show direct imports and module invocation. Framework-scale analysis is optional for algorithm users. |
+
+The original separate editable developer distribution is represented by the
+existing checkout namespace. This is an explicit installation-layout adaptation.
+All dependency, template, command and library responsibilities remain documented
+at their native owners. The source README's dependency declarations describe the
+original project, while the root native manifest governs this repository.
+
+## First contributor change
+
 Scripts import `WriteIfDifferent` from `tools.development.files`, `run` and
 `output_of` from `tools.development.process`, or `get_git_root` from
 `tools.development.repository`. Supply a timeout for commands that may stall.
