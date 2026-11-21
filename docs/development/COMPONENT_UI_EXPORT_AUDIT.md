@@ -708,3 +708,52 @@ and zero skips. All forty-three focused Chemistry checks pass. Strict typing
 of both new files, Black, Ruff, Integration scope, architecture, IR, public API
 baseline and whitespace checks pass. Qualtran 0.7.0 and Kickmix 0.1 Simulator
 availability and the accepted binary identity are rechecked.
+
+## Fresh combined native catalog
+
+`examples.algorithms.catalog_ui_export` composes the existing ten domain
+exporters in the original eleven-section order. It keeps component ownership,
+scoped identities, metadata encoding and score construction with those domains.
+Navigation fragments are combined after their exports. Duplicate section
+ownership is refused. Sequential failure and existing-file semantics remain
+explicit. A rerun refreshes complete navigation while preserving existing node
+and documentation files.
+
+The actual isolated module entry exports 354 JSON files including navigation,
+233 documentation files and 353 fresh non-null atomic interface diagrams.
+Navigation retains all 110 notebooks, 237 document references and 359 factory
+references. Every combined node and document is compared byte-for-byte with
+the first corresponding output from isolated domain exporters. All source
+section, notebook, document and example ordering is checked against the actual
+frozen catalog. Previous group-specific factory parameter, type, filename,
+physics and resource evidence is reused.
+
+Two original naming boundaries become visible across the complete catalog.
+The arithmetic and block-encoding classes both use the unqualified name
+`Product`, so two distinct qualified classes share `Product/docs.txt` and the
+first arithmetic document is retained. Together with repeated SelectHubbard
+and QROMBase references, 237 document references represent 234 qualified
+classes but only 233 output documentation folders. The source Subtract group
+includes `_sub_symp_decomposition`, whose actual factory returns a
+`CompositeBloq`. Original navigation places its filename under `Subtract`,
+while node export places it under `CompositeBloq`. The original actual factory,
+filename and missing expected navigation path are tested explicitly. All other
+358 factory references resolve through their stated documentation folder.
+This inherited navigation gap remains open.
+
+Fresh combined root-instance construction is now exercised directly. Complete
+per-instance dependency decompositions, source per-gate glyph parity and fresh
+native dependency-node coverage remain open under Q-0120. The 353 atomic root
+interfaces have no declared child edges. They do not replace the separate
+accepted 3083-node source-diagram replay or imply that native decompositions
+have been emitted. Observed primitive counts and analytical models remain in
+the existing domain execution evidence.
+
+Concentrated catalog/export regression passes 406 checks with fourteen existing
+notebook-parser warnings and zero skips. Two full source-catalog diagram
+profiles and the real Jupyter notebook check are deselected in this batch;
+their previously accepted source replay and actual notebook evidence is reused.
+The preceding Chemistry execution-family regression passes 1098 checks.
+Strict typing of both new files, Black, Ruff, Integration scope, architecture,
+IR, public API baseline and whitespace checks pass. The isolated complete
+catalog module entry is also exercised.

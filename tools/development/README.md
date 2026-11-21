@@ -587,3 +587,11 @@ identifiers preserve the original repeated example display names. All metadata
 encodings and filenames match actual source factories. This completes native
 instance-provider coverage across the catalog. Decomposition graphs, per-gate
 glyph parity and fresh combined-catalog execution retain separate open evidence.
+
+`python -m examples.algorithms.catalog_ui_export` runs all ten native domain
+exporters in original section order and combines their navigation. It covers
+eleven sections, 110 notebooks, 237 document references and 359 factory
+references. Existing node and documentation files retain first-file behavior.
+The audit records the original cross-domain Product documentation collision and
+Subtract composite navigation gap. Its 353 fresh diagrams are atomic interfaces;
+complete dependency decomposition graphs retain separate acceptance evidence.
