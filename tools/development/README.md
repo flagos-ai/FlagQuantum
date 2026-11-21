@@ -213,3 +213,12 @@ module-cycle handling and per-visitor property normalization.
 Reference tests import optional parsers at execution time. Ordinary test collection
 with `-m "not ftqc_reference"` works without Griffe. Explicit reference selection
 requires the locked documentation dependencies and fails if they are missing.
+
+`copyright_checker.py` provides an opt-in Pylint plugin for retained Google
+Apache-2.0 source notices. After installing the frozen optional Pylint environment,
+run `python -m pylint --load-plugins=tools.development.copyright_checker --disable=all --enable=wrong-or-nonexistent-copyright-notice path/to/imported_source.py`.
+A valid original notice produces status 0. An invalid or truncated notice produces
+status 8. File-level Pylint opt-out follows the host's existing suppression rules.
+Run `tests/unit/test_copyright_checker.py` to compare the original suite, exact raw
+positions and actual plugin loading. See COPYRIGHT_CHECKER_FILE_AUDIT.md for the
+source truncation defect, preserved year behavior and optional dependency review.
