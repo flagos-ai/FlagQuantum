@@ -1280,3 +1280,51 @@ Black, Ruff, scope, architecture, IR, API and whitespace pass. A concurrent
 export run exhausted local disk space. Its log is retained outside the checkout.
 Only generated output from that interrupted run was reclaimed, then the full
 concentrated suite passed serially with failed-only temporary retention.
+
+## Complete duplicate-detection source-family catalog graphs
+
+Both documented `arithmetic/lists/has_duplicates.py` factories now retain all
+eight immediate calls and publish their native dependencies. Concrete storage
+uses the exact existing `sorted_duplicates_program`, retaining the original
+inverse half-LT output aliases and known invalid erasure behavior. Symbolic
+width keeps declared half-LT, inverse and X children with no executable bodies.
+The finite MCX dependency reuses its accepted owner. Symbolic list-length
+refusal and the third, undocumented factory remain covered by the existing
+whole-file inventory rather than an invented finite catalog graph.
+
+Ordered call identities and complete named operand/output collections match
+unchanged source. Input mappings are compared by key and value. Source incoming
+traversal groups insertion order by predecessor, while the native traversal
+uses the declared signature order. Child signature order, dtype, shape and side
+are independently checked. Both fresh root diagrams match source geometry and
+glyphs. MCX uses the original nonempty TextBox connector caption without a font
+size. The internal Drawer callback now accepts that existing text-only label
+shape, including the previously accepted empty caption. Malformed numeric text
+remains rejected. Public exports and serialized label fields are preserved.
+
+The combined module entry produces 2311 JSON files, 234 documents and 2310
+diagrams. There are 52 root immediate graphs, 301 atomic interfaces and 1957
+contextual native children, adding 152 children in this batch. Qualified
+recursive operation labels remain 36. Concentrated catalog/Drawer regression
+passes 530 cases with fourteen existing warnings, three deselections and zero
+skips. Five touched Python files pass strict typing, Black and Ruff. Scope,
+architecture, IR, API and whitespace checks pass.
+
+The native duplicate, component, whole-file, resource and classical suites pass
+612 cases. These preserve exact source primitive streams, resource/model
+queries, valid two-word full complex states and all small measurement histories,
+zeroed work and the original three-word erasure counterexample. The optional
+foreign-file suite separately passes 19 cases and fails three controlled SDK
+cases at widths one, two and three. Its production dependencies and test were
+unchanged from published eacdf60f7 when the failures were reproduced. The native
+import deliberately prefers source typed-graph expansion. The SDK witness
+retains its independent atomic-CCX shortcut. At width one, the native stream has
+eight T/T-dagger and two measurements, while that SDK witness has four T/T-dagger,
+one measurement and one atomic CCX. Original tests and source remain intact.
+This SDK-path primitive parity gap remains open and is separate from the fully
+qualified catalog source graphs. Temporary alternate-oracle experiments did
+not establish equivalence and provide no acceptance evidence.
+
+Twenty-eight of the original 44 successful arithmetic root drawings are now
+qualified, leaving sixteen. Recursive arithmetic glyphs, SDK-path parity and
+broader catalog dependencies remain in Q-0120. Full G2 acceptance is pending.

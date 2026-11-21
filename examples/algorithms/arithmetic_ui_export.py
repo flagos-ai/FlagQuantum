@@ -30,6 +30,10 @@ from examples.algorithms.controlled_addition_decomposition import (
     controlled_addition_catalog_program,
     controlled_addition_score,
 )
+from examples.algorithms.duplicate_decomposition import (
+    duplicate_catalog_program,
+    duplicate_score,
+)
 from examples.algorithms.integer_multiplication_catalog import (
     integer_multiplication_examples,
 )
@@ -625,6 +629,8 @@ def score(component: object) -> object:
         decomposed = sign_extension_score(name(component), ports)
     if decomposed is None:
         decomposed = sorting_score(name(component), ports, attributes(component))
+    if decomposed is None:
+        decomposed = duplicate_score(name(component), ports)
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -649,7 +655,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Addition, subtraction, bitwise, negation, sign conversion and sorting instances retain their immediate child graphs. "
+        "Addition, subtraction, bitwise, negation, sign conversion, sorting and duplicate detection instances retain their immediate child graphs. "
         "Other diagrams show atomic typed interfaces. Contextual child nodes "
         "preserve native helper boundaries. Symbolic child declarations have "
         "no executable body. Resource models retain separate evidence. "
@@ -699,10 +705,12 @@ def decomposition(component: object) -> ProgramRecord | None:
         )
     if record is None:
         record = sign_extension_catalog_program(name(component), ports)
+    if record is None:
+        record = sorting_catalog_program(name(component), ports, attributes(component))
     return (
         record
         if record is not None
-        else sorting_catalog_program(name(component), ports, attributes(component))
+        else duplicate_catalog_program(name(component), ports)
     )
 
 
