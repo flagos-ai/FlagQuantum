@@ -7,12 +7,72 @@ from pathlib import Path
 import pytest
 import torch
 
+import flagquantum as fq
 from examples.synthesis.applications.cfd.qls_for_hybrid_solvers.verify_block_encoding.overview import (
     model,
+    quantum,
     workflow,
 )
+from flagquantum import synth
 
 pytestmark = pytest.mark.integration
+
+
+@pytest.mark.parametrize("column", range(8))
+def test_native_pauli_block_complete_columns_phase_and_clean_workspace(
+    column: int,
+) -> None:
+    matrix = model.source_matrix()
+    vector = torch.eye(8, dtype=torch.float64)[column]
+    program, scale = quantum.native_pauli_program(matrix, vector)
+    state = fq.run(program).statevector().reshape(256, 16)
+    reference, reference_scale = quantum.pauli_encoding(matrix, vector)
+    assert scale == reference_scale
+    assert program.circuit.n_wires == 12
+    assert program.report["workspace_qubits"] == 4
+    torch.testing.assert_close(
+        state[:, 0], fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
+    )
+    torch.testing.assert_close(
+        state[:8, 0], matrix[:, column] / scale, atol=1e-12, rtol=0
+    )
+    assert torch.count_nonzero(state[:, 1:]) == 0
+
+
+@pytest.mark.parametrize("seed", [37, 91])
+def test_native_pauli_block_signed_coherent_data_and_named_readout(seed: int) -> None:
+    matrix, vector = model.source_matrix(), model.right_hand_side(seed)
+    program, scale = quantum.native_pauli_program(matrix, vector)
+    result = fq.run(program)
+    state = result.statevector().reshape(256, 16)
+    reference, _ = quantum.pauli_encoding(matrix, vector)
+    torch.testing.assert_close(
+        state[:, 0], fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
+    )
+    torch.testing.assert_close(
+        state[:8, 0], matrix @ vector.to(model.CTYPE) / scale, atol=1e-12, rtol=0
+    )
+    observed = program.probabilities(result, registers=("selection", "data"))
+    assert sum(observed.values()) == pytest.approx(1)
+    assert all(
+        observed[(0, word)] == pytest.approx(float(state[word, 0].abs() ** 2))
+        for word in range(8)
+    )
+    assert torch.count_nonzero(state[:, 1:]) == 0
+
+
+def test_native_pauli_budget_refuses_instead_of_using_opaque_select() -> None:
+    with pytest.raises(synth.SynthesisError, match="max_workspace=0"):
+        quantum.native_pauli_program(
+            model.source_matrix(),
+            model.right_hand_side(37),
+            max_qubits=8,
+            max_workspace=0,
+        )
+    with pytest.raises(ValueError, match="1 through 32"):
+        quantum.native_pauli_program(
+            torch.zeros((8, 8), dtype=model.CTYPE), model.right_hand_side(37)
+        )
 
 
 @pytest.mark.parametrize(

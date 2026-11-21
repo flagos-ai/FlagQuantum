@@ -1,6 +1,7 @@
 """Native PREPARE with explicit Pauli and banded SELECT blocks."""
 
 import cmath
+import math
 
 import torch
 
@@ -9,7 +10,21 @@ from flagquantum import synth
 from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import (
     SelectPauliLCU,
 )
-from flagquantum.synth import Output, QArray, QBit, prepare_amplitudes, qfunc
+from flagquantum.synth import (
+    Output,
+    QArray,
+    QBit,
+    QNum,
+    X,
+    allocate,
+    apply,
+    control,
+    inplace_prepare_amplitudes,
+    phase,
+    prepare_amplitudes,
+    qfunc,
+    within,
+)
 
 from .model import CTYPE, bands, pauli_expansion
 
@@ -17,6 +32,77 @@ from .model import CTYPE, bands, pauli_expansion
 @qfunc
 def prepare(amplitudes: list[float], q: Output[QArray[QBit]]) -> None:
     prepare_amplitudes(amplitudes, 0, q)
+
+
+@qfunc
+def pauli_word(codes: list[float], term: int, data: QArray[QBit]) -> None:
+    for bit in range(3):
+        if codes[3 * term + bit] == 1:
+            X(data[bit])
+        if codes[3 * term + bit] == 2:
+            phase(data[bit], -math.pi / 2)
+            X(data[bit])
+            phase(data[bit], math.pi / 2)
+        if codes[3 * term + bit] == 3:
+            phase(data[bit], math.pi)
+
+
+@qfunc
+def pauli_block(
+    amplitudes: list[float],
+    weights: list[float],
+    codes: list[float],
+    angles: list[float],
+    count: int,
+    selection: Output[QNum[5]],
+    data: Output[QArray[QBit]],
+) -> None:
+    prepare_amplitudes(amplitudes, 0, data)
+    allocate(selection)
+    with within():
+        inplace_prepare_amplitudes(weights, 0, selection)
+    with apply():
+        # qfunc captures each lambda during static loop expansion, never later.
+        for term in range(count):
+            if codes[3 * term] + codes[3 * term + 1] + codes[3 * term + 2] > 0:
+                control(
+                    selection == term, lambda: pauli_word(codes, term, data)
+                )  # noqa: B023
+            control(selection == term, lambda: phase(1, angles[term]))  # noqa: B023
+
+
+def native_pauli_program(
+    matrix: torch.Tensor,
+    rhs: torch.Tensor,
+    *,
+    max_qubits: int = 12,
+    max_workspace: int = 4,
+) -> tuple[synth.Program, float]:
+    """Compose the original LCU on eight outputs plus four clean work bits."""
+    terms = pauli_expansion(matrix)
+    if not terms or len(terms) > 32:
+        raise ValueError(
+            "the native five-bit selector requires 1 through 32 Pauli terms"
+        )
+    alpha = sum(abs(weight) for _, weight in terms)
+    weights = [(abs(weight) / alpha) ** 0.5 for _, weight in terms]
+    weights += [0.0] * (32 - len(weights))
+    codes = [float("IXYZ".index(name)) for label, _ in terms for name in label[::-1]]
+    program = synth.synthesize(
+        pauli_block,
+        classical_inputs={
+            "amplitudes": tuple(float(value) for value in rhs),
+            "weights": weights,
+            "codes": codes,
+            "angles": [cmath.phase(weight) for _, weight in terms],
+            "count": len(terms),
+        },
+        max_qubits=max_qubits,
+        max_workspace=max_workspace,
+        max_operations=10_000,
+        memory_limit_bytes=1024**2,
+    )
+    return program, alpha
 
 
 def preparation(values: torch.Tensor) -> fq.Circuit:

@@ -308,6 +308,12 @@ Named user readout does not require a physical-layout decoder.
    qfunc block-algorithm synthesis. Before adding an API, assess existing
    algorithms/primitives and specify callback, control, inverse, selection and
    budget semantics. Do not compare opaque matrix counts with basis-gate counts.
+   The original CFD nozzle Pauli block now has a native qfunc comparison using
+   existing checked helpers and within/apply: all eight columns and two signed
+   inputs match the independent complete state, including imaginary LCU phases
+   and clean workspace. It needs 12 rather than eight qubits. Its banded sibling
+   and general QSVT composition remain distinct work; this is not blanket
+   block-algorithm support or an original-budget replacement claim.
 5. **Teaching navigation:** generated workflow links now name the original case
    rather than displaying dozens of indistinguishable `overview` entries.
 
