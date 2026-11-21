@@ -15,6 +15,7 @@ from typing import Literal
 from ...core.ir import CircuitIR, Instruction
 from ..lowering.basis_translation import translate
 from ._cz_local_cleanup import compact_native_cz_locals
+from .commutation_cancellation import merge_commuting_rotations
 from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul
 from .two_qubit_synthesis import synthesize_two_qubit
 
@@ -145,6 +146,11 @@ def _candidate(
     # the generic synthesis entry's fixed-pulse contract unchanged, and compact
     # only bounded proposals that already satisfy the raw resource limits.
     candidate = compact_native_cz_locals(candidate, pair)
+    # Euler cleanup exposes rotations separated by commuting CZ gates. Reuse
+    # the existing proof-based merge on this bounded, numeric proposal only.
+    candidate = merge_commuting_rotations(
+        CircuitIR(max(pair) + 1, candidate)
+    ).instructions
     # Bounded numerical synthesis is a proposal, not its own acceptance oracle.
     reconstructed = _product(candidate, pair)
     if reconstructed is None or not _verified(product, reconstructed):

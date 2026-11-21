@@ -577,3 +577,48 @@ def test_v4_evidence_does_not_bypass_deployment_preflight(refusal: str) -> None:
             shots=2048 if refusal == "shots" else 128,
             evaluated_at=_NOW + timedelta(hours=2) if refusal == "expired" else _NOW,
         )
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_commuting_rotation_cleanup_reaches_verified_target_artifact(
+    routed: bool,
+) -> None:
+    source = CircuitIR(
+        2,
+        tuple(
+            instruction
+            for x_angle, z_angle in (
+                (0.17, 0.23),
+                (-0.31, 0.41),
+                (0.53, -0.61),
+                (-0.71, 0.83),
+            )
+            for instruction in (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": x_angle}),
+                Instruction("rz", (1,), {"theta": z_angle}),
+            )
+        ),
+        dtype="complex128",
+    )
+    compiled = _compile(source, routed=routed)
+    stage = compiled.legalization.native_block_optimization
+    assert stage is not None and len(stage.rewrites) == 1
+    assert len(stage.program.instructions) <= 16
+    assert sum(item.name == "cz" for item in stage.program.instructions) == 2
+    assert stage.rewrites[0].input_instruction_indices == tuple(range(12))
+    assert stage.rewrites[0].output_instruction_indices == tuple(
+        range(len(stage.program.instructions))
+    )
+    assert compiled.physical_plan.program is stage.program
+    assert compiled.legalization.schedule.program is stage.program
+    expected, actual = _operator(source), _operator(stage.program)
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    assert float(abs(abs(phase) - 1)) <= 1e-11
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
