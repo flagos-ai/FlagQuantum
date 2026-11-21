@@ -14,6 +14,15 @@ in units of one half. In preflight, the direct signed qfunc required a wider
 working register than the local statevector budget. The Circuit exercise
 checks all 256 input pairs in one coherent witness.
 
+A fresh native preflight on November 21, 2026 retains the same input formats:
+`QNum[3]`, `QNum[5, True, 1]` and result `QNum[6, True, 1]`. The compiler now
+borrows immutable input bits for exact mask/copy operations. Retained lowering
+uses 25 work bits and 264 instructions, versus 36 and 286 before this change;
+recomputation uses 25 and 264, versus 25 and 304. Native execution still needs
+39 total qubits, so it does not replace this original-budget Circuit exercise.
+Compiler regression checks cover all 256 inputs and all 64 XOR targets, while
+smaller full-state witnesses verify absolute phase and clean work bits.
+
 The amplitude exercise uses native indexed rotations to load `x²` on the
 indicator, with `x = word / 32`. It draws the 2,048 shots observed in the
 source transcript and derives both joint and marginal counts from them.

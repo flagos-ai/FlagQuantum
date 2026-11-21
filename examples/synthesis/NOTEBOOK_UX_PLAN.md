@@ -118,6 +118,16 @@ The editorial denominator and these implementation steps are independent.
 | Repeated inspection | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed; protected API check passed | This removes duplicate work, not synthesis-time specialization. Runtime parameter reuse still requires its own measured design and admission. |
 | Block/QSVT composition | Existing native control, inverse and domain kernels remain available | Select a complete original CFD/plasma path and verify borrowing, normalization, phase, cleanup and budgets before introducing a new public abstraction. |
 | Named sampling | Existing bounded readers and sampling adapters remain authoritative | Reuse their bit-order and conditional-denominator contracts in application workflows; introduce no competing sampler. |
+| Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
+
+The signed workshop preflight retains all 256 input pairs and all 64 arbitrary
+XOR targets, checked with exact reversible simulation under both schedules.
+Two smaller full-state witnesses independently check absolute complex phases
+and clean work bits; they are not original-size statevector acceptance.
+Retained scheduling changed from 36 work bits / 286 instructions to 25 / 264;
+recomputation changed from 25 / 304 to 25 / 264. These are logical resource counts,
+not runtime speed claims. Sign-bit aliases are allowed only for copy-based
+consumers; arithmetic kernels requiring injective operands retain owned copies.
 
 For the two measured coloring programs, per-result verification now inspects the
 identical sealed plan once rather than twice, and complete named reading performs

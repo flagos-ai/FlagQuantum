@@ -319,6 +319,13 @@ Named user readout does not require a physical-layout decoder.
    Circuit sign-extension adder while its unsigned example uses native qfunc.
    Reuse existing signed/fractional arithmetic support before defining another
    interface; require the original all-branch phase and carry checks.
+   A fresh original-domain preflight after `65e1243c8` needs 39 native qubits,
+   including 25 work bits, so the 14-qubit Circuit remains the executed route.
+   Borrowing immutable input casts reduces retained work bits from 36 to 25
+   and instructions from 286 to 264 (recompute: 304 to 264). Exact reversible
+   tests cover every input and arbitrary XOR target under both schedules;
+   smaller independent full-state tests check phase and cleanup. This partial
+   compiler improvement does not close the original-budget native gap.
 
 These are scoped observations, not authorization to silently change protected
 public APIs or replace original-scale acceptance with smaller demonstrations.
