@@ -271,3 +271,20 @@ architecture, multilevel IR, protected API baseline and whitespace checks pass.
 The complete bitwise-file source-call and fresh-drawing acceptance is closed.
 The explicitly recorded zero-width, symbolic physical and other Arithmetic
 presentation boundaries retain their own separate acceptance criteria.
+
+## Symbolic complement dependency graph — 2026-11-22
+
+The existing symbolic BitwiseNot graph is now reused by symbolic Negate and
+SubtractFrom. It retains the source-success OnEach(X) call and its original
+unresolved-width decomposition refusal. Literal whole-definition matching
+qualifies that stored complement before applying bitwise/repeated-X glyphs.
+Finite execution rejection for unresolved widths remains with the binder.
+
+The combined complete bitwise/negation/subtraction traversal covers all twelve
+source-success catalog roots. It retains 34 exact ordered graphs, 22 source
+non-root class labels and 105 original atomic/refusal contexts. Twenty fresh
+non-root drawings match exactly. Two Add(width=64) descendant drawings raise
+the original frozen IndexError and retain that exception as separate evidence.
+The symbolic XOR and malformed source CompositeBloq root refusals retain their
+existing dedicated checks. See SUBTRACTION_FILE_AUDIT.md and the durable
+`g2-symbolic-word-*20261122` receipts for complete batch acceptance.

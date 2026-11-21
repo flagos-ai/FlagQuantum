@@ -36,9 +36,9 @@ from flagquantum.drawer.register_score_data import (
 def word_program(operation: str, ports: Signature) -> ProgramRecord | None:
     """Retain complete immediate calls for XOR, complement and negation.
 
-    Concrete words reuse executable domain owners verbatim. Symbolic complement
-    and negation retain external child declarations, as their source immediate
-    decompositions do. Those declarations have no executable body. Symbolic XOR
+    Concrete words reuse executable domain owners verbatim. Symbolic negation
+    reuses the symbolic complement graph down to its declared repeated-X leaf.
+    The symbolic increment remains a source refusal. Symbolic XOR
     retains the original decomposition refusal and receives no native graph.
     """
     if operation not in {"Xor", "BitwiseNot", "Negate"}:
@@ -59,14 +59,12 @@ def word_program(operation: str, ports: Signature) -> ProgramRecord | None:
         builder = ComponentProgramBuilder(ports, (child,))
         result = builder.call_dict(child.name, {"q": builder.inputs["x"]})
         return builder.finalize({"x": result["q"]})
-    children = tuple(
-        FunctionRecord(name, (), registers=tuple(ports))
-        for name in ("BitwiseNot", "AddK_1")
-    )
-    builder = ComponentProgramBuilder(ports, children)
-    value = builder.inputs["x"]
-    for child in children:
-        value = builder.call_dict(child.name, {"x": value})["x"]
+    complement = word_program("BitwiseNot", ports)
+    assert complement is not None
+    increment = FunctionRecord("AddK_1", (), registers=tuple(ports))
+    builder = ComponentProgramBuilder(ports, (increment,))
+    value = builder.call_program(complement, {"x": builder.inputs["x"]})["x"]
+    value = builder.call_dict(increment.name, {"x": value})["x"]
     return builder.finalize({"x": value})
 
 

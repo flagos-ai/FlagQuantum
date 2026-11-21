@@ -62,10 +62,14 @@ def test_concrete_graph_is_exact_existing_executable_owner(identifier: str) -> N
 
 
 @pytest.mark.parametrize("identifier", ("negate_symb", "bitwise_not_symb"))
-def test_symbolic_children_remain_nonexecutable_declarations(identifier: str) -> None:
+def test_symbolic_graphs_retain_source_refusal_leaves_and_physical_rejection(
+    identifier: str,
+) -> None:
     record = word_program(native.name(identifier), native.signature(identifier))
     assert record is not None
-    assert all(not f.blocks for f in record.functions[1:])
+    declared = [f for f in record.functions[1:] if not f.blocks]
+    expected = {("q",), ("x",)} if identifier == "negate_symb" else {("q",)}
+    assert {tuple(r.name for r in f.registers or ()) for f in declared} == expected
     with pytest.raises(ValueError):
         bind_register_program(record, ((0,),))
 

@@ -7,7 +7,7 @@
 
 from collections.abc import Mapping
 
-from examples.algorithms.word_arithmetic_decomposition import word_symbols
+from examples.algorithms.word_arithmetic_decomposition import word_program, word_symbols
 from flagquantum.compiler.registers.bits.bitwise_component import bitwise_word_program
 from flagquantum.compiler.registers.bits.on_each import on_each_word_program
 from flagquantum.compiler.registers.component_definition_match import (
@@ -18,15 +18,28 @@ from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.register_score_data import RegisterWireSymbolSupplier
 
 
 def word_child_decomposition(
     record: ProgramRecord, entry: str, parameters: Mapping[str, object]
 ) -> tuple[str, ProgramRecord, RegisterWireSymbolSupplier] | None:
-    """Return source glyphs after literal matching of a concrete scalar word body."""
+    """Match concrete word definitions or the symbolic complement graph literally."""
     function = next(f for f in record.functions if f.name == entry)
     registers = function.registers or ()
+    if (
+        len(registers) == 1
+        and registers[0].name == "x"
+        and type(registers[0].bitsize) is not int
+        and not registers[0].shape_symbolic
+        and registers[0].dtype.num_cbits == 0
+    ):
+        template = word_program("BitwiseNot", Signature(registers))
+        assert template is not None
+        if matches_component_definition(record, entry, template):
+            return "BitwiseNot", template, word_symbols(template, "BitwiseNot")
+        return None
     if not registers or any(
         type(register.bitsize) is not int
         or register.bitsize < 1
@@ -43,7 +56,7 @@ def word_child_decomposition(
         candidates.append(("Xor", bitwise_word_program(dtype, "xor")))
     elif ports == ("x",):
         candidates.append(("BitwiseNot", bitwise_word_program(dtype, "bitwise_not")))
-        constant = parameters.get("k")
+        constant = parameters.get("k", 1)
         if type(constant) is int:
             candidates.append(
                 (
