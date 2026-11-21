@@ -1196,3 +1196,42 @@ and broader catalog dependency coverage remain in Q-0120. The complete intake
 now has three original rendering IndexErrors and no deferred CAdd layout.
 Contextual native child identities and previously registered source failures,
 pending contracts and environment/dashboard gaps remain explicit.
+
+## Complete sign-extension source-family catalog graphs
+
+Both actual factories in `arithmetic/conversions/sign_extension.py` now use the
+existing executable `sign_extension_program` for catalog drawings and dependency
+publication. Each five-call graph matches unchanged source order, operands,
+child register encodings, shapes and sides. Fresh original root drawing geometry
+and glyphs match for both SignExtend and SignTruncate. Existing workspace,
+partition and fanout symbol callbacks are reused. Forward and inverse storage
+arguments retain the existing owner contract and MSB-first bit order.
+
+The original truncation ends with an untyped Join whose output is QAny despite
+the nominal QInt output signature. The native graph retains this exact view,
+with an explicit regression witness. No signed cast is inserted. Physical
+execution evidence is reused through exact Program equality. The complete
+sign-extension physical/capture/serialization suites and fresh presentation
+checks pass 53 cases with six upstream serialization warnings. These cover both
+signed encodings, complex amplitudes with an entangled spectator, inverse
+restoration, zeroed redundant prefixes and original primitive streams. Actual
+8-to-16-bit factories are covered. Their fanout emits 15 CX operations per
+direction. Independently, the source analytical query counts one Clifford and
+zero T or measurements. Dense state inspection in the component suite is
+limited to input widths at most three, with actual-factory composition covered
+by the separate file suite.
+
+The isolated combined catalog module produces 1353 JSON files, 234 documents
+and 1352 non-null diagrams. There are 44 root immediate decompositions, 309
+atomic root interfaces and 999 contextual native dependencies. This batch adds
+16 child files. Qualified descendant operation labels increase from 23 to 25.
+Twenty of the original 44 successful arithmetic root drawings are qualified,
+leaving 24. Recursive arithmetic source glyphs and broader catalog dependencies
+remain open in Q-0120. Previously registered source failures, pending contracts
+and external environment/dashboard gaps remain recorded separately.
+
+Concentrated catalog regression passes 512 cases with fourteen existing warnings,
+three deselections and zero skips. Strict typing of three touched Python files,
+Black, Ruff, team scope, architecture, IR, API and whitespace checks pass. The
+isolated user-facing `python -m examples.algorithms.catalog_ui_export` entry
+succeeds. Existing executable Programs and physical owners remain authoritative.
