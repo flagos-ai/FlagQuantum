@@ -622,3 +622,35 @@ def test_commuting_rotation_cleanup_reaches_verified_target_artifact(
     decoded = read_compilation_evidence_bundle_json(bundle.to_json())
     assert decoded == bundle
     verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_direct_cz_translation_reaches_the_unchanged_artifact_consumers(
+    routed: bool,
+) -> None:
+    # A controlled phase needs two CZs already, so strict CZ block reduction
+    # correctly leaves it alone. Shorter native lowering still reaches emission.
+    source = CircuitIR(
+        2, (Instruction("cphase", (1, 0), {"theta": 0.37}),), dtype="complex128"
+    )
+    compiled = _compile(source, routed=routed, budget=10)
+    native = compiled.legalization.native_gate_legalization
+    stage = compiled.legalization.native_block_optimization
+    assert len(native.program.instructions) == 11
+    assert native.decompositions[0].replacement_opcodes == tuple(
+        item.name for item in native.program.instructions
+    )
+    assert stage is not None and stage.rewrites == ()
+    assert stage.program is native.program
+    assert compiled.physical_plan.version == "1.0"
+    expected, actual = _operator(source), _operator(compiled.legalization.program)
+    phase = torch.vdot(actual.flatten(), expected.flatten()) / 4
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+    with pytest.raises(ArtifactCompilationError, match="max_added_operations"):
+        _compile(source, routed=routed, budget=9)
