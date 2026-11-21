@@ -20,6 +20,10 @@ from sympy import Symbol
 from examples.algorithms import basic_gate_ui_export as basic
 from examples.algorithms.and_notebook import and_signature
 from examples.algorithms.basic_gate_decomposition import decomposition_score
+from examples.algorithms.component_ui_dependencies import (
+    ComponentFunction,
+    dependency_graph,
+)
 from examples.algorithms.control_predicate_catalog import (
     PredicateExample,
     predicate_examples,
@@ -234,6 +238,8 @@ DOCUMENTS = (
 
 
 def name(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return "ComponentFunction"
     if component in _BASIC_COMPONENTS:
         return basic.name(component)
     if isinstance(component, ConjunctionCall):
@@ -307,6 +313,8 @@ def _control_attributes(
 
 
 def attributes(component: object) -> Mapping[str, object]:
+    if isinstance(component, ComponentFunction):
+        return component.attributes()
     if component in _BASIC_COMPONENTS:
         return basic.attributes(component)
     name(component)
@@ -366,10 +374,14 @@ def attributes(component: object) -> Mapping[str, object]:
 
 
 def filename(component: object) -> str:
+    if isinstance(component, ComponentFunction):
+        return component.filename()
     return component_filename(attributes(component))
 
 
 def signature(component: object) -> Signature:
+    if isinstance(component, ComponentFunction):
+        return Signature(component.function.registers or ())
     if component in _BASIC_COMPONENTS:
         return basic.signature(component)
     name(component)
@@ -412,6 +424,8 @@ def signature(component: object) -> Signature:
 
 def score(component: object) -> object:
     """Draw owned decompositions, falling back to the existing atomic interface."""
+    if isinstance(component, ComponentFunction):
+        return component.score()
     decomposed = decomposition_score(component)
     if decomposed is not None:
         return decomposed
@@ -482,11 +496,14 @@ def basic_gate_sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
 
 def export_example(destination: Path) -> None:
     """Publish the complete Basic Gates instance catalog and fresh interfaces."""
-    graph: dict[object, tuple[object, ...]] = {
-        example.make(): ()
-        for _, _, examples in (*basic.DOCUMENTS, *DOCUMENTS)
-        for example in examples
-    }
+    graph = dependency_graph(
+        (
+            example.make()
+            for _, _, examples in (*basic.DOCUMENTS, *DOCUMENTS)
+            for example in examples
+        ),
+        owner=lambda component: name(component) + "/" + filename(component),
+    )
     export_component_ui(
         destination,
         basic_gate_sections(),

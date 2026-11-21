@@ -32,14 +32,17 @@ def test_fresh_all_groups_and_first_file_outputs(tmp_path: Path) -> None:
         *expected_files,
         Path("navigation.json"),
     }
-    assert len(list(combined.rglob("*.json"))) == 354
+    assert len(list(combined.rglob("*.json"))) == 354 + len(
+        list((combined / "ComponentFunction").glob("*.json"))
+    )
     assert len(list(combined.rglob("docs.txt"))) == 234
     for path, expected in expected_files.items():
         assert (combined / path).read_bytes() == expected
         if path.suffix == ".json":
             data = json.loads(expected)
             assert data["msd"] is not None
-            assert data["callees"] == []
+            for link in data["callees"]:
+                assert (combined / link["name"] / link["filename"]).is_file()
 
 
 def test_complete_navigation_and_original_naming_witnesses(

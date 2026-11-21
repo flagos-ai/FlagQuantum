@@ -948,3 +948,36 @@ witnesses. The combined catalog has twenty-one immediate decompositions and
 All 33 original decomposition/rendering failures remain recorded. Recursive
 native graph expansion and dependency-node publication remain open, so Q-0120
 is still open. No broader catalog closure is implied by immediate drawings.
+
+## Reachable native Program dependency publication
+
+`component_ui_dependencies.py` projects the existing Compiler call graph into
+UI graph entries. Each reachable child function has a file, and all dependency
+links resolve through the existing exporter mapping. Multiplicity remains with
+the Compiler resource graph. Root metadata, filenames, original ordered glyphs
+and the eighteen fresh successful-source comparisons remain unchanged.
+
+Internal nodes are identified by the owning root filename and native function
+name. The immutable Program supplies bodies and ports directly. This contextual
+identity deliberately preserves separate native helper boundaries across roots.
+Descendant pure typed-call bodies use the existing Drawer, while mixed/primitive
+bodies retain atomic interfaces. Descendant glyphs use native register defaults.
+These nodes have no original Bloq identity, cross-root semantic deduplication or
+recursive source-glyph equivalence claim. Further source-identity and recursive
+presentation qualification remains in Q-0120.
+
+Every reachable function and edge is checked against the Compiler graph, every
+published dependency link is resolved, and all root files remain accounted for.
+The combined module now publishes 737 JSON files, 234 documents and 736 non-null
+diagrams, including 383 contextual native dependency nodes. The original 353
+root diagrams still contain twenty-one immediate decompositions and 332 atomic
+interfaces. Concentrated export regression passes 431 cases with fourteen
+existing warnings and three deselections. Strict typing of five changed files,
+formatting, team scope, architecture, IR and API checks pass. Physical execution
+and resource evidence is reused unchanged from the accepted component owners.
+
+A regression first exhausted disk while writing temporary outputs. Only finished
+or interrupted temporary outputs created by this continuation were reclaimed,
+with source and evidence logs retained. The complete concentrated regression
+then passed. Q-0120 remains open for broader catalog dependencies and recursive
+source identity/glyph parity, alongside the previously recorded source failures.

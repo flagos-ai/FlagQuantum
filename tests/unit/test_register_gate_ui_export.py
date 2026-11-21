@@ -121,12 +121,16 @@ def test_full_basic_gate_export_has_all_fresh_interfaces(tmp_path: Path) -> None
     assert sum(len(docs) for docs in nav.values()) == 35
     assert sum(len(doc["examples"]) for docs in nav.values() for doc in docs) == 51
     assert len(list(tmp_path.rglob("docs.txt"))) == 35
-    assert len(list(tmp_path.rglob("*.json"))) == 52
+    assert len(list(tmp_path.rglob("*.json"))) == 52 + len(
+        list((tmp_path / "ComponentFunction").glob("*.json"))
+    )
     for component in EXAMPLES.values():
         path = tmp_path / native.name(component) / native.filename(component)
         record = json.loads(path.read_text())
         assert record["msd"] == native.score(component)
-        assert record["msd"] is not None and record["callees"] == []
+        assert record["msd"] is not None
+        for link in record["callees"]:
+            assert (tmp_path / link["name"] / link["filename"]).is_file()
         assert (
             path.with_name("docs.txt")
             .read_text()
