@@ -166,3 +166,22 @@ models remain the separate tables already recorded above.
 The Cirq 1.6.1 lane retains 1,512 upstream NumPy-2.5 array-shape deprecation
 warnings from its recursive controlled-unitary failure witnesses. The Cirq 1.7
 focused lane has no warnings. These warnings are retained in the receipt.
+
+## Complete recursive example dependencies — 2026-11-22
+
+Symbolic Negate now calls the existing complete BitwiseNot graph, followed by the
+original symbolic AddK refusal declaration. Concrete Negate's AddK(1) and XorK(1)
+descendants now qualify through their existing executable constructors. Root
+metadata without a constant supplies the source increment candidate k=1. The
+candidate receives a source label only after literal equality of the complete
+reachable Program, including phase, measurement feedback and work ownership.
+Other observed constants continue using explicit root metadata. Constructors
+and constant values supply matching evidence through the existing binding and
+drawing path. The physical Negate recipe remains unchanged.
+
+All source-success recursive calls in both Negate catalog factories now match
+the original ordered source graphs and fresh glyphs. The shared twelve-root
+word/subtraction receipt records the full closure and retained source refusal
+boundaries. Actual eight-bit Negate emits 28 T-family gates and seven
+measurements, matching the independently evaluated source QEC model. The full
+primitive histogram remains separate from the analytical model object.

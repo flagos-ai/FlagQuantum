@@ -12,6 +12,9 @@ from examples.algorithms.subtraction_decomposition import subtraction_symbols
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
 )
+from flagquantum.compiler.registers.arithmetic.constant_addition_component import (
+    constant_addition_program,
+)
 from flagquantum.compiler.registers.arithmetic.out_of_place_addition_component import (
     out_of_place_addition_program,
 )
@@ -70,6 +73,23 @@ def addition_child_decomposition(
                     "OutOfPlaceAdder",
                     out_of_place_addition_program(
                         width, include_msb=count == width + 1, adjoint=adjoint
+                    ),
+                )
+            )
+    elif (
+        ports == ("x",)
+        and not registers[0].shape_symbolic
+        and registers[0].dtype.encoding in {"uint", "signed", "montgomery"}
+    ):
+        # Negate contributes the source increment when its root has no k field.
+        constant = parameters.get("k", 1)
+        if type(constant) is int:
+            parameters = {**parameters, "k": constant}
+            candidates.append(
+                (
+                    "AddK",
+                    constant_addition_program(
+                        registers[0].dtype, constant % (1 << registers[0].bitsize)
                     ),
                 )
             )
