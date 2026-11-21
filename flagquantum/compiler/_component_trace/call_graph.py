@@ -226,21 +226,13 @@ def symbolic_call_graph(
     return _build_call_graph(component, calls, generalizer, keep, max_depth)
 
 
-def _build_call_graph(
-    component: Node,
+def _call_graph_adjacency(
+    components: Iterable[Node],
     calls: Callable[[Node], RawCallees[Node]],
-    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None,
+    generalize: Callable[[Node | None], Node | None],
     keep: Callable[[Node], bool] | None,
     max_depth: int | None,
-) -> SymbolicCallGraph[Node]:
-    if max_depth is not None and (type(max_depth) is not int or max_depth < 0):
-        raise ValueError("Call graph depth must be a nonnegative integer")
-
-    generalize = compose_cost_generalizer(generalizer)
-    root = generalize(component)
-    if root is None:
-        raise ValueError("Cannot remove the root of a call graph")
-
+) -> tuple[dict[Node, dict[Node, SymbolicInt]], list[Node]]:
     graph: dict[Node, dict[Node, SymbolicInt]] = {}
     active: set[Node] = set()
     postorder: list[Node] = []
@@ -262,7 +254,55 @@ def _build_call_graph(
             active.remove(node)
         postorder.append(node)
 
-    visit(root, 0)
+    for root in components:
+        visit(root, 0)
+    return graph, postorder
+
+
+def symbolic_call_graph_union(
+    components: Iterable[Node],
+    declared_calls: CallDeclaration[Node],
+    *,
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
+    keep: Callable[[Node], bool] | None = None,
+) -> dict[Node, dict[Node, SymbolicInt]]:
+    """Build the source library's shared first-visit graph of concrete roots.
+
+    Roots retain their identities. Only callees are generalized. Each visited
+    declaration receives a fresh allocator, matching the library source path.
+    A shared node is expanded once across all roots. Cycles are rejected by the
+    same traversal used for single-root graphs.
+    """
+
+    def calls(node: Node) -> RawCallees[Node]:
+        return _declared_callees(
+            node, declared_calls, SymbolAllocator(), ignore_unavailable=True
+        )
+
+    graph, _ = _call_graph_adjacency(
+        components, calls, compose_cost_generalizer(generalizer), keep, None
+    )
+    return graph
+
+
+def _build_call_graph(
+    component: Node,
+    calls: Callable[[Node], RawCallees[Node]],
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None,
+    keep: Callable[[Node], bool] | None,
+    max_depth: int | None,
+) -> SymbolicCallGraph[Node]:
+    if max_depth is not None and (type(max_depth) is not int or max_depth < 0):
+        raise ValueError("Call graph depth must be a nonnegative integer")
+
+    generalize = compose_cost_generalizer(generalizer)
+    root = generalize(component)
+    if root is None:
+        raise ValueError("Cannot remove the root of a call graph")
+
+    graph, postorder = _call_graph_adjacency(
+        (root,), calls, generalize, keep, max_depth
+    )
     totals: dict[Node, SymbolicInt] = {root: 1}
     leaves: dict[Node, SymbolicInt] = {}
     for node in reversed(postorder):
