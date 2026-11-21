@@ -12,8 +12,17 @@ from pathlib import Path
 from sympy import Symbol
 
 from flagquantum.core.ir.program.registers import RegisterSide
+from flagquantum.testing.component_examples import ComponentDocumentation
 from tools.development.docstrings import get_markdown_docstring
 from tools.development.notebook_autogen import NotebookSpec
+
+
+def _documentation_name(documentation: ComponentDocumentation[object]) -> str:
+    return documentation.component_type.__name__
+
+
+def _documentation_text(documentation: ComponentDocumentation[object]) -> str:
+    return "\n".join(get_markdown_docstring(documentation.component_type))
 
 
 class ComponentUIEncoder(json.JSONEncoder):
@@ -63,6 +72,12 @@ def export_component_ui(
     filename: Callable[[object], str],
     score: Callable[[object], object],
     encoder: type[json.JSONEncoder] = ComponentUIEncoder,
+    documentation_name: Callable[
+        [ComponentDocumentation[object]], str
+    ] = _documentation_name,
+    documentation_text: Callable[
+        [ComponentDocumentation[object]], str
+    ] = _documentation_text,
 ) -> None:
     """Publish navigation, class documentation and all supplied graph nodes.
 
@@ -73,12 +88,14 @@ def export_component_ui(
     Score providers return None when their domain cannot provide a diagram.
     Ordinary score-provider failures yield a null diagram. Process cancellation,
     other provider failures and filesystem failures propagate, retaining earlier files.
+    Explicit documentation providers support domains whose operations share a
+    native IR or resource-call class. Defaults retain class names and docstrings.
     """
     navigation = {
         section: {
             spec.title: [
                 {
-                    "name": documentation.component_type.__name__,
+                    "name": documentation_name(documentation),
                     "examples": [
                         {
                             "name": example.name,
@@ -99,13 +116,11 @@ def export_component_ui(
     for _, specifications in sections:
         for spec in specifications:
             for documentation in spec.component_specs:
-                folder = destination / documentation.component_type.__name__
+                folder = destination / documentation_name(documentation)
                 folder.mkdir(parents=True, exist_ok=True)
                 path = folder / "docs.txt"
                 if not path.is_file():
-                    path.write_text(
-                        "\n".join(get_markdown_docstring(documentation.component_type))
-                    )
+                    path.write_text(documentation_text(documentation))
     for component, children in graph.items():
         folder = destination / name(component)
         path = folder / filename(component)
