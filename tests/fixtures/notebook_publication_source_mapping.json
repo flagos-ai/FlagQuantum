@@ -1,0 +1,62 @@
+[
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/multiplexers/unary_iteration.ipynb",
+    "native_notebook": "examples/notebooks/unary_iteration.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/arithmetic/t_complexity_of_comparison_gates.ipynb",
+    "native_notebook": "examples/notebooks/comparison_gate_costs.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/arithmetic/error_analysis_for_fxp_arithmetic.ipynb",
+    "native_notebook": "examples/notebooks/fixed_point_error_analysis.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/phase_estimation/phase_estimation_of_quantum_walk.ipynb",
+    "native_notebook": "examples/notebooks/quantum_walk_phase_estimation.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/chemistry/trotter/grid_ham/trotter_costs.ipynb",
+    "native_notebook": "examples/notebooks/grid_trotter_costs.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/chemistry/trotter/hubbard/qpe_cost_optimization.ipynb",
+    "native_notebook": "examples/notebooks/hubbard_qpe_costs.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/chemistry/resource_estimation.ipynb",
+    "native_notebook": "examples/notebooks/register_chemistry_resources.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/chemistry/writing_algorithms.ipynb",
+    "native_notebook": "examples/notebooks/chemistry_authoring.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/cryptography/rsa/factoring-via-modexp.ipynb",
+    "native_notebook": "examples/notebooks/register_factoring_via_modexp.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/state_preparation/state_preparation_via_rotation_tutorial.ipynb",
+    "native_notebook": "examples/notebooks/state_preparation_via_rotation_tutorial.ipynb"
+  },
+  {
+    "section": "Concepts",
+    "source_notebook": "qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state_tutorial.ipynb",
+    "native_notebook": "examples/notebooks/kikuchi_guiding_state.ipynb"
+  },
+  {
+    "section": "Root Components",
+    "source_notebook": "qualtran/bloqs/cryptography/ecc/ecc.ipynb",
+    "native_notebook": "examples/notebooks/register_elliptic_curve_cryptography.ipynb"
+  }
+]

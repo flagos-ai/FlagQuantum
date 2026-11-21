@@ -282,3 +282,17 @@ Run `tests/unit/test_notebook_catalog.py` to check path ownership and assets, or
 use the locked reference environment for the original 110-spec/237-document
 comparison and native module-symbol resolution. See `NOTEBOOK_CATALOG_FILE_AUDIT.md`
 for rendering boundaries and the separately open top-level orchestration.
+
+`python -m tools.development.notebook_publication` publishes the explicit native
+library into `docs/components`, retaining authored notebook text and generating
+its ordered Sphinx index. The 110 topic registrations and 12 concept/root
+references resolve to 120 distinct outputs. Unregistered native notebook assets
+are reported and remain outside the explicit catalog.
+
+For generated metadata, `publish_notebooks(..., render=...)` invokes a domain
+callback on registered topics before publication. That callback can call the
+existing `notebook_autogen.render_notebook` with its owned NotebookSpec and
+rendering functions. The default publishes the already authored native assets.
+Run `tests/unit/test_notebook_publication.py` for the complete source-order/TOC
+comparison, actual full-native publication and renderer integration. See
+`NOTEBOOK_PUBLICATION_FILE_AUDIT.md` for the explicit metadata-to-asset adaptation.
