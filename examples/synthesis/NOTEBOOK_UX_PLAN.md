@@ -302,3 +302,20 @@ the wrong statevector bit convention and expected synthesis errors for a
 Runtime memory refusal; the reference and expected exception were corrected.
 Production semantics and refusal categories were not changed to satisfy them.
 Black, Ruff and the protected API snapshot pass.
+
+## Numeric readout validation checkpoint
+
+Numeric reading now calls the existing checked raw-distribution helper directly
+after its Program validation and verified-format checks. This avoids repeating
+the same sealed-program validation inside the public raw-reading wrapper.
+Result identity, requested-port bounds, unknown-format refusal and decoding
+retain their existing order and errors. Each later call validates again; circuit
+and logical-register tampering still refuse. No persistent cache is introduced.
+
+Nine local one-thread trials after warmup measured median validation time of
+0.871 ms before and 0.445 ms after, and total numeric reading of 1.253 ms before
+and 0.839 ms after. These small-program observations are diagnostics, not a
+promoted throughput claim. The 123 initial contract cases and 180 broader
+readout, exact-number, MPS and lesson cases pass. Protected API, Black and Ruff
+checks pass. The 103 previously socket-restricted launch/MPS tests pass with
+local loopback access; the earlier raw default failure remains recorded.

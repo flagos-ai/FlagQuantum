@@ -322,6 +322,36 @@ def test_decoded_readout_is_checked_bounded_and_ignores_report_relabeling() -> N
         synth.synthesize(entry, max_operations=0)
 
 
+def test_numeric_readout_reuses_only_its_immediate_program_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entry = definition("a:Output[QNum],result:Output[QNum]", "a |= 4\nresult |= a-3.5")
+    program = synth.synthesize(entry)
+    result = fq.run(program)
+    original = type(program)._validate
+    validations = 0
+
+    def counted(self: synth.Program) -> None:
+        nonlocal validations
+        validations += 1
+        original(self)
+
+    monkeypatch.setattr(type(program), "_validate", counted)
+    assert dict(program.numeric_probabilities(result)) == {(Fraction(1, 2),): 1.0}
+    assert validations == 1
+    # Reuse is confined to this call. Later reads must inspect changed inputs.
+    changed = replace(program, registers={"result": (0,)})
+    with pytest.raises(ValueError, match="logical registers changed"):
+        changed.numeric_probabilities(result)
+    assert validations == 2
+    changed = replace(
+        program, circuit=replace(program.circuit, metadata={"tampered": True})
+    )
+    with pytest.raises(ValueError, match="circuit changed"):
+        changed.numeric_probabilities(result)
+    assert validations == 3
+
+
 @pytest.mark.parametrize(
     "limits",
     [
