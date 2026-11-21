@@ -5,9 +5,12 @@ route costs and directed-edge legalization in this directory. `coupling.py`
 defines the undirected CouplingMap. `directed_topology.py` owns directed target
 connectivity. `routing_cost.py` owns device cost models and weighted paths.
 `routing_strategy.py` owns the strategy vocabulary, cost estimates, candidate
-ranking and SABRE planning used to price candidates. `routing.py` emits routed
-instructions and records evidence, reusing the selected plan during automatic
-compilation. `sabre.py` implements the search and `layout.py` assigns wires.
+ranking and SABRE planning used to price candidates. `routing.py` validates
+inputs, dispatches strategies and passes the selected plan to emission during
+automatic compilation. `routing_emission.py` owns instruction emission for
+restore-after-each-gate, persistent-layout and SABRE routes, layout restoration,
+and routing evidence including post-optimization counts. `sabre.py` implements
+the search and `layout.py` assigns wires.
 These transforms preserve logical meaning and record layout changes.
 
 Allowed dependencies include Core IR, target and operator semantics, Compiler
@@ -25,9 +28,12 @@ and change routing behavior in its owning implementation.
 from `routing_strategy.py`. Existing imports through both
 `flagquantum.compiler.routing` and `flagquantum.compiler.topology.routing`
 therefore resolve to the same objects. The previous private estimation helpers
-are also retained as direct aliases. Compiler owns those private aliases, which
-can be removed after repository consumers migrate and private-import cleanup is
-explicitly approved, targeting the next minor release (0.5.0).
+are also retained as direct aliases. The moved emission helpers,
+`_routing_metadata` and `record_post_routing_optimization` remain direct aliases
+from `routing_emission.py`; the existing root-module exports are preserved.
+Compiler owns those private aliases, which can be removed after repository
+consumers migrate and private-import cleanup is explicitly approved, targeting
+the next minor release (0.5.0).
 
 ```bash
 python -m examples.weighted_routing
@@ -38,8 +44,13 @@ The example compiles a circuit onto alternative device paths and verifies that
 calibrated link costs select the lower-error path. Both routes use two SWAPs.
 For a candidate-ranking change, edit `routing_strategy.py` and run
 `tests/unit/test_compilation_routing_estimate.py` together with this example.
-For instruction emission, edit `routing.py` and extend the scenario with the
-corresponding legality, layout restoration and rejection assertions.
+For entry validation or strategy dispatch, edit `routing.py`. For instruction
+emission or routing evidence, edit `routing_emission.py` and extend the scenario
+with the corresponding legality, layout restoration and rejection assertions.
+Run the routing, persistent-layout, SABRE and directed-topology tests in `tests/unit`,
+plus `tests/team/compiler/test_routing_conformance.py`. Emission uses Core IR,
+operand semantics, ordering barriers, the topology cost model and existing SABRE
+plans; it must not call the routing entry module or select a strategy.
 
 SABRE reuses dependency lookahead only within one unchanged frontier. See the
 [lifetime invariant and development evidence](../../../docs/development/COMPILER_FRONTIER_LOOKAHEAD_REUSE.md)
