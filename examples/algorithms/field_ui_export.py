@@ -28,11 +28,8 @@ from examples.algorithms.field_polynomial_catalog import (
     polynomial_view_examples,
 )
 from examples.algorithms.field_square_catalog import field_square_examples
-from flagquantum.core.ir.program.registers import RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.core.value_math import SymbolicInt
-from flagquantum.drawer.register_score import RegisterStep, layout_register_score
-from flagquantum.drawer.register_score_data import register_score_data
 from flagquantum.simulation.finite_field_addition import binary_field_encoding
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 from flagquantum.simulation.finite_field_polynomial_encoding import (
@@ -45,6 +42,7 @@ from flagquantum.testing.component_examples import (
 from tools.development.component_ui_export import (
     component_filename,
     export_component_ui,
+    register_interface_score,
 )
 from tools.development.notebook_autogen import NotebookSpec
 
@@ -336,38 +334,7 @@ def filename(component: object) -> str:
 
 
 def score(component: object) -> object:
-    ports = signature(component)
-    # A display-only interface must not require executable field admission.
-    # Preserve nominal register metadata and different LEFT/RIGHT lifetimes.
-    widths: dict[str, SymbolicInt] = {}
-    inputs, outputs = [], []
-    for port in ports:
-        for index in port.all_idxs():
-            label = port.name + ("[" + ",".join(map(str, index)) + "]" if index else "")
-            if port.side == RegisterSide.RIGHT:
-                label = "out:" + label
-            widths[label] = port.bitsize
-            if port.side != RegisterSide.RIGHT:
-                inputs.append(label)
-            if port.side != RegisterSide.LEFT:
-                outputs.append(label)
-    step = RegisterStep(
-        name(component),
-        tuple(inputs),
-        tuple(outputs),
-        input_registers=tuple(ports.lefts()),
-        output_registers=tuple(ports.rights()),
-    )
-    return register_score_data(
-        layout_register_score(
-            widths,
-            inputs,
-            (step,),
-            input_registers=tuple(ports.lefts()),
-            output_registers=tuple(ports.rights()),
-            outputs=outputs,
-        )
-    )
+    return register_interface_score(signature(component), name(component))
 
 
 def documentation_name(documentation: ComponentDocumentation[object]) -> str:

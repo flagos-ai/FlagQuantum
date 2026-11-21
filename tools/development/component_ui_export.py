@@ -12,6 +12,10 @@ from pathlib import Path
 from sympy import Symbol
 
 from flagquantum.core.ir.program.registers import RegisterSide
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.core.value_math import SymbolicInt
+from flagquantum.drawer.register_score import RegisterStep, layout_register_score
+from flagquantum.drawer.register_score_data import register_score_data
 from flagquantum.testing.component_examples import ComponentDocumentation
 from tools.development.docstrings import get_markdown_docstring
 from tools.development.notebook_autogen import NotebookSpec
@@ -59,6 +63,40 @@ def component_filename(
         prefix
         + hashlib.md5(payload.encode(), usedforsecurity=False).hexdigest()
         + ".json"
+    )
+
+
+def register_interface_score(ports: Signature, name: str) -> object:
+    """Draw nominal directional ports without admitting executable storage."""
+    # Preserve nominal register metadata and different LEFT/RIGHT lifetimes.
+    widths: dict[str, SymbolicInt] = {}
+    inputs, outputs = [], []
+    for port in ports:
+        for index in port.all_idxs():
+            label = port.name + ("[" + ",".join(map(str, index)) + "]" if index else "")
+            if port.side == RegisterSide.RIGHT:
+                label = "out:" + label
+            widths[label] = port.bitsize
+            if port.side != RegisterSide.RIGHT:
+                inputs.append(label)
+            if port.side != RegisterSide.LEFT:
+                outputs.append(label)
+    step = RegisterStep(
+        name,
+        tuple(inputs),
+        tuple(outputs),
+        input_registers=tuple(ports.lefts()),
+        output_registers=tuple(ports.rights()),
+    )
+    return register_score_data(
+        layout_register_score(
+            widths,
+            inputs,
+            (step,),
+            input_registers=tuple(ports.lefts()),
+            output_registers=tuple(ports.rights()),
+            outputs=outputs,
+        )
     )
 
 
