@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum.compiler.routing import CouplingMap
+from flagquantum.compiler.topology import (
+    routing_emission,
+    routing_strategy,
+    sabre,
+    topology_legalization,
+)
 from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
@@ -158,21 +166,127 @@ def test_auto_routing_is_deterministic_and_bound_to_snapshot_and_topology() -> N
     assert first.program.to_json() == second.program.to_json()
 
 
+@pytest.mark.parametrize("warm_cache", [False, True])
+@pytest.mark.parametrize("shape", ["line", "star"])
+def test_auto_reuses_only_its_own_plan_with_unchanged_evidence(
+    warm_cache: bool, shape: str
+) -> None:
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).ry(3, theta=0.21).cx(3, 1).to_ir()
+    device = (
+        CouplingMap.line(4)
+        if shape == "line"
+        else CouplingMap(4, ((0, 1), (0, 2), (0, 3)))
+    )
+    if warm_cache:
+        device.shortest_path(0, 3)
+    cache_before = device.path_cache_info()
+    for program in (source, fq.Circuit(4).h(3).cx(3, 0).cx(2, 0).to_ir(), source):
+        with (
+            patch.object(
+                routing_strategy,
+                "_plan_sabre_for_topology",
+                wraps=routing_strategy._plan_sabre_for_topology,
+            ) as selection_search,
+            patch.object(
+                routing_emission,
+                "_plan_sabre_for_topology",
+                wraps=routing_emission._plan_sabre_for_topology,
+            ) as emission_search,
+        ):
+            result = legalize_circuit_topology(
+                program, coupling_map=device, snapshot=_snapshot()
+            )
+        assert selection_search.call_count == 1
+        assert emission_search.call_count == 0
+        reference = legalize_circuit_topology(
+            program,
+            coupling_map=device,
+            snapshot=_snapshot(),
+            strategy=result.strategy,
+        )
+        assert result == reference
+        assert result.program.to_json() == reference.program.to_json()
+        assert device.path_cache_info() == cache_before
+        torch.testing.assert_close(_state(result.program), _state(program))
+
+
+def test_auto_retains_replanning_when_search_records_path_cache_activity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sabre, "STALLED_SWAP_LIMIT_PER_WIRE", 0)
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).ry(3, theta=0.21).cx(3, 1).to_ir()
+    with patch.object(
+        routing_emission,
+        "_plan_sabre_for_topology",
+        wraps=routing_emission._plan_sabre_for_topology,
+    ) as emission_search:
+        result = legalize_circuit_topology(
+            source, coupling_map=CouplingMap.line(4), snapshot=_snapshot()
+        )
+    reference = legalize_circuit_topology(
+        source,
+        coupling_map=CouplingMap.line(4),
+        snapshot=_snapshot(),
+        strategy="sabre",
+    )
+    assert result.strategy == "sabre"
+    assert result.program.to_json() == reference.program.to_json()
+    assert result.legalization_identity == reference.legalization_identity
+    assert emission_search.call_count == 1
+    assert result.program.metadata["routing"]["path_cache"]["delta"]["misses"] > 0
+
+
+def test_auto_preserves_a_replacement_router_and_its_failures() -> None:
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).cx(3, 1).to_ir()
+    with patch.object(
+        topology_legalization,
+        "route_to_topology",
+        wraps=topology_legalization.route_to_topology,
+    ) as replacement:
+        result = legalize_circuit_topology(
+            source, coupling_map=CouplingMap.line(4), snapshot=_snapshot()
+        )
+    assert replacement.call_count == 1
+    assert replacement.call_args.kwargs["strategy"] == result.strategy
+    with (
+        patch.object(
+            topology_legalization,
+            "route_to_topology",
+            side_effect=RuntimeError("Replacement router rejected the program"),
+        ),
+        pytest.raises(TopologyLegalizationError, match="Replacement router"),
+    ):
+        legalize_circuit_topology(
+            source, coupling_map=CouplingMap.line(4), snapshot=_snapshot()
+        )
+
+
+def test_reused_sabre_plan_preserves_a_symbolic_parameter() -> None:
+    theta = fq.Parameter("theta")
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).ry(3, theta=theta).cx(3, 1).to_ir()
+    result = legalize_circuit_topology(
+        source, coupling_map=CouplingMap.line(4), snapshot=_snapshot()
+    )
+    assert result.strategy == "sabre"
+    assert (
+        next(
+            item.params["theta"]
+            for item in result.program.instructions
+            if item.name == "ry"
+        )
+        is theta
+    )
+
+
 def test_routing_preserves_parameter_object_and_gradient() -> None:
     theta = torch.tensor(0.19, dtype=torch.float64, requires_grad=True)
-    source = CircuitIR(
-        3,
-        (
-            Instruction("ry", (1,), params={"theta": theta}),
-            Instruction("cx", (0, 2)),
-        ),
-        dtype="complex128",
-    )
+    source = fq.Circuit(4).h(0).cx(0, 3).cx(0, 2).ry(3, theta=theta).cx(3, 1).to_ir()
     result = legalize_circuit_topology(
         source,
-        coupling_map=CouplingMap.line(3),
+        coupling_map=CouplingMap.line(4),
         snapshot=_snapshot(),
     )
+    assert result.strategy == "sabre"
 
     routed_parameter = next(
         item.params["theta"]
