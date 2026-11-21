@@ -142,6 +142,7 @@ def test_unregistered_instance_is_refused() -> None:
 
 
 DECOMPOSITION_EXAMPLES = (
+    "approx_cswap_small",
     "int_state",
     "int_effect",
     "multi_and",
@@ -222,13 +223,16 @@ def test_control_archive_collision_uses_fresh_instance_decompositions(
     )
 
 
-@pytest.mark.parametrize("identifier", ("swap_large", "cswap_large"))
+@pytest.mark.parametrize(
+    "identifier,columns",
+    (("swap_large", 68), ("cswap_large", 68), ("approx_cswap_large", 1543)),
+)
 def test_source_large_swap_rendering_failure_and_native_graph(
-    originals: tuple[Any, dict[str, Any]], identifier: str
+    originals: tuple[Any, dict[str, Any]], identifier: str, columns: int
 ) -> None:
     from qualtran.drawing import get_musical_score_data
 
     with pytest.raises(IndexError, match="index out of range"):
         get_musical_score_data(originals[1][identifier].decompose_bloq())
     score = native.score(EXAMPLES[identifier])
-    assert isinstance(score, dict) and score["max_x"] == 68
+    assert isinstance(score, dict) and score["max_x"] == columns

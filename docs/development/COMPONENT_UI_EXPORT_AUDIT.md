@@ -856,3 +856,30 @@ The combined catalog now has thirteen immediate native decompositions and
 remain in relative swap, SwapWithZero, multiplexed swap and ControlledViaAnd.
 Source leaf decomposition refusals, original rendering failures, dependency
 node publication and recursive coverage remain separately open.
+
+
+## Complete relative-phase exchange child graph
+
+`relative_swap_component.py` composes the existing relative-swap physical
+segments and the existing typed fanout. The immediate graph retains the
+original moment/import ordering, first-use y/x splits, packed MultiTargetCNOT
+boundary and final x/y joins. Width one keeps bit ports directly. All storage
+remains caller-owned, with no private work or measurement. The existing
+physical relative-swap emitter still owns phases and instruction recipes.
+
+Widths one through four match complete ordered original child connections.
+Full complex outputs match the existing physical emitter, with independent
+original tensor checks at widths one and two. Observed primitive categories
+match existing physical emission and observed T/T-dagger count is 4 * width.
+The original analytical model also has 4 * width T gates; its opaque Clifford
+classification remains separate. Previous complete-operator and controlled
+measurement/clean-work evidence is reused and its execution families rerun.
+
+The four-bit catalog graph matches fresh source geometry, ordered glyphs and
+MultiTargetCNOT-specific title and symbols after native boundary/identity
+normalization. The native 64-bit graph renders, with the original IndexError
+retained as an extension witness. There are now fifteen immediate native
+decompositions and 338 atomic interfaces. Twelve original successful Basic
+Gates instances match fresh drawings. Six source-success instances remain in
+SwapWithZero, MultiplexedCSwap and ControlledViaAnd; dependency publication
+and recursive coverage remain open.

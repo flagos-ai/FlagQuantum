@@ -13,6 +13,7 @@ It neither expands physical instructions nor evaluates resource estimates.
 from examples.algorithms.control_predicate_catalog import PredicateExample
 from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
+    ControlledSwapCall,
 )
 from flagquantum.compiler.registers.component_basis_vectors import (
     integer_basis_function_data,
@@ -23,6 +24,9 @@ from flagquantum.compiler.registers.control.component_predicate import (
 )
 from flagquantum.compiler.registers.control.conjunction_program import (
     conjunction_program,
+)
+from flagquantum.compiler.registers.primitives.relative_swap_component import (
+    relative_swap_program,
 )
 from flagquantum.compiler.registers.primitives.swap_component import SwapDeclaration
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
@@ -46,6 +50,13 @@ def decomposition_program(component: object) -> ProgramRecord | None:
             return integer_basis_program(
                 component.name, component.registers[0].dtype, data[0], state=data[1]
             )
+    if (
+        isinstance(component, ControlledSwapCall)
+        and component.approximate
+        and not component.adjoint
+        and type(component.width) is int
+    ):
+        return relative_swap_program(component.width)
     if isinstance(component, SwapDeclaration) and type(component.bitsize) is int:
         return component.program()
     if (
@@ -81,6 +92,11 @@ def decomposition_symbols(
         step: RegisterStep, register: Register | None, index: tuple[int, ...] | None
     ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
         if register is None:
+            if tuple(r.name for r in functions[step.name].registers or ()) == (
+                "control",
+                "targets",
+            ):
+                return "Text", {"text": "MultiTargetCNOT", "fontsize": 10}
             return "Text", {
                 "text": (
                     "TwoBitSwap"
@@ -92,6 +108,23 @@ def decomposition_symbols(
             }
         assert index is not None
         function = functions[step.name]
+        if isinstance(component, ControlledSwapCall):
+            if step.name in {"s", "sdg", "h", "t", "tdg"}:
+                return "TextBox", {
+                    "text": {"s": "S", "sdg": "S†", "h": "H", "t": "T", "tdg": "T†"}[
+                        step.name
+                    ]
+                }
+            if step.name == "cx":
+                return (
+                    ("Circle", {"filled": True})
+                    if register.name == "ctrl"
+                    else ("ModPlus", {})
+                )
+            if register.name == "control":
+                return "Circle", {"filled": True}
+            if register.name == "targets":
+                return "ModPlus", {}
         if isinstance(component, FunctionRecord) and step.name.endswith(
             ("_basis_0", "_basis_1")
         ):
