@@ -281,8 +281,9 @@ def test_export_failure_preserves_old_outputs_and_reclaims_temporaries(
     )
 
 
-@pytest.fixture
-def kernel_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def configure_kernel_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
     base = tmp_path / "jupyter"
     folder = base / "kernels" / "python3"
     folder.mkdir(parents=True)
@@ -306,12 +307,17 @@ def kernel_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         )
     )
     monkeypatch.setenv(
-        "JUPYTER_PATH", str(base) + os.pathsep + os.environ["JUPYTER_PATH"]
+        "JUPYTER_PATH", str(base) + os.pathsep + os.environ.get("JUPYTER_PATH", "")
     )
     monkeypatch.setenv("JUPYTER_RUNTIME_DIR", str(base / "runtime"))
     monkeypatch.setenv("IPYTHONDIR", str(base / "ipython"))
     monkeypatch.setenv("JUPYTER_CONFIG_DIR", str(base / "config"))
     return base
+
+
+@pytest.fixture
+def kernel_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return configure_kernel_environment(tmp_path, monkeypatch)
 
 
 def test_real_source_and_native_execution_with_kernel_cleanup(

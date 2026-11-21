@@ -244,3 +244,21 @@ complete frozen-package output comparisons, suffix/metadata/TOC handling and
 concurrent ordinary/native formatting. Source alias routing and captions become
 native paths and identity. REFERENCE_TEMPLATES_FILE_AUDIT.md records the measured
 loaded profile, preserved formatting limits and isolated dependency procedure.
+
+The accepted documentation workflows have ordinary module command entry points.
+Run `python -m tools.development.notebook_cleaning` to check tracked package
+notebooks, or add `--apply` to clear output and metadata. Its exit status remains
+the number of dirty notebooks, including after applying cleanup. Run
+`python -m tools.development.notebook_execution --n-workers 1 --output-md` to
+execute tracked package/example notebooks and export Markdown with the existing
+notebook output. Use `--no-output-nbs` to disable notebook export and
+`--no-only-out-of-date` to force execution.
+
+`python -m tools.development.reference_templates` runs the loaded-namespace
+reference workflow. `python -m tools.development.reference_docs` invokes the
+static Griffe workflow, whose inherited-setter refusal remains explicit. Both
+write to the current checkout's reference directory and propagate owner errors.
+Run `tests/unit/test_documentation_commands.py` with the locked documentation
+environment for exact original parser comparisons and actual subprocess usage.
+See `DOCUMENTATION_COMMANDS_FILE_AUDIT.md` for full source dispositions and reused
+owner evidence.
