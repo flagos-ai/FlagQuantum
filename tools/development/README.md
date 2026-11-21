@@ -534,3 +534,14 @@ and coefficient-view lifetimes remain with existing native owners. The Drawer
 metadata path handles symbolic display independently of executable admission.
 Complete decomposition graph coverage remains in
 `docs/development/COMPONENT_UI_EXPORT_AUDIT.md`.
+
+
+Run `python -m examples.algorithms.bookkeeping_ui_export` for all six
+Bookkeeping notebooks, ten documentation references and eleven original
+factory interfaces. Existing split/join, partition, routing and cast owners
+supply directional signatures. Allocation, free and Always retain the typed
+interfaces of their accepted native notebook implementations. The common
+`register_interface_score` helper draws nominal port metadata directly through
+Drawer, preserving symbolic widths and separate input/output lifetimes.
+AutoPartition exports native control values and unused routing segments, with
+its source serializer differences recorded in the UI-export audit.

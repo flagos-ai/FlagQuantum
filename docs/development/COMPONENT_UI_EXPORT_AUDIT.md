@@ -426,3 +426,51 @@ files, Black, Ruff, Integration scope, architecture, multi-level IR, public API
 baseline and whitespace checks pass. The isolated actual module entry passes.
 All twenty-two factories have a non-null metadata drawing, with twenty-one
 unique node files because the original constant-multiplier factories coincide.
+
+
+## Complete bookkeeping native instance catalog
+
+`examples/algorithms/bookkeeping_ui_export.py` covers all six Bookkeeping
+notebooks, ten documentation references and eleven actual frozen example
+instances. Run `python -m examples.algorithms.bookkeeping_ui_export`. The normal
+module entry produces twelve JSON files including navigation, ten documentation
+files and eleven non-null atomic interface diagrams.
+
+Existing word split/join functions, partition signatures, AutoPartition groups
+and cast signatures own the views. Symbolic allocation/free signatures and
+Always's AND interface retain the accepted native notebook declarations. The
+49-bit partition preserves its 2-by-3 array of two-bit words and 37-bit scalar.
+Split and Join preserve duplicate logical names with distinct directional
+namespaces. Cast preserves the 32-bit signed source and unsigned fixed-point
+target with 32 fractional bits.
+
+Nine factories retain exact original parameter dictionaries after neutral enum
+translation, encoded metadata and filenames. Two AutoPartition instances use
+explicit native child control values and ordered groups containing unused
+segments. Their actual source control scalar is a NumPy array that the source
+encoder replaces with NOT_SERIALIZABLE. Native metadata retains the value 1
+and unused widths instead. These two filenames deliberately differ. Tests
+compare the actual original routing, control polarity, child width and ports
+while preserving the source encoding witness.
+
+The existing field-only drawing implementation is extracted into the shared
+tool-owned `register_interface_score`. Both catalogs use this helper. All
+twenty-two field interface scores are byte-equivalent to accepted commit
+c342490df. Export orchestration, score failure handling and executable
+descriptor admission retain their existing owners. The complete 3317-file
+export-protocol evidence is reused. This batch separately exercises the
+exporter regression with both full-fixture profiles deselected. Six remaining
+checks pass, including actual Jupyter execution. Its initial local-port bind
+was denied by the sandbox, and the same suite passed with escalation.
+
+The concentrated regression passes 940 checks, with zero skips and 25 existing
+notebook-parser and protobuf-deprecation warnings. Strict typing of all four
+changed Python files, Black, Ruff, Integration scope, architecture, IR and API
+checks pass. Actual module execution produces all eleven fresh diagrams.
+Existing partition, AutoPartition, split/join, cast, allocation and Always
+execution tests retain complex-amplitude, measurement/feedback, clean-work and
+primitive resource evidence. View operations emit zero gates in those accepted
+execution tests. UI rendering introduces no physical gate stream or analytical
+cost estimate. Whole-instance decomposition graphs and per-gate glyph parity
+remain separate open work. Native provider coverage reaches 125 of 237
+documentation references and 193 of 359 original factories.
