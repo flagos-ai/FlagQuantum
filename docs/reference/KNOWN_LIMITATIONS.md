@@ -130,6 +130,23 @@ Do not edit this generated region. Capability boundaries come from
 | Populated OpenFermion molecular data input | `experimental` | One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim. |
 | OpenFermion interaction operator input | `experimental` | One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim. |
 
+## Target compilation evidence record limits
+
+The v4 physical evidence schema bounds each instruction array, including
+`instructions` and `native_input_instructions`, to 4096 records. A larger native
+or routing operation-growth allowance does not override this independent
+serialization bound. Target compilation can therefore finish routing and native
+optimization but still raise `ValueError` when building its v4 physical evidence.
+No larger-capacity v4 compilation or automatic evidence-version fallback is
+supported by that allowance.
+
+The [restored-route objective inspection](../development/COMPILER_TARGET_ROUTING_OBJECTIVE.md)
+retains 15 such failed explicit-strategy controls across nine of 60 inspected
+applications, with all 60 default controls accepted. Those development inputs do
+not prove a general default-workflow capacity bound or qualified performance.
+Changing the v4 record limits or failure contract requires the existing public
+API and serialized-schema review process; this record does not change them.
+
 ## Validated public performance claims
 
 | Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |
