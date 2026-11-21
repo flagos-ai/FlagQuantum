@@ -723,8 +723,8 @@ def _expand(
         return None
 
     options: list[_Translation] = []
-    u3 = _synthesize_u3(instruction)
-    if u3 is not None and all(can_run(item) for item in u3):
+    u3 = _synthesize_u3(instruction, can_run=can_run)
+    if u3 is not None:
         options.append(_Translation(u3, (), True))
     if z_rotation is not None and pulse_opcode is not None:
         synthesized = synthesize_one_qubit(
