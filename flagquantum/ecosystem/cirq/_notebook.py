@@ -79,6 +79,8 @@ def execute_notebook(
     name: str | Path, *, timeout: int = 600, kernel_name: str = "python3"
 ) -> Any:
     """Execute a notebook from an explicit path or a caller-relative stem."""
+    from ...testing.notebook_execution import execute_notebook_node
+
     path = Path(name)
     if not path.is_absolute():
         caller = Path(extract_stack(limit=2)[0].filename)
@@ -86,8 +88,7 @@ def execute_notebook(
     if not path.suffix:
         path = path.with_suffix(".ipynb")
     notebook = import_module("nbformat").read(path, as_version=4)
-    preprocessor = import_module("nbconvert.preprocessors").ExecutePreprocessor
-    executed, _ = preprocessor(timeout=timeout, kernel_name=kernel_name).preprocess(
-        notebook
+    executed, _ = execute_notebook_node(
+        notebook, timeout=timeout, kernel_name=kernel_name
     )
     return executed

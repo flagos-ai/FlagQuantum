@@ -151,3 +151,10 @@ for original single-/three-axis examples, nested prefix folding, clean private
 children, dirty echo children, every small measurement branch and SDK-free
 execution after conversion. Compiler owns graph scheduling, allocation and
 binding, while the source resource models remain independent.
+
+The existing Cirq notebook helper retains caller-relative file resolution and
+its execution defaults. It delegates optional Jupyter execution to
+`flagquantum.testing.notebook_execution`, imported only when executing a
+notebook. The adapter owns external file selection and conversion, while the
+shared Testing helper owns kernel lifecycle. Run
+`tests/unit/test_cirq_notebook_resources_file.py` after changing that delegation.
