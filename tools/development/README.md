@@ -460,3 +460,13 @@ input tuples and workspace ownership before using `circuit.append(op)`.
 script and executes completed generated classes through existing native owners.
 See `COMPONENT_QUICKSTARTER_AUDIT.md` for source-template defects and the pending
 actual-browser review.
+
+`python -m tools.development.requirement_locks --source-root /path/to/requirements --output /path/to/locks`
+compiles a complete development lock and seven constrained sub-environments
+from an explicit owner's `deps` tree. Supply `--pip-compile` to select the
+installed optional compiler. All compiles finish in staging before destination
+publication. Existing output pins seed resolution and unchanged files retain
+their timestamps. Run `tests/unit/test_development_requirement_locks.py` for the
+complete source orchestration and actual offline eight-profile comparison.
+See `DEVELOPMENT_REQUIREMENT_LOCKS_AUDIT.md` for bootstrap versions, configuration
+scope, write-failure semantics and the separate whole-environment acceptance.
