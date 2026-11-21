@@ -151,3 +151,14 @@ Run `tests/unit/test_notebook_tools.py` together with the existing docstring,
 metadata/discovery and development-file tests after a change. See
 `NOTEBOOK_TOOLS_FILE_AUDIT.md` for source parser limits and explicit fixes to the
 original diff-status and temporary-file cleanup defects.
+
+`notebook_execution.py` runs Git-tracked notebooks and exports executed notebook
+and Markdown outputs beneath docs. Start with
+`tests/unit/test_notebook_execution.py::test_real_spawn_batch_exports_and_aggregates_failures`.
+Call execute_and_export_notebooks with explicit source roots for a focused
+checkout and guard its caller with `if __name__ == "__main__"` for spawn.
+Testing owns actual Jupyter execution. The tool owns stale-output selection,
+ordered Markdown links, per-file atomic exports and batch failure summaries.
+Rendering completes before destination writes. Each destination replacement
+is atomic, and cross-file replacement can leave one updated destination. Markdown image resource files retain the original
+exporter's separate-resource limitation. See NOTEBOOK_EXECUTION_FILE_AUDIT.md.
