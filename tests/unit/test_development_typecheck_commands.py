@@ -169,5 +169,7 @@ def test_timeout_resets_terminal(
 
 @pytest.mark.parametrize("arguments", [[], ["unknown"]])
 def test_invalid_mode(arguments: list[str]) -> None:
-    with pytest.raises(SystemExit, match="Expected package or development"):
+    with pytest.raises(
+        SystemExit, match="Expected package, development or retained-source"
+    ):
         typecheck_command.main(arguments)
