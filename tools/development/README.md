@@ -102,3 +102,32 @@ assert summarize_results(report)["pass"].tolist() == [1] * 5
 The fixture import is confined to this developer example. The reporting tool
 itself has no test-package dependency. Run `tests/unit/test_component_report.py`
 and `tests/unit/test_reference_testing_file.py` after changing this workflow.
+
+`tensor_report.py` times the existing Compiler expansion callback, Simulation
+node construction and pinned contraction-width planner. Supply `flatten` and
+`build_nodes` explicitly and run `report_on_tensors` as a task with
+`ProcessDeadlineExecutor` from `process_deadlines.py`. Tasks receive `cxn` and
+send one complete result. Use the executor as a context manager. As required
+by multiprocessing spawn, process-launching scripts must guard their main entry.
+
+```python
+from tools.development.process_deadlines import ProcessDeadlineExecutor
+
+
+def report_value(cxn, value):
+    cxn.send(value)
+
+
+if __name__ == "__main__":
+    with ProcessDeadlineExecutor(timeout=10, max_workers=1) as executor:
+        executor.submit(report_value, {"value": "ready"})
+        arguments, result = executor.next_result()
+        assert result == "ready"
+```
+
+The complete Compiler-to-Simulation report example is
+`tests/unit/test_tensor_report.py::test_report_uses_existing_compiler_and_simulation_in_worker`.
+Run that file with the existing tensor-node, dense-component and width-policy
+tests. See `TENSOR_REPORT_FILE_AUDIT.md` for the original blocking defects and
+native lifecycle corrections. Width estimates and observed timing fields remain
+separate from physical gate counts and algorithmic resource estimates.
