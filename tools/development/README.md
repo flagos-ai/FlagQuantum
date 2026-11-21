@@ -262,3 +262,12 @@ Run `tests/unit/test_documentation_commands.py` with the locked documentation
 environment for exact original parser comparisons and actual subprocess usage.
 See `DOCUMENTATION_COMMANDS_FILE_AUDIT.md` for full source dispositions and reused
 owner evidence.
+
+`python -m tools.development.incremental_coverage HEAD~1` checks touched Python
+lines against a comparison revision using the existing coverage annotations.
+Missing annotations conservatively count relevant changed lines as uncovered.
+The command exits zero only when the owner's uncovered-line count is zero.
+Run `tests/unit/test_incremental_coverage_command.py` and
+`tests/unit/test_development_coverage.py` for the complete source entry and real
+Git-checkout workflow. See `INCREMENTAL_COVERAGE_COMMAND_FILE_AUDIT.md` for source
+argument and diagnostic semantics.
