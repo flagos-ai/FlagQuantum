@@ -16,7 +16,7 @@ Track three independent measures:
 - Migration: 212/212 approved workflows accepted in the historical snapshot;
   current revisions require their applicable regression tests.
 - Teaching: six new learning-path Notebooks passed their initial numerical checks;
-  60/212 migration Notebooks have been reviewed and replayed. See the
+  144/212 migration Notebooks have been reviewed and replayed. See the
   [per-case editorial ledger](NOTEBOOK_UX_REVIEW.md). Remaining cases are pending.
 - Capability gaps: inspect actual code and missing public behavior. A hidden
   helper alone is a presentation issue, not proof that synth lacks a feature.
@@ -27,9 +27,9 @@ Track three independent measures:
 | --- | --- | --- | --- |
 | UX-01 | Static screen of all 212 accepted workflows; separate navigation | Reproducible report tied to existing inventory; no evidence rewrite | Screen complete; editorial review active |
 | UX-02 | Six learning-path Notebooks | All cells execute; independent amplitudes, cleanup, topology and optimizer checks | Initial independent checks passed |
-| UX-03 | Review delegated construction by shared helper family | Expose useful public program at the point of use; preserve upstream workflow and numerical scope | Twelve delegated workflows exposed; remaining review active |
+| UX-03 | Review delegated construction by shared helper family | Expose useful public program at the point of use; preserve upstream workflow and numerical scope | Central programs exposed where useful; remaining review active |
 | UX-04 | Review direct Circuit uses and capability gaps | Identify reference versus application code; reuse existing high-level APIs first | Seven initially visible Circuit workflows reviewed and replayed; hidden kernels still require inspection |
-| UX-05 | Review remaining visible-qfunc workflows and five-category navigation | Explain problem, quantum semantics, compilation, result and limits; changed workflows pass tests | Functions 31/31 and Algorithms 17 reviewed; case navigation names corrected |
+| UX-05 | Review remaining visible-qfunc workflows and five-category navigation | Explain problem, quantum semantics, compilation, result and limits; changed workflows pass tests | Functions 31/31, Algorithms 40/45 and Tutorials 45/49 reviewed; case navigation names corrected |
 | UX-06 | Final evidence and handoff | All 212 editorial reviews resolved; applicable corpus regression and default checks recorded | Pending |
 
 Work proceeds in reviewable local batches. Remote CI is reserved for integration;

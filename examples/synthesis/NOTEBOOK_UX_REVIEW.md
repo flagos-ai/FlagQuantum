@@ -68,12 +68,33 @@ evidence directory `notebook-ux-20261121/functions-replay.json`.
 | [tutorials/basics/quantum_programming/execution_tutorial_part2/overview](tutorials/basics/quantum_programming/execution_tutorial_part2/overview/walkthrough.ipynb) | Exposes Bell qfunc; distinguishes Circuit runtime binding from synth specialization | Passed |
 | [tutorials/basics/exponentiation/example_exponentiation/overview](tutorials/basics/exponentiation/example_exponentiation/overview/walkthrough.ipynb) | Exposes full-Hamiltonian Trotter call and actual named output | Passed |
 
-## Algorithms: 17 reviewed and replayed
+| [community/basics/vqe/overview](community/basics/vqe/overview/walkthrough.ipynb) | The editable qfunc prepares the state for a bound angle. | Passed |
+
+| [community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview](community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/walkthrough.ipynb) | The editable qfunc below specifies an all-ones control over a logical array. | Passed |
+| [community/hackathons/iquhack_2025/challenge_template/overview](community/hackathons/iquhack_2025/challenge_template/overview/walkthrough.ipynb) | The editable starter allocates a logical array and requests uniform superposition. | Passed |
+| [community/hackathons/iquhack_2025/gaussian_reference/overview](community/hackathons/iquhack_2025/gaussian_reference/overview/walkthrough.ipynb) | The editable direct qfunc supplies normalized Gaussian probabilities to native state preparation. | Passed |
+| [community/hackathons/iquhack_2025/winning_gaussian/overview](community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb) | The tuned product rotations, controlled adjustment and truncated Fourier schedule are built by the explicit [Circuit builder](workflow.py). | Passed |
+| [community/hackathons/iquhack_2025/workshop/overview](community/hackathons/iquhack_2025/workshop/overview/walkthrough.ipynb) | The editable arithmetic qfunc below requests coherent output computation from two three-bit inputs. | Passed |
+| [community/paper_implementation_project/bb84/bb84_implementation/overview](community/paper_implementation_project/bb84/bb84_implementation/overview/walkthrough.ipynb) | The editable root below prepares eight signals with classically bound message and basis arrays. | Passed |
+
+| [community/hackathons/qinnovision_2025/advection_equation/second_place/overview](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/walkthrough.ipynb) | The linked quantum builder initializes the seven-bit profile and repeats a controlled-rotation ladder for the declared time grid. | Passed |
+| [community/hackathons/qinnovision_2025/advection_equation/winning/overview](community/hackathons/qinnovision_2025/advection_equation/winning/overview/walkthrough.ipynb) | The native qfunc loads the original seven-bit initial vector. | Passed |
+| [community/paper_implementation_project/block_encoding/select_structures_be/overview](community/paper_implementation_project/block_encoding/select_structures_be/overview/walkthrough.ipynb) | The current builder uses native synth to load coefficient amplitudes and a bounded Circuit SELECT to implement each structured address map. | Passed |
+| [community/paper_implementation_project/block_encoding_nd_laplacian/overview](community/paper_implementation_project/block_encoding_nd_laplacian/overview/walkthrough.ipynb) | The editable one-dimensional root composes the shared Fourier-shift Laplacian block. | Passed |
+| [community/paper_implementation_project/bpde/overview](community/paper_implementation_project/bpde/overview/walkthrough.ipynb) | The quantum builder forms a two-branch evolution matrix from the regenerated hydrogen models, then adds a reusable symbolic phase and interferometric readout. | Passed |
+| [community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview](community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/walkthrough.ipynb) | The current implementation constructs tree, circulant and discriminant walk blocks with explicit Circuit gates and uses native synth for the Chebyshev input preparation. | Passed |
+| [community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/walkthrough.ipynb) | The editable factory binds the classical coefficient-encoding matrix and composes native preparation, selected generator powers and inverse encoding. | Passed |
+| [community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/walkthrough.ipynb) | The editable uniform root below prepares five logical qubits and calls the shared reversible compressor. | Passed |
+| [community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview](community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/walkthrough.ipynb) | The native preparation composes even/odd fitted responses and the shared QSVT blocks, then measures the actual eight-bit success amplitude used by exact amplification. | Passed |
+
+## Algorithms: 45 reviewed and replayed
 
 All original experiment sizes and existing numerical checks are retained.
-The five newly exposed programs and the twelve other reviewed workflows all
-executed every cell. Logs are indexed by `algorithms-replay.json`,
-`algorithms-foundations-replay.json` and `algorithms-blocks-replay.json`.
+The first seventeen rows were verified in the initial Algorithms checkpoint;
+subsequent rows use the solver, ML, phase, dynamics and remaining-Algorithms
+replay manifests. Every listed workflow executed all code cells. The original
+20-bit Glued Trees experiment completed in 874.711 seconds without shrinking
+its time grid, term set or samples.
 
 | Notebook | Review outcome | Replay |
 | --- | --- | --- |
@@ -94,6 +115,87 @@ executed every cell. Logs are indexed by `algorithms-replay.json`,
 | [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview/walkthrough.ipynb) | Circuit and dense response construction; opaque operations explicitly not basis-gate costs | Passed |
 | [algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview/walkthrough.ipynb) | Mixed synth/Circuit construction; identifies integrated qfunc gap and retained flags | Passed |
 | [algorithms/amplitude_amplification/qsvt_fixed_point/overview](algorithms/amplitude_amplification/qsvt_fixed_point/overview/walkthrough.ipynb) | Explains bounded truth-table specialization, fresh phase fitting and checked qfunc cleanup | Passed |
+
+| [algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview/walkthrough.ipynb) | The visible qfuncs expose feature encoding, variational rotations and their composition. | Passed |
+| [algorithms/machine_learning/qgan/qgan_bars_and_strips/overview](algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/walkthrough.ipynb) | The visible qfunc preview prepares the same four-qubit encoding and eight-weight ansatz used by the training layer. | Passed |
+| [algorithms/machine_learning/qsvm/overview](algorithms/machine_learning/qsvm/overview/walkthrough.ipynb) | The editable Pauli qfunc below composes two feature layers and the adjoint of the second input's encoding. | Passed |
+| [algorithms/machine_learning/quantum_autoencoder/overview](algorithms/machine_learning/quantum_autoencoder/overview/walkthrough.ipynb) | The editable encoder below defines data rotations, both entangling layers and the final trash rotations. | Passed |
+| [algorithms/metrology/classical_shadow_tomography/overview](algorithms/metrology/classical_shadow_tomography/overview/walkthrough.ipynb) | The editable Pauli probe below prepares a Bell state and composes the selected basis rotations. | Passed |
+| [algorithms/number_theory_and_cryptography/discrete_log/overview](algorithms/number_theory_and_cryptography/discrete_log/overview/walkthrough.ipynb) | The editable modulo-five qfunc below initializes the function register to one, prepares two coherent exponents, requests two modular exponentiations and applies inverse QFTs. | Passed |
+| [algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview/walkthrough.ipynb) | The sampled native qfunc route uses bounded table-driven point translation. | Passed |
+| [algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/walkthrough.ipynb) | The editable `poisson` qfunc expresses state loading, spatial transforms, controlled spectral evolution, reciprocal rotation and automatic inverse regions. | Passed |
+| [algorithms/quantum_differential_equations_solvers/lchs/overview](algorithms/quantum_differential_equations_solvers/lchs/overview/walkthrough.ipynb) | The 128-dimensional comparison is classical numerical analysis. | Passed |
+| [algorithms/quantum_differential_equations_solvers/time_marching/overview](algorithms/quantum_differential_equations_solvers/time_marching/overview/walkthrough.ipynb) | The reusable `magnus` qfunc in [quantum.py](quantum.py) requests the static phase-stream slice. | Passed |
+| [algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/walkthrough.ipynb) | The visible factory below converts the model's Pauli description to observables, then defines a qfunc that requests probability preparation and two product formulas per time slice. | Passed |
+| [algorithms/quantum_linear_solvers/hhl/overview](algorithms/quantum_linear_solvers/hhl/overview/walkthrough.ipynb) | The visible roots specify state loading, eigenphase precision, reciprocal rotations and the compute/use/uncompute region. | Passed |
+| [algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/walkthrough.ipynb) | The original-size Notebook constructs all sixteen Pauli terms in a native Circuit block, fits fresh phases, and applies a projected response using the shared Circuit QSVT machinery. | Passed |
+| [algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/overview](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/overview/walkthrough.ipynb) | The editable objective below composes the nine-angle ansatz, LCU preparation, selector-controlled phases, inverse preparation and the target Hadamards. | Passed |
+| [algorithms/quantum_phase_estimation/qpe_for_matrix/overview](algorithms/quantum_phase_estimation/qpe_for_matrix/overview/walkthrough.ipynb) | The visible roots prepare the data and compose QPE around exact unitary or power-aware product-formula callbacks. | Passed |
+| [algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/walkthrough.ipynb) | The optimized root shown below prepares Hartree-Fock data, allocates selector and phase outputs, and composes the checked `estimate` helper. | Passed |
+| [algorithms/quantum_primitives/gqsp/overview](algorithms/quantum_primitives/gqsp/overview/walkthrough.ipynb) | The polynomial coefficients and freshly fitted rotation rows are classical. | Passed |
+| [algorithms/quantum_primitives/gradient_estimation/overview](algorithms/quantum_primitives/gradient_estimation/overview/walkthrough.ipynb) | The editable qfuncs request coherent polynomial phases and inverse Fourier transforms. | Passed |
+| [algorithms/quantum_primitives/hadamard_test/overview](algorithms/quantum_primitives/hadamard_test/overview/walkthrough.ipynb) | The helper composition is entirely visible: within/apply supplies the two Hadamards around controlled QFT, and `drop(psi)` keeps the data as unobserved quantum environment. | Passed |
+| [algorithms/quantum_primitives/quantum_oracle_sketching_boolean/overview](algorithms/quantum_primitives/quantum_oracle_sketching_boolean/overview/walkthrough.ipynb) | The editable three-bit preview below composes equality-controlled constant phases over a uniform register. | Passed |
+| [algorithms/quantum_state_preparation/adapt_vqe/overview](algorithms/quantum_state_preparation/adapt_vqe/overview/walkthrough.ipynb) | The editable one-pool preview below requests a nonzero Pauli evolution rather than showing only allocation. | Passed |
+| [algorithms/quantum_state_preparation/fermionic_gaussian/overview](algorithms/quantum_state_preparation/fermionic_gaussian/overview/walkthrough.ipynb) | The visible `prepare_pair` qfunc composes a rotation, relative phase, entangler and parity choice. | Passed |
+| [algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview/walkthrough.ipynb) | The editable Fourier probe below requests coherent energy-dependent phases and inverse QFT. | Passed |
+
+## Tutorials: 49 reviewed and replayed
+
+The nine initial Tutorial rows remain in the cross-category table. The following
+additional workflows retain all original code stages and numerical scope.
+
+| Notebook | Review outcome | Replay |
+| --- | --- | --- |
+
+| [tutorials/advanced_tutorials/discrete_quantum_walk/overview](tutorials/advanced_tutorials/discrete_quantum_walk/overview/walkthrough.ipynb) | The editable circle root below expresses coin rotation, Fourier-domain signed motion and its inverse transform. | Passed |
+| [tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/walkthrough.ipynb) | The visible roots compose the coin and reversible movement, with six position bits on the ring or two five-bit coordinates on the torus. | Passed |
+| [tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview](tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview/walkthrough.ipynb) | The editable root below passes a static power callback to QPE. | Passed |
+| [tutorials/basics/entanglement](tutorials/basics/entanglement/walkthrough.ipynb) | `Output` declares newly allocated logical qubits; `allocate` initializes them in zero. | Passed |
+| [tutorials/basics/grover_graph_coloring/overview](tutorials/basics/grover_graph_coloring/overview/walkthrough.ipynb) | The editable root below prepares all five two-bit color variables and composes the shared [predicate and diffuser](../main.py). | Passed |
+| [tutorials/basics/optimization/learning_optimization/overview](tutorials/basics/optimization/learning_optimization/overview/walkthrough.ipynb) | The cost is a real phase expression over coherent two-bit integers. | Passed |
+| [tutorials/basics/prepare_state](tutorials/basics/prepare_state/walkthrough.ipynb) | The 32 nonnegative entries are target probabilities, not amplitudes. | Passed |
+| [tutorials/basics/qmci_pi_estimation/overview](tutorials/basics/qmci_pi_estimation/overview/walkthrough.ipynb) | The editable preparation root below allocates coordinates at a checked static bit width and composes the shared [prepare and reflect helpers](operations.py). | Passed |
+| [tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/walkthrough.ipynb) | The control Hadamards surround a coherent controlled four-qubit QFT. | Passed |
+| [tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/walkthrough.ipynb) | The two-bit controller coherently chooses identity, QFT or inverse QFT. | Passed |
+| [tutorials/basics/quantum_programming/classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/walkthrough.ipynb) | The classical expression `x**2 + 1` describes the function; the three-bit Hadamard input requests all eight arguments coherently. | Passed |
+| [tutorials/basics/quantum_programming/qmod_tutorial_part1/overview](tutorials/basics/quantum_programming/qmod_tutorial_part1/overview/walkthrough.ipynb) | These are FlagQuantum Python programs; the historical directory name records the source lesson, not a requirement to learn another language. | Passed |
+| [tutorials/basics/quantum_programming/qmod_tutorial_part2/overview](tutorials/basics/quantum_programming/qmod_tutorial_part2/overview/walkthrough.ipynb) | The first pass runs each supplied solution with independent numerical checks. | Passed |
+| [tutorials/basics/quantum_programming/synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/walkthrough.ipynb) | Both runs compute the same coherent `x**2 + 1` function. | Passed |
+| [tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/walkthrough.ipynb) | The visible qfunc roots allocate three data bits and one of eight fractional phase widths, then invoke coherent QPE on the supplied 8-by-8 unitary. | Passed |
+| [tutorials/technology_demonstrations/arithmetic_expressions/overview](tutorials/technology_demonstrations/arithmetic_expressions/overview/walkthrough.ipynb) | The three input bits describe all eight `(x,y)` pairs. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/walkthrough.ipynb) | The visible native root retains the original ten logical bits and four phases, while [program.py](program.py) defines the source-specific block, projector phases and inverse sequence. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/walkthrough.ipynb) | The root allocates six data bits, three block bits and a QSVT auxiliary, then composes the shared [QSVT sequence](program.py). | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/walkthrough.ipynb) | The commented source is expressed entirely in native FlagQuantum. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview](tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/walkthrough.ipynb) | The native helper reconstructs the literal commented boxes, including their register wiring and half-turn rotations. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/walkthrough.ipynb) | The qfunc requests a coherent conditional increment/decrement on six position bits. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/walkthrough.ipynb) | This reconstruction deliberately retains the source cascade, including X on bit zero inside every cascade step. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/walkthrough.ipynb) | This is a FlagQuantum qfunc reconstruction of the commented source circuit; no external SDK is executed. | Passed |
+| [tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/walkthrough.ipynb) | The historical source is commented code, now reconstructed with FlagQuantum allocation, coherent control and modular arithmetic. | Passed |
+| [tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview](tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/walkthrough.ipynb) | The visible root below requests one coin-controlled modular shift using shared [reversible helpers](quantum.py). | Passed |
+| [tutorials/technology_demonstrations/hamiltonian_evolution/overview](tutorials/technology_demonstrations/hamiltonian_evolution/overview/walkthrough.ipynb) | The native builders in [benchmark.py](benchmark.py) bind a fresh 551-term, twelve-qubit water Hamiltonian into qfunc evolution requests. | Passed |
+| [tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/walkthrough.ipynb) | The same familiar arithmetic builds different reversible programs for unsigned, signed and fractional registers. | Passed |
+| [tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/walkthrough.ipynb) | The visible qfuncs combine arithmetic phases, coherent feasibility conditions and static repeated layers. | Passed |
+| [tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/walkthrough.ipynb) | The editable qfunc below expresses the negative cut count and the shared RX mixer across all four layers. | Passed |
+| [tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/walkthrough.ipynb) | The editable quantum program below applies the portfolio cost as a phase on three two-bit holdings, then mixes each bit. | Passed |
+| [tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/walkthrough.ipynb) | The editable program uses three unsigned two-bit holdings and a three-bit numeric slack. | Passed |
+| [tutorials/workshops/finance_workshops/option_pricing_workshop/overview](tutorials/workshops/finance_workshops/option_pricing_workshop/overview/walkthrough.ipynb) | The editable root below composes native probability loading, payoff rotations and bounded amplification. | Passed |
+| [tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview/walkthrough.ipynb) | The editable preparation root below composes the fresh two-asset model and its controlled payoff rotations. | Passed |
+| [tutorials/workshops/grover_workshop/grover_workshop/overview](tutorials/workshops/grover_workshop/grover_workshop/overview/walkthrough.ipynb) | The two drafts intentionally allocate seven qubits without an oracle or reflection. | Passed |
+| [tutorials/workshops/hhl_workshop/overview](tutorials/workshops/hhl_workshop/overview/walkthrough.ipynb) | The qfunc loads the RHS, performs finite-resolution QPE, rotates the indicator using a classical reciprocal table and applies the inverse QPE. | Passed |
+| [tutorials/workshops/oracle_workshop/oracles_workshop/overview](tutorials/workshops/oracle_workshop/oracles_workshop/overview/walkthrough.ipynb) | The bit oracle XORs a predicate into a target, preserving reversibility even for a nonzero target. | Passed |
+
+| [algorithms/quantum_walks/glued_trees/overview](algorithms/quantum_walks/glued_trees/overview/walkthrough.ipynb) | The twenty-qubit qfunc below requests the complete ordered 200-term evolution with ten repetitions. | Passed |
+| [algorithms/search_and_optimization/dqi/dqi_max_xorsat/overview](algorithms/search_and_optimization/dqi/dqi_max_xorsat/overview/walkthrough.ipynb) | The editable DQI root below requests symmetric amplitudes, sign phases, GF(2) encoding, the lookup decoder and final Hadamards. | Passed |
+| [algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview](algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/walkthrough.ipynb) | The visible roots express the ordinary penalized phase/mixer and the one-hot Grover composition. | Passed |
+| [algorithms/search_and_optimization/qaoa/overview](algorithms/search_and_optimization/qaoa/overview/walkthrough.ipynb) | The visible programs prepare coherent decision variables and compose cost and mixer helpers. | Passed |
+| [algorithms/search_and_optimization/quantum_likelihood_estimation/overview](algorithms/search_and_optimization/quantum_likelihood_estimation/overview/walkthrough.ipynb) | The editable factory below builds a one-qubit experiment from a selected Hamiltonian, preparation, evolution time and analysis rotations. | Passed |
+
+| [tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/overview](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/overview/walkthrough.ipynb) | The visible predicate encodes the six marked four-bit integers coherently. | Passed |
+| [tutorials/technology_demonstrations/hardware_aware_mcx/overview](tutorials/technology_demonstrations/hardware_aware_mcx/overview/walkthrough.ipynb) | The user specifies one coherent all-ones control over fifteen logical inputs. | Passed |
+| [tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/walkthrough.ipynb) | The editable root below uses the regenerated seven-vertex diagonal Hamiltonian and all ten QAOA layers. | Passed |
+
+| [tutorials/technology_demonstrations/hhl/hhl_example/overview](tutorials/technology_demonstrations/hhl/hhl_example/overview/walkthrough.ipynb) | The visible qfunc composes RHS preparation, finite QPE, a reciprocal rotation table and inverse QPE. | Passed |
 
 ## Separate FlagQuantum learning path
 
@@ -122,6 +224,15 @@ Named user readout does not require a physical-layout decoder.
    budget semantics. Do not compare opaque matrix counts with basis-gate counts.
 5. **Teaching navigation:** generated workflow links now name the original case
    rather than displaying dozens of indistinguishable `overview` entries.
+
+6. **Structured state families:** the community Gaussian tree example currently
+   builds an explicit Circuit, numerically verifies eight bits and only compiles
+   the 127-bit extension. A future qfunc family must preserve the tuned angle
+   and truncation semantics, and distinguish construction from simulation.
+7. **Signed arithmetic teaching:** the iQuHack fixed-point exercise uses a
+   Circuit sign-extension adder while its unsigned example uses native qfunc.
+   Reuse existing signed/fractional arithmetic support before defining another
+   interface; require the original all-branch phase and carry checks.
 
 These are scoped observations, not authorization to silently change protected
 public APIs or replace original-scale acceptance with smaller demonstrations.
@@ -164,3 +275,23 @@ are rerun before commit. A broader 632-node selection was intentionally stopped
 after 641.79 seconds, with 211 passes and no recorded failure, after entering
 unrelated large-state references. It is partial evidence, not a full corpus
 pass. The historical corpus and migration evidence remain unchanged.
+
+## Current editorial checkpoint
+
+**144/212 (67.9%)** accepted workflows have now been inspected and
+freshly replayed; **68** remain. Counts by category: Functions 31,
+Algorithms 45, Tutorials 49, Applications 1,
+Community 18. The six new lessons are separate from this denominator.
+
+Per-Notebook complete-cell exit status and elapsed time are retained in
+`notebook-ux-20261121/*-replay.json`. Only successful replays count here.
+The earlier raw default-suite and partial-catalog records above remain unchanged.
+A missing scientific dependency on the first QSVM replay was resolved by using
+the existing verified scientific runtime, and the retry passed. The first
+editable programming-part-II replay exposed a notebook variable shadowing the
+`phase` operation; renaming the result variable restored the intended operation,
+and its complete-cell retry passed. Original failing logs are retained.
+
+The solver/ML follow-up regression recorded **100 passes in 95.47 seconds**.
+No remote CI or release claim is made. All original workloads, random choices,
+independent references and approved migration denominators are preserved.
