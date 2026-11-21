@@ -17,7 +17,13 @@ from ..lowering.basis_translation import translate
 from ._cz_local_cleanup import compact_native_cz_locals
 from .commutation_cancellation import merge_commuting_rotations
 from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul
-from .two_qubit_synthesis import synthesize_two_qubit
+from .two_qubit_synthesis import (
+    _is_unitary,
+    _prepared_basis,
+    _swap_register,
+    _weyl_decomposition,
+    synthesize_two_qubit,
+)
 
 # Bound matrix-product error and synthesis work per block. Larger programs are
 # streamed as multiple blocks; this is not a circuit-size admission limit.
@@ -127,15 +133,25 @@ def _candidate(
     if product is None:
         reject("synthesis_unavailable")
         return None
+    limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS
+    if max_output_operations is not None:
+        limit = min(limit, max_output_operations)
+    if cz_count <= 3 and limit >= 32 and _is_unitary(product):
+        count = _prepared_basis("cz").entangler_count(
+            _weyl_decomposition(_swap_register(product))
+        )
+        # The existing general CZ form emits two local factors per layer,
+        # each with at most five RZ/RX leaves. Only prune when that entire raw
+        # form fits, preserving instruction-growth rejection precedence.
+        if count >= cz_count and limit >= count + 10 * (count + 1):
+            reject("not_lower_cz_cost")
+            return None
     candidate = synthesize_two_qubit(
         product, qubits=pair, entangler="cz", z_rotation="rz", pulse_opcode="rx"
     )
     if candidate is None or any(item.name not in _BASIS for item in candidate):
         reject("synthesis_unavailable")
         return None
-    limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS
-    if max_output_operations is not None:
-        limit = min(limit, max_output_operations)
     if len(candidate) > limit:
         reject("instruction_growth_rejected")
         return None
