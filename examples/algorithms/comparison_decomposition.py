@@ -10,6 +10,9 @@ from dataclasses import replace
 from typing import Literal, cast
 
 from examples.algorithms.subtraction_decomposition import subtraction_symbols
+from flagquantum.compiler.registers.comparison._component_gates import (
+    comparison_bit_functions,
+)
 from flagquantum.compiler.registers.comparison.constant_component import (
     less_than_constant_program,
 )
@@ -31,7 +34,8 @@ from flagquantum.compiler.registers.comparison.tree_component import (
     mixer_program,
     single_qubit_comparison_program,
 )
-from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.addition_symbols import addition_wire_symbol
@@ -52,6 +56,35 @@ from flagquantum.drawer.register_score_data import (
     SymbolClass,
     register_score_data,
 )
+
+
+def symbolic_greater_than_program(ports: Signature) -> ProgramRecord:
+    """Retain GreaterThan's source graph with a declared symbolic comparison.
+
+    Word widths remain unresolved. The existing one-bit X definition is reused,
+    and physical admission remains with the register binder.
+    """
+    comparison = FunctionRecord(
+        "LessThanEqual",
+        (),
+        registers=tuple(
+            Signature.build_from_dtypes(
+                x=ports[0].dtype, y=ports[1].dtype, target=ports[2].dtype
+            )
+        ),
+    )
+    x_gate, _ = comparison_bit_functions()
+    builder = ComponentProgramBuilder(ports, (comparison, x_gate))
+    result = builder.call_dict(
+        comparison.name,
+        {
+            "x": builder.inputs["a"],
+            "y": builder.inputs["b"],
+            "target": builder.inputs["target"],
+        },
+    )
+    target = builder.call_dict(x_gate.name, {"q": result["target"]})["q"]
+    return builder.finalize({"a": result["x"], "b": result["y"], "target": target})
 
 
 def comparison_catalog_program(

@@ -4,7 +4,10 @@
 
 """Qualify stored comparison trees through their existing executable owners."""
 
-from examples.algorithms.comparison_decomposition import comparison_symbols
+from examples.algorithms.comparison_decomposition import (
+    comparison_symbols,
+    symbolic_greater_than_program,
+)
 from flagquantum.compiler.registers.comparison.ordering_component import (
     greater_than_program,
     less_equal_program,
@@ -18,6 +21,7 @@ from flagquantum.compiler.registers.component_definition_match import (
 )
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.registers import RegisterSide
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.register_score_data import RegisterWireSymbolSupplier
 
 
@@ -66,6 +70,17 @@ def comparison_child_decomposition(
                     greater_than_program(registers[0].bitsize, registers[1].bitsize),
                 )
             )
+    elif (
+        ports == ("a", "b", "target")
+        and any(type(register.bitsize) is not int for register in registers[:2])
+        and all(
+            register.dtype.encoding == "uint" and not register.shape_symbolic
+            for register in registers[:2]
+        )
+    ):
+        candidates.append(
+            ("GreaterThan", symbolic_greater_than_program(Signature(registers)))
+        )
     return next(
         (
             (label, template, comparison_symbols(template, label, {}))

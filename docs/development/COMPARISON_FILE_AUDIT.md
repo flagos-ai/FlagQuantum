@@ -212,3 +212,16 @@ mixer, single-bit comparison and erasure definitions retain prior acceptance.
 The execution owner, phases, measurements, work ownership and primitive resource
 stream remain unchanged. See SORTING_FILE_AUDIT.md and the durable
 `g2-sorting-child-*20261122` receipts for whole-tree evidence.
+
+## Symbolic GreaterThan graph dependency — 2026-11-22
+
+The symbolic sorting consumers now reuse a complete GreaterThan graph with the
+original LessThanEqual call followed by X. The child comparison retains its
+unresolved unsigned word widths as a typed declaration. The X definition comes
+from the existing native comparison bit owner. Full reachable-definition
+matching qualifies this graph before source class labels and wire symbols are
+used. Every original source-success descendant across all six sorting catalog
+factories is traversed and compared, including these symbolic GreaterThan calls.
+The original symbolic LessThanEqual decomposition refusal remains explicit.
+Physical binding still rejects unresolved widths. Frozen sources are unchanged.
+See SORTING_FILE_AUDIT.md and `g2-symbolic-sorting-recursive-20261122.json`.
