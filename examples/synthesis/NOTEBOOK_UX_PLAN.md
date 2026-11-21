@@ -115,7 +115,7 @@ The editorial denominator and these implementation steps are independent.
 | Work | Delivered locally | Remaining acceptance |
 | --- | --- | --- |
 | Amplitude construction | `b7d7d4383`: replace the Compiler's quadratic Walsh loop with an O(N log N), O(N)-storage butterfly; 69 preparation/conformance tests passed | The [bounded capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md) is pending explicit approval. The public 256-entry cap remains. The full-image native workflow is not yet claimed. |
-| Repeated inspection | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed; protected API check passed | This removes duplicate work, not synthesis-time specialization. Runtime parameter reuse still requires its own measured design and admission. |
+| Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
 | Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. Banded construction and general QSVT composition remain explicit follow-ups; no new public abstraction. |
 | Named sampling | Existing bounded readers and sampling adapters remain authoritative | Reuse their bit-order and conditional-denominator contracts in application workflows; introduce no competing sampler. |
 | Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
@@ -138,6 +138,18 @@ and probability mass were retained. Other acceptance jobs were running, so these
 are not controlled benchmark ratios. Every later call still validates mutable
 controls; a distinct, serialized result plan still receives its own inspection.
 Raw before/after measurements remain separate from the original resource baseline.
+
+The QSVM feature-map diagnostic compares four nonzero angle triples with five
+trials after warmup. Concrete qfunc specialization, symbolic Circuit binding
+and accepted-plan runtime inputs produce the same complete complex state within
+1.3e-16, retaining two qubits and ten logical operations. Local median synthesis,
+execution and named reading were approximately 3.48, 1.12 and 1.19 ms;
+existing runtime-plan execution was 1.16 ms. Other checks were active, so these
+are diagnostics rather than a throughput claim. Python-traced compilation peaks
+were about 106--108 kB; that is not total process or tensor peak memory. The
+intrusive C1--C6 profile is retained separately from primary wall-time samples.
+The variational tutorial demonstrates the existing runtime route directly,
+including the need to admit a gradient-capable plan on its first execution.
 
 
 ## Validation policy

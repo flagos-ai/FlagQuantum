@@ -22,7 +22,14 @@ application reproductions remain in the five category catalogs.
 Independent acceptance is in
 `tests/integration/test_synthesis_learning_path.py`. The checks cover complete
 complex states, clean temporary storage, named outputs, connectivity and actual
-variational energy evaluations. To execute all lessons and their references:
+variational energy evaluations.
+
+The variational lesson also contrasts concrete qfunc specialization with the
+existing Circuit runtime-input route. Three nonzero tensor angles reuse one
+accepted plan and check actual energies and PyTorch gradients. This does not
+claim symbolic runtime inputs for qfunc or a compile cache.
+
+To execute all lessons and their references:
 
 ```sh
 python -m pytest tests/integration/test_synthesis_learning_path.py -q

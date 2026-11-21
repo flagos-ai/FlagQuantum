@@ -121,6 +121,15 @@ def test_variational_objective_records_actual_quantum_energies() -> None:
     assert min(value for _, value in evaluations) == pytest.approx(
         -math.sqrt(1.01), abs=1e-10
     )
+    runtime = cast(list[tuple[float, float, float]], namespace["runtime_evaluations"])
+    assert [angle for angle, _, _ in runtime] == [0.31, -0.47, 1.13]
+    for angle, energy, gradient in runtime:
+        assert energy == pytest.approx(
+            math.cos(angle) + 0.1 * math.sin(angle), abs=1e-12
+        )
+        assert gradient == pytest.approx(
+            -math.sin(angle) + 0.1 * math.cos(angle), abs=1e-12
+        )
 
 
 @pytest.mark.parametrize(
