@@ -5,7 +5,7 @@ restore the logical output layout. Restoration is repeated while comparing
 routing trials and initial placements, so its classical planning cost affects
 ordinary compilation even though it emits no additional quantum work.
 
-`compiler/topology/sabre.py:restore_swaps` fixes one leaf of a spanning forest at
+`compiler/topology/layout_restore.py:restore_swaps` fixes one leaf of a spanning forest at
 a time. Previously it searched for the token-to-leaf path again after each
 SWAP. The active tree does not change during that walk: only token positions
 change. The implementation now finds the path once and walks its consecutive
