@@ -166,7 +166,7 @@ def _collect_blocks(
     barrier: Callable[[Instruction], bool] | None = None,
     identity_reader: MatrixReader | None = None,
 ) -> Iterator[tuple[tuple[int, int], tuple[int, ...]]]:
-    """Collect bounded pair blocks, optionally closing entangling identity prefixes.
+    """Collect bounded pair blocks, checking identity prefixes only at capacity.
 
     Leading locals still join a closed prefix. The caller must synthesize and
     verify that complete block; prefix detection only proposes a split point.
@@ -174,13 +174,9 @@ def _collect_blocks(
     open_blocks: dict[tuple[int, int], list[int]] = {}
     wire_blocks: dict[int, tuple[int, int]] = {}
     claimed: set[int] = set()
-    products: dict[tuple[int, int], Matrix | None] = {}
-    entanglers: dict[tuple[int, int], int] = {}
 
     def close(pair: tuple[int, int]) -> tuple[int, ...]:
         positions = open_blocks.pop(pair)
-        products.pop(pair, None)
-        entanglers.pop(pair, None)
         for wire in pair:
             del wire_blocks[wire]
         # Use the existing two-qubit collector's exclusive leading-member rule.
@@ -228,8 +224,6 @@ def _collect_blocks(
             pair = (min(left, right), max(left, right))
             if readable(index, pair):
                 open_blocks[pair] = []
-                products[pair] = _IDENTITY
-                entanglers[pair] = 0
                 for wire in pair:
                     wire_blocks[wire] = pair
             else:
@@ -238,22 +232,31 @@ def _collect_blocks(
             continue
         open_blocks[pair].append(index)
         claimed.add(index)
-        identity_prefix = False
-        if identity_reader is not None:
-            matrix = identity_reader(instruction, pair)
-            product = products[pair]
-            product = (
-                None if matrix is None or product is None else _matmul(matrix, product)
-            )
-            products[pair] = product
-            entanglers[pair] += len(instruction.wires) == 2
-            identity_prefix = (
-                entanglers[pair] >= 2
-                and product is not None
-                and _verified(product, _IDENTITY)
-            )
-        if identity_prefix or len(open_blocks[pair]) == _MAX_BLOCK_OPERATIONS:
+        if len(open_blocks[pair]) == _MAX_BLOCK_OPERATIONS:
+            positions = open_blocks[pair]
+            split = len(positions)
+            if identity_reader is not None:
+                product = _IDENTITY
+                entanglers = 0
+                # Short blocks keep their existing collection fast path. Only
+                # a forced split needs a search for a better bounded boundary.
+                for offset, position in enumerate(positions, 1):
+                    member = program.instructions[position]
+                    matrix = identity_reader(member, pair)
+                    if matrix is None:
+                        break
+                    product = _matmul(matrix, product)
+                    entanglers += len(member.wires) == 2
+                    if entanglers >= 2 and _verified(product, _IDENTITY):
+                        split = offset
+                        break
+            suffix = positions[split:]
+            open_blocks[pair] = positions[:split]
             yield pair, close(pair)
+            if suffix:
+                open_blocks[pair] = suffix
+                for wire in pair:
+                    wire_blocks[wire] = pair
     for pair in tuple(open_blocks):
         yield pair, close(pair)
 
