@@ -320,3 +320,50 @@ existing parser, notebook-presentation and source-protobuf warnings. Strict
 checking of the provider and both touched test files, Black, Ruff, Integration
 scope, architecture, multi-level IR, public API baseline and whitespace checks
 pass. The actual module entry also passes in an isolated temporary directory.
+
+## Complete Modular Arithmetic native instance catalog
+
+`examples/algorithms/modular_ui_export.py` covers all seven Modular Arithmetic
+notebooks, twenty documentation groups and thirty-five actual source factories.
+Run `python -m examples.algorithms.modular_ui_export`. The normal module entry
+produces thirty-six JSON files, twenty documentation files and thirty-five fresh
+atomic typed interface diagrams. Empty RSA and double-phase ECC root signatures,
+2048-bit ModExp output, symbolic words and the four-element ECC control array
+are rendered without allocating execution wires.
+
+Modular addition, subtraction, multiplication and inverse examples retain their
+existing domain catalog objects. RSA instances use ModularExponentiation and
+RSAPhaseEstimation directly. ECC uses the existing signature functions,
+EllipticCurveFixedPointAddition, ECPoint and concrete
+EllipticCurveWindowAddition. Symbolic ECC interface metadata uses the existing
+signature functions instead of passing symbolic widths to int-only executable
+class constructors. A small UI tuple associates these heterogeneous signatures
+with their operation label, parameter mapping and authoritative native owner.
+No execution class hierarchy or program IR is introduced.
+
+Every source factory name, documentation group, example order, exact parameter
+object, encoded parameter dictionary and filename matches the original group.
+Port comparisons retain nominal encoding, symbolic widths and assumptions,
+Montgomery modulus presence or absence, shape and LEFT/RIGHT/THRU lifetime.
+Nested point coordinates, modulus, curve coefficient and both window parameters
+are included. Concrete modular doubling keeps its original nested dtype metadata.
+ECAdd's unbound Montgomery descriptor remains distinct from its algorithm modulus.
+
+This export emits atomic interfaces. Complete per-instance decomposition graphs
+and source per-gate glyph parity remain open. The metadata workflow adds no
+physical gates or resource estimates. Existing complete modular-source tests and
+RSA/ECC tests supply reused primitive-stream, full-complex-amplitude, applicable
+measurement-history, clean-work and independent model evidence. Dirty source
+lifetimes and out-of-promise ECC domains retain their existing audit boundaries.
+The source files and reference defects remain unchanged.
+
+Native instance providers now cover one hundred of 237 documentation references
+and 160 of 359 factories. Eight catalog sections still contain 137 documentation
+references and 199 factories. Q0120 remains open for these providers, complete
+decomposition drawings and the fresh whole-catalog run. Prior complete exporter
+and Jupyter evidence is reused because the exporter has not changed.
+
+The concentrated modular batch passes 800 checks with zero skips and fourteen
+existing notebook-parser warnings. Strict typing of both added files, Black,
+Ruff, Integration scope, architecture, multi-level IR, public API baseline and
+whitespace checks pass. The isolated actual module entry also passes.

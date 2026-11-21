@@ -517,3 +517,11 @@ lifetimes. Signed conditional arithmetic has distinct filenames where the source
 metadata encoder collides. Complete decomposition drawings remain tracked in
 `docs/development/COMPONENT_UI_EXPORT_AUDIT.md`. Existing arithmetic components
 continue to own execution through `circuit.append(op)` and resource estimates.
+
+Run `python -m examples.algorithms.modular_ui_export` for all seven Modular
+Arithmetic notebook entries, including their RSA and ECC factories. Thirty-five
+fresh atomic interfaces preserve empty roots, Montgomery descriptors, symbolic
+expressions and shaped control ports. Physical execution, measured primitive
+counts and analytical resource models remain with the existing native owners.
+Complete decomposition graph coverage is tracked in
+`docs/development/COMPONENT_UI_EXPORT_AUDIT.md`.
