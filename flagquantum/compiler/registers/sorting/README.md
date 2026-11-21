@@ -76,3 +76,14 @@ same declarations. Merge uses LEFT input arrays and RIGHT result/history, while
 sort uses THRU words and RIGHT history. Run the sorting declaration and foreign
 consumer tests for the shortest checks, and see `SORTING_FILE_AUDIT.md` for the
 original direct SDK merge wrapper failure and its composite conversion evidence.
+
+`network_graph.py` owns finite array wiring for parallel comparison, bitonic merge
+and recursive sort. Its supplied comparator entry has `a`/`b` THRU words and one
+RIGHT `out` bit. The comparator owns its temporary workspace. Concrete component
+factories supply the existing executable comparator. Symbolic example graphs
+supply the same typed interface with unresolved word widths. Both consumers use
+the same pair order, left/right/merge call order and retained logical histories.
+Physical-width validation and exact inverse construction remain with component
+factories and binding. Run `tests/unit/test_sorting_graph.py` for a replaceable
+comparator example and `tests/unit/test_sorting_component.py` for normal append,
+source streams, measured branches and inverse cleanup.
