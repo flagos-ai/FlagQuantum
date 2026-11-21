@@ -117,7 +117,7 @@ The editorial denominator and these implementation steps are independent.
 | Amplitude construction | `b7d7d4383`: replace the Compiler's quadratic Walsh loop with an O(N log N), O(N)-storage butterfly; 69 preparation/conformance tests passed | The [bounded capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md) is pending explicit approval. The public 256-entry cap remains. The full-image native workflow is not yet claimed. |
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
 | Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; banded construction and general reusable QSVT APIs remain follow-ups. |
-| Named sampling | Existing bounded readers and sampling adapters remain authoritative | Reuse their bit-order and conditional-denominator contracts in application workflows; introduce no competing sampler. |
+| Named sampling | Bell and QSVT lessons use existing `fq.counts`/`fq.samples` on synthesized Circuit IR, selecting wires from named ports; the original joint draw is preserved for conditioning | Sealed Program output overrides still refuse. A direct named finite-shot convenience surface requires separate API admission; no competing sampler was introduced. |
 | Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
 
@@ -180,3 +180,19 @@ route with a different instruction vocabulary, not an efficiency comparator.
 The 26 scenario tests and all 12 Notebook stages pass. An initial column-probe
 used unsupported classical-name basis assignment; it was changed to the existing
 explicit amplitude-preparation API without changing compiler semantics.
+
+## Finite-shot execution checkpoint
+
+The Bell lesson requests 4096 real local draws with the existing Runtime API,
+using its named port mapping and a named measurement result. Tests retain exact
+Bell amplitudes separately, check same-seed reproducibility, changed-seed draws,
+shot totals and the Program override/result-identity refusals.
+
+The native QSVT lesson samples all response flags and data in one joint request.
+It reports unconditional flag acceptance and conditional data frequencies with
+the accepted-shot denominator. Independent checks compare the empirical histogram
+with the matrix-exponential distribution and verify asymmetric requested-wire
+order. Zero accepted shots refuse conditional estimation rather than inventing
+a distribution. This creates a separate measurement plan on the same IR; it is
+not runtime mutation of the sealed synthesis plan or a direct named shot reader.
+The 98 focused lesson, QSVT and existing observable-output tests pass.

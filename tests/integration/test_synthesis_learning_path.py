@@ -31,6 +31,34 @@ def test_bell_relative_phase_and_named_readout() -> None:
     assert namespace["outcomes"] == pytest.approx({(0,): 0.5, (3,): 0.5})
 
 
+def test_bell_runtime_counts_are_seeded_and_separate_from_exact_readout() -> None:
+    namespace = run_lesson("01_states")
+    program = cast(synth.Program, namespace["program"])
+    counts = cast(dict[str, int], namespace["shot_counts"])
+    assert sum(counts.values()) == 4096
+    assert set(counts) == {"00", "11"}
+    repeated = fq.run(
+        program.circuit,
+        outputs=fq.counts(qubits=program.registers["pair"], name="pair"),
+        options=fq.ExecutionOptions(shots=4096, seed=37),
+    )
+    assert repeated.measurement("pair").value[0] == counts
+    other = fq.run(
+        program.circuit,
+        outputs=fq.counts(qubits=program.registers["pair"], name="pair"),
+        options=fq.ExecutionOptions(shots=4096, seed=91),
+    )
+    assert other.counts[0] != counts
+    assert counts["00"] / 4096 == pytest.approx(0.5, abs=0.05)
+    assert namespace["outcomes"] == pytest.approx({(0,): 0.5, (3,): 0.5})
+    # A measured IR is a distinct result identity; it must not impersonate the
+    # original sealed synthesis execution.
+    with pytest.raises((TypeError, ValueError)):
+        program.probabilities(repeated, registers=("pair",))
+    with pytest.raises(TypeError, match="execution overrides"):
+        fq.run(program, outputs=fq.counts(), shots=4096)
+
+
 def test_computation_preserves_every_input_and_cleans_workspace() -> None:
     namespace = run_lesson("02_computation")
     program = cast(synth.Program, namespace["program"])

@@ -484,3 +484,10 @@ three budget refusals are covered. The 212/212 editorial denominator is unchange
 the native route's ten qubits are recorded separately from the six-qubit packed
 Circuit. Raw preflight, initial refusal and corrected acceptance logs remain in
 the local `notebook-ux-20261121` evidence directory.
+
+
+Finite-shot teaching now uses the authoritative Runtime API in the Bell and
+Hamiltonian-QSVT examples. The 98 related checks cover exact versus empirical
+results, seeded counts, joint-shot correlation, the accepted-shot denominator,
+requested bit order and the sealed synthesis boundary. All changed cells replay;
+no new sampling algorithm or public export was introduced.

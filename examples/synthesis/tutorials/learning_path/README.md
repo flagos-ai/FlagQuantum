@@ -34,3 +34,9 @@ To execute all lessons and their references:
 ```sh
 python -m pytest tests/integration/test_synthesis_learning_path.py -q
 ```
+
+The state lesson also requests actual finite-shot counts through existing
+`fq.counts`, selecting the synthesized Circuit's named `pair` mapping. This
+creates a separate measurement plan; sealed synthesis Programs currently refuse
+shot/output overrides. Exact named probabilities, sampled frequencies and
+reported shot uncertainty are kept distinct. No second sampling API is added.

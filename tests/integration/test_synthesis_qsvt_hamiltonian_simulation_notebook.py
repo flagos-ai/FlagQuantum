@@ -184,3 +184,45 @@ def test_native_sequence_refuses_insufficient_budget(
             workflow.input_state(),
             **constraints,
         )
+
+
+def test_native_joint_samples_keep_named_order_and_conditional_denominator(
+    fitted_source: workflow.Result,
+) -> None:
+    import flagquantum as fq
+    from examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.hamiltonian_simulation_qsvt.overview import (
+        quantum,
+    )
+
+    program = quantum.build_program(
+        fitted_source.cosine, fitted_source.sine, workflow.input_state()
+    )
+    names = ("parity", "branch", "selection", "data")
+    wires = tuple(wire for name in names for wire in program.registers[name])
+    result = fq.run(
+        program.circuit,
+        outputs=fq.samples(qubits=wires, name="joint"),
+        options=fq.ExecutionOptions(shots=4096, seed=37),
+    )
+    rows = result.measurement("joint").value[0]
+    accepted = rows[:, :4].sum(dim=1) == 0
+    count = int(accepted.sum())
+    assert count / len(rows) == pytest.approx(
+        fitted_source.success_probability, abs=0.04
+    )
+    # Data[0] has the high tensor-product significance in the named view.
+    values = 2 * rows[accepted, 4] + rows[accepted, 5]
+    histogram = torch.bincount(values, minlength=4).double() / count
+    expected = fitted_source.expected.abs().square()
+    torch.testing.assert_close(histogram, expected, atol=0.07, rtol=0)
+    assert float(histogram.sum()) == pytest.approx(1)
+    assert float((torch.bincount(values, minlength=4) / len(rows)).sum()) < 0.3
+    # Reverse the requested port order on a deterministic basis state to detect
+    # a convention error that a symmetric Bell distribution cannot reveal.
+    basis = fq.Circuit(3).x(0)
+    ordered = fq.run(
+        basis,
+        outputs=fq.counts(qubits=(2, 0, 1), name="reordered"),
+        options=fq.ExecutionOptions(shots=7, seed=37),
+    )
+    assert ordered.measurement("reordered").value == [{"010": 7}]
