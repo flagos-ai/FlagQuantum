@@ -186,7 +186,7 @@ def main() -> None:
         "evidence_class": "development",
         "suite": args.suite,
         "source_sha256": hashlib.sha256(Path(sabre.__file__).read_bytes()).hexdigest(),
-        "harness_commit": _HARNESS_COMMIT if args.suite == "applications" else None,
+        "source_commit": _HARNESS_COMMIT if args.suite == "applications" else None,
         "limits": "Inspected inputs, shared CPU host; no held-out, memory, ranking or qualified timing claims. Generic depths count logical CX/SWAP. Applications at n=8,12 verify only three probes.",
         "outcomes": outcomes,
     }

@@ -2,7 +2,6 @@
   "evidence_class": "development",
   "suite": "generic",
   "source_sha256": "c37cedb830683898ddb3467291f49d1c00e4e0dd33e661c3bbd9b4ca1a75caac",
-  "harness_commit": null,
   "limits": "Inspected inputs, shared CPU host; no held-out, memory, ranking or qualified timing claims. Generic depths count logical CX/SWAP. Applications at n=8,12 verify only three probes.",
   "outcomes": [
     {
@@ -2647,5 +2646,7 @@
     }
   ],
   "base_commit": "cf5fc36c29c3f9162b6b58054f8163c98944e33d",
-  "normalization": "Duplicate successful stdout JSON removed after equality check; all parsed fields and numerical values retained."
+  "normalization": "Duplicate successful stdout JSON removed after equality check; all parsed fields and numerical values retained. The harness_commit field was renamed to the existing source_commit provenance vocabulary without changing its value; source_commit_role identifies its owner.",
+  "source_commit": null,
+  "source_commit_role": "No external harness used for the generic suite"
 }
