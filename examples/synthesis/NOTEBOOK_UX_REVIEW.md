@@ -312,9 +312,13 @@ Named user readout does not require a physical-layout decoder.
    rather than displaying dozens of indistinguishable `overview` entries.
 
 6. **Structured state families:** the community Gaussian tree example currently
-   builds an explicit Circuit, numerically verifies eight bits and only compiles
-   the 127-bit extension. A future qfunc family must preserve the tuned angle
-   and truncation semantics, and distinguish construction from simulation.
+   executes its eight-bit stage through native qfunc and only compiles the
+   127-bit extension through Circuit. The native program preserves the fitted
+   angles and thresholds, and exposes a controlled helper and pairwise phases.
+   All 17 cells replayed; 18 related tests passed, including independent full
+   states at widths two, five and eight and the unchanged large-stage schedule.
+   The source-sized qfunc state error was below 6e-17 with no phase alignment.
+   Larger native compile-only construction remains distinct from execution.
 7. **Signed arithmetic teaching:** the iQuHack fixed-point exercise uses a
    Circuit sign-extension adder while its unsigned example uses native qfunc.
    Reuse existing signed/fractional arithmetic support before defining another

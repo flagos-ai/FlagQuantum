@@ -15,9 +15,9 @@ separately in [the improvement plan](NOTEBOOK_UX_PLAN.md).
 
 | Visible teaching surface | Count |
 | --- | ---: |
-| Delegated quantum construction | 19 |
+| Delegated quantum construction | 18 |
 | Visible Circuit construction | 18 |
-| Visible qfunc definition | 175 |
+| Visible qfunc definition | 176 |
 
 ## Review priorities
 
@@ -156,7 +156,7 @@ not a complete dependency graph. Counts recognize literal `qfunc`,
 | [community/basics/vqe/overview/walkthrough.ipynb](community/basics/vqe/overview/walkthrough.ipynb) | Visible qfunc definition | 3 | 1 | 1 | 0 | — |
 | [community/hackathons/iquhack_2025/challenge_template/overview/walkthrough.ipynb](community/hackathons/iquhack_2025/challenge_template/overview/walkthrough.ipynb) | Visible qfunc definition | 17 | 2 | 1 | 0 | — |
 | [community/hackathons/iquhack_2025/gaussian_reference/overview/walkthrough.ipynb](community/hackathons/iquhack_2025/gaussian_reference/overview/walkthrough.ipynb) | Visible qfunc definition | 19 | 1 | 1 | 0 | — |
-| [community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb](community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb) | Delegated quantum construction | 17 | 0 | 0 | 0 | — |
+| [community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb](community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb) | Visible qfunc definition | 17 | 2 | 0 | 0 | — |
 | [community/hackathons/iquhack_2025/workshop/overview/walkthrough.ipynb](community/hackathons/iquhack_2025/workshop/overview/walkthrough.ipynb) | Visible qfunc definition | 16 | 1 | 1 | 0 | — |
 | [community/hackathons/qinnovision_2025/advection_equation/second_place/overview/walkthrough.ipynb](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/walkthrough.ipynb) | Delegated quantum construction | 20 | 0 | 0 | 0 | [main.py](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/main.py), [physics.py](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/physics.py), [plots.py](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/plots.py), [quantum.py](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/quantum.py), [workflow.py](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/workflow.py) |
 | [community/hackathons/qinnovision_2025/advection_equation/winning/overview/walkthrough.ipynb](community/hackathons/qinnovision_2025/advection_equation/winning/overview/walkthrough.ipynb) | Delegated quantum construction | 51 | 0 | 0 | 0 | [main.py](community/hackathons/qinnovision_2025/advection_equation/winning/overview/main.py), [physics.py](community/hackathons/qinnovision_2025/advection_equation/winning/overview/physics.py), [plots.py](community/hackathons/qinnovision_2025/advection_equation/winning/overview/plots.py), [quantum.py](community/hackathons/qinnovision_2025/advection_equation/winning/overview/quantum.py), [workflow.py](community/hackathons/qinnovision_2025/advection_equation/winning/overview/workflow.py) |

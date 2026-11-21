@@ -119,6 +119,7 @@ The editorial denominator and these implementation steps are independent.
 | Block/QSVT composition | Existing native control, inverse and domain kernels remain available | Select a complete original CFD/plasma path and verify borrowing, normalization, phase, cleanup and budgets before introducing a new public abstraction. |
 | Named sampling | Existing bounded readers and sampling adapters remain authoritative | Reuse their bit-order and conditional-denominator contracts in application workflows; introduce no competing sampler. |
 | Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | The original workshop still needs 39 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
+| Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
 
 The signed workshop preflight retains all 256 input pairs and all 64 arbitrary
 XOR targets, checked with exact reversible simulation under both schedules.

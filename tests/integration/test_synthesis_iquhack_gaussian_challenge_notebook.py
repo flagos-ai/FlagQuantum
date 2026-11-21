@@ -16,7 +16,10 @@ def test_original_eight_bit_starter_and_exact_reference() -> None:
     stage = workflow.build(1)
     observed = workflow.compare(stage)
     assert workflow.resources(stage.starter) == (8, 8, 1, 0)
-    assert workflow.resources(stage.reference) == (8, 509, 502, 254)
+    # The Walsh butterfly leaves one fewer nonzero roundoff rotation than the
+    # historical character sums (509 operations / 502 depth). Keep exact current
+    # costs and the independent full-state Gaussian checks below.
+    assert workflow.resources(stage.reference) == (8, 508, 501, 254)
     assert len(observed.grid) == len(observed.starter) == len(observed.reference) == 256
     assert observed.starter_mse > 1e-6
     assert observed.reference_mse < 1e-25
