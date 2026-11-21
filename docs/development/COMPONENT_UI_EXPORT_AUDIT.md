@@ -616,3 +616,52 @@ resource accounts. This catalog owns metadata and interfaces. Strict typing of
 two files, Black, Ruff, Integration scope, architecture, IR, API and whitespace
 checks pass. The reference availability check confirms Qualtran 0.7.0 and the
 locked Kickmix extension 0.1 with Simulator present and binary hash recorded.
+
+## Complete Rotations instance group
+
+`examples.algorithms.rotations_ui_export` maps all eighteen original notebooks,
+thirty documentation references and forty-nine actual factories. Native
+rotation and SU(2) primitives, variable/cost phasing catalogs, phase-gradient
+addition and constant rotations, Fourier declarations, phase-window owners and
+seeded Ising, sparse-chemistry and THC declarations supply its interfaces.
+The large THC case regenerates the original RandomState(7) tensors in their
+original order. Existing native preprocessing regenerates all 101551 alias rows,
+including signs, alternates, keep values, normalization and block exponent.
+No reference package is imported by the native provider.
+
+The complete nominal port descriptors match the actual source factories.
+All declaration orders match except walk-derived interfaces, where the frozen
+walk uses a set union. Native deterministic named order is retained and tested
+against the complete source descriptor set. Forty-seven factory metadata
+encodings and filenames match exactly, including actual symbolic assumptions,
+fixed-point formats, RIGHT phase outputs, complex values and full lookup tuples.
+The Ising walk and Ising QPE retain signed Pauli strings and complex coefficients
+explicitly. Their source encoder discards foreign Pauli objects as sentinels.
+These two intentional native metadata and filename extensions are tested.
+
+The original two square-cost phasing factories collide on one filename despite
+different gradient ports. Two symbolic textbook QPE precision factories also
+collide because their different expression widths encode as unsupported-object
+sentinels. Both collisions retain the source's first-file behavior. Each
+individual native interface score is independently non-null, and both colliding
+pairs have distinct scores. The test compares each emitted file against the
+first retained instance without claiming that file represents both interfaces.
+
+The actual isolated module entry produces forty-eight JSON files including
+navigation, thirty documentation files and forty-seven fresh non-null atomic
+interface diagrams. Coverage reaches 198 of 237 documentation references and
+318 of 359 factory references. Chemistry remains with thirteen notebooks,
+thirty-nine document references and forty-one factory references. Full
+per-instance decomposition graphs, source gate glyph parity and fresh whole-
+catalog execution remain open.
+
+The reference-only restored OpenFermion 1.6.1 environment now runs both original
+THC walk and THC QPE factories. Its explicit dependency path is confined to the
+source validation lane. The native provider adds no dependency or executable
+storage admission. Concentrated component-family regression passes 783 checks,
+with seventeen existing parser/deprecation/environment warnings and zero skips.
+All 52 focused factory/export checks are included. Existing full complex-state,
+measurement-branch, work-zero, source operand/feedback, phase/window/Fourier and
+walk evidence is reused through those owners. Observed primitive counts and
+analytical resource estimates remain separate. Strict typing of two files,
+Black, Ruff, Integration scope, architecture, IR, API and whitespace checks pass.

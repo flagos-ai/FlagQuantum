@@ -571,3 +571,10 @@ references and thirty-eight factory instances. Three QROMBase references share
 one documentation file, and the two identical sparse-alias factories retain one
 instance file. Diagrams show atomic nominal ports. The UI audit records the
 native Pauli metadata extension and unordered source Hubbard register union.
+
+`python -m examples.algorithms.rotations_ui_export` covers the complete Rotations
+group through native phase, Fourier, window and chemistry-walk owners. All
+forty-nine original factories are compared with their actual parameters and
+nominal descriptors. Frozen metadata collisions keep the first exported file.
+The audit records deterministic native walk port order and explicit signed
+Pauli metadata separately from source-equivalent parameter encodings.
