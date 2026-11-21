@@ -1,9 +1,11 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 dev_tools/qualtran_dev_tools/notebook_execution.py.
+# Command entry adapted from dev_tools/execute-notebooks.py.
 
 """Execute tracked documentation notebooks and export their accepted outputs."""
 
+import argparse
 import multiprocessing
 import os
 import random
@@ -242,3 +244,28 @@ def execute_and_export_notebooks(
         :10
     ]:
         print(f"{result.duration_s:5.2f}s {result.nb_in}")
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    """Execute tracked notebooks with the original export and freshness defaults."""
+    parser = argparse.ArgumentParser()
+    for name, default in (
+        ("--output-nbs", True),
+        ("--output-md", False),
+        ("--only-out-of-date", True),
+    ):
+        parser.add_argument(
+            name, action=argparse.BooleanOptionalAction, default=default
+        )
+    parser.add_argument("--n-workers", type=int, default=None)
+    args = parser.parse_args(argv)
+    execute_and_export_notebooks(
+        output_nbs=args.output_nbs,
+        output_md=args.output_md,
+        only_out_of_date=args.only_out_of_date,
+        n_workers=args.n_workers,
+    )
+
+
+if __name__ == "__main__":
+    main()
