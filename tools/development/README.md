@@ -306,3 +306,14 @@ policy. Run `tests/unit/test_notebook_publication_check.py` for the actual
 unchanged source shell comparison and native full-library workflow. See
 `NOTEBOOK_PUBLICATION_CHECK_FILE_AUDIT.md` for process bounds and literal-path
 handling.
+
+`python -m tools.development.documentation_cleanup docs/components` removes
+generated notebooks, Markdown and checkpoints from the explicit owned directory.
+It accepts `docs/reference/flagquantum` for generated package reference pages or
+an external generated-only staging directory. Other in-checkout paths are
+refused, including the authored `docs` root. Unrelated RST, HTML and images
+remain present. The native staged reference TOC spelling is recognized alongside
+the original spelling. Run `tests/unit/test_documentation_cleanup.py` for the
+complete unchanged source comparison, real 120-notebook publication cleanup and
+CLI ownership refusals. See `DOCUMENTATION_CLEANUP_FILE_AUDIT.md` for the
+adaptation of the original docs-branch assumptions.
