@@ -360,3 +360,11 @@ original Git pattern, including pre-existing ignored annotations. Run
 comparisons and real native pytest-cov/annotation/analyzer workflows. See
 `DEVELOPMENT_COVERAGE_COMMANDS_AUDIT.md` for failure order, the original ignored
 annotation-conversion status, unrelated-history behavior and native path mappings.
+
+`typecheck_command.py` runs the package or complete developer-helper typing scope
+under the existing native strict policy. Use
+`python -m tools.development.typecheck_command development` or replace
+`development` with `package`. Extra mypy arguments pass through in order.
+The developer scope supports the `tools` namespace with explicit package bases.
+See `DEVELOPMENT_TYPECHECK_COMMANDS_AUDIT.md` for the complete source wrapper
+comparison and the still-open original configuration migration parent.
