@@ -34,6 +34,10 @@ pytestmark = pytest.mark.unit
         ("x+(y+y)", 2, 2),
         ("(x+y)+(x-y)", 4, 0),
         ("x-y", 2, -1),
+        ("x*4+y", 8, 1),
+        ("4*x+y", 8, 1),
+        ("x*8+y", 16, 1),
+        ("x+y*2", 2, 2),
     ],
 )
 def test_signed_expression_family_every_input_and_arbitrary_xor(

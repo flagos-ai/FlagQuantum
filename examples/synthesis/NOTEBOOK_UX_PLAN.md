@@ -274,3 +274,31 @@ recorded successful environment rechecks. One evidence-history check still
 rejects 99 origin declarations because shared private refs appear fetchable.
 Historical refs and origin declarations were not rewritten. The raw full run
 remains failed; focused and environment rechecks do not rename it green.
+
+## Immutable root-input shift checkpoint
+
+The terminal XOR reader now borrows immutable root-input bits for a static
+power-of-two multiplication when that value is consumed only by the terminal
+sum. One owned zero wire supplies all shift and padding positions. No operand
+is written. A temporary arithmetic result, nonterminal consumer or unsupported
+width retains owned storage; no temporary-lifetime pinning is introduced.
+Both schedules preserve arbitrary XOR targets, absolute complex phases and
+clean workspace. Existing multiplication kernels keep their injective maps.
+
+The signed workshop now executes its native program, using 20 total qubits,
+six work bits and 47 logical instructions including preparation (depth 23).
+The arithmetic portion uses 43 instructions, compared with the preceding
+25-qubit/11-work-bit/49-arithmetic-instruction implementation. Complete coherent
+witnesses retain every original input pair and all 64 possible output words;
+no global-phase alignment is used. Named numeric reading returns the signed
+half-unit values 5, -7.5 and -2.5. The independent 14-qubit Circuit remains
+available, and that smaller native budget still refuses. Qubit, workspace,
+operation and execution-memory refusals remain distinct and checked.
+
+The final Compiler and related integration selection passes 2219 tests in
+45.23 seconds, including original-size coherent states under both schedules.
+All 16 workshop Notebook cells replay. Initial reference-test failures used
+the wrong statevector bit convention and expected synthesis errors for a
+Runtime memory refusal; the reference and expected exception were corrected.
+Production semantics and refusal categories were not changed to satisfy them.
+Black, Ruff and the protected API snapshot pass.

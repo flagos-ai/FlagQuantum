@@ -294,6 +294,9 @@ def _emit_arithmetic(
     events: list[ScheduleEvent] = []
     active: dict[ValueId, _Allocation] = {}
     bound_inputs = {key: tuple(value) for key, value in inputs.items()}
+    immutable_inputs = frozenset(
+        wire for bits in bound_inputs.values() for wire in bits
+    )
     counts: dict[ValueId, int] = {}
     ensuring: set[ValueId] = set()
     returned = block.operations[-1].operands[0].id
@@ -462,6 +465,26 @@ def _emit_arithmetic(
         if borrowed is not None:
             rules.append((key, "borrowed_input_bits"))
             return _Allocation((), borrowed)
+        shifted = shifted_multiply(op) if implementation == "arithmetic" else None
+        if (
+            shifted is not None
+            and direct_output
+            and terminal_addends is not None
+            and key in terminal_addends
+            and all(block.operations[use] is final for use in analysis.values[key].uses)
+        ):
+            variable, shift = shifted
+            width = unsigned_width(bound(key))
+            if set(variable) <= immutable_inputs and len(variable) + shift <= width:
+                # Only immutable root bits may outlive a rematerialized operand.
+                # The terminal XOR reader accepts repeated zero/sign controls;
+                # one owned zero wire supplies every padding position.
+                zero = allocate(1, op)
+                result = (
+                    zero * (width - len(variable) - shift) + variable + zero * shift
+                )
+                rules.append((key, "borrowed_input_shift"))
+                return _Allocation(zero, result)
         if op.name in {
             "qint.equal",
             "qint.less",
@@ -528,6 +551,9 @@ def _emit_arithmetic(
         shifted = shifted_multiply(op)
         if shifted is not None:
             variable, shift = shifted
+            if len(allocation.owned) < len(allocation.result):
+                # Root-input shift views own only their unchanged zero padding.
+                return ()
             return _copy(variable, allocation.result[:-shift])
         if op.name in {"qint.equal", "qint.less"}:
             borrowed = borrowed_comparison(op)

@@ -5,10 +5,13 @@ import math
 from pathlib import Path
 
 import pytest
+import torch
 
+import flagquantum as fq
 from examples.synthesis.community.hackathons.iquhack_2025.workshop.overview import (
     workflow,
 )
+from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration
 
@@ -63,7 +66,7 @@ def test_all_original_workflow_stages_unexecuted() -> None:
     )
 
 
-def test_signed_native_preflight_preserves_original_budget_refusal() -> None:
+def test_signed_native_execution_preserves_original_budget_refusal() -> None:
     from examples.synthesis.community.hackathons.iquhack_2025.workshop.overview.quantum import (
         signed_addition,
     )
@@ -71,22 +74,45 @@ def test_signed_native_preflight_preserves_original_budget_refusal() -> None:
 
     program = synth.synthesize(
         signed_addition,
-        max_qubits=25,
-        max_workspace=11,
+        max_qubits=20,
+        max_workspace=6,
         max_operations=1000,
         memory_limit_bytes=1024**3,
     )
     resources = program.report["resources"]
-    assert resources.n_qubits == 25
-    assert resources.n_operations == 53
-    assert resources.depth == 24
-    assert program.report["workspace_qubits"] == 11
-    # The accepted original workload still executes its separate 14-qubit
-    # Circuit; compiling a wider native candidate does not replace that proof.
-    with pytest.raises(synth.SynthesisError):
+    assert resources.n_qubits == 20
+    assert resources.n_operations == 47
+    assert resources.depth == 23
+    assert program.report["workspace_qubits"] == 6
+    result = fq.run(program)
+    assert dict(
+        program.numeric_probabilities(result, registers=("x", "y", "result"))
+    ) == {(5, -7.5, -2.5): 1.0}
+    state = result.statevector().flatten()
+    expected = torch.zeros_like(state)
+    basis = sum(
+        ((word >> shift) & 1) << (resources.n_qubits - 1 - wire)
+        for name, word in (("x", 5), ("y", 17), ("result", 59))
+        for shift, wire in enumerate(reversed(program.registers[name]))
+    )
+    expected[basis] = 1
+    torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
+    # Native execution does not imply the independent Circuit's smaller budget.
+    for limits in (
+        {"max_qubits": 14, "max_workspace": 0},
+        {"max_qubits": 19, "max_workspace": 6},
+        {"max_qubits": 20, "max_workspace": 5},
+        {"max_qubits": 20, "max_workspace": 6, "max_operations": 46},
+    ):
+        with pytest.raises(synth.SynthesisError):
+            synth.synthesize(
+                signed_addition,
+                **{"memory_limit_bytes": 1024**3, **limits},
+            )
+    with pytest.raises(PlanningError, match="execution memory budget exceeded"):
         synth.synthesize(
             signed_addition,
-            max_qubits=14,
-            max_workspace=0,
-            memory_limit_bytes=1024**3,
+            max_qubits=20,
+            max_workspace=6,
+            memory_limit_bytes=1024**2,
         )
