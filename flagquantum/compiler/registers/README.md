@@ -482,3 +482,12 @@ graph and bound payload. Numerical codecs remain in Simulation. Run
 `python -m examples.algorithms.typed_classical_feedback` for the append path.
 See `docs/development/TYPED_CLASSICAL_WORD_FEEDBACK_AUDIT.md` for the approved
 domain, source tensor counterexample, resource split and validation boundaries.
+
+`component_wire_graph.py` rebuilds finite native component calls from ordered
+wire identities. It retains earliest-layer insertion, lazy typed Split/Join,
+owned RIGHT outputs and LEFT consumption through `ComponentProgramBuilder`.
+Comparison constant scans and tree stages use this shared transformation.
+Existing typed child Programs own primitive gates and measurement feedback.
+The module accepts positive-width quantum storage and has no SDK or numerical
+execution dependency. Its focused contributor check is
+`python -m pytest tests/unit/test_component_wire_graph.py -q`.
