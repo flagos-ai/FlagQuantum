@@ -268,6 +268,7 @@ def optimize_native_blocks(
         lambda index, pair: source.instructions[index].name in {"rx", "rz", "cz"}
         and matrix_reader(source.instructions[index], pair) is not None,
         barrier=lambda instruction: not _safe_spectator(instruction, matrix_reader),
+        identity_reader=matrix_reader,
     ):
         block = [source.instructions[index] for index in positions]
         candidate = _candidate(
