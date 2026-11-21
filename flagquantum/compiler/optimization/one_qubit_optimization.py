@@ -479,7 +479,7 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     preserve_u3 = all(instruction.name in {"u3", "cx"} for instruction in ir)
     output: list[Instruction | None] = []
     # Only open runs retain a product. Completed runs are written back at their
-    # original positions, so spectator wires and entanglers keep their order.
+    # original positions, so spectator qubits and entanglers keep their order.
     open_runs: dict[int, tuple[list[int], Matrix]] = {}
 
     def close(qubits: Iterable[int]) -> None:
