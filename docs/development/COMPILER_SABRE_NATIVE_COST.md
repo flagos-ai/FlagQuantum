@@ -147,3 +147,7 @@ assert program.metadata["routing"]["mapping_restored"] is True
 
 Expected: legal device edges and restored logical output placement. The
 experimental selector is not installed by this example or by importing its module.
+
+## Archive serialization
+
+The report is serialized without indentation to respect the unchanged 1,800,000-byte repository file limit. All parsed values, historical drivers and measurements are preserved. The original indented document SHA-256 was `fca49bbaa7f8699a0dfdd159efac5d3860b26a3504ebc66745d3cce923bd2c08`; its size was 2,703,662 bytes. The compact document is 683,439 bytes. Parsed-document equality was checked before replacing the representation. No resource or acceptance threshold was relaxed.
