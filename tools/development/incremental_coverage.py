@@ -14,6 +14,8 @@
 
 import os.path
 import re
+import sys
+from collections.abc import Sequence
 
 from tools.development import process
 from tools.development.environment import PreparedEnvironment
@@ -344,3 +346,26 @@ def check_for_uncovered_lines(env: PreparedEnvironment) -> int:
         print(process.highlight("All touched lines covered", color_code=process.GREEN))
     print()
     return uncovered_count
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Check touched-line coverage against the first supplied Git revision."""
+    arguments = sys.argv[1:] if argv is None else argv
+    if not arguments:
+        print(
+            process.highlight(
+                'Must specify a comparison branch (e.g. "origin/master" or "HEAD~1").',
+                process.RED,
+            )
+        )
+        return 1
+    environment = PreparedEnvironment(
+        actual_commit_id=None,
+        compare_commit_id=arguments[0],
+        destination_directory=os.getcwd(),
+    )
+    return int(bool(check_for_uncovered_lines(environment)))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
