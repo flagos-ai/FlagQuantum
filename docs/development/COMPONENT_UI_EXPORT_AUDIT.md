@@ -1328,3 +1328,54 @@ not establish equivalence and provide no acceptance evidence.
 Twenty-eight of the original 44 successful arithmetic root drawings are now
 qualified, leaving sixteen. Recursive arithmetic glyphs, SDK-path parity and
 broader catalog dependencies remain in Q-0120. Full G2 acceptance is pending.
+
+## Complete permutation source-family catalog graphs
+
+The complete `arithmetic/permutation.py` catalog inventory is accounted for.
+All four successful original root diagrams now retain their ordered cycle calls.
+Concrete dense and partial permutations exactly reuse `permutation_program` and
+its cycle, constant equality and controlled-XOR owners. Known symbolic cycle
+collections retain separate typed cycle declarations with no executable bodies.
+Their ordered data remains in existing root attributes and their bounded word
+ports preserve both width and iteration bound. Physical binding refuses those
+symbolic graphs. The unknown-cycle-count and unknown-cycle-value examples retain
+original decomposition refusal. Both known-cycle factories retain the original
+controlled-XorK drawing ValueError and atomic catalog interface. Existing
+physical cycle ownership and original source error witnesses remain separate.
+
+All four fresh source-success drawings, complete ordered operands and child
+port dtype/width/bound/shape/side agree. Twelve focused module cases pass.
+The isolated combined catalog entry produces 2921 JSON files, 234 documents and
+2920 diagrams, with 56 root immediate decompositions, 297 atomic interfaces and
+2567 contextual native children. This batch adds 610 child files. Qualified
+recursive operation labels remain 36.
+
+The existing register/component/declaration/file/foreign permutation batch
+passes 112 checks and fails four pre-existing foreign SDK stream checks. Native
+owners and those tests are unchanged from baseline 8a4f528bb. Native source-graph
+checks cover exact primitive streams, full small complex tensors with spectators,
+measurement histories, zeroed work, coherent inverse restoration, actual
+factories and normal append entry. Source analytical queries are retained
+independently. For n-bit words and E constant-equality calls, emitted T/T-dagger
+count is 4*(n-1)*E and measurement count is (n-1)*E, agreeing with the source
+model under that same decomposition.
+
+The separate SDK shortcut witness has different primitive counts. Native/source
+SDK instruction lengths are respectively 76/15 for width-two cycle, 146/28 for
+width-two composition, 139/120 for width-three cycle and 272/238 for width-three
+composition. These are explicit unresolved SDK-entry parity cases. The original
+SDK tests and reference source stay intact. Their logs and unchanged-baseline
+witness are retained. Combined with duplicate detection, seven SDK primitive-path
+failures remain open. Catalog presentation completion does not close that gap.
+
+Thirty-two of the original 44 successful arithmetic root drawings are qualified.
+The twelve remaining roots belong to the complete comparison source family.
+Recursive arithmetic source glyphs, SDK primitive-path parity and broader
+catalog dependencies remain open in Q-0120. Full G2 acceptance is pending.
+
+Concentrated existing catalog/Drawer regression passes 530 cases with fourteen
+existing warnings, three deselections and zero skips. The twelve focused
+permutation presentation cases pass separately, including bounded child-port
+checks. Strict typing of three Python files, Black, Ruff, scope, architecture,
+IR, API and whitespace checks pass. The isolated user-facing catalog module
+entry also succeeds. The four pre-existing SDK failures remain explicitly open.
