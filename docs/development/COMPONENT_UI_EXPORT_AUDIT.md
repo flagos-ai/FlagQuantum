@@ -883,3 +883,28 @@ decompositions and 338 atomic interfaces. Twelve original successful Basic
 Gates instances match fresh drawings. Six source-success instances remain in
 SwapWithZero, MultiplexedCSwap and ControlledViaAnd; dependency publication
 and recursive coverage remain open.
+
+
+## Complete typed SwapWithZero traversal
+
+`swap_with_zero_component.py` uses the existing validated network traversal and
+`relative_swap_program` child. It retains source split, exchange and join order
+for one-dimensional, multidimensional and reverse traversal. All selectors and
+targets remain caller-owned. The native selector Join retains the original
+bounded descriptor at the Program return boundary; the source child Join uses
+QAny. This nominal dtype adaptation is explicit while bits and logical wiring
+remain comparable. No additional Cast node or physical gate is introduced.
+
+All three actual source catalog scores match freshly executed source glyphs,
+layout and ordered ports, with native SSA/boundary text normalized. Child
+CSwapApprox glyphs retain their own `~swap` title and `@(approx)` control.
+Small routing fixtures in both directions match original ordered child calls,
+physical primitive categories, full complex phases and unchanged owned outputs.
+Existing exhaustive branch, operator and resource evidence remains applicable.
+
+The catalog now projects eighteen immediate native decompositions with
+335 atomic interfaces. Fifteen original successful Basic Gates instances
+match fresh drawings, and three native large-swap displays retain original
+IndexError witnesses. MultiplexedCSwap and ControlledViaAnd account for the
+remaining three successful instances. Dependency-node publication and recursive
+coverage remain open, so Q-0120 remains open.

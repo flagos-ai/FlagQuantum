@@ -142,6 +142,9 @@ def test_unregistered_instance_is_refused() -> None:
 
 
 DECOMPOSITION_EXAMPLES = (
+    "swz",
+    "swz_small",
+    "swz_multi_dimensional",
     "approx_cswap_small",
     "int_state",
     "int_effect",

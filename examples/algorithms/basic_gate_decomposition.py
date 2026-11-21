@@ -11,6 +11,7 @@ It neither expands physical instructions nor evaluates resource estimates.
 """
 
 from examples.algorithms.control_predicate_catalog import PredicateExample
+from examples.algorithms.swap_network_catalog import SwapWithZeroExample
 from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
     ControlledSwapCall,
@@ -24,6 +25,9 @@ from flagquantum.compiler.registers.control.component_predicate import (
 )
 from flagquantum.compiler.registers.control.conjunction_program import (
     conjunction_program,
+)
+from flagquantum.compiler.registers.lookup.swap_with_zero_component import (
+    swap_with_zero_program,
 )
 from flagquantum.compiler.registers.primitives.relative_swap_component import (
     relative_swap_program,
@@ -43,6 +47,10 @@ from flagquantum.drawer.register_score_data import (
 
 def decomposition_program(component: object) -> ProgramRecord | None:
     """Select only complete concrete graphs owned by the existing Compiler."""
+    if isinstance(component, SwapWithZeroExample):
+        return swap_with_zero_program(
+            component.widths, component.word, component.shape, adjoint=component.adjoint
+        )
     if isinstance(component, FunctionRecord):
         data = integer_basis_function_data(component)
         if data is not None:
@@ -92,6 +100,10 @@ def decomposition_symbols(
         step: RegisterStep, register: Register | None, index: tuple[int, ...] | None
     ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
         if register is None:
+            if isinstance(component, SwapWithZeroExample) and tuple(
+                r.name for r in functions[step.name].registers or ()
+            ) == ("ctrl", "x", "y"):
+                return "Text", {"text": "~swap", "fontsize": 10}
             if tuple(r.name for r in functions[step.name].registers or ()) == (
                 "control",
                 "targets",
@@ -108,6 +120,16 @@ def decomposition_symbols(
             }
         assert index is not None
         function = functions[step.name]
+        if isinstance(component, SwapWithZeroExample) and register.name in {
+            "ctrl",
+            "x",
+            "y",
+        }:
+            return (
+                ("TextBox", {"text": "@(approx)"})
+                if register.name == "ctrl"
+                else ("TextBox", {"text": f"×({register.name})"})
+            )
         if isinstance(component, ControlledSwapCall):
             if step.name in {"s", "sdg", "h", "t", "tdg"}:
                 return "TextBox", {
