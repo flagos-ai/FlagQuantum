@@ -222,3 +222,25 @@ status 8. File-level Pylint opt-out follows the host's existing suppression rule
 Run `tests/unit/test_copyright_checker.py` to compare the original suite, exact raw
 positions and actual plugin loading. See COPYRIGHT_CHECKER_FILE_AUDIT.md for the
 source truncation defect, preserved year behavior and optional dependency review.
+
+`reference_templates.py` owns the template-driven SDK generation entry.
+`reference_template_pages.py` owns its runtime page plugins and per-page
+formatting, and `reference_output.py` owns suffix repair, metadata cleanup and
+Sphinx contents. The six original Jinja assets live in `templates/`. With the
+locked optional TensorFlow-docs environment and this checkout as the current
+working directory, generate the native loaded namespace profile with
+
+```python
+from pathlib import Path
+from tools.development.reference_templates import build_reference_docs
+
+build_reference_docs(Path.cwd())
+assert Path("docs/reference/flagquantum/Circuit.md").is_file()
+assert Path("docs/reference/autotoc.rst.inc").is_file()
+```
+
+Run `tests/unit/test_reference_templates.py` for all four real page categories,
+complete frozen-package output comparisons, suffix/metadata/TOC handling and
+concurrent ordinary/native formatting. Source alias routing and captions become
+native paths and identity. REFERENCE_TEMPLATES_FILE_AUDIT.md records the measured
+loaded profile, preserved formatting limits and isolated dependency procedure.
