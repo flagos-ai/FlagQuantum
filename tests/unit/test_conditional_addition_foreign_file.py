@@ -187,7 +187,12 @@ def test_actual_outer_sdk_execution_and_original_negative_control_boundary(
         # The source's missing controlled erase decomposition recurses in unitary.
         with pytest.raises(RecursionError):
             cirq.unitary(And(uncompute=True).controlled())
-        with pytest.raises(RecursionError):
+        # The native importer diagnoses the unsupported controlled effect before
+        # attempting the source unitary recursion.
+        with pytest.raises(
+            ValueError,
+            match="Source leaf explicitly declares no unitary and has no executable decomposition",
+        ):
             import_cirq_register_gate(operation, signature=signature)
         return
     imported = import_cirq_register_gate(operation, signature=signature)
