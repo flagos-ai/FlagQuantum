@@ -1,6 +1,6 @@
 """Exact arithmetic with retained or dependency-aware cleanup/recomputation.
 
-Only verified unsigned expressions enter here. Both schedules compute into an
+Only verified raw-word expressions enter here. Both schedules compute into an
 arbitrary XOR target and restore every supplied zero workspace qubit. The same
 X/CX/CCX kernels serve forward and inverse computation without hidden phase.
 """
@@ -374,7 +374,44 @@ def _emit_arithmetic(
             return "constant_shift_add"
         return None
 
+    def borrowed_input_bits(op: Operation) -> tuple[int, ...] | None:
+        # Root inputs outlive every compute and cleanup. Borrowing temporary SSA
+        # storage would require pinning it across recompute erasures.
+        if (
+            implementation != "arithmetic"
+            or op.name != "qint.bitwise"
+            or op.attributes["operator"] != "&"
+        ):
+            return None
+        width = op.results[0].type.parameters[0]
+        signs = op.attributes.get("signed", (False, False))
+        for position in (0, 1):
+            variable, mask = op.operands[position], op.operands[1 - position]
+            if (
+                variable.id not in bound_inputs
+                or mask.type != INDEX
+                or bound(mask.id) != (1 << width) - 1
+            ):
+                continue
+            bits = bound_inputs[variable.id][-width:]
+            if signs[position] and width > len(bits):
+                # Only copy-based readers accept repeated sign controls. Adder
+                # and multiplier kernels require injective operand maps.
+                if any(
+                    block.operations[use].name
+                    not in {"qint.bitwise", "qint.subtract_mod", "qint.return"}
+                    for use in analysis.values[op.results[0].id].uses
+                ):
+                    return None
+                bits = (bits[0],) * (width - len(bits)) + bits
+            return bits
+        return None
+
     def reserve(key: ValueId, op: Operation) -> _Allocation:
+        borrowed = borrowed_input_bits(op)
+        if borrowed is not None:
+            rules.append((key, "borrowed_input_bits"))
+            return _Allocation((), borrowed)
         if op.name in {
             "qint.equal",
             "qint.less",
@@ -397,6 +434,8 @@ def _emit_arithmetic(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
         if op.name == "qint.bitwise":
+            if not allocation.owned:
+                return ()
             return _bitwise(
                 op.attributes["operator"],
                 tuple(encoding(value.id) for value in op.operands),
