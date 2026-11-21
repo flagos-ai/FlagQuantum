@@ -28,6 +28,9 @@ class DevelopmentReport(TypedDict):
     evidence_class: str
     implementation_commit: str
     suite: str
+    input_nonce: str | None
+    completed: bool
+    failures: list[dict[str, object]]
     compiler_sha256: str
     runner_sha256: str
     source_commit: str | None
@@ -116,7 +119,13 @@ def _generic(width: int, topology: str, seed: int) -> dict[str, object]:
 
 
 def _application(
-    width: int, family: str, topology: str, workflow: str, harness: Path
+    width: int,
+    family: str,
+    topology: str,
+    workflow: str,
+    harness: Path,
+    *,
+    nonce: str = "01" * 32,
 ) -> dict[str, object]:
     sys.path.insert(0, str(harness / "src"))
     from sdkbench.candidates.adapters import load_adapter, workflow_configuration
@@ -136,7 +145,7 @@ def _application(
             }
         }
     )
-    source = fixture(width, family, topology, "01" * 32)
+    source = fixture(width, family, topology, nonce)
     seed = bundle.plan["execution_profile"]["compiler_seeds"][0]
     adapter = load_adapter(registration)
     before = adapter.execute("route", source, seed)
@@ -162,8 +171,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=("generic", "applications"), required=True)
     parser.add_argument("--sdkbench-root", type=Path)
+    parser.add_argument("--nonce", default="01" * 32)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if len(args.nonce) != 64 or any(c not in "0123456789abcdef" for c in args.nonce):
+        parser.error("--nonce must contain exactly 64 lowercase hexadecimal characters")
     if args.suite == "applications":
         if args.sdkbench_root is None:
             parser.error("--sdkbench-root is required for applications")
@@ -199,6 +211,9 @@ def main() -> None:
             timeout=10,
         ).strip(),
         "suite": args.suite,
+        "input_nonce": args.nonce if args.suite == "applications" else None,
+        "completed": False,
+        "failures": [],
         "compiler_sha256": hashlib.sha256(
             Path(sabre.__file__).read_bytes()
         ).hexdigest(),
@@ -206,25 +221,31 @@ def main() -> None:
         "source_commit": _HARNESS_COMMIT if args.suite == "applications" else None,
         "python": sys.version,
         "platform": platform.platform(),
-        "limits": "Inspected inputs; no qualified timing, memory, held-out or ranking claim. Generic depth counts CX/SWAP equally. Applications at n=8,12 verify only three probes.",
+        "limits": "Local development inputs; a new nonce alone does not establish unseen programs or qualify resources. No qualified timing, memory, held-out generalization or ranking claim. Baseline-first order. Generic depth counts CX/SWAP equally. Applications at n=8,12 verify only three probes.",
         "rows": rows,
         "failure": None,
     }
-    try:
-        for case in cases:
+    for case in cases:
+        try:
             result = (
                 _generic(*case)
                 if args.suite == "generic"
-                else _application(*case, args.sdkbench_root)
+                else _application(*case, args.sdkbench_root, nonce=args.nonce)
             )
             rows.append({"case": case, "result": result})
-            args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
             print(len(rows), case, "passed", flush=True)
-    except Exception as error:
-        # Preserve failures at the diagnostic process boundary, then propagate.
-        report["failure"] = {"type": type(error).__name__, "message": str(error)}
+        except Exception as error:
+            # Preserve each failed diagnostic attempt and finish the frozen case set.
+            failure = {"type": type(error).__name__, "message": str(error)}
+            if report["failure"] is None:
+                report["failure"] = failure
+            report["failures"].append({"case": case, **failure})
+            print(case, "failed", failure, flush=True)
         args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-        raise
+    report["completed"] = True
+    args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    if report["failures"]:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
