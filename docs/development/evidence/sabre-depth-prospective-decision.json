@@ -1,0 +1,267 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "61d957a6ec9310f2aa105d94190bdc5e6d5e8ea5",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "input_nonce": "61357a88d4608fa7ca10295537fee2aeeb3e88cf1a2d2e4825fe094335d17f8b",
+  "quality_admission_passed": false,
+  "decision": "Reject the unchanged depth-only tie policy under the frozen lexicographic rule; keep production selection unchanged.",
+  "semantic_pairs_accepted": 120,
+  "independent_acceptances": 240,
+  "case_failures": 0,
+  "maximum_semantic_error": 4.956510152190599e-14,
+  "quality_counts": {
+    "all": {
+      "improved": 12,
+      "unchanged": 107,
+      "regressed": 1
+    },
+    "new_source_target": {
+      "improved": 7,
+      "unchanged": 94,
+      "regressed": 1
+    },
+    "repeated_source_target": {
+      "improved": 5,
+      "unchanged": 13,
+      "regressed": 0
+    }
+  },
+  "changed_cases": [
+    {
+      "case": [
+        6,
+        "qft",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        75,
+        52
+      ],
+      "candidate": [
+        75,
+        42
+      ],
+      "new_source_target": false
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "status": "improved",
+      "baseline": [
+        65,
+        48
+      ],
+      "candidate": [
+        63,
+        38
+      ],
+      "new_source_target": false
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        56,
+        31
+      ],
+      "candidate": [
+        56,
+        27
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "status": "regressed",
+      "baseline": [
+        52,
+        27
+      ],
+      "candidate": [
+        56,
+        27
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        176,
+        110
+      ],
+      "candidate": [
+        176,
+        107
+      ],
+      "new_source_target": false
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        270,
+        106
+      ],
+      "candidate": [
+        270,
+        95
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "status": "improved",
+      "baseline": [
+        264,
+        103
+      ],
+      "candidate": [
+        264,
+        94
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        174,
+        78
+      ],
+      "candidate": [
+        168,
+        69
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        534,
+        206
+      ],
+      "candidate": [
+        534,
+        200
+      ],
+      "new_source_target": false
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        438,
+        165
+      ],
+      "candidate": [
+        438,
+        162
+      ],
+      "new_source_target": false
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "status": "improved",
+      "baseline": [
+        334,
+        172
+      ],
+      "candidate": [
+        334,
+        169
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "status": "improved",
+      "baseline": [
+        156,
+        106
+      ],
+      "candidate": [
+        144,
+        90
+      ],
+      "new_source_target": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "status": "improved",
+      "baseline": [
+        148,
+        100
+      ],
+      "candidate": [
+        138,
+        84
+      ],
+      "new_source_target": true
+    }
+  ],
+  "resources_qualified": false,
+  "production_candidate_enabled": false
+}
