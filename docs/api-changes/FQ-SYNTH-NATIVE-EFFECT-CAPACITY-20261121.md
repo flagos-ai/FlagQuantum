@@ -1,7 +1,7 @@
 # Bounded native static-composition capacity proposal
 
 Status: approved for implementation by the user on November 21, 2026.
-Approval: the user replied “批准” to the explicit request to approve both this
+Approval: the user replied “Approved” (translated from Chinese) to the explicit request to approve both this
 proposal and the companion capacity proposal. The approval covers the bounded
 changes and acceptance requirements below; it does not declare acceptance or
 production release readiness.

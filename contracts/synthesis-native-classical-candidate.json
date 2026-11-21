@@ -18,7 +18,7 @@
   ],
   "binding": "synthesis_time",
   "real_input_bound": 9007199254740992,
-  "max_classical_elements": 4096,
+  "max_classical_elements": 16384,
   "helper_roles": [
     "classical",
     "inout"
@@ -53,5 +53,7 @@
     "unselected_branch": "not captured; no branch return/break/continue anywhere",
     "shared_capture_and_resource_budgets": true
   },
-  "extension_authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md"
+  "extension_authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md",
+  "max_helper_classical_elements": 4096,
+  "capacity_authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md"
 }
