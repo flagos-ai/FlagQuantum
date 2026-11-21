@@ -474,3 +474,46 @@ execution tests. UI rendering introduces no physical gate stream or analytical
 cost estimate. Whole-instance decomposition graphs and per-gate glyph parity
 remain separate open work. Native provider coverage reaches 125 of 237
 documentation references and 193 of 359 original factories.
+
+## Complete optimization native instance catalog
+
+`examples/algorithms/optimization_ui_export.py` covers all five Optimization
+notebooks, six documentation references and twelve frozen example factories.
+Existing k-XOR loading and Kikuchi algorithm factories provide every instance.
+All twelve actual parameter dictionaries, encoded metadata and filenames equal
+the originals. Checks preserve the input constraint multiset, maximum RHS,
+symbol assumptions, guiding amplitude, precision, sparsity, bounded index
+metadata and packed versus shaped array ports.
+
+Run `python -m examples.algorithms.optimization_ui_export`. The actual isolated
+entry produces twelve JSON files including navigation, six documentation files
+and eleven unique non-null atomic interface diagrams. The original encoder maps
+the two distinct symbolic GuidingState instances to the same filename because
+it replaces their ell and amplitude expressions with NOT_SERIALIZABLE. Their
+register expressions differ. Existing exporter semantics retain the first file.
+Tests preserve this collision and verify both individual Drawer scores are
+non-null and distinct. File deduplication therefore does not establish identity
+of these two logical instances.
+
+The concentrated regression passes 327 checks, with zero skips and fifteen
+existing parser/IPython warnings. Existing complete source-file and notebook
+checks exercise measured QROM branches, full complex amplitudes, clean work,
+typed child wiring and separate exact/model resources. The source sorting and
+matrix-oracle declaration-only boundaries remain explicit. The UI workflow adds
+no emitted primitive stream or analytical estimate. Native coverage reaches
+131 of 237 documentation references and 205 of 359 source factories.
+
+Two earlier source-file tests still expected the original bounded-register
+admission refusal. Current approved bounded storage admits the GuidingState
+wiring fixture, so its test now verifies the complete Program and all six child
+call multiplicities. Identity child bodies remain a wiring fixture. The packed
+scalar to shaped neighbor call reaches the same zero-dimensional IndexError as
+the actual frozen source, and the second test checks that exact failure. The
+source SortInPlace decomposition refusal remains tested. These assertion and
+stale docstring corrections form an independent commit.
+
+Strict typing covers both new provider files, both corrected source-file tests
+and the algorithm whose docstring was corrected. Black, Ruff, Integration
+scope, architecture, IR, public API baseline and whitespace checks pass. Full
+per-instance decomposition graphs, source glyph parity and a fresh whole-catalog
+run remain open alongside the four remaining provider groups.

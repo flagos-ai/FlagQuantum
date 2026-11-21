@@ -545,3 +545,12 @@ interfaces of their accepted native notebook implementations. The common
 Drawer, preserving symbolic widths and separate input/output lifetimes.
 AutoPartition exports native control values and unused routing segments, with
 its source serializer differences recorded in the UI-export audit.
+
+Run `python -m examples.algorithms.optimization_ui_export` for all five
+Optimization notebooks, six documentation references and twelve original k-XOR
+and Kikuchi factories. Native algorithm factories own all parameters and
+signatures. Concrete constraints, symbolic assumptions, iteration bounds and
+array lifetimes remain available in metadata. The original encoder maps two
+distinct symbolic GuidingState instances to one filename. The export preserves
+that collision and first-file retention, with both individual interface scores
+covered separately by tests.
