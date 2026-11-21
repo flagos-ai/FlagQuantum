@@ -385,3 +385,12 @@ complete imported-source profile, including the existing optional copyright
 checker and documentation-parameter checks. It requires the accepted optional
 Pylint environment. See `DEVELOPMENT_LINT_COMMANDS_AUDIT.md` for ownership,
 complete profile mapping, source defects and diagnostic comparisons.
+
+`check_command.py` composes accepted lint, strict package typing, incremental
+formatting and coverage owners. Run
+`python -m tools.development.check_command HEAD --only-changed-files` for changed
+lint and coverage scopes, or omit the flag for package scopes. Use
+`--apply-format-changes` to pass `--apply` to the formatter. Ordinary failure in
+any phase makes the final command fail after all four phases run. See
+`DEVELOPMENT_CHECK_COMMANDS_AUDIT.md` for the original false-success and argument
+forwarding defects and the explicit native corrections.
