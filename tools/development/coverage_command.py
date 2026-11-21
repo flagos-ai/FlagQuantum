@@ -9,34 +9,13 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from tools.development import process
-from tools.development.changed_tests import changed_test_paths, comparison_revision
+from tools.development.changed_tests import changed_test_paths
 from tools.development.environment import PreparedEnvironment
 from tools.development.pytest_command import run_tests
 from tools.development.repository import get_git_root
+from tools.development.repository import merge_base_revision as coverage_revision
 
 CONFIG_ARGUMENT = "--cov-config=tools/development/coverage.ini"
-
-
-def coverage_revision(root: Path, revision: str | None) -> str:
-    """Resolve the source's commit defaults and compare at their merge base."""
-    selected = comparison_revision(root, revision)
-    base = process.run(
-        ["git", "merge-base", selected, "HEAD"],
-        cwd=root,
-        capture_output=True,
-        check=False,
-        timeout=15,
-        log_run_to_stderr=False,
-    ).stdout.strip()
-    resolved = process.output_of(["git", "rev-parse", selected], cwd=root, timeout=15)
-    if resolved == base:
-        print(f"Comparing against revision {selected!r}.", file=sys.stderr)
-        return selected
-    print(
-        f"Comparing against revision {selected!r} (merge base {base}).",
-        file=sys.stderr,
-    )
-    return str(base)
 
 
 def changed_coverage_directories(root: Path, revision: str) -> list[str]:

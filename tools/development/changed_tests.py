@@ -5,27 +5,8 @@
 
 from pathlib import Path
 
-from tools.development import process
 from tools.development.environment import PreparedEnvironment
-
-
-def comparison_revision(root: Path, revision: str | None) -> str:
-    """Resolve an explicit commit or the original ordered main-branch defaults."""
-    candidates = [revision] if revision else ["upstream/main", "origin/main", "main"]
-    for candidate in candidates:
-        result = process.run(
-            ["git", "cat-file", "-t", candidate],
-            cwd=root,
-            capture_output=True,
-            check=False,
-            timeout=15,
-            log_run_to_stderr=False,
-        )
-        if result.returncode == 0 and result.stdout.strip() == "commit":
-            return candidate
-    if revision:
-        raise ValueError(f"No revision {revision!r}")
-    raise ValueError("No default revision found to compare against")
+from tools.development.repository import comparison_revision as comparison_revision
 
 
 def changed_test_paths(root: Path, revision: str) -> list[str]:
