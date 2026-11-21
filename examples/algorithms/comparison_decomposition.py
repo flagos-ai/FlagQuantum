@@ -59,8 +59,8 @@ def comparison_catalog_program(
 ) -> ProgramRecord | None:
     """Select native owners and retain all three catalog source refusals.
 
-    Four SDK-imported source roots have different immediate native grouping or
-    insertion order. Those boundaries are recorded in COMPONENT_UI_EXPORT_AUDIT.
+    Concrete comparison owners retain the source SDK layer order and lazy
+    typed views. EqualsAConstant keeps its existing nominal output view.
     """
     if operation == "LessThanConstant" and type(ports[0].bitsize) is int:
         threshold = parameters["less_than_val"]
@@ -117,10 +117,15 @@ def comparison_symbols(
                     step,
                     register,
                     index,
-                    values=(1, 0) if operation == "LessThanEqual" else (1, 1),
+                    values={
+                        "LessThanEqual": (1, 0),
+                        "SingleQubitCompare": (0, 1),
+                    }.get(operation, (1, 1)),
                 )
             return controlled_not_wire_symbol(step, register, index)
         if ports == ("ctrl", "junk", "target"):
+            if register is None and registers[-1].side.name == "LEFT":
+                return "Text", {"text": "†", "fontsize": 10}
             return multi_and_wire_symbol(
                 step, register, index, values=(0,) * registers[0].shape[0]
             )
@@ -144,6 +149,19 @@ def comparison_symbols(
                 assert type(control) is int
                 polarity = 1 if index[0] else control
             return "Circle", {"filled": bool(polarity)}
+        if ports in {("x", "y", "ancilla"), ("a", "b", "less_than", "greater_than")}:
+            if register is None:
+                return "Text", {
+                    "text": (
+                        "BiQubitsMixer" if ports[0] == "x" else "SingleQubitCompare"
+                    ),
+                    "fontsize": 10,
+                }
+            if register.name == ports[0]:
+                return "TextBox", {
+                    "text": "BiQubitsMixer" if ports[0] == "x" else "SingleQubitCompare"
+                }
+            return partition_wire_symbol(step, register, index)
         if ports == ("x", "y", "target"):
             if register is None:
                 return "Text", {"text": "", "fontsize": 10}

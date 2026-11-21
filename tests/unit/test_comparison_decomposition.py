@@ -38,6 +38,10 @@ from tests.unit.test_register_gate_ui_export import _canonical_score
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 EXACT = (
+    "lt_k",
+    "leq",
+    "bi_qubits_mixer",
+    "sq_cmp",
     "greater_than",
     "equals",
     "eq_k",
@@ -47,14 +51,6 @@ EXACT = (
     "lineardepthhalflessthan_small",
     "lineardepthhalflessthanequal_small",
 )
-# These owners remain authoritative for physical execution. Their immediate
-# grouping or independent-node insertion differs from the source SDK import.
-GRAPH_BOUNDARIES = {
-    "lt_k": (44, 44),
-    "leq": (43, 43),
-    "bi_qubits_mixer": (8, 18),
-    "sq_cmp": (3, 7),
-}
 REFUSED = ("lt_k_symb", "leq_symb", "gt_k")
 
 
@@ -120,19 +116,6 @@ def test_complete_ordered_calls_operands_types_and_fresh_diagrams(
     assert native.score(identifier) == actual_score
 
 
-@pytest.mark.parametrize("identifier", GRAPH_BOUNDARIES)
-def test_native_owner_grouping_difference_is_explicit(
-    originals: tuple[Any, dict[str, Any]], identifier: str
-) -> None:
-    record = _record(identifier)
-    composite = originals[1][identifier].decompose_bloq()
-    actual = _native_trace(record)
-    expected = _source_trace(_source(native.signature(identifier)), composite)
-    assert (len(actual), len(expected)) == GRAPH_BOUNDARIES[identifier]
-    assert actual != expected
-    assert native.decomposition(identifier) == record
-
-
 def test_every_concrete_graph_reuses_existing_executable_owner() -> None:
     expected = {
         "lt_k": less_than_constant_program(8, 5),
@@ -157,7 +140,7 @@ def test_every_concrete_graph_reuses_existing_executable_owner() -> None:
         expected[identifier] = half_comparison_program(
             native.signature(identifier)[0].dtype, relation
         )
-    assert expected.keys() == set(EXACT) | GRAPH_BOUNDARIES.keys()
+    assert expected.keys() == set(EXACT)
     for identifier, owner in expected.items():
         assert _record(identifier) == owner
 

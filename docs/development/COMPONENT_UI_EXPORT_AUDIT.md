@@ -1389,34 +1389,38 @@ retain original DecomposeTypeError. GreaterThanConstant retains original
 DecomposeNotImplementedError. The existing whole-source definition disposition,
 physical stream and classical/model evidence remain in COMPARISON_FILE_AUDIT.md.
 
-Eight roots match complete ordered source calls, named operands and fresh source
-geometry/glyphs. These are GreaterThan, Equals, EqualsAConstant,
-CLinearDepthGreaterThan and all four half-comparison relations. MCX circles retain
-literal zero controls, the two-control caption is CCX, SignExtend/SignTruncate
-retain directional ports, and the adder retains its c=a+b connector. Child types,
-widths, shapes and sides match with one explicit existing view boundary.
-EqualsAConstant's original default Join returns QAny, while its native executable
-owner retains the nominal unsigned view. Both encodings are checked separately.
-This catalog work retains the existing executable owner's storage contract.
+All twelve concrete roots match complete ordered source calls, named operands
+and freshly rendered source geometry and glyphs. Eleven also match complete
+child types. EqualsAConstant's original default Join returns QAny, while its
+native executable owner retains the nominal unsigned view. Both encodings are
+checked separately. This view boundary remains explicit.
 
-Four original-success root graphs retain unresolved immediate graph differences.
-The complete catalog inventory is accounted for, while source root parity for
-these four remains open in Q-0120.
+The complete LessThanConstant, LessThanEqual, BiQubitsMixer and SingleQubitCompare
+owners now use the shared Compiler wire reconstruction. It schedules existing
+typed child Programs by earliest physical dependency layers and reproduces the
+source's lazy Split/Join, insertion order and allocation-key types without an
+SDK dependency. Forward and adjoint tree graphs match complete original traces.
+The former opaque primitive wrappers and unused prefix-zero wrapper are removed.
+Source circuits and reference code remain unchanged.
 
-| Factory | Native immediate calls | Original immediate calls | Remaining difference |
+| Factory | Native immediate calls | Original immediate calls | Disposition |
 | --- | --- | --- | --- |
-| lt_k | 44 | 44 | Independent seed allocation, input split and cleanup insertion/visitation differ. |
-| leq | 43 | 43 | Prefix/suffix Split/Join, independent tree branches and cleanup visitation differ. |
-| bi_qubits_mixer | 8 | 18 | Existing native tree owner wraps its exact primitive body in one typed bit-gate child. Source SDK graph exposes CX/And children. |
-| sq_cmp | 3 | 7 | Existing native tree owner wraps its exact primitive body. Source graph exposes And/CX/X children. |
+| lt_k | 44 | 44 | Exact ordered calls, operands, child types and fresh drawing. |
+| leq | 43 | 43 | Exact ordered calls, operands, child types and fresh drawing. |
+| bi_qubits_mixer | 18 | 18 | Exact shared CX/And layers in both directions. |
+| sq_cmp | 7 | 7 | Exact shared And/CX/X layers in both directions. |
 
-All twelve presentation Programs equal the existing executable owners exactly.
-Consequently the catalog adds no physical gates, measurement feedback or work
-allocation. Existing execution checks cover small complete complex maps,
-entangled spectators, all applicable small measurement histories, forward flag
-ownership, clean inverse work, source gate streams and ordinary circuit.append.
-Those execution checks independently pass even for the four graph boundaries.
-Dense state verification remains limited to the existing small-width cases.
+All twelve presentation Programs equal the executable owners. Every actual
+primitive histogram equals its previously published baseline. Execution checks
+cover small complete complex maps, entangled spectators, applicable small
+measurement histories, forward flag ownership, clean inverse work, original
+gate streams and ordinary circuit.append. Sorting append examples retain their
+contiguous logical history layout with the shared components' current pool
+order. Eight-bit sorting witnesses explicitly map independent three-wire mixer
+allocations from dependency layers to original subtree postorder.
+Unequal-width-one physical witnesses
+map source direct-generator allocation to the earliest-layer native allocation
+order explicitly. Dense state verification remains small-width evidence.
 
 Actual factory primitive counts and analytical model queries are recorded in
 separate fields of g2-ui-comparison-resources-20261122.json. Each row below gives
@@ -1435,19 +1439,26 @@ model under the same convention.
 | bi_qubits_mixer | 8 | 0 | 8 | 0 |
 | sq_cmp | 4 | 0 | 4 | 0 |
 
-Forty of the original 44 successful arithmetic root drawings are qualified.
-The four comparison graph differences, unsigned/QAny Join view boundary,
-recursive arithmetic glyphs and seven existing duplicate/permutation SDK
-primitive-path failures remain explicit. Q-0120 and full G2 acceptance remain
-open. No new parent acceptance is inferred from catalog graph delivery.
+All 44 original-success arithmetic root drawings are qualified. The explicit
+EqualsAConstant unsigned/QAny Join view, recursive arithmetic glyphs and seven
+existing duplicate/permutation SDK primitive-path failures remain open. Q-0120
+and full G2 acceptance remain pending. This batch closes the four immediate
+graph differences and does not change parent acceptance counts.
 
-The combined module entry succeeds with 3407 JSON files, 234 documents and 3406
+The combined module entry succeeds with 3569 JSON files, 234 documents and 3568
 non-null diagrams. It publishes 68 immediate root graphs, 285 atomic interfaces,
-3053 contextual native children and 38 qualified descendant operation labels.
-This batch adds 486 contextual children. Concentrated catalog/Drawer regression
-passes 558 cases with fourteen existing warnings, three deselections and zero
-skips. All 307 comparison execution/component/file/resource/native Kickmix checks
-pass. Sixteen focused catalog disposition checks pass. Strict typing of three
-Python files, Black, Ruff, Integration scope, architecture, IR, public API and
-whitespace checks pass. File-generating regressions and the isolated catalog
-module run were executed serially to bound temporary disk consumption.
+3215 contextual native children and 38 qualified descendant operation labels.
+This batch adds 162 contextual children. Concentrated catalog/Drawer regression
+passes 570 cases with fourteen existing warnings, three deselections and zero
+skips. Four tree-direction checks were subsequently moved from the generic wire
+suite to the comparison suite without changing their assertions. Final physical
+checks pass 311 cases. Final downstream checks cover sorting, duplicates,
+permutations, symmetric difference and generic wire reconstruction. All 275 downstream
+checks pass. Strict typing of
+eleven Python files, Black, Ruff, Compiler and Integration scope, architecture,
+IR, public API and whitespace checks pass.
+
+The initial concentrated run exhausted temporary storage and exited 120. Its
+retry log replaced the first log. Only confirmed reproducible task-generated
+exports were reclaimed. The successful retry and isolated module export ran
+serially with failed-only temporary retention and first-failure stopping.
