@@ -116,7 +116,7 @@ The editorial denominator and these implementation steps are independent.
 | --- | --- | --- |
 | Amplitude construction | `b7d7d4383`: replace the Compiler's quadratic Walsh loop with an O(N log N), O(N)-storage butterfly; 69 preparation/conformance tests passed | The [bounded capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-PREPARATION-CAPACITY-20261121.md) is pending explicit approval. The public 256-entry cap remains. The full-image native workflow is not yet claimed. |
 | Repeated inspection and parameter use | `4346ad249`: reuse a shared plan's inspection within one result-verification call; 106 contract and 94 execution-mode/numeric tests passed. Lesson six now verifies existing Circuit runtime-plan inputs and PyTorch gradients at three nonzero angles | The existing runtime route does not make qfunc symbolic. Native qfunc parameter reuse still requires its own measured design and admission. |
-| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; banded construction and general reusable QSVT APIs remain follow-ups. |
+| Block/QSVT composition | Original CFD Pauli block now also composes existing preparation, controlled helpers and within/apply in native qfunc; all eight columns and two signed inputs match complete independent states | Native uses 12 qubits (four clean work bits), versus eight for Circuit; zero-work native budget refuses. The original degree-33 Hamiltonian QSVT now composes both full streams and its Pauli signal in native qfunc; General reusable QSVT APIs remain follow-ups; the separate checkpoint below covers the native CFD banded route. |
 | Named sampling | Bell and QSVT lessons use existing `fq.counts`/`fq.samples` on synthesized Circuit IR, selecting wires from named ports; the original joint draw is preserved for conditioning | Sealed Program output overrides still refuse. A direct named finite-shot convenience surface requires separate API admission; no competing sampler was introduced. |
 | Signed numeric casts | `65e1243c8`: arithmetic candidates borrow immutable root input bits for exact masks and copy-only sign extension; 2022 Compiler/integration tests and six final focused tests passed | A subsequent equal-modulus sum fusion and read-only sign aliasing step now needs 25 native qubits versus 14 Circuit qubits. Retain the Circuit route until a reusable lower-cost implementation satisfies its original budget. |
 | Gaussian state family | Winning iQuHack executable stage now uses logical qfunc ports, a controlled borrowed helper and pairwise phases; full 17-cell replay and 18 related tests passed | The 127-qubit extension retains explicit Circuit compilation only. It is not a native executable capacity claim. |
@@ -319,3 +319,42 @@ promoted throughput claim. The 123 initial contract cases and 180 broader
 readout, exact-number, MPS and lesson cases pass. Protected API, Black and Ruff
 checks pass. The 103 previously socket-restricted launch/MPS tests pass with
 local loopback access; the earlier raw default failure remains recorded.
+
+## Native banded CFD checkpoint
+
+The original tridiagonal block now also executes in native qfunc. Conditional
+`R(theta, pi/2)` and sign phases dilate each signed diagonal value; modular
+increments/decrements shift the data register, and within/apply supplies the
+selector PREPARE/unprepare. These are existing public operations. No dense
+SELECT matrix or output response matrix is embedded in the native program.
+
+All eight input columns and signed source seeds 37/91 match the complete
+independent Circuit state, including every non-success flag branch, without
+phase alignment. The absolute preflight error is at most 4.03e-15; work-bit
+probability is below 1.86e-31. The eight-row, 21-entry source matrix and scale
+3.8927056451476174 remain unchanged. Native resources are nine total qubits,
+three work bits, 454 logical instructions and depth 420 for either source seed.
+The independent Circuit retains six qubits and a different instruction
+vocabulary; this is not a basis-level efficiency claim. Six total qubits,
+insufficient workspace and lower operation budgets refuse.
+
+All 29 CFD tests and the ten original Notebook cells pass. The 23 catalog and
+audit checks pass; source data, provenance and the 212-workflow denominator are
+unchanged. The angle-table slice prototype was rejected by the existing
+frontend, so the delivered program uses its existing bounded conditional
+rotations. It does not expand a protected syntax or preparation profile.
+
+The preceding frozen integration checkpoint at `824ef0942` recorded 21196
+passes, 801 skips, 14 failures and six setup errors in 1117.17 seconds. Five new
+vocabulary failures came from an added comment using a retired term; changing
+that comment to the canonical qubit noun restores all 173 vocabulary checks.
+The other nine failures/six errors match the recorded worktree, socket and
+shared-ref environment issues. The original raw run remains failed. All 222
+original/alternative paths match recorded stages in 563.656 seconds of total
+case time, and all six lessons plus three focused applications replay in
+25.254 seconds on that frozen implementation.
+
+The final related CFD, exact-number and learning-path selection passes103 tests
+in15.45 seconds, and the ten-cell Notebook replays after its final named-success
+readout edit. The generated audit report and all local documentation links
+remain consistent.

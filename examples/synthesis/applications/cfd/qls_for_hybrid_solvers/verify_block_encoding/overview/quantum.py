@@ -1,4 +1,4 @@
-"""Native PREPARE with explicit Pauli and banded SELECT blocks."""
+"""Native block compositions and independent Pauli/banded Circuit references."""
 
 import cmath
 import math
@@ -15,6 +15,7 @@ from flagquantum.synth import (
     QArray,
     QBit,
     QNum,
+    R,
     X,
     allocate,
     apply,
@@ -66,8 +67,9 @@ def pauli_block(
         for term in range(count):
             if codes[3 * term] + codes[3 * term + 1] + codes[3 * term + 2] > 0:
                 control(
-                    selection == term, lambda: pauli_word(codes, term, data)
-                )  # noqa: B023
+                    selection == term,
+                    lambda: pauli_word(codes, term, data),  # noqa: B023
+                )
             control(selection == term, lambda: phase(1, angles[term]))  # noqa: B023
 
 
@@ -100,6 +102,81 @@ def native_pauli_program(
         max_qubits=max_qubits,
         max_workspace=max_workspace,
         max_operations=10_000,
+        memory_limit_bytes=1024**2,
+    )
+    return program, alpha
+
+
+@qfunc
+def banded_term(angles: list[float], term: int, flag: QBit, data: QNum[3]) -> None:
+    # R(2*acos(d), pi/2) Z dilates the real diagonal value d.
+    phase(flag, math.pi)
+    # The frontend captures each callback during static loop expansion.
+    for column in range(8):
+        control(
+            data == column,
+            lambda: R(angles[8 * term + column], math.pi / 2, flag),  # noqa: B023
+        )
+    if term == 0:
+        data += 1
+    if term == 2:
+        data -= 1
+
+
+@qfunc
+def banded_block(
+    amplitudes: list[float],
+    weights: list[float],
+    angles: list[float],
+    selection: Output[QNum[2]],
+    flag: Output[QBit],
+    data: Output[QNum[3]],
+) -> None:
+    allocate(selection)
+    allocate(flag)
+    prepare_amplitudes(amplitudes, 0, data)
+    with within():
+        inplace_prepare_amplitudes(weights, 0, selection)
+    with apply():
+        for term in range(3):
+            control(
+                selection == term,
+                lambda: banded_term(angles, term, flag, data),  # noqa: B023
+            )
+
+
+def native_banded_program(
+    matrix: torch.Tensor,
+    rhs: torch.Tensor,
+    *,
+    max_qubits: int = 9,
+    max_workspace: int = 3,
+    max_operations: int = 512,
+) -> tuple[synth.Program, float]:
+    """Compose the real source tridiagonal dilation with logical registers."""
+    if matrix.shape != (8, 8) or bands(matrix) != (-1, 0, 1) or bool(matrix.imag.any()):
+        raise ValueError(
+            "the native banded encoding requires the real eight-row tridiagonal profile"
+        )
+    offsets = (-1, 0, 1)
+    widths = [float(matrix.diagonal(offset).abs().max()) for offset in offsets]
+    alpha = sum(widths)
+    angles = []
+    for offset, scale in zip(offsets, widths, strict=True):
+        for column in range(8):
+            row = column - offset
+            diagonal = float(matrix[row, column].real / scale) if 0 <= row < 8 else 0.0
+            angles.append(2 * math.acos(diagonal))
+    program = synth.synthesize(
+        banded_block,
+        classical_inputs={
+            "amplitudes": tuple(float(value) for value in rhs),
+            "weights": [(width / alpha) ** 0.5 for width in widths] + [0.0],
+            "angles": angles,
+        },
+        max_qubits=max_qubits,
+        max_workspace=max_workspace,
+        max_operations=max_operations,
         memory_limit_bytes=1024**2,
     )
     return program, alpha

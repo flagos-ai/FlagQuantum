@@ -546,3 +546,11 @@ no global-phase alignment is used. Named numeric reading returns the signed
 half-unit values 5, -7.5 and -2.5. The independent 14-qubit Circuit remains
 available, and that smaller native budget still refuses. Qubit, workspace,
 operation and execution-memory refusals remain distinct and checked.
+
+
+The CFD banded source now has a second executable native route as well as its
+independent Circuit reference. All eight columns, source seeds37/91, full flag
+branches, absolute phases and three clean work bits pass. Native resources are
+nine qubits/454 logical instructions/depth420 for either seed; the reference
+retains six qubits. All29 CFD tests and all ten original Notebook stages pass;
+the editorial212/212 denominator and original source identities are unchanged.

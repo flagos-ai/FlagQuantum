@@ -19,4 +19,14 @@ an opaque SELECT. These resource counts use different gate vocabularies and
 are not a basis-level efficiency comparison. Every basis column and two
 signed coherent right-hand sides match the complete independent Circuit state,
 including absolute phase and all non-success selector branches. All four work
-bits return exactly to zero. The banded encoding remains Circuit-based.
+bits return exactly to zero. The banded encoding also has a complete native composition, described below.
+
+The banded qfunc dilates the three real signed diagonals using conditional
+equatorial rotations, modular data-register increments/decrements and selector
+PREPARE/unprepare. It retains the eight-row matrix, all 21 entries and LCU scale
+3.8927056451476174. No SELECT response matrix is embedded in the native program.
+All eight input columns and two signed coherent right-hand sides match the
+complete six-qubit Circuit reference within 1e-12, without phase alignment.
+The native route uses nine total qubits, three clean work bits and 454 logical
+instructions for either source seed (depth 420); its six-qubit/zero-workspace
+request refuses. The full Notebook still has ten original code stages.
