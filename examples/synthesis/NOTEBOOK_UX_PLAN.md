@@ -384,3 +384,49 @@ No production capacity, semantic check or numerical threshold was weakened.
 The final related selection passes 112 tests, the 23 catalog/audit tests pass,
 and all ten Notebook cells replay with both resource constraints. Black, Ruff
 and local documentation-link checks pass.
+
+
+## Six-band nozzle block and full-sequence admission checkpoint
+
+The original sixteen-row, 45-entry nozzle matrix now composes a native block
+using its actual six occupied diagonals (-8, -7, -1, 0, 7, 8). Existing classical
+integer arrays bind the shift offsets; existing rotation tables implement the
+signed dilation. No dense SELECT or final response matrix is supplied. Its
+original right-hand side uses eleven total qubits, three clean work bits, 566
+logical instructions and depth 527. The full 256-column logical unitary matches
+the independent Circuit reference in absolute phase, with zero measured work
+probability. This covers nonzero selectors and unused selector branches needed
+by repeated QSVT, rather than only the success-input subspace. Two signed input
+seeds and distinct five-/seven-band matrices exercise bound offsets and
+coherence. Qubit/workspace and operation budgets still refuse when insufficient.
+
+The original fourteen-cell Notebook now executes this native source block and
+keeps the existing full degree-101/255 inverse solve explicitly identified as
+packed Circuit construction. Neither native block completion nor a shortened
+sequence is counted as full native nozzle QSVT.
+
+Both complete native sequence probes refuse at the current 4096-effect frontend
+budget. Bounded zero-/one-pair captures predict 7180/9318 top-level operations
+including declarations and return; these diagnostic estimates are not full-size
+acceptance. The [ordinary static-composition capacity proposal](../../docs/api-changes/FQ-SYNTH-NATIVE-EFFECT-CAPACITY-20261121.md)
+requests an explicit bounded admission, retaining specialized QPE/evolution/Qmod
+profiles. Approval remains pending and no cap or protected contract was changed.
+The separate image-capacity proposal remains pending as well.
+
+The first formal attempt exposed reference setup mistakes: custom initial
+states require Circuit.state(), and the independent block verifier expects a
+complex target. Correcting those test inputs gives nine passes in 7.02 seconds;
+production validation and thresholds remain unchanged. Historical failed logs
+are retained. The notebook retains all fourteen code stages and both original
+phase counts and solution-error bounds.
+
+The final related selection passes 66 tests in 20.49 seconds. After the final
+Notebook began executing its displayed qfunc directly, a combined run recorded
+88 passes and one stale generated-audit failure in 24.71 seconds. Regenerating
+that report restores all 23 catalog/audit tests in 3.34 seconds. All fourteen
+final Notebook cells replay in 13.48 seconds. An accidentally broad native
+catalog selection was interrupted after 51 passes in 59.01 seconds; it is not a
+complete corpus verification claim. The preceding frozen 222-path replay and
+raw default-suite failures retain their original commit attribution. This
+example-only batch changes no production compiler/runtime implementation.
+Black, Ruff, protected API and local documentation link checks pass.
