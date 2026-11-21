@@ -273,8 +273,21 @@ def test_full_root_original_child_operands_and_native_typed_admission_boundary()
         identity(f"child_{index}", tuple(signature))
         for index, signature in enumerate(signatures)
     )
-    # Identity bodies are a wiring fixture, never physical preparation evidence.
-    with pytest.raises(ValueError, match="parameters|bounded|unsupported"):
-        actual.program(*bodies)
+    # Identity bodies establish typed wiring with the admitted bounded pi array.
+    from flagquantum.core.ir.program import verify_program_record
+
+    program = actual.program(*bodies)
+    assert verify_program_record(program) == ()
+    root = next(function for function in program.functions if function.name == "main")
+    assert root.registers == tuple(actual.signature)
+    child_calls = Counter(
+        operation.callee
+        for operation in root.blocks[0].operations
+        if operation.callee in {body.name for body in bodies}
+    )
+    assert child_calls == {
+        "child_0": 2,
+        **{f"child_{index}": 1 for index in range(1, 6)},
+    }
     with pytest.raises(ValueError, match="concrete"):
         native.symbolic_count_guiding_state().program(*bodies)

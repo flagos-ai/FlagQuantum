@@ -152,7 +152,7 @@ def test_literal_packed_to_array_neighbor_call_retains_source_failure() -> None:
     original = source._kikuchi_matrix()._sparse_matrix_encoding.col_oracle
     with pytest.raises(IndexError, match="0-dimensional"):
         original.decompose_bloq()
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
+    with pytest.raises(IndexError, match="0-dimensional"):
         native.column_oracle.program(
             identity("neighbor", tuple(native.neighbor_query.signature))
         )

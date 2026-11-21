@@ -282,9 +282,9 @@ class GuidingState(PrepareOracle):
     ) -> ProgramRecord:
         """Bind all six original child roles through shared packed-word rebindings.
 
-        Every child must carry its actual source signature. The bounded pi
-        array currently fails protected Core executable admission at sorting.
-        No replacement sorting contract or physical identity is substituted.
+        Every child must carry its actual source signature, including the
+        bounded pi array. Callers supply child bodies and their independent
+        physical evidence for source-declaration-only sorting and preparation.
         """
         count, length, width = self.c, self.ell, self.inst.index_bitsize
         scratch_width = self.sort_ancilla_bitsize
