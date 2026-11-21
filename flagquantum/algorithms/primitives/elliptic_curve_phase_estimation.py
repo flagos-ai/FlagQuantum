@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -99,8 +100,23 @@ class EllipticCurvePhaseEstimation:
     def source_signature(self) -> Signature:
         return elliptic_curve_phase_signature(self.width)
 
-    def source_call_graph(self) -> SymbolicCallGraph[str]:
-        return elliptic_curve_phase_source_graph(self.width, self.window)
+    def source_callees(self) -> dict[Hashable, SymbolicInt]:
+        """Retain the representative point and window parameters in model calls."""
+        addition: Hashable = (
+            ("ECAddR", self.width, self.point)
+            if self.window == 1
+            else (
+                "ECWindowAddR",
+                self.width,
+                self.point,
+                self.window,
+                self.multiplication_window,
+            )
+        )
+        return {addition: self.width // self.window, ("MeasureQFT", self.width): 1}
+
+    def source_call_graph(self) -> SymbolicCallGraph[Hashable]:
+        return symbolic_call_graph(self, {self: self.source_callees()})
 
     @cached_property
     def _windows(self) -> tuple[EllipticCurveWindowAddition, ...]:

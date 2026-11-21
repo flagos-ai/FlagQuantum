@@ -55,3 +55,27 @@ expected failures. Native tests cover both original example declarations,
 the symbolic grouped call graph and the new windowed execution
 evidence. Q-0462 closes. Q-0461 remains open for the opaque scalar path,
 concrete source qubit-count failure and inherited clean-domain boundaries.
+
+## Parameter-preserving model calls
+
+The operation's `source_call_graph()` now retains its own constructor identity
+and complete child keys. `ECAddR` carries width and the supplied point;
+`ECWindowAddR` additionally carries both window sizes. `MeasureQFT` carries its
+width. The existing module-level grouped graph remains available. The model
+uses immutable parameter tuples for terminal calls, following the RSA model,
+so a symbolic modulus does not trigger physical arithmetic validation.
+
+The representative point remains the supplied point, as in the original
+`build_call_graph`; concrete execution still uses the successive point powers.
+The parameter regression compares unchanged source declarations across both
+addition modes, two multiplication windows, and a nondividing width/window
+model case. A terminal-cost consumer verifies that distinct multiplication
+windows remain distinguishable. These declarations are model counts. They do
+not certify executable scalar addition or supply missing leaf gate estimates.
+The physical amplitude, workspace and resource evidence above still applies.
+
+Batch validation on 2026-11-21 passed 44 concentrated cases and 29 integration
+cases, strict typing for all three changed Python files, formatting, Algorithms
+scope, architecture, IR and public API checks. The Cirq 1.6.1 lane passed all
+20 selected model and physical phase cases with the native Kickmix extension
+present.
