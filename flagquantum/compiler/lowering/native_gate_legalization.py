@@ -313,15 +313,15 @@ def _local_replacement(
 
 
 def _identity(
-    source: CircuitIR,
-    result: CircuitIR,
+    source_content_hash: str,
+    result_content_hash: str,
     snapshot: TargetCapabilitySnapshot,
     native_opcodes: tuple[str, ...],
     decompositions: tuple[GateDecompositionRecord, ...],
 ) -> str:
     payload = {
-        "source_content_hash": source.content_hash,
-        "result_content_hash": result.content_hash,
+        "source_content_hash": source_content_hash,
+        "result_content_hash": result_content_hash,
         "target_snapshot_id": snapshot.snapshot_id,
         "native_opcodes": native_opcodes,
         "decompositions": [
@@ -407,15 +407,23 @@ def legalize_native_gates(
     result = replace(ir, instructions=tuple(instructions)) if records else ir
     native_opcodes = tuple(sorted(descriptors))
     decompositions = tuple(records)
+    # Reuse within this identity construction only. Circuit tensors can mutate
+    # between calls, and result construction still validates the source afresh.
+    source_content_hash = ir.content_hash
+    result_content_hash = source_content_hash if result is ir else result.content_hash
     return NativeGateLegalizationResult(
         source_program=ir,
         program=result,
-        source_content_hash=ir.content_hash,
+        source_content_hash=source_content_hash,
         target_snapshot_id=snapshot.snapshot_id,
         native_opcodes=native_opcodes,
         decompositions=decompositions,
         legalization_identity=_identity(
-            ir, result, snapshot, native_opcodes, decompositions
+            source_content_hash,
+            result_content_hash,
+            snapshot,
+            native_opcodes,
+            decompositions,
         ),
     )
 
