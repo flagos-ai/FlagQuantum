@@ -196,3 +196,24 @@ order. Zero accepted shots refuse conditional estimation rather than inventing
 a distribution. This creates a separate measurement plan on the same IR; it is
 not runtime mutation of the sealed synthesis plan or a direct named shot reader.
 The 98 focused lesson, QSVT and existing observable-output tests pass.
+
+## Integration status and remaining admissions
+
+The final QSVT selection passes 29 tests, including refusal of either shortened
+source phase stream; the catalog/audit selection passes 23 tests. Protected API
+and local documentation-link checks pass. An accidentally broad 506-case native
+catalog selection was stopped by its 120-second subprocess limit and is retained
+as an incomplete run, not a pass. Its expensive numerical workload is already
+covered by separately recorded source replay and independent acceptance; no
+remote CI was started. The prior raw default failures and exact environment
+rechecks remain as recorded, rather than being renamed a clean full-suite run.
+
+The next original-size native replacement is the 128-by-128 image preparation.
+Its exact bounded API proposal is already reviewable, but remains unapproved;
+the current 256-entry preparation and 4096-element root binding caps are intact.
+Do not interpret a completed editorial denominator as approval for those changes.
+Native symbolic runtime angles also require separate contract admission; the
+existing Circuit route is executable and demonstrated, not a promise that native
+qfunc already reuses symbolic parameters. The signed-addition original-budget gap
+remains measured and open. These capability gaps do not revoke the 212 accepted
+original workflow reproductions or their explicitly labeled Circuit paths.

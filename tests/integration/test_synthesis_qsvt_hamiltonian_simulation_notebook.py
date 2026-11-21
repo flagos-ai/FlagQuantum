@@ -226,3 +226,22 @@ def test_native_joint_samples_keep_named_order_and_conditional_denominator(
         options=fq.ExecutionOptions(shots=7, seed=37),
     )
     assert ordered.measurement("reordered").value == [{"010": 7}]
+
+
+@pytest.mark.parametrize("stream", ["cosine", "sine"])
+def test_native_sequence_rejects_missing_source_phase(
+    fitted_source: workflow.Result, stream: str
+) -> None:
+    from dataclasses import replace
+
+    from examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.hamiltonian_simulation_qsvt.overview import (
+        quantum,
+    )
+
+    cosine, sine = fitted_source.cosine, fitted_source.sine
+    if stream == "cosine":
+        cosine = replace(cosine, phases=cosine.phases[:-1])
+    else:
+        sine = replace(sine, phases=sine.phases[:-1])
+    with pytest.raises(ValueError, match="33/34"):
+        quantum.build_program(cosine, sine, workflow.input_state())
