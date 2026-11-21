@@ -33,7 +33,7 @@ _HARNESS = "9aa9260920984e2ca05bcb293abb885fccd9c144"
 class DevelopmentReport(TypedDict, total=False):
     scope: str
     base_commit: str
-    candidate_commit: str
+    implementation_commit: str
     candidate_source_sha256: str
     baseline_source_sha256: str
     runner_sha256: str
@@ -41,7 +41,7 @@ class DevelopmentReport(TypedDict, total=False):
     platform: str
     numerical_cases: int
     complete: bool
-    sdkbench_commit: str
+    source_commit: str
     workflows: list[dict[str, object]]
 
 
@@ -101,7 +101,7 @@ def main() -> None:
     report: DevelopmentReport = {
         "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
         "base_commit": _BASE,
-        "candidate_commit": _git(_ROOT, "rev-parse", "HEAD"),
+        "implementation_commit": _git(_ROOT, "rev-parse", "HEAD"),
         "candidate_source_sha256": hashlib.sha256(
             candidate_source.encode()
         ).hexdigest(),
@@ -126,7 +126,7 @@ def main() -> None:
         import flagquantum.compiler.optimization.two_qubit_optimization as matrices
         from benchmarks.compiler_cz_identity_prefix import _observe
 
-        report["sdkbench_commit"] = _HARNESS
+        report["source_commit"] = _HARNESS
         original = matrices._matmul
         for case in itertools.product(
             (6, 8, 12),

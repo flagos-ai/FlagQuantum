@@ -35,7 +35,7 @@ the compiler, with its existing attribution and boundaries.
 The control is the exact private function extracted from main commit
 `b3ed982a0d90a05ec69b093723aa1b6e83630463`. Other compiler components stay at the
 candidate revision. The initial raw reports record that checkout parent in
-`candidate_commit`; `candidate_source_sha256` identifies the modified working
+`implementation_commit`; `candidate_source_sha256` identifies the modified working
 source actually executed. They do not claim to measure pristine historical main
 against an entire new release. Workflow timings were collected while local tests
 could also run, and must not be interpreted as performance evidence.
@@ -110,3 +110,14 @@ python -m examples.compiler_synthesis
 It checks one-qubit, two-qubit and state-preparation synthesis against the shipped
 runtime, reports target-basis membership, demonstrates explicit refusals and
 ends with `FlagQuantum compiler synthesis check passed`.
+
+## CI provenance vocabulary correction
+
+The first PR head failed quality, CPU 3.12 and coverage shard 174 because the
+evidence used two undeclared revision field names. The reports now reuse
+`implementation_commit` for the compiler checkout and `source_commit` for the
+external SDKBench checkout. Recorded revisions and numerical observations are
+unchanged. The validation record retains the original document hashes, name
+mapping and exact historical benchmark source. Historical `runner_sha256` values
+continue to bind that source, while future runs emit the declared names. The
+repository revision vocabulary and its test are unchanged.

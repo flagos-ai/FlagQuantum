@@ -4,7 +4,7 @@
     {
       "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
       "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
-      "candidate_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+      "implementation_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
       "candidate_source_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
       "baseline_source_sha256": "13ba7b064c0363cbc7b9d9aa047a4ada0115be15502d21e694db6b92b61421e2",
       "runner_sha256": "4c8372f6ceefc9bb3c843606b89db6b4fdd73adc0dd358f77acea9498e33727d",
@@ -17,7 +17,7 @@
     {
       "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
       "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
-      "candidate_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+      "implementation_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
       "candidate_source_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
       "baseline_source_sha256": "13ba7b064c0363cbc7b9d9aa047a4ada0115be15502d21e694db6b92b61421e2",
       "runner_sha256": "4c8372f6ceefc9bb3c843606b89db6b4fdd73adc0dd358f77acea9498e33727d",
@@ -30,7 +30,7 @@
     {
       "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
       "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
-      "candidate_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+      "implementation_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
       "candidate_source_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
       "baseline_source_sha256": "13ba7b064c0363cbc7b9d9aa047a4ada0115be15502d21e694db6b92b61421e2",
       "runner_sha256": "4c8372f6ceefc9bb3c843606b89db6b4fdd73adc0dd358f77acea9498e33727d",
@@ -43,7 +43,7 @@
     {
       "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
       "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
-      "candidate_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+      "implementation_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
       "candidate_source_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
       "baseline_source_sha256": "13ba7b064c0363cbc7b9d9aa047a4ada0115be15502d21e694db6b92b61421e2",
       "runner_sha256": "4c8372f6ceefc9bb3c843606b89db6b4fdd73adc0dd358f77acea9498e33727d",
@@ -2393,7 +2393,7 @@
           }
         }
       ],
-      "sdkbench_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144"
+      "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144"
     }
   ]
 }

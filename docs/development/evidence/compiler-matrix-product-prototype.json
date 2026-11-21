@@ -2,7 +2,7 @@
   "scope": "Exploratory prototype on a shared host; separate from the production-source validation. Timings are not qualified performance evidence. Python allocation peaks are not process RSS.",
   "workflow_report": {
     "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
-    "sdkbench_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
     "runner_sha256": "2a832a4cfc41f590dcf16159f259373e1137d96c3e84ce6641ff7a2c89ad90fd",
     "evidence_class": "development_within_sdk_control",
     "rows": [
