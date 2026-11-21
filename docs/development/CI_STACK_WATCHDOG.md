@@ -137,3 +137,22 @@ checkout's default tier passed 79 selected unit tests after restoring unmodified
 policy/chemistry fixtures omitted by sparse checkout; the failed collection and
 fixture attempts remain in the evidence record. This is not full-repository
 default-tier certification. Full Linux CI remains required before integration.
+
+## CI environment isolation and subsequent failures
+
+After synchronization with main `02bacc099cdcd1ac08510c8cf944df6e018c94c9`,
+the isolated child fixture clears `PYTEST_ADDOPTS`. CPU-runtime jobs inherited
+parent worker and report flags while child plugin autoload was disabled, so
+argument parsing rejected `-n` and `--dist` before child tests executed. This
+failure was reproduced locally with two outer workers. The slow pass and failure
+scenarios now inject parent worker/report options and verify that the child does
+not write the parent's report. All 11 cases then pass with two outer workers on
+pytest 7.4.4 and 9.2.0. The parent CI command, worker count, reports and test
+assertions remain unchanged.
+
+Coverage job `137020948855` instead failed before pytest: removing a previous
+container exceeded the existing 20-second Docker cleanup limit. A subsequent
+read-only inspection on `jp-mc550-122` found the container absent and Docker
+29.5.3 responsive on kernel 5.15.0-119-generic. This establishes later state,
+not the timeout's root cause or a resolution of cleanup reliability. No service
+or container was restarted or modified. Exact-head Linux CI remains required.

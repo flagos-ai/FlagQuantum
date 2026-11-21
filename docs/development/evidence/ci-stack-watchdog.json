@@ -5,7 +5,7 @@
   "classification": "single_device_fast_path",
   "sources": {
     "tools/pytest_stack_watchdog.py": "272cfbbcdccd1ccc97741daec3b1c35ddf2104159f644ea52949e0cd481eec5c",
-    "tests/integration/test_ci_stack_watchdog.py": "44499835902c4f482ef61b21f81c7b3311b99149bea6fc76daee7a96b4dee018"
+    "tests/integration/test_ci_stack_watchdog.py": "654992e9ec29743839e2a327fcf5a10cf7cb705d59f9a08b1987348b1fd9dc8d"
   },
   "local_environment": {
     "python": "3.12.14",
@@ -306,5 +306,62 @@
       "explanation": "Four diagnostic-label assertions failed because pytest 7 gave node IDs without the file prefix when -c /dev/null selected an unrelated root directory. The child fixture now passes --rootdir explicitly. Test outcomes, diagnostics, and timer cleanup already worked; no watchdog assertion was removed."
     },
     "change": "Use the supported hookwrapper protocol and parse the built-in timeout numerically, including the string 0 used by pytest 7."
-  }
+  },
+  "main_sync_commit": "02bacc099cdcd1ac08510c8cf944df6e018c94c9",
+  "inherited_options_fix": {
+    "failure": "CPU-runtime child pytest inherited parent PYTEST_ADDOPTS, including -n and --dist, while plugin autoload was disabled. It failed argument parsing before executing the child test.",
+    "observed_jobs": [
+      137020187649,
+      137020187608,
+      137020187743,
+      137020187768,
+      137020187548
+    ],
+    "ci_log_hashes": {
+      "137020187649": "1ab82d34b73e355481bd3131adf87cd725f3b00ca0b13f209dde5f1abb0237a2",
+      "137020187608": "d90b6ae37f06e0e4a722c583721c3e667e636ff7370f707b637cd08bdd7dbe05",
+      "137020187743": "b611fda0e3b34ca67e47f8c4b800522fe5a12adacde86a4a2380eaf27e0a3a3e",
+      "137020187768": "e16e576b0f224b3254846f79c7f492b8c37a3041a539187f75e6b4e86a9926fa",
+      "137020187548": "b1402d01f4591390953210ac454df7530bd18dfa1a508c61dc6dcf859f47b301"
+    },
+    "reproduction": {
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [1 item]\n\nF                                                                        [100%]\n=================================== FAILURES ===================================\n________ test_slow_test_reports_its_stack_and_preserves_outcome[False] _________\n[gw1] darwin -- Python 3.12.14 /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python\ntests/integration/test_ci_stack_watchdog.py:68: in test_slow_test_reports_its_stack_and_preserves_outcome\n    assert result.returncode == int(failure), result.stdout + result.stderr\nE   AssertionError: Watchdog threads released\nE     ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]\nE     pytest.main(): error: unrecognized arguments: -n --dist=worksteal\nE       inifile: /dev/null\nE       rootdir: /private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/pytest-of-baai/pytest-625/popen-gw1/test_slow_test_reports_its_sta0\nE     \nE     \nE   assert 4 == 0\nE    +  where 4 = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...r/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/pytest-of-baai/pytest-625/popen-gw1/test_slow_test_reports_its_sta0\\n\\n').returncode\nE    +  and   0 = int(False)\n=========================== short test summary info ============================\nFAILED tests/integration/test_ci_stack_watchdog.py::test_slow_test_reports_its_stack_and_preserves_outcome[False]\n============================== 1 failed in 1.18s ===============================\n",
+      "sha256": "2759a75f2d944806ddf9ee0e026516d7ebeb0f2774406232daa4d846a5e524c0"
+    },
+    "correction": "Clear PYTEST_ADDOPTS only in the isolated fixture child; outer CI options and all assertions remain. Both slow pass/fail scenarios inject parent worker/report options and assert no parent report is created.",
+    "after": {
+      "7.4.4": {
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-7.4.4, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [11 items]\n\n...........                                                              [100%]\n============================== 11 passed in 2.82s ==============================\n",
+        "sha256": "ea4e1235442bff663561bae87189e14a2de19792f47e049635eb73d4e8bb56b9"
+      },
+      "9.2.0": {
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [11 items]\n\n...........                                                              [100%]\n============================== 11 passed in 2.83s ==============================\n",
+        "sha256": "3d2f7c9ec570c8c275584a8fda4d21b7f1577a2cc97efd6048df5d241d4c57aa"
+      }
+    },
+    "setup_failure": "The first local outer invocation loaded xdist twice (autoload plus -p) and exited before collection. The isolated reproduction disables outer autoload and reproduces CI argument parsing failure."
+  },
+  "container_cleanup_observation": {
+    "run_id": 44961101644,
+    "job_id": 137020948855,
+    "log_sha256": "e41378d42532cf5db63b4480df4bbd77d6b64f3d90bb13b61605bb945bbda359",
+    "failure": "docker rm --force exceeded the existing 20-second cleanup timeout before pytest started.",
+    "runner": "fq-mc550-122-cpu15",
+    "container_id": "f9ee43988829ae8f52c63d7866ec969900b480615e48afbb6c88227c8353e880",
+    "subsequent_read_only_observation": {
+      "host": "jp-mc550-122",
+      "kernel": "5.15.0-119-generic",
+      "docker_server": "29.5.3",
+      "inspect": "No such object",
+      "matching_container_list": "empty"
+    },
+    "interpretation": "The container was absent and Docker responsive at the later inspection. This does not establish root cause, prove cleanup reliability, or waive the failure. No restart or service/container mutation was performed."
+  },
+  "main_sync_default_tier": {
+    "passed": 79,
+    "deselected": 14,
+    "log": "+ /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python -m pytest -m smoke or unit -q\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ntestpaths: tests\ncollected 93 items / 14 deselected / 79 selected\n\ntests/unit/test_ci_coverage_plan.py .............                        [ 16%]\ntests/unit/test_ci_cpu_budget.py .................................       [ 58%]\ntests/unit/test_ci_offline_environment.py .......................        [ 87%]\ntests/unit/test_lane_dependency_policy.py ..........                     [100%]\n\n====================== 79 passed, 14 deselected in 6.09s =======================\n",
+    "qualification": "Sparse selection only; full exact-head Linux CI required."
+  },
+  "main_sync_checks": "Black, Ruff, strict mypy for both Python files, and git diff --check passed."
 }

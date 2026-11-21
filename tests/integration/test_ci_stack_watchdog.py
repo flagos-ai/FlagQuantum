@@ -48,6 +48,8 @@ def _run(
                 (str(ROOT), os.environ.get("PYTHONPATH", ""))
             ),
             "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+            # Parent CI worker/report options belong to the outer pytest run.
+            "PYTEST_ADDOPTS": "",
         },
         capture_output=True,
         text=True,
@@ -57,8 +59,12 @@ def _run(
 
 @pytest.mark.parametrize("failure", [False, True])
 def test_slow_test_reports_its_stack_and_preserves_outcome(
-    tmp_path: Path, failure: bool
+    tmp_path: Path, failure: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    parent_report = tmp_path / "parent-report.xml"
+    monkeypatch.setenv(
+        "PYTEST_ADDOPTS", f"-n 12 --dist=worksteal --junitxml={parent_report}"
+    )
     result = _run(
         tmp_path,
         "import time\ndef test_slow():\n    time.sleep(0.15)\n"
@@ -71,6 +77,7 @@ def test_slow_test_reports_its_stack_and_preserves_outcome(
     )
     assert "in test_slow" in result.stderr
     assert "Watchdog threads released" in result.stdout
+    assert not parent_report.exists()
 
 
 @pytest.mark.parametrize("seconds", ["0", "60"])
