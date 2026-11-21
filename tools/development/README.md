@@ -1,9 +1,9 @@
 # Development helpers
 
-This package owns buffered generated-file output, development command logging
-and checkout-root discovery. File, process, repository and coverage helpers use
-only Python's standard library. Docstring rendering uses optional Sphinx and attrs
-development dependencies.
+This package owns buffered generated-file output, development command logging,
+checkout discovery and comparison revisions. File, process, repository and
+coverage helpers use only Python's standard library. Docstring rendering uses
+optional Sphinx and attrs development dependencies.
 Framework, Compiler, Runtime and Simulation packages must not import it.
 
 Scripts import `WriteIfDifferent` from `tools.development.files`, `run` and
@@ -368,3 +368,11 @@ under the existing native strict policy. Use
 The developer scope supports the `tools` namespace with explicit package bases.
 See `DEVELOPMENT_TYPECHECK_COMMANDS_AUDIT.md` for the complete source wrapper
 comparison and the still-open original configuration migration parent.
+
+`format_command.py` preserves the complete changed/all Python file selection and
+check/apply orchestration of the frozen formatter. Run
+`python -m tools.development.format_command HEAD`, adding `--apply` to modify
+selected files or using `--all` for tracked files. Optional Flynt 0.78 owns
+f-string conversion. Existing Ruff import sorting and Black own native source
+formatting. See `DEVELOPMENT_FORMAT_COMMANDS_AUDIT.md` for dependency setup,
+configuration differences and retained source edge cases.
