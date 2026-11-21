@@ -20,6 +20,7 @@ from pathlib import Path
 from sympy import Symbol
 
 from examples.algorithms.addition_catalog import addition_examples
+from examples.algorithms.addition_decomposition import addition_program, addition_score
 from examples.algorithms.comparison_catalog import comparison_examples
 from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
@@ -596,6 +597,8 @@ def score(component: object) -> object:
         return component.score()
     ports = signature(component)
     decomposed = word_score(name(component), ports)
+    if decomposed is None:
+        decomposed = addition_score(name(component), ports, attributes(component))
     if decomposed is not None:
         return decomposed
     leaf = FunctionRecord(name(component), (), registers=tuple(ports))
@@ -620,7 +623,7 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
     )
     return (
         f"# {title}\n\nNative metadata owner `{owner}`.\n\n"
-        "Word bitwise and negation instances retain their immediate child graphs. "
+        "Addition, word bitwise and negation instances retain their immediate child graphs. "
         "Other diagrams show atomic typed interfaces. Contextual child nodes "
         "preserve native helper boundaries. Symbolic child declarations have "
         "no executable body. Resource models retain separate evidence. "
@@ -658,7 +661,13 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
 
 def decomposition(component: object) -> ProgramRecord | None:
     """Select the existing word-arithmetic owner for catalog dependency traversal."""
-    return word_program(name(component), signature(component))
+    ports = signature(component)
+    record = word_program(name(component), ports)
+    return (
+        record
+        if record is not None
+        else addition_program(name(component), ports, attributes(component))
+    )
 
 
 def export_example(

@@ -1061,3 +1061,50 @@ instance has 2008 immediate calls and its fresh layout is deferred under an
 explicit 1000-call intake bound. After these five roots, 39 successful root
 drawings remain. Q-0120 stays open for those source-file groups, recursive
 arithmetic drawings and broader catalog dependencies.
+
+## Complete addition source-family catalog graphs
+
+All ten catalog instances from `arithmetic/addition.py` are now accounted for
+through existing Add, OutOfPlaceAdder and AddK owners. Seven concrete instances
+retain complete immediate call graphs and typed dependencies. Three symbolic
+instances retain the original DecomposeTypeError and atomic interfaces. Five
+source-success drawings match fresh geometry, glyphs and ordered connections.
+The two large native graphs draw successfully while their original IndexErrors
+remain recorded as source witnesses.
+
+The existing `copy_component_program` rebuilds OutOfPlaceAdder in source graph
+visitation order. It renumbers independent input XORs and workspace acquisition
+using the existing SSA graph traversal. Exact ordered traces now match both
+actual concrete factories. The established physical constructor remains the
+execution owner. Graph copying reuses the existing scheduling policy and
+retains the original primitive category counts.
+
+Source-specific immediate glyphs reuse conjunction, controlled-NOT, bitwise and
+partition callbacks. Allocate/Free labels retain original arrow directions.
+Always(Add) retains the wrapper's own default a/b labels and Add title. Source
+And(uncompute=True) retains its empty title, distinct from a generic Adjoint
+wrapper. Child files retain contextual native identities and default symbols.
+Recursive arithmetic source-glyph qualification remains open.
+
+The isolated combined exporter publishes 1009 JSON files, 234 documents and
+1008 non-null diagrams. Its 353 roots contain 33 immediate decompositions and
+320 atomic interfaces, alongside 655 contextual native child nodes. This batch
+adds 211 child files. All previously qualified Basic Gates children remain.
+Concentrated regression passes 491 cases with fourteen existing warnings, three
+deselections and zero skips. Strict typing of three Python files, Black, Ruff,
+team scope, architecture, IR, public API and whitespace checks pass.
+
+The complete existing addition, out-of-place addition and constant-addition
+physical component tests pass 397 cases. Separate copied-graph checks exhaust
+small complete isometries with an entangled spectator, every measured erasure
+history, full complex amplitudes and zeroed released work. Copies retain exact
+primitive category counts. Existing observed primitives and independent
+analytical models remain separately reported. Add/AddK use 4 * (width - 1)
+T/T-dagger gates for equal-width words. Forward OutOfPlaceAdder uses 4 * width
+with its most-significant carry; its measured adjoint retains the accepted
+measurement model. The 64-bit catalog reuses accepted physical stream and
+resource evidence. Fresh dense execution remains uncovered.
+
+Ten of the arithmetic intake's 44 successful root drawings are now qualified.
+Thirty-four successful roots, the explicitly bounded large CAdd layout, recursive
+arithmetic presentation and other catalog dependencies remain in Q-0120.
