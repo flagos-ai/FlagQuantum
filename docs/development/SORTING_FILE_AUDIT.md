@@ -294,3 +294,64 @@ within the available disk budget. Combined catalog topology stays at 3569 JSON,
 68 decomposed roots and 285 atomic interfaces. Qualified contextual descendants
 increase from 204 to 234. Other families' constructor matches retain separate
 fresh-source acceptance boundaries.
+
+## Symbolic recursive dependency closure — 2026-11-22
+
+The three declaration-only sorting contexts recorded above are closed. All six
+source factories, including the symbolic comparator and symbolic four-word sort,
+now retain complete source-success dependency graphs down to original atomic or
+refusal boundaries. The fresh traversal has 112 exact ordered graphs, 106 exact
+non-root source class labels and fresh musical-score payloads, and 765 original
+atomic/refusal contexts. Symbolic GreaterThan retains its LessThanEqual then X
+calls. The unresolved LessThanEqual and CSwap leaves retain declarations at the
+original physical decomposition boundaries.
+
+Compiler `sorting/network_graph.py` now owns finite-array wiring for parallel
+comparison, merge and recursive sort. The existing physical component factories
+supply their accepted executable comparator. Symbolic examples supply a typed
+comparator with the source comparison/swap graph. Both consumers share every
+pair index, intermediate array binding and logical history connection. The old
+example-only recursive sorting wiring was removed. The native component factory
+signatures, width-admission boundary and exact inverse path are retained.
+
+Independent published-baseline replay compares all 162 complete Program objects
+across three physical factories, multiple finite dimensions, widths 1/2/3 and
+both directions. Every Program equals baseline 86e0cda8c. Supplying an independent
+history-producing comparator changes all retained history outputs in all three
+shared consumers, proving the dependency is replaceable through the actual
+binding path. This replacement fixture has its own explicit behavior and makes
+no sorting-correctness claim. Existing native/source sorting execution consumers
+retain normal `circuit.append(op)` acceptance.
+
+All four concrete catalog primitive histograms and independent source cost
+objects equal the preceding published receipt exactly. Actual T-family and
+measurement pairs remain 41/5, 123/15, 1212/156 and 1344/168. Default 4-T CSwap
+estimates remain 32, 96, 960 and 1056, with exact 7-T CSwap estimates equal to the
+emitted T-family counts. Unresolved symbolic widths have dependency metadata and
+models, with finite physical execution rejection. No physical primitive count is
+assigned to an unresolved-width stream.
+
+Whole-Arithmetic traversal now records 318 exact graphs, 1535 original
+atomic/refusal contexts, four remaining native declaration-only source-success
+contexts and the two duplicate-detection graph gaps. The 27 omitted roots still
+contain five successful source decompositions and 22 original refusals. Remaining
+symbolic declarations belong to BitwiseNot under negate/subtract-from and two
+PermutationCycle contexts. Those separate source-file groups and other UI gaps
+remain open under Q-0120. Three sorting symbolic contexts are fully closed at the
+source-success graph boundary. Unknown array lengths retain their existing
+finite traversal restriction and original symbolic/source failure evidence.
+
+Acceptance passes 699 concentrated catalog checks, 708 execution/reference
+checks and 44 focused shared-graph/presentation checks. Strict typing covers all
+11 changed Python files. Black, Ruff, Compiler scope, architecture, multilevel IR,
+public API and whitespace checks pass. Five frozen source blobs are verified.
+The catalog retains three existing selection exclusions and fourteen notebook
+warnings. Execution retains six source serialization deprecation warnings.
+
+The Arithmetic contextual dependency graph grows from 2832 to 2853 definitions,
+adding 21 formerly absent symbolic dependencies. The combined file totals follow
+from the preceding measured export plus this exact node delta, with the complete
+catalog file-equality regression covering the new exports. They are 3590 JSON,
+3589 diagrams, 234 documentation files and 3236 contextual children. Qualified
+contextual descendants increase from 234 to 244. The inventory receipt records
+this derivation separately from literal fresh drawing comparisons.

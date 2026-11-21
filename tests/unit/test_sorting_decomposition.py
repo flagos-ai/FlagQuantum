@@ -110,6 +110,9 @@ def test_symbolic_calls_preserve_declared_children_and_reject_physical_binding(
     record = native.decomposition(identifier)
     assert record is not None
     declared = [function for function in record.functions[1:] if not function.blocks]
-    assert len(declared) == 2
+    assert {tuple(r.name for r in f.registers or ()) for f in declared} == {
+        ("ctrl", "x", "y"),
+        ("x", "y", "target"),
+    }
     with pytest.raises(ValueError):
         bind_register_program(record, ((0,), (1,)))

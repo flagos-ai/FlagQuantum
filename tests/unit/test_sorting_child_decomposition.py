@@ -16,7 +16,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 @pytest.mark.parametrize(
-    "identifier", ("comparator", "parallel_compare", "bitonic_merge", "bitonic_sort")
+    "identifier",
+    (
+        "comparator",
+        "comparator_symb",
+        "parallel_compare",
+        "bitonic_merge",
+        "bitonic_sort",
+        "bitonic_sort_symb",
+    ),
 )
 def test_whole_sorting_file_recursive_definitions_and_fresh_drawings(
     identifier: str, originals: tuple[Any, dict[str, Any]]

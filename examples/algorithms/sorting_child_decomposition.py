@@ -2,24 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from locked Qualtran v0.7.0 arithmetic/sorting.py.
 
-"""Qualify sorting dependencies through their complete executable definitions."""
+"""Qualify complete stored sorting definitions against their native owners."""
 
-from examples.algorithms.sorting_decomposition import sorting_symbols
+from examples.algorithms.sorting_decomposition import (
+    sorting_symbols,
+    symbolic_comparator_program,
+)
 from flagquantum.compiler.registers.comparison.compare_exchange_component import (
     compare_exchange_program,
 )
-from flagquantum.compiler.registers.comparison.parallel_comparison_component import (
-    parallel_comparison_program,
+from flagquantum.compiler.registers.comparison.ordering_declaration import (
+    ComparatorDeclaration,
 )
 from flagquantum.compiler.registers.component_definition_match import (
     matches_component_definition,
 )
 from flagquantum.compiler.registers.component_graph import iter_component_calls
-from flagquantum.compiler.registers.sorting.bitonic_merge_component import (
-    bitonic_merge_program,
-)
-from flagquantum.compiler.registers.sorting.bitonic_sort_component import (
-    bitonic_sort_program,
+from flagquantum.compiler.registers.sorting.network_graph import (
+    bitonic_merge_graph,
+    bitonic_sort_graph,
+    parallel_comparison_graph,
 )
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_bindings import RegisterBinding
@@ -34,24 +36,32 @@ def sorting_child_decomposition(
     Parallel offset comes from the first named comparator operands. Width and
     array length come from typed ports. A two-word sort requires its enclosing
     exact recursive sort, since a two-word parallel block has the same body.
-    Symbolic declarations retain their existing unqualified interface.
+    Symbolic widths reuse the same finite network and declared comparison leaves.
     """
     function = next(f for f in record.functions if f.name == entry)
     registers = function.registers or ()
     if not registers or any(
-        type(r.bitsize) is not int or r.bitsize < 1 or r.is_symbolic()
+        (type(r.bitsize) is int and r.bitsize < 1)
+        or any(type(dimension) is not int for dimension in r.shape_symbolic)
         for r in registers
     ):
         return None
     ports = tuple(r.name for r in registers)
+    if ports not in {("a", "b", "out"), ("xs", "junk"), ("xs", "ys", "result", "junk")}:
+        return None
     width = registers[0].bitsize
+    comparator = (
+        compare_exchange_program(width)
+        if type(width) is int
+        else symbolic_comparator_program(ComparatorDeclaration(width).signature)
+    )
     candidates: list[tuple[str, ProgramRecord]] = []
     if ports == ("a", "b", "out"):
-        candidates.append(("Comparator", compare_exchange_program(width)))
+        candidates.append(("Comparator", comparator))
     elif ports == ("xs", "ys", "result", "junk") and len(registers[0].shape) == 1:
         half = registers[0].shape[0]
         if half > 0 and half & (half - 1) == 0:
-            candidates.append(("BitonicMerge", bitonic_merge_program(half, width)))
+            candidates.append(("BitonicMerge", bitonic_merge_graph(half, comparator)))
     elif ports == ("xs", "junk") and len(registers[0].shape) == 1:
         count = registers[0].shape[0]
         sort_context = count >= 4 or (
@@ -61,13 +71,13 @@ def sorting_child_decomposition(
                 and len(parent.blocks[0].operations) == 3
                 and all(op.callee == entry for op in parent.blocks[0].operations[:2])
                 and matches_component_definition(
-                    record, parent.name, bitonic_sort_program(2 * count, width)
+                    record, parent.name, bitonic_sort_graph(2 * count, comparator)
                 )
                 for parent in record.functions
             )
         )
         if sort_context and count & (count - 1) == 0:
-            candidates.append(("BitonicSort", bitonic_sort_program(count, width)))
+            candidates.append(("BitonicSort", bitonic_sort_graph(count, comparator)))
         if count > 2 and function.blocks and function.blocks[0].operations:
             first = function.blocks[0].operations[0]
             if first.opcode == "call":
@@ -83,8 +93,8 @@ def sorting_child_decomposition(
                     candidates.append(
                         (
                             "ParallelComparators",
-                            parallel_comparison_program(
-                                count, b.index[0] - a.index[0], width
+                            parallel_comparison_graph(
+                                count, b.index[0] - a.index[0], comparator
                             ),
                         )
                     )

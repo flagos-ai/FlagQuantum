@@ -6,25 +6,28 @@
 
 from collections.abc import Mapping
 
-import numpy as np
-
+from examples.algorithms.comparison_decomposition import symbolic_greater_than_program
 from examples.algorithms.subtraction_decomposition import subtraction_symbols
 from flagquantum.compiler.registers.comparison.compare_exchange_component import (
     compare_exchange_program,
+)
+from flagquantum.compiler.registers.comparison.ordering_declaration import (
+    ComparatorDeclaration,
 )
 from flagquantum.compiler.registers.comparison.parallel_comparison_component import (
     parallel_comparison_program,
 )
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
-from flagquantum.compiler.registers.sorting.bitonic_declaration import (
-    BitonicMergeDeclaration,
-    BitonicSortDeclaration,
-)
 from flagquantum.compiler.registers.sorting.bitonic_merge_component import (
     bitonic_merge_program,
 )
 from flagquantum.compiler.registers.sorting.bitonic_sort_component import (
     bitonic_sort_program,
+)
+from flagquantum.compiler.registers.sorting.network_graph import (
+    bitonic_merge_graph,
+    bitonic_sort_graph,
+    parallel_comparison_graph,
 )
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.register_types import (
@@ -45,12 +48,11 @@ from flagquantum.drawer.register_score_data import (
 from flagquantum.drawer.swap_symbols import swap_wire_symbol
 
 
-def _symbolic_comparator(ports: Signature) -> ProgramRecord:
+def symbolic_comparator_program(ports: Signature) -> ProgramRecord:
+    """Compose symbolic source comparison/swap calls with one owned history bit."""
     word, bit = ports[0].dtype, quantum_bit_type()
-    compare = FunctionRecord(
-        "GreaterThan",
-        (),
-        registers=tuple(Signature.build_from_dtypes(a=word, b=word, target=bit)),
+    compare = symbolic_greater_than_program(
+        Signature.build_from_dtypes(a=word, b=word, target=bit)
     )
     swap = FunctionRecord(
         "CSwap",
@@ -63,54 +65,22 @@ def _symbolic_comparator(ports: Signature) -> ProgramRecord:
             )
         ),
     )
-    builder = ComponentProgramBuilder(ports, (compare, swap))
+    builder = ComponentProgramBuilder(ports, (swap,))
     history = builder.allocate(dtype=bit)
-    result = builder.call_dict(compare.name, {**builder.inputs, "target": history})
+    result = builder.call_program(compare, {**builder.inputs, "target": history})
     result = builder.call_dict(
         swap.name, {"ctrl": result["target"], "x": result["a"], "y": result["b"]}
     )
     return builder.finalize({"a": result["x"], "b": result["y"], "out": result["ctrl"]})
 
 
-def _symbolic_sort(ports: Signature, count: int) -> ProgramRecord:
-    width = ports[0].bitsize
-    half = count // 2
-    sort = FunctionRecord(
-        "BitonicSort",
-        (),
-        registers=tuple(BitonicSortDeclaration(half, width).signature),
-    )
-    merge = FunctionRecord(
-        "BitonicMerge",
-        (),
-        registers=tuple(BitonicMergeDeclaration(half, width).signature),
-    )
-    builder = ComponentProgramBuilder(ports, (sort, merge))
-    xs = np.asarray(builder.inputs["xs"])
-    left = builder.call_dict(sort.name, {"xs": xs[:half]})
-    right = builder.call_dict(sort.name, {"xs": xs[half:]})
-    result = builder.call_dict(merge.name, {"xs": left["xs"], "ys": right["xs"]})
-    return builder.finalize(
-        {
-            "xs": result["result"],
-            "junk": np.concatenate(
-                (
-                    np.asarray(left["junk"]),
-                    np.asarray(right["junk"]),
-                    np.asarray(result["junk"]),
-                )
-            ),
-        }
-    )
-
-
 def sorting_catalog_program(
     operation: str, ports: Signature, parameters: Mapping[str, object]
 ) -> ProgramRecord | None:
-    """Reuse concrete sorting owners and source symbolic factory declarations.
+    """Reuse the shared finite network builders with concrete or symbolic children.
 
-    Symbolic child definitions retain typed ports with no executable body. The
-    symbolic sorting factory has four words and three immediate recursive calls.
+    Symbolic widths retain source-success dependency graphs down to declared
+    comparison/swap leaves. Their unresolved physical storage still rejects.
     """
     if operation not in {
         "Comparator",
@@ -122,9 +92,20 @@ def sorting_catalog_program(
     width = ports[0].bitsize
     if type(width) is not int:
         if operation == "Comparator":
-            return _symbolic_comparator(ports)
-        if operation == "BitonicSort" and ports[0].shape == (4,):
-            return _symbolic_sort(ports, 4)
+            return symbolic_comparator_program(ports)
+        comparator = symbolic_comparator_program(ComparatorDeclaration(width).signature)
+        if operation == "BitonicSort" and len(ports[0].shape_symbolic) == 1:
+            count = ports[0].shape_symbolic[0]
+            if type(count) is int:
+                return bitonic_sort_graph(count, comparator)
+        if operation == "BitonicMerge" and len(ports[0].shape_symbolic) == 1:
+            half = ports[0].shape_symbolic[0]
+            if type(half) is int:
+                return bitonic_merge_graph(half, comparator)
+        if operation == "ParallelComparators":
+            count, offset = parameters["k"], parameters["offset"]
+            if type(count) is int and type(offset) is int:
+                return parallel_comparison_graph(count, offset, comparator)
         return None
     if operation == "Comparator":
         return compare_exchange_program(width)
