@@ -148,7 +148,7 @@ def test_style_and_wire_symbol_failures_propagate_without_changing_record() -> N
     def invalid_caption(
         *args: object,
     ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
-        return "TextBox", {"text": "bad"}
+        return "TextBox", {"text": 7}
 
     with pytest.raises(ValueError, match="connector"):
         register_score_data(score, wire_symbol=invalid_caption)

@@ -194,7 +194,7 @@ def register_score_data(
     An explicit wire_symbol callback supplies port glyphs and the connector label
     (register=None, side=None), analogous to the source per-component protocol.
     It receives display identities only and cannot alter geometry or execution.
-    Connector symbols must be Text with text and fontsize attributes.
+    Connector symbols use Text with text and fontsize, or TextBox with text.
 
     Alternatively, register_wire_symbol receives Core register metadata and
     the row-major element index, including () for scalars. Connector arguments
@@ -361,8 +361,12 @@ def register_score_data(
             )
             if label_supplier is not None:
                 symbol, attributes = label_supplier(step, None, None)
-                if symbol == "TextBox" and attributes == {"text": ""}:
-                    label = {"text": ""}
+                if (
+                    symbol == "TextBox"
+                    and set(attributes) == {"text"}
+                    and isinstance(attributes["text"], str)
+                ):
+                    label = {"text": attributes["text"]}
                 elif (
                     symbol == "Text"
                     and isinstance(attributes.get("text"), str)
@@ -374,7 +378,7 @@ def register_score_data(
                     }
                 else:
                     raise ValueError(
-                        "connector wire symbols require Text with text and fontsize or an empty TextBox"
+                        "connector wire symbols require Text with text and fontsize or TextBox with text"
                     )
             connectors.append(
                 {
