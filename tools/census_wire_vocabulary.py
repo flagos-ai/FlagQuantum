@@ -875,6 +875,28 @@ class DocumentationCensus:
         return Counter(self.sites)
 
 
+def _repository_files(root: Path) -> tuple[str, ...]:
+    # core.worktree may point at another checkout in a shared repository. The
+    # census must enumerate the same tree it subsequently reads, without changing
+    # shared configuration or exporting GIT_WORK_TREE to fixture-created repos.
+    listed = subprocess.run(
+        [
+            "git",
+            f"--work-tree={root.resolve()}",
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
+        cwd=root,
+        capture_output=True,
+        check=True,
+        timeout=60,
+    ).stdout
+    return tuple(sorted(set(listed.decode("utf-8").split("\0")) - {""}))
+
+
 def documentation_files(repository_root: Path | None = None) -> tuple[str, ...]:
     """Tracked Markdown that documents the current tree, as repository paths.
 
@@ -890,16 +912,9 @@ def documentation_files(repository_root: Path | None = None) -> tuple[str, ...]:
     """
 
     root = REPOSITORY_ROOT if repository_root is None else repository_root
-    listed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        cwd=root,
-        capture_output=True,
-        check=True,
-        timeout=60,
-    ).stdout
     return tuple(
         name
-        for name in sorted(set(listed.decode("utf-8").split("\0")))
+        for name in _repository_files(root)
         if name.endswith(".md")
         and name not in DOCUMENTATION_EXCLUDED_FILES
         and not name.startswith(DOCUMENTATION_EXCLUDED_PREFIXES)
@@ -965,16 +980,9 @@ def prose_noun_census(
     """
 
     root = REPOSITORY_ROOT if repository_root is None else repository_root
-    listed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        cwd=root,
-        capture_output=True,
-        check=True,
-        timeout=60,
-    ).stdout
     totals: Counter[str] = Counter()
     files: Counter[str] = Counter()
-    for name in sorted(set(listed.decode("utf-8").split("\0"))):
+    for name in _repository_files(root):
         if not name.endswith(".md"):
             continue
         text = (root / name).read_text(encoding="utf-8", errors="replace")
