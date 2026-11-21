@@ -20,6 +20,7 @@ from flagquantum.compiler.registers.component_control import quantum_control_sig
 from flagquantum.compiler.registers.control.controlled_component_resource_model import (
     controlled_component_cost,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program.register_types import (
     classical_bit_type,
@@ -41,6 +42,7 @@ from tests.unit.register_source_graph import (
     walk_source_graph,
 )
 from tests.unit.test_register_subtraction import assert_source
+from tests.unit.test_unary_component_calls import source_slot_names
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -128,6 +130,18 @@ def test_complete_notebook_fixtures(
     expected, outputs = walk_source_graph(source, ports, ports, leaf)
     assert outputs == ports
     assert_source(gates, expected)
+    program = example.program()
+    bindings = []
+    offset = 0
+    for register in example.signature:
+        for _ in register.all_idxs():
+            width = int(register.bitsize)
+            bindings.append(tuple(range(offset, offset + width)))
+            offset += width
+    bound = bind_register_program(program, tuple(bindings), clean=work)
+    assert bound.outputs == tuple(bindings)
+    bound_gates = source_slot_names(bound.circuit.instructions, work)
+    assert_source(bound_gates, expected)
     model = get_cost_value(source, QECGatesCost())
     native_cost = estimate_component_resources(
         controlled_component_cost(
@@ -157,7 +171,7 @@ def test_complete_notebook_fixtures(
         expected_state[:: 1 << (n - 1)] = source_state @ ket
         for history in product((0, 1), repeat=n - 1):
             torch.testing.assert_close(
-                forced_branch(initial, gates, history),
+                forced_branch(initial, bound_gates, history),
                 expected_state * 2 ** (-(n - 1) / 2),
                 atol=2e-12,
                 rtol=0,

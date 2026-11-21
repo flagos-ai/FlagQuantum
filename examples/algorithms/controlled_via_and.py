@@ -15,12 +15,24 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
-from flagquantum.compiler.registers.component_control import quantum_control_signature
+from flagquantum.compiler.registers.component_builder import (
+    BindingCollection,
+    ComponentProgramBuilder,
+)
+from flagquantum.compiler.registers.component_control import (
+    control_component_via_predicate,
+    quantum_control_signature,
+)
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.control.controlled_component import (
     controlled_component_ir,
 )
+from flagquantum.compiler.registers.primitives.controlled_hadamard import (
+    controlled_hadamard_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_types import (
     quantum_bit_type,
     signed_register_type,
@@ -29,6 +41,15 @@ from flagquantum.core.ir.program.register_types import (
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.dynamic import DynamicCircuit
+
+
+def _add_positive_hadamard(
+    builder: ComponentProgramBuilder,
+    control: BindingCollection,
+    values: dict[str, BindingCollection],
+) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+    control, target = builder.call_tuple("ch", {"ctrl": control, "target": values["q"]})
+    return control, (target,)
 
 
 @dataclass(frozen=True)
@@ -76,6 +97,28 @@ class ControlledHadamardExample:
                 "MultiAnd†": inverse,
             },
             max_depth=depth,
+        )
+
+    def program(self) -> ProgramRecord:
+        """Retain the source predicate, positive CH and measured erase calls."""
+        bit = quantum_bit_type()
+        positive = bit_gate_function(
+            "h", (Register("q", bit),), CircuitIR(1, (Instruction("h", (0,)),))
+        )
+        controlled = bit_gate_function(
+            "ch",
+            (Register("ctrl", bit), Register("target", bit)),
+            CircuitIR(2, controlled_hadamard_ir((0,), 1)),
+        )
+        builder = ComponentProgramBuilder(
+            Signature((Register("q", bit),)), (positive, controlled)
+        )
+        record = builder.finalize(builder.call_dict("h", {"q": builder.inputs["q"]}))
+        return control_component_via_predicate(
+            record,
+            {"main": _add_positive_hadamard},
+            tuple(self.signature)[:-1],
+            self.groups,
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:
