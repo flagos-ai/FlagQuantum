@@ -25,15 +25,19 @@ def approximate_qft_program(
     """Preserve caller gradient and q, with measured work owned by shared CAdd."""
     if type(width) is not int or width < 1 or type(with_reverse) is not bool:
         raise ValueError("QFT requires a positive concrete width and boolean reversal")
-    if type(precision) is not int or precision < 2:
-        raise ValueError("Stored approximate QFT requires at least two gradient bits")
-    signature = Signature.build_from_dtypes(
-        q=RegisterType("uint", width),
-        phase_grad=fixed_point_register_type(precision, precision),
-    )
+    if type(precision) is not int or precision < int(width > 1):
+        raise ValueError(
+            "Stored approximate QFT requires a gradient for multi-bit data"
+        )
+    dtypes = {"q": RegisterType("uint", width)}
+    if precision:
+        dtypes["phase_grad"] = fixed_point_register_type(precision, precision)
+    signature = Signature.build_from_dtypes(**dtypes)
     builder = ComponentProgramBuilder(signature)
     q, gradient = tuple(range(width)), tuple(range(width, width + precision))
-    positions = {"q": q, "phase_grad": gradient}
+    positions = {"q": q}
+    if precision:
+        positions["phase_grad"] = gradient
     words: dict[tuple[int, ...], RegisterBinding] = {}
     for name, wires in positions.items():
         value = builder.inputs[name]
@@ -61,6 +65,12 @@ def approximate_qft_program(
     for i in range(width):
         if i:
             active = min(i, precision - 1)
+            addition_positions = {
+                "ctrl": (q[i],),
+                "phase_grad": gradient[: active + 1],
+            }
+            if active:
+                addition_positions["x"] = q[i - active : i][::-1]
             call_through_word_program(
                 builder,
                 words,
@@ -70,11 +80,7 @@ def approximate_qft_program(
                     right_shift=1,
                     controlled=True,
                 ),
-                {
-                    "ctrl": (q[i],),
-                    "x": q[i - active : i][::-1],
-                    "phase_grad": gradient[: active + 1],
-                },
+                addition_positions,
                 nominal_types=nominal_types,
             )
         call_through_word_program(

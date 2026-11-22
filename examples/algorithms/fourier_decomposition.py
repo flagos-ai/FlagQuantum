@@ -107,7 +107,10 @@ def fourier_symbols(
             if register is None:
                 return "Text", {"text": "TwoBitSwap", "fontsize": 10}
             return partition_wire_symbol(step, register, index)
-        if names == ("ctrl", "phase_grad"):
+        if (
+            names == ("ctrl", "phase_grad")
+            and functions[step.name].blocks[0].operations
+        ):
             if register is None:
                 return "Text", {"text": "PhaseGradientUnitary", "fontsize": 10}
             if register.name == "ctrl":
@@ -133,7 +136,7 @@ def fourier_symbols(
             if register.name == "result":
                 return "TextBox", {"text": "c+=a*b"}
             return partition_wire_symbol(step, register, index)
-        if names == ("ctrl", "x", "phase_grad"):
+        if names in {("ctrl", "x", "phase_grad"), ("ctrl", "phase_grad")}:
             if register is None:
                 return "Text", {"text": "pg+=x>>1", "fontsize": 10}
             if register.name == "ctrl":

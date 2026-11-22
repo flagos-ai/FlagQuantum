@@ -258,3 +258,67 @@ def _alter_gate(operation: Operation) -> Operation:
     if operation.opcode == "h":
         return replace(operation, opcode="z")
     return operation
+
+
+@pytest.mark.parametrize("width,precision", ((1, 0), (1, 1), (2, 1), (3, 1), (4, 1)))
+@pytest.mark.parametrize("reverse", (False, True))
+def test_small_precision_source_calls_complete_operator_and_empty_work(
+    width: int, precision: int, reverse: bool
+) -> None:
+    import cirq
+    from qualtran.bloqs.qft.approximate_qft import ApproximateQFT
+
+    from examples.algorithms.fourier_decomposition import fourier_score
+    from tests.unit.test_basic_gate_child_decomposition import _source_score
+    from tests.unit.test_component_graph import _native_trace, _source_trace
+    from tests.unit.test_register_component_calls import SourceCalls
+    from tests.unit.test_register_gate_ui_export import _canonical_score
+
+    source = ApproximateQFT(width, precision, with_reverse=reverse)
+    record = approximate_qft_program(width, precision, with_reverse=reverse)
+    assert _native_trace(record) == _source_trace(SourceCalls, source.decompose_bloq())
+    drawing = fourier_score(
+        "ApproximateQFT",
+        {"bitsize": width, "phase_bitsize": precision, "with_reverse": reverse},
+    )
+    assert drawing is not None
+    assert _canonical_score(dict(drawing)) == _canonical_score(
+        _source_score(source.decompose_bloq())
+    )
+    inputs: tuple[tuple[int, ...], ...] = (tuple(range(width)),)
+    if precision:
+        inputs += (tuple(range(width, width + precision)),)
+    bound = bind_register_program(record, inputs)
+    expected = torch.tensor(cirq.unitary(source), dtype=torch.complex128)
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, width + precision), expected, atol=1e-12, rtol=0
+    )
+    assert all(g.name in {"h", "swap"} for g in bound.circuit.instructions)
+    assert not bound.events
+    assert bound.circuit.n_wires == width + precision
+    assert copy_component_program(record) == record
+    assert CircuitIR.from_json(bound.circuit.to_json()) == bound.circuit
+    # The empty measurement history retains absolute complex phase and a spectator.
+    logical = width + precision
+    raw = torch.arange(1, 2 ** (logical + 1) + 1, dtype=torch.float64)
+    initial = torch.complex(raw, raw.flip(0))
+    initial /= initial.norm()
+    target = (expected @ initial.reshape(2**logical, 2)).flatten()
+    gates = bound.circuit.instructions
+    torch.testing.assert_close(forced_branch(initial, gates, ()), target)
+    torch.testing.assert_close(
+        forced_branch(target, tuple(reversed(gates)), ()), initial
+    )
+    circuit = DynamicCircuit(logical + 1, inputs=initial, dtype=initial.dtype)
+    circuit.append(FieldOperation(logical + 1, gates))
+    result = run_dynamic(circuit, shots=2, seed=103, strategy="trajectory")
+    torch.testing.assert_close(result.final_states.reshape(2, -1), target.expand(2, -1))
+
+
+def test_zero_precision_multibit_original_failure_and_native_rejection() -> None:
+    from qualtran.bloqs.qft.approximate_qft import ApproximateQFT
+
+    with pytest.raises(KeyError, match="phase_grad"):
+        ApproximateQFT(3, 0).decompose_bloq()
+    with pytest.raises(ValueError, match="requires a gradient"):
+        approximate_qft_program(3, 0)

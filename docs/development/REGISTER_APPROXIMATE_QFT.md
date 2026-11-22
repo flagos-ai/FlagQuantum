@@ -102,18 +102,19 @@ execution uses 7200 T/T-dagger, 16004 CX and 1800 measurements on 123 wires.
 Separate original models are eighteen/1702 Toffoli, T-equivalent 72/6808 and
 QubitCount eleven/75. Complete small joint operators and every forward and
 existing-emitter inverse raw history pass. The large factory uses exact stored
-calls and inventories. Stored construction currently requires at least two
-gradient bits; existing zero/one-bit flat execution and original negative-model
-boundaries remain separately recorded under Q-0637.
+calls and inventories. Stored construction also covers one-bit gradients and the successful one-data-bit,
+zero-gradient case. The original negative-model boundaries remain separately
+recorded under Q-0637.
 
 An independent immutable-source probe confirms successful stored decompositions
 for `(width, precision)` equal to `(1, 0)`, `(1, 1)`, `(2, 1)` and `(3, 1)`.
 The first contains one Hadamard and has no gradient port. The one-bit-gradient
 cases retain the caller gradient, with zero-width phase-add input omitted from
 the child signature. `(3, 0)` raises the original `KeyError('phase_grad')`.
-Extending the stored native constructor to these successful small-precision
-cases remains a concrete interface-composition gap. The current catalog
-factories use larger precisions and their graph acceptance does not close it.
+The stored native constructor now covers every successful case in this probe.
+The empty input of each controlled phase-add call omits its x port and emits
+no primitive, measurement or workspace allocation. Native multi-bit zero
+precision retains an explicit ValueError at construction.
 
 
 ## Concentrated catalog acceptance
@@ -134,3 +135,27 @@ process was verified absent before resuming from Rotations. Three existing
 deselections and fourteen notebook warnings remain recorded. Execution has two
 original deprecated-cost warnings. The separate resource receipt keeps literal
 primitive inventories, used clean storage and original analytical models apart.
+
+
+## Small-precision stored graph closure
+
+Ten concrete cases cover widths one through four, zero or one gradient bit and
+both reversal settings. Ordered source calls, operands, exact source drawings,
+complete complex joint operators, an entangled spectator, forward and exact
+inverse execution, append, Program copy and lowered JSON pass. These channels
+have one empty measurement history and no work. Width one uses one H. Wider
+one-bit-gradient cases use one H per data bit and, when requested, one SWAP per
+reversed pair. Actual physical width is data width plus gradient width.
+
+The original model retains negative Toffoli estimates at one gradient bit,
+including -2, -4 and -6 at data widths two, three and four. Its separate width
+estimates are four, five and six, while literal execution needs three, four and
+five wires. No negative estimate is interpreted as a physical instruction count.
+
+Concentrated affected regression passes 130 checks, fresh complete Fourier
+source/drawing/complex-state checks pass 32, and local integration passes 29.
+Exact ProgramRecord comparisons with published d3ec41d32 preserve 256 positive
+phase-add Programs and 24 pre-existing approximate-QFT Programs, including all
+stored definitions. The preceding 881-check complete catalog evidence is reused
+for the unchanged registered factories. Earlier strict diagnostics for test
+tuple annotation and optional drawing narrowing were corrected before acceptance.
