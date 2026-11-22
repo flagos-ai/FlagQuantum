@@ -180,3 +180,14 @@ The pre-correction document hash is retained. Numerical observations, source
 pins, archived measured drivers and acceptance thresholds are unchanged. The
 live driver's future output uses the same declared external origin. No checker
 or supported origin vocabulary was weakened.
+
+## CI benchmark import correction
+
+Exact-head CI found one failure in the benchmark import inventory: the runner
+imported the private module through its parent optimization namespace. Python's
+`from` import could load the submodule, but the inventory correctly could not
+resolve it as an exported parent attribute in a fresh process. Import the three
+used functions from their owning private module directly. The source digest now
+reads that same repository file explicitly. No parent export is added, no check
+is relaxed, and the archived measured driver and numerical evidence are unchanged.
+This is a future-runner import correction, not a repeat of the measured study.

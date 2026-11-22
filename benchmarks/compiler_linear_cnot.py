@@ -19,7 +19,11 @@ from importlib.metadata import version
 from pathlib import Path
 
 from flagquantum.compiler import CouplingMap, compile
-from flagquantum.compiler.optimization import _linear_cnot as linear
+from flagquantum.compiler.optimization._linear_cnot import (
+    _linear_matrix,
+    _pmh_synthesize,
+    resynthesize_cnot_blocks,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 
 _UPSTREAM = "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4"
@@ -73,7 +77,7 @@ def _identity(program: CircuitIR, *, coupling_map: CouplingMap | None) -> Circui
 
 def _compile(source: CircuitIR, topology: str, candidate: bool) -> CircuitIR:
     coupling = CouplingMap.line(source.n_wires) if topology == "line" else None
-    transform = linear.resynthesize_cnot_blocks if candidate else _identity
+    transform = resynthesize_cnot_blocks if candidate else _identity
     return compile(
         source,
         coupling_map=coupling,
@@ -108,7 +112,7 @@ def _upstream_conformance() -> int:
             for _ in range(4 * width):
                 control, target = rng.sample(range(width), 2)
                 operations.append((control, target))
-            matrix = linear._linear_matrix(operations, width)
+            matrix = _linear_matrix(operations, width)
             circuit = synth_cnot_count_full_pmh(
                 np.array(
                     [
@@ -125,7 +129,7 @@ def _upstream_conformance() -> int:
                 )
                 for item in circuit.data
             )
-            assert linear._pmh_synthesize(matrix) == expected, (width, seed)
+            assert _pmh_synthesize(matrix) == expected, (width, seed)
             count += 1
     return count
 
@@ -227,7 +231,10 @@ def main() -> None:
         "platform": platform.platform(),
         "driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "compiler_sha256": hashlib.sha256(
-            Path(linear.__file__).read_bytes()
+            (
+                Path(__file__).resolve().parents[1]
+                / "flagquantum/compiler/optimization/_linear_cnot.py"
+            ).read_bytes()
         ).hexdigest(),
         "upstream_equal_gate_sequences": upstream_equal,
         "rows": [asdict(row) for row in rows],
