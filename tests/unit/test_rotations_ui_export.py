@@ -157,6 +157,11 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         assert data["msd"] is not None
         assert data["msd"] == first_scores[key]
         if identifier in {
+            "two_bit_ffft",
+            "approximate_qft_small",
+            "approximate_qft_from_epsilon",
+            "qft_text_book",
+            "qft_phase_gradient_small",
             "hamming_weight_phasing",
             "hamming_weight_phasing_via_phase_gradient",
             "qvr_zpow",

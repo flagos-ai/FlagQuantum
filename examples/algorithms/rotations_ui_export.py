@@ -25,6 +25,11 @@ from examples.algorithms.component_ui_dependencies import (
     ComponentFunction,
     dependency_graph,
 )
+from examples.algorithms.fourier_decomposition import (
+    fourier_child,
+    fourier_program,
+    fourier_score,
+)
 from examples.algorithms.hamming_phasing_catalog import HammingPhasingExample
 from examples.algorithms.hamming_phasing_decomposition import (
     hamming_phase_child,
@@ -873,7 +878,9 @@ def filename(component: object) -> str:
 def score(component: object) -> object:
     if isinstance(component, ComponentFunction):
         return component.score()
-    result = rotation_gate_score(name(component), attributes(component))
+    result = fourier_score(name(component), attributes(component))
+    if result is None:
+        result = rotation_gate_score(name(component), attributes(component))
     if result is None:
         result = gradient_score(name(component), attributes(component))
     if result is None:
@@ -895,7 +902,9 @@ def score(component: object) -> object:
 
 def decomposition(component: object) -> ProgramRecord | None:
     """Reuse complete controlled-rotation and phase-gradient source graphs."""
-    record = rotation_gate_program(name(component), attributes(component))
+    record = fourier_program(name(component), attributes(component))
+    if record is None:
+        record = rotation_gate_program(name(component), attributes(component))
     if record is None:
         record = gradient_program(name(component), attributes(component))
     if record is None:
@@ -917,7 +926,8 @@ def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
     return (
-        gradient_child(record, entry, root)
+        fourier_child(record, entry, attributes(root))
+        or gradient_child(record, entry, root)
         or phase_rotation_child(record, entry, attributes(root))
         or qvr_child(record, entry, attributes(root))
         or hamming_phase_child(record, entry, attributes(root))

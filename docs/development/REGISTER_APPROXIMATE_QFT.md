@@ -114,3 +114,23 @@ the child signature. `(3, 0)` raises the original `KeyError('phase_grad')`.
 Extending the stored native constructor to these successful small-precision
 cases remains a concrete interface-composition gap. The current catalog
 factories use larger precisions and their graph acceptance does not close it.
+
+
+## Concentrated catalog acceptance
+
+The four-file Fourier group retains thirteen exact source-success recursive
+call graphs and original drawings across five concrete roots. Immutable source
+atomic refusals are retained explicitly. Complete joint amplitudes, applicable
+forward and inverse raw histories, noncontiguous bindings, an entangled
+spectator, clean work, normal append, Program copy and IR JSON pass in the
+1095-check execution regression. Relevant local integration passes 29 checks.
+Strict typing covers eleven source files, with formatting, scope, architecture,
+IR and API checks passing.
+
+Catalog acceptance covers 881 checks across the retained first 47 complete
+Catalog/Chemistry checks and 834 resumed checks. The initial full run reached
+its twenty-minute limit after those two complete files passed. The terminated
+process was verified absent before resuming from Rotations. Three existing
+deselections and fourteen notebook warnings remain recorded. Execution has two
+original deprecated-cost warnings. The separate resource receipt keeps literal
+primitive inventories, used clean storage and original analytical models apart.

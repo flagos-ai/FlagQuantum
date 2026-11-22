@@ -103,3 +103,23 @@ Existing gather callers retain their previous behavior. Complete definition
 mutation tests alter both CX operands and H atoms so even a one-H recursive child
 is changed. The first mutation-only failure left that H-only child intact;
 the corrected test rejects every altered qualified child.
+
+
+## Concentrated catalog acceptance
+
+The four-file Fourier group retains thirteen exact source-success recursive
+call graphs and original drawings across five concrete roots. Immutable source
+atomic refusals are retained explicitly. Complete joint amplitudes, applicable
+forward and inverse raw histories, noncontiguous bindings, an entangled
+spectator, clean work, normal append, Program copy and IR JSON pass in the
+1095-check execution regression. Relevant local integration passes 29 checks.
+Strict typing covers eleven source files, with formatting, scope, architecture,
+IR and API checks passing.
+
+Catalog acceptance covers 881 checks across the retained first 47 complete
+Catalog/Chemistry checks and 834 resumed checks. The initial full run reached
+its twenty-minute limit after those two complete files passed. The terminated
+process was verified absent before resuming from Rotations. Three existing
+deselections and fourteen notebook warnings remain recorded. Execution has two
+original deprecated-cost warnings. The separate resource receipt keeps literal
+primitive inventories, used clean storage and original analytical models apart.
