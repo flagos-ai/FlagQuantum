@@ -480,7 +480,7 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     output: list[Instruction | None] = []
     # Only open runs retain a product. Completed runs are written back at their
     # original positions, so spectator qubits and entanglers keep their order.
-    open_runs: dict[int, tuple[list[int], Matrix]] = {}
+    open_runs: dict[int, tuple[list[int], Matrix | None]] = {}
 
     def close(qubits: Iterable[int]) -> None:
         for touched in qubits:
@@ -490,6 +490,7 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
             positions, product = pending
             if len(positions) < 2:
                 continue
+            assert product is not None
             replacement = _fold_run(
                 [ir.instructions[position] for position in positions],
                 preserve_u3=preserve_u3,
@@ -503,17 +504,35 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
                 output[position] = None
 
     for instruction in ir:
-        matrix = _instruction_matrix(instruction) if _is_foldable(instruction) else None
-        if matrix is None:
+        if not _is_foldable(instruction):
             close(instruction.wires)
             output.append(instruction)
             continue
         wire = instruction.wires[0]
         pending = open_runs.get(wire)
+        if (
+            pending is None
+            and instruction.matrix is None
+            and not instruction.params
+            and canonical_opcode(instruction.name) in _FIXED_EULER_ANGLES
+        ):
+            # A fixed singleton cannot shorten. Parameterized and supplied-matrix
+            # inputs still take their existing numerical validation path.
+            open_runs[wire] = [len(output)], None
+            output.append(instruction)
+            continue
+        matrix = _instruction_matrix(instruction)
+        if matrix is None:
+            close(instruction.wires)
+            output.append(instruction)
+            continue
         if pending is None:
             open_runs[wire] = [len(output)], matrix
         else:
             positions, product = pending
+            if product is None:
+                product = _instruction_matrix(ir.instructions[positions[0]])
+                assert product is not None
             if len(positions) == 1:
                 # A singleton never needs a product. On its second member,
                 # recover _run_product's exact left-associated arithmetic.
