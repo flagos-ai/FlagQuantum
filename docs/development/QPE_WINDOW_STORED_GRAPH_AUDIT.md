@@ -75,6 +75,8 @@ larger tested operators. Source-specific measured cleanup remains distinct from
 the independent default SDK synthesis boundary recorded in the original audits.
 
 Fresh affected catalog and shared drawing regression passes 85 checks.
+A final combined provider regression passes 171 checks. Definition qualification
+is scoped to window and estimation roots before constructing comparison templates.
 Relevant local integration passes 29 checks. Strict typing passes eleven files.
 Black, Ruff, integration scope, architecture, multilevel IR, protected API and
 whitespace checks pass. Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified in

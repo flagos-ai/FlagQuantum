@@ -213,8 +213,14 @@ def window_score(
 
 
 def window_child(
-    record: ProgramRecord, entry: str, parameters: Mapping[str, object]
+    record: ProgramRecord,
+    entry: str,
+    parameters: Mapping[str, object],
+    *,
+    operation: str,
 ) -> tuple[str, ProgramRecord, RegisterWireSymbolSupplier] | None:
+    if operation not in {"RectangularWindowState", "LPRSInterimPrep", "TextbookQPE"}:
+        return None
     function = next(f for f in record.functions if f.name == entry)
     ports = function.registers or ()
     names = tuple(p.name for p in ports)

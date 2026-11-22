@@ -935,7 +935,7 @@ def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
     return (
-        window_child(record, entry, attributes(root))
+        window_child(record, entry, attributes(root), operation=name(root))
         or fourier_child(record, entry, attributes(root))
         or gradient_child(record, entry, root)
         or phase_rotation_child(record, entry, attributes(root))
