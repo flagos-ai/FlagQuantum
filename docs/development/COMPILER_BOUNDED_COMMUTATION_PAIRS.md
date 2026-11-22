@@ -89,3 +89,22 @@ Run `python -m pytest tests/unit/test_compiler_commutation_scaling.py
  tests/unit/test_compilation_commutation.py
  tests/unit/test_compilation_commutation_cancellation.py
  tests/unit/test_compiler_pass_manager.py -q` on one line for focused validation.
+
+
+## Pre-measurement setup corrections
+
+The first invocation stopped before creating a report because sparse checkout
+had not materialized this protocol file. Materializing its unchanged committed
+contents fixed that setup error. The next invocation accepted the first 40
+quality observations, then stopped at width 8: the driver requested the absent
+`ROUTE-LINE-08` bundle case. The existing SDKBench application driver uses
+`ROUTE-GRID-08` for this width. No resource observations had begun.
+
+The corrected driver uses precisely that existing case mapping, retains the
+original partial report and writes a distinct output file. Candidate production
+source, input nonce, metrics, thresholds, resource cases and sample counts are
+unchanged. Publish this correction before the first resource observation.
+The corrected driver is `fq-bounded-pairs-case-mapping-20261122.py`, SHA-256
+`9109aaec86b223ee95b22bd625b2f73e9cc3411eee7cc598f6cd7239a9777bf6`.
+The partial report and corrected complete report are separate evidence; the
+interrupted attempt is not a complete passing run.
