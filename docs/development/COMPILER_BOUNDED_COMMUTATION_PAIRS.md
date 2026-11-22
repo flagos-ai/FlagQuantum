@@ -172,3 +172,21 @@ and Black passed for the three applicable Python modules. The archived patch
 reconstructs all three candidate files byte for byte; the final production
 module and its import-boundary test match baseline exactly. This selected
 sparse-checkout tier is not a claim that the entire repository suite ran locally.
+
+
+## CI revision metadata correction
+
+Exact-head CI at `b7448bf15d3122bb553f1eb0e795717f472897a2` rejects
+the pilot archive's `candidate_commit` key because it is outside the reviewed
+revision-field vocabulary. Normalize that metadata to the existing
+`implementation_commit` key, preserving the full revision value, patch text,
+patch digest, setup diagnostics and environment. Do not change the checker or
+its tests. All four new JSON artifacts then pass its declared-field predicate.
+
+The original pilot bytes remain in that published Git commit, with SHA-256
+`a605917d87db8dbc238caee757b11fe5adee0c2ea189a8b39db542290600ad6d`; the normalized pilot has SHA-256
+`435db25721d90945dfcc76d6668800bf64f823044bf303a139d22df03b1e748a`.
+No resource observation, partial-run record, census, numeric threshold, source
+pin, patch byte or production file is changed. The original failing CI remains
+recorded and is not a passing test. This focused metadata check does not claim
+that the complete historical evidence corpus is materialized locally.
