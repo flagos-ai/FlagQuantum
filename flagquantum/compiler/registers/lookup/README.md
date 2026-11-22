@@ -33,3 +33,10 @@ matrix leaf through `import_cirq_register_optree` with actual typed placement.
 That matrix count, native QROM primitives and symbolic product estimate are
 separate accounts. Run `tests/unit/test_trigonometric_foreign_file.py` for complete
 complex spectator amplitudes, all small raw histories and clean work.
+
+`qrom_component.qrom_program` stores the source XOR-word dependency graph using
+shared bounded unary iteration. Selection words are MSB-first and target arrays
+are row-major. Constant rows preserve the original early fold. Predicate work is
+private and measurement-erased. Unknown tables remain declarations. Run
+`tests/unit/test_qrom_component.py` in the locked reference environment for
+recursive source calls, dirty-target complex operators and physical operands.
