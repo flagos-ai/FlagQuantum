@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import random
 from dataclasses import replace
+from functools import partial
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -14,6 +16,7 @@ from benchmarks.compiler_sabre_native_cost import (
     _native_previews,
     _realize,
 )
+from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.compiler.topology.sabre import plan_sabre_swaps
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -128,3 +131,53 @@ def test_preview_reuse_keeps_sources_and_topologies_isolated() -> None:
         )
         _assert_equivalent(changed, other)
         assert first != other
+
+
+@pytest.mark.parametrize("budget", (2000, 20000))
+def test_native_selection_reuses_search_and_keeps_delivered_guards(budget: int) -> None:
+    from benchmarks.compiler_sabre_trial_reuse import _select
+
+    rng = random.Random(3)
+    source = CircuitIR(
+        6,
+        tuple(Instruction("cx", tuple(rng.sample(range(6), 2))) for _ in range(24)),
+    )
+    coupling = CouplingMap.line(6)
+    incumbent = sabre.plan_sabre_swaps(source, coupling)
+    with (
+        patch.object(
+            sabre, "_plan_sabre_trial", wraps=sabre._plan_sabre_trial
+        ) as trial,
+        patch.object(
+            sabre, "_select_sabre_trials", partial(_select, native_budget=budget)
+        ),
+    ):
+        selected = sabre.plan_sabre_swaps(source, coupling)
+    assert trial.call_count == 5
+    preview = _native_previews(source, coupling)
+    before, before_count = preview(incumbent)
+    after, after_count = preview(selected)
+    realized = _realize(after, after_count + budget)
+    assert all(
+        new <= old
+        for new, old in zip(
+            _cost(realized), _cost(_realize(before, before_count + budget)), strict=True
+        )
+    )
+    assert len(realized.instructions) <= after_count + budget
+    _assert_equivalent(source, realized)
+
+
+def test_reused_native_selector_keeps_custom_topology_objectives() -> None:
+    from benchmarks.compiler_sabre_trial_reuse import _select
+
+    source = CircuitIR(4, (Instruction("cx", (3, 0)), Instruction("cx", (1, 3))))
+    coupling = CouplingMap.line(4)
+    baseline = sabre._plan_sabre_trial(source, coupling)
+    assert baseline is not None
+
+    def objective(plan: sabre.SabrePlan) -> int:
+        return sabre._restored_swap_count(plan, coupling) + len(plan.swaps)
+
+    expected = sabre._select_sabre_trials(source, coupling, baseline, cost=objective)
+    assert _select(source, coupling, baseline, cost=objective) == expected

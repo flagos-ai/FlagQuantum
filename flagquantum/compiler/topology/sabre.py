@@ -64,7 +64,7 @@ from __future__ import annotations
 import math
 import random
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -352,13 +352,34 @@ def _select_sabre_trials(
     cost: Callable[[SabrePlan], int] | None = None,
 ) -> SabrePlan:
     """Retain the single-trial route unless a bounded trial is strictly cheaper."""
-    best = baseline
-    if not best.swaps:
-        return best
+    if not baseline.swaps:
+        return baseline
+    return min(
+        _sabre_trial_costs(program, coupling, baseline, cost=cost),
+        key=lambda item: item[1],
+    )[0]
+
+
+def _sabre_trial_costs(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    baseline: SabrePlan,
+    *,
+    cost: Callable[[SabrePlan], int] | None = None,
+) -> Iterator[tuple[SabrePlan, int]]:
+    """Yield completed trials once, preserving incumbent-based pruning and ties.
+
+    Consumers may inspect alternative plans without repeating search. A pruned
+    trial is absent, so this is not an enumeration of all equal-cost routes.
+    Dependencies and plans remain owned by this invocation.
+    """
     score = (
         cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
     )
-    best_cost = score(best)
+    best_cost = score(baseline)
+    yield baseline, best_cost
+    if not baseline.swaps:
+        return
     dependencies = _build_sabre_dependencies(program.instructions)
     for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):
         candidate = _plan_sabre_trial(
@@ -373,8 +394,8 @@ def _select_sabre_trials(
         if candidate is not None:
             candidate_cost = score(candidate)
             if candidate_cost < best_cost:
-                best, best_cost = candidate, candidate_cost
-    return best
+                best_cost = candidate_cost
+            yield candidate, candidate_cost
 
 
 def _build_sabre_dependencies(
