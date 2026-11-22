@@ -12,6 +12,7 @@ from flagquantum.ecosystem.binary_fields import (
     resolve_binary_field,
 )
 from flagquantum.simulation.binary_field_scalar import (
+    binary_field_frobenius,
     binary_field_operand,
     binary_field_power,
     binary_field_sum,
@@ -41,9 +42,11 @@ def test_complete_original_python_scalar_observations() -> None:
                 ]
             else:
                 field = BinaryField(case["degree"])
-                operation = (
-                    binary_field_sum if case["kind"] == "add" else binary_field_power
-                )
+                operation = {
+                    "add": binary_field_sum,
+                    "pow": binary_field_power,
+                    "frobenius": binary_field_frobenius,
+                }[case["kind"]]
                 result = operation(field, *operands)
         except (ValueError, TypeError) as error:
             assert type(error).__name__ == case.get("error"), case

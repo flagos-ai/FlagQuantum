@@ -131,6 +131,18 @@ def requests() -> list[dict[str, Any]]:
         ("pow", [2, {"kind": "index", "value": 2}]),
     ):
         cases.append({"kind": kind, "degree": 4, "args": args})
+    for count in (
+        0,
+        1,
+        True,
+        -1,
+        (1 << 64) - 1,
+        1 << 64,
+        1.0,
+        "2",
+        {"kind": "index", "value": 2},
+    ):
+        cases.append({"kind": "frobenius", "degree": 4, "args": [3, count]})
     return cases
 
 

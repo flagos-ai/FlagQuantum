@@ -4,6 +4,8 @@
 
 """Python scalar semantics over the shared neutral binary field arithmetic."""
 
+from typing import SupportsIndex, SupportsInt
+
 from ..core._binary_field import BinaryField
 
 
@@ -34,3 +36,13 @@ def binary_field_power(field: BinaryField, value: int, exponent: int) -> int:
         value = field.inverse(value)
         exponent = -exponent
     return field.power(value, exponent)
+
+
+def binary_field_frobenius(field: BinaryField, value: int, count: object = 1) -> int:
+    """Retain the Python binding's unsigned machine-word Frobenius count."""
+    if isinstance(count, float) or not isinstance(count, (SupportsIndex, SupportsInt)):
+        raise TypeError("Frobenius count requires an unsigned integer")
+    steps = int(count)
+    if not 0 <= steps < 1 << 64:
+        raise TypeError("Frobenius count must fit the source unsigned machine word")
+    return field.frobenius(binary_field_operand(value), steps)

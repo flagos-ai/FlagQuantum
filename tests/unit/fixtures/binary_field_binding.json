@@ -5950,6 +5950,90 @@
         }
       ],
       "error": "TypeError"
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        0
+      ],
+      "result": 3
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        1
+      ],
+      "result": 5
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        true
+      ],
+      "result": 5
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        -1
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        18446744073709551615
+      ],
+      "result": 4
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        18446744073709551616
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        1.0
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        "2"
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "frobenius",
+      "degree": 4,
+      "args": [
+        3,
+        {
+          "kind": "index",
+          "value": 2
+        }
+      ],
+      "result": 2
     }
   ]
 }
