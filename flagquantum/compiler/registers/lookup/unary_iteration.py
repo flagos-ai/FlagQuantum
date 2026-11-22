@@ -246,6 +246,51 @@ def append_nested_bounded_unary_tree(
     interval. A folded first-axis root requires a separate zero-selection
     recipe, as in the source base class. Empty selectors use that same recipe.
     """
+
+    def emit_and(
+        left: int, right: int, target: int, values: tuple[int, int], erase: bool
+    ) -> None:
+        if erase:
+            gates.extend(
+                and_uncompute_ir(
+                    left,
+                    right,
+                    target,
+                    classical_bits[workspace.index(target)],
+                    values=values,
+                )
+            )
+        else:
+            gates.extend(and_compute_ir(left, right, target, values=values))
+
+    _walk_nested_bounded_unary_tree(
+        control,
+        axes,
+        extents,
+        workspace,
+        visit_leaf,
+        gates.append,
+        emit_and,
+        adjoint=adjoint,
+        break_early=break_early,
+        zero_selection=zero_selection,
+    )
+
+
+def _walk_nested_bounded_unary_tree(
+    control: int | None,
+    axes: tuple[tuple[int, ...], ...],
+    extents: tuple[int, ...],
+    workspace: tuple[int, ...],
+    visit_leaf: Callable[[int, int], None],
+    emit_gate: Callable[[Instruction], None],
+    emit_and: Callable[[int, int, int, tuple[int, int], bool], None],
+    *,
+    adjoint: bool = False,
+    break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
+    zero_selection: Callable[[], None] | None = None,
+) -> None:
+    """Share the original nested traversal between physical and stored calls."""
     if type(adjoint) is not bool:
         raise ValueError("Nested traversal direction must be a boolean")
     if not any(axes) or (break_early is not None and break_early((), 0, extents[0])):
@@ -271,14 +316,14 @@ def append_nested_bounded_unary_tree(
             else:
                 walk(depth + 1, flat_index, (*indices, index), active, stop)
 
-        append_bounded_unary_tree(
-            gates,
+        _walk_bounded_unary_tree(
             predicate,
             word,
             extent,
             workspace[used:stop],
-            classical_bits[used:stop],
             leaf,
+            emit_gate,
+            emit_and,
             adjoint=adjoint,
             break_early=(
                 None
