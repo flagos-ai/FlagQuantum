@@ -1,5 +1,21 @@
 schema = "flagquantum.evidence_revision_origins.v1"
 
+[[artifact]]
+path = "docs/development/evidence/compiler-linear-cnot.json"
+
+[[artifact.revision]]
+value = "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4"
+origin = "external_dependency"
+repository = "Qiskit/qiskit"
+
+[[artifact]]
+path = "docs/development/evidence/compiler-token-restoration.json"
+
+[[artifact.revision]]
+value = "69d412ad9b915d5f86608c15d6277c6d9195ee0a"
+origin = "external_dependency"
+repository = "Qiskit/rustworkx"
+
 # Exact upstream source for the unadopted compiler invariant experiment.
 [[artifact]]
 path = "docs/development/evidence/cirq-cz-invariant-pruning.json"
