@@ -4,14 +4,28 @@
 
 """Export comparator operations with source resets, call marks and feedback."""
 
+from collections.abc import Sequence
 from dataclasses import replace
 from math import ceil, inf
 from typing import Literal
 
 from ..._component_trace.trace import ComponentCall
+from ...artifacts.operand_identity import OperandIdentity
 from ...artifacts.reversible_phase import ReversiblePhaseProgram
-from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
+from ...lowering.physical_trace import (
+    PhysicalTrace,
+    lower_physical_trace,
+    scope_physical_trace,
+)
 from ..finite_field.coefficients import ClassicalFieldCoefficient
+from ..layout.operand_word import (
+    bind_operand_word_or_integer,
+    bind_quantum_word,
+    bind_z_word,
+)
+from ..primitives._mixed_gates import _Control, _XBasisTarget
+from ..primitives.control_binding import bind_x_output, bind_z_enable
+from ..primitives.operand_binding import bind_operand
 from .low_space_comparison import _comparison_passes, low_space_less_than_ir
 from .mixed_comparison import (
     mixed_greater_than_ir,
@@ -25,30 +39,50 @@ _Relation = Literal["lt", "le", "gt", "ge", "eq"]
 
 
 def physical_comparison(
-    left: tuple[int, ...],
-    right: tuple[_Coefficient, ...],
-    target: int | None,
+    left: int | OperandIdentity | Sequence[int | OperandIdentity],
+    right: _Control | OperandIdentity | Sequence[_Control | OperandIdentity],
+    target: int | _XBasisTarget | OperandIdentity | str | None,
     workspace: tuple[int, ...],
     *,
     relation: _Relation = "lt",
     or_equal: _Coefficient = False,
-    control: int | bool = True,
+    control: _Control | OperandIdentity = True,
     btol: float = inf,
     minimize_qubits: bool = False,
 ) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
-    """Bind big-endian operands and allocate measured bits after classical inputs."""
+    """Bind MSB-first words and caller-owned clean workspace in lease order.
+
+    Existing operand-word and basis-aware control bindings normalize the input.
+    None retains the phase shorthand. An X-basis literal selects phase or skip,
+    and an X-basis classical slot guards the phase. Target scopes precede enable
+    scopes, including repeated reads. Reserve every classical input before HMR.
+    """
     if relation not in ("lt", "le", "gt", "ge", "eq"):
         raise ValueError("Unknown comparison relation")
     if relation in ("le", "ge"):
         or_equal = True
     elif relation == "eq":
         or_equal = False
-    operands = (*right, or_equal)
-    inputs = {q.slot for q in operands if isinstance(q, ClassicalFieldCoefficient)}
+    left_word = bind_quantum_word(left)
+    right_word = bind_z_word(bind_operand_word_or_integer(right, len(left_word)))
+    equal = bind_z_word((bind_operand(or_equal),))[0]
+    wire, skip, target_slots = bind_x_output(
+        _XBasisTarget(True) if target is None else target
+    )
+    enable, control_slots = bind_z_enable(control)
+    guards = (*target_slots, *control_slots)
+    operands = (*right_word, equal)
+    inputs = {
+        q.slot for q in operands if isinstance(q, ClassicalFieldCoefficient)
+    }.union(guards)
     result = max(inputs, default=-1) + 1
     trace = PhysicalTrace(implicit_zero_bits=inputs)
-    ports = (*left, *workspace, *operands, target, control)
+    ports = (*left_word, *workspace, *operands, wire, enable)
     last_wire = max((q for q in ports if type(q) is int), default=0)
+    if skip or enable is False:
+        body = ReversiblePhaseProgram(last_wire + 1, result, (), tuple(sorted(inputs)))
+        return scope_physical_trace(body, (), guards)
+    left, right, target, control, or_equal = left_word, right_word, wire, enable, equal
     if relation == "eq":
         gates = quantum_equal_ir(
             left,
@@ -100,7 +134,10 @@ def physical_comparison(
                 )
             ]
 
-    return lower_physical_trace(gates, 0, last_wire, trace, reorder_feedback=False)
+    body, calls = lower_physical_trace(
+        gates, 0, last_wire, trace, reorder_feedback=False
+    )
+    return scope_physical_trace(body, calls, guards)
 
 
 def _bind_less_than_dispatch(
