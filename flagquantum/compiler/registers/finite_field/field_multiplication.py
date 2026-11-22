@@ -9,15 +9,12 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from ....core._binary_polynomial import remainder
 from ....core.ir import Instruction
 from ..primitives.swap import swap_bit_ir
 from .polynomial import _PolynomialEmitter, _validate_registers
 
-
-def _remainder(value: int, modulus: int) -> int:
-    while value.bit_length() >= modulus.bit_length():
-        value ^= modulus << (value.bit_length() - modulus.bit_length())
-    return value
+_remainder = remainder
 
 
 def _product(left: int, right: int, modulus: int) -> int:
