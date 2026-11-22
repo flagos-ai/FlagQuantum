@@ -243,6 +243,20 @@ def _select(
             candidates.append(candidate)
     if not candidates:
         return incumbent
+    return _choose_native_route(
+        program, coupling, incumbent, candidates, native_budget=native_budget
+    )
+
+
+def _choose_native_route(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    incumbent: sabre.SabrePlan,
+    candidates: list[sabre.SabrePlan],
+    *,
+    native_budget: int,
+) -> sabre.SabrePlan:
+    """Compare delivered costs with the same lowering, growth and depth guards."""
     preview_plan = _native_previews(program, coupling)
     native, routed_count = preview_plan(incumbent)
     incumbent_cost = _cost(_realize(native, routed_count + native_budget))
