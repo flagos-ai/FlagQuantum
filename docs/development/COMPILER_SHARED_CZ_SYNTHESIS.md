@@ -193,3 +193,9 @@ validation can safely be shared. Independent replay and mutable-content checks
 remain necessary. The profile ran alongside repository-hygiene tests. Its timing
 fields include profiling overhead and shared-host load, and cumulative times
 overlap; use the call counts for diagnosis, not those times as latency evidence.
+
+The SDKBench source pin in the template archive uses the existing external
+dependency declaration in `evidence-revision-origins.toml`. Its repository URL
+and full revision stay in the archive; the separate inline provenance vocabulary
+is reserved for repository and producing-host history. The metadata repair
+changes no archived source, measurement, or reconstruction digest.
