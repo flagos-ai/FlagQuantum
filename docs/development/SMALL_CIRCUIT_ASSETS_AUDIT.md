@@ -100,8 +100,9 @@ No decomposition gate-count parity is inferred from an analytical model.
 
 The 285-test concentrated batch and 55 local register integration tests pass.
 Strict mypy passes the complete three-file changed Python surface. Black, Ruff,
-Verification scope, architecture, internal IR, protected API baseline and
-whitespace checks pass. The shared asset binder helper has 100% statement
+Verification scope, architecture, internal IR and protected API baseline pass.
+Native code and documentation pass whitespace checks. The two original modular
+assets deliberately retain their trailing blank lines for exact Git-blob parity. The shared asset binder helper has 100% statement
 coverage. All six assets and the complete observation fixture regenerate
 byte-for-byte. Existing dependency-policy findings are unchanged because this
 batch adds no production imports or numerical implementation.
