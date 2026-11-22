@@ -1,4 +1,7 @@
-"""Named angle execution preserves symbolic plans and per-attempt gradients."""
+"""Named angle execution preserves symbolic plans and per-attempt gradients.
+
+Load execution's bound planner aliases before any test installs planner spies.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +20,7 @@ import flagquantum as fq
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.errors import CapabilityError, SerializationError, ValidationError
 from flagquantum.noise import NoiseModel
+from flagquantum.runtime import execution
 from flagquantum.runtime import execution_plan_contract as codec
 from flagquantum.runtime._runtime_inputs import bind_runtime_inputs
 from tests.unit import test_execution_runtime_inputs_contract_fake as review
@@ -55,6 +59,7 @@ def test_public_plan_replay_keeps_multiple_graphs_independent(
     assert restored.identity == plan.identity
     monkeypatch.setattr("flagquantum.runtime.planner.plan", _forbidden)
     monkeypatch.setattr("flagquantum.runtime.planner.plan_advanced", _forbidden)
+    monkeypatch.setattr(execution, "build_plan", _forbidden)
     monkeypatch.setattr("flagquantum.runtime.planner.compile_program", _forbidden)
     monkeypatch.setattr("flagquantum.runtime.execution.compile_program", _forbidden)
     for candidate in (plan, restored):
@@ -239,6 +244,7 @@ def test_unmarked_and_conflicting_plans_fail_before_planning(
     ).plan
     monkeypatch.setattr("flagquantum.runtime.planner.plan", _forbidden)
     monkeypatch.setattr("flagquantum.runtime.planner.plan_advanced", _forbidden)
+    monkeypatch.setattr(execution, "build_plan", _forbidden)
     for candidate in (plan, initial_plan):
         with pytest.raises(CapabilityError, match="does not accept runtime inputs"):
             fq.run(candidate, inputs={"theta": 0.2})
@@ -268,6 +274,7 @@ def test_unsupported_routes_fail_before_planner(
     options: fq.ExecutionOptions, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("flagquantum.runtime.planner.plan_advanced", _forbidden)
+    monkeypatch.setattr(execution, "build_plan", _forbidden)
     expected = ValueError if options.batch_size == 2 else CapabilityError
     with pytest.raises(expected):
         fq.run(_program(), inputs={"theta": 0.2}, options=options)
