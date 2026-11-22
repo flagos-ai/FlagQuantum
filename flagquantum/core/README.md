@@ -131,3 +131,12 @@ horizon. Core owns scalar, roster and source validation; output-grid placement,
 private sampling and conditional numerical execution belong to later domains.
 The existing unconditional Lindblad assembler refuses this source before grid
 assembly. Ordinary pulse/transport sources retain source 1.0 bytes.
+
+Private declared-width integer semantics are split between
+`_fixed_width_integer.py` for immutable allocated-word values,
+`_fixed_width_products.py` for source-ordered limb products,
+`_fixed_width_modular.py` for modular cofactor algorithms and
+`_unsigned_integer_text.py` for integer grammar and digit conversion.
+Compiler report formatting consumes this shared grammar. Quantum-register MSB
+ordering remains at its existing boundary. See
+`docs/development/FIXED_WIDTH_INTEGER_AUDIT.md` for source limitations and aliases.
