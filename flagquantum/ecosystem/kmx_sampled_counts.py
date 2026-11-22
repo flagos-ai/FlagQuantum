@@ -16,6 +16,7 @@ from ..simulation.physical_basis_shots import (
     PHYSICAL_SAMPLE_BATCH_SIZE,
     sample_basis_batch,
 )
+from ._command_numbers import parse_int64
 from .kmx_sampling_init import (
     parse_register_initialization as parse_register_initialization,
 )
@@ -48,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--in", dest="input", type=Path)
     parser.add_argument("--out", dest="output", type=Path)
-    parser.add_argument("--shots", type=int)
+    parser.add_argument("--shots", type=parse_int64)
     parser.add_argument("--init", default="")
     parser.add_argument("--groups", nargs="?", const="", choices=("",))
     try:

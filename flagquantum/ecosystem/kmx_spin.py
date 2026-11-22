@@ -13,6 +13,7 @@ from ..compiler.formats._binary_streams import write_binary_result
 from ..compiler.formats.kmx_circuit import read_circuit_file
 from ..compiler.formats.kmx_spin_report import format_spin_report
 from ..simulation.physical_basis_spin import spin_basis
+from ._command_numbers import parse_int64
 
 _MODES = tuple(
     f"{width}{suffix}" for width in (64, 128, 256, 512) for suffix in ("", "-polyfill")
@@ -26,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--in", dest="input", type=Path)
     parser.add_argument("--out", dest="output", type=Path)
-    parser.add_argument("--shots", type=int)
+    parser.add_argument("--shots", type=parse_int64)
     parser.add_argument("--mode", choices=_MODES)
     try:
         args, unknown = parser.parse_known_args(argv)

@@ -158,3 +158,18 @@ its execution defaults. It delegates optional Jupyter execution to
 notebook. The adapter owns external file selection and conversion, while the
 shared Testing helper owns kernel lifecycle. Run
 `tests/unit/test_cirq_notebook_resources_file.py` after changing that delegation.
+
+
+## Native command argument helpers
+
+`_command_arguments.py` owns first-match argv scanning, typed flags, enum
+selection and scoped file acquisition. `_command_numbers.py` owns the frozen
+signed-integer grammar and direct host-C float32/64 parsing. Existing KMX
+commands reuse the integer callback while argparse retains orchestration and
+help. These private helpers carry no Core, Compiler or Simulation state.
+
+Run `python -m pytest tests/unit/test_command_arguments.py -q` for the shortest
+change path. `tests/unit/fixtures/generate_command_arguments.py` regenerates
+frozen-source observations. See
+`docs/development/COMMAND_ARGUMENTS_AUDIT.md` for exact ownership, original
+integer wrap aliases and the explicitly open host-specific C file-mode boundary.
