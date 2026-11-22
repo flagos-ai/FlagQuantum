@@ -127,3 +127,13 @@ def test_overlapping_input_ports_and_child_ports_are_rejected() -> None:
             {"a": (0,), "b": (1,)},
             ((cx, {"ctrl": (0,), "target": (0,)}),),
         )
+
+
+@pytest.mark.parametrize("barriers", [(-1,), (1,), (True,), (0, 0)])
+def test_invalid_explicit_group_positions_reject(barriers: tuple[int, ...]) -> None:
+    ports = Signature((Register("q", quantum_bit_type()),))
+    x = ProgramRecord((comparison_bit_functions()[0],))
+    with pytest.raises(ValueError, match="barriers"):
+        wire_component_program(
+            ports, {"q": (0,)}, {"q": (0,)}, ((x, {"q": (0,)}),), barriers=barriers
+        )

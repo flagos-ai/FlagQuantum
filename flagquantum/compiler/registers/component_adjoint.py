@@ -182,6 +182,7 @@ def adjoint_component_calls(
     from .component_definition_match import matches_component_definition
     from .component_graph import _namespace_helpers
     from .component_rebindings import adjoint_word_rebinding
+    from .layout.component_cast import cast_word_function
     from .layout.component_workspace import allocate_word_function, free_word_function
 
     definitions = list(record.functions)
@@ -205,7 +206,17 @@ def adjoint_component_calls(
                 break
         else:
             if tuple(reg.name for reg in registers) == ("reg", "reg"):
-                view = adjoint_word_rebinding(function, name)
+                left, right = registers
+                if (
+                    left.shape_symbolic == right.shape_symbolic
+                    and function
+                    == cast_word_function(
+                        function.name, left.dtype, right.dtype, left.shape
+                    )
+                ):
+                    view = cast_word_function(name, right.dtype, left.dtype, left.shape)
+                else:
+                    view = adjoint_word_rebinding(function, name)
             elif len(registers) == 1 and function == allocate_word_function(
                 function.name, registers[0].dtype, False
             ):

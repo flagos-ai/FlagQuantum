@@ -43,3 +43,8 @@ casts single-bit views and rejoins only the requested positions. Allocation stay
 with the caller. Scaled phase addition uses this source-ordered path, including
 repeated whole-word access and overlapping shorter slices. Run the phase-gradient
 and variable-rotation decomposition tests to verify view graphs and execution.
+
+Stored AutoPartition accepts validated typed child declarations as well as
+call bodies. Symbolic partitions retain declarations, and exact packed adjoints
+reverse the original partition sequence. Run `test_component_auto_partition.py`
+and `test_packed_prepare_component.py` when changing that boundary.

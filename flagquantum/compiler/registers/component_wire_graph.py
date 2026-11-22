@@ -103,7 +103,9 @@ class _WireWords:
             groups = _groups(register, ports[register.name])
             bindings = np.asarray(values[register.name])
             for index in register.all_idxs():
-                self.words[tuple(groups[index])] = register.dtype, bindings[index]
+                key = tuple(groups[index])
+                kind = self.words[key][0] if key in self.words else register.dtype
+                self.words[key] = kind, bindings[index]
 
 
 def _groups(register: Register, wires: tuple[int, ...]) -> NDArray[np.object_]:
@@ -129,13 +131,23 @@ def wire_component_program(
     inputs: Mapping[str, tuple[int, ...]],
     outputs: Mapping[str, tuple[int, ...]],
     calls: Iterable[WireCall],
+    *,
+    barriers: tuple[int, ...] = (),
 ) -> ProgramRecord:
     """Recreate earliest-layer calls and lazy typed views without an SDK.
 
     Physical identities span both sides of every call. RIGHT-only ports own new
-    wires and LEFT-only ports consume them. Existing component bodies continue
+    wires and LEFT-only ports consume them. Barrier positions start a new
+    earliest-layer group, preserving explicitly nested source circuit moments.
+    Existing component bodies continue
     owning gates and measurement feedback. Unreturned live words are freed.
     """
+    calls = tuple(calls)
+    if any(
+        type(position) is not int or not 0 <= position < len(calls)
+        for position in barriers
+    ) or len(set(barriers)) != len(barriers):
+        raise ValueError("Wire barriers require distinct valid call positions")
     builder = ComponentProgramBuilder(signature)
     words = _WireWords(builder)
     input_wires = [wire for group in inputs.values() for wire in group]
@@ -144,7 +156,10 @@ def wire_component_program(
     words.store(signature.lefts(), inputs, builder.inputs)
     layers: dict[int, list[WireCall]] = {}
     latest: dict[int, int] = {}
-    for record, ports in calls:
+    floor = 0
+    for position, (record, ports) in enumerate(calls):
+        if position in barriers:
+            floor = 1 + max(latest.values(), default=-1)
         root = record.functions[0]
         if root.registers is None:
             raise ValueError("Wire calls require typed component signatures")
@@ -157,7 +172,9 @@ def wire_component_program(
             raise ValueError("Wire call ports overlap")
         for register in root.registers:
             _groups(register, ports[register.name])
-        layer = 1 + max((latest.get(wire, -1) for wire in wires), default=-1)
+        layer = max(
+            floor, 1 + max((latest.get(wire, -1) for wire in wires), default=-1)
+        )
         layers.setdefault(layer, []).append((record, ports))
         latest.update((wire, layer) for wire in wires)
     for layer in sorted(layers):
