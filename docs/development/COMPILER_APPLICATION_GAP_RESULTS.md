@@ -148,3 +148,20 @@ separates the six-extra-SWAP source-optimization effect from native synthesis
 savings. It also retains a rejected candidate: all 120 inspected application
 outputs pass semantics, but three ordinary outputs regress and two make
 count/depth tradeoffs. No candidate optimizer code is enabled in production.
+
+## Integration baseline and CI source preparation
+
+The documentation branch is synchronized with integrated main
+`5a84f706ab9aeaab0ad3a5472bac292616fe39fe`. Its production `flagquantum/` tree
+equals that main tree; this synchronization does not rerun or relabel the frozen
+study measured at `2ea5b78b6449b837db151e0d29c90895f6b51a4e`. Recorded source
+pins, inputs, numerical outputs and replay digests remain unchanged.
+
+CI for documentation head `d8106c17ee186b3b7df12982d454708c8bc13145` failed
+before tests: the API source-restoration step exceeded its existing ten-minute
+budget, and the fallback checkout recorded TLS connection termination before
+the preparation job was cancelled. One unchanged failed-job retry also failed
+source preparation. Required aggregate checks consequently failed; they are
+not test passes. Synchronization supplies the current integrated source baseline
+for a fresh exact-head run without modifying CI, budgets, acceptance tests or
+recorded evidence. Full CI remains required before merging this documentation.
