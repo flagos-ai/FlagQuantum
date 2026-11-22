@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -17,7 +18,7 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
 from flagquantum.compiler.optimization import _cz_blocks
 from flagquantum.compiler.routing import CouplingMap
 from flagquantum.compiler.topology import topology_legalization as routing
-from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -686,6 +687,91 @@ def test_equivalent_baseline_copy_is_not_the_retained_instance() -> None:
         blocks.verify_native_block_optimization(
             result, native, snapshot=_snapshot(), evaluated_at=_NOW
         )
+
+
+@pytest.mark.parametrize(
+    "alter",
+    [
+        pytest.param(lambda program: replace(program, n_wires=3), id="wire-count"),
+        pytest.param(
+            lambda program: replace(program, dtype="complex128"), id="precision"
+        ),
+        pytest.param(lambda program: replace(program, shape=(2, 2)), id="shape"),
+        pytest.param(
+            lambda program: replace(
+                program, observables=(ObservableNode("z", (1,), coefficient=-0.5),)
+            ),
+            id="observable",
+        ),
+        pytest.param(
+            lambda program: replace(
+                program, measurements=(MeasurementNode("samples", (1,), shots=37),)
+            ),
+            id="measurement",
+        ),
+        pytest.param(
+            lambda program: replace(
+                program, metadata={"purpose": {"calibration": (0.3, 0.7)}}
+            ),
+            id="nested-metadata",
+        ),
+    ],
+)
+def test_resealed_noninstruction_changes_are_rejected(
+    alter: Callable[[CircuitIR], CircuitIR],
+) -> None:
+    result, native = _stage(_source())
+    changed = alter(result.program)
+    forged = _reseal(replace(result, program=changed))
+    with pytest.raises(
+        blocks.NativeBlockOptimizationError, match="noninstruction semantics"
+    ):
+        blocks.verify_native_block_optimization(
+            forged, native, snapshot=_snapshot(), evaluated_at=_NOW
+        )
+
+
+def test_native_rewrites_preserve_noninstruction_tensor_semantics() -> None:
+    coefficient = torch.tensor(0.41, dtype=torch.float64)
+    calibration = torch.tensor([0.2, 0.8], dtype=torch.float64)
+    source = replace(
+        _source(),
+        dtype="complex128",
+        shape=(2, 2),
+        observables=(ObservableNode("z", (0,), coefficient=coefficient),),
+        measurements=(MeasurementNode("samples", (1, 0), shots=37),),
+        metadata={"calibration": calibration, "parameter": Parameter("readout")},
+    )
+    result, native = _stage(source)
+    assert result.rewrites
+    _equivalent(source, result.program)
+    for program in (source, native.program, result.program):
+        payload = program.to_dict()
+        payload.pop("instructions")
+        expected = source.to_dict()
+        expected.pop("instructions")
+        assert payload == expected
+    # Re-sealing the identity cannot legitimize a different observable or
+    # calibration tensor, even though instruction operators are unchanged.
+    for changed in (
+        replace(
+            result.program,
+            observables=(ObservableNode("z", (0,), coefficient=coefficient + 0.1),),
+        ),
+        replace(
+            result.program,
+            metadata=dict(result.program.metadata) | {"calibration": calibration + 0.1},
+        ),
+    ):
+        with pytest.raises(
+            blocks.NativeBlockOptimizationError, match="noninstruction semantics"
+        ):
+            blocks.verify_native_block_optimization(
+                _reseal(replace(result, program=changed)),
+                native,
+                snapshot=_snapshot(),
+                evaluated_at=_NOW,
+            )
 
 
 def test_long_stream_bounds_each_rewrite() -> None:
