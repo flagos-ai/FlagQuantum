@@ -55,6 +55,11 @@ from examples.algorithms.phase_gradient_rotation_decomposition import (
 from examples.algorithms.programmable_rotation_array_catalog import (
     ProgrammableRotationArrayExample,
 )
+from examples.algorithms.qpe_window_decomposition import (
+    window_child,
+    window_program,
+    window_score,
+)
 from examples.algorithms.qvr_catalog import QvrExample
 from examples.algorithms.qvr_decomposition import qvr_child, qvr_program, qvr_score
 from examples.algorithms.rotation_gate_decomposition import (
@@ -878,7 +883,9 @@ def filename(component: object) -> str:
 def score(component: object) -> object:
     if isinstance(component, ComponentFunction):
         return component.score()
-    result = fourier_score(name(component), attributes(component))
+    result = window_score(name(component), attributes(component))
+    if result is None:
+        result = fourier_score(name(component), attributes(component))
     if result is None:
         result = rotation_gate_score(name(component), attributes(component))
     if result is None:
@@ -902,7 +909,9 @@ def score(component: object) -> object:
 
 def decomposition(component: object) -> ProgramRecord | None:
     """Reuse complete controlled-rotation and phase-gradient source graphs."""
-    record = fourier_program(name(component), attributes(component))
+    record = window_program(name(component), attributes(component))
+    if record is None:
+        record = fourier_program(name(component), attributes(component))
     if record is None:
         record = rotation_gate_program(name(component), attributes(component))
     if record is None:
@@ -926,7 +935,8 @@ def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
     return (
-        fourier_child(record, entry, attributes(root))
+        window_child(record, entry, attributes(root))
+        or fourier_child(record, entry, attributes(root))
         or gradient_child(record, entry, root)
         or phase_rotation_child(record, entry, attributes(root))
         or qvr_child(record, entry, attributes(root))

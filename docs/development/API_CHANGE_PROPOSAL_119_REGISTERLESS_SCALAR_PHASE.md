@@ -14,6 +14,12 @@ GlobalPhase and three one-qubit rotations. The actual source catalog factories
 The source declaration order gives GlobalPhase instance zero. Its graph
 traversal visits the connected Rz/Rx/Rz chain before the disconnected scalar.
 
+The complete `phase_estimation/lp_resource_state.py` intake also reaches this
+contract through `ReflectionUsingPrepare` with `global_phase=1j`. Its unchanged
+seven-selection-bit factory reflection decomposes into ten calls, including a
+registerless GlobalPhase. The stored LP resource-state graph therefore shares
+this prerequisite. Existing flat LP execution remains independently accepted.
+
 FlagQuantum already owns exact scalar emission through scalar_phase_ir,
 full SU2 execution, symbolic scalar expressions, and typed nested calls.
 The finite Program opcode vocabulary currently requires quantum operands for
