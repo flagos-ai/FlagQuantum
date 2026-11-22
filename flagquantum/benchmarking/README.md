@@ -133,3 +133,20 @@ Markdown table.
 - `ftqc_exact_reference.py`: observe W1-A H-T-H construction, planning and
   execution through existing public APIs. Core CPU only, no performance gate.
   See [the exact reference baseline](../../docs/development/FTQC_EXACT_REFERENCE_BASELINE.md).
+
+`_adaptive_timing.py` owns original source-ordered repeated timing with explicit
+clock and sample ownership. `_timing_report.py` owns ordered filter selection and
+reports, reusing Compiler SI formatting. A complete physical-generation example
+uses the existing instruction entry point and preserves its resource checks.
+
+```bash
+python -m benchmarks.reversible_phase_timing --only 'increment_*' --target_seconds 0.01
+python -m pytest tests/unit/test_benchmark_support.py tests/unit/test_kmx_spin_command.py -q
+```
+
+The displayed comparisons use the original C++ workload goals of 580/610 ns.
+They remain separate from observed native timings. These single-process generation
+measurements establish no accelerator or distributed performance claim. The
+[complete source audit](../../docs/development/BENCHMARK_SUPPORT_AUDIT.md) records
+clock substitution in the reference harness, ownership changes and undefined
+original goal-comparison boundaries.
