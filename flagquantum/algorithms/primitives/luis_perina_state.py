@@ -6,7 +6,7 @@
 """Compose Luis–Perina phase windows from shared rotations and reflection."""
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import acos, pi
 
 from ...compiler._component_trace.call_graph import (
@@ -16,13 +16,29 @@ from ...compiler._component_trace.call_graph import (
 from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.bits.bitwise import on_each_ir
+from ...compiler.registers.bits.on_each import on_each_word_program
+from ...compiler.registers.component_adjoint import adjoint_component_hierarchy
+from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.component_definition_match import (
+    matches_component_definition,
+)
+from ...compiler.registers.component_gate_function import bit_gate_function
+from ...compiler.registers.component_graph import _namespace_helpers
+from ...compiler.registers.component_rebindings import adjoint_word_rebinding
 from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_requirements,
     source_symbolic_zero_reflection_resource_formula,
 )
 from ...compiler.registers.primitives.controlled_rotation import controlled_rz_ir
+from ...compiler.registers.primitives.controlled_rotation_component import (
+    controlled_rz_program,
+)
 from ...core._composition import inverted_instruction
-from ...core.ir import Instruction
+from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program import ProgramRecord
+from ...core.ir.program.register_bindings import RegisterBinding
+from ...core.ir.program.register_types import quantum_bit_type
+from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt, SymbolicReal, ceil, log2
 from ...core.value_math import acos as symbolic_acos
@@ -31,6 +47,78 @@ from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
 from .phase_estimation_window import PhaseEstimationWindow
 from .prepared_state_reflection import PreparedStateReflection
+
+
+def luis_perina_interim_program(width: int, *, adjoint: bool = False) -> ProgramRecord:
+    """Retain the source's arbitrary-input m/anc graph and exact stored inverse.
+
+    m is MSB-first caller storage. anc is a logical through output, with no
+    private work or measurement. Shared Rz, CRz and word adjoints own their
+    unchanged definitions and absolute phase.
+    """
+    if type(width) is not int or width < 1 or type(adjoint) is not bool:
+        raise ValueError(
+            "Interim Program requires a positive width and boolean adjoint"
+        )
+    bit = Register("q", quantum_bit_type())
+    h = bit_gate_function("hadamard", (bit,), CircuitIR(1, (Instruction("h", (0,)),)))
+    angle = -2 * pi / (2**width + 1)
+    rz = bit_gate_function(
+        "interim_rz",
+        (bit,),
+        CircuitIR(1, (Instruction("rz", (0,), params={"theta": angle}),)),
+    )
+    builder = ComponentProgramBuilder(LuisPerinaInterim(width).signature, (h, rz))
+    m = builder.call_program(
+        on_each_word_program(width, h), {"q": builder.inputs["m"]}
+    )["q"]
+    assert isinstance(m, RegisterBinding)
+    bits = builder.split(m)
+    anc = builder.call_dict(h.name, {"q": builder.inputs["anc"]})["q"]
+    for i in range(width):
+        values = builder.call_program(
+            controlled_rz_program(-2 * pi * 2**i / (2**width + 1)),
+            {"ctrl": bits[-i - 1], "q": anc},
+        )
+        bits[-i - 1], anc = values["ctrl"], values["q"]
+    anc = builder.call_dict(rz.name, {"q": anc})["q"]
+    anc = builder.call_dict(h.name, {"q": anc})["q"]
+    record = builder.finalize({"m": builder.join(bits), "anc": anc})
+    if not adjoint:
+        return record
+    inverse_rz = bit_gate_function(
+        "interim_inverse_rz",
+        (bit,),
+        CircuitIR(1, (Instruction("rz", (0,), params={"theta": -angle}),)),
+    )
+    definitions = [*record.functions, inverse_rz]
+    adjoints = {rz.name: inverse_rz.name}
+    for position, function in enumerate(record.functions[1:]):
+        ports = function.registers or ()
+        if matches_component_definition(record, function.name, ProgramRecord((h,))):
+            adjoints[function.name] = function.name
+        elif tuple(port.name for port in ports) == ("reg", "reg"):
+            inverse = adjoint_word_rebinding(
+                function, f"interim_inverse_view_{position}"
+            )
+            definitions.append(inverse)
+            adjoints[function.name] = inverse.name
+        elif tuple(port.name for port in ports) == ("ctrl", "q"):
+            for i in range(width):
+                theta = -2 * pi * 2**i / (2**width + 1)
+                if matches_component_definition(
+                    record, function.name, controlled_rz_program(theta)
+                ):
+                    inverse_record = _namespace_helpers(
+                        controlled_rz_program(theta, adjoint=True),
+                        f"interim_inverse_crz_{position}",
+                    )
+                    definitions.extend(inverse_record.functions)
+                    adjoints[function.name] = inverse_record.functions[0].name
+                    break
+    return adjoint_component_hierarchy(
+        replace(record, functions=tuple(definitions)), adjoints
+    )
 
 
 @dataclass(frozen=True)
