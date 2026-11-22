@@ -543,6 +543,8 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
     assert imported == [
         "__future__",
         "collections.abc",
+        "contextlib",
+        "contextvars",
         "dataclasses",
         "types",
         "typing",

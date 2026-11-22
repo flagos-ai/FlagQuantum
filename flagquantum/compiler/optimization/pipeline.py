@@ -7,6 +7,7 @@ from dataclasses import replace
 from typing import Any
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
+from .commutation import _reuse_commutation_analysis
 from .optimization_levels import DEFAULT_OPTIMIZATION_LEVEL, optimization_level_stages
 from .pass_manager import PassBinding, PassManager, PassRegistry
 from .pass_registry import default_pass_registry
@@ -93,7 +94,8 @@ def _optimize_to_fixed_point(
     sequence = (*stages, *admitted)
     if not sequence:
         return _with_recorded_level(ir, optimization_level)
-    optimized = PassManager(
-        _registry_admitting(passes, registry_factory=registry_factory)
-    ).to_fixed_point(ir, sequence)
+    with _reuse_commutation_analysis():
+        optimized = PassManager(
+            _registry_admitting(passes, registry_factory=registry_factory)
+        ).to_fixed_point(ir, sequence)
     return _with_recorded_level(optimized, optimization_level, admitted)
