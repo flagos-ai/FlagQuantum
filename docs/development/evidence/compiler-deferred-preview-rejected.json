@@ -1,0 +1,3070 @@
+{
+  "implementation_commit": "4c8805d2882c4593e5ddfed95d03a7a353d02fd4",
+  "base_commit": "4c8805d2882c4593e5ddfed95d03a7a353d02fd4",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "scope": "Inspected single-device shared macOS development controls, one numerical thread; no qualified timing, process RSS, prospective, SDK ranking or scalability claim",
+  "baseline_source_sha256": "eaf8de069d8d7f4bc3c8208426159436954ef6c37ef0574ea3d5f10efbed3fe7",
+  "candidate_source": "\"\"\"Inspect target-CZ-aware SABRE trials without enabling a production policy.\n\nWeyl counts shortlist one alternative. The incumbent and that alternative then\nuse the existing bounded synthesis acceptance before a route can be selected.\nThis is a development experiment for an unannotated numeric CZ target only.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport hashlib\nimport itertools\nimport json\nimport random\nimport struct\nimport subprocess\nimport sys\nimport time\nimport traceback\nfrom collections.abc import Callable, Iterator\nfrom dataclasses import replace\nfrom functools import partial\nfrom pathlib import Path\nfrom typing import TypedDict\nfrom unittest.mock import patch\n\nfrom benchmarks import compiler_sabre_depth as workflows\nfrom flagquantum.compiler.lowering.basis_translation import translate\nfrom flagquantum.compiler.optimization._cz_blocks import (\n    _candidate,\n    _collect_blocks,\n    _numeric_matrix,\n    _product,\n)\nfrom flagquantum.compiler.optimization.two_qubit_synthesis import (\n    _prepared_basis,\n    _swap_register,\n    _weyl_decomposition,\n)\nfrom flagquantum.compiler.topology import sabre\nfrom flagquantum.compiler.topology.coupling import CouplingMap\nfrom flagquantum.core.ir import CircuitIR, Instruction\n\n_ORIGINAL = sabre._select_sabre_trials\n_BASIS = frozenset((\"rx\", \"rz\", \"cz\"))\n_HARNESS = \"9aa9260920984e2ca05bcb293abb885fccd9c144\"\n\n\nclass Report(TypedDict):\n    scope: str\n    source_commit: str\n    implementation_commit: str\n    nonce: str\n    runner_sha256: str\n    native_budget: int\n    complete: bool\n    rows: list[dict[str, object]]\n    failures: list[dict[str, object]]\n    quality_regressions: list[dict[str, object]]\n\n\ndef _native_previews(\n    source: CircuitIR,\n    coupling: CouplingMap,\n) -> Callable[[sabre.SabrePlan], tuple[CircuitIR, int]]:\n    if any(\n        item.metadata or item.matrix is not None or not 1 <= len(item.wires) <= 2\n        for item in source.instructions\n    ):\n        raise ValueError(\"Preview requires unannotated numeric one/two-qubit gates\")\n    # Source indices have meaning only in this closure. No value survives a\n    # selection call or can be reused for another source or target.\n    lowered: dict[tuple[int, tuple[int, ...]], tuple[Instruction, ...]] = {}\n\n    def lower(index: int, wires: tuple[int, ...]) -> tuple[Instruction, ...]:\n        key = (index, wires)\n        if key in lowered:\n            return lowered[key]\n        item = (\n            Instruction(\"swap\", wires)\n            if index == -1\n            else replace(source.instructions[index], wires=wires)\n        )\n        leaves = (\n            (item,)\n            if item.name in _BASIS\n            else translate(\n                item,\n                can_run=lambda gate: gate.name in _BASIS,\n                z_rotation=\"rz\",\n                pulse_opcode=\"rx\",\n            )\n        )\n        if leaves is None or any(gate.name not in _BASIS for gate in leaves):\n            raise ValueError(\"Unsupported preview lowering\")\n        for gate in leaves:\n            pair = (\n                (gate.wires[0], (gate.wires[0] + 1) % source.n_wires)\n                if len(gate.wires) == 1\n                else (gate.wires[0], gate.wires[1])\n            )\n            if _numeric_matrix(gate, pair) is None:\n                raise ValueError(\"Preview does not support symbolic or batched values\")\n        lowered[key] = tuple(leaves)\n        return lowered[key]\n\n    def preview(plan: sabre.SabrePlan) -> tuple[CircuitIR, int]:\n        if plan.initial_logical_to_physical != tuple(range(source.n_wires)):\n            raise ValueError(\"Preview requires identity input placement\")\n        physical: list[tuple[int, tuple[int, ...]]] = []\n        cursor = 0\n        for count, index in enumerate(plan.sequence):\n            while cursor < len(plan.swaps) and plan.swap_placements[cursor] == count:\n                physical.append((-1, plan.swaps[cursor]))\n                cursor += 1\n            physical.append((index, plan.placements[index]))\n        if cursor != len(plan.swaps):\n            raise ValueError(\"Preview plan contains unemitted SWAPs\")\n        physical.extend(\n            (-1, (left, right))\n            for left, right, _ in sabre.plan_restore_swaps(plan, coupling)\n        )\n        return replace(\n            source,\n            instructions=tuple(\n                leaf for index, wires in physical for leaf in lower(index, wires)\n            ),\n        ), len(physical)\n\n    return preview\n\n\ndef _blocks(\n    native: CircuitIR,\n) -> Iterator[tuple[tuple[int, int], tuple[int, ...]]]:\n    return _collect_blocks(\n        native,\n        lambda index, pair: _numeric_matrix(native.instructions[index], pair)\n        is not None,\n        identity_reader=_numeric_matrix,\n    )\n\n\ndef _cz_lower_bound(\n    native: CircuitIR,\n    *,\n    matrix_costs: dict[bytes, int] | None = None,\n) -> int:\n    estimate = sum(item.name == \"cz\" for item in native.instructions)\n    basis = _prepared_basis(\"cz\")\n    for pair, positions in _blocks(native):\n        block = [native.instructions[index] for index in positions]\n        before = sum(item.name == \"cz\" for item in block)\n        if before < 2:\n            continue\n        matrix = _product(block, pair, matrix_reader=_numeric_matrix)\n        if matrix is None:\n            raise ValueError(\"Unsupported numeric block\")\n        key = b\"\".join(\n            struct.pack(\"!dd\", value.real, value.imag)\n            for row in matrix\n            for value in row\n        )\n        if matrix_costs is not None and key in matrix_costs:\n            after = matrix_costs[key]\n        else:\n            after = basis.entangler_count(_weyl_decomposition(_swap_register(matrix)))\n            if matrix_costs is not None:\n                matrix_costs[key] = after\n        estimate -= max(0, before - after)\n    return estimate\n\n\ndef _realize(native: CircuitIR, limit: int) -> CircuitIR:\n    if len(native.instructions) > limit:\n        raise ValueError(\"Native preview exceeds the operation budget\")\n    replacements: dict[int, tuple[Instruction, ...]] = {}\n    size = len(native.instructions)\n    for pair, positions in _blocks(native):\n        block = [native.instructions[index] for index in positions]\n        proposal = _candidate(\n            block,\n            pair,\n            max_output_operations=len(block) + limit - size,\n            matrix_reader=_numeric_matrix,\n        )\n        if proposal is not None:\n            replacements[positions[0]] = proposal\n            replacements.update((index, ()) for index in positions[1:])\n            size += len(proposal) - len(block)\n    return replace(\n        native,\n        instructions=tuple(\n            leaf\n            for index, item in enumerate(native.instructions)\n            for leaf in replacements.get(index, (item,))\n        ),\n    )\n\n\ndef _cost(native: CircuitIR) -> tuple[int, int]:\n    levels = [0] * native.n_wires\n    count = 0\n    for item in native.instructions:\n        if len(item.wires) == 2:\n            count += 1\n            level = max(levels[q] for q in item.wires) + 1\n            for q in item.wires:\n                levels[q] = level\n    return count, max(levels, default=0)\n\n\ndef _select(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    baseline: sabre.SabrePlan,\n    *,\n    cost: Callable[[sabre.SabrePlan], int] | None = None,\n    native_budget: int = 256,\n) -> sabre.SabrePlan:\n    incumbent = _ORIGINAL(program, coupling, baseline, cost=cost)\n    if cost is not None or not incumbent.swaps:\n        return incumbent\n    candidates: list[sabre.SabrePlan] = []\n    seen = {incumbent}\n    swap_limit = sabre._restored_swap_count(incumbent, coupling)\n    for seed, layers in ((0, False), (1, False), (2, False), (None, True)):\n        candidate = sabre._plan_sabre_trial(\n            program,\n            coupling,\n            initial_layout=baseline.initial_logical_to_physical,\n            tie_rng=random.Random(seed) if seed is not None else None,\n            committed_swap_limit=swap_limit + 1,\n            layer_lookahead=layers,\n        )\n        if (\n            candidate is None\n            or sabre._restored_swap_count(candidate, coupling) > swap_limit\n        ):\n            continue\n        if candidate not in seen:\n            seen.add(candidate)\n            candidates.append(candidate)\n    if not candidates:\n        return incumbent\n    preview_plan = _native_previews(program, coupling)\n    native, routed_count = preview_plan(incumbent)\n    if len(native.instructions) > routed_count + native_budget:\n        raise ValueError(\"Native preview exceeds the operation budget\")\n    shortlist: tuple[sabre.SabrePlan, CircuitIR, int] | None = None\n    best_estimate = sum(item.name == \"cz\" for item in native.instructions)\n    matrix_costs: dict[bytes, int] = {}\n    for candidate in candidates:\n        preview, count = preview_plan(candidate)\n        estimate = _cz_lower_bound(preview, matrix_costs=matrix_costs)\n        if estimate < best_estimate:\n            shortlist, best_estimate = (candidate, preview, count), estimate\n    if shortlist is None:\n        return incumbent\n    incumbent_cost = _cost(_realize(native, routed_count + native_budget))\n    if best_estimate >= incumbent_cost[0]:\n        return incumbent\n    candidate, preview, count = shortlist\n    delivered = _cost(_realize(preview, count + native_budget))\n    # The estimate alone cannot override residual or instruction-growth rejection.\n    # Keep both delivered objectives non-increasing rather than hide a tradeoff.\n    return (\n        candidate\n        if delivered[0] < incumbent_cost[0] and delivered[1] <= incumbent_cost[1]\n        else incumbent\n    )\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"--sdkbench-root\", type=Path, required=True)\n    parser.add_argument(\"--nonce\", default=\"01\" * 32)\n    parser.add_argument(\"--output\", type=Path, required=True)\n    args = parser.parse_args()\n    harness = args.sdkbench_root.resolve()\n    revision = subprocess.check_output(\n        [\"git\", \"rev-parse\", \"HEAD\"], cwd=harness, text=True, timeout=15\n    ).strip()\n    dirty = subprocess.check_output(\n        [\"git\", \"status\", \"--porcelain\"], cwd=harness, text=True, timeout=15\n    ).strip()\n    if revision != _HARNESS or dirty:\n        parser.error(\"The pinned SDKBench checkout must be unchanged\")\n    sys.path.insert(0, str(harness / \"src\"))\n    from sdkbench.candidates.adapters import workflow_configuration\n\n    native_budget = workflow_configuration(\"flagquantum-target-artifact\")[\"options\"][\n        \"max_native_added_operations\"\n    ]\n    report: Report = {\n        \"scope\": \"Inspected single-device development experiment; production policy disabled; no qualified performance, held-out, ranking or scalability claim\",\n        \"implementation_commit\": subprocess.check_output(\n            [\"git\", \"rev-parse\", \"HEAD\"], text=True, timeout=15\n        ).strip(),\n        \"source_commit\": revision,\n        \"nonce\": args.nonce,\n        \"runner_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n        \"native_budget\": native_budget,\n        \"complete\": False,\n        \"rows\": [],\n        \"failures\": [],\n        \"quality_regressions\": [],\n    }\n    with patch.object(\n        workflows, \"_select\", partial(_select, native_budget=native_budget)\n    ):\n        for case in itertools.product(\n            (6, 8, 12),\n            (\"qaoa\", \"ising\", \"hopping\", \"qft\", \"repetition\"),\n            (\"line\", \"ring\", \"grid\", \"sparse\"),\n        ):\n            start = time.perf_counter()\n            try:\n                result = workflows._application(\n                    *case, \"flagquantum-target-artifact\", harness, nonce=args.nonce\n                )\n                before, after = result[\"baseline\"], result[\"candidate\"]\n                if not isinstance(before, dict) or not isinstance(after, dict):\n                    raise ValueError(\"Workflow did not return comparison metrics\")\n                if any(\n                    after[key] > before[key]\n                    for key in (\"full_cz_count\", \"two_body_dependency_depth\")\n                ):\n                    report[\"quality_regressions\"].append(\n                        {\"case\": case, \"result\": result}\n                    )\n                report[\"rows\"].append(\n                    {\n                        \"case\": case,\n                        \"result\": result,\n                        \"development_seconds\": time.perf_counter() - start,\n                    }\n                )\n            except Exception as error:\n                # A diagnostic boundary retains failure and continues the fixed set.\n                report[\"failures\"].append(\n                    {\n                        \"case\": case,\n                        \"type\": type(error).__name__,\n                        \"message\": str(error),\n                        \"traceback\": traceback.format_exc(),\n                    }\n                )\n            args.output.write_text(json.dumps(report, indent=2) + \"\\n\")\n            print(case, \"inspected\", flush=True)\n    report[\"complete\"] = True\n    args.output.write_text(json.dumps(report, indent=2) + \"\\n\")\n    if report[\"failures\"] or report[\"quality_regressions\"]:\n        raise SystemExit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "native_budget": 20000,
+  "baseline_scope": "Original experimental selector versus deferred realization; production source unchanged.",
+  "driver": "\"\"\"Inspect deferred native-preview realization against the unchanged experimental selector.\"\"\"\nfrom __future__ import annotations\n\nimport ast\nimport contextlib\nimport cProfile\nimport hashlib\nimport itertools\nimport json\nimport pstats\nimport statistics\nimport subprocess\nimport sys\nimport time\nimport tracemalloc\nfrom collections.abc import Iterator\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom typing import Any\nfrom unittest.mock import patch\n\nROOT = Path.cwd()\nHARNESS = Path('/private/tmp/sdkbench-product-conformance-20261121')\nBASE = '4c8805d2882c4593e5ddfed95d03a7a353d02fd4'\nSOURCE_PATH = 'benchmarks/compiler_sabre_native_cost.py'\nOUTPUT = Path('/private/tmp/fq-preview-realization-controls-20261122.json')\n\ndef git(folder: Path, *arguments: str) -> str:\n    return subprocess.check_output(['git', *arguments], cwd=folder, text=True, timeout=15).strip()\n\nassert git(HARNESS, 'rev-parse', 'HEAD') == '9aa9260920984e2ca05bcb293abb885fccd9c144'\nassert not git(HARNESS, 'status', '--porcelain')\nsys.path.insert(0, str(HARNESS / 'src'))\nfrom benchmarks import compiler_sabre_native_cost as native\nfrom flagquantum.compiler.topology import sabre\nfrom functools import partial\nfrom flagquantum.compiler import optimize\nfrom flagquantum.core.ir import CircuitIR, Instruction\nfrom sdkbench.candidates.adapters import load_adapter, workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\n\nbaseline_source = (ROOT / SOURCE_PATH).read_text()\ncandidate_source = baseline_source.replace(\n    '    incumbent_cost = _cost(_realize(native, routed_count + native_budget))',\n    '    if len(native.instructions) > routed_count + native_budget:\\n        raise ValueError(\"Native preview exceeds the operation budget\")'\n).replace('    best_estimate = incumbent_cost[0]', '    best_estimate = sum(item.name == \"cz\" for item in native.instructions)').replace(\n    '    candidate, preview, count = shortlist',\n    '    incumbent_cost = _cost(_realize(native, routed_count + native_budget))\\n    if best_estimate >= incumbent_cost[0]:\\n        return incumbent\\n    candidate, preview, count = shortlist'\n)\nassert candidate_source != baseline_source\nnode = next(item for item in ast.parse(candidate_source).body if isinstance(item, ast.FunctionDef) and item.name == '_select')\nnamespace = dict(vars(native))\nexec(compile(ast.Module(body=[node],type_ignores=[]), 'deferred-preview-realization', 'exec'),namespace)\ncandidate = namespace['_select']\n\n@contextlib.contextmanager\ndef variant(name: str) -> Iterator[None]:\n    with patch.object(sabre, '_select_sabre_trials', partial(native._select if name == 'baseline' else candidate, native_budget=20000)):\n        yield\n\ndef observe(case: tuple[int, str, str], workflow: str) -> dict[str, Any]:\n    width, family, topology = case\n    bundle = Bundle(HARNESS / 'docs/implementation')\n    acceptance = bundle.cases['ROUTE-GRID-08' if width == 8 else f'ROUTE-LINE-{width:02d}']\n    config = workflow_configuration(workflow)\n    adapter = load_adapter(SimpleNamespace(configuration={'options': {'sdk': config['sdk'], 'workflow': workflow, 'compiler_options': config}}))\n    source = fixture(width, family, topology, '01' * 32)\n    seed = bundle.plan['execution_profile']['compiler_seeds'][0]\n    start = time.perf_counter()\n    payload = adapter.execute('route', source, seed)\n    seconds = time.perf_counter() - start\n    metrics = routing(payload, source, None, acceptance, 0)\n    assert payload['final_layout'] == list(range(width))\n    normalized = json.dumps({key: payload[key] for key in ('operations', 'final_layout')}, sort_keys=True, separators=(',', ':'), allow_nan=False)\n    return {'metrics': metrics, 'normalized_output_sha256': hashlib.sha256(normalized.encode()).hexdigest(), 'audit': dict(adapter.audit), 'seconds': seconds}\n\nreport: dict[str, Any] = {'implementation_commit': git(ROOT, 'rev-parse', 'HEAD'), 'base_commit': BASE, 'source_commit': git(HARNESS, 'rev-parse', 'HEAD'), 'scope': 'Inspected single-device shared macOS development controls, one numerical thread; no qualified timing, process RSS, prospective, SDK ranking or scalability claim', 'baseline_source_sha256': hashlib.sha256(baseline_source.encode()).hexdigest(), 'candidate_source': candidate_source, 'native_budget': 20000, 'baseline_scope': 'Original experimental selector versus deferred realization; production source unchanged.', 'driver': Path(__file__).read_text(), 'complete': False, 'rows': [], 'timing': [], 'memory': [], 'profiles': []}\n\ndef checkpoint() -> None:\n    OUTPUT.write_text(json.dumps(report, indent=2) + '\\n')\n\nfor workflow in ('flagquantum-target-artifact',):\n    for index, case in enumerate(itertools.product((6, 8, 12), ('qaoa', 'ising', 'hopping', 'qft', 'repetition'), ('line', 'ring', 'grid', 'sparse'))):\n        observations = {}\n        for mode in (('baseline', 'candidate') if index % 2 == 0 else ('candidate', 'baseline')):\n            with variant(mode):\n                observations[mode] = observe(case, workflow)\n        assert all(observations['baseline'][key] == observations['candidate'][key] for key in ('metrics', 'normalized_output_sha256', 'audit')), (workflow, case, observations)\n        report['rows'].append({'workflow': workflow, 'case': case, 'observations': observations})\n        checkpoint()\n    print('Accepted all 60 paired workflows:', workflow, flush=True)\n\nfor case in ((6, 'qft', 'grid'), (6, 'repetition', 'ring'), (12, 'qft', 'grid')):\n    samples = {'baseline': [], 'candidate': []}\n    for iteration in range(11):\n        for mode in (('baseline', 'candidate') if iteration % 2 == 0 else ('candidate', 'baseline')):\n            with variant(mode):\n                observed = observe(case, 'flagquantum-target-artifact')\n            if iteration >= 2:\n                samples[mode].append(observed['seconds'])\n    report['timing'].append({'case': case, 'workflow': 'flagquantum-target-artifact', 'warmups_per_variant': 2, 'samples_seconds': samples, 'median_seconds': {mode: statistics.median(values) for mode, values in samples.items()}})\n    for mode in ('baseline', 'candidate'):\n        with variant(mode):\n            tracemalloc.start()\n            observed = observe(case, 'flagquantum-target-artifact')\n            peak = tracemalloc.get_traced_memory()[1]\n            tracemalloc.stop()\n        report['memory'].append({'case': case, 'mode': mode, 'python_peak_bytes': peak, 'scope': 'Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS'})\n    checkpoint()\n    print(case, report['timing'][-1]['median_seconds'], flush=True)\nreport['complete'] = True\ncheckpoint()\n",
+  "complete": true,
+  "rows": [
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qaoa",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.2591559389004138e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 41,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 15236
+          },
+          "seconds": 0.1717241249862127
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.2591559389004138e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 41,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 15236
+          },
+          "seconds": 0.1371608329936862
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qaoa",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 7.221785298249065e-16,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 8428
+          },
+          "seconds": 0.03789870801847428
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 7.221785298249065e-16,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 8428
+          },
+          "seconds": 0.03743212501285598
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qaoa",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 8.005932084973443e-16,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 22,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9242
+          },
+          "seconds": 0.04987095796968788
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 8.005932084973443e-16,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 22,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9242
+          },
+          "seconds": 0.0667033750214614
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 6.984540463862221e-16,
+            "full_cz_count": 34,
+            "two_body_dependency_depth": 24,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 8155
+          },
+          "seconds": 0.07491416699485853
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 6.984540463862221e-16,
+            "full_cz_count": 34,
+            "two_body_dependency_depth": 24,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 8155
+          },
+          "seconds": 0.074715249997098
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "ising",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 11707
+          },
+          "seconds": 0.05535833298927173
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 11707
+          },
+          "seconds": 0.07191708404570818
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "ising",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 4.344434768182728e-15,
+            "full_cz_count": 44,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 9740
+          },
+          "seconds": 0.0559521249961108
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 4.344434768182728e-15,
+            "full_cz_count": 44,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 9740
+          },
+          "seconds": 0.056900625000707805
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "ising",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 4.574283909837767e-15,
+            "full_cz_count": 42,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 9355
+          },
+          "seconds": 0.059658334008418024
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 4.574283909837767e-15,
+            "full_cz_count": 42,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 9355
+          },
+          "seconds": 0.04349929204909131
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "ising",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 11707
+          },
+          "seconds": 0.05501733400160447
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 11707
+          },
+          "seconds": 0.05673974996898323
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "hopping",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.09723954199580476
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.11324304202571511
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "hopping",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.11370158300269395
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.09805874997982755
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "hopping",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.182845611224301e-14,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 78,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 7,
+            "serialized_artifact_bytes": 22237
+          },
+          "seconds": 0.11878920800518245
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.182845611224301e-14,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 78,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 7,
+            "serialized_artifact_bytes": 22237
+          },
+          "seconds": 0.1348147090175189
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "hopping",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.11289570899680257
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19174
+          },
+          "seconds": 0.11341516702668741
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qft",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.987626749397768e-15,
+            "full_cz_count": 75,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 111,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 15883
+          },
+          "seconds": 0.13422479102155194
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.987626749397768e-15,
+            "full_cz_count": 75,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 111,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 15883
+          },
+          "seconds": 0.11744470795383677
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qft",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          },
+          "seconds": 0.12171537498943508
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          },
+          "seconds": 0.120743790990673
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "215c6820322ed157cad7c164466c24f30970395ee09b31924b6172289e2cefd7",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 13593
+          },
+          "seconds": 0.19919437495991588
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "215c6820322ed157cad7c164466c24f30970395ee09b31924b6172289e2cefd7",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 13593
+          },
+          "seconds": 0.2185258329845965
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "qft",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          },
+          "seconds": 0.10504141601268202
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          },
+          "seconds": 0.12134404195239767
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "repetition",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 6.141450319825085e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 78,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 17491
+          },
+          "seconds": 0.11779129202477634
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 6.141450319825085e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 78,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 17491
+          },
+          "seconds": 0.09864308399846777
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "fabf1dfb5d396167184dd30241bcbd28fb840a54d62694c2c652fb627d104d25",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 18691
+          },
+          "seconds": 0.21258900000248104
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "fabf1dfb5d396167184dd30241bcbd28fb840a54d62694c2c652fb627d104d25",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 18691
+          },
+          "seconds": 0.21275862504262477
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "repetition",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 4.901354889651292e-15,
+            "full_cz_count": 62,
+            "two_body_dependency_depth": 51,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 15350
+          },
+          "seconds": 0.09249545895727351
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 4.901354889651292e-15,
+            "full_cz_count": 62,
+            "two_body_dependency_depth": 51,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 15350
+          },
+          "seconds": 0.11161754198838025
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        6,
+        "repetition",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 4.490574227168739e-15,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 10951
+          },
+          "seconds": 0.0473609579494223
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 4.490574227168739e-15,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 10951
+          },
+          "seconds": 0.04701487498823553
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qaoa",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 6.072657351995283e-14,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7d2a59ed23a7253b1e8c8a6bdce94dd37166f8cca72c6b9eb64436b4721c2692",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 122,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 24640
+          },
+          "seconds": 0.1649089169804938
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 6.072657351995283e-14,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7d2a59ed23a7253b1e8c8a6bdce94dd37166f8cca72c6b9eb64436b4721c2692",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 122,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 24640
+          },
+          "seconds": 0.16207279200898483
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qaoa",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.1983210615419905e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 26,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0342e4937e7c2c59f4d47d3b7df07df708685959a764ce73d63d1b229a25d04c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 68,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 13630
+          },
+          "seconds": 0.08169887500116602
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.1983210615419905e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 26,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0342e4937e7c2c59f4d47d3b7df07df708685959a764ce73d63d1b229a25d04c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 68,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 13630
+          },
+          "seconds": 0.08548704202985391
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qaoa",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.3030438699344067e-15,
+            "full_cz_count": 78,
+            "two_body_dependency_depth": 31,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "569b39a764fc4ff6bcd1abf6e70a7cb6b0e32c581fec7b38d6b50459e0ef491c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 80,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16532
+          },
+          "seconds": 0.11651204200461507
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.3030438699344067e-15,
+            "full_cz_count": 78,
+            "two_body_dependency_depth": 31,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "569b39a764fc4ff6bcd1abf6e70a7cb6b0e32c581fec7b38d6b50459e0ef491c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 80,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16532
+          },
+          "seconds": 0.11276983300922439
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.4851826706862361e-15,
+            "full_cz_count": 74,
+            "two_body_dependency_depth": 37,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3311ceaebff24897476bfc19fedb79303b8464fe408eeb6626d8b37abe1508df",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 80,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 15945
+          },
+          "seconds": 0.1555004590190947
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.4851826706862361e-15,
+            "full_cz_count": 74,
+            "two_body_dependency_depth": 37,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3311ceaebff24897476bfc19fedb79303b8464fe408eeb6626d8b37abe1508df",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 80,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 15945
+          },
+          "seconds": 0.1729687080369331
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.1674243517016566e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 24676
+          },
+          "seconds": 0.29822595801670104
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.1674243517016566e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 24676
+          },
+          "seconds": 0.29931245802436024
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "ising",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.5449287945012552e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "099641f79fb58db4b1bf9292147e46cd490990a562aac07c556b171d3536b53c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16596
+          },
+          "seconds": 0.18272033403627574
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.5449287945012552e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "099641f79fb58db4b1bf9292147e46cd490990a562aac07c556b171d3536b53c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16596
+          },
+          "seconds": 0.16435416595777497
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "ising",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.4046076445151095e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7ebecabbbbea75027e2d1f83eb740b6dbce89c2e35e822f592b91c7b531b1f0d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16776
+          },
+          "seconds": 0.11503116699168459
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.4046076445151095e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7ebecabbbbea75027e2d1f83eb740b6dbce89c2e35e822f592b91c7b531b1f0d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16776
+          },
+          "seconds": 0.09946374996798113
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "ising",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.466587386380936e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 41,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "333e4ed741649111229666866314ca98c7464b9db85994ce5775c7aaf62cc881",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13550
+          },
+          "seconds": 0.10032087500439957
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.466587386380936e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 41,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "333e4ed741649111229666866314ca98c7464b9db85994ce5775c7aaf62cc881",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13550
+          },
+          "seconds": 0.08360458299284801
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "hopping",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.14835479203611612
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.1707802499877289
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "hopping",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.1495628749835305
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.14891887496924028
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "hopping",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.413935800722356e-15,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 93,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9ea40253c35b984ec4c2a1770b9855b06aafb13e2a45bab145a70d939a4a22b7",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 132,
+            "accepted_block_rewrites": 10,
+            "serialized_artifact_bytes": 31045
+          },
+          "seconds": 0.19027933396864682
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.413935800722356e-15,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 93,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9ea40253c35b984ec4c2a1770b9855b06aafb13e2a45bab145a70d939a4a22b7",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 132,
+            "accepted_block_rewrites": 10,
+            "serialized_artifact_bytes": 31045
+          },
+          "seconds": 0.20823887502774596
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "hopping",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.15023270901292562
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 24820
+          },
+          "seconds": 0.1499479579506442
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qft",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 4.313514714559936e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 77,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "550354af2b5f0f0e18554ce918dad38ee683633b81022b1dcd6906130db3d342",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 218,
+            "accepted_block_rewrites": 27,
+            "serialized_artifact_bytes": 30700
+          },
+          "seconds": 0.2753477080259472
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 4.313514714559936e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 77,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "550354af2b5f0f0e18554ce918dad38ee683633b81022b1dcd6906130db3d342",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 218,
+            "accepted_block_rewrites": 27,
+            "serialized_artifact_bytes": 30700
+          },
+          "seconds": 0.2737114999908954
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qft",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.806892464795862e-15,
+            "full_cz_count": 142,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d8ce9cb303f15f41a4e19e9108c7b93170816b68acc6c33c18b3a3bdc6b083c3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 194,
+            "accepted_block_rewrites": 22,
+            "serialized_artifact_bytes": 28138
+          },
+          "seconds": 0.23442929197335616
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.806892464795862e-15,
+            "full_cz_count": 142,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d8ce9cb303f15f41a4e19e9108c7b93170816b68acc6c33c18b3a3bdc6b083c3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 194,
+            "accepted_block_rewrites": 22,
+            "serialized_artifact_bytes": 28138
+          },
+          "seconds": 0.2378604169934988
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qft",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.12653962484595e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 97,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a4e96efdc91b12924bbf887af7417e3860ff5e42709bcb07824408d86249533e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 170,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 32097
+          },
+          "seconds": 0.23850954102817923
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.12653962484595e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 97,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a4e96efdc91b12924bbf887af7417e3860ff5e42709bcb07824408d86249533e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 170,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 32097
+          },
+          "seconds": 0.21142320800572634
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "qft",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 5.246464596772037e-15,
+            "full_cz_count": 170,
+            "two_body_dependency_depth": 96,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "de469ad82e7273f2f27ae4f1191a6060912661dc021ee1d8a2dd6cd123fa9374",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 182,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 34040
+          },
+          "seconds": 0.23723408300429583
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 5.246464596772037e-15,
+            "full_cz_count": 170,
+            "two_body_dependency_depth": 96,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "de469ad82e7273f2f27ae4f1191a6060912661dc021ee1d8a2dd6cd123fa9374",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 182,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 34040
+          },
+          "seconds": 0.2393070420366712
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "repetition",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.237726045655905e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7695b00b6a82edb238d19842454f213203679194ca87dd1af035b65d13e2d605",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 20033
+          },
+          "seconds": 0.12733520800247788
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.237726045655905e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7695b00b6a82edb238d19842454f213203679194ca87dd1af035b65d13e2d605",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 20033
+          },
+          "seconds": 0.11154720897320658
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "repetition",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.2278911070751667e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "5b10d5cfbcc66b3ec3cb41a4ebcf98dac2dc03fbc7a6a3547282d634471098c3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 20298
+          },
+          "seconds": 0.12958499998785555
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.2278911070751667e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "5b10d5cfbcc66b3ec3cb41a4ebcf98dac2dc03fbc7a6a3547282d634471098c3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 20298
+          },
+          "seconds": 0.12949279096210375
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "repetition",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.4330101267912156e-15,
+            "full_cz_count": 46,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "25d250fad2586d3a9603ccc2c38fb20b79bdbd73b3d96ce26489ac1b81bb51db",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 12580
+          },
+          "seconds": 0.07197925000218675
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.4330101267912156e-15,
+            "full_cz_count": 46,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "25d250fad2586d3a9603ccc2c38fb20b79bdbd73b3d96ce26489ac1b81bb51db",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 54,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 12580
+          },
+          "seconds": 0.07149170798948035
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        8,
+        "repetition",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.2415205078620253e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "50c820ea8abd3ed48d6784082d8c7fa29bb7017ee96602f0b0de2c7c38984c04",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 60,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 15721
+          },
+          "seconds": 0.06830733298556879
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.2415205078620253e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "50c820ea8abd3ed48d6784082d8c7fa29bb7017ee96602f0b0de2c7c38984c04",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 60,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 15721
+          },
+          "seconds": 0.07422312500420958
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qaoa",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.005952500137591e-15,
+            "full_cz_count": 270,
+            "two_body_dependency_depth": 101,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a94db80e652282fe1cb6b4317452699474fb30b7fe2c07938e5e360ef607ac85",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 270,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 53561
+          },
+          "seconds": 0.7287875839974731
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.005952500137591e-15,
+            "full_cz_count": 270,
+            "two_body_dependency_depth": 101,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a94db80e652282fe1cb6b4317452699474fb30b7fe2c07938e5e360ef607ac85",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 270,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 53561
+          },
+          "seconds": 0.7302086249692366
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qaoa",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.1302146135477929e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "290faa38e669fa411bc5f34d51b4268baf8fc466a843a147b382950c88efd743",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 138,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 27481
+          },
+          "seconds": 0.17245162499602884
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.1302146135477929e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "290faa38e669fa411bc5f34d51b4268baf8fc466a843a147b382950c88efd743",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 138,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 27481
+          },
+          "seconds": 0.18820045795291662
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qaoa",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.1387399314838863e-15,
+            "full_cz_count": 150,
+            "two_body_dependency_depth": 76,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0321cbd788fd7ccae52f97a12cd880f7410688b5341f4603559b93939a5be8a2",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 162,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 30299
+          },
+          "seconds": 0.49126758298370987
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.1387399314838863e-15,
+            "full_cz_count": 150,
+            "two_body_dependency_depth": 76,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0321cbd788fd7ccae52f97a12cd880f7410688b5341f4603559b93939a5be8a2",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 162,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 30299
+          },
+          "seconds": 0.4914767079753801
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.0166130809736812e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 51,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 24835
+          },
+          "seconds": 0.3120118330116384
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.0166130809736812e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 51,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 24835
+          },
+          "seconds": 0.31848324998281896
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "ising",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.0731970492786265e-15,
+            "full_cz_count": 284,
+            "two_body_dependency_depth": 146,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "13bf8bf4a204f7812da4a09773bef4d5cbcbd676fe7e856d2e7757e01a4ecefa",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 294,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 55831
+          },
+          "seconds": 0.394220124988351
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.0731970492786265e-15,
+            "full_cz_count": 284,
+            "two_body_dependency_depth": 146,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "13bf8bf4a204f7812da4a09773bef4d5cbcbd676fe7e856d2e7757e01a4ecefa",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 294,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 55831
+          },
+          "seconds": 0.4112984160310589
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "ising",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.1938124470981842e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3ef18ec30d50bc5b42b77b35e737e49de5ddc20593092f5373a409fb94128df3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 34635
+          },
+          "seconds": 0.22001566702965647
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.1938124470981842e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3ef18ec30d50bc5b42b77b35e737e49de5ddc20593092f5373a409fb94128df3",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 34635
+          },
+          "seconds": 0.21861179103143513
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "ising",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 9.708443902280867e-16,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 52,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "435efc028512e1b578a811d3f262c2612cab2763064eb2a6c75dd6958c5bd3a6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 138,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 26314
+          },
+          "seconds": 0.2922524169553071
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 9.708443902280867e-16,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 52,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "435efc028512e1b578a811d3f262c2612cab2763064eb2a6c75dd6958c5bd3a6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 138,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 26314
+          },
+          "seconds": 0.28469079203205183
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "ising",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 9.074842391027969e-16,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d32290ffa446525672f7692445a85375ab0032f6c5462461b1d2735a14b5dc2b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 144,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 24094
+          },
+          "seconds": 0.17516649997560307
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 9.074842391027969e-16,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d32290ffa446525672f7692445a85375ab0032f6c5462461b1d2735a14b5dc2b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 144,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 24094
+          },
+          "seconds": 0.1751275829738006
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "hopping",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.4513387079932727
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.43475212500197813
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "hopping",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.4248379580094479
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.42402733297785744
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "hopping",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 5.4291956315693945e-15,
+            "full_cz_count": 362,
+            "two_body_dependency_depth": 296,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "db4cf02508d1803929579af31bae263e2c6315abe12a313ff3f4d6ab3b7e6a85",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 378,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 81354
+          },
+          "seconds": 0.5607121249777265
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 5.4291956315693945e-15,
+            "full_cz_count": 362,
+            "two_body_dependency_depth": 296,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "db4cf02508d1803929579af31bae263e2c6315abe12a313ff3f4d6ab3b7e6a85",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 378,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 81354
+          },
+          "seconds": 0.5422742920345627
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "hopping",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.4437999170040712
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 288,
+            "accepted_block_rewrites": 12,
+            "serialized_artifact_bytes": 64554
+          },
+          "seconds": 0.4187054999638349
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 2.508910598853109e-14,
+            "full_cz_count": 396,
+            "two_body_dependency_depth": 137,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 528,
+            "accepted_block_rewrites": 62,
+            "serialized_artifact_bytes": 75725
+          },
+          "seconds": 0.6962605419685133
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 2.508910598853109e-14,
+            "full_cz_count": 396,
+            "two_body_dependency_depth": 137,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 528,
+            "accepted_block_rewrites": 62,
+            "serialized_artifact_bytes": 75725
+          },
+          "seconds": 0.7089681249926798
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qft",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.460944228876607e-14,
+            "full_cz_count": 322,
+            "two_body_dependency_depth": 131,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9171739a9ebcb6315aa01294c73e0a55131a3cfe103fb324f54f6714ab32562a",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 444,
+            "accepted_block_rewrites": 59,
+            "serialized_artifact_bytes": 61535
+          },
+          "seconds": 0.6097039580345154
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.460944228876607e-14,
+            "full_cz_count": 322,
+            "two_body_dependency_depth": 131,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9171739a9ebcb6315aa01294c73e0a55131a3cfe103fb324f54f6714ab32562a",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 444,
+            "accepted_block_rewrites": 59,
+            "serialized_artifact_bytes": 61535
+          },
+          "seconds": 0.6091923750354908
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "seconds": 0.6023038339917548
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "seconds": 0.5975705000455491
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "qft",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.868227728968996e-14,
+            "full_cz_count": 338,
+            "two_body_dependency_depth": 158,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "959d44977e90f745125e797e7793ddc1b7b13e700f420e2d6ea5493fea61103e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 372,
+            "accepted_block_rewrites": 13,
+            "serialized_artifact_bytes": 64868
+          },
+          "seconds": 0.5123507910175249
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.868227728968996e-14,
+            "full_cz_count": 338,
+            "two_body_dependency_depth": 158,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "959d44977e90f745125e797e7793ddc1b7b13e700f420e2d6ea5493fea61103e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 372,
+            "accepted_block_rewrites": 13,
+            "serialized_artifact_bytes": 64868
+          },
+          "seconds": 0.5298911249847151
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "repetition",
+        "line"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.215456781461763e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 67,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "df4904f69e8b7a676f304e1a6b81ebc8c4b48dab60d5c8d3217603efa882e0b2",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 24399
+          },
+          "seconds": 0.16484304197365418
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.215456781461763e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 67,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "df4904f69e8b7a676f304e1a6b81ebc8c4b48dab60d5c8d3217603efa882e0b2",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 24399
+          },
+          "seconds": 0.15961287502432242
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "repetition",
+        "ring"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.8041124150158794e-15,
+            "full_cz_count": 108,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "20a66592b75613e2dbc4d2ddcf97b419fbcd129f4b8758127d6a125a5825d1b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 24936
+          },
+          "seconds": 0.15936416701879352
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.8041124150158794e-15,
+            "full_cz_count": 108,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "20a66592b75613e2dbc4d2ddcf97b419fbcd129f4b8758127d6a125a5825d1b0",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 24936
+          },
+          "seconds": 0.17530566599452868
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "repetition",
+        "grid"
+      ],
+      "observations": {
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 3.034510874935902e-15,
+            "full_cz_count": 100,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9a99191846b9b2a862738e45e90d6c00aa11de986f791361ad0fdeb839e7743d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 120,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 23970
+          },
+          "seconds": 0.26061158400261775
+        },
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 3.034510874935902e-15,
+            "full_cz_count": 100,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9a99191846b9b2a862738e45e90d6c00aa11de986f791361ad0fdeb839e7743d",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 120,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 23970
+          },
+          "seconds": 0.2563685000059195
+        }
+      }
+    },
+    {
+      "workflow": "flagquantum-target-artifact",
+      "case": [
+        12,
+        "repetition",
+        "sparse"
+      ],
+      "observations": {
+        "candidate": {
+          "metrics": {
+            "max_semantic_error": 1.9351429362883096e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "790b8c505a78e080466374458c98181a4c0e0305024f737788d151ba6fea178f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 17853
+          },
+          "seconds": 0.10831929201958701
+        },
+        "baseline": {
+          "metrics": {
+            "max_semantic_error": 1.9351429362883096e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "790b8c505a78e080466374458c98181a4c0e0305024f737788d151ba6fea178f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 90,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 17853
+          },
+          "seconds": 0.12417766702128574
+        }
+      }
+    }
+  ],
+  "timing": [
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "workflow": "flagquantum-target-artifact",
+      "warmups_per_variant": 2,
+      "samples_seconds": {
+        "baseline": [
+          0.21684541599825025,
+          0.19753533299081028,
+          0.21297454100567847,
+          0.2012395829660818,
+          0.2167887089890428,
+          0.2007997080218047,
+          0.20069883402902633,
+          0.21647375001339242,
+          0.20242108299862593
+        ],
+        "candidate": [
+          0.20600070798536763,
+          0.22048591601196676,
+          0.19888462498784065,
+          0.2181544589693658,
+          0.2018670000252314,
+          0.2028191660065204,
+          0.2179978340282105,
+          0.20159166702069342,
+          0.21746595803415403
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.20242108299862593,
+        "candidate": 0.20600070798536763
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "workflow": "flagquantum-target-artifact",
+      "warmups_per_variant": 2,
+      "samples_seconds": {
+        "baseline": [
+          0.2012746250256896,
+          0.2138235829770565,
+          0.20215004205238074,
+          0.21488304098602384,
+          0.19938075001118705,
+          0.19645799999125302,
+          0.21392712503438815,
+          0.19776133296545595,
+          0.2142621249658987
+        ],
+        "candidate": [
+          0.19920600001933053,
+          0.21300383302150294,
+          0.21504770801402628,
+          0.21683808299712837,
+          0.21335637499578297,
+          0.2147973329992965,
+          0.21544312499463558,
+          0.2143891669693403,
+          0.2161049999995157
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.20215004205238074,
+        "candidate": 0.2147973329992965
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "workflow": "flagquantum-target-artifact",
+      "warmups_per_variant": 2,
+      "samples_seconds": {
+        "baseline": [
+          0.6519597500446253,
+          0.6594884590012953,
+          0.653468124975916,
+          0.8218232920044102,
+          0.6615598750067875,
+          0.6582469170098193,
+          0.6575087079545483,
+          0.6652357919956557,
+          0.6679697500076145
+        ],
+        "candidate": [
+          0.6676229999866337,
+          0.6563102080253884,
+          0.6636707910220139,
+          0.6613684999756515,
+          0.6612282090354711,
+          0.6600792920216918,
+          0.6639872920350172,
+          0.6611008340260014,
+          0.6299829999916255
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.6594884590012953,
+        "candidate": 0.6612282090354711
+      }
+    }
+  ],
+  "memory": [
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "mode": "baseline",
+      "python_peak_bytes": 35364633,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "mode": "candidate",
+      "python_peak_bytes": 35364447,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "mode": "baseline",
+      "python_peak_bytes": 35365252,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "mode": "candidate",
+      "python_peak_bytes": 35369438,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "mode": "baseline",
+      "python_peak_bytes": 35364945,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "mode": "candidate",
+      "python_peak_bytes": 35365480,
+      "scope": "Fixture, adapter, compilation and independent acceptance; Python traced allocations, not process RSS"
+    }
+  ],
+  "profiles": []
+}
