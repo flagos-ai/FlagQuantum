@@ -1,0 +1,10 @@
+# Sphinx output owned by the local documentation builder.
+/_build/
+
+# Published component notebooks and generated navigation.
+/components/
+
+# API renderers share this generated namespace and root page.
+/reference/flagquantum/
+/reference/flagquantum.md
+/reference/autotoc.rst.inc
