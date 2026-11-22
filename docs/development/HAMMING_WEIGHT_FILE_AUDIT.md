@@ -198,3 +198,25 @@ absence explicitly. Whole dependency findings decrease from 687 to 685, with
 zero findings in the changed files. This evidence does not certify the full
 repository default suite. See g2-hamming-foreign-evidence.json and its named logs
 in the external reference evidence directory.
+
+
+## Source-ordered catalog dependency closure
+
+The stored forward count now allocates output bits on first use and gathers
+existing typed word views through the shared layout owner. At width four the
+original and native forward bodies each contain 26 ordered calls. The former
+whole-output allocation/Split body contained 25 and was not graph-equal.
+
+The inverse uses the shared component adjoint over that complete forward graph,
+with specialized measurement-erased And and inverse Split/Join/Cast/Free
+definitions. The width-four inverse also has 26 source-equal ordered calls.
+The existing named And boundary remains available to resource consumers.
+Unused forward helper definitions retained by the shared adjoint are excluded
+from reachable catalog-child inventories. No primitive schedule is inferred
+from graph-call totals.
+
+All 27 focused count-component cases pass, including the existing operand,
+feedback, complete complex-amplitude and raw-history checks. The Hamming phase
+closure additionally checks fresh recursive drawings and full coherent forward
+and inverse operators. The original one-bit empty-junk refusal remains under
+Q-0198; this graph correction does not close that source boundary.
