@@ -95,3 +95,15 @@ retained logical output, distinct from temporary clean padding. Run
 `python -m examples.algorithms.register_field_inverse` for the normal append
 path and returned aliases. `FIELD_INVERSE_FILE_AUDIT.md` records the complete
 source map, exact-native adjoint adaptation and remaining admission boundaries.
+
+`field_binding.py`, `product_binding.py`, `inverse_binding.py` and
+`division_binding.py` compose the complete source Python wrapper semantics over
+these existing physical generators. Targets, scaffold and clean leases belong
+to the caller Program. The shared private binding helpers preserve init reset
+order, component ranges and fresh classical feedback after caller storage.
+External field objects are consumed by Ecosystem `binary_fields`; Python scalar
+addition, powers and Frobenius counts belong to Simulation `binary_field_scalar`.
+Run `tests/unit/test_field_physical_binding.py` for exact original marked streams,
+normal append and exhaustive small complex measurement branches. See
+`docs/development/BINARY_FIELD_BINDING_AUDIT.md` for the complete definition map,
+source allocation translation and separate physical/model accounting.
