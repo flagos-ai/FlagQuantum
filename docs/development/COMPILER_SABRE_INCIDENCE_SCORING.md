@@ -67,3 +67,8 @@ IR generator supplied positional parameter tuples instead of the IR parameter
 mapping. The corrected driver uses `theta` mappings; tasks, source scorer,
 thresholds and observer protocol are unchanged. The failure log is retained
 with the eventual observations.
+
+A second setup invocation also stopped before routing: the generator used the
+external spelling `cp` instead of the authoritative IR opcode `cphase`. The
+corrected generator was validated for all twelve inputs before executing the
+unchanged control protocol. Both setup failures remain in the evidence record.

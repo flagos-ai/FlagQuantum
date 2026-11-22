@@ -67,7 +67,7 @@ def _program(family: str, width: int) -> CircuitIR:
             for control in range(target + 1, width):
                 instructions.append(
                     Instruction(
-                        "cp", (control, target), {"theta": 2.0 ** (target - control)}
+                        "cphase", (control, target), {"theta": 2.0 ** (target - control)}
                     )
                 )
     elif family == "parity_ladder":
