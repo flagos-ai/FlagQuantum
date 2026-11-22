@@ -8,6 +8,7 @@ from collections.abc import Iterator
 
 from ..core._fixed_width_integer import FixedWidthInteger
 from ..core._fixed_width_modular import is_coprime
+from ..core._modular_integer import ModularInteger
 from ..core._word_operations import WORD_MASK, extract_bits, require_word
 
 
@@ -74,3 +75,12 @@ def sample_striped_modulo(
             ) & WORD_MASK
         total += gained
     return tuple(output), tuple(buffer)
+
+
+def sample_modular_integer(
+    modulus: FixedWidthInteger, draws: Iterator[int]
+) -> ModularInteger:
+    """Sample an immutable modular value with the source scalar draw order."""
+    return ModularInteger(
+        sample_fixed_width_modulo(modulus.width, modulus, draws), modulus
+    )
