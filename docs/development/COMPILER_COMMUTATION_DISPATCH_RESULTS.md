@@ -8,7 +8,7 @@ Withdraw the executable candidate. The first resource run fails the
 [predeclared admission gate](COMPILER_COMMUTATION_DISPATCH.md). Production
 commutation code is restored byte-for-byte to integrated main
 `46ba1523ed0c47fcf304d64d33b34d3f6c4b9629`. Retain the
-[exact candidate patch](evidence/commutation-dispatch-pilot.patch), published
+[exact candidate patch](evidence/commutation-dispatch-pilot.json), published
 implementation `c7cb03e04cf659de46f0675e5de6e093cf09781f`, complete observations
 and failures. Do not tune the candidate, loosen the gate or rerun for a better
 median in this experiment. This experiment does not establish that reducing
@@ -96,3 +96,10 @@ assert [(gate.name, gate.wires) for gate in compiled] == [("rz", (0,))]
 
 The retained evidence supports a negative development decision, not admission of
 the withdrawn implementation or completion of the larger compiler objective.
+
+
+The unified diff is encoded inside JSON so its required blank-context spaces
+survive the repository trailing-whitespace hook. Decoding its `patch` field
+reconstructs the exact original bytes and SHA-256; applying it to the pinned
+baseline passes `git apply --check`. This storage correction changes no frozen
+source, raw observation or admission decision.
