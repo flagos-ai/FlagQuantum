@@ -1,0 +1,61 @@
+{
+  "scope": "Fresh producer-free replay of both complete commutation-dispatch archives",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "draws": {
+    "inspected": {
+      "observation_sha256": "4edc8cea4670e2cd10c57272b0c9da89b719ffaedb7af73321b64fec4aae1150",
+      "archive_index_sha256": "305b82db1e7280b1148ffd812144fd364508f5d1bb534baacb375cd54295f38c",
+      "payload_files": [
+        {
+          "path": "commutation-dispatch-inspected-payloads-00.json",
+          "sha256": "76438ea5506fe8df9a4542f5c86c261de240de679b5d8228ed508f8cdfe3b67f",
+          "payload_count": 59
+        },
+        {
+          "path": "commutation-dispatch-inspected-payloads-01.json",
+          "sha256": "9e235a24def7c5eceb11ba8db9ffa6b8897dbfdd70bbf62555e6e5f211217f74",
+          "payload_count": 28
+        },
+        {
+          "path": "commutation-dispatch-inspected-payloads-02.json",
+          "sha256": "263eaee98c60c5c522f0ec3d6171e98a69167198656bdeb183f91f47c9392e5c",
+          "payload_count": 17
+        }
+      ],
+      "exact_original_bytes_reconstructed": true,
+      "replayed": 240,
+      "maximum_semantic_error": 6.072657351995283e-14,
+      "full_operator_rows": 80,
+      "three_probe_rows": 160
+    },
+    "fresh": {
+      "observation_sha256": "f6c24a8c53cbd87d82bb70f3dacf03e3da8f07cbcaf9d489e584cbfd8b0a5826",
+      "archive_index_sha256": "a3547ffed6cf43e10364049b4c5b479fca81fc3b321627d53aa9490a7b641168",
+      "payload_files": [
+        {
+          "path": "commutation-dispatch-fresh-payloads-00.json",
+          "sha256": "e8043a057c62bc00a37211628f681c2ad5d1cca40d5f514d4935a48f400607d1",
+          "payload_count": 62
+        },
+        {
+          "path": "commutation-dispatch-fresh-payloads-01.json",
+          "sha256": "ca45e1125609fe31debe577aa5bdceb4c2b9ee9139975999c721570a9256d3a5",
+          "payload_count": 31
+        },
+        {
+          "path": "commutation-dispatch-fresh-payloads-02.json",
+          "sha256": "052d56b8ccd864ec71439402bc0b09a7d96db54aa6e3fca48842a6ef522c82f6",
+          "payload_count": 15
+        }
+      ],
+      "exact_original_bytes_reconstructed": true,
+      "replayed": 240,
+      "maximum_semantic_error": 3.344683981205328e-14,
+      "full_operator_rows": 80,
+      "three_probe_rows": 160
+    }
+  },
+  "producer_sdks_imported": false,
+  "script_sha256": "f45693f00cef179ceca4a9aad3267332a98c1d248bc487143024ed4097a0235f",
+  "script_source": "import collections,hashlib,itertools,json,subprocess,sys\nfrom pathlib import Path\nharness=Path('/private/tmp/sdkbench-product-conformance-20261121')\nassert subprocess.check_output(['git','rev-parse','HEAD'],cwd=harness,text=True,timeout=20).strip()=='9aa9260920984e2ca05bcb293abb885fccd9c144'\nassert not subprocess.check_output(['git','status','--porcelain'],cwd=harness,text=True,timeout=20).strip()\nsys.path.insert(0,str(harness/'src'))\nfrom sdkbench.candidates.applications import WIDTHS,FAMILIES,TOPOLOGIES,fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nroot=Path('/private/tmp/fq-commutation-rule-dispatch-20261122/docs/development/evidence');bundle=Bundle(harness/'docs/implementation')\ncanonical=lambda x:json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False)\ndigest=lambda x:hashlib.sha256(canonical(x).encode()).hexdigest()\nproof={'scope':'Fresh producer-free replay of both complete commutation-dispatch archives','source_commit':'9aa9260920984e2ca05bcb293abb885fccd9c144','draws':{}}\nfor draw in ('inspected','fresh'):\n source=root/f'commutation-dispatch-{draw}-screen.json';index=json.loads(source.read_text());p={k:v for k,v in index.items() if k not in ('payload_files','original_observation_sha256','original_field_order')};p['payloads']={}\n for item in index['payload_files']:\n  raw=(root/item['path']).read_bytes();assert hashlib.sha256(raw).hexdigest()==item['sha256'];part=json.loads(raw);assert len(part)==item['payload_count'] and not set(part).intersection(p['payloads']);p['payloads'].update(part)\n p={key:p[key] for key in index['original_field_order']};reconstructed=(json.dumps(p,indent=2,allow_nan=False)+'\\n').encode();assert hashlib.sha256(reconstructed).hexdigest()==index['original_observation_sha256'] and p['completed']\n expected={(f'{w:02d}/{f}/{t}',flow,variant,11) for w,f,t,flow,variant in itertools.product(WIDTHS,FAMILIES,TOPOLOGIES,tuple(p['manifest']['configurations']),('baseline','candidate'))};actual=collections.Counter((r['case'],r['workflow'],r['variant'],r['seed']) for r in p['rows']);assert set(actual)==expected and set(actual.values())=={1}\n inputs={i['case']:i for i in p['inputs']};maximum=0;count=0\n for row in p['rows']:\n  width,family,topology=row['case'].split('/');width=int(width);f=fixture(width,family,topology,p['manifest']['input_nonce']);assert digest(f)==inputs[row['case']]['fixture_sha256']\n  encoded=p['payloads'][row['payload_sha256']];assert hashlib.sha256(encoded.encode()).hexdigest()==row['payload_sha256'];payload=json.loads(encoded);payload['compile_wall_seconds']=row['compile_wall_seconds'];case=bundle.cases['ROUTE-GRID-08' if width==8 else f'ROUTE-LINE-{width:02d}'];metrics=routing(payload,f,None,case,0)\n  assert row['status']=='accepted' and metrics==row['metrics'] and payload['final_layout']==list(range(width));maximum=max(maximum,metrics['max_semantic_error']);count+=1\n  if count%40==0:print(json.dumps({'phase':'independent-archive-replay','draw':draw,'accepted':count}),flush=True)\n assert not p['exact_pair_mismatches']\n assert not {'flagquantum','qiskit','cirq'}.intersection(sys.modules)\n proof['draws'][draw]={'observation_sha256':index['original_observation_sha256'],'archive_index_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'payload_files':index['payload_files'],'exact_original_bytes_reconstructed':True,'replayed':count,'maximum_semantic_error':maximum,'full_operator_rows':sum(r['metrics']['verification']=='full-operator' for r in p['rows']),'three_probe_rows':sum(r['metrics']['verification']=='three-probes-only' for r in p['rows'])}\nproof.update(producer_sdks_imported=False,script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),script_source=Path(__file__).read_text())\nPath('/private/tmp/fq-commutation-dispatch-replay.json').write_text(json.dumps(proof,indent=2)+'\\n');print(json.dumps({k:v for k,v in proof.items() if k!='script_source'}))\n"
+}

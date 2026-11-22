@@ -55,7 +55,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import get_operator_schema
+from ...core.operator_schema import canonical_opcode, get_operator_schema
 
 #: Single-qubit opcodes whose runtime matrix is diagonal in the computational
 #: basis. Every angle is acceptable, which is what makes the rule exact without
@@ -157,7 +157,7 @@ _TARGET_PAULI: Mapping[str, tuple[int, frozenset[str]]] = MappingProxyType(
 
 #: Every opcode the structural rules below can answer "yes" for. An opcode outside
 #: this set still commutes by disjointness, and still commutes with the same
-#: opcode on the same qubits through the fixed/single-generator rule; what it cannot do
+#: opcode on the same qubits through `_is_same_operator_family`; what it cannot do
 #: is commute with a *different* operator it touches. Stating the set here keeps
 #: the reach of the rule source a readable fact rather than something to be
 #: reconstructed from the branches of `commute`.
@@ -176,6 +176,56 @@ _RULE_OPCODES = frozenset(
 )
 
 
+def _parameters(opcode: str) -> tuple[str, ...] | None:
+    """The declared parameter names of ``opcode``, or None when it has no schema.
+
+    None covers the three instruction names that are not operators at all --
+    `measure`, `reset`, and `barrier` -- and every opcode that is not declared.
+    Both are declined rather than read as an empty parameter list, which would
+    make an unknown instruction look like a fixed gate.
+    """
+
+    schema = get_operator_schema(opcode)
+    return None if schema is None else schema.parameters
+
+
+def _is_declared(instruction: Instruction) -> bool:
+    """Whether ``instruction`` is an operator this module is allowed to read.
+
+    A `matrix` override replaces the opcode's matrix with caller-supplied content,
+    so the opcode name stops describing what runs and no rule may be applied to
+    it. This is the same refusal `one_qubit_optimization` makes, for the same
+    reason.
+    """
+
+    return (
+        instruction.matrix is None
+        and _parameters(canonical_opcode(instruction.name)) is not None
+    )
+
+
+def _is_same_operator_family(left: Instruction, right: Instruction) -> bool:
+    """Whether both are one opcode on the same qubits that commutes with itself.
+
+    Two instructions of one opcode on one set of qubits commute when the opcode is
+    fixed -- an operator always commutes with itself -- or when it is
+    `exp(-i theta/2 G)`, because two such exponentials add their angles whichever
+    order they are applied in. Nothing else qualifies: two different `u3` triples
+    share an opcode and generally do not commute, so `u3` is absent from
+    `_SINGLE_GENERATOR` and a pair of them is a barrier.
+    """
+
+    opcode = canonical_opcode(left.name)
+    if opcode != canonical_opcode(right.name) or left.wires != right.wires:
+        return False
+    if opcode in _SINGLE_GENERATOR:
+        return True
+    declared = _parameters(opcode)
+    return (
+        declared is not None and not declared and not left.params and not right.params
+    )
+
+
 def _one_against_controlled(single: Instruction, controlled: Instruction) -> bool:
     """Whether the single-qubit ``single`` commutes with ``controlled``.
 
@@ -189,8 +239,8 @@ def _one_against_controlled(single: Instruction, controlled: Instruction) -> boo
     if single.wires[0] not in controlled.wires:
         return False
 
-    single_opcode = single.name
-    controlled_opcode = controlled.name
+    single_opcode = canonical_opcode(single.name)
+    controlled_opcode = canonical_opcode(controlled.name)
     position = controlled.wires.index(single.wires[0])
 
     if single_opcode in _DIAGONAL_ONE_QUBIT:
@@ -213,20 +263,13 @@ def commute(left: Instruction, right: Instruction) -> bool:
 
     if set(left.wires).isdisjoint(right.wires):
         return True
-    if left.matrix is not None or right.matrix is not None:
+    if not _is_declared(left) or not _is_declared(right):
         return False
-    # Instruction construction already canonicalizes opcodes. Resolve each schema
-    # once; fixed gates and single-generator rotations commute on identical wires.
-    left_opcode, right_opcode = left.name, right.name
-    left_schema = get_operator_schema(left_opcode)
-    right_schema = get_operator_schema(right_opcode)
-    if left_schema is None or right_schema is None:
-        return False
-    if left_opcode == right_opcode and left.wires == right.wires:
-        if left_opcode in _SINGLE_GENERATOR or (
-            not left_schema.parameters and not left.params and not right.params
-        ):
-            return True
+    if _is_same_operator_family(left, right):
+        return True
+
+    left_opcode = canonical_opcode(left.name)
+    right_opcode = canonical_opcode(right.name)
 
     # A pair no rule can answer "yes" for is answered here, which keeps the reach
     # of the rule source the readable fact `_RULE_OPCODES` states rather than
@@ -382,7 +425,7 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
                 open_block = []
                 representatives.clear()
             key = (
-                candidate.name,
+                canonical_opcode(candidate.name),
                 candidate.wires,
                 candidate.matrix is not None,
                 bool(candidate.params),
