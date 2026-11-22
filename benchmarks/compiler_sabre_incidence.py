@@ -136,7 +136,7 @@ def main() -> None:
                         start = time.perf_counter()
                         result = route_to_topology(program, topology, strategy="sabre")
                         elapsed = time.perf_counter() - start
-                    digest = result.content_hash()
+                    digest = result.content_hash
                     if expected is None:
                         expected = digest
                     assert digest == expected, (family, width, block, label)
@@ -154,7 +154,7 @@ def main() -> None:
                         )
                     finally:
                         tracemalloc.stop()
-                assert result.content_hash() == expected
+                assert result.content_hash == expected
             observations.append(
                 Observation(family, width, len(program.instructions), measurements)
             )

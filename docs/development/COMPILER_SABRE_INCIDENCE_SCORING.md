@@ -72,3 +72,8 @@ A second setup invocation also stopped before routing: the generator used the
 external spelling `cp` instead of the authoritative IR opcode `cphase`. The
 corrected generator was validated for all twelve inputs before executing the
 unchanged control protocol. Both setup failures remain in the evidence record.
+
+The next invocation routed its first warmup input but stopped while reading its
+content hash: the driver called the IR property as a method. No comparison or
+retained timing row completed. This driver error is also retained; using the
+property changes only observation plumbing.
