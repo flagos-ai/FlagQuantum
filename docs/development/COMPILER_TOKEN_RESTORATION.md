@@ -15,7 +15,7 @@ revision `69d412ad9b915d5f86608c15d6277c6d9195ee0a`, SHA-256
 The Apache-2.0 source cites Miltzow et al., *Approximation and Hardness for Token
 Swapping* (2016). Its license SHA-256 is
 `5df2a0d87d6c562f0ea11c688ac52532aa28d744cabc7994ff0537f64b3b3320`.
-The prototype retains its license notice and identifies the adaptations.
+The archived prototype retains its license notice and identifies the adaptations.
 
 FlagQuantum owns complete layouts, induced device topology, deterministic
 traversal, bounded work and source anchors. No upstream graph object, random
@@ -79,3 +79,53 @@ assert program.metadata["routing"]["mapping_restored"] is True
 
 Expected: legal edges and restored logical output placement. The prototype is
 not enabled by this workflow or importing its module.
+
+## First complete outcome: rejected
+
+The declaration was published at
+`0f4be70526352c5c43e7274d141dffa538050db1` before application observations.
+The measured implementation is `c1c42c547a34f0eda1937c7a3d8ddd7c95476c49`.
+The only intervening source change annotates the variable-length swap tuple.
+[The archive](evidence/compiler-token-restoration.json) retains the exact module,
+independent tests, upstream sources/license, balanced driver, raw observations
+and supervisor. The first complete run exits zero after 80.034 seconds with
+120 pairs, 240 accepted executions and no execution failure. This is successful
+observation, not successful admission. Seven pairs regress at least one delivered
+quality metric. Production remains unchanged; the unused candidate and its tests
+are removed from the package/test tree and retained only in the archive.
+
+| Workflow | CZ/depth both non-increasing with a strict gain | Equal CZ/depth | Tradeoff | Regression without a gain |
+| --- | ---: | ---: | ---: | ---: |
+| Ordinary restored | 11 | 47 | 1 | 1 |
+| Target artifact | 8 | 47 | 2 | 3 |
+
+The seven adverse pairs are fully retained. Examples include:
+
+| Workflow and inspected case | Baseline CZ / depth | Candidate CZ / depth |
+| --- | ---: | ---: |
+| Ordinary QFT8/ring | 188 / 95 | 188 / 106 |
+| Ordinary QAOA12/sparse | 126 / 53 | 120 / 55 |
+| Target QFT6/grid | 65 / 48 | 71 / 48 |
+| Target QAOA12/sparse | 122 / 51 | 118 / 55 |
+| Target repetition12/sparse | 70 / 58 | 68 / 62 |
+
+Shortening a final SWAP sequence changes the cost of routing trials and can
+select a different forward route. Even a shorter restored route can expose
+different local synthesis cancellations. This is why isolated token counts do
+not establish lower delivered CZ cost or dependency depth. The target QFT6/grid
+counterexample demonstrates that limitation on a full-operator-accepted input.
+
+| Target-artifact case | Baseline / candidate median | Compiler-stage Python peak, baseline / candidate |
+| --- | ---: | ---: |
+| QFT6/grid | 90.817 / 104.051 ms | 1,919,966 / 2,170,178 bytes |
+| Repetition6/ring | 116.288 / 96.767 ms | 2,429,443 / 2,078,573 bytes |
+| QFT12/grid | 567.942 / 573.260 ms | 10,116,693 / 10,118,318 bytes |
+
+The first case exceeds both declared resource admission bounds as well. Do not
+retune or repeat this implementation to rescue it. Full symbolic/metadata and
+native evidence-boundary qualification was not performed for the rejected
+candidate. Its seven focused tests pass, including all 600 five-wire permutations
+against independent optimal distances, exact budget exhaustion, disconnected
+components and unused device wires. Black, Ruff and focused mypy pass on the
+archived source. These finite controls establish neither universal optimality
+nor global SDK superiority. No formal campaign was launched or host restarted.
