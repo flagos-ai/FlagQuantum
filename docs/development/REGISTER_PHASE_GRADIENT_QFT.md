@@ -61,3 +61,32 @@ emitter preserves the executable recursion. The width-four case above
 keeps the aggregate 40 T, the 48 T sum of executed product-leaf models,
 and the 52 emitted T-family gates separate. Q-0641 remains open for the
 source general count-autotest gap.
+
+
+## Stored catalog dependency interface
+
+This batch retains the complete locked source-file graph through the existing
+Program and append paths. Words use MSB-first physical labels and caller-owned
+through storage. Textbook q is unsigned. Gradient QFT and approximate QFT keep
+a separate unsigned fractional gradient through word owned by the caller.
+Shared multiplication and controlled addition own their measured carry work,
+which must return to zero. TwoBitFFFT has x/y QBit through ports and no work.
+Its original ignored-adjoint decomposition remains separate from the native
+exact inverse. Existing primitive execution and source-model evidence is reused.
+Compiler owns stored word/call composition, Algorithms owns the already accepted
+fermionic Fourier sequence, and the example provider owns catalog glyphs and
+literal-definition qualification. No protected contract change is required.
+
+
+## Complete catalog graph closure
+
+The concrete three-bit root retains all eighteen original calls. Recursive
+width-one and width-two children preserve with_reverse=False, independent of
+the source model's equal-key collision and default-reversal declarations.
+Four complete source-success graphs and fresh drawings agree. PlusEqualProduct
+remains an original atomic refusal. Shared native product accumulation below
+that boundary owns and erases its clean work. Literal execution emits 24
+T/T-dagger, 46 CX and six measurements on ten physical wires. Separate source
+model T-equivalent is 40 and QubitCount six. Complete small arbitrary-gradient
+joint operators, all tested raw histories and exact existing-emitter inverse
+recovery pass. No equality with a nonexistent original product recipe is claimed.
