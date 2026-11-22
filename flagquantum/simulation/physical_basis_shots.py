@@ -109,17 +109,26 @@ def apply_packed_basis_records(
     *,
     counts: Counter[str] | None = None,
     debug: Callable[[int, bool], None] | None = None,
+    observer: Callable[[BasisRecord, int], None] | None = None,
 ) -> None:
     """Apply physical records to packed state with a fresh condition stack."""
     q, b, phases = state.qubits, state.bits, state.phases
     shots = len(phases)
-    scopes = [(1 << shots) - 1]
+    all_lanes = (1 << shots) - 1
+    scopes = [all_lanes]
     sign = state.sign
 
     for record in records:
         code = record.opcode
         predicate = record.condition_bit
         active = scopes[-1] if predicate is None else scopes[-1] & b[predicate]
+        if observer is not None:
+            counted = (
+                all_lanes
+                if code in {"PUSH_CONDITION", "POP_CONDITION", "INFO_TAG"}
+                else active
+            )
+            observer(record, counted)
         if code == "PUSH_CONDITION":
             scopes.append(active)
         elif code == "POP_CONDITION" and len(scopes) > 1:
@@ -200,6 +209,7 @@ def sample_basis_batch(
     outcome_mask: Callable[[], int] | None = None,
     capture_before: bool = False,
     debug: Callable[[int, bool], None] | None = None,
+    observer: Callable[[BasisRecord, int], None] | None = None,
 ) -> BasisBatch:
     """Run up to 64 input-basis shots and report exact combined phase.
 
@@ -217,7 +227,9 @@ def sample_basis_batch(
     counts: Counter[str] = Counter()
     draw = outcome_mask if outcome_mask is not None else lambda: rng.getrandbits(shots)
 
-    apply_packed_basis_records(records, state, draw, counts=counts, debug=debug)
+    apply_packed_basis_records(
+        records, state, draw, counts=counts, debug=debug, observer=observer
+    )
 
     angles = tuple(
         (phase + ((state.sign >> i) & 1) * _SIGN) % _TURN

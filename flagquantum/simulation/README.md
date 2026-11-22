@@ -953,3 +953,33 @@ The same `physical_basis_rng.py` owner initializes mt19937_64 from standard
 child, with eager initialization and uint32 truncation verified against original
 C++. Run `pytest tests/unit/test_shared_test_fixtures.py` for deterministic stream
 replacement and test-local lifetime examples.
+
+## Physical instruction counters
+
+`physical_operation_counters.PhysicalOperationCounters` owns cumulative,
+per-lane raw instruction and exact rotation-level counts independently of
+`PackedBasisState`. Pass its `observe` method to the optional observer in
+`physical_basis_shots.apply_packed_basis_records` or `sample_basis_batch`.
+The shared execution loop supplies the classically active lane mask before
+quantum controls change it. Snapshots contain owned primitive tuples, and
+clearing counters preserves the caller's state.
+
+```python
+from random import Random
+from flagquantum.compiler.formats.kmx_circuit import read_kmx_circuit
+from flagquantum.compiler.formats._physical_operation_statistics import PhysicalOperationStatistics
+from flagquantum.simulation.physical_basis_shots import sample_basis_batch
+from flagquantum.simulation.physical_operation_counters import PhysicalOperationCounters
+
+counters = PhysicalOperationCounters(4)
+batch = sample_basis_batch(
+    read_kmx_circuit("X q0\n"), shots=4, rng=Random(0), observer=counters.observe
+)
+assert PhysicalOperationStatistics.from_counts(*counters.snapshot())["X"] == 4
+assert batch.qubits[0] == 15
+```
+
+Run `tests/unit/test_physical_operation_counters.py` for native execution
+replacement, cumulative/clear ownership, the complete frozen binding's lane
+projections and all small feedback/erasure branches through circuit.append(op).
+Source objects remain confined to fixture generation.
