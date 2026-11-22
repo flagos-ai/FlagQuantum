@@ -35,8 +35,12 @@ are now inspected development cases and cannot be reused as unseen qualification
 
 The [raw observations](evidence/compiler-application-gaps.json) retain every
 row and all 298 distinct normalized payloads as canonical JSON strings keyed
-by SHA-256. A row's original compile-wall value reconstructs the complete
-acceptance payload. An independently started process imported no FlagQuantum,
+by SHA-256. The index refers to ten separately hashed payload files, each below
+the repository's unchanged 1.8 MB per-file ceiling. Joining them reconstructs the
+original 13,940,983-byte observation exactly, including its recorded SHA-256.
+The independent archive replay checks every file digest, rejects duplicate
+payload keys, reconstructs those exact bytes, and replays all 1,200 observations.
+A row's original compile-wall value reconstructs the complete acceptance payload. An independently started process imported no FlagQuantum,
 Qiskit or Cirq and replayed all 1,200 rows through the unchanged evaluator,
 checking fixture/payload hashes, complete combination accounting, layouts and
 exact metric agreement. Its [proof and script](evidence/compiler-application-gaps-replay.json)
@@ -136,3 +140,11 @@ as acceptance inputs; no timing ratios, process-memory rankings, hardware,
 scalability or publication eligibility are claimed. Formal host-qualified
 SDKBench remains user-deferred. The existing runnable public workflow and its
 expected restored-layout result are in the frozen protocol.
+
+## Follow-up stage diagnosis and rejected widening
+
+The [stage replay and operand-order experiment](COMPILER_OPERAND_ORDER_GAPS.md)
+separates the six-extra-SWAP source-optimization effect from native synthesis
+savings. It also retains a rejected candidate: all 120 inspected application
+outputs pass semantics, but three ordinary outputs regress and two make
+count/depth tradeoffs. No candidate optimizer code is enabled in production.
