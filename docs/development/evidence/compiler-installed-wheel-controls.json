@@ -1,0 +1,286 @@
+{
+  "scope": "Installed-wheel native conformance, not a prospective benchmark, package release, qualified performance result or SDK ranking",
+  "source_commit": "9cb8f184825e658f7378763a1f3a39c57720233d",
+  "source_repository": "sdkbench-org/sdkbench",
+  "run_id": 44982483623,
+  "run_attempt": 1,
+  "run_conclusion": "success",
+  "artifact": {
+    "id": 14738910504,
+    "name": "compiler-revision-wheel-conformance",
+    "size_in_bytes": 465412797,
+    "digest": "sha256:3b5505505c90978a26057a6416dfcf99be15581756a35fc730b5f8979b8a549a",
+    "created_at": "2026-11-22T03:55:41Z",
+    "expires_at": "2027-02-20T03:51:19Z"
+  },
+  "original_archive_digest_verified": true,
+  "roles": {
+    "first": {
+      "source_commit": "11745ab11070765974b90f5a8f512bf4c30576b1",
+      "build_returncode": 0,
+      "source_archive": {
+        "filename": "source.zip",
+        "sha256": "97e92316286169535395c47e2b9503d44ecc9a00455d97c9886ee2b1bed3e716"
+      },
+      "wheel": {
+        "filename": "flagquantum-0.4.0-cp310-abi3-linux_x86_64.whl",
+        "sha256": "ba951909ed1ec83d270c6b3ca2143cdd3b5f9da6cd4a90fd182ab0e7434dd54f"
+      },
+      "build_log": {
+        "filename": "build.log",
+        "sha256": "cc2fbae9af8d5cc26c930659698e24955337ca10112c11f65fe343dbc4bee7eb"
+      },
+      "source_archive_commit_comment_verified": true,
+      "wheel_record_payloads_verified": 1342,
+      "packaged_optimization_source_sha256": {
+        "flagquantum/compiler/optimization/one_qubit_optimization.py": "2ca48687ddb590cbfa8c5cff747f9ad64cbf3c7d1202252b2e3a0836e6843b76",
+        "flagquantum/compiler/optimization/two_qubit_optimization.py": "ea92d229b4e1fa68fa053782e56792962f7d37da690be3c15964889f638c16ed"
+      },
+      "testcases": [
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[frozen-flagquantum-target-artifact]",
+          "seconds": 2.097
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[frozen-flagquantum-ordinary-restored]",
+          "seconds": 1.618
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qaoa-flagquantum-target-artifact]",
+          "seconds": 1.935
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qaoa-flagquantum-ordinary-restored]",
+          "seconds": 1.618
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[ising-flagquantum-target-artifact]",
+          "seconds": 1.835
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[ising-flagquantum-ordinary-restored]",
+          "seconds": 1.602
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[hopping-flagquantum-target-artifact]",
+          "seconds": 1.999
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[hopping-flagquantum-ordinary-restored]",
+          "seconds": 1.626
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qft-flagquantum-target-artifact]",
+          "seconds": 2.084
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qft-flagquantum-ordinary-restored]",
+          "seconds": 1.618
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[repetition-flagquantum-target-artifact]",
+          "seconds": 1.988
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[repetition-flagquantum-ordinary-restored]",
+          "seconds": 1.612
+        }
+      ],
+      "selected_tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "independent_build_attestation": false
+    },
+    "second": {
+      "source_commit": "dce3948b946906875a759362e8570b22a8214d5f",
+      "build_returncode": 0,
+      "source_archive": {
+        "filename": "source.zip",
+        "sha256": "bd6a3b2524e66ad5ea3baf15fd8a92a71b6d29609a0b4d0a5aca811e124c1b09"
+      },
+      "wheel": {
+        "filename": "flagquantum-0.4.0-cp310-abi3-linux_x86_64.whl",
+        "sha256": "a375db64d4faf85e2187956581dd36f3bff5cb53319afdf431e221cccb0265f3"
+      },
+      "build_log": {
+        "filename": "build.log",
+        "sha256": "b1f854d32b0d060ca663ff99563a654435beba217e1ee0849146ab8a4e49b903"
+      },
+      "source_archive_commit_comment_verified": true,
+      "wheel_record_payloads_verified": 1342,
+      "packaged_optimization_source_sha256": {
+        "flagquantum/compiler/optimization/one_qubit_optimization.py": "b374058e9a5316732f08c48795e2656b506ae567c6c12c229ee63d55bf712a55",
+        "flagquantum/compiler/optimization/two_qubit_optimization.py": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2"
+      },
+      "testcases": [
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[frozen-flagquantum-target-artifact]",
+          "seconds": 2.054
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[frozen-flagquantum-ordinary-restored]",
+          "seconds": 1.662
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qaoa-flagquantum-target-artifact]",
+          "seconds": 1.934
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qaoa-flagquantum-ordinary-restored]",
+          "seconds": 1.614
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[ising-flagquantum-target-artifact]",
+          "seconds": 1.822
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[ising-flagquantum-ordinary-restored]",
+          "seconds": 1.6
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[hopping-flagquantum-target-artifact]",
+          "seconds": 2.0
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[hopping-flagquantum-ordinary-restored]",
+          "seconds": 1.63
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qft-flagquantum-target-artifact]",
+          "seconds": 2.049
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[qft-flagquantum-ordinary-restored]",
+          "seconds": 1.625
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[repetition-flagquantum-target-artifact]",
+          "seconds": 1.996
+        },
+        {
+          "name": "test_native_workflow_satisfies_independent_arbitrary_input_semantics[repetition-flagquantum-ordinary-restored]",
+          "seconds": 1.628
+        }
+      ],
+      "selected_tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "independent_build_attestation": false
+    }
+  },
+  "joint_development_check": {
+    "matched_non_frontend_inputs": true,
+    "distinct_interpreters": true,
+    "scope": "development admission only; not a joint study freeze",
+    "entropy_drawn": false,
+    "campaign_executed": false,
+    "publication_eligible": false
+  },
+  "same_interpreter_executable_bytes": true,
+  "separate_interpreter_invocations": true,
+  "raw_small_record_hashes": [
+    {
+      "member": "build-requirements.txt",
+      "bytes": 261,
+      "sha256": "004047b88a6c04351f484d1ed6ccb57b4ec442f8f8e33298856ae227648517f8"
+    },
+    {
+      "member": "common/requirements.txt",
+      "bytes": 3606,
+      "sha256": "16df7ca82295404d19e90bb5ad348024fcca190499bda16802739b030789fb62"
+    },
+    {
+      "member": "first/build/build.json",
+      "bytes": 6321,
+      "sha256": "a90b949fd6c65443771bc9016f9d3ed26ac7eae82c66b1af104c10b3e6891245"
+    },
+    {
+      "member": "first/build/build.log",
+      "bytes": 513169,
+      "sha256": "cc2fbae9af8d5cc26c930659698e24955337ca10112c11f65fe343dbc4bee7eb"
+    },
+    {
+      "member": "first/conformance.log",
+      "bytes": 115,
+      "sha256": "b9c89020fc448fd6ff45ca302430a71cb97844f37c2f39b986fc0dde5eadeeb5"
+    },
+    {
+      "member": "first/conformance.xml",
+      "bytes": 2493,
+      "sha256": "6454e53b63791c20c52d7fad1757112115fa9cc78167172ff2153263a3d46dbd"
+    },
+    {
+      "member": "first/installed-requirements.txt",
+      "bytes": 809,
+      "sha256": "2eaded202e304eefc6edccaf05b6063c41e37ebf9936ae189f3f042c4d08d968"
+    },
+    {
+      "member": "first-build-stdout.json",
+      "bytes": 6321,
+      "sha256": "a90b949fd6c65443771bc9016f9d3ed26ac7eae82c66b1af104c10b3e6891245"
+    },
+    {
+      "member": "first/development-admissions.json",
+      "bytes": 32047,
+      "sha256": "7956a1349e926bd117c2411607c6340a0f5fe8e86e0975998c2bba12857038c3"
+    },
+    {
+      "member": "joint-development-check.json",
+      "bytes": 231,
+      "sha256": "40070ac94f9e1094d1cc50c92375ab873169e9367301c714dc5c77525d3c2843"
+    },
+    {
+      "member": "second/build/build.json",
+      "bytes": 6325,
+      "sha256": "c892ce879d2083edf54ac63646be597e2c35744bf5d4c7758a2103b1b7407ca1"
+    },
+    {
+      "member": "second/build/build.log",
+      "bytes": 513170,
+      "sha256": "b1f854d32b0d060ca663ff99563a654435beba217e1ee0849146ab8a4e49b903"
+    },
+    {
+      "member": "second/conformance.log",
+      "bytes": 115,
+      "sha256": "d41baa8d32ccf1b4d317c897ae9b4788e9bf0588745724c83c611faccc35a993"
+    },
+    {
+      "member": "second/conformance.xml",
+      "bytes": 2493,
+      "sha256": "9a91f5af729cc8a3f35c9d2d4747131c13b208d876fdd27268b01159370a5b5e"
+    },
+    {
+      "member": "second/development-admissions.json",
+      "bytes": 32060,
+      "sha256": "19f6c4bd4c1ef99f06a505ee6d42a712e904fcb772ccb677e511c64958a7f928"
+    },
+    {
+      "member": "second/installed-requirements.txt",
+      "bytes": 810,
+      "sha256": "03c41891323b515083a3dae3e8ebe29c31b2a1d38bbd3e96a2050372d22ed741"
+    },
+    {
+      "member": "second-build-stdout.json",
+      "bytes": 6325,
+      "sha256": "c892ce879d2083edf54ac63646be597e2c35744bf5d4c7758a2103b1b7407ca1"
+    }
+  ],
+  "transfer": {
+    "first_attempt": "180-second transfer timeout; partial bytes retained",
+    "resume_requested": true,
+    "complete_original_archive_digest_verified": true,
+    "workflow_or_conformance_rerun": false,
+    "audit_setup_correction": "Initial source-member lookup assumed a top-level directory; the retained git archive has root-relative paths. Corrected the member lookup without rerunning the workflow."
+  },
+  "audit_driver": "from __future__ import annotations\nimport base64,csv,hashlib,io,json,zipfile\nimport xml.etree.ElementTree as ET\nfrom pathlib import Path\nROOT=Path('/private/tmp/fq-integrated-wheel-evidence-20261122')\nverification=json.loads((ROOT/'archive-verification.json').read_text())\nartifact_path=Path(verification['verified_path'])\nrun=json.loads((ROOT/'github-run.json').read_text())\nartifact=json.loads((ROOT/'github-artifacts.json').read_text())['artifacts'][0]\nassert run['status']=='completed' and run['conclusion']=='success' and run['run_attempt']==1\nwith artifact_path.open('rb') as stream:assert hashlib.file_digest(stream,'sha256').hexdigest()==artifact['digest'].split(':',1)[1]\nexpected={'first':'11745ab11070765974b90f5a8f512bf4c30576b1','second':'dce3948b946906875a759362e8570b22a8214d5f'}\nroles={};admissions=[]\nwith zipfile.ZipFile(artifact_path) as archive:\n joint=json.loads(archive.read('joint-development-check.json'))\n assert joint['matched_non_frontend_inputs'] and joint['distinct_interpreters']\n assert not joint['entropy_drawn'] and not joint['campaign_executed'] and not joint['publication_eligible']\n for role,revision in expected.items():\n  build=json.loads(archive.read(role+'/build/build.json'))\n  assert build['source_commit']==revision and build['returncode']==0 and build['independent_attestation'] is False\n  for field in ('source_archive','wheel','log'):\n   name=role+'/build/'+build[field]['filename']\n   with archive.open(name) as stream:digest=hashlib.file_digest(stream,'sha256').hexdigest()\n   assert digest==build[field]['sha256'],name\n  source_data=archive.read(role+'/build/'+build['source_archive']['filename'])\n  wheel_data=archive.read(role+'/build/'+build['wheel']['filename'])\n  with zipfile.ZipFile(io.BytesIO(source_data)) as source,zipfile.ZipFile(io.BytesIO(wheel_data)) as wheel:\n   assert source.comment.decode()==revision\n   names=wheel.namelist();record=next(n for n in names if n.endswith('.dist-info/RECORD') and len(n.split('/'))==2)\n   verified_files=0\n   for name,digest,size in csv.reader(io.StringIO(wheel.read(record).decode())):\n    if not digest:\n     assert name==record and not size\n     continue\n    kind,wanted=digest.split('=',1);assert kind=='sha256'\n    data=wheel.read(name)\n    assert base64.urlsafe_b64encode(hashlib.sha256(data).digest()).decode().rstrip('=')==wanted\n    assert len(data)==int(size)\n    verified_files+=1\n   sources={}\n   for name in ('flagquantum/compiler/optimization/one_qubit_optimization.py','flagquantum/compiler/optimization/two_qubit_optimization.py'):\n    matches=[n for n in source.namelist() if n == name or n.endswith('/'+name)];assert len(matches)==1\n    assert source.read(matches[0])==wheel.read(name)\n    sources[name]=hashlib.sha256(wheel.read(name)).hexdigest()\n  xml=ET.fromstring(archive.read(role+'/conformance.xml'));suites=xml.findall('.//testsuite');assert len(suites)==1\n  suite=suites[0];assert {k:int(suite.attrib[k]) for k in ('tests','failures','errors','skipped')}=={'tests':12,'failures':0,'errors':0,'skipped':0}\n  testcases=suite.findall('testcase');assert len(testcases)==12 and all(len(case)==0 for case in testcases)\n  admission=json.loads(archive.read(role+'/development-admissions.json'));admissions.append(admission)\n  assert not admission['entropy_drawn'] and not admission['publication_eligible']\n  assert set(admission['registrations'])=={'flagquantum-ordinary-restored','flagquantum-target-artifact'}\n  assert next(d['version'] for d in admission['inventory']['dependencies'] if d['name']=='torch')=='2.14.0+cpu'\n  roles[role]={'source_commit':revision,'build_returncode':build['returncode'],'source_archive':build['source_archive'],'wheel':build['wheel'],'build_log':build['log'],'source_archive_commit_comment_verified':True,'wheel_record_payloads_verified':verified_files,'packaged_optimization_source_sha256':sources,'testcases':[{'name':case.attrib['name'],'seconds':float(case.attrib['time'])} for case in testcases],'selected_tests':12,'failures':0,'errors':0,'skipped':0,'independent_build_attestation':False}\n assert admissions[0]['interpreter']['python']!=admissions[1]['interpreter']['python']\n assert admissions[0]['interpreter']['executable_sha256']==admissions[1]['interpreter']['executable_sha256']\nraw_records=[]\nwith zipfile.ZipFile(artifact_path) as archive:\n for name in verification['extracted_small_records']:\n  data=archive.read(name);raw_records.append({'member':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\nreport={'scope':'Installed-wheel native conformance, not a prospective benchmark, package release, qualified performance result or SDK ranking','source_commit':run['head_sha'],'source_commit_origin':'external_dependency','source_repository':'sdkbench-org/sdkbench','run_id':run['id'],'run_attempt':run['run_attempt'],'run_conclusion':run['conclusion'],'artifact':{k:artifact[k] for k in ('id','name','size_in_bytes','digest','created_at','expires_at')},'original_archive_digest_verified':True,'roles':roles,'joint_development_check':joint,'same_interpreter_executable_bytes':True,'separate_interpreter_invocations':True,'raw_small_record_hashes':raw_records,'transfer':{'first_attempt':'180-second transfer timeout; partial bytes retained','resume_requested':True,'complete_original_archive_digest_verified':True,'workflow_or_conformance_rerun':False,'audit_setup_correction':'Initial source-member lookup assumed a top-level directory; the retained git archive has root-relative paths. Corrected the member lookup without rerunning the workflow.'},'audit_driver':Path(__file__).read_text(),'limits':['Six-wire frozen fixture and five inspected application families on line topology, ordinary restored and target-artifact workflows only.','No entropy draw, resource-qualified campaign, build attestation, symbolic/gradient certification, larger widths or scalability claim.','Artifact expires at the recorded GitHub retention deadline; locally retained bytes do not establish indefinite public availability.','Second source predates the separately merged telemetry and identity-restoration PRs; this run does not certify those later source revisions.']}\n(ROOT/'audit.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint('Verified both source ZIP comments, wheel and log hashes, every wheel RECORD payload, packaged optimization sources, and 12+12 successful native checks.')\nprint('Verified wheel payload counts:',{role:row['wheel_record_payloads_verified'] for role,row in roles.items()})\n",
+  "limits": [
+    "Six-wire frozen fixture and five inspected application families on line topology, ordinary restored and target-artifact workflows only.",
+    "No entropy draw, resource-qualified campaign, build attestation, symbolic/gradient certification, larger widths or scalability claim.",
+    "Artifact expires at the recorded GitHub retention deadline; locally retained bytes do not establish indefinite public availability.",
+    "Second source predates the separately merged telemetry and identity-restoration PRs; this run does not certify those later source revisions."
+  ],
+  "original_audit_index_sha256": "123c6db472a7761eec978ae01dab493f04c862df25db9b8329dc986727f0d1b1",
+  "index_origin_normalization": "The original source_commit_origin external_dependency stamp is represented by the authoritative evidence-revision-origins.toml declaration; all source, result and numerical fields are retained. The original audit index is retained locally under its recorded hash."
+}
