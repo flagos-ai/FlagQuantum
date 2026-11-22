@@ -99,3 +99,47 @@ python -m pytest tests/unit/test_ir_container_encoding.py \
 The optional workflow probe needs the pinned checkout's `src` on `PYTHONPATH`
 and its `docs/implementation` bundle. The retained measurement used a 240-second
 outer process-group timeout and submitted no remote jobs.
+
+## Current-pipeline acceptance control
+
+A subsequent [development record](evidence/ir-container-encoding-current-pipeline.json)
+loads the encoder function from existing candidate
+`9eff313ea69ca304b521782884acfe117c961031` into the current compiler tree at
+`780d1a1522da67f6e510d94f7e2a034fa4bdb7c0`. All other modules remain at that
+current tree. This isolates the private encoding implementation rather than
+comparing two complete source releases.
+
+Sixty paired native target-artifact workflows cover widths 6/8/12, five
+application families and four topologies with the already inspected nonce.
+All 120 independent acceptances pass. Every pair retains identical normalized
+operation/layout digests, evaluator metrics, selected routing strategy, restored
+SWAP counts, rewrite counts and maximum rewrite membership. Clock-dependent
+complete artifacts are not compared byte-for-byte. Existing golden encoding
+and artifact tests protect their respective byte contracts separately.
+
+The existing pinned SDKBench source and evaluator are unchanged. Six-wire
+acceptance uses complete operators; larger widths retain three-probe scope.
+Variant order alternates across cases. A second complete pass explicitly cleans
+up encoder aliases bound by lazy imports and verifies that no candidate alias
+survives into the next baseline. Both exact drivers and all first-pass outcomes
+are retained. Neither pass supplies repeated unprofiled timing or RSS evidence.
+
+Separate cProfile observations on Ising-8/line, QFT-12/grid and QAOA-12/sparse
+show 70 content-hash calls per target-artifact workflow and 339,330, 998,160 and
+336,856 recursive encoder calls respectively. These observations motivate
+prioritizing the already implemented general encoding optimization; they do not
+justify skipping independent validation or adding cross-call caches over mutable
+IR. Profile totals overlap and include instrumentation overhead. All three
+profiled workflows also pass the existing independent acceptance.
+
+The original GPU latency-variance failure remains in PR #1273 history. This
+additional semantic evidence does not waive it, certify formal resources,
+promote a compiler policy, or establish superiority. Full exact-head CI remains
+required before integration. No production code changed for this evidence update.
+
+The new evidence update passes 78 focused container/scalar/public-IR tests,
+the English scan, local documentation-link checks and revision-field vocabulary
+checks. The full default command was attempted but stopped at collection with
+539 errors in the sparse checkout, including omitted benchmark modules and
+tracked fixtures; it executed no selected test suite. Its complete log and hash
+are retained. This failure is not substituted for the complete-checkout CI gate.
