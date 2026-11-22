@@ -941,3 +941,9 @@ rejection sampling. It consumes a caller-owned uint64 iterator and Core integer
 values, including the existing standard mt19937_64 stream in
 `physical_basis_rng.py`. Core owns no random state. Retry consumption is checked
 against the unchanged source, including the next draw after each result.
+
+`_packed_chacha.py` owns immutable packed ChaCha state, the shared quarter/block
+algorithm, explicit refill and buffer cursor. `physical_basis_rng.py` adapts that
+owner to the existing eager-seeded ChaCha8 spin stream and retains standard
+mt19937_64 packing. Run `pytest tests/unit/test_packed_chacha.py
+tests/unit/test_kmx_spin_command.py` for complete state and consumer conformance.
