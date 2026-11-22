@@ -60,3 +60,34 @@ assert optimize(source).instructions == source.instructions
 
 Expected: independent gates remain unchanged. This proposal supports existing
 CPU compilation and offline target-artifact workflows; it adds no public API.
+
+## First completed outcome
+
+This declaration was published at
+`3761d6de0f888e983179b9e0fe8dc0bccefa505e` before execution.
+[The retained exact record](evidence/compiler-translation-reuse.json) contains
+the driver, complete proposed module, baseline hash, all first-run observations
+and the balanced observer configuration. The bounded supervisor completed once
+with status zero. No local test run or artifact transfer overlapped execution.
+
+All 120 pairs and 240 independent acceptances retain identical metrics,
+normalized operation/layout hashes and adapter audits. This finite equality
+does not by itself establish all metadata, autograd, concurrency or tamper
+behavior. Production adoption would additionally require focused behavior tests.
+
+| Inspected case | Baseline / proposed median | Observed reduction | Whole-observation Python traced peak, baseline / proposed |
+| --- | ---: | ---: | ---: |
+| 6-wire qft, grid | 91.751 / 90.058 ms | 1.85% | 35,363,902 / 35,364,777 bytes |
+| 6-wire repetition, ring | 115.695 / 112.168 ms | 3.05% | 35,364,741 / 35,365,598 bytes |
+| 12-wire qft, grid | 578.236 / 556.588 ms | 3.74% | 35,365,980 / 35,364,804 bytes |
+
+No timing case meets the declared 5% reduction. The candidate also has
+slightly larger observed traced peaks. Neither fact proves a statistically
+significant resource change on a shared host, but neither permits relaxing
+the declared admission rule. Do not adopt this proposal, rerun for a favorable
+result, or tune the fixture selection. The production legalizer stays unchanged.
+The finite result suggests repeated rule search alone is insufficient to close
+the remaining native-CZ selection overhead. A later design must address a
+verified larger cost while retaining independent baseline and routing replay;
+it needs its own fixed proposal and first-run control. No performance ranking,
+release claim or formal-host qualification follows.
