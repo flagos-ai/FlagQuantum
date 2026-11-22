@@ -74,3 +74,17 @@ The generated library entry is `docs/_build/html/components/index.html`, with
 the checkout's existing publication and retention policy. The root homepage's
 full catalog integration and the API generator's setter-signature refusal are
 tracked separately in the development audits.
+
+For a local documentation preview that rebuilds after edits, install the
+optional pinned watcher and use the same authored source tree.
+
+```console
+python -m pip install 'sphinx-autobuild==2024.10.3' 'starlette==0.50.0' \
+  'uvicorn==0.40.0' 'watchfiles==1.1.1' 'websockets==15.0.1' \
+  'anyio==4.12.1' 'h11==0.16.0'
+python -m sphinx_autobuild --host 127.0.0.1 --port 8000 docs docs/_build/html
+```
+
+The complete nine-entry upstream documentation input, native owners, installed
+tool constraints and actual local rebuild evidence are recorded in
+[the documentation dependency audit](development/DOCUMENTATION_DEPENDENCY_INPUTS_AUDIT.md).
