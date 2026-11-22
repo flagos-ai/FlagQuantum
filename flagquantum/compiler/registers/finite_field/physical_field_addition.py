@@ -5,9 +5,12 @@
 """Physical field addition with the source's call and classical guard layout."""
 
 from ..._component_trace.trace import ComponentCall
-from ...artifacts.reversible_phase import ReversiblePhaseOperation as Operation
 from ...artifacts.reversible_phase import ReversiblePhaseProgram
-from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
+from ...lowering.physical_trace import (
+    PhysicalTrace,
+    lower_physical_trace,
+    scope_physical_trace,
+)
 from .coefficients import ClassicalFieldCoefficient, gf2_add_coefficients_ir
 
 
@@ -33,21 +36,10 @@ def physical_field_addition(
     last_wire = max((port for port in ports if type(port) is int), default=0)
     name = "c_gf_iadd" if type(control) is int else "gf_iadd"
     trace = PhysicalTrace(implicit_zero_bits=inputs)
-    if guard is None:
-        if target and control is not False:
-            trace.calls.append(ComponentCall(name, 0, len(gates)))
-        return lower_physical_trace(gates, 0, last_wire, trace, reorder_feedback=False)
-
-    body, _ = lower_physical_trace(gates, 0, last_wire, trace, reorder_feedback=False)
-    # The binding holds the outer classical scope across the generator marks.
-    # Keep the inner coefficient predicate even if it reads the same bit.
-    operations = (
-        Operation("push_condition", (), condition_bit=guard),
-        *body.operations,
-        Operation("pop_condition", ()),
+    if target and control is not False:
+        trace.calls.append(ComponentCall(name, 0, len(gates)))
+    body, calls = lower_physical_trace(
+        gates, 0, last_wire, trace, reorder_feedback=False
     )
-    program = ReversiblePhaseProgram(
-        body.n_qubits, body.n_bits, operations, body.input_bits
-    )
-    calls = (ComponentCall(name, 1, len(operations) - 1),) if target else ()
-    return program, calls
+    # Preserve a repeated coefficient predicate inside the binding guard.
+    return scope_physical_trace(body, calls, () if guard is None else (guard,))

@@ -138,3 +138,34 @@ def lower_physical_trace(
         ),
         tuple(rebind(call) for call in export.calls),
     )
+
+
+def scope_physical_trace(
+    program: ReversiblePhaseProgram,
+    calls: tuple[ComponentCall, ...],
+    guards: tuple[int, ...],
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Keep caller-owned classical guards outside all physical call marks."""
+    if not guards:
+        return program, calls
+    prefix = tuple(
+        Operation("push_condition", (), condition_bit=guard) for guard in guards
+    )
+    operations = (
+        *prefix,
+        *program.operations,
+        *(Operation("pop_condition", ()) for _ in guards),
+    )
+
+    def shift(call: ComponentCall) -> ComponentCall:
+        return replace(
+            call,
+            start=call.start + len(guards),
+            stop=call.stop + len(guards),
+            children=tuple(shift(child) for child in call.children),
+        )
+
+    return (
+        replace(program, operations=operations),
+        tuple(shift(call) for call in calls),
+    )
