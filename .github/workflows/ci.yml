@@ -129,33 +129,42 @@ jobs:
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          mkdir "$RUNNER_TEMP/ci-source"
+          staging="$(mktemp -d "$RUNNER_TEMP/ci-source-producer.XXXXXXXX")"
+          echo "staging-root=$staging" >> "$GITHUB_OUTPUT"
+          echo "full-path=$staging/full" >> "$GITHUB_OUTPUT"
+          echo "incremental-path=$staging/incremental" >> "$GITHUB_OUTPUT"
+          mkdir "$staging/full" "$staging/incremental"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
-          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir "$RUNNER_TEMP/ci-source-incremental"
-          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
+          git rev-parse HEAD > "$staging/full/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$staging/full/source.pack"
+          cp "$staging/full/source.sha" "$staging/incremental/source.sha"
           base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
             # Carry the Git path proof for bounded API repair of cache misses.
             git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
-          } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
+          } | git pack-objects --stdout > "$staging/incremental/source.pack"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source-incremental/
+          path: ${{ steps.pack-source.outputs.incremental-path }}
           retention-days: 1
           compression-level: 0
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source/
+          path: ${{ steps.pack-source.outputs.full-path }}
           retention-days: 1
           compression-level: 0
+
+      - name: Remove this producer's temporary source packs
+        if: ${{ always() && steps.pack-source.outputs.staging-root != '' }}
+        env:
+          FQ_SOURCE_STAGING: ${{ steps.pack-source.outputs.staging-root }}
+        run: rm -rf -- "$FQ_SOURCE_STAGING"
 
   quality:
     needs: prepare-source
@@ -2481,7 +2490,8 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
+            -p tools.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
@@ -2492,7 +2502,8 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
+            -p tools.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:

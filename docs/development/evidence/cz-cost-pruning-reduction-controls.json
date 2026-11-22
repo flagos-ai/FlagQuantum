@@ -1,0 +1,2279 @@
+{
+  "date": "2026-11-22",
+  "decision": "Reject production CZ-cost pruning; retain operator and instruction-budget evidence. No default, tolerance, SDKBench or resource-gate change.",
+  "base_commit": "6db1fbda8a168599e5c0f155b9fb14052cf01342",
+  "implementation_commit": "c446adc9802655e40f50b1ad5984054097bf0567",
+  "restored_source_sha256": "158f34dd05904cd1399aaf90b7d426f9101257e846825c06b7ec12accf379325",
+  "candidate_patch": "diff --git a/flagquantum/compiler/optimization/_cz_blocks.py b/flagquantum/compiler/optimization/_cz_blocks.py\nindex 073d2175e..2d6ce75b1 100644\n--- a/flagquantum/compiler/optimization/_cz_blocks.py\n+++ b/flagquantum/compiler/optimization/_cz_blocks.py\n@@ -17,7 +17,13 @@ from ..lowering.basis_translation import translate\n from ._cz_local_cleanup import compact_native_cz_locals\n from .commutation_cancellation import merge_commuting_rotations\n from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul\n-from .two_qubit_synthesis import synthesize_two_qubit\n+from .two_qubit_synthesis import (\n+    _is_unitary,\n+    _prepared_basis,\n+    _swap_register,\n+    _weyl_decomposition,\n+    synthesize_two_qubit,\n+)\n \n # Bound matrix-product error and synthesis work per block. Larger programs are\n # streamed as multiple blocks; this is not a circuit-size admission limit.\n@@ -127,15 +133,25 @@ def _candidate(\n     if product is None:\n         reject(\"synthesis_unavailable\")\n         return None\n+    limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS\n+    if max_output_operations is not None:\n+        limit = min(limit, max_output_operations)\n+    if cz_count <= 3 and limit >= 32 and _is_unitary(product):\n+        count = _prepared_basis(\"cz\").entangler_count(\n+            _weyl_decomposition(_swap_register(product))\n+        )\n+        # The existing general CZ form emits two local factors per layer,\n+        # each with at most five RZ/RX leaves. Only prune when that entire raw\n+        # form fits, preserving instruction-growth rejection precedence.\n+        if count >= cz_count and limit >= count + 10 * (count + 1):\n+            reject(\"not_lower_cz_cost\")\n+            return None\n     candidate = synthesize_two_qubit(\n         product, qubits=pair, entangler=\"cz\", z_rotation=\"rz\", pulse_opcode=\"rx\"\n     )\n     if candidate is None or any(item.name not in _BASIS for item in candidate):\n         reject(\"synthesis_unavailable\")\n         return None\n-    limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS\n-    if max_output_operations is not None:\n-        limit = min(limit, max_output_operations)\n     if len(candidate) > limit:\n         reject(\"instruction_growth_rejected\")\n         return None\n",
+  "observations": {
+    "base_commit": "6db1fbda8a168599e5c0f155b9fb14052cf01342",
+    "implementation_commit": "c446adc9802655e40f50b1ad5984054097bf0567",
+    "source_sha256": "8c484aaa5204c9548a55ceb71563f8d2d12e0bfe1836caf4a52dab34d1adbf09",
+    "driver_sha256": "9bb570d17a408ba7a00a04f07d1dad652a83a444a483db401ad2870f1bf78e59",
+    "scope": "Inspected stage-level development controls, not end-to-end SDKBench or qualified performance evidence",
+    "complete": true,
+    "rows": [
+      {
+        "case": "refocused_pi_x",
+        "input": [
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 3.141592653589793
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ]
+        ],
+        "outputs": {
+          "baseline": [
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ]
+          ],
+          "candidate": [
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ]
+          ]
+        },
+        "rejections": {
+          "baseline": [],
+          "candidate": []
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 2
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.00018354100757278502,
+            0.00017741697956807911,
+            0.0001736670092213899,
+            0.0001811669790185988,
+            0.00017933399067260325,
+            0.00018391601042822003,
+            0.00018087498028762639,
+            0.00018233401351608336,
+            0.00018199998885393143,
+            0.00018237499170936644,
+            0.0001815830182749778,
+            0.0001814170100260526,
+            0.00018149998504668474,
+            0.00018683300004340708,
+            0.0001822079939302057,
+            0.00018375000217929482,
+            0.00018316699424758554,
+            0.0001820830220822245,
+            0.00018224999075755477,
+            0.0001818750170059502
+          ],
+          "candidate": [
+            0.0003339999821037054,
+            0.00030779201188124716,
+            0.0002764169767033309,
+            0.0002732920111157,
+            0.0002838750078808516,
+            0.00028237499645911157,
+            0.0002817080239765346,
+            0.00027891702484339476,
+            0.0002805410185828805,
+            0.00028024998027831316,
+            0.00028024998027831316,
+            0.00027925000176765025,
+            0.00027895800303667784,
+            0.0002919590042438358,
+            0.00028208299772813916,
+            0.0002879590028896928,
+            0.0002806249831337482,
+            0.00027904199669137597,
+            0.0002798329805955291,
+            0.00027845901786349714
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.00018204150546807796,
+          "candidate": 0.00028039549943059683
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 10560,
+          "candidate": 11176
+        }
+      },
+      {
+        "case": "refocused_pi_x_with_frame",
+        "input": [
+          [
+            "rz",
+            [
+              0
+            ],
+            {
+              "theta": 0.173
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 3.141592653589793
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rz",
+            [
+              1
+            ],
+            {
+              "theta": 0.379
+            }
+          ]
+        ],
+        "outputs": {
+          "baseline": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 0.17300000000000004
+              }
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": -2.762592653589793
+              }
+            ]
+          ],
+          "candidate": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 0.17300000000000004
+              }
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": -2.762592653589793
+              }
+            ]
+          ]
+        },
+        "rejections": {
+          "baseline": [],
+          "candidate": []
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 2
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.0002160840085707605,
+            0.00021329199080355465,
+            0.00021270898287184536,
+            0.0002119579876307398,
+            0.0002118330157827586,
+            0.000225499999942258,
+            0.0002151249791495502,
+            0.00020816599135287106,
+            0.00021020800340920687,
+            0.00020566702005453408,
+            0.0002488750033080578,
+            0.00019979197531938553,
+            0.0002036660152953118,
+            0.00020645902259275317,
+            0.0002110839996021241,
+            0.00020795900491066277,
+            0.00020945898722857237,
+            0.00020983399008400738,
+            0.0002114999806508422,
+            0.0002094999945256859
+          ],
+          "candidate": [
+            0.00031795797985978425,
+            0.0003158750187139958,
+            0.0003124579961877316,
+            0.00031133301672525704,
+            0.0003103329800069332,
+            0.00037987501127645373,
+            0.0003122909984085709,
+            0.0003096250002272427,
+            0.0003067500074394047,
+            0.0003139999753329903,
+            0.00030683301156386733,
+            0.00030308301211334765,
+            0.00030508299823850393,
+            0.0003152920107822865,
+            0.00030612500268034637,
+            0.000308749993564561,
+            0.00030937499832361937,
+            0.0003090419922955334,
+            0.0003106249787379056,
+            0.0003093330014962703
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.00021064600150566548,
+          "candidate": 0.00030997899011708796
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 10896,
+          "candidate": 11512
+        }
+      },
+      {
+        "case": "quarter_turn_pauli_product",
+        "input": [
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 1.5707963267948966
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ]
+        ],
+        "outputs": {
+          "baseline": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948974
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.4980898515441834
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948961
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": -0.07270647525071361
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ]
+          ],
+          "candidate": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948974
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.4980898515441834
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948961
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": -0.07270647525071361
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ]
+          ]
+        },
+        "rejections": {
+          "baseline": [],
+          "candidate": []
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 2
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.0003991670091636479,
+            0.0003563330101314932,
+            0.00035654098610393703,
+            0.0003522499755490571,
+            0.0003538329910952598,
+            0.0003549579996615648,
+            0.0003538329910952598,
+            0.0003567500098142773,
+            0.0003582499921321869,
+            0.0003785419976338744,
+            0.0003583329962566495,
+            0.00035858299816027284,
+            0.000385124993044883,
+            0.0003620839852374047,
+            0.0003559580072760582,
+            0.00035691700759343803,
+            0.00035995899816043675,
+            0.0003572499845176935,
+            0.00035633298102766275,
+            0.0003550420224200934
+          ],
+          "candidate": [
+            0.0004824170027859509,
+            0.0004616249934770167,
+            0.0004599170060828328,
+            0.00046012498205527663,
+            0.00045879202662035823,
+            0.0004600420070346445,
+            0.00046104201464913785,
+            0.00045950000640004873,
+            0.00046291699982248247,
+            0.00047479200293309987,
+            0.0004669170011766255,
+            0.0004695839888881892,
+            0.0004975830088369548,
+            0.0004648329922929406,
+            0.0004617079976014793,
+            0.00046300000394694507,
+            0.0004583749978337437,
+            0.00045950000640004873,
+            0.000458249996881932,
+            0.00047341702156700194
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.00035683350870385766,
+          "candidate": 0.000461666495539248
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 15494,
+          "candidate": 14022
+        }
+      },
+      {
+        "case": "mixed_wire_two_cz_reduction",
+        "input": [
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 0.173
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              1
+            ],
+            {
+              "theta": 0.379
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ]
+        ],
+        "outputs": {
+          "baseline": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 4.884981308350689e-15
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.944654856670747
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.0778597741612512
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": -1.5707963267948926
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 4.71238898038469
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 2.980650860174226
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": -3.141592653589786
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948963
+              }
+            ]
+          ],
+          "candidate": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 4.884981308350689e-15
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.944654856670747
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.0778597741612512
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": -1.5707963267948926
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 4.71238898038469
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 2.980650860174226
+              }
+            ],
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": -3.141592653589786
+              }
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 1.5707963267948963
+              }
+            ]
+          ]
+        },
+        "rejections": {
+          "baseline": [],
+          "candidate": []
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 2
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.0004722920130006969,
+            0.00048708400572650135,
+            0.00048208297812379897,
+            0.00047962498501874506,
+            0.0004773339896928519,
+            0.0004776660061907023,
+            0.0004738749994430691,
+            0.00047558301594108343,
+            0.0004895419988315552,
+            0.0004769169900100678,
+            0.00047558400547131896,
+            0.0004777080030180514,
+            0.00047666599857620895,
+            0.00047745800111442804,
+            0.0004737919953186065,
+            0.00048395799240097404,
+            0.0005179590079933405,
+            0.0004764579934999347,
+            0.00047158298548310995,
+            0.00047649999032728374
+          ],
+          "candidate": [
+            0.0006064579938538373,
+            0.0005882499972358346,
+            0.0005969580088276416,
+            0.0005939170077908784,
+            0.0005925830046180636,
+            0.0005924580036662519,
+            0.0005958749970886856,
+            0.0005952919891569763,
+            0.0006102090119384229,
+            0.0005947919853497297,
+            0.0005902079865336418,
+            0.0005952920182608068,
+            0.0005939999828115106,
+            0.0005891250038985163,
+            0.0005909170140512288,
+            0.0005933339998591691,
+            0.0006023749883752316,
+            0.000596124998992309,
+            0.0005871669854968786,
+            0.0005939170077908784
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.00047712548985145986,
+          "candidate": 0.0005939584953011945
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 21403,
+          "candidate": 21323
+        }
+      },
+      {
+        "case": "generic_two_cz_control",
+        "input": [
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 0.173
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ]
+        ],
+        "outputs": {
+          "baseline": null,
+          "candidate": null
+        },
+        "rejections": {
+          "baseline": [
+            "not_lower_cz_cost"
+          ],
+          "candidate": [
+            "not_lower_cz_cost"
+          ]
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 1
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.00020195799879729748,
+            0.00020054102060385048,
+            0.00020699997548945248,
+            0.00020325000514276326,
+            0.0002083329891320318,
+            0.00020329200197011232,
+            0.00020833400776609778,
+            0.0002035830111708492,
+            0.00020620800205506384,
+            0.00020304200006648898,
+            0.000208500016015023,
+            0.00020316598238423467,
+            0.00020787501125596464,
+            0.00020216600387357175,
+            0.00020720899919979274,
+            0.0002026250003837049,
+            0.00020666600903496146,
+            0.00020241699530743062,
+            0.0002079589758068323,
+            0.00020249999943189323
+          ],
+          "candidate": [
+            0.00013337499694898725,
+            0.00012720798258669674,
+            0.00012958401930518448,
+            0.00012729200534522533,
+            0.00013070800923742354,
+            0.0001265419996343553,
+            0.0001315420086029917,
+            0.00012683297973126173,
+            0.0001299580035265535,
+            0.00012762498226948082,
+            0.0001315839763265103,
+            0.00012783400597982109,
+            0.00013012500130571425,
+            0.00012604199582710862,
+            0.0001315839763265103,
+            0.00012579100439324975,
+            0.00013050000416114926,
+            0.00012658300693146884,
+            0.00013070899876765907,
+            0.0001260410062968731
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.00020343750657048076,
+          "candidate": 0.00012870901264250278
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 16471,
+          "candidate": 9984
+        }
+      },
+      {
+        "case": "generic_three_cz_control",
+        "input": [
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 0.173
+            }
+          ],
+          [
+            "rz",
+            [
+              0
+            ],
+            {
+              "theta": 0.241
+            }
+          ],
+          [
+            "rx",
+            [
+              1
+            ],
+            {
+              "theta": 0.319
+            }
+          ],
+          [
+            "rz",
+            [
+              1
+            ],
+            {
+              "theta": 0.413
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ],
+          [
+            "rx",
+            [
+              0
+            ],
+            {
+              "theta": 0.527
+            }
+          ],
+          [
+            "rz",
+            [
+              0
+            ],
+            {
+              "theta": 0.631
+            }
+          ],
+          [
+            "rx",
+            [
+              1
+            ],
+            {
+              "theta": 0.739
+            }
+          ],
+          [
+            "rz",
+            [
+              1
+            ],
+            {
+              "theta": 0.811
+            }
+          ],
+          [
+            "cz",
+            [
+              0,
+              1
+            ],
+            {}
+          ]
+        ],
+        "outputs": {
+          "baseline": null,
+          "candidate": null
+        },
+        "rejections": {
+          "baseline": [
+            "not_lower_cz_cost"
+          ],
+          "candidate": [
+            "not_lower_cz_cost"
+          ]
+        },
+        "weyl_calls": {
+          "baseline": 1,
+          "candidate": 1
+        },
+        "samples_seconds": {
+          "baseline": [
+            0.0003295420028734952,
+            0.0003349579928908497,
+            0.00032683301833458245,
+            0.00031879200832918286,
+            0.00035320897586643696,
+            0.0003251669986639172,
+            0.0003175830061081797,
+            0.00031454197596758604,
+            0.00031887501245364547,
+            0.00031850000959821045,
+            0.00032454199390485883,
+            0.0003196669858880341,
+            0.00032616700627841055,
+            0.00032116699730977416,
+            0.00032529199961572886,
+            0.00032045799889601767,
+            0.0003237500204704702,
+            0.000320334016578272,
+            0.00032587500754743814,
+            0.00031912498525343835
+          ],
+          "candidate": [
+            0.00020924999262206256,
+            0.00021199998445808887,
+            0.00020374997984617949,
+            0.00019974997849203646,
+            0.00021312502212822437,
+            0.00020329200197011232,
+            0.00020750000840052962,
+            0.00019466702360659838,
+            0.00020512499031610787,
+            0.00019795898697338998,
+            0.00020208398927934468,
+            0.00019879100727848709,
+            0.00020620800205506384,
+            0.00020016697817482054,
+            0.00020383400260470808,
+            0.00019929098198190331,
+            0.00020641699666157365,
+            0.00020779197802767158,
+            0.0002049999893642962,
+            0.00019804202020168304
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.0003224585088901222,
+          "candidate": 0.00020379199122544378
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 24978,
+          "candidate": 10080
+        }
+      }
+    ]
+  },
+  "driver": "from __future__ import annotations\nimport hashlib,json,math,os,statistics,subprocess,sys,time,tracemalloc\nfrom pathlib import Path\nfrom types import ModuleType\nfrom unittest.mock import patch\nimport numpy as np\nfrom flagquantum.core.ir import Instruction\nfrom flagquantum.compiler.optimization import two_qubit_synthesis as synthesis\nBASE='6db1fbda8a168599e5c0f155b9fb14052cf01342'\nCANDIDATE='c446adc9802655e40f50b1ad5984054097bf0567'\ncandidate_source=subprocess.check_output(['git','show',CANDIDATE+':flagquantum/compiler/optimization/_cz_blocks.py'],timeout=15)\ncandidate=ModuleType('flagquantum.compiler.optimization._cz_pruning_frozen_candidate');sys.modules[candidate.__name__]=candidate;exec(compile(candidate_source,'candidate-cz-blocks','exec'),candidate.__dict__)\nsource=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/_cz_blocks.py'],timeout=15)\nbaseline=ModuleType('flagquantum.compiler.optimization._cz_pruning_reduction_control');sys.modules[baseline.__name__]=baseline;exec(compile(source,'baseline-cz-blocks','exec'),baseline.__dict__)\ndef rotation(name,wire,angle):return Instruction(name,(wire,),params={'theta':angle})\ncz=Instruction('cz',(0,1))\ncases={'refocused_pi_x':(cz,rotation('rx',0,math.pi),cz),'refocused_pi_x_with_frame':(rotation('rz',0,.173),cz,rotation('rx',0,math.pi),cz,rotation('rz',1,.379)),'quarter_turn_pauli_product':(cz,rotation('rx',0,math.pi/2),cz),'mixed_wire_two_cz_reduction':(cz,rotation('rx',0,.173),cz,rotation('rx',1,.379),cz)}\ncases['generic_two_cz_control']=(cz,rotation('rx',0,.173),cz)\ncases['generic_three_cz_control']=(cz,rotation('rx',0,.173),rotation('rz',0,.241),rotation('rx',1,.319),rotation('rz',1,.413),cz,rotation('rx',0,.527),rotation('rz',0,.631),rotation('rx',1,.739),rotation('rz',1,.811),cz)\ndef operator(items):\n matrix=np.eye(4,dtype=complex)\n for i in items:\n  if i.name=='cz':leaf=np.diag([1,1,1,-1])\n  else:\n   theta=i.params['theta']\n   if i.name=='rx':small=np.array([[math.cos(theta/2),-1j*math.sin(theta/2)],[-1j*math.sin(theta/2),math.cos(theta/2)]])\n   elif i.name=='rz':small=np.diag([np.exp(-1j*theta/2),np.exp(1j*theta/2)])\n   else:raise AssertionError(i.name)\n   leaf=np.kron(small,np.eye(2)) if i.wires==(0,) else np.kron(np.eye(2),small)\n  matrix=leaf@matrix\n return matrix\ndef normalize(items):\n return None if items is None else [(i.name,i.wires,dict(i.params)) for i in items]\ndef once(module,block):\n reasons=[];output=module._candidate(block,(0,1),on_rejection=reasons.append)\n return output,reasons\nreport={'base_commit':BASE,'implementation_commit':CANDIDATE,'source_sha256':hashlib.sha256(candidate_source).hexdigest(),'driver_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'scope':'Inspected stage-level development controls, not end-to-end SDKBench or qualified performance evidence','complete':False,'rows':[]}\nfor name,block in cases.items():\n outputs={};counts={};reasons={};times={'baseline':[],'candidate':[]};peaks={}\n for mode,module in [('baseline',baseline),('candidate',candidate)]:\n  for _ in range(3):once(module,block)\n  real=synthesis._weyl_decomposition;calls=[]\n  def counted(*args,**kwargs):calls.append(1);return real(*args,**kwargs)\n  with patch.object(synthesis,'_weyl_decomposition',counted),patch.object(candidate,'_weyl_decomposition',counted):outputs[mode],reasons[mode]=once(module,block)\n  counts[mode]=len(calls)\n  tracemalloc.start();once(module,block);peaks[mode]=tracemalloc.get_traced_memory()[1];tracemalloc.stop()\n assert normalize(outputs['baseline'])==normalize(outputs['candidate']) and reasons['baseline']==reasons['candidate']\n for mode,output in outputs.items():\n  if output is not None:\n   original=operator(block);actual=operator(output);index=np.unravel_index(np.argmax(np.abs(original)),original.shape);phase=actual[index]/original[index];assert abs(abs(phase)-1)<1e-10;assert np.max(np.abs(actual-phase*original))<1e-10\n for iteration in range(22):\n  for mode in (('baseline','candidate') if iteration%2==0 else ('candidate','baseline')):\n   module=baseline if mode=='baseline' else candidate;start=time.perf_counter();once(module,block);elapsed=time.perf_counter()-start\n   if iteration>=2:times[mode].append(elapsed)\n report['rows'].append({'case':name,'input':normalize(block),'outputs':{mode:normalize(v) for mode,v in outputs.items()},'rejections':reasons,'weyl_calls':counts,'samples_seconds':times,'median_seconds':{k:statistics.median(v) for k,v in times.items()},'python_traced_peak_bytes':peaks});Path('/private/tmp/fq-cz-pruning-reduction-controls-20261122.json').write_text(json.dumps(report,indent=2)+'\\n');print(name,counts,report['rows'][-1]['median_seconds'],peaks,flush=True)\nreport['complete']=True;Path('/private/tmp/fq-cz-pruning-reduction-controls-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\n",
+  "complete_operator_replay": [
+    {
+      "case": "refocused_pi_x",
+      "input_czs": 2,
+      "outcomes": {
+        "baseline": {
+          "rewritten": true,
+          "output_czs": 0,
+          "maximum_entry_residual": 1.2246467991473532e-16,
+          "phase_modulus_error": 0.0
+        },
+        "candidate": {
+          "rewritten": true,
+          "output_czs": 0,
+          "maximum_entry_residual": 1.2246467991473532e-16,
+          "phase_modulus_error": 0.0
+        }
+      }
+    },
+    {
+      "case": "refocused_pi_x_with_frame",
+      "input_czs": 2,
+      "outcomes": {
+        "baseline": {
+          "rewritten": true,
+          "output_czs": 0,
+          "maximum_entry_residual": 2.220446049250313e-16,
+          "phase_modulus_error": 0.0
+        },
+        "candidate": {
+          "rewritten": true,
+          "output_czs": 0,
+          "maximum_entry_residual": 2.220446049250313e-16,
+          "phase_modulus_error": 0.0
+        }
+      }
+    },
+    {
+      "case": "quarter_turn_pauli_product",
+      "input_czs": 2,
+      "outcomes": {
+        "baseline": {
+          "rewritten": true,
+          "output_czs": 1,
+          "maximum_entry_residual": 6.866350197783356e-16,
+          "phase_modulus_error": 4.440892098500626e-16
+        },
+        "candidate": {
+          "rewritten": true,
+          "output_czs": 1,
+          "maximum_entry_residual": 6.866350197783356e-16,
+          "phase_modulus_error": 4.440892098500626e-16
+        }
+      }
+    },
+    {
+      "case": "mixed_wire_two_cz_reduction",
+      "input_czs": 3,
+      "outcomes": {
+        "baseline": {
+          "rewritten": true,
+          "output_czs": 2,
+          "maximum_entry_residual": 7.852032228899707e-15,
+          "phase_modulus_error": 0.0
+        },
+        "candidate": {
+          "rewritten": true,
+          "output_czs": 2,
+          "maximum_entry_residual": 7.852032228899707e-15,
+          "phase_modulus_error": 0.0
+        }
+      }
+    },
+    {
+      "case": "generic_two_cz_control",
+      "input_czs": 2,
+      "outcomes": {
+        "baseline": {
+          "rewritten": false,
+          "output_czs": 2
+        },
+        "candidate": {
+          "rewritten": false,
+          "output_czs": 2
+        }
+      }
+    },
+    {
+      "case": "generic_three_cz_control",
+      "input_czs": 3,
+      "outcomes": {
+        "baseline": {
+          "rewritten": false,
+          "output_czs": 3
+        },
+        "candidate": {
+          "rewritten": false,
+          "output_czs": 3
+        }
+      }
+    }
+  ],
+  "initial_diagnostic": {
+    "driver": "from __future__ import annotations\nimport hashlib,json,math,os,statistics,subprocess,sys,time,tracemalloc\nfrom pathlib import Path\nfrom types import ModuleType\nfrom unittest.mock import patch\nimport numpy as np\nfrom flagquantum.core.ir import Instruction\nfrom flagquantum.compiler.optimization import _cz_blocks as candidate, two_qubit_synthesis as synthesis\nBASE='6db1fbda8a168599e5c0f155b9fb14052cf01342'\nsource=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/_cz_blocks.py'],timeout=15)\nbaseline=ModuleType('flagquantum.compiler.optimization._cz_pruning_reduction_control');sys.modules[baseline.__name__]=baseline;exec(compile(source,'baseline-cz-blocks','exec'),baseline.__dict__)\ndef rotation(name,wire,angle):return Instruction(name,(wire,),params={'theta':angle})\ncz=Instruction('cz',(0,1))\ncases={'refocused_pi_x':(cz,rotation('rx',0,math.pi),cz),'refocused_pi_x_with_frame':(rotation('rz',0,.173),cz,rotation('rx',0,math.pi),cz,rotation('rz',1,.379)),'nonreducing_half_pi_x':(cz,rotation('rx',0,math.pi/2),cz),'nonreducing_three_cz':(cz,rotation('rx',0,.173),cz,rotation('rx',1,.379),cz)}\ndef operator(items):\n matrix=np.eye(4,dtype=complex)\n for i in items:\n  if i.name=='cz':leaf=np.diag([1,1,1,-1])\n  else:\n   theta=i.params['theta']\n   if i.name=='rx':small=np.array([[math.cos(theta/2),-1j*math.sin(theta/2)],[-1j*math.sin(theta/2),math.cos(theta/2)]])\n   elif i.name=='rz':small=np.diag([np.exp(-1j*theta/2),np.exp(1j*theta/2)])\n   else:raise AssertionError(i.name)\n   leaf=np.kron(small,np.eye(2)) if i.wires==(0,) else np.kron(np.eye(2),small)\n  matrix=leaf@matrix\n return matrix\ndef normalize(items):\n return None if items is None else [(i.name,i.wires,dict(i.params)) for i in items]\ndef once(module,block):\n reasons=[];output=module._candidate(block,(0,1),on_rejection=reasons.append)\n return output,reasons\nreport={'base_commit':BASE,'implementation_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=15).strip(),'source_sha256':hashlib.sha256(Path('flagquantum/compiler/optimization/_cz_blocks.py').read_bytes()).hexdigest(),'driver_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'scope':'Inspected stage-level development controls, not end-to-end SDKBench or qualified performance evidence','complete':False,'rows':[]}\nfor name,block in cases.items():\n outputs={};counts={};reasons={};times={'baseline':[],'candidate':[]};peaks={}\n for mode,module in [('baseline',baseline),('candidate',candidate)]:\n  for _ in range(3):once(module,block)\n  real=synthesis._weyl_decomposition;calls=[]\n  def counted(*args,**kwargs):calls.append(1);return real(*args,**kwargs)\n  with patch.object(synthesis,'_weyl_decomposition',counted),patch.object(candidate,'_weyl_decomposition',counted):outputs[mode],reasons[mode]=once(module,block)\n  counts[mode]=len(calls)\n  tracemalloc.start();once(module,block);peaks[mode]=tracemalloc.get_traced_memory()[1];tracemalloc.stop()\n assert normalize(outputs['baseline'])==normalize(outputs['candidate']) and reasons['baseline']==reasons['candidate']\n for mode,output in outputs.items():\n  if output is not None:\n   original=operator(block);actual=operator(output);index=np.unravel_index(np.argmax(np.abs(original)),original.shape);phase=actual[index]/original[index];assert abs(abs(phase)-1)<1e-10;assert np.max(np.abs(actual-phase*original))<1e-10\n for iteration in range(22):\n  for mode in (('baseline','candidate') if iteration%2==0 else ('candidate','baseline')):\n   module=baseline if mode=='baseline' else candidate;start=time.perf_counter();once(module,block);elapsed=time.perf_counter()-start\n   if iteration>=2:times[mode].append(elapsed)\n report['rows'].append({'case':name,'input':normalize(block),'outputs':{mode:normalize(v) for mode,v in outputs.items()},'rejections':reasons,'weyl_calls':counts,'samples_seconds':times,'median_seconds':{k:statistics.median(v) for k,v in times.items()},'python_traced_peak_bytes':peaks});Path('/private/tmp/fq-cz-pruning-reduction-controls-20261122.json').write_text(json.dumps(report,indent=2)+'\\n');print(name,counts,report['rows'][-1]['median_seconds'],peaks,flush=True)\nreport['complete']=True;Path('/private/tmp/fq-cz-pruning-reduction-controls-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\n",
+    "observations": {
+      "base_commit": "6db1fbda8a168599e5c0f155b9fb14052cf01342",
+      "implementation_commit": "c446adc9802655e40f50b1ad5984054097bf0567",
+      "source_sha256": "8c484aaa5204c9548a55ceb71563f8d2d12e0bfe1836caf4a52dab34d1adbf09",
+      "driver_sha256": "3d587f88e0d9d115736debe602bd44cd40cfc38e199d4869bbcb3a6e320d09c3",
+      "scope": "Inspected stage-level development controls, not end-to-end SDKBench or qualified performance evidence",
+      "complete": true,
+      "rows": [
+        {
+          "case": "refocused_pi_x",
+          "input": [
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ]
+          ],
+          "outputs": {
+            "baseline": [
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ]
+            ],
+            "candidate": [
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ]
+            ]
+          },
+          "rejections": {
+            "baseline": [],
+            "candidate": []
+          },
+          "weyl_calls": {
+            "baseline": 1,
+            "candidate": 2
+          },
+          "samples_seconds": {
+            "baseline": [
+              0.0001913330052047968,
+              0.000742042000638321,
+              0.00018799997633323073,
+              0.00018375000217929482,
+              0.00018495798576623201,
+              0.0001848749816417694,
+              0.00018629099940881133,
+              0.00021708299755118787,
+              0.00019816699204966426,
+              0.00019133399473503232,
+              0.00018904099124483764,
+              0.00019062499632127583,
+              0.0001874169975053519,
+              0.00018599999020807445,
+              0.00019200000679120421,
+              0.00018666702089831233,
+              0.00018849998014047742,
+              0.00019220900139771402,
+              0.00018829197506420314,
+              0.00018599999020807445
+            ],
+            "candidate": [
+              0.00029220798751339316,
+              0.00028829200891777873,
+              0.0002869160089176148,
+              0.00028404200566001236,
+              0.0002829589939210564,
+              0.00028404200566001236,
+              0.0002875829814001918,
+              0.0003717920044437051,
+              0.0002971659996546805,
+              0.000301499996567145,
+              0.0002887080190703273,
+              0.0002859999949578196,
+              0.0002862499968614429,
+              0.00028516698512248695,
+              0.0002859999949578196,
+              0.00028583401581272483,
+              0.00029112500487826765,
+              0.00028979199123568833,
+              0.00028737500542774796,
+              0.0002863749978132546
+            ]
+          },
+          "median_seconds": {
+            "baseline": 0.00018839597760234028,
+            "candidate": 0.0002871455071726814
+          },
+          "python_traced_peak_bytes": {
+            "baseline": 10560,
+            "candidate": 11176
+          }
+        },
+        {
+          "case": "refocused_pi_x_with_frame",
+          "input": [
+            [
+              "rz",
+              [
+                0
+              ],
+              {
+                "theta": 0.173
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 3.141592653589793
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rz",
+              [
+                1
+              ],
+              {
+                "theta": 0.379
+              }
+            ]
+          ],
+          "outputs": {
+            "baseline": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 0.17300000000000004
+                }
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": -2.762592653589793
+                }
+              ]
+            ],
+            "candidate": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 0.17300000000000004
+                }
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": -2.762592653589793
+                }
+              ]
+            ]
+          },
+          "rejections": {
+            "baseline": [],
+            "candidate": []
+          },
+          "weyl_calls": {
+            "baseline": 1,
+            "candidate": 2
+          },
+          "samples_seconds": {
+            "baseline": [
+              0.00021591701079159975,
+              0.0002194159897044301,
+              0.00022045901278033853,
+              0.00024333299370482564,
+              0.00022295801318250597,
+              0.0002151249791495502,
+              0.00021583301713690162,
+              0.00021533301332965493,
+              0.0002152090019080788,
+              0.00023645901819691062,
+              0.0002215420245192945,
+              0.0002186669735237956,
+              0.0002166659978684038,
+              0.00021808300516568124,
+              0.0002163749886676669,
+              0.00021879200357943773,
+              0.00022204199922271073,
+              0.00021770902094431221,
+              0.00021641701459884644,
+              0.00021920798462815583
+            ],
+            "candidate": [
+              0.0003302080149296671,
+              0.0003273750189691782,
+              0.0003248749999329448,
+              0.0003277079958934337,
+              0.00032125000143423676,
+              0.00031970901181921363,
+              0.00031962498906068504,
+              0.00032016600016504526,
+              0.0003189579874742776,
+              0.00031900001340545714,
+              0.00032054202165454626,
+              0.0003206249966751784,
+              0.00031704199500381947,
+              0.00031937501626089215,
+              0.00031783300801180303,
+              0.0003189999843016267,
+              0.0003216250042896718,
+              0.0003215420001652092,
+              0.0003235839831177145,
+              0.000390583008993417
+            ]
+          },
+          "median_seconds": {
+            "baseline": 0.00021837498934473842,
+            "candidate": 0.00032058350916486233
+          },
+          "python_traced_peak_bytes": {
+            "baseline": 10896,
+            "candidate": 11512
+          }
+        },
+        {
+          "case": "nonreducing_half_pi_x",
+          "input": [
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 1.5707963267948966
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ]
+          ],
+          "outputs": {
+            "baseline": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948974
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.4980898515441834
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948961
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": -0.07270647525071361
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ]
+            ],
+            "candidate": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948974
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.4980898515441834
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 1.5707963267948961
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": -0.07270647525071361
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 3.141592653589793
+                }
+              ]
+            ]
+          },
+          "rejections": {
+            "baseline": [],
+            "candidate": []
+          },
+          "weyl_calls": {
+            "baseline": 1,
+            "candidate": 2
+          },
+          "samples_seconds": {
+            "baseline": [
+              0.00036795801133848727,
+              0.00036591599928215146,
+              0.00036425000871531665,
+              0.0003644159878604114,
+              0.0003691250167321414,
+              0.00036750000435858965,
+              0.00038479198701679707,
+              0.000366291991667822,
+              0.0003632910083979368,
+              0.00036704199737869203,
+              0.00036858298699371517,
+              0.00036383300903253257,
+              0.00036533299135044217,
+              0.0003640000068116933,
+              0.000375375006115064,
+              0.000362291990313679,
+              0.00035908399149775505,
+              0.0003603750083129853,
+              0.00036287499824538827,
+              0.00036195802385918796
+            ],
+            "candidate": [
+              0.00047274999087676406,
+              0.00048137499834410846,
+              0.00047158298548310995,
+              0.00047166700824163854,
+              0.00047474997700192034,
+              0.00047508301213383675,
+              0.0004977080097887665,
+              0.0004799999878741801,
+              0.00047220801934599876,
+              0.0004725419858004898,
+              0.00047458300832659006,
+              0.00047400000039488077,
+              0.0004710000066552311,
+              0.0004758749855682254,
+              0.00047441700007766485,
+              0.0004688330227509141,
+              0.00046870799269527197,
+              0.0004693329974543303,
+              0.0004704160091932863,
+              0.00046791700879111886
+            ]
+          },
+          "median_seconds": {
+            "baseline": 0.0003648744896054268,
+            "candidate": 0.0004726459883386269
+          },
+          "python_traced_peak_bytes": {
+            "baseline": 15430,
+            "candidate": 14022
+          }
+        },
+        {
+          "case": "nonreducing_three_cz",
+          "input": [
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                0
+              ],
+              {
+                "theta": 0.173
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ],
+            [
+              "rx",
+              [
+                1
+              ],
+              {
+                "theta": 0.379
+              }
+            ],
+            [
+              "cz",
+              [
+                0,
+                1
+              ],
+              {}
+            ]
+          ],
+          "outputs": {
+            "baseline": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 4.884981308350689e-15
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.944654856670747
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.0778597741612512
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": -1.5707963267948926
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 4.71238898038469
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 2.980650860174226
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": -3.141592653589786
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948963
+                }
+              ]
+            ],
+            "candidate": [
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": 4.884981308350689e-15
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.944654856670747
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 3.0778597741612512
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": -1.5707963267948926
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 4.71238898038469
+                }
+              ],
+              [
+                "cz",
+                [
+                  0,
+                  1
+                ],
+                {}
+              ],
+              [
+                "rx",
+                [
+                  0
+                ],
+                {
+                  "theta": 2.980650860174226
+                }
+              ],
+              [
+                "rz",
+                [
+                  0
+                ],
+                {
+                  "theta": -3.141592653589786
+                }
+              ],
+              [
+                "rx",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948966
+                }
+              ],
+              [
+                "rz",
+                [
+                  1
+                ],
+                {
+                  "theta": 1.5707963267948963
+                }
+              ]
+            ]
+          },
+          "rejections": {
+            "baseline": [],
+            "candidate": []
+          },
+          "weyl_calls": {
+            "baseline": 1,
+            "candidate": 2
+          },
+          "samples_seconds": {
+            "baseline": [
+              0.0004817500011995435,
+              0.0004792500112671405,
+              0.0004790840030182153,
+              0.0005219590093474835,
+              0.0004992499889340252,
+              0.0005171250086277723,
+              0.0004952500166837126,
+              0.00048354099271818995,
+              0.00048070799675770104,
+              0.0004939160135108978,
+              0.0004920000210404396,
+              0.0004832909908145666,
+              0.0004884579975623637,
+              0.00048329198034480214,
+              0.0004883749934379011,
+              0.0004851660050917417,
+              0.00048558300477452576,
+              0.0004860420012846589,
+              0.00048391599557362497,
+              0.0004924579989165068
+            ],
+            "candidate": [
+              0.0005983340088278055,
+              0.0005984579911455512,
+              0.0005934170039836317,
+              0.0005917079979553819,
+              0.0006072089890949428,
+              0.000668166991090402,
+              0.0006075419951230288,
+              0.0006051659875083715,
+              0.0005983340088278055,
+              0.0006128750101197511,
+              0.0006107499939389527,
+              0.0006572499987669289,
+              0.0006007499760016799,
+              0.0005987910262774676,
+              0.0006011670047882944,
+              0.0006027919880580157,
+              0.0006072499963920563,
+              0.0006037910061422735,
+              0.000614624994341284,
+              0.0006036669947206974
+            ]
+          },
+          "median_seconds": {
+            "baseline": 0.00048581250302959234,
+            "candidate": 0.0006037290004314855
+          },
+          "python_traced_peak_bytes": {
+            "baseline": 21403,
+            "candidate": 21323
+          }
+        }
+      ]
+    },
+    "first_import_failure": "Traceback (most recent call last):\n  File \"/private/tmp/fq-cz-pruning-reduction-controls-20261122.py\", line 8, in <module>\n    from flagquantum.compiler.optimization import _cz_blocks as candidate, two_qubit_synthesis as synthesis\nModuleNotFoundError: No module named 'flagquantum.compiler.optimization'\n",
+    "explanation": "The initial script needed PYTHONPATH to select this checkout. Two labels incorrectly said nonreducing even though returned CZ counts were lower; no raw numeric value was changed. The immutable-source rerun uses descriptive labels and adds two generic controls."
+  },
+  "verification": {
+    "focused_log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-native-matrix-reader-20261122\nconfigfile: pytest.ini\ncollected 222 items\n\ntests/unit/test_compilation_two_qubit_synthesis.py ..................... [  9%]\n..........................................                               [ 28%]\ntests/unit/test_compilation_two_qubit_optimization.py .................. [ 36%]\n.......                                                                  [ 39%]\ntests/unit/test_native_block_optimization.py ........................... [ 51%]\n.................................................................        [ 81%]\ntests/integration/test_native_block_physical_evidence.py ............... [ 87%]\n...........................                                              [100%]\n\n============================= 222 passed in 2.08s ==============================\n",
+    "checks": "Black and Ruff passed for the changed tests; source restoration is byte-for-byte identical to the declared main revision.",
+    "scope": "222 selected unit/integration tests passed; sparse default-tier selection: 180 passed, 42 deselected. Full-checkout CI still required.",
+    "sparse_default_log": "+ /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python -m pytest -m smoke or unit -q\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-native-matrix-reader-20261122\nconfigfile: pytest.ini\ntestpaths: tests\ncollected 222 items / 42 deselected / 180 selected\n\ntests/unit/test_compilation_two_qubit_optimization.py .................. [ 10%]\n.......                                                                  [ 13%]\ntests/unit/test_compilation_two_qubit_synthesis.py ..................... [ 25%]\n..........................................                               [ 48%]\ntests/unit/test_native_block_optimization.py ........................... [ 63%]\n.................................................................        [100%]\n\n====================== 180 passed, 42 deselected in 1.50s ======================\n",
+    "main_sync": {
+      "passed": 225,
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-native-matrix-reader-20261122\nconfigfile: pytest.ini\ncollected 225 items\n\ntests/unit/test_compilation_two_qubit_synthesis.py ..................... [  9%]\n..........................................                               [ 28%]\ntests/unit/test_compilation_two_qubit_optimization.py .................. [ 36%]\n.......                                                                  [ 39%]\ntests/unit/test_native_block_optimization.py ........................... [ 51%]\n....................................................................     [ 81%]\ntests/integration/test_native_block_physical_evidence.py ............... [ 88%]\n...........................                                              [100%]\n\n============================= 225 passed in 2.49s ==============================\n",
+      "log_sha256": "524426c9c9beaca491942b8a37184aeedf996ea5d956b53fa15d91c9d775fed3",
+      "production_compiler_diff": "empty against synchronized main",
+      "checks": "Black, Ruff and git diff --check passed",
+      "source_commit": "02bacc099cdcd1ac08510c8cf944df6e018c94c9"
+    }
+  },
+  "limits": [
+    "Inspected stage-level development inputs, not end-to-end SDKBench or unseen qualification.",
+    "Shared macOS arm64 Python 3.12.14, one numerical thread, not a qualified Linux timing or RSS campaign.",
+    "All twenty alternating retained samples per variant remain in the record; no statistical significance or stable performance claim.",
+    "Python traced allocation is not process RSS.",
+    "No new production helper, cache, public API, fixture exception, routing selector or participant-specific treatment.",
+    "No machine restart."
+  ]
+}
