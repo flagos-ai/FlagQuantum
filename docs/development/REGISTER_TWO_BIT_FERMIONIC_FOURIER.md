@@ -46,3 +46,31 @@ tests, and 5,546 concentrated regressions passed. The only concentrated
 warning comes from the original symbolic approximate-QFT helper. Strict
 typing, format, both ownership scopes, architecture, internal IR, and
 public API checks passed.
+
+
+## Stored catalog dependency interface
+
+This batch retains the complete locked source-file graph through the existing
+Program and append paths. Words use MSB-first physical labels and caller-owned
+through storage. Textbook q is unsigned. Gradient QFT and approximate QFT keep
+a separate unsigned fractional gradient through word owned by the caller.
+Shared multiplication and controlled addition own their measured carry work,
+which must return to zero. TwoBitFFFT has x/y QBit through ports and no work.
+Its original ignored-adjoint decomposition remains separate from the native
+exact inverse. Existing primitive execution and source-model evidence is reused.
+Compiler owns stored word/call composition, Algorithms owns the already accepted
+fermionic Fourier sequence, and the example provider owns catalog glyphs and
+literal-definition qualification. No protected contract change is required.
+
+
+## Complete catalog graph closure
+
+The original concrete factory retains all fifteen literal source calls and
+fresh root drawing. The stored Program reuses the existing Algorithms sequence,
+including six H, three S, three CX, one T, one T-dagger and one Rz, with no work
+or measurement. The original model is two T, twelve Clifford and one rotation,
+T-equivalent thirteen and QubitCount two. The native stored inverse equals the
+full complex conjugate transpose. The original is_adjoint=True decomposition
+still equals its forward graph, so it is explicitly excluded from exact inverse
+claims. Its separate original tensor behavior and the earlier full parameter
+grid remain retained evidence.

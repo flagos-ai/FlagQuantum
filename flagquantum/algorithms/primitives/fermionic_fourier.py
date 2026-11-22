@@ -16,7 +16,10 @@ from ...compiler._component_trace.resource_generalization import (
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.bits.bitwise import _validate_wires
-from ...core.ir import Instruction
+from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.component_gate_function import bit_gate_function
+from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
@@ -98,3 +101,33 @@ def two_bit_fermionic_fourier_ir(
             Instruction("rz", (x,), {"theta": -angle}),
         )
     return (Instruction("rz", (x,), {"theta": angle}), *fixed)
+
+
+def two_bit_fermionic_fourier_program(
+    k: int, n: int, *, adjoint: bool = False
+) -> ProgramRecord:
+    """Store the accepted literal sequence and exact inverse as typed bit calls.
+
+    Caller-owned x/y need no work or feedback. The source is_adjoint flag is
+    ignored by its decomposition; native adjoint remains the exact inverse.
+    """
+    builder = ComponentProgramBuilder(source_two_bit_fermionic_fourier_signature())
+    wires = [builder.inputs["x"], builder.inputs["y"]]
+    for gate in two_bit_fermionic_fourier_ir(0, 1, k, n, adjoint=adjoint):
+        names = ("ctrl", "target") if gate.name == "cx" else ("q",)
+        function = bit_gate_function(
+            "fourier_" + gate.name,
+            tuple(Register(name, quantum_bit_type()) for name in names),
+            CircuitIR(
+                len(names),
+                (Instruction(gate.name, tuple(range(len(names))), gate.params),),
+            ),
+        )
+        result = builder.call_program(
+            ProgramRecord((function,)),
+            dict(zip(names, (wires[i] for i in gate.wires), strict=True)),
+            entry=function.name,
+        )
+        for name, wire in zip(names, gate.wires, strict=True):
+            wires[wire] = result[name]
+    return builder.finalize(dict(zip(("x", "y"), wires, strict=True)))
