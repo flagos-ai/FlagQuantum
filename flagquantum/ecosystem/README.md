@@ -190,3 +190,26 @@ Run `tests/unit/test_kmx_command_dispatch.py` after changing selection or
 argument forwarding. Its workflow invokes every owning command and executes the
 converted circuit through `circuit.append(op)`. Source-boundary details are in
 `docs/development/MAIN_COMMAND_AUDIT.md`.
+
+## Exact phase object conversion
+
+`_phase_angle.phase_angle_from_half_turns` converts an external Python value
+through Fraction normalization and ties-to-even rounding into the existing
+Compiler PhaseAngle128. Decimal strings and binary floats retain their distinct
+exact values. The Compiler double/decimal constructors retain their existing
+policies. The helper is the common boundary used when creating raw phase records
+or seeding a packed phase accumulator.
+
+```python
+from fractions import Fraction
+from flagquantum.ecosystem._phase_angle import phase_angle_from_half_turns
+
+angle = phase_angle_from_half_turns(Fraction(1, 4))
+assert angle.half_turns() == Fraction(1, 4)
+assert angle.clifford_hierarchy_level() == 3
+```
+
+Run `tests/unit/test_phase_angle_objects.py` for both frozen source consumers,
+full raw words, binary round trips, native phase composition and the normal
+circuit.append(op) complex-state workflow. See
+`docs/development/PHASE_ANGLE_OBJECT_AUDIT.md` for the complete source scope.
