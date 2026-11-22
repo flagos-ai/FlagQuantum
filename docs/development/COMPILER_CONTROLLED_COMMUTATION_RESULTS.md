@@ -256,3 +256,45 @@ Compiler PR's exact-head CI is green. No production compiler or frozen evidence
 file changes in this follow-up. Ruff and Black pass for all five complete test
 modules, strict mypy passes all five, and the six edited artifact paths pass
 the English-language check.
+
+
+## Original thermal-reset live-cost regression
+
+Exact-head CI at `e6dc85d30830563456c7e5735a4490100ebb848e` reports two
+coverage failures. The selection example remains the already documented
+Integration PR #1308 dependency. The second failure is the original 50-round
+thermal-reset test, which stops at its old live operation-count assertion.
+Neither failure is retried as infrastructure noise.
+
+An untimed diagnostic synthesizes the unchanged licensed original twice,
+substituting the existing pre-extension predicate boundary for the control.
+The earlier boundary reproduces 22,200 operations and depth 19,901; the current
+boundary produces 22,100 operations and depth 19,801. The only gate-count
+difference is CX: 3,500 becomes 3,400. Both retain 400 amplitude-damping channels,
+one workspace qubit and 11 total qubits. See the [complete counters and driver](evidence/controlled-commutation-thermal-cost-diagnosis.json).
+This is a causal cost diagnostic, not a wall-time or channel-correctness claim.
+
+Update only the live cost expectations to 22,100 operations and depth 19,801,
+and explicitly assert 3,400 CX. Preserve the original source/license hashes,
+25,000-operation construction cap, 20,000-operation refusal, density memory
+refusal, all 400 channels, all named registers, complete workspace-tail checks,
+and independent Kraus-channel density reference at absolute tolerance 1e-10
+with zero relative slack. All seven thermal/reset integration cases then pass,
+including the original 50-round complete-density comparison.
+
+The first strict check of the unchanged thermal test reports eight existing
+typing errors. The touched module is repaired using a typed external Torch
+block-diagonal callable, checked filename/resource/state narrowing, explicit
+synthesis keywords and concrete Program/ExecutionResult arguments. No casts,
+ignores, exclusions, tolerance changes or production changes are introduced.
+Performance admission and the separate selection-example dependency remain
+unresolved; the compiler PR stays a draft.
+
+
+The final combined local selection passes 318 tests: the existing selected
+unit/compiler cases plus all seven thermal/reset integration cases. An earlier
+command named an unmaterialized `tests/hybrid_compiler` directory and collected
+zero tests; it is a setup failure, not verification. The corrected selection
+uses existing directories and retains all numerical, phase, workspace and
+refusal assertions. Strict mypy, Ruff and Black pass for the complete thermal
+test module; the three added/edited artifact paths pass the English check.
