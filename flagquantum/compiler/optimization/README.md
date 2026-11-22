@@ -16,6 +16,9 @@ execution belong to the topology and runtime domains.
   `_cz_blocks.py`. The stage then reuses structural commutation to merge
   generated rotations across CZ gates; see [admission and tests](../../../docs/development/COMPILER_CZ_COMMUTING_ROTATIONS.md).
   See also the [source and evidence record](../../../docs/development/COMPILER_CZ_CIRQ_REUSE.md).
+  The shared synthesis implementation can decline non-reducing CZ proposals
+  before generating local factors only when the full raw form fits the existing
+  budget; see [controls and admission](../../../docs/development/COMPILER_SHARED_CZ_SYNTHESIS.md).
 - `_linear_cnot.py` adapts Qiskit's PMH elimination behind the existing explicit
   pass hook. It verifies exact binary maps, guards complete-program depth and
   can decline nonlocal proposals. It is not a default policy; see

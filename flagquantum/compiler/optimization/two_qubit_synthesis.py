@@ -848,8 +848,37 @@ def synthesize_two_qubit(
     `qubits=(0, 1)`, comes back as the entangler alone.
     """
 
+    result, _ = _synthesize_two_qubit(
+        matrix,
+        qubits=qubits,
+        entangler=entangler,
+        z_rotation=z_rotation,
+        pulse_opcode=pulse_opcode,
+        metadata=metadata,
+    )
+    return result
+
+
+def _synthesize_two_qubit(
+    matrix: Any,
+    *,
+    qubits: Sequence[int],
+    entangler: str,
+    z_rotation: str,
+    pulse_opcode: str = "sx",
+    metadata: Mapping[str, Any] | None = None,
+    max_entanglers: int | None = None,
+    max_output_operations: int | None = None,
+) -> tuple[tuple[Instruction, ...] | None, int | None]:
+    """Share one validated decomposition between emission and CZ cost refusal.
+
+    A known count with no proposal records a bounded native-CZ cost refusal.
+    Other unsupported requests return no proposal and no count. Tight operation
+    limits retain full emission so callers can preserve growth-refusal priority.
+    """
+
     if entangler not in SUPERCONTROLLED_ENTANGLERS:
-        return None
+        return None, None
     qubit_list = list(qubits)
     if len(qubit_list) != 2:
         raise ValueError("qubits must name exactly two qubits")
@@ -864,15 +893,28 @@ def synthesize_two_qubit(
     if not _is_unitary(target_matrix):
         raise ValueError("matrix must be unitary")
     if z_rotation not in Z_ROTATION_OPCODES:
-        return None
+        return None, None
     if pulse_opcode not in HALF_PI_PULSE_OPCODES:
-        return None
+        return None, None
 
     # Decompose in the low-control kron convention, then read the result back on
     # the caller's own qubits; see the module docstring.
     target = _weyl_decomposition(_swap_register(target_matrix))
     decomposer = _prepared_basis(entangler)
     count = decomposer.entangler_count(target)
+    if (
+        entangler == "cz"
+        and z_rotation == "rz"
+        and pulse_opcode == "rx"
+        and max_entanglers is not None
+        and count > max_entanglers
+        and max_output_operations is not None
+        and count + 10 * (count + 1) <= max_output_operations
+    ):
+        # The general form has count+1 layers, two local factors per layer,
+        # and at most five leaves per factor. No resource refusal can precede
+        # the non-reduction refusal when this entire raw form fits the budget.
+        return None, count
     factors = decomposer.decomposition(target, count)
 
     left_qubit, right_qubit = qubit_list
@@ -905,7 +947,7 @@ def synthesize_two_qubit(
             and len(candidate) < count + len(baseline_recipes)
             and _verified_cx_pulses(target_matrix, candidate, (left_qubit, right_qubit))
         ):
-            return candidate
+            return candidate, count
     entangler_params: Mapping[str, Any] = (
         {} if decomposer.angle is None else {"theta": decomposer.angle}
     )
@@ -955,7 +997,7 @@ def synthesize_two_qubit(
             metadata=annotations,
         )
     )
-    return tuple(leaves)
+    return tuple(leaves), count
 
 
 def _local_leaves(

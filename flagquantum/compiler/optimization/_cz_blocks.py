@@ -17,7 +17,7 @@ from ..lowering.basis_translation import translate
 from ._cz_local_cleanup import compact_native_cz_locals
 from .commutation_cancellation import merge_commuting_rotations
 from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul
-from .two_qubit_synthesis import synthesize_two_qubit
+from .two_qubit_synthesis import _synthesize_two_qubit
 
 # Bound matrix-product error and synthesis work per block. Larger programs are
 # streamed as multiple blocks; this is not a circuit-size admission limit.
@@ -127,15 +127,28 @@ def _candidate(
     if product is None:
         reject("synthesis_unavailable")
         return None
-    candidate = synthesize_two_qubit(
-        product, qubits=pair, entangler="cz", z_rotation="rz", pulse_opcode="rx"
-    )
-    if candidate is None or any(item.name not in _BASIS for item in candidate):
-        reject("synthesis_unavailable")
-        return None
     limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS
     if max_output_operations is not None:
         limit = min(limit, max_output_operations)
+    candidate, entangler_count = _synthesize_two_qubit(
+        product,
+        qubits=pair,
+        entangler="cz",
+        z_rotation="rz",
+        pulse_opcode="rx",
+        max_entanglers=cz_count - 1,
+        max_output_operations=limit,
+    )
+    if (
+        candidate is None
+        and entangler_count is not None
+        and entangler_count >= cz_count
+    ):
+        reject("not_lower_cz_cost")
+        return None
+    if candidate is None or any(item.name not in _BASIS for item in candidate):
+        reject("synthesis_unavailable")
+        return None
     if len(candidate) > limit:
         reject("instruction_growth_rejected")
         return None
