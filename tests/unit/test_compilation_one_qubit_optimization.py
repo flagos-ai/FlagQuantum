@@ -20,6 +20,7 @@ import pytest
 import torch
 
 import flagquantum.compiler as compiler
+from flagquantum.compiler.optimization import one_qubit_optimization as one_qubit
 from flagquantum.compiler.optimization.one_qubit_optimization import (
     _IDENTITY,
     _declines_vocabulary,
@@ -253,7 +254,9 @@ def test_a_vocabulary_run_whose_product_is_the_identity_is_deleted() -> None:
         assert _single_basis_pair(run) is not None
         for instruction in run:
             assert _instruction_matrix(instruction) != _IDENTITY
-        assert _emit(_run_product(run), qubit=0, metadata={}) == ()
+        product = _run_product(run)
+        assert product is not None
+        assert _emit(product, qubit=0, metadata={}) == ()
         assert _fold_run(list(run)) == ()
         assert collapse_one_qubit_runs(CircuitIR(1, tuple(run))).instructions == ()
 
@@ -267,7 +270,9 @@ def test_the_vocabulary_decline_still_holds_when_the_replacement_has_gates() -> 
     """
 
     run = [Instruction("sx", (0,)), Instruction("sx", (0,))]
-    replacement = _emit(_run_product(run), qubit=0, metadata={})
+    product = _run_product(run)
+    assert product is not None
+    replacement = _emit(product, qubit=0, metadata={})
     assert [item.name for item in replacement] == ["u3"]
     assert _declines_vocabulary(run, replacement) is True
 
@@ -292,6 +297,7 @@ def test_a_minus_identity_vocabulary_run_is_not_deleted() -> None:
         Instruction("rx", (0,), params={"theta": cmath.pi}),
     ]
     product = _run_product(run)
+    assert product is not None
     assert _gap(product, [[-1 + 0j, 0j], [0j, -1 + 0j]]) < 1e-12
     assert [item.name for item in _emit(product, qubit=0, metadata={})] == ["rz"]
     assert _fold_run(list(run)) is None
@@ -673,3 +679,42 @@ def test_the_unitarity_test_is_what_declines_not_the_shape() -> None:
     assert bearing.matrix.shape == unitary.matrix.shape
     assert not _is_foldable(bearing)
     assert _is_foldable(unitary)
+
+
+def test_independent_fixed_gates_need_no_fold_matrices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = CircuitIR(
+        12,
+        tuple(
+            Instruction(name, (wire,))
+            for wire, name in enumerate(
+                ("h", "x", "y", "z", "s", "sdg", "t", "tdg", "sx", "sxdg", "i", "h")
+            )
+        ),
+    )
+
+    def unnecessary_matrix(instruction: Instruction) -> one_qubit.Matrix | None:
+        raise AssertionError("Independent fixed gates cannot shorten")
+
+    monkeypatch.setattr(one_qubit, "_instruction_matrix", unnecessary_matrix)
+    assert collapse_one_qubit_runs(source).instructions == source.instructions
+
+
+@pytest.mark.parametrize(
+    "angle", (torch.tensor(0.3, requires_grad=True), torch.ones(2))
+)
+def test_unreadable_angle_separates_deferred_fixed_runs(angle: torch.Tensor) -> None:
+    prefix = (Instruction("h", (0,)), Instruction("ry", (0,), {"theta": angle}))
+    tail = (Instruction("s", (0,)), Instruction("s", (0,)))
+    source = CircuitIR(2, (*prefix, Instruction("h", (1,)), *tail))
+    result = collapse_one_qubit_runs(source)
+    assert result.instructions[:3] == source.instructions[:3]
+    assert len(result.instructions) == 4
+    assert (
+        _gap(
+            _runtime_matrix(result.instructions[-1]),
+            _run_product_from_table(list(tail)),
+        )
+        < 1e-12
+    )
