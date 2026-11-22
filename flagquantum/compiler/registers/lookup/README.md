@@ -40,3 +40,12 @@ are row-major. Constant rows preserve the original early fold. Predicate work is
 private and measurement-erased. Unknown tables remain declarations. Run
 `tests/unit/test_qrom_component.py` in the locked reference environment for
 recursive source calls, dirty-target complex operators and physical operands.
+
+`majorana_component.majorana_program` stores Pauli Majorana traversal with a
+private clean parity accumulator. `selected_pauli_component.selected_pauli_program`
+stores bounded row-major Pauli selection under one or two positive controls.
+Both reuse the same bounded traversal and exact directional And erasure as
+physical emitters. Coordinates are scalar MSB-first bounded words with concrete
+extents greater than one. Run `tests/unit/test_majorana_component.py` and
+`tests/unit/test_hubbard_select_component.py` for exact recursive source calls,
+complex amplitudes, raw histories and private-work checks.

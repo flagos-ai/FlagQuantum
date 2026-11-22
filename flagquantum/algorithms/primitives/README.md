@@ -220,3 +220,11 @@ scratch. Run `test_hubbard_stored_graph.py`, `test_packed_prepare_component.py`
 and the existing Hubbard/alias/packed file tests together. Source atomic
 arithmetic, singleton, symbolic and reflection-junk boundaries are recorded in
 `docs/development/PACKED_PREPARE_STORED_GRAPH_AUDIT.md`.
+
+`hubbard_majorana_component`, `hubbard_spin_up_component` and
+`hubbard_select_component` retain successful complete stored Hubbard SELECT
+recipes through shared Compiler traversal, partitions, swaps and exact
+adjoints. Hubbard owns coordinate conventions and composition. The controlled
+SELECT root retains its relative phase and all eleven original calls. See
+`docs/development/HUBBARD_SELECT_STORED_GRAPH_AUDIT.md` for source boundaries,
+small all-history evidence and separate literal/model resource accounts.
