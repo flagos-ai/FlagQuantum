@@ -20,6 +20,14 @@ seven-selection-bit factory reflection decomposes into ten calls, including a
 registerless GlobalPhase. The stored LP resource-state graph therefore shares
 this prerequisite. Existing flat LP execution remains independently accepted.
 
+The complete `phase_estimation/qubitization_qpe.py` Ising factory reaches the
+same requirement even with its rectangular window. Its ordinary walk calls
+`ReflectionUsingPrepare(global_phase=-1)` with a registerless GlobalPhase.
+The controlled walk reflection has no registerless phase, but ordinary powers
+two, four and eight retain that dependency. Replacing the LP window therefore
+does not close the full Ising stored graph. The source-only recursive intake
+is retained in `g2-qubitization-ising-recursive-20261122.json`.
+
 FlagQuantum already owns exact scalar emission through scalar_phase_ir,
 full SU2 execution, symbolic scalar expressions, and typed nested calls.
 The finite Program opcode vocabulary currently requires quantum operands for
