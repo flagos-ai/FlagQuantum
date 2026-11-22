@@ -132,6 +132,7 @@ def run(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout-seconds", type=float, required=True)
     parser.add_argument("--diagnostics", type=Path, required=True)
     parser.add_argument("--rss-limit-bytes", type=int)
+    parser.add_argument("--hardware-samples", type=Path)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
@@ -142,6 +143,15 @@ def run(argv: list[str] | None = None) -> int:
         parser.error("positive timeouts and a command are required")
     if args.rss_limit_bytes is not None and args.rss_limit_bytes <= 0:
         parser.error("RSS limit must be positive")
+    if args.hardware_samples is not None:
+        if args.rss_limit_bytes is not None:
+            parser.error(
+                "hardware sampling cannot meet the strict RSS sampling cadence"
+            )
+        if not __package__:
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        args.hardware_samples.parent.mkdir(parents=True, exist_ok=True)
+        args.hardware_samples.touch(exist_ok=False)
     rss: dict[str, object] = {
         "rss_limit_bytes": args.rss_limit_bytes,
         "sampled_group_rss_max_bytes": 0,
@@ -184,8 +194,17 @@ def run(argv: list[str] | None = None) -> int:
     peak = samples = 0
     recent_samples: deque[tuple[float, int]] = deque(maxlen=32)
     maximum_gap = 0.0
+    next_hardware_sample = started
     try:
         while process.poll() is None:
+            if (
+                args.hardware_samples is not None
+                and time.monotonic() >= next_hardware_sample
+            ):
+                from tools.hardware_telemetry import record_sample
+
+                record_sample(args.hardware_samples, process.pid, started)
+                next_hardware_sample = time.monotonic() + 1.0
             if args.rss_limit_bytes is not None:
                 try:
                     observed = _process_group_rss(process.pid)
