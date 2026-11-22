@@ -32,6 +32,7 @@ def phase_add_component_program(
     Fractional ports are MSB-first. Retained input bits update the gradient
     prefix. Shared Add owns and erases carry workspace. This graph is native
     execution below an original source decomposition refusal.
+    An empty input omits x and retains the remaining through storage unchanged.
     """
     if type(right_shift) is not int or right_shift < 0:
         raise ValueError("Phase addition right shift must be a nonnegative integer")
@@ -40,14 +41,19 @@ def phase_add_component_program(
     if (
         type(input_width) is not int
         or type(gradient_width) is not int
-        or min(input_width, gradient_width) < 1
+        or input_width < 0
+        or gradient_width < 1
     ):
-        raise ValueError("Phase addition requires two positive register widths")
+        raise ValueError(
+            "Phase addition requires nonnegative input and positive gradient widths"
+        )
     if type(controlled) is not bool:
         raise ValueError("Phase addition controlled mode must be boolean")
     builder = ComponentProgramBuilder(
         source_phase_add_signature(input_width, gradient_width, controlled=controlled)
     )
+    if input_width == 0:
+        return builder.finalize(builder.inputs)
     x, phase = builder.inputs["x"], builder.inputs["phase_grad"]
     assert isinstance(x, RegisterBinding) and isinstance(phase, RegisterBinding)
     active = min(input_width, max(0, gradient_width - right_shift))
