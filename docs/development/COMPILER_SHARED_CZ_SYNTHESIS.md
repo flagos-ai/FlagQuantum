@@ -199,3 +199,50 @@ dependency declaration in `evidence-revision-origins.toml`. Its repository URL
 and full revision stay in the archive; the separate inline provenance vocabulary
 is reserved for repository and producing-host history. The metadata repair
 changes no archived source, measurement, or reconstruction digest.
+
+## Follow-up Jacobi update pilots
+
+The [Jacobi pilot archive](evidence/jacobi-update-pilots.json) retains two
+withdrawn private numerical experiments on integration
+`39713983207cef13a7d2ea473a523236b43e4dd4`. Neither changes the default compiler,
+search budgets, native-growth limits, independent replay, or public contracts.
+
+The first computed each symmetric mirrored pair once. It reproduced 1,000
+exactly symmetric inspected inputs bitwise, and 245 focused tests passed. One
+Qiskit anchor refused this host's 2.6.2 installation because the repository
+certifies lanes 2.0 and 2.5; that comparison is not a pass. The first resource
+attempt stopped at its first output-equality preflight, without a completed
+resource report. Its partial timing arrays were not persisted, so no timing
+conclusion is drawn from that attempt.
+
+An untimed diagnosis found real M2 mixtures are not always exactly symmetric:
+212 of 252 solver inputs differed across the diagonal, by at most
+2.7755575615628914e-17. Mirroring changed 50 eigenpair outputs. Both complete
+six-wire circuits passed the independent operator tolerance and retained CZ
+count and depth, but their emitted angles differed. This invalidates the
+micro-optimization's exact-output premise. Three original input/eigenpair
+witnesses are retained for numerical replay; theoretical symmetry is not an
+exact floating-point invariant.
+
+The second proposal traversed the two halves together while calculating them
+separately. All 231 focused synthesis, native-block and route-preview tests
+passed; 1,003 inspected inputs, including the three real counterexamples,
+matched the baseline eigenpairs bitwise. Its first completed resource control
+used the unchanged three cases, two warmups and nine alternating samples, with
+equal patch lifetimes and no concurrent local test suite.
+
+| Experimental target-artifact control | Baseline / candidate median ms | Ratio | Baseline / candidate Python peak bytes |
+| --- | ---: | ---: | ---: |
+| QFT, 6 wires, grid | 189.089 / 201.922 | 1.0679 | 2268662 / 2268580 |
+| Repetition, 6 wires, ring | 200.908 / 200.104 | 0.9960 | 2600195 / 2600145 |
+| QFT, 12 wires, grid | 557.216 / 555.749 | 0.9974 | 10118935 / 10118935 |
+
+Every time ratio fails the existing requirement of at least 5 percent improvement
+on every control. Python peaks do not grow. The last output sequences and layouts
+agree, and all six independent acceptances pass: full operators at width six,
+three probes at width twelve. Emitted circuits were not retained for fresh
+offline replay. No full application screen follows early rejection. The archive
+preserves raw samples, source snapshots, tests, witnesses, and exact drivers;
+both candidate implementations and their added tests were restored out of the
+executable tree. These shared-host observations establish neither qualified
+latency nor an SDK ranking.
