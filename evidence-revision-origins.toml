@@ -1,5 +1,14 @@
 schema = "flagquantum.evidence_revision_origins.v1"
 
+# Exact upstream source for the unadopted compiler invariant experiment.
+[[artifact]]
+path = "docs/development/evidence/cirq-cz-invariant-pruning.json"
+
+[[artifact.revision]]
+value = "de651a7886d1a1383d595f95f36b93ed3ea91685"
+origin = "external_dependency"
+repository = "quantumlib/Cirq"
+
 # Every revision a checked-in evidence artifact records that a reader of this
 # repository cannot obtain, with the origin that accounts for it.
 #
