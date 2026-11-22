@@ -1,0 +1,5955 @@
+{
+  "source_blob": "5f111727a1e383394ef856e7104ff4817ae12f31",
+  "cases": [
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        283,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        "0x11B",
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        null,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        null,
+        null
+      ],
+      "result": [
+        8,
+        285,
+        2
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        27,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        "0x11B",
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        true,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        "8",
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        -1,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        0,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        513,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        27,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        "x^8+x^4+x^3+x+1",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        "0x11B",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        "0x",
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        true,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        -1,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        257,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        8.0,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        {
+          "kind": "index",
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        {
+          "kind": "poly",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        {
+          "kind": "element",
+          "char": 3,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        1267650600228229401496703205376,
+        {
+          "kind": "element",
+          "char": 2,
+          "value": 283
+        },
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        0
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        1
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        2
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        3
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        5
+      ],
+      "result": [
+        8,
+        283,
+        5
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        255
+      ],
+      "result": [
+        8,
+        283,
+        255
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        256
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        true
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        -1
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        {
+          "kind": "index",
+          "value": 3
+        }
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        8,
+        283,
+        {
+          "kind": "poly",
+          "char": 2,
+          "value": 3
+        }
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 3,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": true,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 8,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": true,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 8.0,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        null,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "field",
+          "char": 2.0,
+          "degree": 513,
+          "modulus": {
+            "kind": "poly",
+            "char": 2,
+            "value": 283
+          }
+        },
+        283,
+        null
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "construct",
+      "args": [
+        {
+          "kind": "subclass",
+          "value": 8
+        },
+        283,
+        null
+      ],
+      "result": [
+        8,
+        283,
+        3
+      ]
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        0,
+        2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        0,
+        23
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        23
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        2,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        2,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        2,
+        23
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        1,
+        23
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        23,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        23,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        23,
+        2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        23,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 1,
+      "args": [
+        23,
+        23
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 1,
+      "args": [
+        23,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        0,
+        3
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        0,
+        39
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        1,
+        3
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        1,
+        39
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        2,
+        3
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        2,
+        39
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        3,
+        0
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        3,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        3,
+        2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        3,
+        3
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        3,
+        39
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        -1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        -2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        3,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        39,
+        0
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        39,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        39,
+        2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        39,
+        3
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 2,
+      "args": [
+        39,
+        39
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        -1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        -2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 2,
+      "args": [
+        39,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        0,
+        15
+      ],
+      "result": 15
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        0,
+        135
+      ],
+      "result": 12
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        1,
+        15
+      ],
+      "result": 14
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        1,
+        135
+      ],
+      "result": 13
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        2,
+        15
+      ],
+      "result": 13
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        2,
+        135
+      ],
+      "result": 14
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 9
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 13
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 8
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 15
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        15,
+        0
+      ],
+      "result": 15
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        15,
+        1
+      ],
+      "result": 14
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        15,
+        2
+      ],
+      "result": 13
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        15,
+        15
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        15,
+        135
+      ],
+      "result": 3
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        1
+      ],
+      "result": 15
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        -1
+      ],
+      "result": 8
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        -2
+      ],
+      "result": 12
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 12
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        15,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 10
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        135,
+        0
+      ],
+      "result": 12
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        135,
+        1
+      ],
+      "result": 13
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        135,
+        2
+      ],
+      "result": 14
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        135,
+        15
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        135,
+        135
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        1
+      ],
+      "result": 12
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        -1
+      ],
+      "result": 10
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        -2
+      ],
+      "result": 8
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 8
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        135,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 15
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        0,
+        255
+      ],
+      "result": 255
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        0,
+        2055
+      ],
+      "result": 239
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        1,
+        255
+      ],
+      "result": 254
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        1,
+        2055
+      ],
+      "result": 238
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2,
+        255
+      ],
+      "result": 253
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2,
+        2055
+      ],
+      "result": 237
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 142
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 71
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 45
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 139
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        255,
+        0
+      ],
+      "result": 255
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        255,
+        1
+      ],
+      "result": 254
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        255,
+        2
+      ],
+      "result": 253
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        255,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        255,
+        2055
+      ],
+      "result": 16
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        1
+      ],
+      "result": 255
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        -1
+      ],
+      "result": 253
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        -2
+      ],
+      "result": 230
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 223
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        255,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 145
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2055,
+        0
+      ],
+      "result": 239
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2055,
+        1
+      ],
+      "result": 238
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2055,
+        2
+      ],
+      "result": 237
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2055,
+        255
+      ],
+      "result": 16
+    },
+    {
+      "kind": "add",
+      "degree": 8,
+      "args": [
+        2055,
+        2055
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        1
+      ],
+      "result": 239
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        -1
+      ],
+      "result": 106
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        -2
+      ],
+      "result": 253
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 193
+    },
+    {
+      "kind": "pow",
+      "degree": 8,
+      "args": [
+        2055,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 89
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        0,
+        36893488147419103231
+      ],
+      "result": 36893488147419103231
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        0,
+        295147905179352825863
+      ],
+      "result": 2097167
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        1,
+        36893488147419103231
+      ],
+      "result": 36893488147419103230
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        1,
+        295147905179352825863
+      ],
+      "result": 2097166
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        2,
+        36893488147419103231
+      ],
+      "result": 36893488147419103229
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        2,
+        295147905179352825863
+      ],
+      "result": 2097165
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 18446744073709682688
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 9223372036854841344
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        255
+      ],
+      "result": 1152921504607903748
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 31143726524727513410
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 22845571727492800771
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        0
+      ],
+      "result": 36893488147419103231
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        1
+      ],
+      "result": 36893488147419103230
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        2
+      ],
+      "result": 36893488147419103229
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        36893488147419103231
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        295147905179352825863
+      ],
+      "result": 36893488147417006064
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        1
+      ],
+      "result": 36893488147419103231
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        -1
+      ],
+      "result": 422212465065987
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        -2
+      ],
+      "result": 703690126131205
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        255
+      ],
+      "result": 25224404131991797088
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 16577025955245873165
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        36893488147419103231,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 4116896658661235440
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        0
+      ],
+      "result": 2097167
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        1
+      ],
+      "result": 2097166
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        2
+      ],
+      "result": 2097165
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        36893488147419103231
+      ],
+      "result": 36893488147417006064
+    },
+    {
+      "kind": "add",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        295147905179352825863
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        1
+      ],
+      "result": 2097167
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        -1
+      ],
+      "result": 30789642070169176395
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        -2
+      ],
+      "result": 27934555125455281288
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        255
+      ],
+      "result": 28656551750556222000
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 10691356091591047158
+    },
+    {
+      "kind": "pow",
+      "degree": 65,
+      "args": [
+        295147905179352825863,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 25455507808326129484
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        0,
+        340282366920938463463374607431768211455
+      ],
+      "result": 340282366920938463463374607431768211455
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        0,
+        2722258935367507707706996859454145691655
+      ],
+      "result": 1087
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        1,
+        340282366920938463463374607431768211455
+      ],
+      "result": 340282366920938463463374607431768211454
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        1,
+        2722258935367507707706996859454145691655
+      ],
+      "result": 1086
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2,
+        340282366920938463463374607431768211455
+      ],
+      "result": 340282366920938463463374607431768211453
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2,
+        2722258935367507707706996859454145691655
+      ],
+      "result": 1085
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 170141183460469231731687303715884105795
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 255211775190703847597530955573826158690
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        255
+      ],
+      "result": 170141183460469231731687303715884113993
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 28177208825877902923345396085514239110
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 227476766246589895638039363956985902905
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        0
+      ],
+      "result": 340282366920938463463374607431768211455
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        1
+      ],
+      "result": 340282366920938463463374607431768211454
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        2
+      ],
+      "result": 340282366920938463463374607431768211453
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        340282366920938463463374607431768211455
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        2722258935367507707706996859454145691655
+      ],
+      "result": 340282366920938463463374607431768210368
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        1
+      ],
+      "result": 340282366920938463463374607431768211455
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        -1
+      ],
+      "result": 337667449542465845499927305434229566632
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        -2
+      ],
+      "result": 114293503510506533762744057869978967757
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        255
+      ],
+      "result": 7491404293390515793884917883538254452
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 220508417678300254745090194509551514475
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        340282366920938463463374607431768211455,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 97322648485537066322063355135678783995
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        0
+      ],
+      "result": 1087
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        1
+      ],
+      "result": 1086
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        2
+      ],
+      "result": 1085
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        340282366920938463463374607431768211455
+      ],
+      "result": 340282366920938463463374607431768210368
+    },
+    {
+      "kind": "add",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        2722258935367507707706996859454145691655
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        1
+      ],
+      "result": 1087
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        -1
+      ],
+      "result": 295356410048009978659455401060348310905
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        -2
+      ],
+      "result": 123617189434752345176728065608790473029
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        255
+      ],
+      "result": 50244916572906953129721495378933370655
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 111790751446996124124665432803326018046
+    },
+    {
+      "kind": "pow",
+      "degree": 128,
+      "args": [
+        2722258935367507707706996859454145691655,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 129713313727110029189643725893110776078
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        0,
+        0
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        0,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        0,
+        2
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        0,
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        0,
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775
+      ],
+      "result": 2351
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        -2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        255
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        0,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        1,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        1,
+        2
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        1,
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084094
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        1,
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775
+      ],
+      "result": 2350
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        -2
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        255
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        1,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 1
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        2,
+        0
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        2,
+        1
+      ],
+      "result": 3
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        2,
+        2
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        2,
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084093
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        2,
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775
+      ],
+      "result": 2349
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        1
+      ],
+      "result": 2
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        -1
+      ],
+      "result": 6703903964971298549787012499102923063739682910296196688861780721860882015036773488400937149083451713845015929093243025426876941405973284973216824503042194
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        -2
+      ],
+      "result": 3351951982485649274893506249551461531869841455148098344430890360930441007518386744200468574541725856922507964546621512713438470702986642486608412251521097
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        255
+      ],
+      "result": 57896044618658097711785492504343953926634992332820282019728792003956564819968
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 5411877055054890926573866774074843127150679998077408101977915707882084372113899002535091832216339170681406588574518426335507346476139705829775369464447569
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        2,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 8239573226035958122229928536320788787612738448969156465901329001732776621343180193539089767162668430195333359678482020672727390843862826776800435987989495
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        0
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        1
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084094
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        2
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084093
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+      ],
+      "result": 0
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006081744
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        1
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        -1
+      ],
+      "result": 3470024655058529288490537780846816341211636261787365996485207438223489810131558880004007584995250446794533685411277456409802252449862884296312818162533577
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        -2
+      ],
+      "result": 4220692065776303139285158838879475097257381579598696539287869239975026824730957113010766714510352755270767818871439934490428681307175729094002241133762843
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        255
+      ],
+      "result": 1008863473196426620402381421437624316759866135773580062415700309791377621088397970476619276570342486730806176457777139944793936519666103512211442711583490
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 8945623950271477997287840741571208453824024253639063327698535285150313994615980661917611143653339451568658984883413498746988935021335394788437130984146023
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 3536462524946531644164853304256340192528750285092787135564733158530327488382222224169656020682782753038450447051770228983203212853758895130954376876681586
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        0
+      ],
+      "result": 2351
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        1
+      ],
+      "result": 2350
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        2
+      ],
+      "result": 2349
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084095
+      ],
+      "result": 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006081744
+    },
+    {
+      "kind": "add",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        0
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        1
+      ],
+      "result": 2351
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        -1
+      ],
+      "result": 1917033556042984706179773880248173076268333758568816659693942525272975617919222296751503898698085336361565755289643982441843540732173538504965730786890448
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        -2
+      ],
+      "result": 7714663879382626831704331154419674259974653439269477376649436304517015241061346335821149877899291838420046891392121469543462444332345276521878304256106116
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        255
+      ],
+      "result": 6137052020315746905984368630273843715383663021481011997339224050044137955688329007606491658161624772266422997698074065464825193815722798930117821055725583
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        1461501637330902918203684832716283019655932542993
+      ],
+      "result": 537450226265057075822626071069489811075919428693038046725696524043206196390365030687747963815575625247123316231861706447328140908909223073976781326404520
+    },
+    {
+      "kind": "pow",
+      "degree": 512,
+      "args": [
+        107262463439540776796592199985646769019834926564739147021788491549774112240588375814414994385335227421520254865491888406830031062495572559571469192048672775,
+        -1461501637330902918203684832716283019655932542993
+      ],
+      "result": 7946704363384198669044593623073607956782802409410532890220649976768501762684259039432995843164209068275924487475745161175592000370314021509882098586101254
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        true,
+        1
+      ],
+      "result": 0
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        true,
+        -1
+      ],
+      "result": 1
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        true
+      ],
+      "result": 2
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        -1,
+        0
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "add",
+      "degree": 4,
+      "args": [
+        179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216,
+        0
+      ],
+      "error": "ValueError"
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        1.5
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        "3"
+      ],
+      "error": "TypeError"
+    },
+    {
+      "kind": "pow",
+      "degree": 4,
+      "args": [
+        2,
+        {
+          "kind": "index",
+          "value": 2
+        }
+      ],
+      "error": "TypeError"
+    }
+  ]
+}
