@@ -143,3 +143,30 @@ checks. The full default command was attempted but stopped at collection with
 539 errors in the sparse checkout, including omitted benchmark modules and
 tracked fixtures; it executed no selected test suite. Its complete log and hash
 are retained. This failure is not substituted for the complete-checkout CI gate.
+
+
+## Evidence-origin correction
+
+CI run `44966540135` rejected the current-pipeline archive's inline
+`source_commit_origin="external_dependency"`. The artifact reader shares its
+inline-origin vocabulary with the runtime provenance reader, which accepts only
+repository and producing-host history. External dependencies instead belong in
+`evidence-revision-origins.toml`; its existing directory-scoped SDKBench entry
+already records the exact harness revision and `sdkbench-org/sdkbench`.
+
+The correction removes only the invalid redundant inline origin. All source
+revisions, numerical results, raw drivers, attempts and original report hashes
+remain unchanged. The original published archive remains available in commit
+`3bc3f01dae3874b98a0086a11dcce9773f78c8d5`. No validator or allowed vocabulary
+changes. The same run also lost a coverage worker during the long Rainbow
+reference check at approximately 300 seconds; that separate failure is not
+explained or repaired by this metadata correction.
+
+
+After restoring the six unmodified tracked artifact fixtures omitted by sparse
+checkout, the exact failing inline-origin test and the 78 encoder/public-IR
+checks passed together (79 tests). The initial local origin-test attempt lacked
+all inline-origin fixtures and failed its nonempty-fixture assertion; it was not
+counted as a pass. The new archive's three revisions also pass the existing
+declaration/origin and abbreviation helpers. English and documentation links
+pass. These focused checks do not replace full-source CI.

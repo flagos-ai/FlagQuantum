@@ -3,7 +3,6 @@
   "scope": "Additional development acceptance and profiling; no production implementation change, qualified timing or SDK comparison",
   "source": {
     "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
-    "source_commit_origin": "external_dependency",
     "repository": "https://github.com/sdkbench-org/sdkbench"
   },
   "controlled_replay": {
