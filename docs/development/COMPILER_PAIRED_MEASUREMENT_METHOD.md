@@ -83,3 +83,45 @@ Expected: independent gates remain unchanged. This declaration introduces no
 production optimization or public contract. Reproduction requires the exact
 recorded source, driver and environment; temporary paths must be adjusted in a
 separate retained reproduction, without rewriting the original archive.
+
+## Completed first confirmation
+
+The declaration above was published at
+`b864121b459ef2aa37cde8320c59d23228996348` before the balanced execution.
+[The exact archive](evidence/compiler-balanced-synthesis-products.json) retains
+both the original asymmetric control and the first completed balanced control,
+with their reconstruction hashes. Proposed helper source, baseline source and
+SDKBench pins match across the two controls. Source and case selection were not
+changed. Do not attribute differences between the separate observations solely
+to patch setup: other shared-host conditions were not controlled.
+
+Both workflows complete all 120 pairs and 240 independent acceptances. Within
+and across the controls, every case retains identical normalized operation/layout
+hashes, evaluator metrics and adapter audits. Both variants use one cached
+module-attribute list, parsed function definitions and equal patch lifetimes;
+restoration is checked after each observation. No local test suite or artifact
+transfer overlapped the balanced measurements. Garbage collection policy was
+unchanged. The supervisor completed once with status zero.
+
+| Inspected case | Balanced original / proposed median | Whole-observation Python traced peak, original / proposed |
+| --- | ---: | ---: |
+| 6-wire qft, grid | 96.141 / 96.301 ms | 35,366,014 / 35,364,182 bytes |
+| 6-wire repetition, ring | 121.818 / 122.288 ms | 35,364,353 / 35,363,788 bytes |
+| 12-wire qft, grid | 605.918 / 604.833 ms | 35,363,187 / 35,364,909 bytes |
+
+These observations do not demonstrate a consistent end-to-end gain. Keep the
+production product helper unchanged. The earlier asymmetric six-wire QFT timing
+(91.901 / 105.424 ms) is retained; it must not be presented as proof that this
+helper causes a 15% workflow slowdown. Neither confirmation qualifies performance
+or closes native-CZ selector resource admission. It is also not a balanced
+confirmation of the two separate proposals in PR #1291; their adoption remains
+unproven. Future implementation comparisons must balance their observers and
+retain their own first completed result.
+
+The new declaration branch is based on integrated main
+`006c3268e803bd8dc13258b913cccfa9b69bb718`. Its seeded sparse default and
+runtime tiers pass 236 unit and 42 integration tests. The first default attempt
+passed 235 tests and failed because the unchanged local-GPU workflow fixture was
+omitted from sparse checkout; restoring that tracked input resolves the setup
+failure. No test, workflow assertion or resource limit was changed. These sparse
+checks do not certify the complete repository or qualify performance.
