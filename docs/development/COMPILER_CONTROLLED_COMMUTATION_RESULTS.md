@@ -171,3 +171,88 @@ this implementation under draft review.
 
 The sparse default tier also passes 262 tests, with 96 deselected. This is
 scoped local verification, not a claim that full repository CI has passed.
+
+## Downstream constraint and live-resource follow-up
+
+The exact-head CI run at `9fda5216fb1afee1966665821eb8f49e0162a4fe`
+also exposes live synthesis expectations that were calibrated against earlier
+compiler costs. For example, the branched arithmetic retain schedule now uses
+95 operations instead of the test's earlier 103. An operation limit of 103
+therefore admits both schedules; the unchanged width objective correctly
+selects the narrower recomputation schedule. This is distinct from the
+historical benchmark-attribution failures above. Do not disable optimization,
+substitute the historical checker into live workflows, or alter archived data
+to make those scenarios pass.
+
+Update the live regression scenarios with stricter limits and exact current
+costs while retaining their numerical references, exceptions, named-register
+checks and clean-workspace requirements:
+
+| Scenario | Earlier live expectation or cap | Current live expectation or stricter cap |
+| --- | --- | --- |
+| Branched retain-only operation limit | 103 | 95 |
+| Combined recovery operation/depth limits | 102 / 72 | 94 / 68 |
+| Uniform-input retain-only operation limit | 105 | 97 |
+| Qmod predicate depth, 13 / 14 qubits | 69 / 53 | 67 / 49 |
+| Water evolution native CX count | 4,176 | 3,694 |
+| Exponential operation rejection limit | 2,398 | 2,386 |
+| Exponential depth rejection limit | 2,045 | 2,038 |
+
+The exponential test also checks positive acceptance at exactly 2,387
+operations and depth 2,039, alongside rejection below those current boundaries.
+The arithmetic recovery test still requires every candidate to report all four
+violated limits and checks every combined recovery with a complete retry. The
+preparation test still verifies all 100 cancelling input X operations consume
+construction budget and checks the unchanged 205-operation source separately
+from the 95-operation executable. These are live private-compiler cost
+expectations, not changes to an API snapshot or a historical numerical artifact.
+No SDKBench threshold, case, tolerance, deadline or resource limit changes.
+
+The protected `tools/` selection walkthrough is repaired separately in
+[Integration PR #1308](https://github.com/flagos-ai/FlagQuantum/pull/1308).
+It explicitly minimizes depth for both requests using the existing objective;
+its original qubit and operation limits and complete complex-state checks
+remain unchanged. The same edited script passes on integrated main and this
+controlled-gate candidate. Integrate that separate change before promoting the
+complete compiler PR; the original walkthrough assertion remains a CI blocker
+until its dependency lands and the compiler branch synchronizes main.
+
+All 148 cases in the affected arithmetic, user workflow, Qmod predicate, water
+and exponential-boundary selection pass locally, including complete numerical
+and gradient assertions. The narrower first follow-up passed 58 cases. These
+checks do not establish full CI success or performance admission.
+
+A first strict Linux-targeted mypy run of the four initially touched test modules
+reports 40 errors. Repeating the same command with all four files shadowed by
+their exact pre-follow-up Git contents reports the same 40 errors. This is an
+existing typing deficit, not a passing strict-type check or an exemption from
+the engineering standard. Resolve the deficit in the touched modules with
+typed callbacks and fixture arguments, explicit optional-result assertions,
+runtime narrowing of resource records and the property descriptor, and an
+explicit dynamic boundary for deliberately invalid immutable-mapping writes.
+No ignores, casts or checker exclusions were added. Strict Linux-targeted mypy
+then passes all five complete touched test modules, including the additional
+exponential boundary scenarios. The resource regression
+and the incomplete resource-protocol evidence remain unresolved, so this PR
+continues as a draft.
+
+The expanded default selection passes 311 tests with 239 deselected. A first
+broader sparse-checkout run records 493 passes and three failures: the existing
+selection example needs Integration PR #1308, and two other examples lack the
+unchanged `selection_costs` source directory in that local sparse checkout.
+Retain those failures; they are not numerical acceptance failures or a passing
+whole-repository check.
+
+After materializing the missing source, an explicit prospective combined-tree
+check substitutes only the exact example file from Integration commit
+`b124669d1568fdbcdf54975cbeed4a463b8515a1`. With the compiler follow-up tests
+unchanged, `python -m pytest -m "smoke or unit or integration" -q` passes all
+496 locally selected cases, with 54 deselected. This includes both independently
+executed candidate schedules, complete state/phase/gradient checks and every
+exponential rejection/acceptance scenario. The example substitution is then
+removed byte-for-byte; it is not committed into the Compiler PR. This proves
+the proposed combination locally, not that the dependency has landed or the
+Compiler PR's exact-head CI is green. No production compiler or frozen evidence
+file changes in this follow-up. Ruff and Black pass for all five complete test
+modules, strict mypy passes all five, and the six edited artifact paths pass
+the English-language check.
