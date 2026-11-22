@@ -1,0 +1,229 @@
+{
+  "scope": "Exploratory prototype on a shared host; separate from the production-source validation. Timings are not qualified performance evidence. Python allocation peaks are not process RSS.",
+  "workflow_report": {
+    "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "runner_sha256": "2a832a4cfc41f590dcf16159f259373e1137d96c3e84ce6641ff7a2c89ad90fd",
+    "evidence_class": "development_within_sdk_control",
+    "rows": [
+      {
+        "case": [
+          8,
+          "ising",
+          "line"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.1688982500054408,
+            0.1716307919996325,
+            0.17460249998839572,
+            0.16949020899483003,
+            0.16884879101417027,
+            0.18204216699814424,
+            0.18993570801103488
+          ],
+          "candidate": [
+            0.1674313340045046,
+            0.16618020797614008,
+            0.16771841701120138,
+            0.18517250000149943,
+            0.1706090840161778,
+            0.1743706670240499,
+            0.17984820800484158
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.1716307919996325,
+          "candidate": 0.1706090840161778
+        },
+        "profile_matmul": [
+          {
+            "primitive_calls": 1035,
+            "calls": 1035,
+            "self_seconds": 0.002781856,
+            "cumulative_seconds": 0.010415729
+          }
+        ],
+        "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+        "python_traced_peak_bytes": {
+          "baseline": 3166778,
+          "candidate": 3226880
+        },
+        "independent_acceptances": 21
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.6563143749954179,
+            0.69374716602033,
+            0.655174999992596,
+            0.6550249170104507,
+            0.6592059579852503,
+            0.6716663329862058,
+            0.656925791001413
+          ],
+          "candidate": [
+            0.6422568749985658,
+            0.6615346249891445,
+            0.6408497089869343,
+            0.640486582997255,
+            0.6351309999881778,
+            0.661071583017474,
+            0.6382476669969037
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.656925791001413,
+          "candidate": 0.6408497089869343
+        },
+        "profile_matmul": [
+          {
+            "primitive_calls": 7381,
+            "calls": 7381,
+            "self_seconds": 0.019400025,
+            "cumulative_seconds": 0.073005918
+          }
+        ],
+        "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+        "python_traced_peak_bytes": {
+          "baseline": 10116749,
+          "candidate": 10116531
+        },
+        "independent_acceptances": 21
+      },
+      {
+        "case": [
+          12,
+          "qaoa",
+          "sparse"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.17803537502186373,
+            0.19172854200587608,
+            0.19057437501032837,
+            0.18133949997718446,
+            0.1815385000081733,
+            0.17869354199501686,
+            0.179480708000483
+          ],
+          "candidate": [
+            0.17698466699221171,
+            0.1918539580074139,
+            0.18636362499091774,
+            0.17763104199548252,
+            0.17675737498211674,
+            0.17710983401047997,
+            0.17679041699739173
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.18133949997718446,
+          "candidate": 0.17710983401047997
+        },
+        "profile_matmul": [
+          {
+            "primitive_calls": 1005,
+            "calls": 1005,
+            "self_seconds": 0.002719651,
+            "cumulative_seconds": 0.010121655
+          }
+        ],
+        "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+        "python_traced_peak_bytes": {
+          "baseline": 3094304,
+          "candidate": 3093960
+        },
+        "independent_acceptances": 21
+      }
+    ],
+    "complete": true
+  },
+  "workflow_driver": "import ast,contextlib,cProfile,hashlib,json,os,pstats,statistics,subprocess,sys,time,types\nfrom pathlib import Path\nfrom unittest.mock import patch\n\nROOT=Path('/private/tmp/fq-native-cz-identity-prefix-20261122')\nHARNESS=Path('/private/tmp/sdkbench-product-conformance-20261121')\nassert subprocess.check_output(['git','rev-parse','HEAD'],cwd=HARNESS,text=True,timeout=15).strip()=='9aa9260920984e2ca05bcb293abb885fccd9c144'\nsys.path.insert(0,str(HARNESS/\"src\"));sys.path.insert(0,str(ROOT))\nimport flagquantum.compiler.optimization.two_qubit_optimization as matrices\nimport flagquantum.compiler.optimization._cz_blocks\nbaseline=matrices._matmul\nprototype=ast.parse(Path('/private/tmp/fq-matrix-product-probe-20261122.py').read_text())\nnode=next(x for x in prototype.body if isinstance(x,ast.FunctionDef) and x.name=='candidate');namespace={};exec(ast.unparse(node),namespace);candidate=namespace['candidate']\nsource=subprocess.check_output(['git','show','b3ed982a0d90a05ec69b093723aa1b6e83630463:benchmarks/compiler_cz_identity_prefix.py'],cwd=ROOT,text=True,timeout=15)\ncontrol=types.ModuleType('fq_matrix_workflow_control');control.__file__=str(ROOT/'benchmarks/compiler_cz_identity_prefix.py');exec(compile(source,control.__file__,'exec'),control.__dict__)\n@contextlib.contextmanager\ndef variant(name):\n with contextlib.ExitStack() as stack:\n  if name=='candidate':\n   for module_name,module in tuple(sys.modules.items()):\n    if module_name.startswith('flagquantum.compiler.') and module is not None:\n     for attribute,value in tuple(vars(module).items()):\n      if value is baseline:stack.enter_context(patch.object(module,attribute,candidate))\n  yield\ncases=[(8,'ising','line'),(12,'qft','grid'),(12,'qaoa','sparse')]\nreport={'base_commit':'b3ed982a0d90a05ec69b093723aa1b6e83630463','sdkbench_commit':'9aa9260920984e2ca05bcb293abb885fccd9c144','runner_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'evidence_class':'development_within_sdk_control','rows':[],'complete':False}\nfor case in cases:\n observations={'baseline':[],'candidate':[]};profile=cProfile.Profile();profile.enable();reference=control._observe(case,HARNESS);profile.disable()\n costs=[{'primitive_calls':v[0],'calls':v[1],'self_seconds':v[2],'cumulative_seconds':v[3]} for k,v in pstats.Stats(profile).stats.items() if k[0].endswith('two_qubit_optimization.py') and k[2]=='_matmul']\n for iteration in range(9):\n  for name in (['baseline','candidate'] if iteration%2==0 else ['candidate','baseline']):\n   with variant(name):out=control._observe(case,HARNESS)\n   assert out['normalized_output_sha256']==reference['normalized_output_sha256']\n   assert out['metrics']==reference['metrics']\n   assert out['restored_swap_count']==reference['restored_swap_count']\n   if iteration>=2:observations[name].append(out['seconds'])\n  print(json.dumps({'case':case,'iteration':iteration,'all_outputs_equal':True}),flush=True)\n memory={}\n for name in ['baseline','candidate']:\n  with variant(name):memory[name]=control._observe(case,HARNESS,True)['python_peak_bytes']\n row={'case':case,'samples_seconds':observations,'median_seconds':{k:statistics.median(v) for k,v in observations.items()},'profile_matmul':costs,'normalized_output_sha256':reference['normalized_output_sha256'],'python_traced_peak_bytes':memory,'independent_acceptances':21}\n report['rows'].append(row);Path('/private/tmp/fq-matrix-product-workflow-probe-20261122.json').write_text(json.dumps(report,indent=2)+'\\n');print(json.dumps(row),flush=True)\nreport['complete']=True;Path('/private/tmp/fq-matrix-product-workflow-probe-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\n",
+  "numerical_driver": "import ast\nimport hashlib\nimport json\nimport math\nimport random\nimport statistics\nimport subprocess\nimport time\nfrom pathlib import Path\n\nsource = subprocess.check_output(['git','show','b3ed982a0d90a05ec69b093723aa1b6e83630463:flagquantum/compiler/optimization/two_qubit_optimization.py'], text=True, timeout=15)\nnode = next(x for x in ast.parse(source).body if isinstance(x, ast.FunctionDef) and x.name == '_matmul')\nnamespace = {}\nexec('from __future__ import annotations\\n'+ast.unparse(node), namespace)\nbaseline = namespace['_matmul']\n\ndef candidate(left, right):\n    result = []\n    for index in range(4):\n        row = left[index]\n        result.append([\n            sum((row[0] * right[0][column], row[1] * right[1][column],\n                 row[2] * right[2][column], row[3] * right[3][column]))\n            for column in range(4)\n        ])\n    return result\n\nrng = random.Random(982137)\ncases = [([[complex(rng.uniform(-2,2),rng.uniform(-2,2)) for _ in range(4)] for _ in range(4)], [[complex(rng.uniform(-2,2),rng.uniform(-2,2)) for _ in range(4)] for _ in range(4)]) for _ in range(1000)]\nvalues=[0.0,-0.0,1.0,-1.0,math.inf,-math.inf,math.nan,1e-300,1e300]\nfor _ in range(100):\n    cases.append(tuple([[complex(rng.choice(values),rng.choice(values)) for _ in range(4)] for _ in range(4)] for _ in range(2)))\ndef bits(matrix):\n    return tuple((complex(x).real.hex(),complex(x).imag.hex()) for row in matrix for x in row)\nfor left,right in cases:\n    assert bits(baseline(left,right)) == bits(candidate(left,right))\nobservations = {'baseline':[], 'candidate':[]}\nfor iteration in range(33):\n    names = ['baseline','candidate'] if iteration%2==0 else ['candidate','baseline']\n    for name in names:\n        function=baseline if name=='baseline' else candidate\n        start=time.perf_counter()\n        for left,right in cases[:128]:function(left,right)\n        elapsed=time.perf_counter()-start\n        if iteration>=2:observations[name].append(elapsed)\nreport={'base_commit':'b3ed982a0d90a05ec69b093723aa1b6e83630463','cases':len(cases),'exact_hex_results_equal':True,'batch_size':128,'samples_seconds':observations,'medians_seconds':{k:statistics.median(v) for k,v in observations.items()},'scope':'Shared-host development microbenchmark; no end-to-end latency or memory qualification','candidate_source':ast.unparse(next(x for x in ast.parse(Path(__file__).read_text()).body if isinstance(x,ast.FunctionDef) and x.name=='candidate'))}\nPath('/private/tmp/fq-matrix-product-probe-20261122.json').write_text(json.dumps(report,indent=2)+'\\n');print(json.dumps({k:v for k,v in report.items() if k!='samples_seconds'},indent=2))\n",
+  "micro_report": {
+    "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+    "cases": 1100,
+    "exact_hex_results_equal": true,
+    "batch_size": 128,
+    "samples_seconds": {
+      "baseline": [
+        0.0005426669958978891,
+        0.0006042910099495202,
+        0.0005484579887706786,
+        0.0005676249857060611,
+        0.0005456249928101897,
+        0.0005420830275397748,
+        0.0005408750148490071,
+        0.000541834015166387,
+        0.0005402079841587692,
+        0.0005407090066000819,
+        0.0005392080056481063,
+        0.0005712919810321182,
+        0.0005400840018410236,
+        0.0007046669779811054,
+        0.0006147920212242752,
+        0.0010535419860389084,
+        0.0005618339928332716,
+        0.0007095840119291097,
+        0.0006174159934744239,
+        0.0005400840018410236,
+        0.0005962499999441206,
+        0.0006895420083310455,
+        0.000550874974578619,
+        0.0005402920069172978,
+        0.000538624997716397,
+        0.0006110419926699251,
+        0.0006512500112876296,
+        0.0007680839917156845,
+        0.000770207989262417,
+        0.0005474159843288362,
+        0.0005399159854277968
+      ],
+      "candidate": [
+        0.00028300000121816993,
+        0.00028308399487286806,
+        0.00029024999821558595,
+        0.000279792002402246,
+        0.0002701659977901727,
+        0.0002703749923966825,
+        0.0002706669911276549,
+        0.00027024999144487083,
+        0.0002716669987421483,
+        0.000271833996521309,
+        0.00027245801175013185,
+        0.00027266700635664165,
+        0.0002701659977901727,
+        0.00027229200350120664,
+        0.00028966699028387666,
+        0.0004307909985072911,
+        0.00027570899692364037,
+        0.000275790982414037,
+        0.00028062501223757863,
+        0.000275792001048103,
+        0.0002723340003285557,
+        0.00027208399842493236,
+        0.0002767499827314168,
+        0.0002749999985098839,
+        0.00027187500381842256,
+        0.00028787500923499465,
+        0.00032841702341102064,
+        0.00036583299515768886,
+        0.0003897499991580844,
+        0.00041795900324359536,
+        0.0002727920073084533
+      ]
+    },
+    "medians_seconds": {
+      "baseline": 0.000550874974578619,
+      "candidate": 0.00027570899692364037
+    },
+    "scope": "Shared-host development microbenchmark; no end-to-end latency or memory qualification",
+    "candidate_source": "def candidate(left, right):\n    result = []\n    for index in range(4):\n        row = left[index]\n        result.append([sum((row[0] * right[0][column], row[1] * right[1][column], row[2] * right[2][column], row[3] * right[3][column])) for column in range(4)])\n    return result"
+  }
+}
