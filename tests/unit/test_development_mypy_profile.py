@@ -246,3 +246,38 @@ def test_profile_mode_process_contract(
         )
     ]
     assert capsys.readouterr().out == "\033[31m\033[0m"
+
+
+def test_complete_typing_dependency_declaration_and_closure() -> None:
+    from packaging.requirements import Requirement
+    from packaging.utils import canonicalize_name
+
+    lines = (
+        (REFERENCE / "dev_tools/requirements/deps/mypy.txt").read_text().splitlines()
+    )
+    requirements = [
+        Requirement(line) for line in lines if line and not line.startswith("#")
+    ]
+    assert [str(requirement) for requirement in requirements] == [
+        "mypy~=1.14",
+        "mypy-protobuf",
+        "sympy",
+    ]
+    installed = {
+        canonicalize_name(distribution.metadata["Name"]): distribution
+        for distribution in importlib.metadata.distributions(path=[str(DEPENDENCIES)])
+    }
+    for requirement in requirements:
+        assert (
+            installed[canonicalize_name(requirement.name)].version
+            in requirement.specifier
+        )
+    for distribution in installed.values():
+        for line in distribution.requires or []:
+            requirement = Requirement(line)
+            if requirement.marker and not requirement.marker.evaluate({"extra": ""}):
+                continue
+            assert (
+                installed[canonicalize_name(requirement.name)].version
+                in requirement.specifier
+            )

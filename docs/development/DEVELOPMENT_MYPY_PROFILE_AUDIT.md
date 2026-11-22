@@ -103,3 +103,22 @@ The final concentrated run passed 528 cases with 915 visible warnings and zero
 skips in 219.93 seconds. Strict mypy passed all three changed Python files. Black,
 Ruff, Integration scope, architecture, IR, API and diff checks passed. Source
 profile/dependency receipts and full logs are retained beside the frozen inputs.
+
+
+## Complete typing dependency input
+
+Q-0097 is now accepted as the complete direct typing declaration. All three
+entries are checked in order against the frozen source input. Mypy 1.19.1
+satisfies ~=1.14, and mypy-protobuf 4.0.0 and SymPy 1.14.0 satisfy their
+unconstrained entries. Every active base requirement edge of the exact twelve
+installed distributions resolves within that isolated target. The existing
+actual mypy/profile tests exercise the checker and symbolic import. Existing
+protobuf generation evidence exercises mypy-protobuf through the real protoc
+plugin, including all eight frozen schemas and all sixteen generated artifacts.
+
+The native strict checker retains the root project development policy. The
+imported-source profile and its isolated checker remain an explicit audit
+workflow owned by the existing typecheck command. Documentation, constraints,
+plugin configuration and diagnostics are reused from the preceding acceptance.
+No alternative type or plugin implementation is introduced. The complete large
+mypy.env.txt scientific runtime lock retains separate parent Q-0106.
