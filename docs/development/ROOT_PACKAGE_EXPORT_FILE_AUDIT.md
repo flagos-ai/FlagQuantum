@@ -70,3 +70,24 @@ Strict typing of both added Python files, Black, Ruff, team scope, architecture,
 IR and public API checks pass. Logs and the unchanged-input blob certificate
 are retained under ftqc-reference-env/g2-root-version-. The broader regression
 retains that failure in its original log.
+
+## Standard-library namespace closure
+
+Q-0170 is the complete standard-library initializer `qualtran/bloqs/__init__.py`,
+blob `59a0698c8f9a08764494c7dcd64c887de7e994e9`. Its complete contents comprise
+Google's Apache notice and the standard-library docstring. The existing source
+initializer verifier checks the actual imported file, exact blob and every AST
+statement. This initializer adds no executable definitions or re-exports.
+
+The native owner is the existing `flagquantum.algorithms` namespace, whose
+algorithm implementations retain their domain packages and normal append
+consumers. This source initializer requires no additional native behavior.
+Existing stored graph, declaration and append integration evidence is reused.
+The complete namespace file can close independently of the source and numeric
+boundaries in its child algorithms. It owns no quantum gates, resource model,
+state, measurements or workspace.
+
+The standard-library namespace batch passes 11 concentrated and 29 local
+integration cases. Strict typing for the updated verifier, Black, Ruff,
+Integration scope, architecture, internal IR, protected API baseline and
+whitespace checks pass. Prior root export consumer evidence remains reusable.

@@ -68,3 +68,10 @@ def test_complete_root_initializer() -> None:
     assert_source_exports(
         "qualtran", "a0f2b5e2d219176be9c7a0017968e6cb25c0cb98", EXPORTS
     )
+
+
+def test_complete_standard_library_namespace() -> None:
+    """The complete source library root declares no additional exports."""
+    assert_source_exports(
+        "qualtran.bloqs", "59a0698c8f9a08764494c7dcd64c887de7e994e9", ()
+    )
