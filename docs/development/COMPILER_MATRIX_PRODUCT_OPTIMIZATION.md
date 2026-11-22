@@ -142,3 +142,48 @@ completes 2,400 deterministic packed-double comparisons on Python 3.12.14 at
 `466df8dbfb04196d5a50582cc35d2a9f8e21b2da`, with no mismatch. It is numerical
 regression evidence only, not a rerun of the workflow timing or a full CI pass.
 The reproduction commands above continue to apply.
+
+
+## Integrated stack-watchdog verification
+
+The branch now includes main `a2e131363aba76d67ef71ef155fff34b50786eb9`,
+which contains the reviewed Python stack watchdog (PR #1281) and complete-operator
+routing controls (PR #1283). Both prerequisite PR heads passed 246 exact-head
+checks: 243 success and three optional skips. Main synchronization is a normal
+merge at `021690dd4d11d32750a484b3634597017b8f70af`; the private matrix-product
+implementation itself is unchanged.
+
+[The synchronized record](evidence/compiler-matrix-products-watchdog-sync.json)
+retains 2,400 deterministic packed-double comparisons on Python 3.12.14 and all
+60 paired application/topology checks with 120 unchanged independent acceptances.
+Normalized delivered outputs, routing/layout/resource metrics and rewrite
+statistics agree. The separate five-file compiler selection passes 302 tests
+(260 unit and 42 integration), including the newly integrated complete-operator
+routing regressions. These are focused results, not complete repository tiers.
+The paired workflow timings may overlap that test run and are not performance
+observations.
+
+The existing complete Rainbow original-source catalog reference also passes
+under coverage.py 7.17.2 `sysmon` and the integrated Python watchdog with a
+one-second diagnostic trigger: one selected test passed in 139.25 seconds,
+33 deselected. That reference invokes all three original/native/independent
+complete-state checks at `k=0,1,2`, including clean private environment tests.
+The other catalog references are absent from this sparse checkout; they are not
+claimed as executed. A Python stack snapshot was observed and execution completed.
+This does not prove the root cause of prior Linux worker exits or replace full
+Linux CI. The first invocation lacked coverage in the base interpreter and exited
+before pytest; using the existing cached 7.17.2 package resolved this setup issue.
+No dependency, assertion or resource threshold changed.
+
+Reproduction of this diagnostic, with coverage available:
+
+```sh
+COVERAGE_CORE=sysmon python -m coverage run --source=flagquantum -m pytest   tests/integration/test_synthesis_native_catalog.py -k original_source_reference   -q -p tools.pytest_stack_watchdog --fq-stack-dump-after=1   -o faulthandler_timeout=0
+```
+
+Use an external bounded supervisor; the completed diagnostic used a 360-second
+process budget and 180-second no-output budget. The one-second trigger requests
+a diagnostic snapshot, not test termination. CI retains its original diagnostic
+trigger and job deadlines. Black, Ruff, English, local links and revision checks
+pass. New full-source exact-head CI is required after this synchronization; no
+prior failure is relabeled as successful and no gate waiver is requested.
