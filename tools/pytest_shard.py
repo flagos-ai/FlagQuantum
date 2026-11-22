@@ -11,6 +11,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -139,6 +141,25 @@ def _cpu_seconds() -> float:
     own = resource.getrusage(resource.RUSAGE_SELF)
     children = resource.getrusage(resource.RUSAGE_CHILDREN)
     return own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_testnodedown(node: object, error: object) -> None:
+    """Retain an available local worker exit status without changing its outcome."""
+    if error is None:
+        return
+    gateway = getattr(node, "gateway", None)
+    # execnet owns this private transport. Remote or changed transports may not
+    # expose a local Popen; report missing evidence rather than guessing a signal.
+    process = getattr(getattr(gateway, "_io", None), "popen", None)
+    status = process.poll() if isinstance(process, subprocess.Popen) else None
+    payload = {
+        "worker": getattr(gateway, "id", None),
+        "error": str(error),
+        "process_exit_status": status,
+        "termination_signal": -status if status is not None and status < 0 else None,
+    }
+    print("CI worker exit: " + json.dumps(payload), file=sys.stderr, flush=True)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

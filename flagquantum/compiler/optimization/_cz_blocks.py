@@ -15,6 +15,7 @@ from typing import Literal
 from ...core.ir import CircuitIR, Instruction
 from ..lowering.basis_translation import translate
 from ._cz_local_cleanup import compact_native_cz_locals
+from .commutation_cancellation import merge_commuting_rotations
 from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul
 from .two_qubit_synthesis import synthesize_two_qubit
 
@@ -145,6 +146,11 @@ def _candidate(
     # the generic synthesis entry's fixed-pulse contract unchanged, and compact
     # only bounded proposals that already satisfy the raw resource limits.
     candidate = compact_native_cz_locals(candidate, pair)
+    # Euler cleanup exposes rotations separated by commuting CZ gates. Reuse
+    # the existing proof-based merge on this bounded, numeric proposal only.
+    candidate = merge_commuting_rotations(
+        CircuitIR(max(pair) + 1, candidate)
+    ).instructions
     # Bounded numerical synthesis is a proposal, not its own acceptance oracle.
     reconstructed = _product(candidate, pair)
     if reconstructed is None or not _verified(product, reconstructed):
@@ -158,8 +164,13 @@ def _collect_blocks(
     readable: Callable[[int, tuple[int, int]], bool],
     *,
     barrier: Callable[[Instruction], bool] | None = None,
+    identity_reader: MatrixReader | None = None,
 ) -> Iterator[tuple[tuple[int, int], tuple[int, ...]]]:
-    """Collect exclusive, bounded pair blocks without constructing another IR."""
+    """Collect bounded pair blocks, checking identity prefixes only at capacity.
+
+    Leading locals still join a closed prefix. The caller must synthesize and
+    verify that complete block; prefix detection only proposes a split point.
+    """
     open_blocks: dict[tuple[int, int], list[int]] = {}
     wire_blocks: dict[int, tuple[int, int]] = {}
     claimed: set[int] = set()
@@ -207,16 +218,43 @@ def _collect_blocks(
             if not wires or pair != joining or not joins:
                 yield pair, close(pair)
         if joining is not None and joins and joining in open_blocks:
-            open_blocks[joining].append(index)
-            claimed.add(index)
-            if len(open_blocks[joining]) == _MAX_BLOCK_OPERATIONS:
-                yield joining, close(joining)
+            pair = joining
         elif len(instruction.wires) == 2:
             left, right = instruction.wires
             pair = (min(left, right), max(left, right))
             if readable(index, pair):
-                open_blocks[pair] = [index]
-                claimed.add(index)
+                open_blocks[pair] = []
+                for wire in pair:
+                    wire_blocks[wire] = pair
+            else:
+                continue
+        else:
+            continue
+        open_blocks[pair].append(index)
+        claimed.add(index)
+        if len(open_blocks[pair]) == _MAX_BLOCK_OPERATIONS:
+            positions = open_blocks[pair]
+            split = len(positions)
+            if identity_reader is not None:
+                product = _IDENTITY
+                entanglers = 0
+                # Short blocks keep their existing collection fast path. Only
+                # a forced split needs a search for a better bounded boundary.
+                for offset, position in enumerate(positions, 1):
+                    member = program.instructions[position]
+                    matrix = identity_reader(member, pair)
+                    if matrix is None:
+                        break
+                    product = _matmul(matrix, product)
+                    entanglers += len(member.wires) == 2
+                    if entanglers >= 2 and _verified(product, _IDENTITY):
+                        split = offset
+                        break
+            suffix = positions[split:]
+            open_blocks[pair] = positions[:split]
+            yield pair, close(pair)
+            if suffix:
+                open_blocks[pair] = suffix
                 for wire in pair:
                     wire_blocks[wire] = pair
     for pair in tuple(open_blocks):

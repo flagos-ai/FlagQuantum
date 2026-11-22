@@ -44,10 +44,15 @@ def _native_baseline(program: CircuitIR) -> CircuitIR:
     return replace(program, instructions=tuple(instructions))
 
 
-@pytest.mark.parametrize("builder", [build_qft, build_maxcut, build_ising])
+@pytest.mark.parametrize(
+    "builder,previous_counts",
+    [(build_qft, (156, 324)), (build_maxcut, (462, 798)), (build_ising, (609, 1239))],
+)
 @pytest.mark.parametrize("line_topology", [False, True], ids=["no-topology", "line"])
 def test_application_preserves_complete_operator_and_target_constraints(
-    builder: Callable[[], synth.Program], line_topology: bool
+    builder: Callable[[], synth.Program],
+    previous_counts: tuple[int, int],
+    line_topology: bool,
 ) -> None:
     source = builder().circuit
     routed = compile(
@@ -55,6 +60,8 @@ def test_application_preserves_complete_operator_and_target_constraints(
         coupling_map=CouplingMap.line(source.n_wires) if line_topology else None,
     )
     baseline = _native_baseline(routed)
+    # Parent-revision counts retain the CX-mediated decomposition overhead.
+    assert len(baseline.instructions) < previous_counts[int(line_topology)]
     result = resynthesize_cz_blocks(baseline)
     expected, actual = _operator(source), _operator(result)
     phase = torch.trace(actual.conj().T @ expected) / expected.shape[0]

@@ -461,14 +461,16 @@ def _plan_sabre_trial(
             last_on_wire[wire] = index
 
     # Classical order is order that no qubit records. Per bit, a read follows the
-    # write it observes, and a write follows both the read it would invalidate and
+    # write it observes, and a write follows every read it would invalidate and
     # the earlier write whose value it replaces. A bit no measurement ever writes
     # contributes no edge, so a program without classical state keeps the
     # qubit-only graph it had. Processing in program order keeps every edge
     # forward, so the graph stays acyclic and the front layer still empties on
     # every program.
     last_writer: dict[int, int] = {}
-    last_reader: dict[int, int] = {}
+    # Readers on independent qubits have no quantum edge ordering them; keeping
+    # only the most recent reader would let a write overtake an earlier reader.
+    readers_since_write: dict[int, list[int]] = {}
     for index, instruction in enumerate(instructions):
         written, read = _classical_accesses(instruction)
         for bit in read:
@@ -477,14 +479,17 @@ def _plan_sabre_trial(
                 successors[producer].append(index)
                 pending[index] += 1
         if written is not None:
-            predecessors = (last_writer.get(written), last_reader.pop(written, None))
+            predecessors = (
+                last_writer.get(written),
+                *readers_since_write.pop(written, ()),
+            )
             for predecessor in predecessors:
                 if predecessor is not None:
                     successors[predecessor].append(index)
                     pending[index] += 1
             last_writer[written] = index
         for bit in read:
-            last_reader[bit] = index
+            readers_since_write.setdefault(bit, []).append(index)
 
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
@@ -834,15 +839,18 @@ def restore_swaps(
         )
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
-        while logical_to_physical[leaf] != leaf:
-            physical = logical_to_physical[leaf]
-            step = _restore_path(physical, leaf, tree, active)[1]
+        physical = logical_to_physical[leaf]
+        # The active tree stays fixed until this token reaches its leaf. Walk
+        # its unique path once; SWAPs move tokens, not the remaining tree edges.
+        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
+        for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
             logical_to_physical[other] = physical
             physical_to_logical[step] = leaf
             physical_to_logical[physical] = other
             swaps.append((physical, step) if physical < step else (step, physical))
+            physical = step
         active[leaf] = False
     return tuple(swaps)
 

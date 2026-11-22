@@ -9,8 +9,8 @@ that composes it, which is the Compiler-layer counterpart of the equivalence
 library and basis search Qiskit ships.
 
 Every rule is an exact closed form. `cx` is `cz` conjugated by one `h`, `rzz` is
-`cx` around a `rz`, and the rest follow from those. Seventeen of the eighteen
-entries reproduce their source exactly; `cphase` is the exception, because
+`cx` around a `rz`, and the rest follow from those. All opcode families except `cphase`
+reproduce their source exactly; `cphase` is the exception, because
 turning a controlled rotation into a controlled phase needs a third `rz` on the
 control qubit and that rotation leaves a global phase behind. FlagQuantum IR has
 no field for a global phase, so a `cphase` translation is equal to its source
@@ -296,6 +296,47 @@ def _crz_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     )
 
 
+def _rzz_to_cz(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Conjugate CZ RX(theta) CZ by H on the second operand."""
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    return (
+        _gate("h", (right,), metadata),
+        _gate("cz", (left, right), metadata),
+        _gate("rx", (right,), metadata, instruction.params["theta"]),
+        _gate("cz", (left, right), metadata),
+        _gate("h", (right,), metadata),
+    )
+
+
+def _crz_to_cz(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Cancel the interior H RZ(-theta/2) H to RX(-theta/2)."""
+    left, right = instruction.wires
+    metadata = instruction.metadata
+    half = instruction.params["theta"] * _HALF
+    return (
+        _gate("rz", (right,), metadata, half),
+        _gate("h", (right,), metadata),
+        _gate("cz", (left, right), metadata),
+        _gate("rx", (right,), metadata, -half),
+        _gate("cz", (left, right), metadata),
+        _gate("h", (right,), metadata),
+    )
+
+
+def _cphase_to_cz(instruction: Instruction) -> tuple[Instruction, ...]:
+    """Apply the direct CRZ word and its existing control-phase correction."""
+    return (
+        *_crz_to_cz(instruction),
+        _gate(
+            "rz",
+            (instruction.wires[0],),
+            instruction.metadata,
+            instruction.params["theta"] * _HALF,
+        ),
+    )
+
+
 def _cphase_to_cx(instruction: Instruction) -> tuple[Instruction, ...]:
     """`CPHASE(theta)` is the `CRZ` form plus `RZ(theta/2)` on the control."""
 
@@ -506,9 +547,18 @@ EQUIVALENCE_RULES: Mapping[str, tuple[EquivalenceRule, ...]] = MappingProxyType(
         "csxdg": (EquivalenceRule("csxdg", _csxdg_to_fixed_basis),),
         "dcx": (EquivalenceRule("dcx", _dcx_to_fixed_basis),),
         "ecr": (EquivalenceRule("ecr", _ecr_to_fixed_basis),),
-        "rzz": (EquivalenceRule("rzz", _rzz_to_cx),),
-        "crz": (EquivalenceRule("crz", _crz_to_cx),),
-        "cphase": (EquivalenceRule("cphase", _cphase_to_cx),),
+        "rzz": (
+            EquivalenceRule("rzz", _rzz_to_cx),
+            EquivalenceRule("rzz", _rzz_to_cz),
+        ),
+        "crz": (
+            EquivalenceRule("crz", _crz_to_cx),
+            EquivalenceRule("crz", _crz_to_cz),
+        ),
+        "cphase": (
+            EquivalenceRule("cphase", _cphase_to_cx),
+            EquivalenceRule("cphase", _cphase_to_cz),
+        ),
         "rxx": (EquivalenceRule("rxx", _rxx_to_rzz),),
         "ryy": (EquivalenceRule("ryy", _ryy_to_rxx),),
         "crx": (EquivalenceRule("crx", _crx_to_crz),),
@@ -673,8 +723,8 @@ def _expand(
         return None
 
     options: list[_Translation] = []
-    u3 = _synthesize_u3(instruction)
-    if u3 is not None and all(can_run(item) for item in u3):
+    u3 = _synthesize_u3(instruction, can_run=can_run)
+    if u3 is not None:
         options.append(_Translation(u3, (), True))
     if z_rotation is not None and pulse_opcode is not None:
         synthesized = synthesize_one_qubit(

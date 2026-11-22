@@ -371,6 +371,48 @@ def test_automatic_routed_plan_retains_topology_space_transitions(
     torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
 
 
+@pytest.mark.parametrize("routed", [False, True])
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
+def test_inverse_swap_prefixes_preserve_bounded_collective_artifact_evidence(
+    routed: bool, pair: tuple[int, int]
+) -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("rx", (0,), {"theta": 0.17}),
+            Instruction("swap", pair),
+            Instruction("swap", pair[::-1]),
+            Instruction("rz", (2,), {"theta": 0.31}),
+            Instruction("swap", pair),
+            Instruction("swap", pair[::-1]),
+        ),
+        dtype="complex128",
+    )
+    compiled = _compile(source, routed=routed)
+    stage = compiled.legalization.native_block_optimization
+    assert stage is not None
+    assert len(stage.source_program.instructions) > 64
+    assert sum(item.name == "cz" for item in stage.program.instructions) == 0
+    assert len(stage.rewrites) >= 2
+    assert all(
+        len(rewrite.input_instruction_indices) <= 64 for rewrite in stage.rewrites
+    )
+    expected, actual = _operator(source), _operator(stage.program)
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    assert float(abs(abs(phase) - 1)) <= 1e-11
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    assert len(bundle.physical_plan.native_input_instructions) == len(
+        stage.source_program.instructions
+    )
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+
+
 def test_complete_cancellation_retains_consumed_inputs_in_the_artifact_bundle() -> None:
     source = CircuitIR(
         2, (Instruction("cz", (0, 1)), Instruction("cz", (1, 0))), dtype="complex128"
@@ -577,3 +619,80 @@ def test_v4_evidence_does_not_bypass_deployment_preflight(refusal: str) -> None:
             shots=2048 if refusal == "shots" else 128,
             evaluated_at=_NOW + timedelta(hours=2) if refusal == "expired" else _NOW,
         )
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_commuting_rotation_cleanup_reaches_verified_target_artifact(
+    routed: bool,
+) -> None:
+    source = CircuitIR(
+        2,
+        tuple(
+            instruction
+            for x_angle, z_angle in (
+                (0.17, 0.23),
+                (-0.31, 0.41),
+                (0.53, -0.61),
+                (-0.71, 0.83),
+            )
+            for instruction in (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": x_angle}),
+                Instruction("rz", (1,), {"theta": z_angle}),
+            )
+        ),
+        dtype="complex128",
+    )
+    compiled = _compile(source, routed=routed)
+    stage = compiled.legalization.native_block_optimization
+    assert stage is not None and len(stage.rewrites) == 1
+    assert len(stage.program.instructions) <= 16
+    assert sum(item.name == "cz" for item in stage.program.instructions) == 2
+    assert stage.rewrites[0].input_instruction_indices == tuple(range(12))
+    assert stage.rewrites[0].output_instruction_indices == tuple(
+        range(len(stage.program.instructions))
+    )
+    assert compiled.physical_plan.program is stage.program
+    assert compiled.legalization.schedule.program is stage.program
+    expected, actual = _operator(source), _operator(stage.program)
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    assert float(abs(abs(phase) - 1)) <= 1e-11
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_direct_cz_translation_reaches_the_unchanged_artifact_consumers(
+    routed: bool,
+) -> None:
+    # A controlled phase needs two CZs already, so strict CZ block reduction
+    # correctly leaves it alone. Shorter native lowering still reaches emission.
+    source = CircuitIR(
+        2, (Instruction("cphase", (1, 0), {"theta": 0.37}),), dtype="complex128"
+    )
+    compiled = _compile(source, routed=routed, budget=10)
+    native = compiled.legalization.native_gate_legalization
+    stage = compiled.legalization.native_block_optimization
+    assert len(native.program.instructions) == 11
+    assert native.decompositions[0].replacement_opcodes == tuple(
+        item.name for item in native.program.instructions
+    )
+    assert stage is not None and stage.rewrites == ()
+    assert stage.program is native.program
+    assert compiled.physical_plan.version == "1.0"
+    expected, actual = _operator(source), _operator(compiled.legalization.program)
+    phase = torch.vdot(actual.flatten(), expected.flatten()) / 4
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+    with pytest.raises(ArtifactCompilationError, match="max_added_operations"):
+        _compile(source, routed=routed, budget=9)

@@ -928,3 +928,87 @@ def test_an_unchanged_instruction_cannot_be_replaced_by_an_equal_copy() -> None:
         blocks.verify_native_block_optimization(
             forged, native, snapshot=_snapshot(), evaluated_at=_NOW
         )
+
+
+def test_no_rewrite_hash_reuse_keeps_mutation_checks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    angle = torch.tensor(0.31, dtype=torch.float64)
+    source = CircuitIR(2, (Instruction("rx", (0,), {"theta": angle}),))
+    snapshot = _snapshot()
+    native = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    original_hash = CircuitIR.content_hash.fget
+    assert original_hash is not None
+    calls: list[CircuitIR] = []
+
+    def observed_hash(program: CircuitIR) -> str:
+        calls.append(program)
+        return original_hash(program)
+
+    monkeypatch.setattr(CircuitIR, "content_hash", property(observed_hash))
+    result = blocks.optimize_native_blocks(native, snapshot=snapshot, evaluated_at=_NOW)
+    assert result is not None and result.program is native.program
+    # Includes independent baseline replay and source/result construction checks.
+    assert sum(program is native.program for program in calls) == 7
+    blocks.verify_native_block_optimization(
+        result, native, snapshot=snapshot, evaluated_at=_NOW
+    )
+    angle.add_(0.5)
+    with pytest.raises(
+        blocks.NativeBlockOptimizationError, match="source hash is stale"
+    ):
+        replace(result)
+    with pytest.raises(blocks.NativeBlockOptimizationError):
+        blocks.verify_native_block_optimization(
+            result, native, snapshot=snapshot, evaluated_at=_NOW
+        )
+    fresh_native = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    fresh = blocks.optimize_native_blocks(
+        fresh_native, snapshot=snapshot, evaluated_at=_NOW
+    )
+    assert fresh is not None
+    assert fresh.source_content_hash != result.source_content_hash
+    assert fresh.optimization_identity != result.optimization_identity
+
+
+def test_native_matrix_reads_preserve_the_operand_position_of_shared_wires() -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("rz", (1,), {"theta": 0.37}),
+            Instruction("cz", (0, 1)),
+            Instruction("rx", (1,), {"theta": 0.29}),
+            Instruction("cz", (1, 0)),
+            Instruction("rz", (1,), {"theta": 0.48}),
+            Instruction("cz", (1, 2)),
+            Instruction("rx", (1,), {"theta": 0.91}),
+            Instruction("cz", (2, 1)),
+        ),
+    )
+    result, _ = _stage(source)
+    _equivalent(source, result.program)
+
+
+@pytest.mark.parametrize("storage", ("tensor", "mapping"))
+def test_rewritten_blocks_recheck_mutable_angles_in_later_analyses(
+    storage: str,
+) -> None:
+    angle = torch.tensor(0.31, dtype=torch.float64)
+    rotation = Instruction(
+        "rx", (0,), {"theta": angle if storage == "tensor" else 0.31}
+    )
+    source = replace(_source(), instructions=(*_source().instructions, rotation))
+    result, native = _stage(source)
+    assert result.rewrites
+    if storage == "tensor":
+        angle.add_(0.5)
+    else:
+        assert isinstance(rotation.params, dict)
+        rotation.params["theta"] = 0.81
+    with pytest.raises(blocks.NativeBlockOptimizationError):
+        blocks.verify_native_block_optimization(
+            result, native, snapshot=_snapshot(), evaluated_at=_NOW
+        )
+    fresh, _ = _stage(source)
+    assert fresh.source_content_hash != result.source_content_hash
+    _equivalent(source, fresh.program)
