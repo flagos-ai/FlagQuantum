@@ -2,7 +2,6 @@
   "complete": true,
   "implementation_commit": "b4f4a5bddb477235626a8f8ea6bba72122cafc18",
   "source_commit": "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4",
-  "source_commit_origin": "external_dependency",
   "evidence_class": "development",
   "distribution_semantics": "single_device_fast_path",
   "scalability_claim_allowed": false,
@@ -2998,7 +2997,6 @@
     "complete": true,
     "implementation_commit": "72d30b573b312d28c16e47193122885dd7d4a34c",
     "source_commit": "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4",
-    "source_commit_origin": "external_dependency",
     "evidence_class": "development",
     "distribution_semantics": "single_device_fast_path",
     "scalability_claim_allowed": false,
@@ -5976,5 +5974,6 @@
     },
     "raw_log": "completed 4 serial_mix 0 all_to_all\ncompleted 4 serial_mix 0 line\ncompleted 4 serial_mix 1 all_to_all\ncompleted 4 serial_mix 1 line\ncompleted 4 serial_mix 2 all_to_all\ncompleted 4 serial_mix 2 line\ncompleted 4 parallel_layers 0 all_to_all\ncompleted 4 parallel_layers 0 line\ncompleted 4 parallel_layers 1 all_to_all\ncompleted 4 parallel_layers 1 line\ncompleted 4 parallel_layers 2 all_to_all\ncompleted 4 parallel_layers 2 line\ncompleted 4 parity_relay 0 all_to_all\ncompleted 4 parity_relay 0 line\ncompleted 4 parity_relay 1 all_to_all\ncompleted 4 parity_relay 1 line\ncompleted 4 parity_relay 2 all_to_all\ncompleted 4 parity_relay 2 line\ncompleted 8 serial_mix 0 all_to_all\ncompleted 8 serial_mix 0 line\ncompleted 8 serial_mix 1 all_to_all\ncompleted 8 serial_mix 1 line\ncompleted 8 serial_mix 2 all_to_all\ncompleted 8 serial_mix 2 line\ncompleted 8 parallel_layers 0 all_to_all\ncompleted 8 parallel_layers 0 line\ncompleted 8 parallel_layers 1 all_to_all\ncompleted 8 parallel_layers 1 line\ncompleted 8 parallel_layers 2 all_to_all\ncompleted 8 parallel_layers 2 line\ncompleted 8 parity_relay 0 all_to_all\ncompleted 8 parity_relay 0 line\ncompleted 8 parity_relay 1 all_to_all\ncompleted 8 parity_relay 1 line\ncompleted 8 parity_relay 2 all_to_all\ncompleted 8 parity_relay 2 line\ncompleted 16 serial_mix 0 all_to_all\ncompleted 16 serial_mix 0 line\ncompleted 16 serial_mix 1 all_to_all\ncompleted 16 serial_mix 1 line\ncompleted 16 serial_mix 2 all_to_all\ncompleted 16 serial_mix 2 line\ncompleted 16 parallel_layers 0 all_to_all\ncompleted 16 parallel_layers 0 line\ncompleted 16 parallel_layers 1 all_to_all\ncompleted 16 parallel_layers 1 line\ncompleted 16 parallel_layers 2 all_to_all\ncompleted 16 parallel_layers 2 line\ncompleted 16 parity_relay 0 all_to_all\ncompleted 16 parity_relay 0 line\ncompleted 16 parity_relay 1 all_to_all\ncompleted 16 parity_relay 1 line\ncompleted 16 parity_relay 2 all_to_all\ncompleted 16 parity_relay 2 line\ncompleted 32 serial_mix 0 all_to_all\ncompleted 32 serial_mix 0 line\ncompleted 32 serial_mix 1 all_to_all\ncompleted 32 serial_mix 1 line\ncompleted 32 serial_mix 2 all_to_all\ncompleted 32 serial_mix 2 line\ncompleted 32 parallel_layers 0 all_to_all\ncompleted 32 parallel_layers 0 line\ncompleted 32 parallel_layers 1 all_to_all\ncompleted 32 parallel_layers 1 line\ncompleted 32 parallel_layers 2 all_to_all\ncompleted 32 parallel_layers 2 line\ncompleted 32 parity_relay 0 all_to_all\ncompleted 32 parity_relay 0 line\ncompleted 32 parity_relay 1 all_to_all\ncompleted 32 parity_relay 1 line\ncompleted 32 parity_relay 2 all_to_all\ncompleted 32 parity_relay 2 line\n{\"rows\": 72, \"quality_regressions\": 0, \"default_admission_passed\": false}\n",
     "all_delivered_metrics_equal_to_initial": true
-  }
+  },
+  "original_inline_origin_document_sha256": "8dc03d30b2a7d910e95e1feb4719cb54d0a55d624295f7b94fccdc8d562af428"
 }

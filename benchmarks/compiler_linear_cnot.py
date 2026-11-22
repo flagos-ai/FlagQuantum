@@ -219,7 +219,6 @@ def main() -> None:
             ["git", "rev-parse", "HEAD"], text=True, timeout=15
         ).strip(),
         "source_commit": _UPSTREAM,
-        "source_commit_origin": "external_dependency",
         "evidence_class": "development",
         "distribution_semantics": "single_device_fast_path",
         "scalability_claim_allowed": False,

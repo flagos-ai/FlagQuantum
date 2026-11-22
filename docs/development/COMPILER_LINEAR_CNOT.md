@@ -168,3 +168,15 @@ Replacement conformance uses an independent breadth-first search over all 168
 three-wire reversible permutations, substitutes that synthesizer at the same
 internal boundary, and runs the unchanged compiler/pass consumer. This proves
 the consumer does not require PMH-specific identity or orchestration machinery.
+
+## Evidence validation correction
+
+The first complete-corpus workflow verification passed 124 tests and failed one
+origin-vocabulary assertion. The archive had stated `external_dependency` in an
+inline field whose consumer accepts only repository/producing-host history.
+The external Qiskit pin is now declared in `evidence-revision-origins.toml`, in a
+separate integration-owned commit, and those two inline fields are removed.
+The pre-correction document hash is retained. Numerical observations, source
+pins, archived measured drivers and acceptance thresholds are unchanged. The
+live driver's future output uses the same declared external origin. No checker
+or supported origin vocabulary was weakened.
