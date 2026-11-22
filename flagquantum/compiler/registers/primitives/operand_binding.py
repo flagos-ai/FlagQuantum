@@ -1,5 +1,6 @@
 """Normalize typed operands for the existing register emitters."""
 
+from ...artifacts._operand_views import OperandDomain, admit_operand_identity
 from ...artifacts.operand_identity import OperandIdentity, OperandKind
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ._mixed_gates import _Control, _XBasisTarget
@@ -10,6 +11,9 @@ _Operand = _Control | _XBasisTarget
 def bind_operand(value: object) -> _Operand:
     """Resolve one admitted Z-, X- or quantum operand without changing its slot."""
     if isinstance(value, OperandIdentity):
+        if value.kind is OperandKind.REGISTER:
+            raise ValueError("A register identity is not a physical operand")
+        value = admit_operand_identity(value, OperandDomain.MIXED_OPERAND)
         match value.kind:
             case OperandKind.BOOLEAN:
                 return bool(value)
@@ -21,8 +25,6 @@ def bind_operand(value: object) -> _Operand:
                 return _XBasisTarget(bool(value))
             case OperandKind.X_CLASSICAL:
                 return _XBasisTarget(ClassicalFieldCoefficient(value.value))
-            case OperandKind.REGISTER:
-                raise ValueError("A register identity is not a physical operand")
     if isinstance(value, (ClassicalFieldCoefficient, _XBasisTarget, bool)):
         return value
     if type(value) is int and value >= 0:

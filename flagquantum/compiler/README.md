@@ -1177,3 +1177,29 @@ array, word, KMB and register tests after changes. The existing typed binders
 carry these identities to `circuit.append(op)`. Complete original-file mapping,
 source formatting adaptations, execution counts and remaining boundaries are
 in `docs/development/SCALAR_IDENTITY_AUDIT.md`.
+
+### Physical operand union domains
+
+Private `artifacts._operand_views` retains source union admission, constant
+restrictions, default sentinels, raw casts and context-dependent diagnostics.
+`OperandDomain` records the static context. Values remain existing
+`OperandIdentity` instances. Normal typed register binding reuses mixed-domain
+admission before dispatching to the existing emitters and `circuit.append(op)`.
+
+```python
+from flagquantum.compiler.artifacts._operand_views import (
+    OperandDomain, admit_operand_identity, cast_operand_word,
+)
+from flagquantum.compiler.artifacts.operand_identity import OperandIdentity, OperandKind
+
+qubit = OperandIdentity(OperandKind.QUANTUM, 17)
+assert admit_operand_identity(qubit, OperandDomain.Z_OPERAND) is qubit
+word = qubit.physical_word
+assert bool(cast_operand_word(word, OperandDomain.Z_OPERAND, OperandKind.BOOLEAN))
+assert not bool(cast_operand_word(word, OperandDomain.MIXED_OPERAND, OperandKind.BOOLEAN))
+```
+
+Run `tests/unit/test_operand_union_views.py` with the existing identity, array,
+broadcast, condition-scope and shared erasure regressions after changing this
+boundary. The complete fourteen-file mapping and raw/effective guard accounting
+are recorded in `docs/development/OPERAND_UNION_AUDIT.md`.

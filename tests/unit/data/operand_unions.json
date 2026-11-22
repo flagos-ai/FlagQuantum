@@ -1,0 +1,2624 @@
+{
+  "pin": "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453",
+  "frozen_blobs": {
+    "kickmix/src/kickmix/id/bit_or_bool.h": "c666537f9caf2fc53eb3817a55d6d226448dfdcf",
+    "kickmix/src/kickmix/id/bit_or_false.cc": "5b987d89edad14086bf74b8a6f2e62f215a341d8",
+    "kickmix/src/kickmix/id/bit_or_false.h": "369aadb9d3181775f598feaf2e05f323f3d3cf0a",
+    "kickmix/src/kickmix/id/qubit_or_bit.h": "80ca03f58a672a776202d8a9aefd6434146e0f75",
+    "kickmix/src/kickmix/id/qubit_or_bit_or_bool.cc": "5e0f89c000125f29b1211c0b8289b3d4f4f56c24",
+    "kickmix/src/kickmix/id/qubit_or_bit_or_bool.h": "97bd09c7e45305f33e66d22338e89611e4f3e216",
+    "kickmix/src/kickmix/id/qubit_or_false.cc": "d9b74a1ebbbf8068caf90307596bde269bfff375",
+    "kickmix/src/kickmix/id/qubit_or_false.h": "76caeb5bcf6d75e1a44fad1496e7f9e2ea3fa07c",
+    "kickmix/src/kickmix/id/qubit_or_minus_state.h": "467a51206dbde3b28e66fb309a8e47db903b1f14",
+    "kickmix/src/kickmix/id/qubit_or_true.h": "acf71dc3c0748fca268b2b4544a5882ed2c53703",
+    "kickmix/src/kickmix/id/qubit_or_xbit_or_xbool.cc": "05c456aea2d1f7cdcff50cc25484b2b9ec2f455d",
+    "kickmix/src/kickmix/id/qubit_or_xbit_or_xbool.h": "76fac22c0956726e31e29e7d3aa448898595f8fb",
+    "kickmix/src/kickmix/id/qubit_or_xzbit_or_xzbool.cc": "1b1ff23ec51d3b3d4cd6ea10fa3bb6d2c0e23225",
+    "kickmix/src/kickmix/id/qubit_or_xzbit_or_xzbool.h": "a6bfbf955aad9a268840edde4242f5df2fda1edc",
+    "kickmix/src/kickmix/id/id_tagging.h": "d002cac7b2b806ac686fbf5199d8690aca7453c1",
+    "kickmix/src/kickmix/id/bit_id.cc": "6e44d06010d9238d27894074a31a25a0b6cd222c",
+    "kickmix/src/kickmix/id/bit_id.h": "52f239f32990e1a6272c39fa8b2a348af7118229",
+    "kickmix/src/kickmix/id/qubit_id.cc": "b4f83d750aa3033dfd8e76ff63bdd9b718ba2500",
+    "kickmix/src/kickmix/id/qubit_id.h": "40f58ecbaecceb7c32e3385a630acebff419c830",
+    "kickmix/src/kickmix/id/register_id.cc": "b239b23f5278dec2b28cdcc898b77391b3a9a0dd",
+    "kickmix/src/kickmix/id/register_id.h": "5f5bc645f2d0ff61a4babcb59eae17f23cc65ae5",
+    "kickmix/src/kickmix/id/xbit_id.cc": "82587898a147df47f7d07551e03f34f30c40d999",
+    "kickmix/src/kickmix/id/xbit_id.h": "66ca34e7f4c268680179dcf31b245dc2c0c8db6b",
+    "kickmix/src/kickmix/id/xbool.cc": "a5cbda16059a932217d3475fb859d59095119793",
+    "kickmix/src/kickmix/id/xbool.h": "8d3c26673b815dd51df5f1b2eabf3c9786922e73",
+    "kickmix/src/kickmix/py/circuit/ops/cx.pybind.cc": "de54a2df66f20ffb0e11ada82aa46c9a91c37784",
+    "kickmix/src/kickmix/py/circuit/ops/cx.cc": "b83879b628ef730c0ca6c499868d0eb467e7d2a4",
+    "kickmix/src/kickmix/build/circuit_builder.cc": "cb165727a016fde525a4708233c985c52614ff64",
+    "kickmix/src/kickmix/build/circuit_builder.h": "fd05956a28c443f414310781f2926a2ef1f09208"
+  },
+  "source_rows": [
+    "constructible\tclassical_boolean\t1\t1\t0\t0\t0\t0\t1",
+    "constructible\tclassical_false\t1\t1\t0\t0\t0\t1\t1",
+    "constructible\tquantum_classical\t0\t1\t1\t0\t0\t0\t1",
+    "constructible\tz_operand\t1\t1\t1\t0\t0\t0\t1",
+    "constructible\tquantum_false\t0\t0\t1\t0\t0\t0\t1",
+    "constructible\tquantum_minus\t0\t0\t1\t1\t0\t0\t0",
+    "constructible\tquantum_true\t1\t0\t1\t0\t0\t0\t0",
+    "constructible\tx_operand\t0\t0\t1\t1\t1\t0\t1",
+    "constructible\tmixed_operand\t1\t1\t1\t1\t1\t0\t1",
+    "bitbool\t536870912\t0\tb0\tb0\t0\t1\t1\t536870912\t1\t1\t0",
+    "restricted\t0\t536870912\t1\t536870912\t0\tb0\t1\t1073741824\t1\t1073741824\t0\tq0\t1",
+    "qubitbit\t0\t0\t0\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t536870912\t0\t1\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t1073741824\t0\t0\t1\tq0\t536870912\t1073741824\t1",
+    "qubitconstant\t0\t1073741824\t0\t1\t0\t1073741824\t1073741824\t0\t1\t0\t1073741824\tq0\t1",
+    "z\t536870912\t0\t1\tb0\tb0\t0\t0\t0\t1\t0\t1\t536870912\t1073741824\t1",
+    "z\t1073741824\t0\t2\tq0\tq0\t0\t0\t0\t0\t1\t1\t536870912\t1073741824\t1",
+    "z\t1073741824\t0\t2\tq0\tq0\t0\t0\t0\t0\t1\t1\t536870912\t1073741824\t1",
+    "z\t1073741824\t0\t2\tq0\tq0\t0\t0\t0\t0\t1\t1\t536870912\t1073741824\t1",
+    "z\t536870912\t0\t1\tb0\tb0\t0\t0\t0\t1\t0\t1\t536870912\t1073741824\t1",
+    "x\t1073741824\t0\t2\tq0\tq0\t0\t0\t1\t0\t0\t2147483648\t1073741824\t1",
+    "x\t2147483648\t0\t4\t(X)b0\t(X)b0\t0\t1\t0\t0\t0\t2147483648\t1073741824\t1",
+    "x\t1073741824\t0\t2\tq0\tq0\t0\t0\t1\t0\t0\t2147483648\t1073741824\t1",
+    "mixed\t536870912\t0\t1\tb0\tb0\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t536870912\t536870912\t1",
+    "mixed\t1073741824\t0\t2\tq0\tq0\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t1073741824\t1073741824\t1",
+    "mixed\t2147483648\t0\t4\txb0\txb0\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t2147483648\t2147483648\t1",
+    "mixed\t1073741824\t0\t2\tq0\tq0\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t1073741824\t1073741824\t1",
+    "mixed\t536870912\t0\t1\tb0\tb0\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t536870912\t536870912\t1",
+    "mixed\t2147483648\t0\t4\txb0\txb0\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t2147483648\t2147483648\t1",
+    "bitbool\t536870913\t1\tb1\tb1\t0\t1\t1\t536870913\t1\t1\t0",
+    "restricted\t1\t536870913\t1\t536870913\t1\tb1\t1\t1073741825\t1\t1073741825\t1\tq1\t1",
+    "qubitbit\t0\t0\t0\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t536870913\t1\t1\t0\tb1\t536870913\t1073741825\t1",
+    "qubitbit\t1073741825\t1\t0\t1\tq1\t536870913\t1073741825\t1",
+    "qubitconstant\t1\t1073741825\t0\t1\t1\t1073741825\t1073741825\t0\t1\t1\t1073741825\tq1\t1",
+    "z\t536870913\t1\t1\tb1\tb1\t0\t0\t0\t1\t0\t1\t536870913\t1073741825\t1",
+    "z\t1073741825\t1\t2\tq1\tq1\t0\t0\t0\t0\t1\t1\t536870913\t1073741825\t1",
+    "z\t1073741825\t1\t2\tq1\tq1\t0\t0\t0\t0\t1\t1\t536870913\t1073741825\t1",
+    "z\t1073741825\t1\t2\tq1\tq1\t0\t0\t0\t0\t1\t1\t536870913\t1073741825\t1",
+    "z\t536870913\t1\t1\tb1\tb1\t0\t0\t0\t1\t0\t1\t536870913\t1073741825\t1",
+    "x\t1073741825\t1\t2\tq1\tq1\t0\t0\t1\t0\t0\t2147483649\t1073741825\t1",
+    "x\t2147483649\t1\t4\t(X)b1\t(X)b1\t0\t1\t0\t0\t0\t2147483649\t1073741825\t1",
+    "x\t1073741825\t1\t2\tq1\tq1\t0\t0\t1\t0\t0\t2147483649\t1073741825\t1",
+    "mixed\t536870913\t1\t1\tb1\tb1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t536870913\t536870913\t1",
+    "mixed\t1073741825\t1\t2\tq1\tq1\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t1073741825\t1073741825\t1",
+    "mixed\t2147483649\t1\t4\txb1\txb1\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t2147483649\t2147483649\t1",
+    "mixed\t1073741825\t1\t2\tq1\tq1\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t1073741825\t1073741825\t1",
+    "mixed\t536870913\t1\t1\tb1\tb1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t536870913\t536870913\t1",
+    "mixed\t2147483649\t1\t4\txb1\txb1\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870913\t1073741825\t2147483649\t2147483649\t2147483649\t1",
+    "bitbool\t536870929\t17\tb17\tb17\t0\t1\t1\t536870929\t1\t1\t0",
+    "restricted\t17\t536870929\t1\t536870929\t17\tb17\t1\t1073741841\t1\t1073741841\t17\tq17\t1",
+    "qubitbit\t0\t0\t0\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t536870929\t17\t1\t0\tb17\t536870929\t1073741841\t1",
+    "qubitbit\t1073741841\t17\t0\t1\tq17\t536870929\t1073741841\t1",
+    "qubitconstant\t17\t1073741841\t0\t1\t17\t1073741841\t1073741841\t0\t1\t17\t1073741841\tq17\t1",
+    "z\t536870929\t17\t1\tb17\tb17\t0\t0\t0\t1\t0\t1\t536870929\t1073741841\t1",
+    "z\t1073741841\t17\t2\tq17\tq17\t0\t0\t0\t0\t1\t1\t536870929\t1073741841\t1",
+    "z\t1073741841\t17\t2\tq17\tq17\t0\t0\t0\t0\t1\t1\t536870929\t1073741841\t1",
+    "z\t1073741841\t17\t2\tq17\tq17\t0\t0\t0\t0\t1\t1\t536870929\t1073741841\t1",
+    "z\t536870929\t17\t1\tb17\tb17\t0\t0\t0\t1\t0\t1\t536870929\t1073741841\t1",
+    "x\t1073741841\t17\t2\tq17\tq17\t0\t0\t1\t0\t0\t2147483665\t1073741841\t1",
+    "x\t2147483665\t17\t4\t(X)b17\t(X)b17\t0\t1\t0\t0\t0\t2147483665\t1073741841\t1",
+    "x\t1073741841\t17\t2\tq17\tq17\t0\t0\t1\t0\t0\t2147483665\t1073741841\t1",
+    "mixed\t536870929\t17\t1\tb17\tb17\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t536870929\t536870929\t1",
+    "mixed\t1073741841\t17\t2\tq17\tq17\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t1073741841\t1073741841\t1",
+    "mixed\t2147483665\t17\t4\txb17\txb17\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t2147483665\t2147483665\t1",
+    "mixed\t1073741841\t17\t2\tq17\tq17\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t1073741841\t1073741841\t1",
+    "mixed\t536870929\t17\t1\tb17\tb17\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t536870929\t536870929\t1",
+    "mixed\t2147483665\t17\t4\txb17\txb17\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t2147483665\t2147483665\t1",
+    "bitbool\t1036870912\t500000000\tb500000000\tb500000000\t0\t1\t1\t1036870912\t1\t1\t0",
+    "restricted\t500000000\t1036870912\t1\t1036870912\t500000000\tb500000000\t1\t1573741824\t1\t1573741824\t500000000\tq500000000\t1",
+    "qubitbit\t0\t0\t0\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t1036870912\t500000000\t1\t0\tb500000000\t1036870912\t1573741824\t1",
+    "qubitbit\t1573741824\t500000000\t0\t1\tq500000000\t1036870912\t1573741824\t1",
+    "qubitconstant\t500000000\t1573741824\t0\t1\t500000000\t1573741824\t1573741824\t0\t1\t500000000\t1573741824\tq500000000\t1",
+    "z\t1036870912\t500000000\t1\tb500000000\tb500000000\t0\t0\t0\t1\t0\t1\t1036870912\t1573741824\t1",
+    "z\t1573741824\t500000000\t2\tq500000000\tq500000000\t0\t0\t0\t0\t1\t1\t1036870912\t1573741824\t1",
+    "z\t1573741824\t500000000\t2\tq500000000\tq500000000\t0\t0\t0\t0\t1\t1\t1036870912\t1573741824\t1",
+    "z\t1573741824\t500000000\t2\tq500000000\tq500000000\t0\t0\t0\t0\t1\t1\t1036870912\t1573741824\t1",
+    "z\t1036870912\t500000000\t1\tb500000000\tb500000000\t0\t0\t0\t1\t0\t1\t1036870912\t1573741824\t1",
+    "x\t1573741824\t500000000\t2\tq500000000\tq500000000\t0\t0\t1\t0\t0\t2647483648\t1573741824\t1",
+    "x\t2647483648\t500000000\t4\t(X)b500000000\t(X)b500000000\t0\t1\t0\t0\t0\t2647483648\t1573741824\t1",
+    "x\t1573741824\t500000000\t2\tq500000000\tq500000000\t0\t0\t1\t0\t0\t2647483648\t1573741824\t1",
+    "mixed\t1036870912\t500000000\t1\tb500000000\tb500000000\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t1036870912\t1036870912\t1",
+    "mixed\t1573741824\t500000000\t2\tq500000000\tq500000000\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t1573741824\t1573741824\t1",
+    "mixed\t2647483648\t500000000\t4\txb500000000\txb500000000\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t2647483648\t2647483648\t1",
+    "mixed\t1573741824\t500000000\t2\tq500000000\tq500000000\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t1573741824\t1573741824\t1",
+    "mixed\t1036870912\t500000000\t1\tb500000000\tb500000000\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t1036870912\t1036870912\t1",
+    "mixed\t2647483648\t500000000\t4\txb500000000\txb500000000\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t1036870912\t1573741824\t2647483648\t2647483648\t2647483648\t1",
+    "bitbool\t1073741823\t536870911\tb536870911\tb536870911\t0\t1\t1\t1073741823\t1\t1\t0",
+    "restricted\t536870911\t1073741823\t1\t1073741823\t536870911\tb536870911\t1\t1610612735\t1\t1610612735\t536870911\tq536870911\t1",
+    "qubitbit\t0\t0\t0\t0\tb0\t536870912\t1073741824\t1",
+    "qubitbit\t1073741823\t536870911\t1\t0\tb536870911\t1073741823\t1610612735\t1",
+    "qubitbit\t1610612735\t536870911\t0\t1\tq536870911\t1073741823\t1610612735\t1",
+    "qubitconstant\t536870911\t1610612735\t0\t1\t536870911\t1610612735\t1610612735\t0\t1\t536870911\t1610612735\tq536870911\t1",
+    "z\t1073741823\t536870911\t1\tb536870911\tb536870911\t0\t0\t0\t1\t0\t1\t1073741823\t1610612735\t1",
+    "z\t1610612735\t536870911\t2\tq536870911\tq536870911\t0\t0\t0\t0\t1\t1\t1073741823\t1610612735\t1",
+    "z\t1610612735\t536870911\t2\tq536870911\tq536870911\t0\t0\t0\t0\t1\t1\t1073741823\t1610612735\t1",
+    "z\t1610612735\t536870911\t2\tq536870911\tq536870911\t0\t0\t0\t0\t1\t1\t1073741823\t1610612735\t1",
+    "z\t1073741823\t536870911\t1\tb536870911\tb536870911\t0\t0\t0\t1\t0\t1\t1073741823\t1610612735\t1",
+    "x\t1610612735\t536870911\t2\tq536870911\tq536870911\t0\t0\t1\t0\t0\t2684354559\t1610612735\t1",
+    "x\t2684354559\t536870911\t4\t(X)b536870911\t(X)b536870911\t0\t1\t0\t0\t0\t2684354559\t1610612735\t1",
+    "x\t1610612735\t536870911\t2\tq536870911\tq536870911\t0\t0\t1\t0\t0\t2684354559\t1610612735\t1",
+    "mixed\t1073741823\t536870911\t1\tb536870911\tb536870911\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t1073741823\t1073741823\t1",
+    "mixed\t1610612735\t536870911\t2\tq536870911\tq536870911\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t1610612735\t1610612735\t1",
+    "mixed\t2684354559\t536870911\t4\txb536870911\txb536870911\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t2684354559\t2684354559\t1",
+    "mixed\t1610612735\t536870911\t2\tq536870911\tq536870911\t1\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t1610612735\t1610612735\t1",
+    "mixed\t1073741823\t536870911\t1\tb536870911\tb536870911\t1\t0\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t1073741823\t1073741823\t1",
+    "mixed\t2684354559\t536870911\t4\txb536870911\txb536870911\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t2684354559\t2684354559\t1",
+    "bitbool\t0\t0\tfalse\tfalse\t1\t0\t0\t536870912\t0\t1\t1",
+    "z\t0\t0\t0\tFalse\tFalse\t1\t1\t0\t0\t0\t0\t536870912\t1073741824\t1",
+    "x\t1610612736\t0\t3\t|+>\t|+>\t1\t0\t0\t1\t0\t2147483648\t1073741824\t1",
+    "mixed\t0\t0\t0\tfalse\tfalse\t1\t0\t1\t0\t0\t0\t0\t0\t1\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t0\t0\t1",
+    "mixed\t1610612736\t0\t3\tXBool(false)\tXBool(false)\t0\t1\t0\t0\t0\t1\t0\t0\t0\t1\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t1610612736\t1610612736\t1",
+    "bitbool\t1\t1\ttrue\ttrue\t1\t0\t1\t536870913\t0\t1\t1",
+    "z\t1\t1\t0\tTrue\tTrue\t1\t0\t1\t0\t0\t1\t536870913\t1073741825\t1",
+    "x\t1610612737\t1\t3\t|->\t|->\t1\t0\t0\t0\t1\t2147483649\t1073741825\t1",
+    "mixed\t1\t1\t0\ttrue\ttrue\t1\t0\t1\t0\t0\t0\t0\t1\t0\t0\t0\t1\t1610612736\t536870913\t1073741825\t2147483649\t1\t1\t1",
+    "mixed\t1610612737\t1\t3\tXBool(true)\tXBool(true)\t0\t1\t0\t0\t0\t1\t0\t0\t0\t0\t1\t0\t1610612737\t536870913\t1073741825\t2147483649\t1610612737\t1610612737\t1",
+    "numericfalse\t0",
+    "defaults\t0\t0\t0\t536870912\tFalse\t0\t0\t0\t1073741824\tFalse\t1\t1\t1610612737\t1\t|->\t0\t1610612736\t0",
+    "zequals\t0\t1\t0\t0\t0\t0\t0\t1\t0\t0\t0",
+    "zorder\t0\t0\t1\t0",
+    "zorder\t0\t1\t0\t1",
+    "zorder\t0\t536870912\t0\t1",
+    "zorder\t0\t536870929\t0\t1",
+    "zorder\t0\t1073741824\t0\t1",
+    "zorder\t0\t1073741841\t0\t1",
+    "zequals\t1\t0\t1\t0\t0\t0\t0\t0\t1\t0\t0",
+    "zorder\t1\t0\t0\t0",
+    "zorder\t1\t1\t1\t0",
+    "zorder\t1\t536870912\t0\t1",
+    "zorder\t1\t536870929\t0\t1",
+    "zorder\t1\t1073741824\t0\t1",
+    "zorder\t1\t1073741841\t0\t1",
+    "zequals\t536870912\t0\t0\t1\t0\t0\t0\t0\t0\t1\t0",
+    "zorder\t536870912\t0\t0\t0",
+    "zorder\t536870912\t1\t0\t0",
+    "zorder\t536870912\t536870912\t1\t0",
+    "zorder\t536870912\t536870929\t0\t1",
+    "zorder\t536870912\t1073741824\t0\t1",
+    "zorder\t536870912\t1073741841\t0\t1",
+    "zequals\t536870929\t0\t0\t0\t1\t0\t0\t0\t0\t0\t1",
+    "zorder\t536870929\t0\t0\t0",
+    "zorder\t536870929\t1\t0\t0",
+    "zorder\t536870929\t536870912\t0\t0",
+    "zorder\t536870929\t536870929\t1\t0",
+    "zorder\t536870929\t1073741824\t0\t1",
+    "zorder\t536870929\t1073741841\t0\t1",
+    "zequals\t1073741824\t0\t0\t0\t0\t1\t0\t0\t0\t0\t0",
+    "zorder\t1073741824\t0\t0\t0",
+    "zorder\t1073741824\t1\t0\t0",
+    "zorder\t1073741824\t536870912\t0\t0",
+    "zorder\t1073741824\t536870929\t0\t0",
+    "zorder\t1073741824\t1073741824\t1\t0",
+    "zorder\t1073741824\t1073741841\t0\t1",
+    "zequals\t1073741841\t0\t0\t0\t0\t0\t1\t0\t0\t0\t0",
+    "zorder\t1073741841\t0\t0\t0",
+    "zorder\t1073741841\t1\t0\t0",
+    "zorder\t1073741841\t536870912\t0\t0",
+    "zorder\t1073741841\t536870929\t0\t0",
+    "zorder\t1073741841\t1073741824\t0\t0",
+    "zorder\t1073741841\t1073741841\t1\t0",
+    "xequals\t1073741824\t1",
+    "xequals\t2147483648\t0",
+    "xequals\t1610612737\t0",
+    "order\t0\t0\t1\t0",
+    "order\t0\t1\t0\t1",
+    "order\t0\t536870912\t0\t1",
+    "order\t0\t536870929\t0\t1",
+    "order\t0\t1073741824\t0\t1",
+    "order\t0\t1073741841\t0\t1",
+    "order\t0\t1610612736\t0\t1",
+    "order\t0\t1610612737\t0\t1",
+    "order\t0\t2147483648\t0\t1",
+    "order\t0\t2147483665\t0\t1",
+    "order\t1\t0\t0\t0",
+    "order\t1\t1\t1\t0",
+    "order\t1\t536870912\t0\t1",
+    "order\t1\t536870929\t0\t1",
+    "order\t1\t1073741824\t0\t1",
+    "order\t1\t1073741841\t0\t1",
+    "order\t1\t1610612736\t0\t1",
+    "order\t1\t1610612737\t0\t1",
+    "order\t1\t2147483648\t0\t1",
+    "order\t1\t2147483665\t0\t1",
+    "order\t536870912\t0\t0\t0",
+    "order\t536870912\t1\t0\t0",
+    "order\t536870912\t536870912\t1\t0",
+    "order\t536870912\t536870929\t0\t1",
+    "order\t536870912\t1073741824\t0\t1",
+    "order\t536870912\t1073741841\t0\t1",
+    "order\t536870912\t1610612736\t0\t1",
+    "order\t536870912\t1610612737\t0\t1",
+    "order\t536870912\t2147483648\t0\t1",
+    "order\t536870912\t2147483665\t0\t1",
+    "order\t536870929\t0\t0\t0",
+    "order\t536870929\t1\t0\t0",
+    "order\t536870929\t536870912\t0\t0",
+    "order\t536870929\t536870929\t1\t0",
+    "order\t536870929\t1073741824\t0\t1",
+    "order\t536870929\t1073741841\t0\t1",
+    "order\t536870929\t1610612736\t0\t1",
+    "order\t536870929\t1610612737\t0\t1",
+    "order\t536870929\t2147483648\t0\t1",
+    "order\t536870929\t2147483665\t0\t1",
+    "order\t1073741824\t0\t0\t0",
+    "order\t1073741824\t1\t0\t0",
+    "order\t1073741824\t536870912\t0\t0",
+    "order\t1073741824\t536870929\t0\t0",
+    "order\t1073741824\t1073741824\t1\t0",
+    "order\t1073741824\t1073741841\t0\t1",
+    "order\t1073741824\t1610612736\t0\t1",
+    "order\t1073741824\t1610612737\t0\t1",
+    "order\t1073741824\t2147483648\t0\t1",
+    "order\t1073741824\t2147483665\t0\t1",
+    "order\t1073741841\t0\t0\t0",
+    "order\t1073741841\t1\t0\t0",
+    "order\t1073741841\t536870912\t0\t0",
+    "order\t1073741841\t536870929\t0\t0",
+    "order\t1073741841\t1073741824\t0\t0",
+    "order\t1073741841\t1073741841\t1\t0",
+    "order\t1073741841\t1610612736\t0\t1",
+    "order\t1073741841\t1610612737\t0\t1",
+    "order\t1073741841\t2147483648\t0\t1",
+    "order\t1073741841\t2147483665\t0\t1",
+    "order\t1610612736\t0\t0\t0",
+    "order\t1610612736\t1\t0\t0",
+    "order\t1610612736\t536870912\t0\t0",
+    "order\t1610612736\t536870929\t0\t0",
+    "order\t1610612736\t1073741824\t0\t0",
+    "order\t1610612736\t1073741841\t0\t0",
+    "order\t1610612736\t1610612736\t1\t0",
+    "order\t1610612736\t1610612737\t0\t1",
+    "order\t1610612736\t2147483648\t0\t1",
+    "order\t1610612736\t2147483665\t0\t1",
+    "order\t1610612737\t0\t0\t0",
+    "order\t1610612737\t1\t0\t0",
+    "order\t1610612737\t536870912\t0\t0",
+    "order\t1610612737\t536870929\t0\t0",
+    "order\t1610612737\t1073741824\t0\t0",
+    "order\t1610612737\t1073741841\t0\t0",
+    "order\t1610612737\t1610612736\t0\t0",
+    "order\t1610612737\t1610612737\t1\t0",
+    "order\t1610612737\t2147483648\t0\t1",
+    "order\t1610612737\t2147483665\t0\t1",
+    "order\t2147483648\t0\t0\t0",
+    "order\t2147483648\t1\t0\t0",
+    "order\t2147483648\t536870912\t0\t0",
+    "order\t2147483648\t536870929\t0\t0",
+    "order\t2147483648\t1073741824\t0\t0",
+    "order\t2147483648\t1073741841\t0\t0",
+    "order\t2147483648\t1610612736\t0\t0",
+    "order\t2147483648\t1610612737\t0\t0",
+    "order\t2147483648\t2147483648\t1\t0",
+    "order\t2147483648\t2147483665\t0\t1",
+    "order\t2147483665\t0\t0\t0",
+    "order\t2147483665\t1\t0\t0",
+    "order\t2147483665\t536870912\t0\t0",
+    "order\t2147483665\t536870929\t0\t0",
+    "order\t2147483665\t1073741824\t0\t0",
+    "order\t2147483665\t1073741841\t0\t0",
+    "order\t2147483665\t1610612736\t0\t0",
+    "order\t2147483665\t1610612737\t0\t0",
+    "order\t2147483665\t2147483648\t0\t0",
+    "order\t2147483665\t2147483665\t1\t0",
+    "rawrestricted\t2\ttrue\tFalse\tFalse\t{invalid QubitOrMinusState instance}\tb2\t0\t0\t2\t1073741826",
+    "mixed\t2\t2\t0\tfalse\tfalse\t1\t0\t1\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870914\t1073741826\t2147483650\t2\t2\t1",
+    "z\t2\t2\t0\tTrue\tTrue\t1\t0\t0\t0\t0\t1\t536870914\t1073741826\t1",
+    "x\t2\t2\t0\tQubitOrXBitOrXBool{???}\tQubitOrXBitOrXBool{???}\t0\t0\t0\t0\t0\t2147483650\t1073741826\t1",
+    "rawrestricted\t1610612738\ttrue\tFalse\tFalse\t{invalid QubitOrMinusState instance}\tb2\t0\t0\t2\t1073741826",
+    "mixed\t1610612738\t2\t3\tXBool(false)\tXBool(false)\t0\t1\t0\t0\t0\t1\t0\t0\t0\t0\t0\t0\t1610612736\t536870914\t1073741826\t2147483650\t1610612738\t1610612738\t1",
+    "z\t1610612738\t2\t3\tTrue\tTrue\t0\t0\t0\t0\t0\t1\t536870914\t1073741826\t1",
+    "x\t1610612738\t2\t3\tQubitOrXBitOrXBool{???}\tQubitOrXBitOrXBool{???}\t1\t0\t0\t0\t0\t2147483650\t1073741826\t1",
+    "rawrestricted\t2684354560\ttrue\tFalse\tFalse\t{invalid QubitOrMinusState instance}\tb0\t0\t0\t0\t1073741824",
+    "mixed\t2684354560\t0\t5\tQubitOrXZBitOrXZBool{.tagged_id=2684354560}\tQubitOrXZBitOrXZBool{.tagged_id=2684354560}\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870912\t1073741824\t2147483648\t2684354560\t2684354560\t1",
+    "z\t2684354560\t0\t5\tTrue\tTrue\t0\t0\t0\t0\t0\t1\t536870912\t1073741824\t1",
+    "x\t2684354560\t0\t5\tQubitOrXBitOrXBool{???}\tQubitOrXBitOrXBool{???}\t0\t0\t0\t0\t0\t2147483648\t1073741824\t1",
+    "rawrestricted\t2684354577\ttrue\tFalse\tFalse\t{invalid QubitOrMinusState instance}\tb17\t0\t0\t17\t1073741841",
+    "mixed\t2684354577\t17\t5\tQubitOrXZBitOrXZBool{.tagged_id=2684354577}\tQubitOrXZBitOrXZBool{.tagged_id=2684354577}\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t536870929\t1073741841\t2147483665\t2684354577\t2684354577\t1",
+    "z\t2684354577\t17\t5\tTrue\tTrue\t0\t0\t0\t0\t0\t1\t536870929\t1073741841\t1",
+    "x\t2684354577\t17\t5\tQubitOrXBitOrXBool{???}\tQubitOrXBitOrXBool{???}\t0\t0\t0\t0\t0\t2147483665\t1073741841\t1",
+    "rawrestricted\t4294967295\ttrue\tFalse\tFalse\t{invalid QubitOrMinusState instance}\tb536870911\t0\t0\t536870911\t1610612735",
+    "mixed\t4294967295\t536870911\t7\tQubitOrXZBitOrXZBool{.tagged_id=4294967295}\tQubitOrXZBitOrXZBool{.tagged_id=4294967295}\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1610612736\t1073741823\t1610612735\t2684354559\t4294967295\t4294967295\t1",
+    "z\t4294967295\t536870911\t7\tTrue\tTrue\t0\t0\t0\t0\t0\t1\t1073741823\t1610612735\t1",
+    "x\t4294967295\t536870911\t7\tQubitOrXBitOrXBool{???}\tQubitOrXBitOrXBool{???}\t0\t0\t0\t0\t0\t2684354559\t1610612735\t1"
+  ],
+  "compile_refusals": [
+    {
+      "case": "false_restricted",
+      "expression": "BitIdOrFalse(true)",
+      "category": "constant expression"
+    },
+    {
+      "case": "true_restricted",
+      "expression": "QubitOrTrue(false)",
+      "category": "constant expression"
+    },
+    {
+      "case": "minus_restricted",
+      "expression": "QubitOrMinusState(PLUS_KET)",
+      "category": "constant expression"
+    },
+    {
+      "case": "true_no_default",
+      "expression": "QubitOrTrue()",
+      "category": "no matching constructor"
+    },
+    {
+      "case": "minus_no_default",
+      "expression": "QubitOrMinusState()",
+      "category": "no matching constructor"
+    },
+    {
+      "case": "BitOrBool",
+      "expression": "BitOrBool(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrBit",
+      "expression": "QubitOrBit(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrFalse",
+      "expression": "QubitOrFalse(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrTrue",
+      "expression": "QubitOrTrue(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrMinusState",
+      "expression": "QubitOrMinusState(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrBitOrBool",
+      "expression": "QubitOrBitOrBool(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrXBitOrXBool",
+      "expression": "QubitOrXBitOrXBool(uint32_t{1})",
+      "category": "deleted function"
+    },
+    {
+      "case": "QubitOrXZBitOrXZBool",
+      "expression": "QubitOrXZBitOrXZBool(uint32_t{1})",
+      "category": "deleted function"
+    }
+  ],
+  "gate_consumers": [
+    {
+      "control": "false",
+      "target": "quantum",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "false",
+      "target": "x_classical",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "false",
+      "target": "plus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "false",
+      "target": "minus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "true",
+      "target": "quantum",
+      "kmx": "X q1",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "true",
+      "target": "x_classical",
+      "kmx": "NEG if b0",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "true",
+      "target": "plus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "true",
+      "target": "minus",
+      "kmx": "NEG",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical",
+      "target": "quantum",
+      "kmx": "X q1 if b1",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical",
+      "target": "x_classical",
+      "kmx": "PUSH_CONDITION if b0\nNEG if b1\nPOP_CONDITION",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical",
+      "target": "plus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical",
+      "target": "minus",
+      "kmx": "NEG if b1",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical_alias",
+      "target": "quantum",
+      "kmx": "X q1 if b0",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            5
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            },
+            {
+              "X": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical_alias",
+      "target": "x_classical",
+      "kmx": "PUSH_CONDITION if b0\nNEG if b0\nPOP_CONDITION",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            },
+            {
+              "NEG": 1,
+              "POP_CONDITION": 1,
+              "PUSH_CONDITION": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical_alias",
+      "target": "plus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "classical_alias",
+      "target": "minus",
+      "kmx": "NEG if b0",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "1",
+            "1",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            },
+            {
+              "NEG": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "quantum",
+      "target": "quantum",
+      "kmx": "CX q0 q1",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            6
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            6
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            6
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            6
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            },
+            {
+              "CX": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "quantum",
+      "target": "x_classical",
+      "kmx": "Z q0 if b0",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "quantum",
+      "target": "plus",
+      "kmx": "",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "0",
+            "0"
+          ],
+          "lane_counts": [
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    {
+      "control": "quantum",
+      "target": "minus",
+      "kmx": "Z q0",
+      "basis_cases": [
+        {
+          "classical_bits": [
+            0,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            0,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            0
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        },
+        {
+          "classical_bits": [
+            1,
+            1
+          ],
+          "quantum_words": [
+            12,
+            10
+          ],
+          "phase_half_turns": [
+            "0",
+            "0",
+            "1",
+            "1"
+          ],
+          "lane_counts": [
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            },
+            {
+              "Z": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "extension_sha256": "5e849075b49d895cca761fae864c8561b54362a6158fbfcabe7e9eb6e96d789e"
+}
