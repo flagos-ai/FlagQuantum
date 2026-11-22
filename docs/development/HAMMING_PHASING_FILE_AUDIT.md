@@ -141,3 +141,73 @@ because this batch changes tests and the audit only. The first regression
 exposed the two precision violations above (599 passes, two failures); the
 final run records their exact output rather than treating them as tolerance
 successes. No production implementation or immutable source was changed.
+
+## Stored dependency graph interface
+
+The complete-file catalog closure retains both source roots. Input `x` is an
+MSB-first unsigned THRU word. The shared count tree produces owned RIGHT junk
+and count words, and its specialized exact adjoint consumes both. Gradient
+storage belongs to the caller. Direct weighted powers follow LSB-first source
+order. Compiler owns stored calls and lifetimes, while the example provider
+owns fresh source glyphs and literal-definition qualification.
+
+The original four-bit gradient root and its QVR child decompose successfully.
+Their scaled-add child fails finalization because an exact physical word key
+retains `QFxp(3,3)` after a call, against the declared `QFxp(3,0)` cost output.
+Native execution restores the declared storage view with an explicit Cast below
+this original failure boundary. The source remains unchanged. That child is
+recorded as an original dtype refusal, with no exact decomposition or drawing
+claim. Existing exact source-success scaled graphs retain their previous bodies.
+
+
+## Complete catalog graph evidence
+
+Both four-bit source-success roots retain seven exact recursive graphs and
+fresh source drawings, 41 original atomic contexts and the one original
+scaled-child dtype refusal described above. The export adds 793 reachable
+contextual children. Of these, 746 lie below source refusal boundaries or are
+unqualified native helpers. They carry no source decomposition-equality claim.
+The count tree and its exact adjoint each retain all 26 original ordered calls.
+
+The stored component is exercised through existing append, typed binding,
+Program copy and lowered CircuitIR JSON entry points. Complete immutable source
+operators at widths two and three agree in both directions. Noncontiguous
+reversed inputs, an entangled spectator, every raw forward/inverse measurement
+history and private-work zero are checked. Literal-definition mutation tests
+reject swapped CX operands and altered S phases. Larger four-bit factory
+evidence uses complete call graphs and primitive inventories, not a full
+79-qubit statevector.
+
+The four-bit direct body uses 12 T/T-dagger, 50 CX, three phase instructions
+and three measurements on ten physical wires. The gradient body uses 1108
+T/T-dagger, 2592 CX and 277 measurements on 79 physical wires. Minimal clean
+pool rebinding retains every instruction and allocation event. The independent
+source models retain direct 3 And / 35 Clifford / 3 rotations / 3 measurements
+and gradient 561 Toffoli / 3 And / 35 Clifford / 3 measurements. Default
+T-equivalent estimates are 45 and 2256 respectively. Original direct QubitCount
+returns ten. Original recursive gradient QubitCount raises the mixed-QFxp
+finalization error; 45 is the existing declared logical formula, not a
+successful upstream recursive query.
+
+Thirteen frozen source/test/notebook/dependency blobs remain unchanged.
+Qualtran 0.7.0 and native Kickmix 0.1 Simulator were verified. The first resource
+receipt caught ValueError rather than the upstream RuntimeError wrapper; the
+corrected receipt asserts the precise root and mixed-QFxp diagnostic.
+Q-0668 remains open for the previously recorded original boundaries, and
+Q-0120 remains open for other catalog groups.
+
+
+## Concentrated acceptance
+
+Execution/reference regression passes 960 cases, including the shared count
+component, Hamming phasing, variable/cost phasing, gradients, controlled rotations
+and restored optional SDK lane. Relevant local integration passes 29 cases.
+The catalog set passes all 860 selected cases across a retained 97-case prefix
+and a 763-case suffix. The initial run stopped on ENOSPC during generated JSON
+export. Only that batch's verified generated JSON/text directory was removed.
+The suffix runner asserts the unchanged 860-case collection and exact first
+remaining node, then reuses the accepted prefix. A separate plugin-load
+diagnostic is retained; the incompatible optional platformdirs pytest plugin
+is excluded as in the accepted SDK lane. Fourteen existing notebook syntax
+warnings remain. Strict mypy over eight files, Black, Ruff, Compiler/integration
+scope, architecture, multilevel IR, protected API and whitespace checks pass.

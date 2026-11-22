@@ -26,6 +26,11 @@ from examples.algorithms.component_ui_dependencies import (
     dependency_graph,
 )
 from examples.algorithms.hamming_phasing_catalog import HammingPhasingExample
+from examples.algorithms.hamming_phasing_decomposition import (
+    hamming_phase_child,
+    hamming_phase_program,
+    hamming_phase_score,
+)
 from examples.algorithms.hubbard_qubitization_resources import notebook_signature
 from examples.algorithms.phase_gradient_catalog import (
     GradientAdditionExample,
@@ -879,6 +884,8 @@ def score(component: object) -> object:
             attributes(component),
             via_gradient=any(r.name == "phase_grad" for r in signature(component)),
         )
+    if result is None:
+        result = hamming_phase_score(name(component), attributes(component))
     return (
         result
         if result is not None
@@ -893,6 +900,8 @@ def decomposition(component: object) -> ProgramRecord | None:
         record = gradient_program(name(component), attributes(component))
     if record is None:
         record = phase_rotation_program(name(component), attributes(component))
+    if record is None:
+        record = hamming_phase_program(name(component), attributes(component))
     return (
         record
         if record is not None
@@ -911,6 +920,7 @@ def _child_presentation(
         gradient_child(record, entry, root)
         or phase_rotation_child(record, entry, attributes(root))
         or qvr_child(record, entry, attributes(root))
+        or hamming_phase_child(record, entry, attributes(root))
     )
 
 

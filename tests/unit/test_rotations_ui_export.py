@@ -157,6 +157,8 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         assert data["msd"] is not None
         assert data["msd"] == first_scores[key]
         if identifier in {
+            "hamming_weight_phasing",
+            "hamming_weight_phasing_via_phase_gradient",
             "qvr_zpow",
             "qvr_phase_gradient",
             "square_via_phase_gradient",
