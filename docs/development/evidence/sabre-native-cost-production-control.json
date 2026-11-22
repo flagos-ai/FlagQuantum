@@ -1,0 +1,231 @@
+{
+  "report": {
+    "implementation_commit": "ffbc83e754522f127e4f80d0737f45544d70aef0",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "python": "3.12.14",
+    "comparison": "contemporaneous production default versus existing experimental native-cost selector",
+    "scope": "shared-host development observations, no qualified speedup/RSS/ranking claim",
+    "policy_sha256": "eaf8de069d8d7f4bc3c8208426159436954ef6c37ef0574ea3d5f10efbed3fe7",
+    "runner_sha256": "49aed63584c4e7b68bf884829d758eb3674cbfe344df7328a44eb3f1c0a8790c",
+    "rows": [
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.11888104100944474,
+            0.10183279099874198,
+            0.1040752500121016,
+            0.11812654201639816,
+            0.10148145799757913,
+            0.12058270801207982,
+            0.10211516698473133
+          ],
+          "candidate": [
+            0.22190104200853966,
+            0.23825395799940452,
+            0.22416733400314115,
+            0.22196866699960083,
+            0.23737233399879187,
+            0.22295462500187568,
+            0.2235163330042269
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.1040752500121016,
+          "candidate": 0.2235163330042269
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 1894470,
+          "candidate": 2150822
+        },
+        "outputs": {
+          "baseline": {
+            "metrics": {
+              "max_semantic_error": 1.3536401981886357e-15,
+              "full_cz_count": 65,
+              "two_body_dependency_depth": 48,
+              "verification": "full-operator"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 16,
+            "rewrite_count": 5,
+            "maximum_rewrite_inputs": 63,
+            "normalized_output_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e"
+          },
+          "candidate": {
+            "metrics": {
+              "max_semantic_error": 1.3530843112619093e-15,
+              "full_cz_count": 63,
+              "two_body_dependency_depth": 38,
+              "verification": "full-operator"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 16,
+            "rewrite_count": 6,
+            "maximum_rewrite_inputs": 63,
+            "normalized_output_sha256": "215c6820322ed157cad7c164466c24f30970395ee09b31924b6172289e2cefd7"
+          }
+        },
+        "independent_acceptances": 20
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "ring"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.1274431670026388,
+            0.1269247500167694,
+            0.12616020799032412,
+            0.12635737500386313,
+            0.1280163339979481,
+            0.11326395801734179,
+            0.1263123750104569
+          ],
+          "candidate": [
+            0.22770254200440831,
+            0.21190916700288653,
+            0.2273707080166787,
+            0.2204883329977747,
+            0.22749279197887518,
+            0.23059866702533327,
+            0.22695716700400226
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.12635737500386313,
+          "candidate": 0.2273707080166787
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 2407997,
+          "candidate": 2452639
+        },
+        "outputs": {
+          "baseline": {
+            "metrics": {
+              "max_semantic_error": 6.761659273861517e-15,
+              "full_cz_count": 82,
+              "two_body_dependency_depth": 57,
+              "verification": "full-operator"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 20,
+            "rewrite_count": 1,
+            "maximum_rewrite_inputs": 29,
+            "normalized_output_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156"
+          },
+          "candidate": {
+            "metrics": {
+              "max_semantic_error": 6.179029502236603e-15,
+              "full_cz_count": 76,
+              "two_body_dependency_depth": 55,
+              "verification": "full-operator"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 20,
+            "rewrite_count": 4,
+            "maximum_rewrite_inputs": 32,
+            "normalized_output_sha256": "fabf1dfb5d396167184dd30241bcbd28fb840a54d62694c2c652fb627d104d25"
+          }
+        },
+        "independent_acceptances": 20
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.6086770409892779,
+            0.6232138749910519,
+            0.5951757500006352,
+            0.6518025000113994,
+            0.6483949579996988,
+            0.6390958330011927,
+            0.6336742910207249
+          ],
+          "candidate": [
+            0.6445681669865735,
+            0.646827583987033,
+            0.646611624979414,
+            0.6544946670182981,
+            0.7064736250031274,
+            0.6677732089883648,
+            0.6533358750166371
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.6336742910207249,
+          "candidate": 0.6533358750166371
+        },
+        "python_traced_peak_bytes": {
+          "baseline": 10116885,
+          "candidate": 10116829
+        },
+        "outputs": {
+          "baseline": {
+            "metrics": {
+              "max_semantic_error": 1.3843020324286894e-14,
+              "full_cz_count": 352,
+              "two_body_dependency_depth": 150,
+              "verification": "three-probes-only"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 94,
+            "rewrite_count": 38,
+            "maximum_rewrite_inputs": 45,
+            "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6"
+          },
+          "candidate": {
+            "metrics": {
+              "max_semantic_error": 1.3843020324286894e-14,
+              "full_cz_count": 352,
+              "two_body_dependency_depth": 150,
+              "verification": "three-probes-only"
+            },
+            "selected_strategy": "sabre",
+            "restored_swap_count": 94,
+            "rewrite_count": 38,
+            "maximum_rewrite_inputs": 45,
+            "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6"
+          }
+        },
+        "independent_acceptances": 20
+      }
+    ],
+    "complete": true,
+    "production_control": {
+      "source_commit": "d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277"
+    }
+  },
+  "raw_report_sha256": "76815dd045ad3c0891f80823a164ab78f6ee16ee362414838c84e9dcc7cc2776",
+  "sources_and_attempts": {
+    "fq-sabre-native-cost-production-control-20261122.py": {
+      "sha256": "49aed63584c4e7b68bf884829d758eb3674cbfe344df7328a44eb3f1c0a8790c",
+      "content": "import subprocess\nassert not subprocess.check_output(['git','diff','d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277','HEAD','--','flagquantum'],timeout=20)\nassert subprocess.check_output(['git','rev-parse','HEAD'],cwd='/private/tmp/sdkbench-product-conformance-20261121',text=True,timeout=15).strip()=='9aa9260920984e2ca05bcb293abb885fccd9c144'\nassert not subprocess.check_output(['git','status','--porcelain'],cwd='/private/tmp/sdkbench-product-conformance-20261121',timeout=15)\nimport hashlib,json,statistics,time,subprocess,platform\nfrom functools import partial\nfrom pathlib import Path\nfrom unittest.mock import patch\nimport benchmarks.compiler_cz_identity_prefix as control\nfrom benchmarks.compiler_sabre_native_cost import _select\nfrom flagquantum.compiler.topology import sabre\nharness=Path('/private/tmp/sdkbench-product-conformance-20261121');report={'implementation_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=15).strip(),'production_control_commit':'d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277','source_commit':'9aa9260920984e2ca05bcb293abb885fccd9c144','python':platform.python_version(),'comparison':'contemporaneous production default versus existing experimental native-cost selector','scope':'shared-host development observations, no qualified speedup/RSS/ranking claim','policy_sha256':hashlib.sha256(Path('benchmarks/compiler_sabre_native_cost.py').read_bytes()).hexdigest(),'runner_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'rows':[],'complete':False}\nfor case in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n samples={'baseline':[],'candidate':[]};references={};memory={}\n for iteration in range(9):\n  for mode in (('baseline','candidate') if iteration%2==0 else ('candidate','baseline')):\n   if mode=='candidate':\n    with patch.object(sabre,'_select_sabre_trials',partial(_select,native_budget=20000)):observation=control._observe(case,harness)\n   else:observation=control._observe(case,harness)\n   comparable={k:v for k,v in observation.items() if k not in {'seconds','python_peak_bytes'}}\n   if mode not in references:references[mode]=comparable\n   assert comparable==references[mode]\n   if iteration>=2:samples[mode].append(observation['seconds'])\n for mode in ('baseline','candidate'):\n  if mode=='candidate':\n   with patch.object(sabre,'_select_sabre_trials',partial(_select,native_budget=20000)):observation=control._observe(case,harness,True)\n  else:observation=control._observe(case,harness,True)\n  assert {k:v for k,v in observation.items() if k not in {'seconds','python_peak_bytes'}}==references[mode]\n  memory[mode]=observation['python_peak_bytes']\n row={'case':case,'samples_seconds':samples,'median_seconds':{k:statistics.median(v) for k,v in samples.items()},'python_traced_peak_bytes':memory,'outputs':references,'independent_acceptances':20};report['rows'].append(row);Path('/private/tmp/fq-sabre-native-cost-production-control-20261122.json').write_text(json.dumps(report,indent=2)+'\\n');print(row['case'],row['median_seconds'],flush=True)\nreport['complete']=True;Path('/private/tmp/fq-sabre-native-cost-production-control-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\n"
+    },
+    "fq-sabre-native-cost-production-control-20261122.log": {
+      "sha256": "6e7044081e458c7254886abdb10678bc9b05d1238c721e5c97c047e226f4364b",
+      "content": "(6, 'qft', 'grid') {'baseline': 0.1040752500121016, 'candidate': 0.2235163330042269}\n(6, 'repetition', 'ring') {'baseline': 0.12635737500386313, 'candidate': 0.2273707080166787}\n(12, 'qft', 'grid') {'baseline': 0.6336742910207249, 'candidate': 0.6533358750166371}\n"
+    },
+    "fq-sabre-native-cost-production-control-20261122.json": {
+      "sha256": "76815dd045ad3c0891f80823a164ab78f6ee16ee362414838c84e9dcc7cc2776",
+      "content": "{\n  \"implementation_commit\": \"ffbc83e754522f127e4f80d0737f45544d70aef0\",\n  \"production_control_commit\": \"d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277\",\n  \"source_commit\": \"9aa9260920984e2ca05bcb293abb885fccd9c144\",\n  \"python\": \"3.12.14\",\n  \"comparison\": \"contemporaneous production default versus existing experimental native-cost selector\",\n  \"scope\": \"shared-host development observations, no qualified speedup/RSS/ranking claim\",\n  \"policy_sha256\": \"eaf8de069d8d7f4bc3c8208426159436954ef6c37ef0574ea3d5f10efbed3fe7\",\n  \"runner_sha256\": \"49aed63584c4e7b68bf884829d758eb3674cbfe344df7328a44eb3f1c0a8790c\",\n  \"rows\": [\n    {\n      \"case\": [\n        6,\n        \"qft\",\n        \"grid\"\n      ],\n      \"samples_seconds\": {\n        \"baseline\": [\n          0.11888104100944474,\n          0.10183279099874198,\n          0.1040752500121016,\n          0.11812654201639816,\n          0.10148145799757913,\n          0.12058270801207982,\n          0.10211516698473133\n        ],\n        \"candidate\": [\n          0.22190104200853966,\n          0.23825395799940452,\n          0.22416733400314115,\n          0.22196866699960083,\n          0.23737233399879187,\n          0.22295462500187568,\n          0.2235163330042269\n        ]\n      },\n      \"median_seconds\": {\n        \"baseline\": 0.1040752500121016,\n        \"candidate\": 0.2235163330042269\n      },\n      \"python_traced_peak_bytes\": {\n        \"baseline\": 1894470,\n        \"candidate\": 2150822\n      },\n      \"outputs\": {\n        \"baseline\": {\n          \"metrics\": {\n            \"max_semantic_error\": 1.3536401981886357e-15,\n            \"full_cz_count\": 65,\n            \"two_body_dependency_depth\": 48,\n            \"verification\": \"full-operator\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 16,\n          \"rewrite_count\": 5,\n          \"maximum_rewrite_inputs\": 63,\n          \"normalized_output_sha256\": \"8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e\"\n        },\n        \"candidate\": {\n          \"metrics\": {\n            \"max_semantic_error\": 1.3530843112619093e-15,\n            \"full_cz_count\": 63,\n            \"two_body_dependency_depth\": 38,\n            \"verification\": \"full-operator\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 16,\n          \"rewrite_count\": 6,\n          \"maximum_rewrite_inputs\": 63,\n          \"normalized_output_sha256\": \"215c6820322ed157cad7c164466c24f30970395ee09b31924b6172289e2cefd7\"\n        }\n      },\n      \"independent_acceptances\": 20\n    },\n    {\n      \"case\": [\n        6,\n        \"repetition\",\n        \"ring\"\n      ],\n      \"samples_seconds\": {\n        \"baseline\": [\n          0.1274431670026388,\n          0.1269247500167694,\n          0.12616020799032412,\n          0.12635737500386313,\n          0.1280163339979481,\n          0.11326395801734179,\n          0.1263123750104569\n        ],\n        \"candidate\": [\n          0.22770254200440831,\n          0.21190916700288653,\n          0.2273707080166787,\n          0.2204883329977747,\n          0.22749279197887518,\n          0.23059866702533327,\n          0.22695716700400226\n        ]\n      },\n      \"median_seconds\": {\n        \"baseline\": 0.12635737500386313,\n        \"candidate\": 0.2273707080166787\n      },\n      \"python_traced_peak_bytes\": {\n        \"baseline\": 2407997,\n        \"candidate\": 2452639\n      },\n      \"outputs\": {\n        \"baseline\": {\n          \"metrics\": {\n            \"max_semantic_error\": 6.761659273861517e-15,\n            \"full_cz_count\": 82,\n            \"two_body_dependency_depth\": 57,\n            \"verification\": \"full-operator\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 20,\n          \"rewrite_count\": 1,\n          \"maximum_rewrite_inputs\": 29,\n          \"normalized_output_sha256\": \"3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156\"\n        },\n        \"candidate\": {\n          \"metrics\": {\n            \"max_semantic_error\": 6.179029502236603e-15,\n            \"full_cz_count\": 76,\n            \"two_body_dependency_depth\": 55,\n            \"verification\": \"full-operator\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 20,\n          \"rewrite_count\": 4,\n          \"maximum_rewrite_inputs\": 32,\n          \"normalized_output_sha256\": \"fabf1dfb5d396167184dd30241bcbd28fb840a54d62694c2c652fb627d104d25\"\n        }\n      },\n      \"independent_acceptances\": 20\n    },\n    {\n      \"case\": [\n        12,\n        \"qft\",\n        \"grid\"\n      ],\n      \"samples_seconds\": {\n        \"baseline\": [\n          0.6086770409892779,\n          0.6232138749910519,\n          0.5951757500006352,\n          0.6518025000113994,\n          0.6483949579996988,\n          0.6390958330011927,\n          0.6336742910207249\n        ],\n        \"candidate\": [\n          0.6445681669865735,\n          0.646827583987033,\n          0.646611624979414,\n          0.6544946670182981,\n          0.7064736250031274,\n          0.6677732089883648,\n          0.6533358750166371\n        ]\n      },\n      \"median_seconds\": {\n        \"baseline\": 0.6336742910207249,\n        \"candidate\": 0.6533358750166371\n      },\n      \"python_traced_peak_bytes\": {\n        \"baseline\": 10116885,\n        \"candidate\": 10116829\n      },\n      \"outputs\": {\n        \"baseline\": {\n          \"metrics\": {\n            \"max_semantic_error\": 1.3843020324286894e-14,\n            \"full_cz_count\": 352,\n            \"two_body_dependency_depth\": 150,\n            \"verification\": \"three-probes-only\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 94,\n          \"rewrite_count\": 38,\n          \"maximum_rewrite_inputs\": 45,\n          \"normalized_output_sha256\": \"22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6\"\n        },\n        \"candidate\": {\n          \"metrics\": {\n            \"max_semantic_error\": 1.3843020324286894e-14,\n            \"full_cz_count\": 352,\n            \"two_body_dependency_depth\": 150,\n            \"verification\": \"three-probes-only\"\n          },\n          \"selected_strategy\": \"sabre\",\n          \"restored_swap_count\": 94,\n          \"rewrite_count\": 38,\n          \"maximum_rewrite_inputs\": 45,\n          \"normalized_output_sha256\": \"22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6\"\n        }\n      },\n      \"independent_acceptances\": 20\n    }\n  ],\n  \"complete\": true\n}\n"
+    }
+  },
+  "normalization": "Only production_control_commit is represented as production_control.source_commit to use the existing declared field vocabulary. The exact original JSON and driver are retained as strings with hashes. Numerical observations are unchanged.",
+  "limits": [
+    "Inspected shared-host macOS CPU development observations, one numerical thread; no qualified latency, RSS, statistical significance, held-out or ranking claim.",
+    "Two warmups and seven retained alternating samples per variant; one separately instrumented Python allocation observation per variant and case.",
+    "All 60 observations independently accepted; six-wire complete operators, twelve-wire three probes only.",
+    "Production package bytes at the measured source match integration control d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277; experimental policy changes only within a scoped patch."
+  ]
+}
