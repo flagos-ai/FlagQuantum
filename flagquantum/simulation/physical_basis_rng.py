@@ -17,6 +17,49 @@ def _mt19937_64(seed: int) -> Iterator[int]:
     for i in range(1, 312):
         prior = state[-1]
         state.append((6364136223846793005 * (prior ^ (prior >> 62)) + i) & _U64)
+    return _mt19937_64_state(state)
+
+
+def _mt19937_64_seed_sequence(seeds: tuple[int, ...]) -> Iterator[int]:
+    """Apply standard seed_seq uint32 mixing before the shared 64-bit engine."""
+    mask = (1 << 32) - 1
+    words = [0x8B8B8B8B] * 624
+    p, q = 306, 317
+    count = max(len(seeds) + 1, len(words))
+    value = words[0] ^ words[p] ^ words[-1]
+    mixed = (1664525 * (value ^ (value >> 27))) & mask
+    words[p] = (words[p] + mixed) & mask
+    mixed = (mixed + len(seeds)) & mask
+    words[q] = (words[q] + mixed) & mask
+    words[0] = mixed
+    for index in range(1, count):
+        here = index % 624
+        left = (index + p) % 624
+        right = (index + q) % 624
+        value = words[here] ^ words[left] ^ words[(index - 1) % 624]
+        mixed = (1664525 * (value ^ (value >> 27))) & mask
+        words[left] = (words[left] + mixed) & mask
+        seed = seeds[index - 1] & mask if index <= len(seeds) else 0
+        mixed = (mixed + here + seed) & mask
+        words[right] = (words[right] + mixed) & mask
+        words[here] = mixed
+    for index in range(count, count + 624):
+        here = index % 624
+        left = (index + p) % 624
+        right = (index + q) % 624
+        value = (words[here] + words[left] + words[(index - 1) % 624]) & mask
+        mixed = (1566083941 * (value ^ (value >> 27))) & mask
+        words[left] ^= mixed
+        mixed = (mixed - here) & mask
+        words[right] ^= mixed
+        words[here] = mixed
+    state = [words[index] | (words[index + 1] << 32) for index in range(0, 624, 2)]
+    if state[0] >> 31 == 0 and not any(state[1:]):
+        state[0] = 1 << 63
+    return _mt19937_64_state(state)
+
+
+def _mt19937_64_state(state: list[int]) -> Iterator[int]:
     lower = (1 << 31) - 1
     while True:
         for i in range(312):

@@ -947,3 +947,9 @@ algorithm, explicit refill and buffer cursor. `physical_basis_rng.py` adapts tha
 owner to the existing eager-seeded ChaCha8 spin stream and retains standard
 mt19937_64 packing. Run `pytest tests/unit/test_packed_chacha.py
 tests/unit/test_kmx_spin_command.py` for complete state and consumer conformance.
+
+The same `physical_basis_rng.py` owner initializes mt19937_64 from standard
+32-bit seed sequences. Independent test streams consume four parent words per
+child, with eager initialization and uint32 truncation verified against original
+C++. Run `pytest tests/unit/test_shared_test_fixtures.py` for deterministic stream
+replacement and test-local lifetime examples.
