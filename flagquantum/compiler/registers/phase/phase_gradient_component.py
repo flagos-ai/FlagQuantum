@@ -4,6 +4,8 @@
 
 """Retain gradient powers and preparation as owned typed component calls."""
 
+import numpy as np
+
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
@@ -15,6 +17,7 @@ from ....core.ir.program.registers import Register
 from ..bits.on_each import on_each_word_program
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
+from ..primitives.controlled_rotation_component import controlled_z_power_program
 from ..primitives.global_phase import _finite_angle
 from ..primitives.pauli_rotation_component import z_power_function
 from .phase_gradient import (
@@ -23,29 +26,53 @@ from .phase_gradient import (
 )
 
 
-def phase_gradient_unitary_program(width: int, exponent: float = 1) -> ProgramRecord:
+def phase_gradient_unitary_program(
+    width: int, exponent: float = 1, *, controlled: bool = False
+) -> ProgramRecord:
     """Apply source-ordered Z powers to an MSB-first fractional through word.
 
-    No workspace is required. Every source Z power remains a phase primitive,
-    including angles admitting specialized Clifford or T representations.
+    Uncontrolled powers need no workspace. Controlled powers own and erase one
+    shared And target per call. Source Z powers remain phase primitives. A
+    one-bit source word is reused without an extra Split/Join pair.
     """
     if type(width) is not int or width < 1:
         raise ValueError("Gradient component width must be a positive integer")
     _finite_angle(exponent)
+    if type(controlled) is not bool:
+        raise ValueError("Gradient controlled mode must be boolean")
     phases = tuple(
         z_power_function(f"power_{i}", exponent / 2**i) for i in range(width)
     )
     builder = ComponentProgramBuilder(
-        source_phase_gradient_unitary_signature(width), phases
+        source_phase_gradient_unitary_signature(width, controlled=controlled),
+        () if controlled else phases,
     )
     word = builder.inputs["phase_grad"]
     assert isinstance(word, RegisterBinding)
-    bits = builder.split(word)
+    bits = [word] if width == 1 else builder.split(word)
+    control = builder.inputs.get("ctrl")
     for i, phase in enumerate(phases):
-        bits[i] = builder.call_dict(phase.name, {"q": bits[i]})["q"]
-    return builder.finalize(
-        {"phase_grad": builder.join(bits, fixed_point_register_type(width, width))}
-    )
+        if controlled:
+            returned = builder.call_program(
+                controlled_z_power_program(exponent / 2**i),
+                {"q": np.array([control, bits[i]], dtype=object)},
+            )["q"]
+            control, bits[i] = np.asarray(returned)
+        else:
+            value = builder.call_dict(phase.name, {"q": bits[i]})["q"]
+            assert isinstance(value, RegisterBinding)
+            bits[i] = value
+    outputs = {
+        "phase_grad": (
+            bits[0]
+            if width == 1
+            else builder.join(bits, fixed_point_register_type(width, width))
+        )
+    }
+    if controlled:
+        assert isinstance(control, RegisterBinding)
+        outputs["ctrl"] = control
+    return builder.finalize(outputs)
 
 
 def phase_gradient_state_program(width: int, exponent: float = -1) -> ProgramRecord:

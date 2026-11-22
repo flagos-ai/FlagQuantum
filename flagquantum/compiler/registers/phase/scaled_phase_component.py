@@ -11,6 +11,7 @@ from ....core.ir.program.register_types import (
 )
 from ....core.ir.program.registers import RegisterType
 from ..arithmetic.addition_component import addition_component_program
+from ..arithmetic.controlled_addition_component import controlled_addition_program
 from ..component_builder import ComponentProgramBuilder
 from ..layout.component_cast import cast_word_function
 from ..layout.component_word_views import gather_word_binding
@@ -19,7 +20,12 @@ from .scaled_phase_addition import scaled_phase_add_terms
 
 
 def phase_add_component_program(
-    input_width: int, gradient_width: int, *, right_shift: int = 0, sign: int = 1
+    input_width: int,
+    gradient_width: int,
+    *,
+    right_shift: int = 0,
+    sign: int = 1,
+    controlled: bool = False,
 ) -> ProgramRecord:
     """Implement the atomic source leaf using shared integer Add and its inverse.
 
@@ -37,8 +43,10 @@ def phase_add_component_program(
         or min(input_width, gradient_width) < 1
     ):
         raise ValueError("Phase addition requires two positive register widths")
+    if type(controlled) is not bool:
+        raise ValueError("Phase addition controlled mode must be boolean")
     builder = ComponentProgramBuilder(
-        source_phase_add_signature(input_width, gradient_width)
+        source_phase_add_signature(input_width, gradient_width, controlled=controlled)
     )
     x, phase = builder.inputs["x"], builder.inputs["phase_grad"]
     assert isinstance(x, RegisterBinding) and isinstance(phase, RegisterBinding)
@@ -49,23 +57,35 @@ def phase_add_component_program(
     bits, target = builder.split(x), builder.split(phase)
     left = builder.join(bits[:active], RegisterType("uint", active))
     right = builder.join(target[:prefix], RegisterType("uint", prefix))
-    result = builder.call_program(
-        addition_component_program(active, prefix, adjoint=sign == -1),
-        {"a": left, "b": right},
+    addition = (
+        controlled_addition_program(
+            RegisterType("uint", active),
+            RegisterType("uint", prefix),
+            adjoint=sign == -1,
+        )
+        if controlled
+        else addition_component_program(active, prefix, adjoint=sign == -1)
     )
+    operands = {"a": left, "b": right}
+    if controlled:
+        control = builder.inputs["ctrl"]
+        assert isinstance(control, RegisterBinding)
+        operands["ctrl"] = control
+    result = builder.call_program(addition, operands)
     a, b = result["a"], result["b"]
     assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
     bits[:active], target[:prefix] = builder.split(a), builder.split(b)
-    return builder.finalize(
-        {
-            "x": builder.join(
-                bits, fixed_point_register_type(input_width, input_width)
-            ),
-            "phase_grad": builder.join(
-                target, fixed_point_register_type(gradient_width, gradient_width)
-            ),
-        }
-    )
+    outputs = {
+        "x": builder.join(bits, fixed_point_register_type(input_width, input_width)),
+        "phase_grad": builder.join(
+            target, fixed_point_register_type(gradient_width, gradient_width)
+        ),
+    }
+    if controlled:
+        returned_control = result["ctrl"]
+        assert isinstance(returned_control, RegisterBinding)
+        outputs["ctrl"] = returned_control
+    return builder.finalize(outputs)
 
 
 def scaled_phase_add_program(
