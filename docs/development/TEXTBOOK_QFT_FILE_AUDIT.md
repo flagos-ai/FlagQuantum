@@ -61,3 +61,45 @@ reported separately. The concentrated regression passed 5,479 cases.
 The final whole-file suite passed 21 cases, including the full-unitary
 assertions added after that regression began. Strict typing, format, scope,
 architecture, internal IR and public API checks passed.
+
+
+## Stored catalog dependency interface
+
+This batch retains the complete locked source-file graph through the existing
+Program and append paths. Words use MSB-first physical labels and caller-owned
+through storage. Textbook q is unsigned. Gradient QFT and approximate QFT keep
+a separate unsigned fractional gradient through word owned by the caller.
+Shared multiplication and controlled addition own their measured carry work,
+which must return to zero. TwoBitFFFT has x/y QBit through ports and no work.
+Its original ignored-adjoint decomposition remains separate from the native
+exact inverse. Existing primitive execution and source-model evidence is reused.
+Compiler owns stored word/call composition, Algorithms owns the already accepted
+fermionic Fourier sequence, and the example provider owns catalog glyphs and
+literal-definition qualification. No protected contract change is required.
+
+
+## Complete catalog graph closure
+
+The concrete three-bit root retains all ten original calls. Both controlled
+PhaseGradientUnitary children, their CZPowGate bodies and fresh drawings agree.
+Shared one-bit fractional views are reused without an extra Split/Join pair.
+The unchanged symbolic root still raises DecomposeTypeError. Literal three-bit
+execution emits 12 T/T-dagger, 18 CX, three phases and three measurements on
+four physical wires. The separate source model reports one T, three And, nine
+Clifford and three measurements, T-equivalent 13 and QubitCount four. Specialized
+source phase classification and literal retained phase primitives are distinct.
+
+The four-file catalog group retains five concrete source-success roots and one
+symbolic original refusal. Thirteen exact recursive graphs/drawings and 248
+original atomic contexts are recorded. The 1960 additional reachable contextual
+children include 1704 unqualified/native-only descendants below original atomic
+boundaries. Unreachable retained helper definitions are excluded.
+
+The shared layout owner can retain the immutable nominal dtype of the original
+_QReg dictionary key separately from the latest SSA handle dtype. Python equal-key
+assignment retains that key, and the frozen adapter chooses later casts from it.
+This metadata is explicit only for the new source-ordered Fourier compositions.
+Existing gather callers retain their previous behavior. Complete definition
+mutation tests alter both CX operands and H atoms so even a one-H recursive child
+is changed. The first mutation-only failure left that H-only child intact;
+the corrected test rejects every altered qualified child.
