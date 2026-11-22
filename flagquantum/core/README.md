@@ -71,6 +71,11 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 `runtime_config.py` is configuration data owned by Core; configuration
 resolution and execution policy remain Runtime responsibilities.
 
+The private `_word_operations.py` owns unsigned 64-bit scalar carry, borrow,
+mask extraction and full multiply-add values. It has no numerical execution
+state. Complete source correspondence is recorded in
+`docs/development/WORD_OPERATIONS_AUDIT.md`.
+
 ## Ten-minute change path
 
 For a small semantic change, modify the narrowest owning file, add its Core
