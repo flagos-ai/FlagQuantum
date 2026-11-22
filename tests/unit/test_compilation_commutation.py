@@ -542,6 +542,7 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
             imported.append(("." * node.level) + (node.module or ""))
     assert imported == [
         "__future__",
+        "collections",
         "collections.abc",
         "dataclasses",
         "types",
