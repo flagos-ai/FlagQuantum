@@ -75,8 +75,59 @@ assert -angle == PhaseAngle128(1, 0)
 ```
 
 The numerical bridge uses ordinary simulation precision. It does not claim
-128-bit complex-state execution. This value-only module emits no gates, owns no
-quantum work and supplies no gate-cost estimate. The next consumer is the locked
-QFT demolition measurement. Its exact conditional phase operations require an
-internal artifact/codec contract before they can be emitted and bound; that
-consumer is not certified by the value tests alone.
+128-bit complex-state execution. The value module's physical primitive, quantum workspace and measurement counts
+are zero. The accepted exact Z_POW artifact, KMX codec and conditional phase
+binding now connect it to QFT demolition measurement. Those execution consumers
+have their own source-stream, complex-branch and clean-work evidence in
+`test_reversible_phase_angles.py`, `test_kickmix_qft_measurement.py` and
+`test_kickmix_qft_measurement_file.py`. Their measured physical primitives and
+analytical models have separate owners.
+
+## Complete source-file disposition
+
+The complete header K-0296 has blob
+`96eec0ecc72d02dbf31098d14fa85e2d8671fdc8`.
+The test parent K-0297 has blob
+`247d8da592df92737bf09bab0278b548e5708093`. All three angle source files and the
+shared `word_ops.h` dependency were rechecked against the fixed inventory during
+the complete-file intake.
+
+| Complete original definition | Native target and disposition |
+| --- | --- |
+| Raw words, zero/copy construction, equality and Boolean conversion | Frozen low/high words, dataclass value equality and `__bool__` |
+| `clifford_hierarchy_level` | Same named native method using the exact least-significant set bit |
+| `from_power_of_2_half_turns` | `from_power_of_two_half_turns` with the same exponent grid and zero wrap |
+| `from_half_turns_exact_double` | Same named factory, original half-first conversion and representability refusal |
+| `from_rounded_decimal_half_turns` | Same named factory, source 128-digit sticky prefix, limb-equivalent long division and ties-to-even |
+| `to_half_turns_decimal_helper` | `to_decimal_half_turns` uses the same base-ten digit recurrence over the exact ring remainder |
+| `to_decimal_half_turns` | Same named native renderer |
+| `write_decimal_half_turns_to(FILE*)` | Shared exact decimal text is handed to caller-owned output storage. Native value objects have no FILE ownership. |
+| `str` and ostream insertion | Native `__str__` retains exact text and the pi suffix |
+| Angle `operator+` and `operator+=` | `__add__` and assignment of the resulting immutable value |
+| Unary negation | `__neg__`, two-word modular negation |
+| `rotated180` | `rotated_half_turn`, the same high-word bit toggle |
+| `is_closer_to_half_turn_than_no_turn` | `closer_to_half_turn_than_zero`, the same two high-bit test |
+| 45/90/180-degree predicates | Same named native predicates and exact ring masks |
+| Integer assignment and addition | `from_integer_half_turns` and `plus_integer_half_turns` retain integer parity |
+| `operator*` and `operator*=` | `__mul__` and immutable assignment retain unsigned 64-bit factor semantics |
+
+All 23 unchanged original C++ tests pass, including actual temporary FILE
+output, stream output, the complete decimal tables, all factories, predicates,
+word arithmetic and in-place results. A freshly compiled original oracle again
+matches all 4,755 accepted comparison requests, including the 701 source decimal
+strings and 28 matching refusals. Existing portable native tests reuse the same
+full definition mapping. Native exact-word, KMX, QFT feedback and branch consumers
+are rerun together for this intake.
+
+K-0296 and K-0297 are complete. The implementation parent K-0295 stays open for
+the already recorded smallest-subnormal underflow boundary. The native factory
+retains that original result, and ordinary below-grid double values retain the
+original refusal. The source implementation is preserved in its locked form.
+The wider `word_ops.h` parent remains independently open even though this
+angle module's limb multiply/divide dependencies are represented by exact Python
+integer arithmetic. Pending Proposals 116 through 119 stay outside this scope.
+
+The complete-file intake passes 342 concentrated exact-angle/QFT checks and
+29 local integration checks. The documentation-only closure passes Integration
+team scope and whitespace validation. Production typing, formatting, API and
+architecture evidence is reused from the accepted unchanged implementations.
