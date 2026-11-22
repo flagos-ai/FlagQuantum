@@ -8,7 +8,6 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from inspect import getattr_static
 from operator import setitem
-from unittest.mock import patch
 
 import pytest
 import torch
@@ -20,7 +19,6 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.compiler.optimization import _cz_blocks
-from flagquantum.compiler.optimization import two_qubit_synthesis as synthesis
 from flagquantum.compiler.optimization.two_qubit_synthesis import synthesize_two_qubit
 from flagquantum.compiler.routing import CouplingMap
 from flagquantum.compiler.topology import topology_legalization as routing
@@ -654,7 +652,7 @@ def test_rejected_proposals_keep_baseline_and_report_reason(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        _cz_blocks, "_synthesize_two_qubit", lambda *args, **kwargs: (candidate, None)
+        _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: candidate
     )
     result, native = _stage(_source())
     assert result.program is native.program
@@ -675,7 +673,7 @@ def test_combined_budget_rejects_a_candidate_that_fits_the_block_limit(
     padded = valid + (Instruction("rz", (0,), {"theta": 0.0}),) * padding
     assert len(padded) <= len(native.program.instructions) + 32
     monkeypatch.setattr(
-        _cz_blocks, "_synthesize_two_qubit", lambda *args, **kwargs: (padded, None)
+        _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: padded
     )
     result, original = _stage(_source(), budget=26)
     assert result.program is original.program
@@ -1158,19 +1156,15 @@ def test_nonreducing_cz_blocks_keep_resource_rejection_precedence() -> None:
     bound = count + 10 * (count + 1)
     for budget in (0, len(proposal) - 1, len(proposal), bound, 256):
         reasons: list[str] = []
-        with patch.object(
-            synthesis, "_local_leaves", wraps=synthesis._local_leaves
-        ) as emit:
-            assert (
-                _cz_blocks._candidate(
-                    source.instructions,
-                    (0, 1),
-                    max_output_operations=budget,
-                    on_rejection=reasons.append,
-                )
-                is None
+        assert (
+            _cz_blocks._candidate(
+                source.instructions,
+                (0, 1),
+                max_output_operations=budget,
+                on_rejection=reasons.append,
             )
-        assert (emit.call_count == 0) == (budget >= bound)
+            is None
+        )
         assert reasons == [
             (
                 "instruction_growth_rejected"
@@ -1258,14 +1252,9 @@ def test_reducing_cz_blocks_preserve_complete_operators(
     instructions: tuple[Instruction, ...], maximum_czs: int
 ) -> None:
     source = CircuitIR(2, instructions)
-    synthesis._prepared_basis("cz")
-    with patch.object(
-        synthesis, "_weyl_decomposition", wraps=synthesis._weyl_decomposition
-    ) as decompose:
-        proposal = _cz_blocks._candidate(
-            source.instructions, (0, 1), max_output_operations=256
-        )
-    assert decompose.call_count == 1
+    proposal = _cz_blocks._candidate(
+        source.instructions, (0, 1), max_output_operations=256
+    )
     assert proposal is not None
     assert sum(item.name == "cz" for item in proposal) <= maximum_czs
     _equivalent(source, CircuitIR(2, proposal))

@@ -332,9 +332,7 @@ def test_symbolic_angles_survive_optimization_on_both_sides(
 
 
 def test_incorrect_synthesis_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        _cz_blocks, "_synthesize_two_qubit", lambda *args, **kwargs: ((), None)
-    )
+    monkeypatch.setattr(_cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: ())
     source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
     assert resynthesize_cz_blocks(source) is source
 
@@ -344,9 +342,7 @@ def test_equivalent_non_native_synthesis_is_rejected(
 ) -> None:
     source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
     monkeypatch.setattr(
-        _cz_blocks,
-        "_synthesize_two_qubit",
-        lambda *args, **kwargs: (source.instructions, None),
+        _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: source.instructions
     )
     assert resynthesize_cz_blocks(source) is source
 
@@ -363,7 +359,7 @@ def test_excessive_instruction_growth_is_rejected(
     assert all(item.name in {"rz", "rx", "cz"} for item in candidate)
     _assert_equivalent(source, CircuitIR(2, candidate))
     monkeypatch.setattr(
-        _cz_blocks, "_synthesize_two_qubit", lambda *args, **kwargs: (candidate, None)
+        _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: candidate
     )
 
     def forbidden(*args: object) -> bool:
