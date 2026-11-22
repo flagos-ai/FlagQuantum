@@ -3,9 +3,10 @@
 # Adapted from Qualtran v0.7.0 MultiControlPauliBase.build_composite_bloq.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/multi_control_pauli.py
 
-"""Compose literal multi-control X through the existing predicate owner."""
+"""Compose literal multi-control X and Z through the existing predicate owner."""
 
 from dataclasses import replace
+from typing import Literal
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
@@ -18,45 +19,62 @@ from ..component_gate_function import bit_gate_function
 from .control_predicate import ControlRegister
 
 
-def _add_x(
-    builder: ComponentProgramBuilder,
-    control: BindingCollection,
-    values: dict[str, BindingCollection],
-) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-    result = builder.call_dict("controlled_x", {"ctrl": control, "target": values["q"]})
-    return result["ctrl"], (result["target"],)
-
-
 def multi_control_x_program(values: tuple[int, ...]) -> ProgramRecord:
-    """XOR a literal activation into a dirty target, preserving ordered controls.
+    """XOR a binary activation into a dirty target, retaining ordered controls."""
+    return _multi_control_program(values, "x")
 
-    Controls are a row-major QBit array. The shared predicate owns and erases
-    its clean work. The empty activation applies X without a controls port.
-    Invalid nonbinary activations raise ValueError.
+
+def multi_control_z_program(values: tuple[int, ...]) -> ProgramRecord:
+    """Phase a target under ordered binary controls using the shared AND erasure.
+
+    Controls are a row-major QBit array. The predicate owns its clean work.
+    Empty controls apply Z without a controls port. Invalid activations fail.
     """
+    return _multi_control_program(values, "z")
+
+
+def _multi_control_program(
+    values: tuple[int, ...], axis: Literal["x", "z"]
+) -> ProgramRecord:
     if any(type(value) is not int or value not in (0, 1) for value in values):
-        raise ValueError("Multi-control X requires binary activation values")
+        raise ValueError(
+            f"Multi-control {axis.upper()} requires binary activation values"
+        )
     bit = quantum_bit_type()
-    x = bit_gate_function(
-        "x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
+    target_gate = bit_gate_function(
+        axis, (Register("q", bit),), CircuitIR(1, (Instruction(axis, (0,)),))
     )
     if values:
-        cx = bit_gate_function(
-            "controlled_x",
-            (Register("ctrl", bit), Register("target", bit)),
-            CircuitIR(2, (Instruction("cx", (0, 1)),)),
+        control_name, target_name = ("ctrl", "target") if axis == "x" else ("q1", "q2")
+        controlled_gate = bit_gate_function(
+            f"controlled_{axis}",
+            (Register(control_name, bit), Register(target_name, bit)),
+            CircuitIR(2, (Instruction(f"c{axis}", (0, 1)),)),
         )
-        body = ComponentProgramBuilder(Signature.build_from_dtypes(q=bit), (x, cx))
-        target = body.call_dict("x", body.inputs)["q"]
+        body = ComponentProgramBuilder(
+            Signature.build_from_dtypes(q=bit), (target_gate, controlled_gate)
+        )
+        target = body.call_dict(axis, body.inputs)["q"]
+
+        def add_controlled(
+            builder: ComponentProgramBuilder,
+            control: BindingCollection,
+            values: dict[str, BindingCollection],
+        ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+            result = builder.call_dict(
+                f"controlled_{axis}", {control_name: control, target_name: values["q"]}
+            )
+            return result[control_name], (result[target_name],)
+
         controlled = control_component_via_predicate(
             body.finalize({"q": target}),
-            {"main": _add_x},
+            {"main": add_controlled},
             (Register("ctrl", bit, (len(values),)),),
             (ControlRegister(1, values),),
         )
         controlled = replace(
             controlled,
-            functions=tuple(f for f in controlled.functions if f.name != "x"),
+            functions=tuple(f for f in controlled.functions if f.name != axis),
         )
         builder = ComponentProgramBuilder(
             Signature(
@@ -68,7 +86,9 @@ def multi_control_x_program(values: tuple[int, ...]) -> ProgramRecord:
             {"ctrl": builder.inputs["controls"], "q": builder.inputs["target"]},
         )
         return builder.finalize({"controls": result["ctrl"], "target": result["q"]})
-    builder = ComponentProgramBuilder(Signature.build_from_dtypes(target=bit), (x,))
+    builder = ComponentProgramBuilder(
+        Signature.build_from_dtypes(target=bit), (target_gate,)
+    )
     return builder.finalize(
-        {"target": builder.call_dict("x", {"q": builder.inputs["target"]})["q"]}
+        {"target": builder.call_dict(axis, {"q": builder.inputs["target"]})["q"]}
     )

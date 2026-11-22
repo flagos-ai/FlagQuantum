@@ -1,12 +1,15 @@
 """Literal multi-control hierarchy and measured predicate execution."""
 
 from collections.abc import Iterator
+from hashlib import sha1
 from itertools import product
+from pathlib import Path
 
 import pytest
 
 from flagquantum.compiler.registers.control.multi_control_component import (
     multi_control_x_program,
+    multi_control_z_program,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
@@ -17,6 +20,18 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def frozen_multi_control_source() -> None:
+    from qualtran.bloqs.mcmt import multi_control_pauli
+
+    for name, expected in (
+        ("multi_control_pauli.py", "2953333a1cdd9408b03cdec844b5907af091d5a5"),
+        ("multi_control_pauli_test.py", "eed8610ca4c31125b96638a91cd90b58906fe01e"),
+    ):
+        raw = (Path(multi_control_pauli.__file__).parent / name).read_bytes()
+        assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == expected
 
 
 def atomic_leaves(graph: ProgramRecord) -> set[str]:
@@ -56,11 +71,16 @@ class MeasurementSlots(dict[int, int]):
 @pytest.mark.parametrize(
     "values", [pattern for n in range(5) for pattern in product((0, 1), repeat=n)]
 )
-def test_multi_control_root_and_primitive_dependencies(values: tuple[int, ...]) -> None:
-    from qualtran.bloqs.mcmt import MultiControlX
+@pytest.mark.parametrize("axis", ["x", "z"])
+def test_multi_control_root_and_primitive_dependencies(
+    values: tuple[int, ...], axis: str
+) -> None:
+    from qualtran.bloqs.mcmt import MultiControlX, MultiControlZ
 
-    graph = multi_control_x_program(values)
-    source = MultiControlX(values)
+    graph = (multi_control_x_program if axis == "x" else multi_control_z_program)(
+        values
+    )
+    source = (MultiControlX if axis == "x" else MultiControlZ)(values)
     assert verify_program_record(graph) == ()
     compare_layers(graph, source, atomic_leaves(graph))
     width = len(values)
@@ -75,5 +95,5 @@ def test_multi_control_root_and_primitive_dependencies(values: tuple[int, ...]) 
     slots = MeasurementSlots(bound.circuit.instructions)
     assert_source(
         bound.circuit.instructions,
-        reference_arithmetic_gates(source, ports, clean, slots),
+        reference_arithmetic_gates(source, ports, clean, slots, keep_pauli_leaves=True),
     )
