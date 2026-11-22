@@ -34,7 +34,7 @@ Measure complete `route_to_topology(..., strategy="sabre")` calls, including
 materialization and evidence. One warmup and seven retained alternating samples,
 explicit GC before both variants, then one separate full-call traced peak each.
 Retain every sample. Require identical routed IR content hashes on every call,
-all correctness tests passing, aggregate median time ratio at most 0.95,
+all correctness tests passing, median of the twelve per-case median time ratios at most 0.95,
 no case median above 1.10, and no traced peak above 1.05 of baseline.
 Resource budget: one CPU process, numerical threads one, 600-second group-owned
 wall limit with TERM/KILL cleanup. Local observations are diagnostic: host
@@ -61,3 +61,9 @@ assert routed.n_wires == 16
 The expected logical state, gradients, topology legality and restored output
 layout are unchanged. Timing gains, if qualified, do not imply fewer CZs or
 superiority over Qiskit/Cirq. This work does not resolve target-cost search.
+
+The first harness invocation failed before any routing observation because its
+IR generator supplied positional parameter tuples instead of the IR parameter
+mapping. The corrected driver uses `theta` mappings; tasks, source scorer,
+thresholds and observer protocol are unchanged. The failure log is retained
+with the eventual observations.

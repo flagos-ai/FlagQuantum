@@ -66,7 +66,9 @@ def _program(family: str, width: int) -> CircuitIR:
             instructions.append(Instruction("h", (target,)))
             for control in range(target + 1, width):
                 instructions.append(
-                    Instruction("cp", (control, target), (2.0 ** (target - control),))
+                    Instruction(
+                        "cp", (control, target), {"theta": 2.0 ** (target - control)}
+                    )
                 )
     elif family == "parity_ladder":
         for step in (1, 2, 4):
@@ -74,7 +76,7 @@ def _program(family: str, width: int) -> CircuitIR:
                 instructions.extend(
                     (
                         Instruction("cx", (wire, wire + step)),
-                        Instruction("rz", (wire + step,), (0.31,)),
+                        Instruction("rz", (wire + step,), {"theta": 0.31}),
                         Instruction("cx", (wire, wire + step)),
                     )
                 )
@@ -84,9 +86,11 @@ def _program(family: str, width: int) -> CircuitIR:
             {tuple(sorted(rng.sample(range(width), 2))) for _ in range(width * 3)}
         )
         for _ in range(3):
-            instructions.extend(Instruction("rzz", pair, (0.23,)) for pair in edges)
             instructions.extend(
-                Instruction("rx", (wire,), (0.19,)) for wire in range(width)
+                Instruction("rzz", pair, {"theta": 0.23}) for pair in edges
+            )
+            instructions.extend(
+                Instruction("rx", (wire,), {"theta": 0.19}) for wire in range(width)
             )
     else:
         assert family == "matching_layers"
