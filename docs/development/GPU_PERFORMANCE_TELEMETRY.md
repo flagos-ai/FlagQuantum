@@ -19,14 +19,24 @@ existing benchmark and performance evaluator are unchanged.
 Each observation includes wall-clock time, watchdog-relative monotonic time,
 collection duration and the owned process-group ID. The sources are:
 
-- GPU index/UUID, P-state, SM/memory clocks, GPU/memory utilization, used memory,
+- GPU index, P-state, SM/memory clocks, GPU/memory utilization, used memory,
   power and temperature from a read-only `nvidia-smi` CSV query. All physical
-  GPUs are observed; `CUDA_VISIBLE_DEVICES` records the command's selection.
-- Process ID, group, last processor, lifetime CPU percentage, RSS and executable
-  name from `ps`. Other host processes remain visible to help inspect shared
-  load; their arguments and environments are not read.
+  GPUs are observed. UUIDs are not requested; `CUDA_VISIBLE_DEVICES` is not
+  recorded because it may contain device identifiers. GPU indices identify
+  rows only within this host observation, not globally across machines.
+- Process ID, group, last processor, lifetime CPU percentage and RSS for members
+  of the watchdog-owned process group. The accounting query transiently reads
+  numeric host process rows, but unrelated rows are discarded before writing.
+  Executable names, arguments and process environments are not requested.
 - Current permitted CPU sets for observed members of the owned group, plus
   host 1/5/15-minute load averages. Neither value is an exclusive-host proof.
+
+Only validated numeric accounting fields, supported P-state tokens and explicit
+unavailable-value tokens are persisted. Unexpected source rows are discarded
+with an explicit diagnostic. Probe exceptions retain their class, nonzero exits
+retain their status, and nonempty stderr is indicated without retaining its
+contents. Raw stdout from failed queries, stderr and exception messages are not
+written because they can include device identifiers or infrastructure details.
 
 The watchdog requests the first sample during command execution and subsequent
 samples one second after the preceding collection ends. The GPU query has a
@@ -49,8 +59,8 @@ The output is streamed with one record per observation. An existing output path
 is refused before command launch. Missing tools, nonzero query exits, denied
 accounting, malformed process rows, decoding failures and query timeouts remain
 explicit diagnostic fields; unavailable readings never mean idle or clean.
-Unsupported CSV values such as `N/A` remain in the raw source answer. A process
-may exit between `ps` and affinity inspection; the refusal is retained.
+Unsupported CSV values `N/A` and `[Not Supported]` remain explicit. A process
+may exit between `ps` and affinity inspection; the exception class is retained.
 
 Failure to write requested observations propagates and terminates the owned
 command through the existing cleanup path. Command failures retain their exit
@@ -113,9 +123,9 @@ selection for the Linux affinity call; the checker options now state the actual
 module and OS context rather than suppressing errors. Full-source Linux CI and
 real GPU diagnostic records remain required before integration or attribution.
 
-## Read-only A800 query compatibility
+## Historical read-only A800 query compatibility
 
-A subsequent [host probe](evidence/gpu-telemetry-query-compatibility.json)
+Before the collection-minimization revision, a [host probe](evidence/gpu-telemetry-query-compatibility.json)
 executed the exact GPU/process query arguments three times on the Linux A800
 host used by the two-GPU lane. All six probes succeeded. GPU query durations
 were 229.692, 220.468 and 198.093 ms; process queries were 74.720, 77.870 and
@@ -154,3 +164,25 @@ After the diagnostic-bound correction, the telemetry and existing GPU workflow
 policy selection passes 38 tests. Existing sparse default-tier and local sandbox
 limitations above remain unresolved; this focused result does not supersede
 them.
+
+
+## Collection minimization revision
+
+The original collector retained host-wide process rows and requested GPU UUIDs.
+Automatic merge approval rejected publishing that payload through CI artifacts.
+The revised collector applies the restrictions above before writing any sample;
+negative tests inject UUIDs, unrelated process IDs and private error strings and
+verify that none reaches the JSON Lines output. This changes diagnostic content
+only; workload commands, deadlines and acceptance thresholds are unchanged.
+
+The A800 timings and source digests above describe the earlier collector. They
+remain historical evidence and do not certify the revised query arguments or
+parser on that host. Actual workload-overlapping observations remain pending.
+
+The minimized revision passes all 64 selected watchdog/workflow tests, including
+15 telemetry tests. The sparse `pr-default` selection also passes those 64 tests
+on this attempt; the earlier sandbox accounting failure remains recorded above.
+Strict Linux-target mypy passes three Python files, and Black, Ruff, English and
+documentation-link checks pass. These local selections do not certify the full
+repository or real GPU measurement window. Full-source CI must run on this
+revision.

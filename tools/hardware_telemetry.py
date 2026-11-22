@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -21,13 +22,12 @@ class TelemetrySample(TypedDict):
 _COMMANDS = {
     "gpu": (
         "nvidia-smi",
-        "--query-gpu=index,uuid,pstate,clocks.current.sm,clocks.current.memory,"
+        "--query-gpu=index,pstate,clocks.current.sm,clocks.current.memory,"
         "utilization.gpu,utilization.memory,memory.used,power.draw,temperature.gpu",
-        "--format=csv,nounits",
+        "--format=csv,noheader,nounits",
     ),
-    # Include other processes to expose shared-host CPU load. Do not collect
-    # arguments, environments or credentials from their command lines.
-    "processes": ("ps", "-axo", "pid=,pgid=,psr=,pcpu=,rss=,comm="),
+    # Filter transient accounting before persistence; never request command names.
+    "processes": ("ps", "-axo", "pid=,pgid=,psr=,pcpu=,rss="),
 }
 
 
@@ -42,9 +42,6 @@ def record_sample(destination: Path, group: int, started: float) -> None:
         "observations": {},
     }
     observations = sample["observations"]
-    observations["cuda_visible_devices"] = os.environ.get(
-        "CUDA_VISIBLE_DEVICES", "unset"
-    )
     for name, command in _COMMANDS.items():
         try:
             result = subprocess.run(
@@ -54,31 +51,60 @@ def record_sample(destination: Path, group: int, started: float) -> None:
                 timeout=0.5 if name == "gpu" else 0.25,
             )
         except (OSError, UnicodeError, subprocess.SubprocessError) as error:
-            observations[f"{name}_error"] = f"{type(error).__name__}: {error}"
+            observations[f"{name}_error"] = type(error).__name__
         else:
-            observations[name] = result.stdout
-            if result.returncode or result.stderr:
-                observations[f"{name}_diagnostic"] = (
-                    f"returncode={result.returncode}\n{result.stderr}"
-                )
+            if result.returncode:
+                observations[f"{name}_error"] = f"exit_status={result.returncode}"
+                continue
+            if result.stderr:
+                observations[f"{name}_diagnostic"] = "stderr_present"
+            rows = []
+            for row in result.stdout.splitlines():
+                if name == "gpu":
+                    fields = [field.strip() for field in row.split(",")]
+                    valid = (
+                        len(fields) == 9
+                        and fields[0].isdigit()
+                        and re.fullmatch(r"P[0-9]+|N/A|\[Not Supported\]", fields[1])
+                        and all(
+                            re.fullmatch(
+                                r"[0-9]+(?:\.[0-9]+)?|N/A|\[Not Supported\]", value
+                            )
+                            for value in fields[2:]
+                        )
+                    )
+                    if valid:
+                        rows.append(", ".join(fields))
+                    else:
+                        observations["gpu_error"] = "unrecognized GPU accounting row"
+                else:
+                    fields = row.split()
+                    if (
+                        len(fields) != 5
+                        or not all(fields[index].isdigit() for index in (0, 1, 2, 4))
+                        or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", fields[3])
+                    ):
+                        observations["processes_error"] = (
+                            "unrecognized process accounting row"
+                        )
+                    elif int(fields[1]) == group:
+                        rows.append(" ".join(fields))
+            observations[name] = "\n".join(rows)
+            if name == "gpu" and not result.stdout.strip():
+                observations["gpu_error"] = "empty GPU accounting"
     try:
         observations["load_average_1_5_15_minutes"] = str(os.getloadavg())
     except OSError as error:
-        observations["load_average_error"] = str(error)
+        observations["load_average_error"] = type(error).__name__
 
     affinities = []
     for row in observations.get("processes", "").splitlines():
-        fields = row.split(maxsplit=5)
-        if len(fields) != 6 or not fields[0].isdigit() or not fields[1].isdigit():
-            observations["affinity_error"] = "unrecognized process accounting row"
-            continue
-        if int(fields[1]) != group:
-            continue
+        fields = row.split()
         pid = int(fields[0])
         try:
             allowed = sorted(os.sched_getaffinity(pid))
         except (AttributeError, OSError) as error:
-            affinities.append(f"pid={pid} unavailable: {error}")
+            affinities.append(f"pid={pid} unavailable: {type(error).__name__}")
         else:
             affinities.append(f"pid={pid} allowed_cpus={allowed}")
     observations["owned_process_affinities"] = "\n".join(affinities)

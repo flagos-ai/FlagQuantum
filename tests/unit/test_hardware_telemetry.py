@@ -27,9 +27,9 @@ def test_samples_retain_clocks_load_and_owned_affinity(
         assert text and capture_output
         assert timeout == (0.5 if command[0] == "nvidia-smi" else 0.25)
         output = (
-            "index, uuid, pstate, clocks.current.sm\n0, GPU-test, P0, 1200\n"
+            "0, P0, 1200, 900, 50, 10, 1024, 150.5, 60\n"
             if command[0] == "nvidia-smi"
-            else "7 19 3 5.0 128 python\n9 44 1 6.0 256 bash\n"
+            else "7 19 3 5.0 128\n9 44 1 6.0 256\n"
         )
         return subprocess.CompletedProcess(command, 0, output, "")
 
@@ -52,13 +52,14 @@ def test_samples_retain_clocks_load_and_owned_affinity(
         assert sample["elapsed_seconds"] >= 1
         assert sample["collection_seconds"] >= 0
         observations = sample["observations"]
-        assert "GPU-test, P0, 1200" in observations["gpu"]
+        assert observations["gpu"] == "0, P0, 1200, 900, 50, 10, 1024, 150.5, 60"
         assert observations["owned_process_affinities"] == "pid=7 allowed_cpus=[2, 3]"
         assert observations["load_average_1_5_15_minutes"] == "(1.0, 2.0, 3.0)"
-        assert "bash" in observations["processes"]
+        assert observations["processes"] == "7 19 3 5.0 128"
+        assert "cuda_visible_devices" not in observations
 
 
-@pytest.mark.parametrize("failure", ["timeout", "missing", "nonzero"])
+@pytest.mark.parametrize("failure", ["timeout", "missing", "nonzero", "decode"])
 def test_unavailable_probes_are_explicit(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
@@ -66,21 +67,89 @@ def test_unavailable_probes_are_explicit(
         command: tuple[str, ...], *, text: bool, capture_output: bool, timeout: float
     ) -> subprocess.CompletedProcess[str]:
         if failure == "timeout":
-            raise subprocess.TimeoutExpired(command, timeout)
+            raise subprocess.TimeoutExpired(
+                command, timeout, output="GPU-private", stderr="private-host"
+            )
+        if failure == "decode":
+            raise UnicodeError("private-host")
         if failure == "missing":
-            raise FileNotFoundError(command[0])
-        return subprocess.CompletedProcess(command, 3, "partial observation", "denied")
+            raise FileNotFoundError("private-host")
+        return subprocess.CompletedProcess(command, 3, "GPU-private", "private-host")
 
     monkeypatch.setattr(subprocess, "run", probe)
     output = tmp_path / "samples.jsonl"
     telemetry.record_sample(output, 19, time.monotonic())
+    assert "GPU-private" not in output.read_text()
+    assert "private-host" not in output.read_text()
     observations = json.loads(output.read_text())["observations"]
     if failure == "nonzero":
-        assert observations["gpu"] == "partial observation"
-        assert observations["gpu_diagnostic"] == "returncode=3\ndenied"
+        assert observations["gpu_error"] == "exit_status=3"
+        assert "gpu" not in observations
     else:
         assert "gpu_error" in observations and "processes_error" in observations
         assert "gpu" not in observations
+
+
+def test_samples_exclude_identifiers_and_unrelated_processes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def probe(
+        command: tuple[str, ...], *, text: bool, capture_output: bool, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        if command[0] == "nvidia-smi":
+            assert "uuid" not in " ".join(command)
+            output = "GPU-private, P0, 1200, 900, 50, 10, 1024, 150, 60\n"
+        else:
+            assert "comm=" not in " ".join(command)
+            output = "987654 44 1 6.0 256\n7 19 3 5.0 128\nprivate-host\n"
+        return subprocess.CompletedProcess(command, 0, output, "GPU-private")
+
+    def denied(pid: int) -> set[int]:
+        assert pid == 7
+        raise OSError("private-host")
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-private")
+    monkeypatch.setattr(subprocess, "run", probe)
+    monkeypatch.setattr(os, "sched_getaffinity", denied, raising=False)
+    output = tmp_path / "samples.jsonl"
+    telemetry.record_sample(output, 19, time.monotonic())
+    encoded = output.read_text()
+    assert all(
+        value not in encoded for value in ("GPU-private", "private-host", "987654")
+    )
+    observations = json.loads(encoded)["observations"]
+    assert observations["gpu_error"] == "unrecognized GPU accounting row"
+    assert observations["processes_error"] == "unrecognized process accounting row"
+    assert observations["gpu_diagnostic"] == "stderr_present"
+    assert observations["owned_process_affinities"] == "pid=7 unavailable: OSError"
+
+
+@pytest.mark.parametrize("gpu", ["", "0, N/A, N/A, [Not Supported], 0, 0, 0, 0, 0\n"])
+def test_unavailable_metrics_and_load_are_explicit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gpu: str
+) -> None:
+    def probe(
+        command: tuple[str, ...], *, text: bool, capture_output: bool, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            command, 0, gpu if command[0] == "nvidia-smi" else "", ""
+        )
+
+    def denied() -> tuple[float, float, float]:
+        raise OSError("private-host")
+
+    monkeypatch.setattr(subprocess, "run", probe)
+    monkeypatch.setattr(os, "getloadavg", denied)
+    output = tmp_path / "samples.jsonl"
+    telemetry.record_sample(output, 19, time.monotonic())
+    observations = json.loads(output.read_text())["observations"]
+    assert observations["load_average_error"] == "OSError"
+    assert "private-host" not in output.read_text()
+    if gpu:
+        assert observations["gpu"] == gpu.strip()
+        assert "gpu_error" not in observations
+    else:
+        assert observations["gpu_error"] == "empty GPU accounting"
 
 
 def _arguments(tmp_path: Path, code: str) -> list[str]:
