@@ -6,6 +6,7 @@
 
 from math import gcd
 
+from ....core._binary_matrix import BinaryMatrix
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
 from ...artifacts.reversible_phase import ReversiblePhaseProgram
@@ -56,19 +57,11 @@ def _linear_map(
 
 def _inverse_columns(columns: tuple[int, ...]) -> tuple[int, ...]:
     width = len(columns)
-    augmented = [column | (1 << (width + i)) for i, column in enumerate(columns)]
-    for i in range(width):
-        bit = 1 << i
-        pivot = next((j for j in range(i, width) if augmented[j] & bit), None)
-        if pivot is None:
-            raise ValueError(
-                "A reversible binary linear map requires an invertible matrix"
-            )
-        augmented[i], augmented[pivot] = augmented[pivot], augmented[i]
-        for j, column in enumerate(augmented):
-            if i != j and column & bit:
-                augmented[j] ^= augmented[i]
-    return tuple(column >> width for column in augmented)
+    # Invert the transpose to keep the existing packed-column convention.
+    inverse = BinaryMatrix(columns, width).inverse()
+    if inverse.rows != width:
+        raise ValueError("A reversible binary linear map requires an invertible matrix")
+    return inverse.packed_rows
 
 
 def binary_linear_map_ir(

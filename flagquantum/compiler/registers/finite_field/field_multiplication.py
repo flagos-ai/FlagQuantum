@@ -9,6 +9,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from ....core._binary_matrix import BinaryMatrix
 from ....core._binary_polynomial import remainder
 from ....core.ir import Instruction
 from ..primitives.swap import swap_bit_ir
@@ -74,21 +75,15 @@ def _field_plu(
     matrix: list[list[int]],
 ) -> tuple[list[list[int]], list[list[int]], list[int]]:
     """Factor a binary matrix with the first available pivot in each column."""
-    n = len(matrix)
-    upper = [row[:] for row in matrix]
-    lower = [[0] * n for _ in range(n)]
-    permutation = list(range(n))
-    for i in range(n):
-        pivot = next(j for j in range(i, n) if upper[j][i])
-        upper[i], upper[pivot] = upper[pivot], upper[i]
-        lower[i], lower[pivot] = lower[pivot], lower[i]
-        permutation[i], permutation[pivot] = permutation[pivot], permutation[i]
-        lower[i][i] = 1
-        for j in range(i + 1, n):
-            if upper[j][i]:
-                lower[j][i] = 1
-                upper[j] = [a ^ b for a, b in zip(upper[j], upper[i], strict=True)]
-    return upper, lower, permutation
+    factors = BinaryMatrix.from_dense(matrix).plu()
+    if factors is None:
+        raise StopIteration
+    permutation, lower, upper = factors
+    return (
+        upper.dense(),
+        lower.dense(),
+        [row.bit_length() - 1 for row in permutation.transposed().packed_rows],
+    )
 
 
 def _constant_matrix(width: int, value: int, modulus: int) -> list[list[int]]:
