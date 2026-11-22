@@ -72,3 +72,8 @@ helper alias under the same removal condition and target version described above
 Final-layout restoration walks each leaf's unique tree path once. See the
 [restoration traversal invariant](../../../docs/development/COMPILER_RESTORE_PATH_REUSE.md)
 before changing token movement or removing an active tree leaf.
+
+A candidate graph-path restoration retains the tree walk and tests remaining
+device edges for a strictly shorter restore. Its invariant, prospective
+complete-workflow gates and current admission status are recorded in
+[graph restoration](../../../docs/development/COMPILER_GRAPH_LAYOUT_RESTORATION.md).
