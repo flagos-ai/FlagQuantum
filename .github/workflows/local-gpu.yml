@@ -113,32 +113,41 @@ jobs:
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          mkdir "$RUNNER_TEMP/ci-source"
+          staging="$(mktemp -d "$RUNNER_TEMP/ci-source-producer.XXXXXXXX")"
+          echo "staging-root=$staging" >> "$GITHUB_OUTPUT"
+          echo "full-path=$staging/full" >> "$GITHUB_OUTPUT"
+          echo "incremental-path=$staging/incremental" >> "$GITHUB_OUTPUT"
+          mkdir "$staging/full" "$staging/incremental"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
-          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir "$RUNNER_TEMP/ci-source-incremental"
-          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
+          git rev-parse HEAD > "$staging/full/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$staging/full/source.pack"
+          cp "$staging/full/source.sha" "$staging/incremental/source.sha"
           base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
             git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
-          } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
+          } | git pack-objects --stdout > "$staging/incremental/source.pack"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source-incremental/
+          path: ${{ steps.pack-source.outputs.incremental-path }}
           retention-days: 1
           compression-level: 0
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source/
+          path: ${{ steps.pack-source.outputs.full-path }}
           retention-days: 1
           compression-level: 0
+
+      - name: Remove this producer's temporary source packs
+        if: ${{ always() && steps.pack-source.outputs.staging-root != '' }}
+        env:
+          FQ_SOURCE_STAGING: ${{ steps.pack-source.outputs.staging-root }}
+        run: rm -rf -- "$FQ_SOURCE_STAGING"
 
   one-gpu-local:
     if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
