@@ -40,13 +40,19 @@ The sparse checkout's default tier passes 102 unit tests; its runtime tier passe
 42 integration tests. These are the complete seeded selections present in this
 checkout, not whole-repository certification. Full-source CI remains required.
 
-Black, Ruff, English and local-link checks pass. Strict Linux-target mypy passes
-the production module. Including the test module reports seven errors, identical
-to the exact main test source under the same checker options. The first test
-draft additionally used untyped dynamic replacement keywords; typed transformation
-callbacks remove those new errors. No ignores, casts or checker exceptions were
-added. The existing seven test errors remain unresolved; the combined check is
-not passing strict type certification.
+Black and Ruff pass. Strict Linux-target mypy now passes both the production
+module and the complete unit test module with `--strict --python-version=3.12
+--platform=linux --explicit-package-bases --ignore-missing-imports
+--no-incremental --follow-imports=silent`. The seven errors previously recorded
+against the baseline tests are resolved: evidence and synthesis types come from
+their owning modules, the hash-property observer inspects and validates its
+descriptor and return value, and negative tests explicitly cross runtime call
+boundaries to supply invalid budgets and attempt forbidden assignment. Those
+negative tests still require the original exceptions; no casts, ignores,
+production API changes or checker exceptions were added. This checks these two
+files with imported modules followed silently and unavailable dependencies
+ignored; it is not whole-repository type certification. The earlier paired
+performance archive predates these test-only repairs and remains unchanged.
 
 Two warmups and seven alternating retained samples per variant, separate Python
 allocation observations and separate instrumented profiles give:
