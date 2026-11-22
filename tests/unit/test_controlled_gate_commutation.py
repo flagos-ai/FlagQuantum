@@ -131,3 +131,29 @@ def test_commuting_cancellation_keeps_symbolic_or_batched_parameter_identity(
     assert result.instructions[0].params["theta"] is theta
     if isinstance(theta, torch.Tensor):
         assert theta.requires_grad and theta.grad is None
+
+
+def test_historical_attribution_substitutes_only_the_new_reach() -> None:
+    from benchmarks.compiler_commutation_cancellation import (
+        _before_controlled_commutation_extension,
+    )
+    from flagquantum.compiler.optimization import commutation
+
+    current = commutation.commute
+    placements = tuple(itertools.permutations(range(3), 2))
+    with _before_controlled_commutation_extension():
+        for first, second, a, b in itertools.product(
+            _CONTROLLED, _CONTROLLED, placements, placements
+        ):
+            left, right = _gate(first, a), _gate(second, b)
+            expected = a == b and (
+                (first in {"cx", "crx"} and second in {"cx", "crx"})
+                or (first in {"cy", "cry"} and second in {"cy", "cry"})
+            )
+            assert commutation.commute(left, right) == expected
+        source = fq.Circuit(3).cx(0, 1).cx(0, 2).cx(0, 1)
+        assert len(compile(source).instructions) == 3
+        assert commutation.commute(_gate("cx", (0, 1)), _gate("crx", (0, 1)))
+        assert not commutation.commute(_gate("cx", (0, 1)), _gate("cx", (1, 2)))
+    assert commutation.commute is current
+    assert len(compile(source).instructions) == 1

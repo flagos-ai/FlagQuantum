@@ -132,3 +132,42 @@ routing gap or enable the separate commuting-frontier policy on its strength.
 The next implementation must address analysis/fixed-point work and evaluate
 final entangler count, dependency depth and resources together under a new
 frozen declaration. Formal Linux qualification remains deferred.
+
+
+## CI attribution follow-up
+
+The first full CI run found seven historical benchmark-contract failures. The
+new controlled-gate reach composes with old rotation, identity and two-qubit
+passes, so their historical population counts move even though their own rules
+are unchanged. Keep those archived numerical pins and raw evidence unchanged.
+Replay the three historical contract modules under an explicit substitution of
+the earlier controlled-gate decision boundary, following their existing
+rotation-merge and fold substitution instruments. This is scoped to historical
+contract replay; normal benchmark commands and current production compilation
+continue to use the current checker.
+
+A separate test enumerates all 576 ordered controlled opcode/placement pairs
+under that historical scope, verifies the old boundary, and proves the patch
+restores the current checker and its three-to-one CX workflow afterwards.
+Complete operator tests for the current 1,728-pair census remain active outside
+the historical scope. This repairs attribution without changing a recorded
+count, threshold or production algorithm. A vocabulary check also found the
+word `wires` in a new explanatory comment; it is reworded to `qubits`. This
+comment-only correction does not change frozen implementation behavior or
+relocate any observation to a different source revision.
+
+
+Follow-up validation uses the existing certified Qiskit 2.5.0 lane: all 89
+focused current-rule and historical attribution tests pass. The initial local
+2.6.2 attempt passes 87 and refuses the two Qiskit anchors because that version
+is outside the repository's certified lanes; the refusal is preserved, not
+patched out. Ruff, Black and strict Linux-targeted mypy for the complete
+commutation module and current-rule test module pass. The live comment/docstring
+vocabulary scan of the complete commutation module matches integrated main.
+The seven historical count failures are addressed by substitution, with every
+recorded count and application observation unchanged. The complete exact-head
+CI run remains required before integration; the resource concerns still keep
+this implementation under draft review.
+
+The sparse default tier also passes 262 tests, with 96 deselected. This is
+scoped local verification, not a claim that full repository CI has passed.

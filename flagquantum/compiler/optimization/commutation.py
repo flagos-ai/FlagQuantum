@@ -294,7 +294,7 @@ def commute(left: Instruction, right: Instruction) -> bool:
     # Controlled gates on distinct targets commute when neither target changes
     # the other's control. Shared targets additionally require commuting target
     # operators: each Pauli family consists of functions of one Pauli matrix.
-    # The existing target table includes CCX, so restrict this rule to two wires.
+    # The existing target table includes CCX, so restrict this rule to two qubits.
     if (
         len(left.wires) == len(right.wires) == 2
         and left_opcode in _TARGET_PAULI
