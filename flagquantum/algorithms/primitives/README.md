@@ -210,3 +210,13 @@ classical circuit configuration rather than differentiable parameters. Run
 `test_hubbard_package_consumers.py`, `test_hubbard_select.py` and
 `test_hubbard_walk.py` together. The file audit records source negative-control
 and singleton defects and separates emitted gates from analytical declarations.
+
+Stored Hubbard preparation starts in `hubbard_prepare_component.py`. It composes
+shared uniform preparation, swaps, conjunctions and native bounded increment.
+`packed_prepare_component.py` packs a supplied preparation Program through the
+shared AutoPartition owner. Pass the exact inverse explicitly for an adjoint.
+Selection and logical junk stay caller-owned, while child components own clean
+scratch. Run `test_hubbard_stored_graph.py`, `test_packed_prepare_component.py`
+and the existing Hubbard/alias/packed file tests together. Source atomic
+arithmetic, singleton, symbolic and reflection-junk boundaries are recorded in
+`docs/development/PACKED_PREPARE_STORED_GRAPH_AUDIT.md`.
