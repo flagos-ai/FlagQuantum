@@ -137,3 +137,42 @@ independent acceptance, but no complete application screen or general semantic
 validation was run after this early rejection. The source freeze, exact driver,
 all resource samples and pilot limitations are retained. Do not divide these
 medians by earlier runs or claim a speedup from fewer arithmetic operations.
+
+## Follow-up native-preview translation templates
+
+A separate [rejected pilot](evidence/native-preview-template-pilot.json) translated
+each source instruction and the inserted SWAP template once per experimental
+selection, then remapped those native leaves to each candidate's physical
+operands. The existing placement cache stayed call-local. Production routing,
+native replay, final artifact emission, growth limits and independent SDKBench
+acceptance remained unchanged. This was a reuse of the existing translator,
+not a new upstream algorithm or a default native-CZ policy.
+
+The first completed fixed resource control compared the previous and proposed
+experimental consumers on integration
+`39713983207cef13a7d2ea473a523236b43e4dd4`. Both sides used parsed function
+definitions with equal patch lifetimes, two warmups and nine alternating samples.
+The unchanged cases and nonce were already inspected; no local test suite ran
+during these samples.
+
+| Experimental target-artifact control | Baseline / candidate median ms | Ratio | Baseline / candidate Python peak bytes |
+| --- | ---: | ---: | ---: |
+| QFT, 6 wires, grid | 205.134 / 204.349 | 0.9962 | 2268622 / 2266354 |
+| Repetition, 6 wires, ring | 203.571 / 199.841 | 0.9817 | 2600145 / 2601851 |
+| QFT, 12 wires, grid | 564.557 / 558.645 | 0.9895 | 10118935 / 10118885 |
+
+All three time ratios fail the existing 5 percent admission requirement, and
+the repetition allocation peak increases. Withdraw the candidate rather than
+retain another cache on these observations. The medians compare two experimental
+consumers; they do not establish a gain over production or qualified performance.
+
+Eleven focused preview/native-budget tests pass on the candidate, including a
+new reversed-operand, multiple-layout operator control. The resource driver
+checks the last baseline/candidate operation sequences and independently accepts
+both for all three cases: full operators at width six, three probes at width
+twelve. The archive retains the uncommitted candidate source, tests, exact
+drivers, every timing sample, metrics and original report reconstruction hashes.
+It does not retain emitted operations for a fresh offline replay. No complete
+application quality screen or general semantic certification followed this early
+resource rejection. Neither the pilot implementation nor its implementation-
+specific translation-count assertion remains in executable repository code.
