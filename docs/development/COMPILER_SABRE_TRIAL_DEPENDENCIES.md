@@ -89,3 +89,33 @@ copies, rather than the stored metadata. Its run passed 60 tests and failed the
 lifetime case. The test now narrows the stored mapping to its actual dictionary
 type before mutation. The compiler implementation, cases and resource thresholds
 did not change. These setup failures are not passing evidence.
+
+## Retained observations
+
+The published pre-measurement head
+`64f53dea91f485caa070ed790145ab5999b7bef0` completed all 24 pairs under
+the fixed process budget. Every complete output IR hash matched in all 432
+baseline/candidate calls, including warmups and separate memory calls. All 24
+case median time ratios were below one, from 0.90261 to 0.99503; their median
+was 0.97435. The maximum traced peak ratio was 1.00176. Thus this run passes
+the unchanged development gates. Absolute baseline medians range from about
+0.60 ms to 66.71 ms; the smallest timings remain sensitive to shared-host noise.
+Do not present this observation as statistical significance or a default-auto
+compiler speedup.
+
+The [complete record](evidence/compiler-sabre-trial-dependencies.json) retains
+every sample, source/driver text and digest, exact implementation and baseline
+commits, host, limits and completion state. No failed timing case was dropped
+or rerun. The 311 focused routing/conformance tests pass after restoring the
+contracts directory omitted from the first sparse checkout. The earlier run
+had 310 passes and one missing-file error; that setup attempt is not a pass.
+Typing, semantics, protected API and full CI remain separate gates.
+
+Additional verification passed six complete-operator QFT/QAOA/Ising application
+cases plus benchmark import inventory and API candidate checks (22 tests).
+Focused Black, Ruff, mypy, English, local links and changed-artifact revision
+checks pass. The public API migration baseline passes against this source tree.
+Its first setup attempts selected an installed wheel and then lacked proposal
+files in the sparse checkout; neither is passing evidence. Expanding the owned
+checkout and selecting its source resolved those environment errors without
+changing a contract or snapshot. No capability support boundary changes.

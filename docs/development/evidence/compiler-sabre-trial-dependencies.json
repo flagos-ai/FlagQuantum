@@ -1,0 +1,812 @@
+{
+  "evidence_class": "development",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "base_commit": "2ea5b78b6449b837db151e0d29c90895f6b51a4e",
+  "implementation_commit": "64f53dea91f485caa070ed790145ab5999b7bef0",
+  "baseline_source_sha256": "2d6f208a3ced67ff4ffaacedd10149b09cdf44c088085be4db8e12ce70b2432d",
+  "candidate_source_sha256": "cc205ab0feed57ccd86d9ed07f05cfa1547fc5497de263b0c5bd5fd713799dfb",
+  "runner_sha256": "b74a8dd6807f2799bf2b900bc5a37b1e79c09ed8ec6f109e59f9d68f03a8c6ae",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "method": "Equal AST-cloned trial/selector patches, fresh coupling maps; full explicit SABRE route materialization and evidence; one warmup plus seven alternating samples; GC outside timers; separate traced peaks; identical output hashes in all calls.",
+  "limits": "Inspected constructed inputs on shared macOS CPU with one numerical thread, 600-second process-group bound. Not qualified RSS, latency, statistical significance, unseen tasks, whole default compilation or a cross-SDK ranking.",
+  "baseline_source": "# Portions adapted from Qiskit 2.6.2, crates/transpiler/src/passes/sabre/route.rs.\n# (C) Copyright IBM 2024\n# Portions adapted from Cirq 1.7.0, transformers/routing/route_circuit_cqc.py.\n# Copyright 2022 The Cirq Developers\n# Licensed under the Apache License, Version 2.0. See the repository LICENSE or\n# https://www.apache.org/licenses/LICENSE-2.0.\n# Modified for FlagQuantum: incidence-indexed native IR scoring, deterministic\n# ties, repeated-layout detection, bounded rollback and shortest-path progress.\n# Sources: docs/development/COMPILER_UPSTREAM_REUSE.md and\n# docs/development/COMPILER_SABRE_RELATIVE_SCORING.md.\n\n\n\"\"\"SABRE-style lookahead SWAP planning for one undirected coupling topology.\n\nThe planner implements the SABRE heuristic (Li, Ding, and Xie, \"Tackling the\nQubit Mapping Problem for NISQ-Era Quantum Devices\", ASPLOS 2019). It keeps a\nfront layer of two-qubit operations whose predecessors have already executed, and\nwhen no front-layer operation is a coupling edge it inserts the SWAP that\nminimizes the mean front-layer hop distance plus a distance-decayed lookahead\nterm over a bounded extended layer.\n\nThe plan is one persistent layout for the whole circuit, so a materializer\nreplays the forward SWAPs in reverse at the end to restore the logical output\nlayout. The planner is deterministic: ties between equal-cost SWAP candidates\nfirst use the lexicographically smallest physical pair. Three additional fixed-seed\ntrials explore equal-cost choices and one layer-lookahead trial considers disjoint\nSWAP pairs, retaining a trial only when its complete route,\nincluding final restoration, uses fewer SWAPs. The same input always produces the\nsame result without a user seed.\n\nUnlike the shortest-path strategies, this planner moves the layout before an\noperation rather than immediately before it, which is what makes it effective on\ndevices of 20 or more qubits.\n\nThe planner uses only the qubits the program owns, so it plans on the coupling\nsubgraph those qubits induce rather than on the whole device. A padding qubit of a\nwider device is not an ancilla this planner may swap on, and a program the\ncircuit's own qubits cannot connect is refused rather than costed against a route\nthe plan cannot express.\n\nThe planner can start from a caller-supplied initial layout, and\n``plan_sabre_layout`` searches for one using the layout pass of the same paper:\nroute the program, route the reversed program from the resulting layout, and\nadopt that layout as the next candidate whenever it lowers the total number of\ninserted SWAPs. A layout that starts away from the identity cannot be undone by\nreplaying the forward SWAPs in reverse, so ``restore_swaps`` plans the explicit\nrestore that returns every logical qubit to its own qubit.\n\nA dependency is not only a shared qubit. A measurement writes classical state that\nno qubit records and a conditional reads it, so a conditional and the measurement\nthat produces the condition it tests are ordered by the classical channel alone,\neven when the two touch disjoint qubits. The planner therefore keeps program order\nover each classical bit: a read follows the write it observes, and a write follows\nthe reads it would otherwise invalidate. Without those edges the front layer can\nemit a conditional before its measurement, and the dynamic runtime then refuses\nthe routed program with \"classical bit N was read before measurement\" \u2014 a routing\ndefect, not a caller error. Classical order is the only channel through which a\nreordering of measurements is observable, so a measurement whose bit is neither\nre-read nor re-written stays free to move past an operation on other qubits.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport math\nimport random\nfrom collections import deque\nfrom collections.abc import Callable\nfrom dataclasses import dataclass\nfrom typing import TYPE_CHECKING, Any\n\nfrom ...core.ir import CircuitIR, Instruction\nfrom ..optimization.ordering_barrier import is_ordering_barrier\nfrom ._layer_lookahead import choose_layer_swaps\n\nif TYPE_CHECKING:\n    from .routing import CouplingMap\n\n# SABRE defaults. The extended layer is bounded so planning stays linear in the\n# circuit size, and the lookahead weight keeps the front layer dominant.\nLOOKAHEAD_DECAY = 0.9\nLOOKAHEAD_EXTENDED_SIZE = 20\nLOOKAHEAD_WEIGHT = 0.5\n\n# Bound speculative work between executed instructions. A heuristic can cycle on\n# a connected graph; reaching this budget triggers guaranteed shortest-path\n# progress rather than misclassifying the circuit as unroutable.\nSTALLED_SWAP_LIMIT_PER_WIRE = 4\n\n# The layout search reroutes the reversed program until the swap count stops\n# improving, so this bound only supplies a hard worst case above the early exits.\nSABRE_LAYOUT_ROUNDS = 5\n\n\n@dataclass(frozen=True)\nclass SabrePlan:\n    \"\"\"A planned persistent layout and the forward SWAPs that realize it.\n\n    Attributes:\n        sequence: Source instruction indices in the order the planner places\n            them. A front-layer operation is emitted as soon as its\n            predecessors are placed, so this differs from source order when two\n            independent operations become executable at different times.\n        placements: Physical qubits for every source instruction, indexed by\n            source instruction index.\n        swaps: Forward SWAP pairs in the order the planner applied them.\n        swap_placements: Number of instructions already placed when each forward\n            SWAP was applied, so materialization can interleave SWAPs with\n            instructions.\n        swap_anchors: Source instruction index each forward SWAP is attributed\n            to, namely the lowest-indexed blocked front-layer operation when the\n            SWAP was chosen. The heuristic picks a SWAP for its effect on the\n            whole front layer, so this is an audit anchor, not a sole cause.\n        initial_logical_to_physical: Layout the forward SWAPs started from, so a\n            caller can tell how far the plan moved away from the identity layout.\n        final_logical_to_physical: Layout after the forward SWAPs.\n    \"\"\"\n\n    sequence: tuple[int, ...]\n    placements: tuple[tuple[int, ...], ...]\n    swaps: tuple[tuple[int, int], ...]\n    swap_placements: tuple[int, ...]\n    swap_anchors: tuple[int, ...]\n    initial_logical_to_physical: tuple[int, ...]\n    final_logical_to_physical: tuple[int, ...]\n\n\n#: The opcode that writes classical state, the metadata key naming the bit it\n#: writes, and the two spellings a classical condition reads bits with. No other\n#: instruction in the IR writes a classical bit, so a program without a\n#: measurement has no classical dependency to preserve.\n_MEASURE_OPCODE = \"measure\"\n_CLASSICAL_BIT_KEY = \"classical_bit\"\n_CONDITION_KEYS = (\"conditions\", \"condition_clauses\")\n\n\ndef _classical_accesses(\n    instruction: Instruction,\n) -> tuple[int | None, tuple[int, ...]]:\n    \"\"\"Return the classical bit an instruction writes and the bits it reads.\n\n    The condition spellings are read here exactly as ``runtime.dynamic`` reads\n    them. The planner needs the bits itself rather than from that package because\n    Compiler may not depend on Runtime, and a metadata read is a smaller cost than\n    a cross-layer import.\n\n    Raises:\n        ValueError: If the instruction mixes the two condition spellings, or if\n            the spelling it uses is not a sequence of bit/value pairs.\n    \"\"\"\n\n    written: int | None = None\n    if instruction.name == _MEASURE_OPCODE:\n        raw_bit = instruction.metadata.get(_CLASSICAL_BIT_KEY)\n        # A measurement that names no bit records nothing a later instruction can\n        # read, so it takes no place in the classical order.\n        written = None if raw_bit is None else int(raw_bit)\n\n    if all(key in instruction.metadata for key in _CONDITION_KEYS):\n        raise ValueError(\n            f\"instruction {instruction.name}{instruction.wires} cannot define both \"\n            \"conditions and condition_clauses\"\n        )\n    raw_clauses: Any = instruction.metadata.get(\"condition_clauses\")\n    if raw_clauses is None and \"conditions\" in instruction.metadata:\n        raw_clauses = (instruction.metadata[\"conditions\"],)\n    read: set[int] = set()\n    try:\n        for clause in raw_clauses or ():\n            for bit, _value in clause:\n                read.add(int(bit))\n    except (TypeError, ValueError) as error:\n        raise ValueError(\n            f\"instruction {instruction.name}{instruction.wires} has malformed \"\n            f\"classical conditions: {error}\"\n        ) from error\n    return written, tuple(sorted(read))\n\n\ndef _validated_layout(\n    layout: tuple[int, ...] | None,\n    n_wires: int,\n) -> tuple[int, ...]:\n    \"\"\"Return a caller layout as a placement, defaulting to the identity.\"\"\"\n\n    if layout is None:\n        return tuple(range(n_wires))\n    placement = tuple(layout)\n    if len(placement) != n_wires or sorted(placement) != list(range(n_wires)):\n        raise ValueError(\n            \"initial_layout must be a permutation of the circuit wires, got \"\n            f\"{placement!r} for {n_wires} wires\"\n        )\n    return placement\n\n\ndef _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:\n    \"\"\"Return the coupling subgraph induced by the qubits the program owns.\n\n    The planner emits SWAPs only on those qubits, so the graph it plans on has to be\n    the same graph. A padding qubit of a wider device is not an ancilla this planner\n    can swap on, and scoring candidates against device distances that only such a\n    qubit realizes would cost the plan against a route it cannot emit.\n    \"\"\"\n\n    if coupling.n_qubits == n_wires:\n        return coupling\n    # ``routing`` imports this module, so the value type is imported here.\n    from .routing import CouplingMap as _CouplingMap\n\n    return _CouplingMap(\n        n_wires,\n        tuple(edge for edge in coupling.edges if edge[1] < n_wires),\n    )\n\n\ndef _shifted_distance(\n    wire_pair: tuple[int, ...],\n    left: int,\n    right: int,\n    logical_to_physical: list[int],\n    distances: tuple[tuple[float, ...], ...],\n) -> float:\n    \"\"\"Return a two-qubit hop distance as it would be after a candidate SWAP.\"\"\"\n\n    first = logical_to_physical[wire_pair[0]]\n    second = logical_to_physical[wire_pair[1]]\n    if first == left:\n        first = right\n    elif first == right:\n        first = left\n    if second == left:\n        second = right\n    elif second == right:\n        second = left\n    return distances[first][second]\n\n\ndef _relative_score_swap(\n    candidates: set[tuple[int, int]],\n    qubit_pairs: tuple[tuple[int, ...], ...],\n    front: list[int],\n    extended: list[int],\n    layout: list[int],\n    distances: tuple[tuple[float, ...], ...],\n    *,\n    tie_rng: random.Random | None = None,\n) -> tuple[int, int] | None:\n    \"\"\"Score only interactions incident on either endpoint of a proposed SWAP.\"\"\"\n\n    def absolute_score(edge: tuple[int, int]) -> float:\n        left, right = edge\n\n        def shifted(index: int) -> float:\n            return _shifted_distance(qubit_pairs[index], left, right, layout, distances)\n\n        score = sum(shifted(index) for index in front) / len(front)\n        if extended:\n            lookahead = 0.0\n            weight = 1.0\n            for index in extended:\n                lookahead += weight * shifted(index)\n                weight *= LOOKAHEAD_DECAY\n            score += LOOKAHEAD_WEIGHT * lookahead / len(extended)\n        return score\n\n    ordered = sorted(candidates)\n    if tie_rng is not None:\n        tie_rng.shuffle(ordered)\n    if not ordered:\n        return None\n    terms: list[tuple[int, int, float]] = []\n    incidence: list[list[tuple[int, float]]] = [[] for _ in layout]\n    for indices, scale in (\n        (front, 1.0 / len(front)),\n        (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),\n    ):\n        weight = 1.0\n        for index in indices:\n            first, second = (layout[wire] for wire in qubit_pairs[index])\n            coefficient = scale * weight\n            terms.append((first, second, coefficient))\n            if first != second:\n                incidence[first].append((second, coefficient))\n                incidence[second].append((first, coefficient))\n            if indices is extended:\n                weight *= LOOKAHEAD_DECAY\n    # All candidates share the omitted current-layout score. Near a rounding\n    # tie, replay the original absolute arithmetic to preserve its tie behavior.\n    magnitude = math.fsum(weight * distances[a][b] for a, b, weight in terms)\n    tie_tolerance = 4 * len(terms) * math.ulp(max(1.0, magnitude))\n    best: tuple[int, int] | None = None\n    best_score = 0.0\n    for left, right in ordered:\n        changes = []\n        # Coupling distances are symmetric. An interaction touching both\n        # endpoints keeps its distance; every other incident term changes only\n        # its moved endpoint. Preserve one contribution per source term.\n        for moved, destination in ((left, right), (right, left)):\n            before, after = distances[moved], distances[destination]\n            for other, coefficient in incidence[moved]:\n                if other != destination:\n                    changes.append(coefficient * (after[other] - before[other]))\n        score = math.fsum(changes)\n        if best is None:\n            best, best_score = (left, right), score\n        elif abs(score - best_score) <= tie_tolerance:\n            if absolute_score((left, right)) < absolute_score(best):\n                best, best_score = (left, right), score\n        elif score < best_score:\n            best, best_score = (left, right), score\n    return best\n\n\ndef plan_sabre_swaps(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    initial_layout: tuple[int, ...] | None = None,\n) -> SabrePlan:\n    \"\"\"Plan a SABRE persistent layout for one program on one coupling map.\n\n    Only the qubits owned by the program are used, and inserted SWAPs always join\n    two qubits of the program, so no physical ancilla is required. Planning happens\n    on the coupling subgraph those qubits induce, so a wider device is supported\n    exactly as far as its qubits inside the circuit connect the program.\n\n    Args:\n        program: Circuit to place.\n        coupling: Topology the placed circuit must respect.\n        initial_layout: Physical qubit for each logical qubit at the start. Defaults\n            to the identity layout.\n\n    Raises:\n        ValueError: If the coupling map has fewer qubits than the program, if\n            ``initial_layout`` is not a permutation of the circuit qubits, if a\n            two-qubit operation is connected on the device only through qubits the\n            circuit does not own, if an instruction states its classical condition\n            in a malformed or ambiguous way.\n    \"\"\"\n\n    baseline = _plan_sabre_trial(program, coupling, initial_layout=initial_layout)\n    if baseline is None:\n        raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n    return _select_sabre_trials(program, coupling, baseline)\n\n\ndef _select_sabre_trials(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    baseline: SabrePlan,\n    *,\n    cost: Callable[[SabrePlan], int] | None = None,\n) -> SabrePlan:\n    \"\"\"Retain the single-trial route unless a bounded trial is strictly cheaper.\"\"\"\n    best = baseline\n    if not best.swaps:\n        return best\n    score = (\n        cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)\n    )\n    best_cost = score(best)\n    for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):\n        candidate = _plan_sabre_trial(\n            program,\n            coupling,\n            initial_layout=baseline.initial_logical_to_physical,\n            tie_rng=random.Random(seed) if seed is not None else None,\n            committed_swap_limit=best_cost,\n            layer_lookahead=use_layers,\n        )\n        if candidate is not None:\n            candidate_cost = score(candidate)\n            if candidate_cost < best_cost:\n                best, best_cost = candidate, candidate_cost\n    return best\n\n\ndef _plan_sabre_trial(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    initial_layout: tuple[int, ...] | None = None,\n    tie_rng: random.Random | None = None,\n    committed_swap_limit: int | None = None,\n    layer_lookahead: bool = False,\n) -> SabrePlan | None:\n    \"\"\"Run one search; prune only committed SWAPs that cannot beat the incumbent.\"\"\"\n\n    n_wires = program.n_wires\n    if coupling.n_qubits < n_wires:\n        raise ValueError(\"Coupling map has fewer qubits than the circuit.\")\n    placement = _validated_layout(initial_layout, n_wires)\n    instructions = program.instructions\n    count = len(instructions)\n    if count == 0:\n        return SabrePlan(\n            sequence=(),\n            placements=(),\n            swaps=(),\n            swap_placements=(),\n            swap_anchors=(),\n            initial_logical_to_physical=placement,\n            final_logical_to_physical=placement,\n        )\n\n    # ``CouplingMap.distance_matrix`` marks a disconnected pair with a negative\n    # sentinel. A cost function needs such a pair to be maximally expensive\n    # rather than maximally cheap, so a local infinite-distance copy is used.\n    planning = _planning_coupling(coupling, n_wires)\n    distances = tuple(\n        tuple(math.inf if hop < 0 else float(hop) for hop in row)\n        for row in planning.distance_matrix()\n    )\n    neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))\n    wires = tuple(instruction.wires for instruction in instructions)\n    # A channel occupies its qubits but must not be pulled onto a coupling edge,\n    # so it never blocks the front layer. A barrier is in the same position for\n    # the same reason: neither one is a unitary the device has to host, so making\n    # either adjacent would buy nothing.\n    blocks = tuple(\n        len(wire_pair) == 2\n        and not instruction.metadata.get(\"is_channel\")\n        and not is_ordering_barrier(instruction)\n        for instruction, wire_pair in zip(instructions, wires, strict=True)\n    )\n    # A SWAP along one coupling edge keeps each logical qubit inside its own\n    # connected component, so a two-qubit operation whose logical qubits have no\n    # coupling path between them can never be legalized. Connectivity is a\n    # property of the physical qubits, so the initial layout is applied first.\n    for index, wire_pair in enumerate(wires):\n        if not blocks[index]:\n            continue\n        left = placement[wire_pair[0]]\n        right = placement[wire_pair[1]]\n        if not math.isinf(distances[left][right]):\n            continue\n        if planning is not coupling and coupling.distance(left, right) >= 0:\n            raise ValueError(\n                f\"the device connects wires {wire_pair[0]} and {wire_pair[1]} of \"\n                f\"two-wire instruction {index} only through physical ancilla wires \"\n                \"outside the circuit IR, which this planner does not route through; \"\n                \"provide an explicit layout/lowering step\"\n            )\n        raise ValueError(\n            f\"no coupling path between wires {wire_pair[0]} and \"\n            f\"{wire_pair[1]} of two-wire instruction {index}\"\n        )\n\n    # One edge per (instruction, qubit) pair, so an instruction whose two qubits\n    # share a predecessor still reaches zero pending predecessors.\n    successors: list[list[int]] = [[] for _ in range(count)]\n    pending = [0] * count\n    last_on_wire: dict[int, int] = {}\n    for index, wire_pair in enumerate(wires):\n        for wire in wire_pair:\n            previous = last_on_wire.get(wire)\n            if previous is not None:\n                successors[previous].append(index)\n                pending[index] += 1\n            last_on_wire[wire] = index\n\n    # Classical order is order that no qubit records. Per bit, a read follows the\n    # write it observes, and a write follows every read it would invalidate and\n    # the earlier write whose value it replaces. A bit no measurement ever writes\n    # contributes no edge, so a program without classical state keeps the\n    # qubit-only graph it had. Processing in program order keeps every edge\n    # forward, so the graph stays acyclic and the front layer still empties on\n    # every program.\n    last_writer: dict[int, int] = {}\n    # Readers on independent qubits have no quantum edge ordering them; keeping\n    # only the most recent reader would let a write overtake an earlier reader.\n    readers_since_write: dict[int, list[int]] = {}\n    for index, instruction in enumerate(instructions):\n        written, read = _classical_accesses(instruction)\n        for bit in read:\n            producer = last_writer.get(bit)\n            if producer is not None:\n                successors[producer].append(index)\n                pending[index] += 1\n        if written is not None:\n            predecessors = (\n                last_writer.get(written),\n                *readers_since_write.pop(written, ()),\n            )\n            for predecessor in predecessors:\n                if predecessor is not None:\n                    successors[predecessor].append(index)\n                    pending[index] += 1\n            last_writer[written] = index\n        for bit in read:\n            readers_since_write.setdefault(bit, []).append(index)\n\n    logical_to_physical = list(placement)\n    physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(logical_to_physical):\n        physical_to_logical[physical] = logical\n    placements: list[tuple[int, ...]] = [() for _ in range(count)]\n    order: list[int] = []\n    swaps: list[tuple[int, int]] = []\n    swap_placements: list[int] = []\n    swap_anchors: list[int] = []\n    front = [index for index in range(count) if pending[index] == 0]\n    executed = 0\n    stalled = 0\n    progress_swap_start = 0\n    seen_layouts: set[tuple[int, ...]] = set()\n    frontier_lookahead: list[int] | None = None\n\n    def exchange(left: int, right: int) -> None:\n        left_logical = physical_to_logical[left]\n        right_logical = physical_to_logical[right]\n        physical_to_logical[left], physical_to_logical[right] = (\n            right_logical,\n            left_logical,\n        )\n        logical_to_physical[left_logical] = right\n        logical_to_physical[right_logical] = left\n\n    def record_swap(left: int, right: int, anchor: int) -> None:\n        exchange(left, right)\n        swaps.append((left, right))\n        swap_placements.append(executed)\n        swap_anchors.append(anchor)\n\n    def separation(index: int) -> float:\n        left = logical_to_physical[wires[index][0]]\n        right = logical_to_physical[wires[index][1]]\n        return distances[left][right]\n\n    def extended_layer(blocked_front: list[int]) -> list[int]:\n        \"\"\"Return blocked operations reachable from the front, in BFS order.\"\"\"\n        nonlocal frontier_lookahead\n        # SWAPs change placement, not dependency reachability. Rebuild only when\n        # a source instruction executes and changes the frontier.\n        if frontier_lookahead is not None:\n            return frontier_lookahead\n        extended: list[int] = []\n        seen = set(front)\n        queue: deque[int] = deque()\n        for index in blocked_front:\n            for successor in successors[index]:\n                if successor not in seen:\n                    seen.add(successor)\n                    queue.append(successor)\n        while queue and len(extended) < LOOKAHEAD_EXTENDED_SIZE:\n            index = queue.popleft()\n            if blocks[index]:\n                extended.append(index)\n            for successor in successors[index]:\n                if successor not in seen:\n                    seen.add(successor)\n                    queue.append(successor)\n        frontier_lookahead = extended\n        return extended\n\n    def best_swap(blocked_front: list[int]) -> tuple[int, int] | None:\n        \"\"\"Return the lowest-cost SWAP candidate, or None if none exists.\"\"\"\n\n        candidates: set[tuple[int, int]] = set()\n        for index in blocked_front:\n            for wire in wires[index]:\n                physical = logical_to_physical[wire]\n                for neighbour in neighbours[physical]:\n                    candidates.add(\n                        (physical, neighbour)\n                        if physical < neighbour\n                        else (neighbour, physical)\n                    )\n        if not candidates:\n            return None\n        if n_wires > 12:\n            return _relative_score_swap(\n                candidates,\n                wires,\n                blocked_front,\n                extended_layer(blocked_front),\n                logical_to_physical,\n                distances,\n                tie_rng=tie_rng,\n            )\n        # Preserve the lower-overhead full scoring path on small devices.\n        extended = extended_layer(blocked_front)\n        best: tuple[int, int] | None = None\n        best_score = 0.0\n        ordered = sorted(candidates)\n        if tie_rng is not None:\n            tie_rng.shuffle(ordered)\n        for left, right in ordered:\n            front_total = 0.0\n            for index in blocked_front:\n                front_total += _shifted_distance(\n                    wires[index], left, right, logical_to_physical, distances\n                )\n            score = front_total / len(blocked_front)\n            if extended:\n                lookahead = 0.0\n                weight = 1.0\n                for index in extended:\n                    lookahead += weight * _shifted_distance(\n                        wires[index], left, right, logical_to_physical, distances\n                    )\n                    weight *= LOOKAHEAD_DECAY\n                score += LOOKAHEAD_WEIGHT * lookahead / len(extended)\n            if best is None or score < best_score:\n                best = (left, right)\n                best_score = score\n        return best\n\n    stalled_limit = STALLED_SWAP_LIMIT_PER_WIRE * n_wires\n    while front:\n        # A speculative suffix may still be rolled back by progress recovery.\n        # Only the prefix committed by an executed instruction is a lower bound\n        # on the final cost; using len(swaps) here would incorrectly prune it.\n        if (\n            committed_swap_limit is not None\n            and progress_swap_start >= committed_swap_limit\n        ):\n            return None\n        executable = [\n            index for index in front if not blocks[index] or separation(index) == 1\n        ]\n        if executable:\n            frontier_lookahead = None\n            for index in executable:\n                front.remove(index)\n                placements[index] = tuple(\n                    logical_to_physical[wire] for wire in wires[index]\n                )\n                order.append(index)\n                executed += 1\n                for successor in successors[index]:\n                    pending[successor] -= 1\n                    if pending[successor] == 0:\n                        front.append(successor)\n            stalled = 0\n            progress_swap_start = len(swaps)\n            seen_layouts.clear()\n            continue\n\n        blocked_front = [index for index in front if blocks[index]]\n        layout = tuple(logical_to_physical)\n        if layout in seen_layouts or stalled >= stalled_limit:\n            # Qiskit's release valve undoes speculation since the last routed\n            # instruction. No source instruction has executed in this suffix,\n            # so removing it preserves both semantics and attribution.\n            for left, right in reversed(swaps[progress_swap_start:]):\n                exchange(left, right)\n            del swaps[progress_swap_start:]\n            del swap_placements[progress_swap_start:]\n            del swap_anchors[progress_swap_start:]\n            anchor = min(blocked_front, key=lambda index: (separation(index), index))\n            first, second = wires[anchor]\n            path = planning.shortest_path(\n                logical_to_physical[first], logical_to_physical[second]\n            )\n            # Bring both ends together, stopping one edge short. Every SWAP\n            # reduces their distance by one; the next iteration must execute\n            # this front-layer instruction. Unrelated dependencies stay intact.\n            required = len(path) - 2\n            for offset in range((required + 1) // 2):\n                record_swap(path[offset], path[offset + 1], anchor)\n            for offset in range(required // 2):\n                end = len(path) - 1 - offset\n                record_swap(path[end], path[end - 1], anchor)\n            continue\n        # Cirq tracks repeated search choices before forcing a shortest path.\n        # Track complete layouts here because FQ's frontier is a dependency DAG,\n        # rather than Cirq's disjoint two-qubit timesteps.\n        seen_layouts.add(layout)\n        if layer_lookahead:\n            candidates = {\n                (min(physical, neighbor), max(physical, neighbor))\n                for index in blocked_front\n                for qubit in wires[index]\n                for physical in (logical_to_physical[qubit],)\n                for neighbor in neighbours[physical]\n            }\n            moves = choose_layer_swaps(\n                candidates,\n                front,\n                wires,\n                blocks,\n                successors,\n                pending,\n                logical_to_physical,\n                distances,\n            )\n            if moves is not None:\n                for left, right in moves:\n                    record_swap(left, right, blocked_front[0])\n                stalled += len(moves)\n                continue\n        choice = best_swap(blocked_front)\n        if choice is None:\n            raise ValueError(\n                \"SABRE swap insertion has no candidate: the coupling map is \"\n                \"disconnected across the front layer\"\n            )\n        left, right = choice\n        record_swap(left, right, blocked_front[0])\n        stalled += 1\n\n    if executed != count:\n        raise RuntimeError(\n            f\"SABRE planned {executed} of {count} instructions; the front layer \"\n            \"emptied before the program was fully placed\"\n        )\n    # A materializer replays the SWAPs in order while it walks ``sequence``, so\n    # the plan is only usable if that replay reproduces the layout the planner\n    # costed. Fail closed here rather than let a caller route against a layout\n    # that never existed.\n    replay_logical_to_physical = list(placement)\n    replay_physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(replay_logical_to_physical):\n        replay_physical_to_logical[physical] = logical\n    for swap_left, swap_right in swaps:\n        left_logical = replay_physical_to_logical[swap_left]\n        right_logical = replay_physical_to_logical[swap_right]\n        replay_physical_to_logical[swap_left] = right_logical\n        replay_physical_to_logical[swap_right] = left_logical\n        replay_logical_to_physical[left_logical] = swap_right\n        replay_logical_to_physical[right_logical] = swap_left\n    if replay_logical_to_physical != logical_to_physical:\n        raise RuntimeError(\n            \"SABRE plan does not replay to its planned layout; the reported \"\n            \"layout and the reported SWAPs disagree\"\n        )\n    return SabrePlan(\n        sequence=tuple(order),\n        placements=tuple(placements),\n        swaps=tuple(swaps),\n        swap_placements=tuple(swap_placements),\n        swap_anchors=tuple(swap_anchors),\n        initial_logical_to_physical=placement,\n        final_logical_to_physical=tuple(logical_to_physical),\n    )\n\n\ndef _restore_path(\n    start: int,\n    goal: int,\n    tree: list[list[int]],\n    active: list[bool],\n) -> list[int]:\n    \"\"\"Return the remaining tree path from ``start`` to ``goal``, inclusive.\"\"\"\n\n    previous = {start: -1}\n    queue: deque[int] = deque([start])\n    while queue:\n        node = queue.popleft()\n        if node == goal:\n            break\n        for neighbour in tree[node]:\n            if active[neighbour] and neighbour not in previous:\n                previous[neighbour] = node\n                queue.append(neighbour)\n    if goal not in previous:\n        raise ValueError(\n            f\"layout restore has no coupling path from wire {start} to wire {goal}\"\n        )\n    path = [goal]\n    while path[-1] != start:\n        path.append(previous[path[-1]])\n    path.reverse()\n    return path\n\n\ndef restore_swaps(\n    layout: tuple[int, ...],\n    coupling: CouplingMap,\n) -> tuple[tuple[int, int], ...]:\n    \"\"\"Plan the SWAPs that move every logical qubit of ``layout`` to its own qubit.\n\n    Replaying a forward plan in reverse only returns the layout that plan started\n    from, so a plan that started away from the identity layout needs an explicit\n    restore. The coupling graph is reduced to a spanning forest and one tree leaf\n    at a time is walked to its home qubit along the edges that are still active. A\n    leaf has at most one active edge, so a qubit that has already reached home is\n    never displaced.\n\n    Args:\n        layout: Physical qubit for each logical qubit.\n        coupling: Topology the restore SWAPs must respect.\n\n    Raises:\n        ValueError: If ``layout`` is not a permutation of the circuit qubits, or if\n            the coupling map has no spanning forest over them.\n    \"\"\"\n\n    placement = tuple(layout)\n    n_wires = len(placement)\n    if sorted(placement) != list(range(n_wires)):\n        raise ValueError(\n            f\"layout must be a permutation of the circuit wires, got {placement!r}\"\n        )\n\n    adjacency: list[list[int]] = [[] for _ in range(n_wires)]\n    for left, right in coupling.edges:\n        if left < n_wires and right < n_wires:\n            adjacency[left].append(right)\n            adjacency[right].append(left)\n    # A layout already at home needs no spanning-forest traversal. Keep input\n    # validation and edge accounting above this fast path unchanged.\n    if placement == tuple(range(n_wires)):\n        return ()\n\n    parent = [-1] * n_wires\n    for root in range(n_wires):\n        if parent[root] != -1:\n            continue\n        parent[root] = root\n        queue: deque[int] = deque([root])\n        while queue:\n            node = queue.popleft()\n            for neighbour in sorted(adjacency[node]):\n                if parent[neighbour] == -1:\n                    parent[neighbour] = node\n                    queue.append(neighbour)\n    tree = [\n        [\n            neighbour\n            for neighbour in adjacency[node]\n            if parent[neighbour] == node or parent[node] == neighbour\n        ]\n        for node in range(n_wires)\n    ]\n\n    logical_to_physical = list(placement)\n    physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(logical_to_physical):\n        physical_to_logical[physical] = logical\n    swaps: list[tuple[int, int]] = []\n    active = [True] * n_wires\n    for _ in range(n_wires):\n        leaf = next(\n            (\n                node\n                for node in range(n_wires)\n                if active[node]\n                and sum(1 for neighbour in tree[node] if active[neighbour]) <= 1\n            ),\n            None,\n        )\n        if leaf is None:\n            raise ValueError(\"coupling map has no spanning forest over the circuit\")\n        physical = logical_to_physical[leaf]\n        # The active tree stays fixed until this token reaches its leaf. Walk\n        # its unique path once; SWAPs move tokens, not the remaining tree edges.\n        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()\n        for step in path[1:]:\n            other = physical_to_logical[step]\n            logical_to_physical[leaf] = step\n            logical_to_physical[other] = physical\n            physical_to_logical[step] = leaf\n            physical_to_logical[physical] = other\n            swaps.append((physical, step) if physical < step else (step, physical))\n            physical = step\n        active[leaf] = False\n    return tuple(swaps)\n\n\ndef plan_restore_swaps(\n    plan: SabrePlan,\n    coupling: CouplingMap,\n) -> tuple[tuple[int, int, int], ...]:\n    \"\"\"Plan the SWAPs that return a planned program to the identity layout.\n\n    Replaying ``SabrePlan.swaps`` in reverse exactly undoes the forward SWAPs, so\n    it returns the layout the plan started from. That is the identity layout only\n    for a plan that started there. Two restores are therefore always available:\n    walk the plan's final layout home directly, or replay the forward SWAPs in\n    reverse and then walk the layout the plan started from home. The shorter one\n    is returned, so a plan that started from the identity layout pays no more\n    than its forward SWAPs.\n\n    Returns:\n        ``(left, right, anchor)`` triples in execution order. ``anchor`` is the\n        source instruction index a replayed forward SWAP was attributed to, or\n        ``SabrePlan.swap_anchors[0]`` for a swap of the tree walk.\n\n    Raises:\n        ValueError: If the coupling map has no spanning forest over the plan's\n            qubits.\n    \"\"\"\n\n    replayed = tuple(\n        (plan.swaps[index][0], plan.swaps[index][1], plan.swap_anchors[index])\n        for index in range(len(plan.swaps) - 1, -1, -1)\n    )\n    if plan.swaps:\n        anchor = plan.swap_anchors[0]\n        unwound = plan.initial_logical_to_physical\n        candidate = replayed + tuple(\n            (left, right, anchor) for left, right in restore_swaps(unwound, coupling)\n        )\n        direct = tuple(\n            (left, right, anchor)\n            for left, right in restore_swaps(plan.final_logical_to_physical, coupling)\n        )\n        if len(direct) < len(candidate):\n            return direct\n        return candidate\n    anchor = plan.swap_anchors[0] if plan.swap_anchors else 0\n    return tuple(\n        (left, right, anchor)\n        for left, right in restore_swaps(plan.final_logical_to_physical, coupling)\n    )\n\n\ndef _restored_swap_count(plan: SabrePlan, coupling: CouplingMap) -> int:\n    \"\"\"Return the SWAPs a forward plan inserts together with its restore SWAPs.\"\"\"\n\n    return len(plan.swaps) + len(plan_restore_swaps(plan, coupling))\n\n\ndef plan_sabre_layout(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    rounds: int = SABRE_LAYOUT_ROUNDS,\n) -> tuple[int, ...]:\n    \"\"\"Search for an initial layout that shortens the SABRE-routed program.\n\n    The search follows the layout pass of the SABRE paper: route the program,\n    route the reversed program starting from the layout that left behind, and\n    adopt that layout as the next candidate. A candidate replaces the current best\n    only when it lowers the inserted-SWAP count of a fully restored route, so the\n    returned layout never costs more than the identity layout.\n\n    Candidates are searched on the coupling subgraph the program's own qubits\n    induce, so a device wider than the program is searched exactly as far as those\n    qubits connect it.\n\n    Raises:\n        ValueError: If the coupling map has fewer qubits than the program, if\n            ``rounds`` is negative, or if the program cannot be routed.\n    \"\"\"\n\n    n_wires = program.n_wires\n    if coupling.n_qubits < n_wires:\n        raise ValueError(\"Coupling map has fewer qubits than the circuit.\")\n    if rounds < 0:\n        raise ValueError(\"rounds must be non-negative\")\n    identity = tuple(range(n_wires))\n    if not program.instructions:\n        return identity\n\n    reversed_program = CircuitIR(n_wires, tuple(reversed(program.instructions)))\n    candidate = identity\n    best_layout = identity\n    # Keep the original deterministic forward/backward trajectory as candidate\n    # generation. Substituting a better forward route here can lead the reverse\n    # pass away from a valuable old layout. Evaluate each old candidate with the\n    # multi-trial planner, while retaining identity as a candidate throughout.\n    forward = _plan_sabre_trial(program, coupling, initial_layout=candidate)\n    if forward is None:\n        raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n    trajectory_cost = _restored_swap_count(forward, coupling)\n    best_cost = _restored_swap_count(\n        _select_sabre_trials(program, coupling, forward), coupling\n    )\n    for _ in range(rounds):\n        backward = _plan_sabre_trial(\n            reversed_program,\n            coupling,\n            initial_layout=forward.final_logical_to_physical,\n        )\n        if backward is None:\n            raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n        trial = backward.final_logical_to_physical\n        if trial == candidate:\n            break\n        trial_forward = _plan_sabre_trial(program, coupling, initial_layout=trial)\n        if trial_forward is None:\n            raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n        trial_cost = _restored_swap_count(trial_forward, coupling)\n        improved = _select_sabre_trials(program, coupling, trial_forward)\n        improved_cost = _restored_swap_count(improved, coupling)\n        if improved_cost < best_cost:\n            best_layout, best_cost = trial, improved_cost\n        if trial_cost >= trajectory_cost:\n            break\n        trajectory_cost = trial_cost\n        candidate = trial\n        forward = trial_forward\n    return best_layout\n\n\n__all__ = [\n    \"SabrePlan\",\n    \"plan_restore_swaps\",\n    \"plan_sabre_layout\",\n    \"plan_sabre_swaps\",\n    \"restore_swaps\",\n]\n",
+  "candidate_source": "# Portions adapted from Qiskit 2.6.2, crates/transpiler/src/passes/sabre/route.rs.\n# (C) Copyright IBM 2024\n# Portions adapted from Cirq 1.7.0, transformers/routing/route_circuit_cqc.py.\n# Copyright 2022 The Cirq Developers\n# Licensed under the Apache License, Version 2.0. See the repository LICENSE or\n# https://www.apache.org/licenses/LICENSE-2.0.\n# Modified for FlagQuantum: incidence-indexed native IR scoring, deterministic\n# ties, repeated-layout detection, bounded rollback and shortest-path progress.\n# Sources: docs/development/COMPILER_UPSTREAM_REUSE.md and\n# docs/development/COMPILER_SABRE_RELATIVE_SCORING.md.\n\n\n\"\"\"SABRE-style lookahead SWAP planning for one undirected coupling topology.\n\nThe planner implements the SABRE heuristic (Li, Ding, and Xie, \"Tackling the\nQubit Mapping Problem for NISQ-Era Quantum Devices\", ASPLOS 2019). It keeps a\nfront layer of two-qubit operations whose predecessors have already executed, and\nwhen no front-layer operation is a coupling edge it inserts the SWAP that\nminimizes the mean front-layer hop distance plus a distance-decayed lookahead\nterm over a bounded extended layer.\n\nThe plan is one persistent layout for the whole circuit, so a materializer\nreplays the forward SWAPs in reverse at the end to restore the logical output\nlayout. The planner is deterministic: ties between equal-cost SWAP candidates\nfirst use the lexicographically smallest physical pair. Three additional fixed-seed\ntrials explore equal-cost choices and one layer-lookahead trial considers disjoint\nSWAP pairs, retaining a trial only when its complete route,\nincluding final restoration, uses fewer SWAPs. The same input always produces the\nsame result without a user seed.\n\nUnlike the shortest-path strategies, this planner moves the layout before an\noperation rather than immediately before it, which is what makes it effective on\ndevices of 20 or more qubits.\n\nThe planner uses only the qubits the program owns, so it plans on the coupling\nsubgraph those qubits induce rather than on the whole device. A padding qubit of a\nwider device is not an ancilla this planner may swap on, and a program the\ncircuit's own qubits cannot connect is refused rather than costed against a route\nthe plan cannot express.\n\nThe planner can start from a caller-supplied initial layout, and\n``plan_sabre_layout`` searches for one using the layout pass of the same paper:\nroute the program, route the reversed program from the resulting layout, and\nadopt that layout as the next candidate whenever it lowers the total number of\ninserted SWAPs. A layout that starts away from the identity cannot be undone by\nreplaying the forward SWAPs in reverse, so ``restore_swaps`` plans the explicit\nrestore that returns every logical qubit to its own qubit.\n\nA dependency is not only a shared qubit. A measurement writes classical state that\nno qubit records and a conditional reads it, so a conditional and the measurement\nthat produces the condition it tests are ordered by the classical channel alone,\neven when the two touch disjoint qubits. The planner therefore keeps program order\nover each classical bit: a read follows the write it observes, and a write follows\nthe reads it would otherwise invalidate. Without those edges the front layer can\nemit a conditional before its measurement, and the dynamic runtime then refuses\nthe routed program with \"classical bit N was read before measurement\" \u2014 a routing\ndefect, not a caller error. Classical order is the only channel through which a\nreordering of measurements is observable, so a measurement whose bit is neither\nre-read nor re-written stays free to move past an operation on other qubits.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport math\nimport random\nfrom collections import deque\nfrom collections.abc import Callable\nfrom dataclasses import dataclass\nfrom typing import TYPE_CHECKING, Any\n\nfrom ...core.ir import CircuitIR, Instruction\nfrom ..optimization.ordering_barrier import is_ordering_barrier\nfrom ._layer_lookahead import choose_layer_swaps\n\nif TYPE_CHECKING:\n    from .routing import CouplingMap\n\n# SABRE defaults. The extended layer is bounded so planning stays linear in the\n# circuit size, and the lookahead weight keeps the front layer dominant.\nLOOKAHEAD_DECAY = 0.9\nLOOKAHEAD_EXTENDED_SIZE = 20\nLOOKAHEAD_WEIGHT = 0.5\n\n# Bound speculative work between executed instructions. A heuristic can cycle on\n# a connected graph; reaching this budget triggers guaranteed shortest-path\n# progress rather than misclassifying the circuit as unroutable.\nSTALLED_SWAP_LIMIT_PER_WIRE = 4\n\n# The layout search reroutes the reversed program until the swap count stops\n# improving, so this bound only supplies a hard worst case above the early exits.\nSABRE_LAYOUT_ROUNDS = 5\n\n\n@dataclass(frozen=True)\nclass SabrePlan:\n    \"\"\"A planned persistent layout and the forward SWAPs that realize it.\n\n    Attributes:\n        sequence: Source instruction indices in the order the planner places\n            them. A front-layer operation is emitted as soon as its\n            predecessors are placed, so this differs from source order when two\n            independent operations become executable at different times.\n        placements: Physical qubits for every source instruction, indexed by\n            source instruction index.\n        swaps: Forward SWAP pairs in the order the planner applied them.\n        swap_placements: Number of instructions already placed when each forward\n            SWAP was applied, so materialization can interleave SWAPs with\n            instructions.\n        swap_anchors: Source instruction index each forward SWAP is attributed\n            to, namely the lowest-indexed blocked front-layer operation when the\n            SWAP was chosen. The heuristic picks a SWAP for its effect on the\n            whole front layer, so this is an audit anchor, not a sole cause.\n        initial_logical_to_physical: Layout the forward SWAPs started from, so a\n            caller can tell how far the plan moved away from the identity layout.\n        final_logical_to_physical: Layout after the forward SWAPs.\n    \"\"\"\n\n    sequence: tuple[int, ...]\n    placements: tuple[tuple[int, ...], ...]\n    swaps: tuple[tuple[int, int], ...]\n    swap_placements: tuple[int, ...]\n    swap_anchors: tuple[int, ...]\n    initial_logical_to_physical: tuple[int, ...]\n    final_logical_to_physical: tuple[int, ...]\n\n\n#: The opcode that writes classical state, the metadata key naming the bit it\n#: writes, and the two spellings a classical condition reads bits with. No other\n#: instruction in the IR writes a classical bit, so a program without a\n#: measurement has no classical dependency to preserve.\n_MEASURE_OPCODE = \"measure\"\n_CLASSICAL_BIT_KEY = \"classical_bit\"\n_CONDITION_KEYS = (\"conditions\", \"condition_clauses\")\n\n\ndef _classical_accesses(\n    instruction: Instruction,\n) -> tuple[int | None, tuple[int, ...]]:\n    \"\"\"Return the classical bit an instruction writes and the bits it reads.\n\n    The condition spellings are read here exactly as ``runtime.dynamic`` reads\n    them. The planner needs the bits itself rather than from that package because\n    Compiler may not depend on Runtime, and a metadata read is a smaller cost than\n    a cross-layer import.\n\n    Raises:\n        ValueError: If the instruction mixes the two condition spellings, or if\n            the spelling it uses is not a sequence of bit/value pairs.\n    \"\"\"\n\n    written: int | None = None\n    if instruction.name == _MEASURE_OPCODE:\n        raw_bit = instruction.metadata.get(_CLASSICAL_BIT_KEY)\n        # A measurement that names no bit records nothing a later instruction can\n        # read, so it takes no place in the classical order.\n        written = None if raw_bit is None else int(raw_bit)\n\n    if all(key in instruction.metadata for key in _CONDITION_KEYS):\n        raise ValueError(\n            f\"instruction {instruction.name}{instruction.wires} cannot define both \"\n            \"conditions and condition_clauses\"\n        )\n    raw_clauses: Any = instruction.metadata.get(\"condition_clauses\")\n    if raw_clauses is None and \"conditions\" in instruction.metadata:\n        raw_clauses = (instruction.metadata[\"conditions\"],)\n    read: set[int] = set()\n    try:\n        for clause in raw_clauses or ():\n            for bit, _value in clause:\n                read.add(int(bit))\n    except (TypeError, ValueError) as error:\n        raise ValueError(\n            f\"instruction {instruction.name}{instruction.wires} has malformed \"\n            f\"classical conditions: {error}\"\n        ) from error\n    return written, tuple(sorted(read))\n\n\ndef _validated_layout(\n    layout: tuple[int, ...] | None,\n    n_wires: int,\n) -> tuple[int, ...]:\n    \"\"\"Return a caller layout as a placement, defaulting to the identity.\"\"\"\n\n    if layout is None:\n        return tuple(range(n_wires))\n    placement = tuple(layout)\n    if len(placement) != n_wires or sorted(placement) != list(range(n_wires)):\n        raise ValueError(\n            \"initial_layout must be a permutation of the circuit wires, got \"\n            f\"{placement!r} for {n_wires} wires\"\n        )\n    return placement\n\n\ndef _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:\n    \"\"\"Return the coupling subgraph induced by the qubits the program owns.\n\n    The planner emits SWAPs only on those qubits, so the graph it plans on has to be\n    the same graph. A padding qubit of a wider device is not an ancilla this planner\n    can swap on, and scoring candidates against device distances that only such a\n    qubit realizes would cost the plan against a route it cannot emit.\n    \"\"\"\n\n    if coupling.n_qubits == n_wires:\n        return coupling\n    # ``routing`` imports this module, so the value type is imported here.\n    from .routing import CouplingMap as _CouplingMap\n\n    return _CouplingMap(\n        n_wires,\n        tuple(edge for edge in coupling.edges if edge[1] < n_wires),\n    )\n\n\ndef _shifted_distance(\n    wire_pair: tuple[int, ...],\n    left: int,\n    right: int,\n    logical_to_physical: list[int],\n    distances: tuple[tuple[float, ...], ...],\n) -> float:\n    \"\"\"Return a two-qubit hop distance as it would be after a candidate SWAP.\"\"\"\n\n    first = logical_to_physical[wire_pair[0]]\n    second = logical_to_physical[wire_pair[1]]\n    if first == left:\n        first = right\n    elif first == right:\n        first = left\n    if second == left:\n        second = right\n    elif second == right:\n        second = left\n    return distances[first][second]\n\n\ndef _relative_score_swap(\n    candidates: set[tuple[int, int]],\n    qubit_pairs: tuple[tuple[int, ...], ...],\n    front: list[int],\n    extended: list[int],\n    layout: list[int],\n    distances: tuple[tuple[float, ...], ...],\n    *,\n    tie_rng: random.Random | None = None,\n) -> tuple[int, int] | None:\n    \"\"\"Score only interactions incident on either endpoint of a proposed SWAP.\"\"\"\n\n    def absolute_score(edge: tuple[int, int]) -> float:\n        left, right = edge\n\n        def shifted(index: int) -> float:\n            return _shifted_distance(qubit_pairs[index], left, right, layout, distances)\n\n        score = sum(shifted(index) for index in front) / len(front)\n        if extended:\n            lookahead = 0.0\n            weight = 1.0\n            for index in extended:\n                lookahead += weight * shifted(index)\n                weight *= LOOKAHEAD_DECAY\n            score += LOOKAHEAD_WEIGHT * lookahead / len(extended)\n        return score\n\n    ordered = sorted(candidates)\n    if tie_rng is not None:\n        tie_rng.shuffle(ordered)\n    if not ordered:\n        return None\n    terms: list[tuple[int, int, float]] = []\n    incidence: list[list[tuple[int, float]]] = [[] for _ in layout]\n    for indices, scale in (\n        (front, 1.0 / len(front)),\n        (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),\n    ):\n        weight = 1.0\n        for index in indices:\n            first, second = (layout[wire] for wire in qubit_pairs[index])\n            coefficient = scale * weight\n            terms.append((first, second, coefficient))\n            if first != second:\n                incidence[first].append((second, coefficient))\n                incidence[second].append((first, coefficient))\n            if indices is extended:\n                weight *= LOOKAHEAD_DECAY\n    # All candidates share the omitted current-layout score. Near a rounding\n    # tie, replay the original absolute arithmetic to preserve its tie behavior.\n    magnitude = math.fsum(weight * distances[a][b] for a, b, weight in terms)\n    tie_tolerance = 4 * len(terms) * math.ulp(max(1.0, magnitude))\n    best: tuple[int, int] | None = None\n    best_score = 0.0\n    for left, right in ordered:\n        changes = []\n        # Coupling distances are symmetric. An interaction touching both\n        # endpoints keeps its distance; every other incident term changes only\n        # its moved endpoint. Preserve one contribution per source term.\n        for moved, destination in ((left, right), (right, left)):\n            before, after = distances[moved], distances[destination]\n            for other, coefficient in incidence[moved]:\n                if other != destination:\n                    changes.append(coefficient * (after[other] - before[other]))\n        score = math.fsum(changes)\n        if best is None:\n            best, best_score = (left, right), score\n        elif abs(score - best_score) <= tie_tolerance:\n            if absolute_score((left, right)) < absolute_score(best):\n                best, best_score = (left, right), score\n        elif score < best_score:\n            best, best_score = (left, right), score\n    return best\n\n\ndef plan_sabre_swaps(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    initial_layout: tuple[int, ...] | None = None,\n) -> SabrePlan:\n    \"\"\"Plan a SABRE persistent layout for one program on one coupling map.\n\n    Only the qubits owned by the program are used, and inserted SWAPs always join\n    two qubits of the program, so no physical ancilla is required. Planning happens\n    on the coupling subgraph those qubits induce, so a wider device is supported\n    exactly as far as its qubits inside the circuit connect the program.\n\n    Args:\n        program: Circuit to place.\n        coupling: Topology the placed circuit must respect.\n        initial_layout: Physical qubit for each logical qubit at the start. Defaults\n            to the identity layout.\n\n    Raises:\n        ValueError: If the coupling map has fewer qubits than the program, if\n            ``initial_layout`` is not a permutation of the circuit qubits, if a\n            two-qubit operation is connected on the device only through qubits the\n            circuit does not own, if an instruction states its classical condition\n            in a malformed or ambiguous way.\n    \"\"\"\n\n    baseline = _plan_sabre_trial(program, coupling, initial_layout=initial_layout)\n    if baseline is None:\n        raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n    return _select_sabre_trials(program, coupling, baseline)\n\n\ndef _select_sabre_trials(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    baseline: SabrePlan,\n    *,\n    cost: Callable[[SabrePlan], int] | None = None,\n) -> SabrePlan:\n    \"\"\"Retain the single-trial route unless a bounded trial is strictly cheaper.\"\"\"\n    best = baseline\n    if not best.swaps:\n        return best\n    score = (\n        cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)\n    )\n    best_cost = score(best)\n    dependencies = _build_sabre_dependencies(program.instructions)\n    for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):\n        candidate = _plan_sabre_trial(\n            program,\n            coupling,\n            initial_layout=baseline.initial_logical_to_physical,\n            tie_rng=random.Random(seed) if seed is not None else None,\n            committed_swap_limit=best_cost,\n            layer_lookahead=use_layers,\n            _dependencies=dependencies,\n        )\n        if candidate is not None:\n            candidate_cost = score(candidate)\n            if candidate_cost < best_cost:\n                best, best_cost = candidate, candidate_cost\n    return best\n\n\ndef _build_sabre_dependencies(\n    instructions: tuple[Instruction, ...],\n) -> tuple[list[list[int]], tuple[int, ...]]:\n    \"\"\"Build read-only successors and initial indegrees for one source program.\"\"\"\n    # One edge per (instruction, qubit) pair, so an instruction whose two qubits\n    # share a predecessor still reaches zero pending predecessors.\n    successors: list[list[int]] = [[] for _ in range(len(instructions))]\n    pending = [0] * len(instructions)\n    last_on_wire: dict[int, int] = {}\n    for index, instruction in enumerate(instructions):\n        wire_pair = instruction.wires\n        for wire in wire_pair:\n            previous = last_on_wire.get(wire)\n            if previous is not None:\n                successors[previous].append(index)\n                pending[index] += 1\n            last_on_wire[wire] = index\n\n    # Classical order is order that no qubit records. Per bit, a read follows the\n    # write it observes, and a write follows every read it would invalidate and\n    # the earlier write whose value it replaces. A bit no measurement ever writes\n    # contributes no edge, so a program without classical state keeps the\n    # qubit-only graph it had. Processing in program order keeps every edge\n    # forward, so the graph stays acyclic and the front layer still empties on\n    # every program.\n    last_writer: dict[int, int] = {}\n    # Readers on independent qubits have no quantum edge ordering them; keeping\n    # only the most recent reader would let a write overtake an earlier reader.\n    readers_since_write: dict[int, list[int]] = {}\n    for index, instruction in enumerate(instructions):\n        written, read = _classical_accesses(instruction)\n        for bit in read:\n            producer = last_writer.get(bit)\n            if producer is not None:\n                successors[producer].append(index)\n                pending[index] += 1\n        if written is not None:\n            predecessors = (\n                last_writer.get(written),\n                *readers_since_write.pop(written, ()),\n            )\n            for predecessor in predecessors:\n                if predecessor is not None:\n                    successors[predecessor].append(index)\n                    pending[index] += 1\n            last_writer[written] = index\n        for bit in read:\n            readers_since_write.setdefault(bit, []).append(index)\n\n    return successors, tuple(pending)\n\n\ndef _plan_sabre_trial(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    initial_layout: tuple[int, ...] | None = None,\n    tie_rng: random.Random | None = None,\n    committed_swap_limit: int | None = None,\n    layer_lookahead: bool = False,\n    _dependencies: tuple[list[list[int]], tuple[int, ...]] | None = None,\n) -> SabrePlan | None:\n    \"\"\"Run one search; prune only committed SWAPs that cannot beat the incumbent.\"\"\"\n\n    n_wires = program.n_wires\n    if coupling.n_qubits < n_wires:\n        raise ValueError(\"Coupling map has fewer qubits than the circuit.\")\n    placement = _validated_layout(initial_layout, n_wires)\n    instructions = program.instructions\n    count = len(instructions)\n    if count == 0:\n        return SabrePlan(\n            sequence=(),\n            placements=(),\n            swaps=(),\n            swap_placements=(),\n            swap_anchors=(),\n            initial_logical_to_physical=placement,\n            final_logical_to_physical=placement,\n        )\n\n    # ``CouplingMap.distance_matrix`` marks a disconnected pair with a negative\n    # sentinel. A cost function needs such a pair to be maximally expensive\n    # rather than maximally cheap, so a local infinite-distance copy is used.\n    planning = _planning_coupling(coupling, n_wires)\n    distances = tuple(\n        tuple(math.inf if hop < 0 else float(hop) for hop in row)\n        for row in planning.distance_matrix()\n    )\n    neighbours = tuple(planning.neighbors(wire) for wire in range(n_wires))\n    wires = tuple(instruction.wires for instruction in instructions)\n    # A channel occupies its qubits but must not be pulled onto a coupling edge,\n    # so it never blocks the front layer. A barrier is in the same position for\n    # the same reason: neither one is a unitary the device has to host, so making\n    # either adjacent would buy nothing.\n    blocks = tuple(\n        len(wire_pair) == 2\n        and not instruction.metadata.get(\"is_channel\")\n        and not is_ordering_barrier(instruction)\n        for instruction, wire_pair in zip(instructions, wires, strict=True)\n    )\n    # A SWAP along one coupling edge keeps each logical qubit inside its own\n    # connected component, so a two-qubit operation whose logical qubits have no\n    # coupling path between them can never be legalized. Connectivity is a\n    # property of the physical qubits, so the initial layout is applied first.\n    for index, wire_pair in enumerate(wires):\n        if not blocks[index]:\n            continue\n        left = placement[wire_pair[0]]\n        right = placement[wire_pair[1]]\n        if not math.isinf(distances[left][right]):\n            continue\n        if planning is not coupling and coupling.distance(left, right) >= 0:\n            raise ValueError(\n                f\"the device connects wires {wire_pair[0]} and {wire_pair[1]} of \"\n                f\"two-wire instruction {index} only through physical ancilla wires \"\n                \"outside the circuit IR, which this planner does not route through; \"\n                \"provide an explicit layout/lowering step\"\n            )\n        raise ValueError(\n            f\"no coupling path between wires {wire_pair[0]} and \"\n            f\"{wire_pair[1]} of two-wire instruction {index}\"\n        )\n\n    successors, initial_pending = (\n        _build_sabre_dependencies(instructions)\n        if _dependencies is None\n        else _dependencies\n    )\n    # Successors are read-only; each trial consumes its own remaining indegrees.\n    pending = list(initial_pending)\n\n    logical_to_physical = list(placement)\n    physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(logical_to_physical):\n        physical_to_logical[physical] = logical\n    placements: list[tuple[int, ...]] = [() for _ in range(count)]\n    order: list[int] = []\n    swaps: list[tuple[int, int]] = []\n    swap_placements: list[int] = []\n    swap_anchors: list[int] = []\n    front = [index for index in range(count) if pending[index] == 0]\n    executed = 0\n    stalled = 0\n    progress_swap_start = 0\n    seen_layouts: set[tuple[int, ...]] = set()\n    frontier_lookahead: list[int] | None = None\n\n    def exchange(left: int, right: int) -> None:\n        left_logical = physical_to_logical[left]\n        right_logical = physical_to_logical[right]\n        physical_to_logical[left], physical_to_logical[right] = (\n            right_logical,\n            left_logical,\n        )\n        logical_to_physical[left_logical] = right\n        logical_to_physical[right_logical] = left\n\n    def record_swap(left: int, right: int, anchor: int) -> None:\n        exchange(left, right)\n        swaps.append((left, right))\n        swap_placements.append(executed)\n        swap_anchors.append(anchor)\n\n    def separation(index: int) -> float:\n        left = logical_to_physical[wires[index][0]]\n        right = logical_to_physical[wires[index][1]]\n        return distances[left][right]\n\n    def extended_layer(blocked_front: list[int]) -> list[int]:\n        \"\"\"Return blocked operations reachable from the front, in BFS order.\"\"\"\n        nonlocal frontier_lookahead\n        # SWAPs change placement, not dependency reachability. Rebuild only when\n        # a source instruction executes and changes the frontier.\n        if frontier_lookahead is not None:\n            return frontier_lookahead\n        extended: list[int] = []\n        seen = set(front)\n        queue: deque[int] = deque()\n        for index in blocked_front:\n            for successor in successors[index]:\n                if successor not in seen:\n                    seen.add(successor)\n                    queue.append(successor)\n        while queue and len(extended) < LOOKAHEAD_EXTENDED_SIZE:\n            index = queue.popleft()\n            if blocks[index]:\n                extended.append(index)\n            for successor in successors[index]:\n                if successor not in seen:\n                    seen.add(successor)\n                    queue.append(successor)\n        frontier_lookahead = extended\n        return extended\n\n    def best_swap(blocked_front: list[int]) -> tuple[int, int] | None:\n        \"\"\"Return the lowest-cost SWAP candidate, or None if none exists.\"\"\"\n\n        candidates: set[tuple[int, int]] = set()\n        for index in blocked_front:\n            for wire in wires[index]:\n                physical = logical_to_physical[wire]\n                for neighbour in neighbours[physical]:\n                    candidates.add(\n                        (physical, neighbour)\n                        if physical < neighbour\n                        else (neighbour, physical)\n                    )\n        if not candidates:\n            return None\n        if n_wires > 12:\n            return _relative_score_swap(\n                candidates,\n                wires,\n                blocked_front,\n                extended_layer(blocked_front),\n                logical_to_physical,\n                distances,\n                tie_rng=tie_rng,\n            )\n        # Preserve the lower-overhead full scoring path on small devices.\n        extended = extended_layer(blocked_front)\n        best: tuple[int, int] | None = None\n        best_score = 0.0\n        ordered = sorted(candidates)\n        if tie_rng is not None:\n            tie_rng.shuffle(ordered)\n        for left, right in ordered:\n            front_total = 0.0\n            for index in blocked_front:\n                front_total += _shifted_distance(\n                    wires[index], left, right, logical_to_physical, distances\n                )\n            score = front_total / len(blocked_front)\n            if extended:\n                lookahead = 0.0\n                weight = 1.0\n                for index in extended:\n                    lookahead += weight * _shifted_distance(\n                        wires[index], left, right, logical_to_physical, distances\n                    )\n                    weight *= LOOKAHEAD_DECAY\n                score += LOOKAHEAD_WEIGHT * lookahead / len(extended)\n            if best is None or score < best_score:\n                best = (left, right)\n                best_score = score\n        return best\n\n    stalled_limit = STALLED_SWAP_LIMIT_PER_WIRE * n_wires\n    while front:\n        # A speculative suffix may still be rolled back by progress recovery.\n        # Only the prefix committed by an executed instruction is a lower bound\n        # on the final cost; using len(swaps) here would incorrectly prune it.\n        if (\n            committed_swap_limit is not None\n            and progress_swap_start >= committed_swap_limit\n        ):\n            return None\n        executable = [\n            index for index in front if not blocks[index] or separation(index) == 1\n        ]\n        if executable:\n            frontier_lookahead = None\n            for index in executable:\n                front.remove(index)\n                placements[index] = tuple(\n                    logical_to_physical[wire] for wire in wires[index]\n                )\n                order.append(index)\n                executed += 1\n                for successor in successors[index]:\n                    pending[successor] -= 1\n                    if pending[successor] == 0:\n                        front.append(successor)\n            stalled = 0\n            progress_swap_start = len(swaps)\n            seen_layouts.clear()\n            continue\n\n        blocked_front = [index for index in front if blocks[index]]\n        layout = tuple(logical_to_physical)\n        if layout in seen_layouts or stalled >= stalled_limit:\n            # Qiskit's release valve undoes speculation since the last routed\n            # instruction. No source instruction has executed in this suffix,\n            # so removing it preserves both semantics and attribution.\n            for left, right in reversed(swaps[progress_swap_start:]):\n                exchange(left, right)\n            del swaps[progress_swap_start:]\n            del swap_placements[progress_swap_start:]\n            del swap_anchors[progress_swap_start:]\n            anchor = min(blocked_front, key=lambda index: (separation(index), index))\n            first, second = wires[anchor]\n            path = planning.shortest_path(\n                logical_to_physical[first], logical_to_physical[second]\n            )\n            # Bring both ends together, stopping one edge short. Every SWAP\n            # reduces their distance by one; the next iteration must execute\n            # this front-layer instruction. Unrelated dependencies stay intact.\n            required = len(path) - 2\n            for offset in range((required + 1) // 2):\n                record_swap(path[offset], path[offset + 1], anchor)\n            for offset in range(required // 2):\n                end = len(path) - 1 - offset\n                record_swap(path[end], path[end - 1], anchor)\n            continue\n        # Cirq tracks repeated search choices before forcing a shortest path.\n        # Track complete layouts here because FQ's frontier is a dependency DAG,\n        # rather than Cirq's disjoint two-qubit timesteps.\n        seen_layouts.add(layout)\n        if layer_lookahead:\n            candidates = {\n                (min(physical, neighbor), max(physical, neighbor))\n                for index in blocked_front\n                for qubit in wires[index]\n                for physical in (logical_to_physical[qubit],)\n                for neighbor in neighbours[physical]\n            }\n            moves = choose_layer_swaps(\n                candidates,\n                front,\n                wires,\n                blocks,\n                successors,\n                pending,\n                logical_to_physical,\n                distances,\n            )\n            if moves is not None:\n                for left, right in moves:\n                    record_swap(left, right, blocked_front[0])\n                stalled += len(moves)\n                continue\n        choice = best_swap(blocked_front)\n        if choice is None:\n            raise ValueError(\n                \"SABRE swap insertion has no candidate: the coupling map is \"\n                \"disconnected across the front layer\"\n            )\n        left, right = choice\n        record_swap(left, right, blocked_front[0])\n        stalled += 1\n\n    if executed != count:\n        raise RuntimeError(\n            f\"SABRE planned {executed} of {count} instructions; the front layer \"\n            \"emptied before the program was fully placed\"\n        )\n    # A materializer replays the SWAPs in order while it walks ``sequence``, so\n    # the plan is only usable if that replay reproduces the layout the planner\n    # costed. Fail closed here rather than let a caller route against a layout\n    # that never existed.\n    replay_logical_to_physical = list(placement)\n    replay_physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(replay_logical_to_physical):\n        replay_physical_to_logical[physical] = logical\n    for swap_left, swap_right in swaps:\n        left_logical = replay_physical_to_logical[swap_left]\n        right_logical = replay_physical_to_logical[swap_right]\n        replay_physical_to_logical[swap_left] = right_logical\n        replay_physical_to_logical[swap_right] = left_logical\n        replay_logical_to_physical[left_logical] = swap_right\n        replay_logical_to_physical[right_logical] = swap_left\n    if replay_logical_to_physical != logical_to_physical:\n        raise RuntimeError(\n            \"SABRE plan does not replay to its planned layout; the reported \"\n            \"layout and the reported SWAPs disagree\"\n        )\n    return SabrePlan(\n        sequence=tuple(order),\n        placements=tuple(placements),\n        swaps=tuple(swaps),\n        swap_placements=tuple(swap_placements),\n        swap_anchors=tuple(swap_anchors),\n        initial_logical_to_physical=placement,\n        final_logical_to_physical=tuple(logical_to_physical),\n    )\n\n\ndef _restore_path(\n    start: int,\n    goal: int,\n    tree: list[list[int]],\n    active: list[bool],\n) -> list[int]:\n    \"\"\"Return the remaining tree path from ``start`` to ``goal``, inclusive.\"\"\"\n\n    previous = {start: -1}\n    queue: deque[int] = deque([start])\n    while queue:\n        node = queue.popleft()\n        if node == goal:\n            break\n        for neighbour in tree[node]:\n            if active[neighbour] and neighbour not in previous:\n                previous[neighbour] = node\n                queue.append(neighbour)\n    if goal not in previous:\n        raise ValueError(\n            f\"layout restore has no coupling path from wire {start} to wire {goal}\"\n        )\n    path = [goal]\n    while path[-1] != start:\n        path.append(previous[path[-1]])\n    path.reverse()\n    return path\n\n\ndef restore_swaps(\n    layout: tuple[int, ...],\n    coupling: CouplingMap,\n) -> tuple[tuple[int, int], ...]:\n    \"\"\"Plan the SWAPs that move every logical qubit of ``layout`` to its own qubit.\n\n    Replaying a forward plan in reverse only returns the layout that plan started\n    from, so a plan that started away from the identity layout needs an explicit\n    restore. The coupling graph is reduced to a spanning forest and one tree leaf\n    at a time is walked to its home qubit along the edges that are still active. A\n    leaf has at most one active edge, so a qubit that has already reached home is\n    never displaced.\n\n    Args:\n        layout: Physical qubit for each logical qubit.\n        coupling: Topology the restore SWAPs must respect.\n\n    Raises:\n        ValueError: If ``layout`` is not a permutation of the circuit qubits, or if\n            the coupling map has no spanning forest over them.\n    \"\"\"\n\n    placement = tuple(layout)\n    n_wires = len(placement)\n    if sorted(placement) != list(range(n_wires)):\n        raise ValueError(\n            f\"layout must be a permutation of the circuit wires, got {placement!r}\"\n        )\n\n    adjacency: list[list[int]] = [[] for _ in range(n_wires)]\n    for left, right in coupling.edges:\n        if left < n_wires and right < n_wires:\n            adjacency[left].append(right)\n            adjacency[right].append(left)\n    # A layout already at home needs no spanning-forest traversal. Keep input\n    # validation and edge accounting above this fast path unchanged.\n    if placement == tuple(range(n_wires)):\n        return ()\n\n    parent = [-1] * n_wires\n    for root in range(n_wires):\n        if parent[root] != -1:\n            continue\n        parent[root] = root\n        queue: deque[int] = deque([root])\n        while queue:\n            node = queue.popleft()\n            for neighbour in sorted(adjacency[node]):\n                if parent[neighbour] == -1:\n                    parent[neighbour] = node\n                    queue.append(neighbour)\n    tree = [\n        [\n            neighbour\n            for neighbour in adjacency[node]\n            if parent[neighbour] == node or parent[node] == neighbour\n        ]\n        for node in range(n_wires)\n    ]\n\n    logical_to_physical = list(placement)\n    physical_to_logical = [0] * n_wires\n    for logical, physical in enumerate(logical_to_physical):\n        physical_to_logical[physical] = logical\n    swaps: list[tuple[int, int]] = []\n    active = [True] * n_wires\n    for _ in range(n_wires):\n        leaf = next(\n            (\n                node\n                for node in range(n_wires)\n                if active[node]\n                and sum(1 for neighbour in tree[node] if active[neighbour]) <= 1\n            ),\n            None,\n        )\n        if leaf is None:\n            raise ValueError(\"coupling map has no spanning forest over the circuit\")\n        physical = logical_to_physical[leaf]\n        # The active tree stays fixed until this token reaches its leaf. Walk\n        # its unique path once; SWAPs move tokens, not the remaining tree edges.\n        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()\n        for step in path[1:]:\n            other = physical_to_logical[step]\n            logical_to_physical[leaf] = step\n            logical_to_physical[other] = physical\n            physical_to_logical[step] = leaf\n            physical_to_logical[physical] = other\n            swaps.append((physical, step) if physical < step else (step, physical))\n            physical = step\n        active[leaf] = False\n    return tuple(swaps)\n\n\ndef plan_restore_swaps(\n    plan: SabrePlan,\n    coupling: CouplingMap,\n) -> tuple[tuple[int, int, int], ...]:\n    \"\"\"Plan the SWAPs that return a planned program to the identity layout.\n\n    Replaying ``SabrePlan.swaps`` in reverse exactly undoes the forward SWAPs, so\n    it returns the layout the plan started from. That is the identity layout only\n    for a plan that started there. Two restores are therefore always available:\n    walk the plan's final layout home directly, or replay the forward SWAPs in\n    reverse and then walk the layout the plan started from home. The shorter one\n    is returned, so a plan that started from the identity layout pays no more\n    than its forward SWAPs.\n\n    Returns:\n        ``(left, right, anchor)`` triples in execution order. ``anchor`` is the\n        source instruction index a replayed forward SWAP was attributed to, or\n        ``SabrePlan.swap_anchors[0]`` for a swap of the tree walk.\n\n    Raises:\n        ValueError: If the coupling map has no spanning forest over the plan's\n            qubits.\n    \"\"\"\n\n    replayed = tuple(\n        (plan.swaps[index][0], plan.swaps[index][1], plan.swap_anchors[index])\n        for index in range(len(plan.swaps) - 1, -1, -1)\n    )\n    if plan.swaps:\n        anchor = plan.swap_anchors[0]\n        unwound = plan.initial_logical_to_physical\n        candidate = replayed + tuple(\n            (left, right, anchor) for left, right in restore_swaps(unwound, coupling)\n        )\n        direct = tuple(\n            (left, right, anchor)\n            for left, right in restore_swaps(plan.final_logical_to_physical, coupling)\n        )\n        if len(direct) < len(candidate):\n            return direct\n        return candidate\n    anchor = plan.swap_anchors[0] if plan.swap_anchors else 0\n    return tuple(\n        (left, right, anchor)\n        for left, right in restore_swaps(plan.final_logical_to_physical, coupling)\n    )\n\n\ndef _restored_swap_count(plan: SabrePlan, coupling: CouplingMap) -> int:\n    \"\"\"Return the SWAPs a forward plan inserts together with its restore SWAPs.\"\"\"\n\n    return len(plan.swaps) + len(plan_restore_swaps(plan, coupling))\n\n\ndef plan_sabre_layout(\n    program: CircuitIR,\n    coupling: CouplingMap,\n    *,\n    rounds: int = SABRE_LAYOUT_ROUNDS,\n) -> tuple[int, ...]:\n    \"\"\"Search for an initial layout that shortens the SABRE-routed program.\n\n    The search follows the layout pass of the SABRE paper: route the program,\n    route the reversed program starting from the layout that left behind, and\n    adopt that layout as the next candidate. A candidate replaces the current best\n    only when it lowers the inserted-SWAP count of a fully restored route, so the\n    returned layout never costs more than the identity layout.\n\n    Candidates are searched on the coupling subgraph the program's own qubits\n    induce, so a device wider than the program is searched exactly as far as those\n    qubits connect it.\n\n    Raises:\n        ValueError: If the coupling map has fewer qubits than the program, if\n            ``rounds`` is negative, or if the program cannot be routed.\n    \"\"\"\n\n    n_wires = program.n_wires\n    if coupling.n_qubits < n_wires:\n        raise ValueError(\"Coupling map has fewer qubits than the circuit.\")\n    if rounds < 0:\n        raise ValueError(\"rounds must be non-negative\")\n    identity = tuple(range(n_wires))\n    if not program.instructions:\n        return identity\n\n    reversed_program = CircuitIR(n_wires, tuple(reversed(program.instructions)))\n    candidate = identity\n    best_layout = identity\n    # Keep the original deterministic forward/backward trajectory as candidate\n    # generation. Substituting a better forward route here can lead the reverse\n    # pass away from a valuable old layout. Evaluate each old candidate with the\n    # multi-trial planner, while retaining identity as a candidate throughout.\n    forward = _plan_sabre_trial(program, coupling, initial_layout=candidate)\n    if forward is None:\n        raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n    trajectory_cost = _restored_swap_count(forward, coupling)\n    best_cost = _restored_swap_count(\n        _select_sabre_trials(program, coupling, forward), coupling\n    )\n    for _ in range(rounds):\n        backward = _plan_sabre_trial(\n            reversed_program,\n            coupling,\n            initial_layout=forward.final_logical_to_physical,\n        )\n        if backward is None:\n            raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n        trial = backward.final_logical_to_physical\n        if trial == candidate:\n            break\n        trial_forward = _plan_sabre_trial(program, coupling, initial_layout=trial)\n        if trial_forward is None:\n            raise RuntimeError(\"unbounded SABRE trial did not produce a plan\")\n        trial_cost = _restored_swap_count(trial_forward, coupling)\n        improved = _select_sabre_trials(program, coupling, trial_forward)\n        improved_cost = _restored_swap_count(improved, coupling)\n        if improved_cost < best_cost:\n            best_layout, best_cost = trial, improved_cost\n        if trial_cost >= trajectory_cost:\n            break\n        trajectory_cost = trial_cost\n        candidate = trial\n        forward = trial_forward\n    return best_layout\n\n\n__all__ = [\n    \"SabrePlan\",\n    \"plan_restore_swaps\",\n    \"plan_sabre_layout\",\n    \"plan_sabre_swaps\",\n    \"restore_swaps\",\n]\n",
+  "runner_source": "\"\"\"Fixed complete-routing controls for selection-local dependency reuse.\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport ast\nimport gc\nimport hashlib\nimport json\nimport platform\nimport statistics\nimport subprocess\nimport sys\nimport time\nimport tracemalloc\nimport types\nfrom contextlib import ExitStack\nfrom dataclasses import asdict\nfrom pathlib import Path\nfrom unittest.mock import patch\n\nfrom flagquantum.compiler import CouplingMap, route_to_topology\nfrom flagquantum.compiler.topology import routing_strategy, sabre\n\nfrom .compiler_sabre_incidence import Measurement, Observation, _program\n\nBASELINE = \"2ea5b78b6449b837db151e0d29c90895f6b51a4e\"\nSOURCE_PATH = \"flagquantum/compiler/topology/sabre.py\"\n_FUNCTIONS = (\"_plan_sabre_trial\", \"_select_sabre_trials\")\n\n\ndef _git(*args: str) -> str:\n    return subprocess.check_output([\"git\", *args], text=True, timeout=15).strip()\n\n\ndef _functions(source: str) -> dict[str, types.FunctionType]:\n    nodes: list[ast.stmt] = [\n        node\n        for node in ast.parse(source).body\n        if isinstance(node, ast.FunctionDef) and node.name in _FUNCTIONS\n    ]\n    assert len(nodes) == len(_FUNCTIONS)\n    namespace = vars(sabre).copy()\n    exec(\n        compile(ast.Module(body=nodes, type_ignores=[]), SOURCE_PATH, \"exec\"), namespace\n    )\n    return {name: namespace[name] for name in _FUNCTIONS}\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"--output\", type=Path, required=True)\n    args = parser.parse_args()\n    if _git(\"diff\", \"HEAD\", \"--\", \"flagquantum\"):\n        parser.error(\"Compiler implementation must match its recorded commit\")\n    baseline_source = _git(\"show\", f\"{BASELINE}:{SOURCE_PATH}\") + \"\\n\"\n    candidate_source = Path(sabre.__file__).read_text()\n    variants = {\n        \"baseline\": _functions(baseline_source),\n        \"candidate\": _functions(candidate_source),\n    }\n    observations: list[Observation] = []\n    report: dict[str, object] = {\n        \"evidence_class\": \"development\",\n        \"distribution_semantics\": \"single_device_fast_path\",\n        \"scalability_claim_allowed\": False,\n        \"base_commit\": BASELINE,\n        \"implementation_commit\": _git(\"rev-parse\", \"HEAD\"),\n        \"baseline_source_sha256\": hashlib.sha256(baseline_source.encode()).hexdigest(),\n        \"candidate_source_sha256\": hashlib.sha256(\n            candidate_source.encode()\n        ).hexdigest(),\n        \"runner_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n        \"python\": sys.version,\n        \"platform\": platform.platform(),\n        \"method\": \"Equal AST-cloned trial/selector patches, fresh coupling maps; full explicit SABRE route materialization and evidence; one warmup plus seven alternating samples; GC outside timers; separate traced peaks; identical output hashes in all calls.\",\n        \"limits\": \"Inspected constructed inputs on shared macOS CPU with one numerical thread, 600-second process-group bound. Not qualified RSS, latency, statistical significance, unseen tasks, whole default compilation or a cross-SDK ranking.\",\n        \"baseline_source\": baseline_source,\n        \"candidate_source\": candidate_source,\n        \"runner_source\": Path(__file__).read_text(),\n        \"complete\": False,\n        \"rows\": [],\n    }\n    for width in (6, 8, 12, 16, 24, 32):\n        for family in (\"fourier\", \"parity_ladder\", \"graph_cost\", \"matching_layers\"):\n            program = _program(family, width)\n            measurements = {label: Measurement([], 0, \"\") for label in variants}\n            expected = None\n            for block in range(9):\n                labels = (\n                    (\"baseline\", \"candidate\")\n                    if block % 2 == 0\n                    else (\"candidate\", \"baseline\")\n                )\n                for label in labels:\n                    topology = CouplingMap.grid(\n                        2 if width == 6 else 4, width // (2 if width == 6 else 4)\n                    )\n                    with ExitStack() as stack:\n                        for module in (sabre, routing_strategy):\n                            for name, function in variants[label].items():\n                                stack.enter_context(\n                                    patch.object(module, name, function)\n                                )\n                        gc.collect()\n                        if block == 8:\n                            tracemalloc.start()\n                        try:\n                            start = time.perf_counter()\n                            result = route_to_topology(\n                                program, topology, strategy=\"sabre\"\n                            )\n                            elapsed = time.perf_counter() - start\n                            if block == 8:\n                                measurements[label].traced_peak_bytes = (\n                                    tracemalloc.get_traced_memory()[1]\n                                )\n                        finally:\n                            if block == 8:\n                                tracemalloc.stop()\n                    digest = result.content_hash\n                    if expected is None:\n                        expected = digest\n                    assert digest == expected, (family, width, block, label)\n                    if 0 < block < 8:\n                        measurements[label].seconds.append(elapsed)\n                    measurements[label].output_hash = digest\n            row = Observation(family, width, len(program.instructions), measurements)\n            observations.append(row)\n            report[\"rows\"] = [asdict(item) for item in observations]\n            args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\n            print(\n                json.dumps(\n                    {\n                        \"width\": width,\n                        \"family\": family,\n                        \"time_ratio\": statistics.median(\n                            measurements[\"candidate\"].seconds\n                        )\n                        / statistics.median(measurements[\"baseline\"].seconds),\n                    }\n                ),\n                flush=True,\n            )\n    report[\"complete\"] = True\n    args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "complete": true,
+  "rows": [
+    {
+      "family": "fourier",
+      "width": 6,
+      "source_operations": 21,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0006379159749485552,
+            0.0005918340175412595,
+            0.0006063749897293746,
+            0.0006140000186860561,
+            0.0006221659714356065,
+            0.0005987499607726932,
+            0.0006615419988520443
+          ],
+          "traced_peak_bytes": 48113,
+          "output_hash": "2e569dec284860c3d0affef5fb2d71ffabe49b3182587dc169b04d5f66786281"
+        },
+        "candidate": {
+          "seconds": [
+            0.0005935830413363874,
+            0.0005662080366164446,
+            0.0005935829831287265,
+            0.0006031669909134507,
+            0.000530666031409055,
+            0.0005993329687044024,
+            0.0006120839971117675
+          ],
+          "traced_peak_bytes": 48193,
+          "output_hash": "2e569dec284860c3d0affef5fb2d71ffabe49b3182587dc169b04d5f66786281"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 6,
+      "source_operations": 33,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0006317910156212747,
+            0.0006593329599127173,
+            0.0006017500418238342,
+            0.0006679170182906091,
+            0.0005755829624831676,
+            0.0006002500304020941,
+            0.0005660420283675194
+          ],
+          "traced_peak_bytes": 55859,
+          "output_hash": "ddfe9760d7eaac4216d88350f029edb85e767287dc66922c36e40472c89c7bef"
+        },
+        "candidate": {
+          "seconds": [
+            0.0005864580161869526,
+            0.0005923749995417893,
+            0.0005471659824252129,
+            0.0005769170238636434,
+            0.0005614580004476011,
+            0.0005605840124189854,
+            0.0005359579809010029
+          ],
+          "traced_peak_bytes": 55723,
+          "output_hash": "ddfe9760d7eaac4216d88350f029edb85e767287dc66922c36e40472c89c7bef"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 6,
+      "source_operations": 42,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0010242089629173279,
+            0.0011465409770607948,
+            0.0009561670012772083,
+            0.0010656669619493186,
+            0.0010433330317027867,
+            0.000970708962995559,
+            0.001005167025141418
+          ],
+          "traced_peak_bytes": 74254,
+          "output_hash": "5c5651403b49e379721f075fdaeaccc7f10366d1dc167268ab806f3d6b585625"
+        },
+        "candidate": {
+          "seconds": [
+            0.0010053750011138618,
+            0.0009599589975550771,
+            0.0009948330116458237,
+            0.00091645895736292,
+            0.0009244589600712061,
+            0.0009118749876506627,
+            0.0009144170326180756
+          ],
+          "traced_peak_bytes": 74118,
+          "output_hash": "5c5651403b49e379721f075fdaeaccc7f10366d1dc167268ab806f3d6b585625"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 6,
+      "source_operations": 24,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0006883749738335609,
+            0.0006567499949596822,
+            0.0006817920366302133,
+            0.0006707499851472676,
+            0.0006636250182054937,
+            0.0006994589930400252,
+            0.0007270830101333559
+          ],
+          "traced_peak_bytes": 50020,
+          "output_hash": "fa412d667165680cb76d586b27dbd6df203fec3c9ceb729b9a61916041c65717"
+        },
+        "candidate": {
+          "seconds": [
+            0.0006354160141199827,
+            0.0006253329920582473,
+            0.0006012499798089266,
+            0.0006206249818205833,
+            0.0006162080098874867,
+            0.0005970419733785093,
+            0.0006276250351220369
+          ],
+          "traced_peak_bytes": 50108,
+          "output_hash": "fa412d667165680cb76d586b27dbd6df203fec3c9ceb729b9a61916041c65717"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 8,
+      "source_operations": 36,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0012043750029988587,
+            0.0012935830163769424,
+            0.0011667090002447367,
+            0.0012385000009089708,
+            0.001191499992273748,
+            0.0011354589951224625,
+            0.001134083024226129
+          ],
+          "traced_peak_bytes": 76890,
+          "output_hash": "02b9afc6cb25a0067e733a060e39ba285b1215f02636807b3e3a8281e1211923"
+        },
+        "candidate": {
+          "seconds": [
+            0.001095958985388279,
+            0.0012923339963890612,
+            0.0012635409948416054,
+            0.0011087500024586916,
+            0.0011510420008562505,
+            0.0012149580288678408,
+            0.0010858329478651285
+          ],
+          "traced_peak_bytes": 76754,
+          "output_hash": "02b9afc6cb25a0067e733a060e39ba285b1215f02636807b3e3a8281e1211923"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 8,
+      "source_operations": 51,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0009623750229366124,
+            0.001053249987307936,
+            0.0009642499499022961,
+            0.000979208038188517,
+            0.0009728749864734709,
+            0.0009726249845698476,
+            0.0009348330204375088
+          ],
+          "traced_peak_bytes": 77447,
+          "output_hash": "16b9f79487d1c6b9ac346babb27145cdaf105a90c5ef671d69f143ac42cbb362"
+        },
+        "candidate": {
+          "seconds": [
+            0.0009140000329352915,
+            0.0008847910212352872,
+            0.0009126249933615327,
+            0.0009631249704398215,
+            0.0008588329656049609,
+            0.0009089590166695416,
+            0.000899125006981194
+          ],
+          "traced_peak_bytes": 77311,
+          "output_hash": "16b9f79487d1c6b9ac346babb27145cdaf105a90c5ef671d69f143ac42cbb362"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 8,
+      "source_operations": 78,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0028912080451846123,
+            0.0028030420071445405,
+            0.0028035829891450703,
+            0.0028288749745115638,
+            0.0027725419495254755,
+            0.002784125041216612,
+            0.002829291974194348
+          ],
+          "traced_peak_bytes": 145366,
+          "output_hash": "1a153a8032fe635f271a5a8dd83cf37c7b4afd0ae0905f12622f5dca7a182456"
+        },
+        "candidate": {
+          "seconds": [
+            0.002836916013620794,
+            0.0027438329998403788,
+            0.0028192500467412174,
+            0.0027158750453963876,
+            0.0027042500441893935,
+            0.002719165990129113,
+            0.002626541012432426
+          ],
+          "traced_peak_bytes": 145422,
+          "output_hash": "1a153a8032fe635f271a5a8dd83cf37c7b4afd0ae0905f12622f5dca7a182456"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 8,
+      "source_operations": 32,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.001317207992542535,
+            0.0014220839948393404,
+            0.0012957080034539104,
+            0.001318958995398134,
+            0.001432958000805229,
+            0.001367832999676466,
+            0.0012960410094819963
+          ],
+          "traced_peak_bytes": 78694,
+          "output_hash": "14ea9fbcc2236536190ed6a8028f0b79a3dcd50c5b67c3cb3fd8fa7a4847a8d5"
+        },
+        "candidate": {
+          "seconds": [
+            0.0012236670008860528,
+            0.0012448749621398747,
+            0.0012853749794885516,
+            0.0013828339870087802,
+            0.0012454999960027635,
+            0.0013258749968372285,
+            0.0012757499935105443
+          ],
+          "traced_peak_bytes": 78558,
+          "output_hash": "14ea9fbcc2236536190ed6a8028f0b79a3dcd50c5b67c3cb3fd8fa7a4847a8d5"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 12,
+      "source_operations": 78,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.003994417027570307,
+            0.004063291009515524,
+            0.00396308396011591,
+            0.0041082079987972975,
+            0.00402008299715817,
+            0.004064582986757159,
+            0.004097124969121069
+          ],
+          "traced_peak_bytes": 169802,
+          "output_hash": "6f88c8f510543872ac828cdc4c03caea4fa673417f38e2285e4601b91ca63d42"
+        },
+        "candidate": {
+          "seconds": [
+            0.00398758304072544,
+            0.003938249952625483,
+            0.003947083023376763,
+            0.003932291001547128,
+            0.003994124999735504,
+            0.003958665998652577,
+            0.003935707965865731
+          ],
+          "traced_peak_bytes": 169858,
+          "output_hash": "6f88c8f510543872ac828cdc4c03caea4fa673417f38e2285e4601b91ca63d42"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 12,
+      "source_operations": 87,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0021097499993629754,
+            0.0020301250042393804,
+            0.0021869579795747995,
+            0.0020944999996572733,
+            0.0020985419978387654,
+            0.001955833053216338,
+            0.0021284170215949416
+          ],
+          "traced_peak_bytes": 135385,
+          "output_hash": "deddbb51f191f874ffaecaef11922ad6bdeafefe027c83035fcd8cebebf30ed7"
+        },
+        "candidate": {
+          "seconds": [
+            0.001908542006276548,
+            0.0019273750367574394,
+            0.0019260830013081431,
+            0.0018798330565914512,
+            0.0019893330172635615,
+            0.0019598339567892253,
+            0.0018992910045199096
+          ],
+          "traced_peak_bytes": 135441,
+          "output_hash": "deddbb51f191f874ffaecaef11922ad6bdeafefe027c83035fcd8cebebf30ed7"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 12,
+      "source_operations": 120,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0068029999965801835,
+            0.006853541010059416,
+            0.006874917016830295,
+            0.006911000004038215,
+            0.006790666026063263,
+            0.006852124992292374,
+            0.006845166033599526
+          ],
+          "traced_peak_bytes": 235916,
+          "output_hash": "92e7e5a9935b80165730a0da7fc0bc35eb372adf542343c6967053b4a49e8be4"
+        },
+        "candidate": {
+          "seconds": [
+            0.006727375031914562,
+            0.0067037909757345915,
+            0.006729750020895153,
+            0.006649999995715916,
+            0.0067378749954514205,
+            0.006727166997734457,
+            0.006755041016731411
+          ],
+          "traced_peak_bytes": 235972,
+          "output_hash": "92e7e5a9935b80165730a0da7fc0bc35eb372adf542343c6967053b4a49e8be4"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 12,
+      "source_operations": 48,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0028593330061994493,
+            0.0027651659911498427,
+            0.0028473749989643693,
+            0.002818125009071082,
+            0.0028590839938260615,
+            0.0028141660150140524,
+            0.0027845000149682164
+          ],
+          "traced_peak_bytes": 110274,
+          "output_hash": "f9df8aeef46f008bdbc82eb9cc78529ff9671dc031d16b1902b276f8fd838975"
+        },
+        "candidate": {
+          "seconds": [
+            0.002767458965536207,
+            0.002766457968391478,
+            0.002767583995591849,
+            0.002729040978010744,
+            0.002760667004622519,
+            0.0028002919862046838,
+            0.0027819579700008035
+          ],
+          "traced_peak_bytes": 110330,
+          "output_hash": "f9df8aeef46f008bdbc82eb9cc78529ff9671dc031d16b1902b276f8fd838975"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 16,
+      "source_operations": 136,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.008208833984099329,
+            0.008062165987212211,
+            0.008144874998833984,
+            0.008203582954593003,
+            0.008089167007710785,
+            0.008045500027947128,
+            0.00815887498902157
+          ],
+          "traced_peak_bytes": 302262,
+          "output_hash": "e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52"
+        },
+        "candidate": {
+          "seconds": [
+            0.008020457986276597,
+            0.007894665992353112,
+            0.007918457966297865,
+            0.007898042036686093,
+            0.007880540972109884,
+            0.007910790969617665,
+            0.007871833047829568
+          ],
+          "traced_peak_bytes": 302318,
+          "output_hash": "e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 16,
+      "source_operations": 123,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0024346670252270997,
+            0.002401749952696264,
+            0.0024399590329267085,
+            0.0024507089983671904,
+            0.002492166997399181,
+            0.0024662080104462802,
+            0.0024354169727303088
+          ],
+          "traced_peak_bytes": 180611,
+          "output_hash": "2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b"
+        },
+        "candidate": {
+          "seconds": [
+            0.002356541983317584,
+            0.0022354170214384794,
+            0.002177208021748811,
+            0.0023087080335244536,
+            0.0021970419911667705,
+            0.002260209002997726,
+            0.002245958021376282
+          ],
+          "traced_peak_bytes": 180667,
+          "output_hash": "2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 16,
+      "source_operations": 168,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.009875375020783395,
+            0.010078374994918704,
+            0.009908125037327409,
+            0.009915500006172806,
+            0.009789291012566537,
+            0.009824375039897859,
+            0.010192500019911677
+          ],
+          "traced_peak_bytes": 360550,
+          "output_hash": "3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77"
+        },
+        "candidate": {
+          "seconds": [
+            0.009699791960883886,
+            0.009731166996061802,
+            0.009687084006145597,
+            0.009683291020337492,
+            0.009653709013946354,
+            0.009671874984633178,
+            0.009633874986320734
+          ],
+          "traced_peak_bytes": 360606,
+          "output_hash": "3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 16,
+      "source_operations": 64,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.005349291954189539,
+            0.005409042001701891,
+            0.005391457991208881,
+            0.005366541969124228,
+            0.005350624967832118,
+            0.005392250022850931,
+            0.005384541989769787
+          ],
+          "traced_peak_bytes": 188048,
+          "output_hash": "54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc"
+        },
+        "candidate": {
+          "seconds": [
+            0.0053294579847715795,
+            0.005386875011026859,
+            0.005306374980136752,
+            0.0055701249511912465,
+            0.005285833030939102,
+            0.005326332990080118,
+            0.005418208020273596
+          ],
+          "traced_peak_bytes": 188104,
+          "output_hash": "54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 24,
+      "source_operations": 300,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.028616208001039922,
+            0.02866958302911371,
+            0.028610582987312227,
+            0.028477209038101137,
+            0.02861450001364574,
+            0.028535333985928446,
+            0.02844229096081108
+          ],
+          "traced_peak_bytes": 729688,
+          "output_hash": "ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313"
+        },
+        "candidate": {
+          "seconds": [
+            0.028291916998568922,
+            0.028140040987636894,
+            0.02809795900247991,
+            0.02798970800358802,
+            0.028141083021182567,
+            0.02811062498949468,
+            0.028045916988048702
+          ],
+          "traced_peak_bytes": 729688,
+          "output_hash": "ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 24,
+      "source_operations": 195,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0071917500463314354,
+            0.007195417012553662,
+            0.007009957975242287,
+            0.0070452080108225346,
+            0.007052166038192809,
+            0.0071982500376179814,
+            0.007104750024154782
+          ],
+          "traced_peak_bytes": 296937,
+          "output_hash": "a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9"
+        },
+        "candidate": {
+          "seconds": [
+            0.006969332986045629,
+            0.006922167027369142,
+            0.006760209042113274,
+            0.006762042001355439,
+            0.007103750016540289,
+            0.006991707952693105,
+            0.006954541953746229
+          ],
+          "traced_peak_bytes": 296993,
+          "output_hash": "a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 24,
+      "source_operations": 252,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.025639166007749736,
+            0.025401083985343575,
+            0.025455625029280782,
+            0.02568879205500707,
+            0.02538087498396635,
+            0.02547587500885129,
+            0.02544341702014208
+          ],
+          "traced_peak_bytes": 623282,
+          "output_hash": "43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705"
+        },
+        "candidate": {
+          "seconds": [
+            0.02553545800037682,
+            0.02527395897777751,
+            0.025073917000554502,
+            0.025217291025910527,
+            0.02517937502125278,
+            0.025144124985672534,
+            0.025112791976425797
+          ],
+          "traced_peak_bytes": 623338,
+          "output_hash": "43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 24,
+      "source_operations": 96,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.013182250026147813,
+            0.013268750044517219,
+            0.01338716596364975,
+            0.013314958021510392,
+            0.013418457994703203,
+            0.013291749986819923,
+            0.013369874970521778
+          ],
+          "traced_peak_bytes": 299034,
+          "output_hash": "6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1"
+        },
+        "candidate": {
+          "seconds": [
+            0.01313525001751259,
+            0.013094542024191469,
+            0.013533791992813349,
+            0.013207125011831522,
+            0.013046958018094301,
+            0.013292332994751632,
+            0.013130249979440123
+          ],
+          "traced_peak_bytes": 299090,
+          "output_hash": "6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 32,
+      "source_operations": 528,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.06505037500755861,
+            0.06762654101476073,
+            0.06670625001424924,
+            0.06636045803315938,
+            0.07123516598949209,
+            0.06775149999884889,
+            0.06516649998957291
+          ],
+          "traced_peak_bytes": 1340436,
+          "output_hash": "2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860"
+        },
+        "candidate": {
+          "seconds": [
+            0.06458691699663177,
+            0.06607666698982939,
+            0.06681345799006522,
+            0.06605612498242408,
+            0.06683579197851941,
+            0.06685070798266679,
+            0.06466195802204311
+          ],
+          "traced_peak_bytes": 1340454,
+          "output_hash": "2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 32,
+      "source_operations": 267,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.014650917029939592,
+            0.014543582976330072,
+            0.01509491604520008,
+            0.01471862499602139,
+            0.01455470803193748,
+            0.014864916971419007,
+            0.014778958982788026
+          ],
+          "traced_peak_bytes": 477883,
+          "output_hash": "753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42"
+        },
+        "candidate": {
+          "seconds": [
+            0.014412417018320411,
+            0.014135540986899287,
+            0.014232209010515362,
+            0.014436749974265695,
+            0.01429825002560392,
+            0.014653709018602967,
+            0.014447499997913837
+          ],
+          "traced_peak_bytes": 477939,
+          "output_hash": "753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 32,
+      "source_operations": 351,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.05376495799282566,
+            0.05415229202480987,
+            0.05432962498161942,
+            0.05384383298223838,
+            0.05385633395053446,
+            0.05384812504053116,
+            0.05373712501022965
+          ],
+          "traced_peak_bytes": 1007500,
+          "output_hash": "5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408"
+        },
+        "candidate": {
+          "seconds": [
+            0.05351616704137996,
+            0.05365116702159867,
+            0.05358062498271465,
+            0.05374274996574968,
+            0.05354945798171684,
+            0.05362087499815971,
+            0.053531916986685246
+          ],
+          "traced_peak_bytes": 1007500,
+          "output_hash": "5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 32,
+      "source_operations": 128,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.034471165970899165,
+            0.034603499982040375,
+            0.03463733399985358,
+            0.0343668750138022,
+            0.03426487499382347,
+            0.03433033399051055,
+            0.034529542026575655
+          ],
+          "traced_peak_bytes": 551880,
+          "output_hash": "55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e"
+        },
+        "candidate": {
+          "seconds": [
+            0.03466495801694691,
+            0.03429391700774431,
+            0.03400699998019263,
+            0.034162791969720274,
+            0.03444295795634389,
+            0.03413741698022932,
+            0.03456845798064023
+          ],
+          "traced_peak_bytes": 551954,
+          "output_hash": "55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e"
+        }
+      }
+    }
+  ]
+}
