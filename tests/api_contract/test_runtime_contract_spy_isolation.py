@@ -10,14 +10,22 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize("option", ["allow_approximate", "allow_backend_fallback"])
-def test_cold_rejection_preserves_later_mps_execution(option: str) -> None:
+@pytest.mark.parametrize("without_numpy", [False, True])
+def test_cold_rejection_preserves_later_mps_execution(
+    option: str, without_numpy: bool
+) -> None:
     completed = subprocess.run(
         [
             sys.executable,
             "-c",
             """
 import sys
+
+if sys.argv[2] == "True":
+    sys.modules["numpy"] = None
+
 import pytest
+import torch
 
 assert "flagquantum.runtime.execution" not in sys.modules
 from tests.api_contract import test_execution_runtime_inputs as contract
@@ -30,11 +38,18 @@ with pytest.MonkeyPatch.context() as patch:
 from flagquantum.runtime import execution, planner
 
 assert execution.build_plan is planner.plan_advanced, "contract spy escaped into runtime planning"
-from tests.benchmark_contract import test_mps_training_recovery as recovery
+import flagquantum.runtime as runtime
 
-recovery.test_truncated_derivative_error_is_separate_from_sharding()
+theta = torch.tensor(0.37, dtype=torch.float64, requires_grad=True)
+circuit = contract.fq.Circuit(2, dtype=torch.complex128).ry(0, theta).cx(0, 1)
+state = runtime.run_native(circuit, mode="mps", max_bond=4, cutoff=0.0)
+value = state.expectation_ps(z=(1,)).sum()
+gradient, = torch.autograd.grad(value, theta)
+torch.testing.assert_close(value, theta.cos(), atol=1e-10, rtol=0)
+torch.testing.assert_close(gradient, -theta.sin(), atol=1e-10, rtol=0)
 """,
             option,
+            str(without_numpy),
         ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
