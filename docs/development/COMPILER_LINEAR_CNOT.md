@@ -107,3 +107,25 @@ An initial test collection used invalid barrier and dynamic-measurement
 construction. The tests now use supported barrier metadata and the required
 `is_dynamic` measurement marker. Those setup attempts are not passing evidence;
 the compiler source was not changed to accept invalid fixtures.
+
+## First complete observations
+
+The declared implementation `b4f4a5bddb477235626a8f8ea6bba72122cafc18`
+completed all 72 pairs and 120 exact upstream sequence comparisons. There were
+zero delivered count/depth regressions. Twenty-one of 36 all-to-all pairs and
+three of 36 line pairs reduced two-body count; all others retained that count.
+These are inspected constructed controls, not application qualification.
+
+Default admission failed: the median of case time ratios was 1.2060, the worst
+case was 2.9988, and the largest Python traced peak ratio was 13.4596. No
+fixture, limit or baseline was changed to rescue the result. In particular,
+PMH can create a longer proposal than the incumbent and discard it only after
+allocating that proposal. The full source, driver, every sample, upstream license,
+setup failures and supervisor are retained in
+[evidence/compiler-linear-cnot.json](evidence/compiler-linear-cnot.json).
+
+A successor must stop synthesis as soon as the monotonically accumulated PMH
+operation count cannot strictly beat the source block. It must preserve every
+previously accepted proposal and retain a new published implementation before
+repeating the same fixed controls. This is an algorithmic emission budget, not
+a looser wall/memory gate or a smaller fixture. No default admission is granted.
