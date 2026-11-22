@@ -1226,3 +1226,21 @@ Run `tests/unit/test_operand_array_views.py` with the existing operand/broadcast
 suite. `docs/development/OPERAND_ARRAY_VIEW_AUDIT.md` maps all twelve source files
 and distinguishes native ownership adaptation, source predicate defects, raw
 pointer casts, physical counts and analytical models.
+
+### Raw physical register diagnostics
+
+`formats.kmb.KmxRegister` owns the immutable name and ordered q/b members.
+Its `diagnostic_text` preserves literal field contents and order, independently
+of the escaped KMX wire encoding. Existing mutable builder columns and Program
+register declaration adapters retain their responsibilities.
+
+```python
+from flagquantum.compiler.formats.kmb import KmxRegister
+
+register = KmxRegister("word", (("q", 1), ("b", 0), ("q", 1)))
+assert register.diagnostic_text == 'KmxRegister{.name="word", .contents={q1, b0, q1, }}'
+```
+
+Run `tests/unit/test_physical_register_data.py`. The complete source mapping,
+raw untyped-sentinel boundary and resource evidence are recorded in
+`docs/development/REGISTER_DATA_AUDIT.md`.

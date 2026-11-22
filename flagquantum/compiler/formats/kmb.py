@@ -74,6 +74,12 @@ class KmxRegister:
     name: str
     members: tuple[tuple[Literal["q", "b"], int], ...]
 
+    @property
+    def diagnostic_text(self) -> str:
+        """Render ordered source register fields with a native type name."""
+        contents = "".join(f"{kind}{wire}, " for kind, wire in self.members)
+        return f'KmxRegister{{.name="{self.name}", .contents={{{contents}}}}}'
+
     def to_kmx(self, index: int) -> Iterator[str]:
         """Render ordered members followed by the optional register name."""
         for kind, operand in self.members:
