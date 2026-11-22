@@ -94,3 +94,12 @@ parents. Current full-suite timeout, Algorithms NumPy ownership, copyright
 order interaction and pending Proposals 116/117/118 remain tracked separately.
 Q-0039 remains open pending actual-browser review after the local-URL policy
 refusal.
+
+## Subsequent complete direct inputs
+
+Q-0095, Q-0096 and Q-0097 have since closed their complete documentation,
+formatter and typing declarations through their owner audits. Q-0098 closes
+its five-entry packaging declaration through
+[the packaging audit](PACKAGING_DEPENDENCY_INPUT_AUDIT.md), actual native sdist,
+fixture wheel, isolated interpreter and existing protobuf execution. These direct
+input acceptances preserve the separate full scientific lock boundaries above.
