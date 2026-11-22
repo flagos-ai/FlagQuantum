@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from struct import Struct, iter_unpack
 from typing import Literal
 
+from ..artifacts._operand_tags import MAX_NUM_QUBITS as _MAX_WIRES
+from ..artifacts._operand_tags import MAX_NUM_REGISTERS as _MAX_REGISTERS
 from ..artifacts.phase_angle import PhaseAngle128
 from ._kmx_text import QUOTED_UNIT, escape_kmx_text, unescape_kmx_text
 from .kmb_operations import (
@@ -34,8 +36,6 @@ _REGISTER = re.compile(rf'REGISTER[ \t]+r([0-9]+)(?:[ \t]+"({QUOTED_UNIT}*)")?')
 _MEMBER = re.compile(r"APPEND_TO_REGISTER[ \t]+([qb][0-9]+)[ \t]+r([0-9]+)")
 _TAG = re.compile(rf'INFO_TAG[ \t]+"({QUOTED_UNIT}*)"')
 _FILE_QUOTED_FIELD = re.compile(r'"(?:[^"\\]|\\.)*"')
-_MAX_WIRES = 500_000_000
-_MAX_REGISTERS = 1_000_000
 _MAX_RECORDS = 2_000_000_000
 _CLASSICAL_TARGET, _CONDITION, _PHASE, _TAGS = 8, 9, 10, 11
 _REGISTER_QUANTUM = 1 << 31

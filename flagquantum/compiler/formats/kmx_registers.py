@@ -10,14 +10,14 @@ from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
 from .._component_trace.trace import ComponentCall
+from ..artifacts._operand_tags import MAX_NUM_QUBITS as _MAX_MEMBERS_PER_KIND
+from ..artifacts._operand_tags import MAX_NUM_REGISTERS as _MAX_REGISTERS
 from ..artifacts.reversible_phase import ReversiblePhaseProgram
 from ._kmx_text import QUOTED_UNIT, escape_kmx_text, unescape_kmx_text
 from .kmx_block_marks import decode_kmx_block_marks, encode_kmx_block_marks
 
 _REGISTER = re.compile(rf'REGISTER[ \t]+r([0-9]+)(?:[ \t]+"({QUOTED_UNIT}*)")?')
 _APPEND = re.compile(r"APPEND_TO_REGISTER[ \t]+([qb])([0-9]+)[ \t]+r([0-9]+)")
-_MAX_REGISTERS = 1_000_000
-_MAX_MEMBERS_PER_KIND = 500_000_000
 
 RegisterMember: TypeAlias = tuple[Literal["q", "b"], int]
 

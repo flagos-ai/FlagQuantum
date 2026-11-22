@@ -1151,3 +1151,29 @@ Run `tests/unit/test_physical_operation_statistics.py` and the existing
 owns actual lane counters. Compiler receives primitive snapshots and performs
 no numerical execution. Full source disposition and acceptance are in
 `docs/development/OPERATION_STATISTICS_AUDIT.md`.
+
+### Scalar physical operand projections
+
+`artifacts.operand_identity` owns the single immutable physical identity.
+Its `physical_word` preserves the original 29-bit payload and high-three-bit
+family tag. Register identities keep their plain uint32 index.
+`diagnostic_text` leaves existing repr intact, and `conjugated_by_h()` exchanges
+classical Z/X identities and Boolean ket values with the same payload.
+`artifacts._operand_tags` supplies shared tag metadata and execution capacities.
+KMB and register format validators consume those declarations.
+
+```python
+from flagquantum.compiler.artifacts.operand_identity import OperandIdentity, OperandKind
+
+bit = OperandIdentity(OperandKind.CLASSICAL, 17)
+xbit = bit.conjugated_by_h()
+assert xbit.physical_word == (4 << 29) | 17
+assert xbit.diagnostic_text == "xb17"
+assert xbit.conjugated_by_h() == bit
+```
+
+Run `tests/unit/test_physical_operand_projection.py` with the existing identity,
+array, word, KMB and register tests after changes. The existing typed binders
+carry these identities to `circuit.append(op)`. Complete original-file mapping,
+source formatting adaptations, execution counts and remaining boundaries are
+in `docs/development/SCALAR_IDENTITY_AUDIT.md`.

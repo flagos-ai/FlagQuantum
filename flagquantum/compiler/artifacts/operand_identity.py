@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from types import NotImplementedType
 
+from ._operand_tags import PAYLOAD_MASK
+
 
 class OperandKind(IntEnum):
     """Operand order follows the locked source's type tags."""
@@ -35,7 +37,7 @@ class OperandIdentity:
         elif self.kind is OperandKind.REGISTER:
             limit = 1 << 32
         else:
-            limit = 1 << 29
+            limit = PAYLOAD_MASK + 1
         if not 0 <= self.value < limit:
             raise ValueError("Operand identity is outside its family range")
 
@@ -53,3 +55,41 @@ class OperandIdentity:
 
     def __repr__(self) -> str:
         return f"OperandIdentity(OperandKind.{self.kind.name}, {self.value})"
+
+    @property
+    def physical_word(self) -> int:
+        """Return the exact uint32 storage word, including scalar family tags.
+
+        Register identities use their plain uint32 index. Their native kind
+        discriminant is outside the physical scalar tag vocabulary.
+        """
+        if self.kind is OperandKind.REGISTER:
+            return self.value
+        return (int(self.kind) << 29) | self.value
+
+    @property
+    def diagnostic_text(self) -> str:
+        """Render the original scalar diagnostic spelling without changing repr."""
+        if self.kind is OperandKind.BOOLEAN:
+            return str(bool(self.value)).lower()
+        if self.kind is OperandKind.X_BOOLEAN:
+            return f"XBool({str(bool(self.value)).lower()})"
+        prefix = {
+            OperandKind.CLASSICAL: "b",
+            OperandKind.QUANTUM: "q",
+            OperandKind.X_CLASSICAL: "xb",
+            OperandKind.REGISTER: "r",
+        }[self.kind]
+        return f"{prefix}{self.value}"
+
+    def conjugated_by_h(self) -> "OperandIdentity":
+        """Exchange the basis of a classical identity or Boolean ket value."""
+        conjugate = {
+            OperandKind.BOOLEAN: OperandKind.X_BOOLEAN,
+            OperandKind.CLASSICAL: OperandKind.X_CLASSICAL,
+            OperandKind.X_BOOLEAN: OperandKind.BOOLEAN,
+            OperandKind.X_CLASSICAL: OperandKind.CLASSICAL,
+        }.get(self.kind)
+        if conjugate is None:
+            raise ValueError("H-basis identity conversion requires a classical value")
+        return OperandIdentity(conjugate, self.value)
