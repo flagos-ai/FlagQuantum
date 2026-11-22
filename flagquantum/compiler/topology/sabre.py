@@ -269,7 +269,7 @@ def _relative_score_swap(
     if not ordered:
         return None
     terms: list[tuple[int, int, float]] = []
-    incidence: list[list[int]] = [[] for _ in layout]
+    incidence: list[list[tuple[int, float]]] = [[] for _ in layout]
     for indices, scale in (
         (front, 1.0 / len(front)),
         (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),
@@ -277,10 +277,11 @@ def _relative_score_swap(
         weight = 1.0
         for index in indices:
             first, second = (layout[wire] for wire in qubit_pairs[index])
-            term_id = len(terms)
-            terms.append((first, second, scale * weight))
-            incidence[first].append(term_id)
-            incidence[second].append(term_id)
+            coefficient = scale * weight
+            terms.append((first, second, coefficient))
+            if first != second:
+                incidence[first].append((second, coefficient))
+                incidence[second].append((first, coefficient))
             if indices is extended:
                 weight *= LOOKAHEAD_DECAY
     # All candidates share the omitted current-layout score. Near a rounding
@@ -291,16 +292,14 @@ def _relative_score_swap(
     best_score = 0.0
     for left, right in ordered:
         changes = []
-        for term_id in sorted(set(incidence[left]) | set(incidence[right])):
-            first, second, weight = terms[term_id]
-            moved_first = right if first == left else left if first == right else first
-            moved_second = (
-                right if second == left else left if second == right else second
-            )
-            changes.append(
-                weight
-                * (distances[moved_first][moved_second] - distances[first][second])
-            )
+        # Coupling distances are symmetric. An interaction touching both
+        # endpoints keeps its distance; every other incident term changes only
+        # its moved endpoint. Preserve one contribution per source term.
+        for moved, destination in ((left, right), (right, left)):
+            before, after = distances[moved], distances[destination]
+            for other, coefficient in incidence[moved]:
+                if other != destination:
+                    changes.append(coefficient * (after[other] - before[other]))
         score = math.fsum(changes)
         if best is None:
             best, best_score = (left, right), score
