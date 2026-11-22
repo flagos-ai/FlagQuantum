@@ -935,3 +935,9 @@ Cotengra for shape-only locked-default greedy width. Internal register/component
 dense consumers accept explicit `simplification_atol`; default None retains
 unsimplified training. Run `examples/algorithms/tensor_width_policy.py` for both
 sides of the real threshold and retained complex phase gradients.
+
+`fixed_width_sampling.py` owns declared-width scalar random packing and modular
+rejection sampling. It consumes a caller-owned uint64 iterator and Core integer
+values, including the existing standard mt19937_64 stream in
+`physical_basis_rng.py`. Core owns no random state. Retry consumption is checked
+against the unchanged source, including the next draw after each result.
