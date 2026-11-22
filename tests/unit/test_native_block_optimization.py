@@ -11,6 +11,7 @@ import torch
 
 from flagquantum.compiler.lowering import native_block_optimization as blocks
 from flagquantum.compiler.lowering.native_gate_legalization import (
+    NativeGateLegalizationError,
     NativeGateLegalizationResult,
     legalize_native_gates,
 )
@@ -193,21 +194,79 @@ def test_verified_routing_allows_native_blocks_and_preserves_layout(
         for item in result.program.instructions
     )
     _equivalent(topology.program, result.program)
-    # An initial placement permutes logical input into physical slots. The
-    # full operator check accounts for it instead of assuming a zero input.
+    _equivalent_after_placement(
+        source, result.program, topology.initial_logical_to_physical
+    )
+    assert topology.final_logical_to_physical == tuple(range(source.n_wires))
+
+
+def _equivalent_after_placement(
+    source: CircuitIR, output: CircuitIR, initial_layout: tuple[int, ...]
+) -> None:
+    # An initial placement permutes logical input into physical slots. Checking
+    # every input basis column detects errors hidden by an all-zero input.
     size = 1 << source.n_wires
     placement = torch.zeros((size, size), dtype=torch.complex128)
     for column in range(size):
         row = sum(
             ((column >> (source.n_wires - logical - 1)) & 1)
             << (source.n_wires - physical - 1)
-            for logical, physical in enumerate(topology.initial_logical_to_physical)
+            for logical, physical in enumerate(initial_layout)
         )
         placement[row, column] = 1
-    expected, actual = _operator(source), _operator(result.program) @ placement
+    expected, actual = _operator(source), _operator(output) @ placement
     phase = torch.trace(actual.conj().T @ expected) / size
+    assert float(abs(abs(phase) - 1)) <= 1e-11
     torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+
+
+def _routing_control(case_index: int) -> CircuitIR:
+    rng = random.Random(2026112201)
+    for index in range(case_index + 1):
+        width = 3 if index < 75 else 4
+        instructions = []
+        for step in range(8 + index % 13):
+            if step % 3 == 0:
+                pair = tuple(rng.sample(range(width), 2))
+                instructions.append(Instruction(rng.choice(("cx", "cz", "swap")), pair))
+            else:
+                instructions.append(
+                    Instruction(
+                        rng.choice(("rx", "ry", "rz")),
+                        (rng.randrange(width),),
+                        {"theta": rng.uniform(-3.2, 3.2)},
+                    )
+                )
+    return CircuitIR(width, tuple(instructions))
+
+
+@pytest.mark.parametrize("case_index", (0, 75, 77, 86, 89, 94, 95, 99))
+@pytest.mark.parametrize(
+    "strategy", ("auto", "sabre", "sabre_layout", "persistent_layout")
+)
+def test_routing_and_native_synthesis_preserve_full_operator_or_refuse_budget(
+    case_index: int, strategy: str
+) -> None:
+    source = _routing_control(case_index)
+    try:
+        result, _, topology, coupling = _routed_stage(source, strategy=strategy)
+    except NativeGateLegalizationError as error:
+        # These inspected cases may exceed the unchanged baseline budget.
+        # A better route may make them pass; a new refusal remains a failure.
+        assert strategy == "persistent_layout"
+        assert case_index in (77, 86, 89, 94, 95, 99)
+        assert str(error) == "native-gate decomposition exceeds max_added_operations"
+        return
+
+    _equivalent(topology.program, result.program)
+    _equivalent_after_placement(
+        source, result.program, topology.initial_logical_to_physical
+    )
     assert topology.final_logical_to_physical == tuple(range(source.n_wires))
+    assert all(
+        len(item.wires) != 2 or coupling.has_edge(*item.wires)
+        for item in result.program.instructions
+    )
 
 
 @pytest.mark.parametrize(
