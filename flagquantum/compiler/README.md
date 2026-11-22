@@ -1244,3 +1244,18 @@ assert register.diagnostic_text == 'KmxRegister{.name="word", .contents={q1, b0,
 Run `tests/unit/test_physical_register_data.py`. The complete source mapping,
 raw untyped-sentinel boundary and resource evidence are recorded in
 `docs/development/REGISTER_DATA_AUDIT.md`.
+
+### Aligned physical word storage
+
+`artifacts._word_storage` owns bounded physical integer pointers and spans over
+aligned retained bytes. `artifacts._word_arena` owns growable stable chunks,
+reservations, rewinding, source-order copies and explicit moves. The ten KMB
+operand columns use these owners through the existing mutable circuit builder.
+Simulation owns numerical execution. Typed immutable operand identities and
+arrays retain their existing authority.
+
+Run `tests/unit/test_physical_word_storage.py` for the shortest contribution
+path. Include the KMX/KMB and mutable-builder tests for format changes.
+`docs/development/PHYSICAL_WORD_STORAGE_AUDIT.md` maps complete source methods,
+replacement tests, host-memory adaptations, resource observations and measured
+construction overhead.

@@ -12,6 +12,7 @@ from typing import Literal
 
 from ..artifacts._operand_tags import MAX_NUM_QUBITS as _MAX_WIRES
 from ..artifacts._operand_tags import MAX_NUM_REGISTERS as _MAX_REGISTERS
+from ..artifacts._word_arena import WordArena
 from ..artifacts.phase_angle import PhaseAngle128
 from ._kmx_text import QUOTED_UNIT, escape_kmx_text, unescape_kmx_text
 from .kmb_operations import (
@@ -100,8 +101,8 @@ class _RegisterData:
 class _Columns:
     registers: list[_RegisterData] = field(default_factory=list)
     operations: bytearray = field(default_factory=bytearray)
-    words: tuple[list[int], ...] = field(
-        default_factory=lambda: tuple([] for _ in range(10))
+    words: tuple[WordArena, ...] = field(
+        default_factory=lambda: tuple(WordArena() for _ in range(10))
     )
     angles: list[PhaseAngle128] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
