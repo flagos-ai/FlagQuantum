@@ -34,7 +34,7 @@ def _git(*args: str) -> str:
 
 
 def _functions(source: str) -> dict[str, types.FunctionType]:
-    nodes = [
+    nodes: list[ast.stmt] = [
         node
         for node in ast.parse(source).body
         if isinstance(node, ast.FunctionDef) and node.name in _FUNCTIONS

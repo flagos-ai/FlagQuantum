@@ -83,6 +83,7 @@ def test_reused_dependencies_preserve_each_bounded_and_unbounded_plan(
 
 def test_separate_planning_calls_read_current_classical_metadata() -> None:
     # Metadata mappings are mutable. No prepared graph may outlive one selection.
+    write_metadata: dict[str, object] = {"classical_bit": 0, "is_dynamic": True}
     source = CircuitIR(
         6,
         (
@@ -92,14 +93,12 @@ def test_separate_planning_calls_read_current_classical_metadata() -> None:
             Instruction(
                 "cx", (1, 5), metadata={"conditions": ((0, 1),), "is_dynamic": True}
             ),
-            Instruction(
-                "measure", (2,), metadata={"classical_bit": 0, "is_dynamic": True}
-            ),
+            Instruction("measure", (2,), metadata=write_metadata),
         ),
     )
     before = sabre.plan_sabre_swaps(source, CouplingMap.line(6))
     assert before.sequence.index(1) < before.sequence.index(2)
-    source.instructions[2].metadata["classical_bit"] = 1
+    write_metadata["classical_bit"] = 1
     after = sabre.plan_sabre_swaps(source, CouplingMap.line(6))
     assert after.sequence.index(2) < after.sequence.index(1)
 
