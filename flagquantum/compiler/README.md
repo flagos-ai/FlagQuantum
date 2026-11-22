@@ -1127,3 +1127,27 @@ migration constraints. [Testing policy](../../docs/development/TESTING.md)
 defines the additional checks for each change.
 
 [Classical vector wrappers](../../docs/development/COMPONENT_CLASSICAL_VECTORS.md) construct typed integer preparations/effects around an existing component, using the existing Program builder and an explicit classical evaluator callback; numerical contraction remains in Simulation.
+
+## Exact physical operation statistics
+
+`formats._physical_operation_statistics.PhysicalOperationStatistics` projects
+validated KMX records and native counter pairs into read-only primitive counts.
+It retains conditional opcode identity and all 129 exact rotation levels.
+`formats.kmx_operation_counts` reuses this projection for its existing CLI.
+These counts remain separate from analytical resource estimates.
+
+```python
+from flagquantum.compiler.formats.kmx_circuit import read_kmx_circuit
+from flagquantum.compiler.formats._physical_operation_statistics import PhysicalOperationStatistics
+
+counts = PhysicalOperationStatistics.from_circuit(
+    read_kmx_circuit("CCX q0 q1 q2\nZ_POW q0 0.25\n")
+)
+assert (counts.num_toffoli_like, counts.num_t_like) == (1, 1)
+```
+
+Run `tests/unit/test_physical_operation_statistics.py` and the existing
+`tests/unit/test_kmx_operation_counts.py` after a projection change. Simulation
+owns actual lane counters. Compiler receives primitive snapshots and performs
+no numerical execution. Full source disposition and acceptance are in
+`docs/development/OPERATION_STATISTICS_AUDIT.md`.

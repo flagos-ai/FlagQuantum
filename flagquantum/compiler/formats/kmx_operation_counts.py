@@ -6,10 +6,10 @@
 
 import argparse
 import sys
-from collections import Counter
 from pathlib import Path
 
 from ._binary_streams import write_binary_result
+from ._physical_operation_statistics import PhysicalOperationStatistics
 from .kmx_circuit import KmxCircuit, read_circuit_file
 
 _ROWS = (
@@ -50,9 +50,11 @@ def format_operation_counts(
     circuit: KmxCircuit, *, groups: bool = False, magic: bool = False
 ) -> str:
     """Render the fixed physical histogram and optional source group totals."""
-    counts = Counter(record.opcode for record in circuit)
+    counts = PhysicalOperationStatistics.from_circuit(circuit)
 
     def total(names: tuple[str, ...]) -> int:
+        if names == _DEBUG:
+            return counts["DEBUG_PRINT"]
         return sum(counts[name] for name in names)
 
     if magic:
