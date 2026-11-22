@@ -83,3 +83,63 @@ assert optimize(source).instructions == source.instructions
 
 Expected: independent gates remain unchanged. The proposal supports existing
 native target-artifact compilation; it introduces no public entry point.
+
+## First complete outcome: not adopted
+
+The declaration was published at
+`9e23002afc78de142e113f6e7e81e365e6a843ff` before the first full control.
+[The exact archive](evidence/cirq-cz-invariant-pruning.json) retains the proposed
+source, balanced driver, all observations and reconstruction hashes. All 120
+pairs and 240 independent acceptances preserve normalized outputs, evaluator
+metrics and adapter audits. The supervisor completed once with status zero.
+No local tests or artifact transfers overlapped the measurements.
+
+| Inspected case | Baseline / proposed median | Observed reduction | Compiler-stage Python traced peak, baseline / proposed |
+| --- | ---: | ---: | ---: |
+| 6-wire qft, grid | 91.622 / 90.736 ms | 0.97% | 1,917,926 / 2,073,198 bytes |
+| 6-wire repetition, ring | 116.636 / 113.780 ms | 2.45% | 2,541,939 / 2,456,069 bytes |
+| 12-wire qft, grid | 565.163 / 554.395 ms | 1.91% | 10,116,699 / 10,116,693 bytes |
+
+No case meets the declared 5% median reduction; six-wire QFT's observed peak
+increases. These shared-host observations do not establish statistical
+significance, a universal performance effect or process-memory qualification.
+They do not satisfy the fixed admission, so the candidate is not adopted.
+Do not rerun or revise thresholds/cases to rescue this implementation.
+
+## Reducing-block and classification controls
+
+The six historical stage cases are retained, with an eight-local-rotation prefix
+added to each of the four reducing cases to exercise the 43-operation admission
+bound. Their exact source is fixed before those stage observations and retained.
+All ten cases preserve exact proposed outputs and rejection reasons. Returned
+operators are checked independently with NumPy at absolute tolerance `1e-11` up
+to one global phase. This development-only reference is not a production dependency.
+Two warmups and twenty retained alternating samples give:
+
+| Stage case | Weyl calls, baseline / proposed | Stage median, baseline / proposed |
+| --- | ---: | ---: |
+| refocused_pi_x | 1 / 1 | 171.6 / 172.1 us |
+| refocused_pi_x_with_frame | 1 / 1 | 194.9 / 195.1 us |
+| quarter_turn_pauli_product | 1 / 1 | 327.3 / 327.1 us |
+| mixed_wire_two_cz_reduction | 1 / 1 | 435.2 / 435.3 us |
+| generic_two_cz_control | 1 / 1 | 203.4 / 203.8 us |
+| generic_three_cz_control | 1 / 0 | 299.4 / 72.7 us |
+| refocused_pi_x_admitted_locals | 1 / 1 | 268.0 / 287.5 us |
+| refocused_pi_x_with_frame_admitted_locals | 1 / 1 | 279.1 / 297.4 us |
+| quarter_turn_pauli_product_admitted_locals | 1 / 1 | 367.3 / 387.0 us |
+| mixed_wire_two_cz_reduction_admitted_locals | 1 / 1 | 521.0 / 539.9 us |
+
+The admitted reducing cases still need one Weyl decomposition and add invariant
+work; the generic three-CZ control avoids Weyl entirely. This is a real local
+tradeoff, not whole-SDK evidence of superiority. The first stage run also checks
+320 fixed-seed, locally dressed zero/one/two/three-CZ operators with global phases
+against a separate NumPy implementation of the inspected Cirq formulas. No
+conservative refusal contradicts that reference, and no constructed reducing
+operator is refused. This finite conformance is not an exhaustive proof of
+floating-point boundary safety. Full tolerance-boundary, resource-precedence,
+symbolic and metadata conformance remain unproven for this unadopted prototype.
+
+The result supports keeping the existing production synthesis path. A faster
+classification stage alone is insufficient to close the remaining delivered
+compilation overhead. Native-CZ routing selection remains unqualified for the
+default compiler. No formal campaign was started and no machine was restarted.
