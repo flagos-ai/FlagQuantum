@@ -125,3 +125,48 @@ Python files, Black, Ruff, Ecosystem scope, architecture, multilevel IR, and
 protected API checks pass. Serial branch coverage of the two adapter files
 is 82% combined; the new square adapter is 88%. Defensive admission guards
 remain uncovered, so this is not a complete branch-coverage claim.
+
+## Stored composition interface
+
+The next catalog closure composes separately supplied evaluation, phase and
+exact erasure Programs. Cost names identify RIGHT evaluation outputs and THRU
+phase inputs of matching width/shape. The outer signature contains evaluation
+inputs and phase extras. The evaluator and its exact inverse own private results
+and work, while the outer consumer retains input words and the through gradient.
+The Square realization remains explicit native arithmetic below the unchanged
+source decomposition refusal. User execution remains `circuit.append(op)`.
+
+## Complete stored dependency graphs — 2026-11-22
+
+Both original cost-phasing factories now compose evaluation, QVR and exact
+evaluation erasure as three stored typed calls. Their combined recursive
+source comparison accepts five exact graphs and retains 42 atomic contexts,
+including both Square directions. Eight original source graphs and all four
+factory execution paths are covered by the shared
+[QVR batch evidence](QVR_FILE_AUDIT.md#complete-stored-dependency-graphs--2026-11-22).
+
+The original root filename collision retains its existing first-file behavior.
+Contextual descendant owners include the actual phase strategy so both complete
+bodies remain navigable. A regression checks each node's outgoing edges and
+Program ownership. Small complete source tensors, every forward and inverse
+raw history, spectator amplitudes, private work zero, append, copy and JSON
+round trips pass. Original Square remains atomic. Its execution delegates to
+the previously accepted native arithmetic and carries no source gate-recipe
+claim.
+
+The original five-bit Z-power instance emits 160 T/Tdag, 394 CX, ten phases
+and 40 measurements on 35 physical wires. Its independent source model is
+40 Toffoli plus ten rotations on 15 wires. The gradient instance emits
+1,636 T/Tdag, 4,062 CX and 409 measurements on 78 used wires. The previous
+reserved layout used 98 wires. The original model remains 520 Toffoli on
+47 wires. Minimal contiguous clean-pool rebinding retains all instructions
+and allocation events. Pending source and contract boundaries remain open.
+
+Batch acceptance passes 851 concentrated catalog checks with three existing
+deselections and 14 existing notebook warnings, 465 execution/SDK checks with
+one original deprecated-cost warning, and 29 relevant local integration checks.
+Strict typing of eight Python files, Black, Ruff, Compiler and integration
+scope, architecture, multilevel IR, protected API and whitespace checks pass.
+All thirteen frozen source/test/notebook/dependency blobs remain unchanged.
+Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. No source parent is
+closed by catalog-only evidence. The recorded source defects remain open.

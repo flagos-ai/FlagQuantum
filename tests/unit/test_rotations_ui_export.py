@@ -157,6 +157,10 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
         assert data["msd"] is not None
         assert data["msd"] == first_scores[key]
         if identifier in {
+            "qvr_zpow",
+            "qvr_phase_gradient",
+            "square_via_phase_gradient",
+            "square_via_zpow_phasing",
             "cz_pow",
             "crz",
             "phase_gradient_unitary",
@@ -176,7 +180,7 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
 
     graph = dependency_graph(
         native.INSTANCES,
-        owner=lambda v: native.name(v) + "/" + native.filename(v),
+        owner=native._dependency_owner,
         program=native.decomposition,
         child_presentation=native._child_presentation,
     )

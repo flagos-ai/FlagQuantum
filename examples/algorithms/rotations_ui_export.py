@@ -46,6 +46,7 @@ from examples.algorithms.programmable_rotation_array_catalog import (
     ProgrammableRotationArrayExample,
 )
 from examples.algorithms.qvr_catalog import QvrExample
+from examples.algorithms.qvr_decomposition import qvr_child, qvr_program, qvr_score
 from examples.algorithms.rotation_gate_decomposition import (
     rotation_gate_program,
     rotation_gate_score,
@@ -872,6 +873,12 @@ def score(component: object) -> object:
         result = gradient_score(name(component), attributes(component))
     if result is None:
         result = phase_rotation_score(name(component), attributes(component))
+    if result is None:
+        result = qvr_score(
+            name(component),
+            attributes(component),
+            via_gradient=any(r.name == "phase_grad" for r in signature(component)),
+        )
     return (
         result
         if result is not None
@@ -884,18 +891,26 @@ def decomposition(component: object) -> ProgramRecord | None:
     record = rotation_gate_program(name(component), attributes(component))
     if record is None:
         record = gradient_program(name(component), attributes(component))
+    if record is None:
+        record = phase_rotation_program(name(component), attributes(component))
     return (
         record
         if record is not None
-        else phase_rotation_program(name(component), attributes(component))
+        else qvr_program(
+            name(component),
+            attributes(component),
+            via_gradient=any(r.name == "phase_grad" for r in signature(component)),
+        )
     )
 
 
 def _child_presentation(
     record: ProgramRecord, entry: str, root: object
 ) -> ChildPresentation | None:
-    return gradient_child(record, entry, root) or phase_rotation_child(
-        record, entry, attributes(root)
+    return (
+        gradient_child(record, entry, root)
+        or phase_rotation_child(record, entry, attributes(root))
+        or qvr_child(record, entry, attributes(root))
     )
 
 
@@ -951,6 +966,19 @@ def sections() -> tuple[tuple[str, tuple[NotebookSpec, ...]], ...]:
     )
 
 
+def _dependency_owner(component: object) -> str:
+    owner = name(component) + "/" + filename(component)
+    if name(component) == "PhasingViaCostFunction":
+        # Both original factories share a root filename but have different bodies.
+        strategy = (
+            "phase_gradient"
+            if any(r.name == "phase_grad" for r in signature(component))
+            else "zpow"
+        )
+        owner += "/" + strategy
+    return owner
+
+
 def export_example(destination: Path) -> None:
     """Publish complete rotation, Fourier and phase-estimation metadata and fresh interfaces."""
     export_component_ui(
@@ -958,7 +986,7 @@ def export_example(destination: Path) -> None:
         sections(),
         dependency_graph(
             INSTANCES,
-            owner=lambda component: name(component) + "/" + filename(component),
+            owner=_dependency_owner,
             program=decomposition,
             child_presentation=_child_presentation,
         ),

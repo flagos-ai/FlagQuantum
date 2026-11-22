@@ -130,3 +130,71 @@ Strict typing, Black, Ruff, Algorithms scope and diff whitespace checks pass.
 This tests/audit-only extension reuses accepted architecture, multilevel IR,
 protected API, CPU and independent notebook evidence. No production behavior,
 reference file or public contract changes in this batch.
+
+## Stored catalog dependency interface
+
+The next closure retains complete QvrZPow and QvrPhaseGradient roots as typed
+Programs. The cost port preserves its supplied name, unsigned fixed-point dtype
+and MSB-first raw bits. The gradient is a caller-owned THRU fractional word.
+Direct phases reuse the existing per-wire source schedule. Gradient sizing and
+scaled-add calls reuse their authoritative owners. Carries belong to the shared
+adder and return to zero. Presentation and source-label qualification belong to
+the example provider. Original precision, signed-index and symbolic boundaries
+remain independent of concrete catalog graph acceptance.
+
+## Complete stored dependency graphs — 2026-11-22
+
+The four original factory contexts now retain their stored typed Programs.
+Fresh recursive comparison with the immutable source accepts eight complete
+ordered graphs, including every comparable call, operand and feedback binding.
+All eight comparable source drawings agree. The 69 atomic source contexts remain
+explicit, including forward and inverse Square and AddIntoPhaseGrad. The 1,064
+native-only descendants below those boundaries are execution realizations with
+no source gate-decomposition equality claim. Complete definition matching
+precedes source-label qualification and rejects changed primitive definitions.
+
+The shared layout owner now follows `_cirq_to_bloq._ensure_in_reg_exists`.
+A previously bound whole word is reused. Intersecting words are split only when
+needed, then selected bits are cast or joined in original insertion order.
+This corrects the twelve-bit scaled child from 37 calls to the original 19.
+The primitive stream remains unchanged. Compiler storage uses native integer
+position labels and typed bindings throughout.
+
+Both original cost-phasing factories share one root filename even though their
+strategies differ. Publication retains the existing first-root-file behavior.
+Descendant identities carry the strategy inferred from the actual signature,
+so both descendant graphs retain separate files and contextual edges.
+The collision regression checks child definitions and outgoing edges separately.
+
+Small original tensors cover direct and gradient QVR with and without Square,
+all forward and inverse raw measurement histories, noncontiguous bindings and
+an entangled spectator. Complete complex amplitudes agree and private cost and
+carry wires return to zero. Dynamic append, stored Program copying and lowered
+JSON round trips pass. Existing original-factory stream and feedback evidence
+is reused. The large fixtures have primitive inventories and previous bounded
+coherent evidence, without a full large-register matrix claim.
+
+| Original factory | Measured T/Tdag | Measured CX | Literal phases | Measurements | Used physical wires | Separate source model | Source width |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| QvrZPow, twelve-bit cost | 0 | 0 | 6 | 0 | 12 | 6 rotations | 12 |
+| QvrPhaseGradient, twelve-bit cost | 484 | 1244 | 0 | 121 | 49 | 119 Toffoli | 31 |
+| Square, five-bit input, gradient | 1636 | 4062 | 0 | 409 | 78 | 520 Toffoli | 47 |
+| Square, five-bit input, Z powers | 160 | 394 | 10 | 40 | 35 | 40 Toffoli, 10 rotations | 15 |
+
+The square-gradient Program reuses released count/compression storage, reducing
+used physical wires from the earlier reserved layout's 98 to 78. Minimal
+contiguous clean-pool rebinding preserves the exact instruction stream and
+allocation events. Source models retain their original formulas and do not
+include every realized carry. The default source T-equivalent estimates are
+66, 476, 2080 and 270 respectively, separately from measured primitive counts.
+Source precision, signed-index, mixed-format and symbolic boundaries remain
+recorded under the original parent entries. Reference sources are unchanged.
+
+Batch acceptance passes 851 concentrated catalog checks with three existing
+deselections and 14 existing notebook warnings, 465 execution/SDK checks with
+one original deprecated-cost warning, and 29 relevant local integration checks.
+Strict typing of eight Python files, Black, Ruff, Compiler and integration
+scope, architecture, multilevel IR, protected API and whitespace checks pass.
+All thirteen frozen source/test/notebook/dependency blobs remain unchanged.
+Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. No source parent is
+closed by catalog-only evidence. The recorded source defects remain open.
