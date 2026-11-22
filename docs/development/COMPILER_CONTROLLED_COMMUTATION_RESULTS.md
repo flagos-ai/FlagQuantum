@@ -298,3 +298,15 @@ zero tests; it is a setup failure, not verification. The corrected selection
 uses existing directories and retains all numerical, phase, workspace and
 refusal assertions. Strict mypy, Ruff and Black pass for the complete thermal
 test module; the three added/edited artifact paths pass the English check.
+
+## Integrated analysis-reuse composition
+
+PR #1306 is now integrated main. The controlled-gate branch synchronizes its
+bounded per-compilation analysis reuse without changing the controlled predicate
+or adding a new optimization. The combined source passes 374 selected local
+unit/compiler/integration cases and strict checks for the four relevant modules.
+A [separate prospective protocol](COMPILER_CONTROLLED_COMMUTATION_INTEGRATED_REUSE.md)
+freezes complete quality draws, producer-free replay and every resource sample
+before new observations. It compares the composed candidate against current
+integrated main. Preserve the earlier failed resource observation and draft
+status until the new candidate's independent gates and full CI are resolved.
