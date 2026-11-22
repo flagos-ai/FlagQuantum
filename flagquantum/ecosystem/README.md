@@ -173,3 +173,20 @@ change path. `tests/unit/fixtures/generate_command_arguments.py` regenerates
 frozen-source observations. See
 `docs/development/COMMAND_ARGUMENTS_AUDIT.md` for exact ownership, original
 integer wrap aliases and the explicitly open host-specific C file-mode boundary.
+
+## Unified physical-format commands
+
+`kmx_command.py` selects the existing format, sampling or drawing owner with
+lazy imports. The complete dispatcher accepts all eight original commands.
+For a short generation and conversion round trip, run
+
+```bash
+python -m flagquantum.ecosystem.kmx_command circuit --kind iadd --n 3 --out /tmp/add.kmx --validate
+python -m flagquantum.ecosystem.kmx_command kmx2kmb --in /tmp/add.kmx --out /tmp/add.kmb
+python -m flagquantum.ecosystem.kmx_command count_operations --in /tmp/add.kmb
+```
+
+Run `tests/unit/test_kmx_command_dispatch.py` after changing selection or
+argument forwarding. Its workflow invokes every owning command and executes the
+converted circuit through `circuit.append(op)`. Source-boundary details are in
+`docs/development/MAIN_COMMAND_AUDIT.md`.
