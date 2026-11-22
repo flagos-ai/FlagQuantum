@@ -112,3 +112,10 @@ After restoring the original production verifier, all 144 focused tests pass:
 same seeded selections. Strict Linux-target mypy passes the complete test module;
 Black, Ruff, English, links and whitespace checks pass. The retained scenarios
 therefore validate existing behavior independently of the withdrawn optimization.
+
+After synchronization to integrated main
+`5bc56a03cc584030e68e00b55ea75e45f9da36bd`, the sparse default tier passes
+134 unit tests and the runtime tier passes 42 integration tests. Strict
+Linux-target mypy still passes the complete test module. The final diff against
+that main changes no production Python source. The historical 120 acceptances
+above belong to the rejected proposal; no new performance benefit is claimed.
