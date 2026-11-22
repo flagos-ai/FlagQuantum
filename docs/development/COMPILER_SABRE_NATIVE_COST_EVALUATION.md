@@ -117,3 +117,49 @@ default-tier attempt stopped with seven missing helper/document collection error
 Neither run is represented as a passing complete default tier. The focused 135-test
 compiler/integration result and 120 paired independent acceptances above are
 separate completed checks. Full-checkout CI remains required before integration.
+
+
+## Contemporaneous production control
+
+A subsequent [fixed diagnostic](evidence/sabre-native-cost-production-control.json)
+compares the reused experimental selector with the production default in the
+same process and source tree. The measured experiment source is
+`ffbc83e754522f127e4f80d0737f45544d70aef0`; its production `flagquantum/`
+bytes match main `d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277` exactly.
+The pinned clean SDKBench checkout and its evaluator/budgets are unchanged.
+The three inputs were already inspected and used by the earlier diagnostic;
+none is held out. Two warmups precede seven alternating retained samples per
+variant, followed by one separate Python allocation observation per variant.
+
+| Inspected workflow | Production / experiment median | CZ count | Two-body depth | Python traced peak bytes, production / experiment |
+| --- | ---: | ---: | ---: | ---: |
+| 6-wire QFT, grid | 104.075 / 223.516 ms | 65 / 63 | 48 / 38 | 1,894,470 / 2,150,822 |
+| 6-wire repetition, ring | 126.357 / 227.371 ms | 82 / 76 | 57 / 55 | 2,407,997 / 2,452,639 |
+| 12-wire QFT, grid | 633.674 / 653.336 ms | 352 / 352 | 150 / 150 | 10,116,885 / 10,116,829 |
+
+All 60 complete workflow observations pass the unchanged independent acceptance,
+with complete operators at width six and three probes at width twelve.
+Within each variant, normalized outputs, metrics and evidence statistics remain
+identical across repetitions. The twelve-wire pair has identical normalized
+output hashes; the other pairs differ and the evaluator checks both.
+
+This control confirms that reducing repeated experimental evaluation work did
+not make target-CZ selection free. The six-wire improvements cost approximately
+115% and 80% more observed compiler time and higher Python peak allocations;
+the twelve-wire case gains no CZ/depth improvement and costs approximately 3%
+more time. These are descriptive shared-host observations, not qualified
+performance or process RSS. No default admission follows. The experiment must
+further reduce selection cost and demonstrate behavior on frozen prospective
+inputs before an admission decision. Production policy remains unchanged.
+
+The archive retains every sample, output metric/hash, the exact driver and log,
+and the original JSON with its hash. Its readable report normalizes one revision
+field name to the repository's existing vocabulary without changing its value
+or any measurement. No production implementation changes accompany this record.
+
+
+After synchronization to that main baseline, 138 focused native-cost, native
+block and physical-evidence tests pass. The new record passes English, local
+links and all three revision-origin/vocabulary checks. Complete source CI on
+the synchronized head is required before integration; earlier head CI success
+is not represented as validation of this update.
