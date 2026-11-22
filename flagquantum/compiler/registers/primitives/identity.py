@@ -5,8 +5,13 @@
 
 """Native binding for a register-wide atomic identity."""
 
-from ....core.ir import Instruction
+from ....core.ir import CircuitIR, Instruction
+from ....core.ir.program import ProgramRecord
+from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.registers import Register
 from ..bits.bitwise import on_each_ir
+from ..bits.on_each import on_each_word_program
+from ..component_gate_function import bit_gate_function
 
 
 def register_identity_ir(
@@ -21,3 +26,20 @@ def register_identity_ir(
     """
     control_wires = tuple(wire for group in controls for wire in group)
     return on_each_ir(Instruction("i", (0,)), (*control_wires, *target))
+
+
+def register_identity_program(width: int) -> ProgramRecord:
+    """Execute an atomic word Identity through native bit leaves.
+
+    The source Identity has no composite recipe. Split, per-bit identities and
+    Join are native execution below that boundary, preserving the opaque word.
+    """
+
+    if type(width) is not int or width < 1:
+        raise ValueError("Executable word Identity requires a positive integer width")
+    identity = bit_gate_function(
+        "identity_bit",
+        (Register("q", quantum_bit_type()),),
+        CircuitIR(1, register_identity_ir((0,))),
+    )
+    return on_each_word_program(width, identity)

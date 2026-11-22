@@ -10,12 +10,17 @@ import torch
 from sympy import Symbol
 
 from flagquantum import Circuit
-from flagquantum.algorithms.primitives.identity_prepare import IdentityPrepare
+from flagquantum.algorithms.primitives.identity_prepare import (
+    IdentityPrepare,
+    identity_prepare_program,
+)
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program import verify_program_record
 from flagquantum.core.ir.program.register_types import (
     classical_bit_type,
     opaque_register_type,
@@ -23,6 +28,7 @@ from flagquantum.core.ir.program.register_types import (
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
+from tests.unit.test_component_hierarchy_control import compare_layers
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -165,3 +171,27 @@ def test_register_converter_symbolic_declaration_and_invalid_bodies() -> None:
         PrepareIdentity(SourceRegister("q", CBit())).decompose_bloq()
     with pytest.raises(ValueError, match="quantum selection"):
         IdentityPrepare(Register("q", classical_bit_type())).bind()
+
+
+@pytest.mark.parametrize("widths", [(1,), (2,), (1, 2), (1, 2, 3), (10, 4, 1)])
+def test_identity_prepare_word_calls_and_native_atomic_execution(
+    widths: tuple[int, ...],
+) -> None:
+    from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+
+    graph = identity_prepare_program(IdentityPrepare.from_bitsizes(widths))
+    source = PrepareIdentity.from_bitsizes(widths)
+    root = graph.functions[0]
+    leaves = {op.callee for op in root.blocks[0].operations}
+    assert None not in leaves
+    compare_layers(graph, source, {str(name) for name in leaves})
+    inputs = []
+    offset = 0
+    for width in widths:
+        inputs.append(tuple(range(offset, offset + width)))
+        offset += width
+    bound = bind_register_program(graph, tuple(inputs))
+    assert bound.outputs == tuple(inputs)
+    assert Counter(g.name for g in bound.circuit.instructions) == {"i": sum(widths)}
+    assert bound.events == ()
+    assert verify_program_record(graph) == ()

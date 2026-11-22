@@ -7,8 +7,13 @@
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
-from ...compiler.registers.primitives.identity import register_identity_ir
+from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.primitives.identity import (
+    register_identity_ir,
+    register_identity_program,
+)
 from ...core.ir import Instruction
+from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.value_math import SymbolicInt
@@ -75,3 +80,22 @@ def _emit_identity(
     return tuple(
         gate for wires in ports.values() for gate in register_identity_ir(wires)
     )
+
+
+def identity_prepare_program(prepare: IdentityPrepare) -> ProgramRecord:
+    """Retain one atomic word Identity call per concrete selection port.
+
+    Words are MSB-first THRU storage. No work or measurement is needed. The
+    original source lacks executable shaped, one-sided and zero-width bodies.
+    """
+
+    prepare.bind()
+    builder = ComponentProgramBuilder(prepare.signature)
+    result = dict(builder.inputs)
+    for reg in prepare.selection_registers:
+        if type(reg.bitsize) is not int:
+            raise ValueError("Stored identity preparation requires concrete widths")
+        result[reg.name] = builder.call_program(
+            register_identity_program(reg.bitsize), {"q": result[reg.name]}
+        )["q"]
+    return builder.finalize(result)
