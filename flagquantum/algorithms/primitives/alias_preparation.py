@@ -13,19 +13,35 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.bits.on_each import on_each_word_program
 from ...compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
+from ...compiler.registers.comparison.ordering_component import less_equal_program
+from ...compiler.registers.component_adjoint import adjoint_component_calls
+from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.component_gate_function import bit_gate_function
+from ...compiler.registers.lookup.qrom_component import qrom_program
 from ...compiler.registers.lookup.qrom_table import QromTable
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
+from ...compiler.registers.preparation.uniform_preparation_component import (
+    uniform_preparation_program,
+)
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
-from ...core.ir import Instruction
+from ...compiler.registers.primitives.controlled_swap_component import (
+    controlled_swap_program,
+)
+from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_types import quantum_bit_type, unsigned_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .alias_sampling import AliasSamplingTable
 from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
 from .symbolic_alias_preparation import AliasPreparationShape
@@ -208,3 +224,104 @@ def _source_alias_preparation_cost(
             CostCall(compare, bystander_qubits=2 * selection + sparse_width),
         ),
     )
+
+
+def alias_preparation_program(
+    table: AliasSamplingTable | AliasPreparationShape, *, adjoint: bool = False
+) -> ProgramRecord:
+    """Store the five original alias calls with MSB-first owned word ports.
+
+    Selection and logical junk remain live THRU outputs. Child components own
+    and erase private work. Shapes without data retain the same five calls with
+    declarations for unknown children. Singleton source bodies remain refused.
+    """
+    if type(adjoint) is not bool:
+        raise ValueError("Alias preparation direction must be boolean")
+    shape = (
+        AliasPreparationShape.from_table(table)
+        if isinstance(table, AliasSamplingTable)
+        else table
+    )
+    sparse = shape.support_size is not None
+    rows = shape.support_size if sparse else shape.rows
+    assert rows is not None
+    mu, width = shape.probability_bits, shape.selection_width
+    builder = ComponentProgramBuilder(shape.signature)
+    words = dict(builder.inputs)
+    address = "sparse_index" if sparse else "selection"
+    uniform = uniform_preparation_program(rows, adjoint=adjoint)
+    bit = quantum_bit_type()
+    if type(mu) is int:
+        hadamard = bit_gate_function(
+            "alias_h", (Register("q", bit),), CircuitIR(1, (Instruction("h", (0,)),))
+        )
+        sigma = on_each_word_program(mu, hadamard)
+        if adjoint:
+            leaf = ProgramRecord((hadamard,))
+            sigma = adjoint_component_calls(sigma, ((leaf, leaf),))
+        compare = less_equal_program(mu)
+    else:
+        sigma = ProgramRecord(
+            (FunctionRecord("main", (), registers=tuple(Signature.build(q=mu))),)
+        )
+        compare = ProgramRecord(
+            (
+                FunctionRecord(
+                    "main",
+                    (),
+                    registers=tuple(
+                        Signature.build_from_dtypes(
+                            x=unsigned_register_type(mu),
+                            y=unsigned_register_type(mu),
+                            target=bit,
+                        )
+                    ),
+                ),
+            )
+        )
+    swap = (
+        controlled_swap_program(width)
+        if type(width) is int
+        else ProgramRecord(
+            (
+                FunctionRecord(
+                    "main",
+                    (),
+                    registers=tuple(Signature.build(ctrl=1, x=width, y=width)),
+                ),
+            )
+        )
+    )
+    targets = (width, width, mu) if sparse else (width, mu)
+    lookup_table = (
+        _lookup_table(table)
+        if isinstance(table, AliasSamplingTable)
+        else QromTable(
+            (rows,),
+            (shape.sparse_index_width if sparse else width,),
+            targets,
+            ((),) * len(targets),
+        )
+    )
+    lookup = qrom_program(lookup_table)
+    lookup_words = ("selection", "alt", "keep") if sparse else ("alt", "keep")
+    steps = [
+        (uniform, {"target": address}),
+        (sigma, {"q": "sigma_mu"}),
+        (
+            lookup,
+            {
+                "selection": address,
+                **{f"target{i}_": name for i, name in enumerate(lookup_words)},
+            },
+        ),
+        (compare, {"x": "keep", "y": "sigma_mu", "target": "less_than_equal"}),
+        (swap, {"ctrl": "less_than_equal", "x": "alt", "y": "selection"}),
+    ]
+    for child, names in reversed(steps) if adjoint else steps:
+        outputs = builder.call_program(
+            child, {port: words[name] for port, name in names.items()}
+        )
+        for port, name in names.items():
+            words[name] = outputs[port]
+    return builder.finalize(words)
