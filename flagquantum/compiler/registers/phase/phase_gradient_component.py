@@ -4,6 +4,8 @@
 
 """Retain gradient powers and preparation as owned typed component calls."""
 
+from dataclasses import replace
+
 import numpy as np
 
 from ....core.ir import CircuitIR, Instruction
@@ -15,8 +17,12 @@ from ....core.ir.program.register_types import (
 )
 from ....core.ir.program.registers import Register
 from ..bits.on_each import on_each_word_program
+from ..component_adjoint import adjoint_component_program
 from ..component_builder import ComponentProgramBuilder
+from ..component_definition_match import matches_component_definition
 from ..component_gate_function import bit_gate_function
+from ..component_graph import _namespace_helpers
+from ..component_rebindings import adjoint_word_rebinding
 from ..primitives.controlled_rotation_component import controlled_z_power_program
 from ..primitives.global_phase import _finite_angle
 from ..primitives.pauli_rotation_component import z_power_function
@@ -27,7 +33,7 @@ from .phase_gradient import (
 
 
 def phase_gradient_unitary_program(
-    width: int, exponent: float = 1, *, controlled: bool = False
+    width: int, exponent: float = 1, *, controlled: bool = False, adjoint: bool = False
 ) -> ProgramRecord:
     """Apply source-ordered Z powers to an MSB-first fractional through word.
 
@@ -38,8 +44,8 @@ def phase_gradient_unitary_program(
     if type(width) is not int or width < 1:
         raise ValueError("Gradient component width must be a positive integer")
     _finite_angle(exponent)
-    if type(controlled) is not bool:
-        raise ValueError("Gradient controlled mode must be boolean")
+    if type(controlled) is not bool or type(adjoint) is not bool:
+        raise ValueError("Gradient controlled mode and adjoint must be boolean")
     phases = tuple(
         z_power_function(f"power_{i}", exponent / 2**i) for i in range(width)
     )
@@ -72,7 +78,42 @@ def phase_gradient_unitary_program(
     if controlled:
         assert isinstance(control, RegisterBinding)
         outputs["ctrl"] = control
-    return builder.finalize(outputs)
+    record = builder.finalize(outputs)
+    if not adjoint:
+        return record
+    definitions = list(record.functions)
+    adjoints: dict[str, str] = {}
+    callees = {op.callee for op in record.functions[0].blocks[0].operations}
+    for position, function in enumerate(record.functions[1:]):
+        if function.name not in callees:
+            continue
+        ports = function.registers or ()
+        if tuple(port.name for port in ports) == ("reg", "reg"):
+            inverse = adjoint_word_rebinding(
+                function, f"gradient_inverse_view_{position}"
+            )
+            definitions.append(inverse)
+            adjoints[function.name] = inverse.name
+        elif not controlled:
+            i = int(function.name.removeprefix("power_"))
+            inverse = z_power_function(f"gradient_inverse_power_{i}", -exponent / 2**i)
+            definitions.append(inverse)
+            adjoints[function.name] = inverse.name
+        else:
+            for i in range(width):
+                if matches_component_definition(
+                    record, function.name, controlled_z_power_program(exponent / 2**i)
+                ):
+                    inverse_record = _namespace_helpers(
+                        controlled_z_power_program(-exponent / 2**i),
+                        f"gradient_inverse_cz_{i}",
+                    )
+                    definitions.extend(inverse_record.functions)
+                    adjoints[function.name] = inverse_record.functions[0].name
+                    break
+    return adjoint_component_program(
+        replace(record, functions=tuple(definitions)), adjoints
+    )
 
 
 def phase_gradient_state_program(width: int, exponent: float = -1) -> ProgramRecord:

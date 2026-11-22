@@ -12,6 +12,7 @@ from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ....core.parameters import Parameter, ParameterExpression
+from ..component_adjoint import adjoint_component_program
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from ..control.conjunction_program import and_component_program
@@ -40,12 +41,16 @@ def controlled_z_power_program(exponent: RotationAngle) -> ProgramRecord:
     return builder.finalize({"q": controls})
 
 
-def controlled_rz_program(angle: RotationAngle) -> ProgramRecord:
+def controlled_rz_program(
+    angle: RotationAngle, *, adjoint: bool = False
+) -> ProgramRecord:
     """Retain the source's two phase powers and two CNOTs in radians.
 
     ctrl and q are one-bit through ports. The source division order is kept
     for numerical values and owned symbolic expressions. This uses no work.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Controlled Rz adjoint must be boolean")
     half: RotationAngle = (
         ParameterExpression("div", (ParameterExpression("div", (angle, pi)), 2))
         if isinstance(angle, (Parameter, ParameterExpression))
@@ -69,4 +74,11 @@ def controlled_rz_program(angle: RotationAngle) -> ProgramRecord:
         q = builder.call_dict(phase, {"q": q})["q"]
         result = builder.call_dict("cnot", {"ctrl": ctrl, "target": q})
         ctrl, q = result["ctrl"], result["target"]
-    return builder.finalize({"ctrl": ctrl, "q": q})
+    record = builder.finalize({"ctrl": ctrl, "q": q})
+    return (
+        adjoint_component_program(
+            record, {"positive": "negative", "negative": "positive", "cnot": "cnot"}
+        )
+        if adjoint
+        else record
+    )
