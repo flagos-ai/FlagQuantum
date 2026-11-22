@@ -141,3 +141,30 @@ longer allocate an unbounded gate sequence relative to the 256-gate input cap.
 Full binary-map and whole-program depth acceptance still apply. The same
 72-pair inputs, samples and resource thresholds will be retained; the first
 failed observations above remain authoritative for their implementation.
+
+## Bounded successor observations and decision
+
+Implementation `72d30b573b312d28c16e47193122885dd7d4a34c` completed the
+same 72 pairs and 120 upstream sequence comparisons. Every delivered baseline
+and candidate metric equals the first implementation's result. The median time
+ratio was 1.1335; the worst time ratio was 3.0272, and the largest traced peak
+ratio was 5.6534. The emission cap reduces the worst allocation ratio relative
+to the first run, but these are different whole-run observations on a shared
+host, not a paired speedup estimate between the two implementations. Both fail
+the unchanged default-admission gates. The successor source, complete samples,
+log and supervision are retained alongside the first run.
+
+Keep this as a private explicit optimization for callers who choose its tradeoff;
+do not add it to the default optimizer, change the protected pass catalog, or
+claim that it improves the SDKBench routing result. It exposes a real exact
+multiwire synthesis capability while preserving topology/depth rejection and
+strict source operation budgets. Further default work needs a better admission
+strategy and independently qualified real-application value, rather than
+relaxed timing or memory limits. No claim of superiority over Qiskit follows:
+this adapts its PMH implementation and currently matches its exact output on
+the fixed conformance inputs.
+
+Replacement conformance uses an independent breadth-first search over all 168
+three-wire reversible permutations, substitutes that synthesizer at the same
+internal boundary, and runs the unchanged compiler/pass consumer. This proves
+the consumer does not require PMH-specific identity or orchestration machinery.

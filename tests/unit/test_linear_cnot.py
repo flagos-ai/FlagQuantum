@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import random
+from collections import deque
 from dataclasses import replace
 from functools import partial
 from unittest.mock import patch
@@ -296,3 +297,44 @@ def test_emission_budget_preserves_every_strictly_shorter_proposal(width: int) -
         assert accepted == expected
         if expected:
             assert linear._pmh_synthesize(matrix, operation_limit=len(expected)) is None
+
+
+def test_exact_search_replaces_pmh_without_changing_the_pass_consumer() -> None:
+    identity = tuple(range(8))
+    shortest: dict[tuple[int, ...], tuple[tuple[int, int], ...]] = {identity: ()}
+    pending = deque([identity])
+    while pending:
+        permutation = pending.popleft()
+        for pair in itertools.permutations(range(3), 2):
+            following = tuple(_apply((pair,), bits) for bits in permutation)
+            if following not in shortest:
+                shortest[following] = shortest[permutation] + (pair,)
+                pending.append(following)
+    assert len(shortest) == 168
+
+    def exact_search(
+        matrix: tuple[int, ...], *, operation_limit: int | None = None
+    ) -> tuple[tuple[int, int], ...] | None:
+        assert len(matrix) == 3
+        permutation = tuple(
+            sum(
+                ((row & bits).bit_count() % 2) << index
+                for index, row in enumerate(matrix)
+            )
+            for bits in range(8)
+        )
+        result = shortest[permutation]
+        return (
+            None
+            if operation_limit is not None and len(result) >= operation_limit
+            else result
+        )
+
+    source = CircuitIR(3, _relay())
+    with patch.object(linear, "_pmh_synthesize", exact_search):
+        result = compile(
+            source,
+            optimization_level=0,
+            passes={"example.linear": linear.resynthesize_cnot_blocks},
+        )
+    assert result.instructions == (Instruction("cx", (0, 2)),)
