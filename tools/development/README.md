@@ -612,3 +612,9 @@ CtrlSpecAnd typed decompositions through
 retain native graph ownership. All other providers keep their current interface
 scores. The component UI audit records original rendering failures and remaining
 dependency publication work.
+
+The complete original developer build declaration and actual wheel contents are
+recorded in
+[`DEVELOPMENT_PACKAGE_INPUT_AUDIT.md`](../../docs/development/DEVELOPMENT_PACKAGE_INPUT_AUDIT.md).
+Its explicit package list omits the nested reference renderer from the wheel.
+The native checkout namespace above owns contributor access to that renderer.
