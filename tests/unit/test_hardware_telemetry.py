@@ -276,3 +276,38 @@ def test_direct_script_runs_without_repository_pythonpath(tmp_path: Path) -> Non
     assert result.returncode == 0, result.stdout + result.stderr
     samples = (tmp_path / "samples.jsonl").read_text().splitlines()
     assert samples and json.loads(samples[0])["process_group"] > 0
+
+
+@pytest.mark.parametrize("group", [None, 19])
+def test_failure_diagnostics_exclude_unowned_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, group: int | None
+) -> None:
+    def probe(
+        command: tuple[str, ...], *, text: bool, capture_output: bool, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
+        assert group is not None
+        assert "uuid" not in " ".join(command) and "cmd" not in " ".join(command)
+        output = (
+            "GPU-private, P0, 1200, 900, 50, 10, 1024, 150, 60\n"
+            if command[0] == "nvidia-smi"
+            else "987654 44 1 6.0 256\n7 19 3 5.0 128\n"
+        )
+        return subprocess.CompletedProcess(command, 0, output, "private-host")
+
+    monkeypatch.setattr(subprocess, "run", probe)
+    monkeypatch.setattr(os, "sched_getaffinity", lambda pid: {2}, raising=False)
+    watchdog._diagnostics(tmp_path, {"reason": "phase_timeout"}, group=group)
+    for output in tmp_path.iterdir():
+        assert all(
+            value not in output.read_text()
+            for value in ("GPU-private", "private-host", "987654")
+        )
+    assert (
+        json.loads((tmp_path / "watchdog.json").read_text())["reason"]
+        == "phase_timeout"
+    )
+    processes = json.loads((tmp_path / "processes.log").read_text())
+    if group is None:
+        assert processes["snapshot_error"] == "command_not_started"
+    else:
+        assert processes["processes"] == "7 19 3 5.0 128"

@@ -17,43 +17,40 @@ from pathlib import Path
 from types import FrameType
 
 
-def _diagnostics(directory: Path, payload: dict[str, object]) -> None:
+def _diagnostics(
+    directory: Path, payload: dict[str, object], *, group: int | None = None
+) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "watchdog.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    commands = {
-        "processes.log": ["ps", "-eo", "pid,ppid,stat,etime,rss,cmd"],
-        "gpu.log": [
-            "nvidia-smi",
-            "--query-compute-apps=pid,gpu_uuid,used_memory",
-            "--format=csv,noheader",
-        ],
-    }
-    for name, command in commands.items():
+    observations = {"snapshot_error": "command_not_started"}
+    if group is not None:
+        if not __package__:
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from tools.hardware_telemetry import record_sample
+
+        output = directory / "hardware-snapshot.jsonl"
         try:
-            result = subprocess.run(command, text=True, capture_output=True, timeout=10)
-            text = result.stdout + result.stderr
-        except (OSError, subprocess.SubprocessError) as error:
-            text = f"diagnostic unavailable: {error}\n"
-        (directory / name).write_text(text, encoding="utf-8")
-    stacks = []
-    proc = Path("/proc")
-    entries = proc.iterdir() if proc.is_dir() else ()
-    for entry in entries:
-        if not entry.name.isdigit():
-            continue
-        try:
-            process_command = (
-                (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode()
-            )
-            stack = (entry / "stack").read_text()
-        except (OSError, UnicodeError):
-            continue
-        if "torchrun" in process_command or "python" in process_command:
-            stacks.append(f"pid={entry.name} command={process_command}\n{stack}\n")
+            record_sample(output, group, time.monotonic())
+            observations = json.loads(output.read_text().splitlines()[-1])[
+                "observations"
+            ]
+        except (OSError, ValueError) as error:
+            observations = {"snapshot_error": type(error).__name__}
+    for name in ("processes", "gpu"):
+        retained = {
+            key: value
+            for key, value in observations.items()
+            if key == name or key.startswith((name + "_", "snapshot_"))
+        }
+        (directory / (name + ".log")).write_text(
+            json.dumps(retained, sort_keys=True) + "\n", encoding="utf-8"
+        )
     (directory / "rank-stacks.log").write_text(
-        "".join(stacks) or "kernel stacks unavailable\n", encoding="utf-8"
+        "Kernel stacks and process command lines are not collected automatically; "
+        "owned numeric process accounting is retained in processes.log.\n",
+        encoding="utf-8",
     )
 
 
@@ -170,7 +167,7 @@ def run(argv: list[str] | None = None) -> int:
                 {
                     **rss,
                     "reason": "rss_monitor_unavailable",
-                    "detail": str(error),
+                    "detail": type(error).__name__,
                     "command_started": False,
                 },
             )
@@ -209,7 +206,7 @@ def run(argv: list[str] | None = None) -> int:
                 try:
                     observed = _process_group_rss(process.pid)
                 except (OSError, ValueError, subprocess.SubprocessError) as error:
-                    rss["detail"] = str(error)
+                    rss["detail"] = type(error).__name__
                     reason = "rss_monitor_unavailable"
                     break
                 sampled = time.monotonic()
@@ -253,7 +250,7 @@ def run(argv: list[str] | None = None) -> int:
                 elif not samples:
                     reason = "rss_no_live_sample"
             except (OSError, ValueError, subprocess.SubprocessError) as error:
-                rss["detail"] = str(error)
+                rss["detail"] = type(error).__name__
                 reason = "rss_monitor_unavailable"
         cleanup_started = time.monotonic()
         if reason:
@@ -281,7 +278,7 @@ def run(argv: list[str] | None = None) -> int:
             **(rss if args.rss_limit_bytes is not None else {}),
         }
         if reason:
-            _diagnostics(args.diagnostics, payload)
+            _diagnostics(args.diagnostics, payload, group=process.pid)
             return 124
         if args.rss_limit_bytes is not None:
             args.diagnostics.mkdir(parents=True, exist_ok=True)
@@ -312,6 +309,7 @@ def run(argv: list[str] | None = None) -> int:
                 "termination_elapsed_seconds": time.monotonic() - cleanup_started,
                 **(rss if args.rss_limit_bytes is not None else {}),
             },
+            group=process.pid,
         )
         raise
     finally:

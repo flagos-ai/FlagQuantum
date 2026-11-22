@@ -186,3 +186,35 @@ Strict Linux-target mypy passes three Python files, and Black, Ruff, English and
 documentation-link checks pass. These local selections do not certify the full
 repository or real GPU measurement window. Full-source CI must run on this
 revision.
+
+
+## Failure-path diagnostics
+
+The existing watchdog failure snapshot now uses the same minimized collector.
+It no longer requests a host-wide command-line inventory, compute-process GPU
+UUIDs or host-wide kernel stacks. `processes.log` and `gpu.log` retain only the
+validated owned process/GPU observations and explicit status fields. The snapshot
+also retains safe numeric load and affinity observations in
+`hardware-snapshot.jsonl`. Prelaunch failures record that no command was started;
+secondary snapshot failures retain their error class without replacing the
+original watchdog verdict. RSS accounting error details likewise retain classes
+instead of raw exception messages.
+
+`rank-stacks.log` explicitly states that kernel stacks and command lines are not
+automatically collected. This is a diagnostic limitation, not evidence of clean
+collectives or an idle host. Cleanup, timeout and RSS acceptance assertions are
+unchanged. A negative test covers both live-group and prelaunch snapshots and
+rejects injected identifiers, private stderr and unrelated process IDs from every
+written artifact.
+
+The first combined local run of this revision passed 65 tests and failed the
+existing orphan-cleanup test because the sandbox denied `ps` and process-group
+signaling. The test and thresholds remain unchanged; this is a permission failure,
+not a passing combined selection.
+
+With the required process-accounting and child-signaling permissions available,
+the unchanged sparse default tier passes all 66 tests, including 17 telemetry
+cases. Strict Linux-target mypy passes all three Python files; Black, Ruff,
+English, links and whitespace checks pass. This resolves the local permission
+limitation for this run without weakening cleanup. Full-source Linux CI and
+workload-overlapping GPU evidence remain separate requirements.
