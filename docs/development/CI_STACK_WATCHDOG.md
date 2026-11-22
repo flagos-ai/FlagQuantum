@@ -163,3 +163,20 @@ inside its own record, preserving the repository revision-field vocabulary.
 A Git-object walk of all 1,001 tracked JSON evidence artifacts, substituting the
 changed working artifact, matches all 20 declared revision field names. This
 checks vocabulary only; full provenance and exact-head CI remain separate gates.
+
+
+## Integration with isolated source staging
+
+The branch synchronizes main `d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277`,
+including the isolated source-pack producer fix. The unchanged watchdog and
+source-artifact regression files pass together: 38 tests, including the two
+real xdist workers and the full/incremental source round trips. No watchdog
+implementation, diagnostic interval or scientific acceptance changes in this
+synchronization.
+
+The first local invocation found the source-artifact test missing from sparse
+checkout and collected nothing. After restoring that tracked file, 37 tests
+passed and the xdist child failed because this local environment lacked its
+xdist import path. Supplying the existing cached xdist and execnet dependencies
+produced the 38-pass run. No test was skipped or changed to mask those setup
+failures. Full Linux exact-head CI is still required.
