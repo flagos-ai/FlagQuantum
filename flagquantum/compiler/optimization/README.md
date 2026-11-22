@@ -41,3 +41,6 @@ python -m pytest -q tests/hybrid_compiler/test_passes.py tests/unit/test_compile
 
 The example checks numerical equivalence and the recorded optimization level.
 The tests exercise analyses, admitted passes, convergence, and failure behavior.
+
+The [shared CZ synthesis experiment](../../../docs/development/COMPILER_SHARED_CZ_SYNTHESIS.md)
+was withdrawn after failing its fixed complete-workflow resource admission.
