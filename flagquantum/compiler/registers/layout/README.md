@@ -36,3 +36,10 @@ python -m pytest tests/unit/test_register_signature.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+`component_word_views.gather_word_binding` assembles requested views of existing
+owned words. It reuses an exact word, splits intersecting words when necessary,
+casts single-bit views and rejoins only the requested positions. Allocation stays
+with the caller. Scaled phase addition uses this source-ordered path, including
+repeated whole-word access and overlapping shorter slices. Run the phase-gradient
+and variable-rotation decomposition tests to verify view graphs and execution.

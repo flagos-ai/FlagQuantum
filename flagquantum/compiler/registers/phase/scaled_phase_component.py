@@ -8,12 +8,11 @@ from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import (
     fixed_point_register_type,
-    quantum_bit_type,
 )
 from ....core.ir.program.registers import RegisterType
 from ..arithmetic.addition_component import addition_component_program
 from ..component_builder import ComponentProgramBuilder
-from ..layout.component_cast import cast_word_function
+from ..layout.component_word_views import gather_word_binding
 from .phase_addition import source_phase_add_signature
 from .scaled_phase_addition import scaled_phase_add_terms
 
@@ -78,8 +77,9 @@ def scaled_phase_add_program(
 ) -> ProgramRecord:
     """Call each source slice in coefficient-bit order, preserving all other bits.
 
-    The input fractional metadata is retained. Temporary views use Cast in
-    both directions. Each atomic addition owns its own clean carry lifetime.
+    The input fractional metadata is retained. Existing whole-word views are
+    reused, with Split, Cast and Join emitted only when a new slice is needed.
+    Each atomic addition owns its own clean carry lifetime.
     """
     terms = scaled_phase_add_terms(
         input_width,
@@ -97,16 +97,14 @@ def scaled_phase_add_program(
     )
     x, phase = builder.inputs["x"], builder.inputs["phase_grad"]
     assert isinstance(x, RegisterBinding)
-    bits = builder.split(x)
+    indices = tuple(range(input_width))
+    words = {indices: x}
     for part, shift in terms:
-        width = len(bits[part])
-        fraction = fixed_point_register_type(width, width)
-        word = bits[part][0] if width == 1 else builder.join(bits[part])
-        source = quantum_bit_type() if width == 1 else RegisterType("opaque", width)
-        cast = cast_word_function("slice_cast", source, fraction)
-        word = builder.call_program(
-            ProgramRecord((cast,)), {"reg": word}, entry=cast.name
-        )["reg"]
+        wires = indices[part]
+        width = len(wires)
+        word = gather_word_binding(
+            builder, words, wires, fixed_point_register_type(width, width)
+        )
         result = builder.call_program(
             phase_add_component_program(
                 width,
@@ -116,11 +114,9 @@ def scaled_phase_add_program(
             ),
             {"x": word, "phase_grad": phase},
         )
-        cast = cast_word_function("slice_uncast", fraction, source)
-        word = builder.call_program(
-            ProgramRecord((cast,)), {"reg": result["x"]}, entry=cast.name
-        )["reg"]
-        assert isinstance(word, RegisterBinding)
-        bits[part] = [word] if width == 1 else builder.split(word)
+        returned = result["x"]
+        assert isinstance(returned, RegisterBinding)
+        words[wires] = returned
         phase = result["phase_grad"]
-    return builder.finalize({"x": builder.join(bits, dtype), "phase_grad": phase})
+    x = gather_word_binding(builder, words, indices, dtype)
+    return builder.finalize({"x": x, "phase_grad": phase})
