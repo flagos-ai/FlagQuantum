@@ -16,3 +16,9 @@ python -m pytest tests/unit/test_uniform_preparation.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+`uniform_preparation_component.uniform_preparation_program` retains complete
+uniform source calls and explicit exact adjoints. The shared comparison and
+conjunction owners retain their own cleanup. Stored multi-control Hadamards use
+source predicate work. Run `tests/unit/test_uniform_preparation_component.py`
+for complete source graphs, small complex operators and raw measurement histories.
