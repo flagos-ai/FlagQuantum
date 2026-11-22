@@ -110,3 +110,64 @@ whitespace checks pass. The environment receipt verifies the actual Kickmix
 immutable inventory. FixedWidthInt and word_ops remain independent open source
 parents; this batch accepts their polynomial conversion and parse dependency
 edges only. The full G2 acceptance remains open.
+
+## Complete uint64 bit-length dependency
+
+K-0289 (`util/bit.h`, blob
+`ea1c426299ab2ed0a7da662f629b133a106228e2`) and K-0290
+(`util/bit.test.cc`, blob `ead0a4db46236891ee1304a5b0e5ee99a7aa6ce1`)
+are the complete unsigned 64-bit length dependency. Both immutable source blobs
+were checked against the original inventory. The only source definition is
+`bit_length(uint64_t)`. It returns zero for zero and the highest set-bit position
+plus one otherwise, using descending 32/16/8/4/2/1-bit tests.
+
+Existing native `int.bit_length()` supplies that exact value throughout the
+source uint64 domain. Core `_binary_polynomial`, `_binary_matrix` and
+`_binary_field_modulus` already consume this builtin. Their accepted parsing,
+capacity, construction and physical field consumers remain authoritative. There
+is no additional production helper, wrapper, representation or circuit schedule.
+Native arbitrary-width integer callers keep their existing wider domain.
+
+The unchanged original `bit.bit_length` C++ test passes against the original
+header. Its full assertions cover zero through seventeen, every power-of-two
+boundary from two through sixty-three and seven alternating-bit examples. A
+separate compiled original-header driver matches all 5,282 native values from
+zero through 1,023, all 64-bit power boundaries, the maximum uint64 value and
+4,096 deterministic random words. This is sampled evidence across the domain,
+with all power boundaries included. The exact algorithm and builtin semantics
+establish the general correspondence.
+
+The probe's deterministic request set is reproduced below. Each requested word
+is passed as a decimal uint64 to a C++ driver including the unchanged `bit.h`.
+The driver emits `unsigned(kickmix::bit_length(value))`. The complete receipt is
+`ftqc-reference-env/g2-bit-length-intake-20261122.json` in the shared evidence
+workspace. Original C++ test output is retained alongside it.
+
+```python
+import random
+
+rng = random.Random(289)
+values = sorted(
+    {
+        *range(1024),
+        *(
+            min((1 << 64) - 1, (1 << k) + delta)
+            for k in range(64)
+            for delta in (-1, 0, 1)
+            if (1 << k) + delta >= 0
+        ),
+        *(rng.getrandbits(64) for _ in range(4096)),
+        (1 << 64) - 1,
+    }
+)
+expected = [value.bit_length() for value in values]
+```
+
+The shared scalar utility emits zero physical primitives, measurements and
+workspace and declares no analytical circuit formula. Full complex-amplitude,
+measured cleanup and resource evidence remains with the accepted field/lookup
+execution owners. Their 530 finite-field and 499 lookup concentrated checks,
+plus the 29 integration checks, are reused from the same verified branch.
+Only this definition mapping and evidence record changes in the dependency
+closure commit. FixedWidthInt, word operations and phase-angle whole-file
+boundaries remain separately open.
