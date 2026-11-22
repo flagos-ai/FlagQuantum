@@ -176,3 +176,20 @@ It does not retain emitted operations for a fresh offline replay. No complete
 application quality screen or general semantic certification followed this early
 resource rejection. Neither the pilot implementation nor its implementation-
 specific translation-count assertion remains in executable repository code.
+
+A subsequent [diagnostic profile](evidence/native-cost-current-profile.json)
+records one production and one experimental execution of each control on the
+unchanged integration above. All six independent acceptances pass. Each of the
+two six-wire experimental executions calls native route selection three times
+and preview realization six times. The twelve-wire experimental execution never
+enters native route selection or preview realization: completed-trial filtering
+has no alternative to evaluate. A preview-only optimization cannot improve that
+control; its small timing difference does not establish an effect of the pilot.
+This is a limitation of the attempted scope, not a reason to waive the fixed gate.
+
+All six profiles also record 70 complete IR content-hash calculations. These
+counts identify repeated work to investigate; they do not establish which
+validation can safely be shared. Independent replay and mutable-content checks
+remain necessary. The profile ran alongside repository-hygiene tests. Its timing
+fields include profiling overhead and shared-host load, and cumulative times
+overlap; use the call counts for diagnosis, not those times as latency evidence.
