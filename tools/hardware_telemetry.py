@@ -48,7 +48,10 @@ def record_sample(destination: Path, group: int, started: float) -> None:
     for name, command in _COMMANDS.items():
         try:
             result = subprocess.run(
-                command, text=True, capture_output=True, timeout=0.25
+                command,
+                text=True,
+                capture_output=True,
+                timeout=0.5 if name == "gpu" else 0.25,
             )
         except (OSError, UnicodeError, subprocess.SubprocessError) as error:
             observations[f"{name}_error"] = f"{type(error).__name__}: {error}"

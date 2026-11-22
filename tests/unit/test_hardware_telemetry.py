@@ -24,7 +24,8 @@ def test_samples_retain_clocks_load_and_owned_affinity(
     def probe(
         command: tuple[str, ...], *, text: bool, capture_output: bool, timeout: float
     ) -> subprocess.CompletedProcess[str]:
-        assert text and capture_output and timeout == 0.25
+        assert text and capture_output
+        assert timeout == (0.5 if command[0] == "nvidia-smi" else 0.25)
         output = (
             "index, uuid, pstate, clocks.current.sm\n0, GPU-test, P0, 1200\n"
             if command[0] == "nvidia-smi"

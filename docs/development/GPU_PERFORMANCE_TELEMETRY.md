@@ -29,8 +29,9 @@ collection duration and the owned process-group ID. The sources are:
   host 1/5/15-minute load averages. Neither value is an exclusive-host proof.
 
 The watchdog requests the first sample during command execution and subsequent
-samples one second after the preceding collection ends. Each of the two
-external probes has a 250 ms timeout. Sampling is synchronous and may delay
+samples one second after the preceding collection ends. The GPU query has a
+500 ms timeout and the process query a 250 ms timeout. Sampling is synchronous
+and may delay
 watchdog polling by up to their combined timeout plus local accounting/I/O;
 existing hard and no-output budgets are unchanged. Collection timestamps and
 durations expose the actual gaps rather than promising an exact 1 Hz cadence.
@@ -85,7 +86,6 @@ explicit, and command outcomes, deadlines, cleanup and the original benchmark
 budgets remain enforced. Real Linux/NVIDIA time-series evidence is still
 required before attributing any variance failure or promoting performance.
 
-
 ## Verification scope
 
 Eleven new tests pass, including command failure propagation, timeout cleanup,
@@ -112,3 +112,45 @@ type-check invocations exposed duplicate module naming and macOS-only stub
 selection for the Linux affinity call; the checker options now state the actual
 module and OS context rather than suppressing errors. Full-source Linux CI and
 real GPU diagnostic records remain required before integration or attribution.
+
+## Read-only A800 query compatibility
+
+A subsequent [host probe](evidence/gpu-telemetry-query-compatibility.json)
+executed the exact GPU/process query arguments three times on the Linux A800
+host used by the two-GPU lane. All six probes succeeded. GPU query durations
+were 229.692, 220.468 and 198.093 ms; process queries were 74.720, 77.870 and
+77.094 ms. GPU source answers include all requested columns and eight devices;
+process accounting returned 2,593 rows.
+
+These GPU durations leave little margin under the original 250 ms diagnostic
+probe limit. The GPU probe now has a 500 ms bound; the process probe keeps its
+250 ms bound. This changes no workload deadline or performance threshold.
+Synchronous observation can consequently occupy up to 750 ms in external probes,
+plus local accounting/I/O, before watchdog polling resumes. Actual collection
+durations remain recorded. The three successful probes do not guarantee that
+every future query will meet either bound.
+
+The probe only read host state. It allocated no quantum workload and changed no
+clock, affinity, power, kernel, driver or service settings. Its caller affinity
+and load refer to the SSH inspection process and observation time, not to any
+benchmark rank. Device idleness at that endpoint is not evidence about previous
+failures or the future measurement window. Actual benchmark-overlapping GPU
+telemetry remains a separate requirement. The public archive retains query timings, status, row counts and the source
+answer digest. The original answer is retained privately; device identifiers,
+process inventories, affinity and host load are omitted from the public evidence.
+
+The exact modified collector also ran in a separate bounded read-only Linux
+probe. Three streamed observations completed in 331.541, 329.874 and
+325.387 ms, at offsets approximately 0, 1.335 and 2.669 seconds. Each contained
+nine GPU CSV lines, 2,562 process rows and three owned-affinity entries, with
+no reported probe-error/diagnostic fields. The temporary directory was removed
+on exit. The archive retains the exact driver, source digest and a summary with internal
+host observations omitted;
+raw temporary process inventories are not retained, so this is compatibility
+inspection rather than complete raw hardware benchmark evidence. It did not run
+the quantum workload or the watchdog itself.
+
+After the diagnostic-bound correction, the telemetry and existing GPU workflow
+policy selection passes 38 tests. Existing sparse default-tier and local sandbox
+limitations above remain unresolved; this focused result does not supersede
+them.
