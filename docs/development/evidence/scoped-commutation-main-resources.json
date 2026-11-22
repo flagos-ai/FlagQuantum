@@ -1,0 +1,2792 @@
+{
+  "scope": "First exact-main inspected resource control; no formal cgroup/RSS, significance or latency-ranking claim",
+  "implementation_commit": "e06fea47e6216f689ca750d9b353f75184baf150",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "quality_observation_sha256": "eacede663fd408a3d7665d9b6390de2cb3416f66622bc9bf95fdd1ec40ac84f2",
+  "warmups": 2,
+  "retained_rounds": 9,
+  "order": "alternating baseline/candidate per round",
+  "source_sha256": "8cc6c5c2f4f2884ed74ee5e5c300c007368df1ea9dd90c032d72ba70133a0070",
+  "source": "import gc,hashlib,json,statistics,subprocess,sys,time,tracemalloc,types\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nfrom contextlib import nullcontext\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom flagquantum.compiler.optimization import pipeline,commutation,commutation_cancellation,pass_registry\nCANDIDATE_SCOPE=pipeline._reuse_commutation_analysis\nCANDIDATE_ANALYSIS=commutation.analyze_commutation\nBASE='5b9cf3878664393e8667ca175ec8669f37fb3bc9'\nbaseline_source=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/commutation.py'],text=True,timeout=20)\nold=types.ModuleType('flagquantum.compiler.optimization._exact_main_commutation');old.__package__='flagquantum.compiler.optimization';sys.modules[old.__name__]=old;exec(compile(baseline_source,'<exact-main-commutation>','exec'),old.__dict__)\nroot=Path.cwd();manifest=json.loads(Path('/private/tmp/fq-compile-scoped-commutation-inspected-manifest.json').read_text());raw=Path('/private/tmp/fq-compile-scoped-commutation-inspected.json').read_bytes();quality=json.loads(raw)\nassert not subprocess.check_output(['git','diff',manifest['implementation_commit'],'HEAD','--','flagquantum'],text=True,timeout=20).strip()\nassert hashlib.sha256((root/'flagquantum/compiler/optimization/commutation.py').read_bytes()).hexdigest()==manifest['files_sha256']['flagquantum/compiler/optimization/commutation.py']\nassert quality['completed'] and quality['implementation_commit']==manifest['implementation_commit']\nreference={(r['case'],r['workflow'],r['variant']):r for r in quality['rows']}\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\nprotocol=(root/'docs/development/COMPILER_SCOPED_COMMUTATION_REUSE_RESULTS.md').read_text()\nout=Path('/private/tmp/fq-compile-scoped-commutation-main-resources.json');assert not out.exists()\nreport={'scope':'First exact-main inspected resource control; no formal cgroup/RSS, significance or latency-ranking claim','implementation_commit':manifest['implementation_commit'],'source_commit':manifest['source_commit'],'quality_observation_sha256':hashlib.sha256(raw).hexdigest(),'warmups':2,'retained_rounds':9,'order':'alternating baseline/candidate per round','source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'source':Path(__file__).read_text(),'protocol_sha256':hashlib.sha256(protocol.encode()).hexdigest(),'protocol_source':protocol,'completed':False,'rows':[],'base_commit':BASE,'baseline_source_sha256':hashlib.sha256(baseline_source.encode()).hexdigest()}\ndef save(first=False):\n data=json.dumps(report,indent=2)+'\\n'\n if first:\n  with out.open('x') as stream:stream.write(data)\n else:\n  temporary=out.with_suffix('.pending');temporary.write_text(data);temporary.replace(out)\nsave(first=True)\nfor width,family,topology in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n source=fixture(width,family,topology,manifest['input_nonce']);identity=f'{width:02d}/{family}/{topology}'\n for workflow in ('flagquantum-ordinary-restored','flagquantum-target-artifact'):\n  config=workflow_configuration(workflow);assert config==manifest['configurations'][workflow]\n  def run(variant,trace=False):\n   adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':workflow,'compiler_options':config}}))\n   scope=nullcontext if variant=='baseline' else CANDIDATE_SCOPE\n   analysis=old.analyze_commutation if variant=='baseline' else CANDIDATE_ANALYSIS\n   with patch.object(pipeline,'_reuse_commutation_analysis',scope),patch.object(commutation,'analyze_commutation',analysis),patch.object(commutation_cancellation,'analyze_commutation',analysis),patch.object(pass_registry,'analyze_commutation',analysis):\n    if trace:tracemalloc.start()\n    try:\n     started=time.perf_counter();payload=adapter.execute('route',source,11);elapsed=time.perf_counter()-started\n     peak=tracemalloc.get_traced_memory()[1] if trace else None\n    finally:\n     if trace:tracemalloc.stop()\n   return payload,elapsed,peak,dict(adapter.audit)\n  verified=[]\n  def verify(variant,payload,audit,phase,iteration):\n   normalized=json.dumps({k:payload[k] for k in ('operations','final_layout')},sort_keys=True,separators=(',',':'),allow_nan=False)\n   observed=hashlib.sha256(normalized.encode()).hexdigest();prior=reference[identity,workflow,variant]\n   assert observed==prior['payload_sha256'] and audit==prior['audit']\n   assert payload['final_layout']==list(range(width))\n   verified.append({'variant':variant,'phase':phase,'iteration':iteration,'payload_sha256':observed,'audit':audit,'matched_quality':True})\n  for iteration in range(2):\n   for variant in ('baseline','candidate'):\n    payload,_,_,audit=run(variant);verify(variant,payload,audit,'warmup',iteration)\n  samples={v:[] for v in ('baseline','candidate')};payloads={};audits={}\n  for iteration in range(9):\n   for variant in (('baseline','candidate') if iteration%2==0 else ('candidate','baseline')):\n    payload,elapsed,_,audit=run(variant);verify(variant,payload,audit,'timed',iteration);samples[variant].append(elapsed);payloads[variant]=payload;audits[variant]=audit\n  peaks={}\n  for variant in ('baseline','candidate'):\n   gc.collect();traced,_,peaks[variant],traced_audit=run(variant,trace=True);verify(variant,traced,traced_audit,'traced',0)\n  metrics={};hashes={}\n  for variant,payload in payloads.items():\n   normalized=json.dumps({k:payload[k] for k in ('operations','final_layout')},sort_keys=True,separators=(',',':'),allow_nan=False)\n   hashes[variant]=hashlib.sha256(normalized.encode()).hexdigest();prior=reference[identity,workflow,variant]\n   assert hashes[variant]==prior['payload_sha256'] and audits[variant]==prior['audit']\n   metrics[variant]=routing(payload,source,None,bundle.cases[f'ROUTE-LINE-{width:02d}'],0)\n   assert metrics[variant]==prior['metrics'] and payload['final_layout']==list(range(width))\n  medians={v:statistics.median(s) for v,s in samples.items()}\n  row={'case':identity,'workflow':workflow,'samples_seconds':samples,'medians_seconds':medians,'candidate_baseline_ratio':medians['candidate']/medians['baseline'],'compiler_stage_python_peak_bytes':peaks,'metrics':metrics,'payload_sha256':hashes,'audit':audits,'sample_verification':verified}\n  assert len(verified)==24\n  row['admission_passed']=(row['candidate_baseline_ratio']<=1.05 and peaks['candidate']<=1.10*peaks['baseline'] and peaks['candidate']<=peaks['baseline']+128*1024)\n  report['rows'].append(row);save();print(json.dumps({k:v for k,v in row.items() if k!='samples_seconds'}),flush=True)\nreport['completed']=True;report['ordinary_speed_gate_count']=sum(row['workflow']=='flagquantum-ordinary-restored' and row['candidate_baseline_ratio']<=0.95 for row in report['rows']);report['admission_passed']=(all(row['admission_passed'] for row in report['rows']) and report['ordinary_speed_gate_count']>=2);save()\n",
+  "protocol_sha256": "7b09f0517d2435a9534a5967c3c81e1caf4ede9733fca14fc1b5e529c2ec9b93",
+  "protocol_source": "# Compilation-scoped commutation reuse results\n\nOwner: Compiler. Classification: `single_device_fast_path`.\n\nThe implementation and protocol were published at\n`e06fea47e6216f689ca750d9b353f75184baf150` before either draw.\nAll 480 observations pass unchanged SDKBench acceptance: 160 complete operators\nand 320 limited three-probe checks. Every paired output, audit and returned\nmetric matches exactly. Both complete archives retain original compile times,\nsource pins, nonces, configuration, failures and hashed normalized payloads.\n\nThe first resource experiment passes its frozen development controls. Ordinary\nQFT6/grid, repetition6/ring and QFT12/grid median ratios are respectively\n0.927109, 0.965032 and 0.940522. The three target-artifact ratios are 0.992724,\n0.997683 and 0.993580. All allocation observations pass the explicit limits.\nThese nine-sample shared-host diagnostics establish no significance or ranking.\nRetain all 144 individually checked warmup, timed and traced payloads and the\noriginal driver/protocol in the resource archive.\n\n## Exact-main resource control declaration\n\nThe initial control disables the candidate's private scope, preserving the new\nstandalone analysis wrapper in both variants. It isolates reuse, but is not an\nexact execution of integrated main: even the disabled-scope baseline pays for a\nContextVar lookup and an additional wrapper call. Do not present its speedup\nratios as exact-main speedup or sufficient production admission evidence.\n\nDeclare one distinct follow-up before its execution. Load main\n`5b9cf3878664393e8667ca175ec8669f37fb3bc9`'s complete unchanged commutation\nmodule and substitute its analyze function at all three consumers, disabling the\nprivate scope. Compare that with the published candidate using its analysis and\nscope, with equal patch lifetimes and fresh adapters. Do not change production\ncode, source pins, SDKBench acceptance, cases or thresholds. This is a different\nbaseline required for fair main comparison, not a favorable rerun of the first\nexperiment. Retain both controls regardless of outcome.\n\nUse the same six fixed inspected case/workflow pairs, two warmups, nine\nalternating samples and one traced peak per variant; verify all 144 execution\noutputs/audits outside timing and independently accept the final timed outputs.\nFreeze the driver hash before the sole follow-up run. Use one numerical thread,\n240-second process-group budget and no simultaneous tests. Candidate medians\nmust be at most 0.95 times exact-main in at least two ordinary cases, no control\nmay exceed 1.05, and each traced peak must be within both 1.10 times baseline\nand 128 KiB above it. If this exact-main control fails, withdraw the executable\ncandidate and retain its exact patch and all observations. Do not tune, loosen\nthresholds or rerun for a better median.\n\nFormal Linux qualification remains deferred. No machine or service is restarted.\n",
+  "completed": true,
+  "rows": [
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "samples_seconds": {
+        "baseline": [
+          0.007663791999220848,
+          0.007666332996450365,
+          0.007669125043321401,
+          0.007513332995586097,
+          0.007658416987396777,
+          0.0075349160470068455,
+          0.007575790979899466,
+          0.0077277919626794755,
+          0.007440458983182907
+        ],
+        "candidate": [
+          0.007097165973391384,
+          0.007090083963703364,
+          0.0071411250391975045,
+          0.006999916979111731,
+          0.007083625008817762,
+          0.006855791958514601,
+          0.007034165959339589,
+          0.006885000038892031,
+          0.00697770802071318
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.007658416987396777,
+        "candidate": 0.007034165959339589
+      },
+      "candidate_baseline_ratio": 0.918488242533085,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 472366,
+        "candidate": 478897
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 1.6172982426630268e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.6172982426630268e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+        "candidate": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    },
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "samples_seconds": {
+        "baseline": [
+          0.1024104580283165,
+          0.10750179103342816,
+          0.08833983296062797,
+          0.09095266700023785,
+          0.0888607919914648,
+          0.11084675003075972,
+          0.08933158300351351,
+          0.08935391699196771,
+          0.10474491701461375
+        ],
+        "candidate": [
+          0.08808445901377127,
+          0.08782549999887124,
+          0.08814170904224738,
+          0.10517887503374368,
+          0.10343033296521753,
+          0.08892362494952977,
+          0.09075816697441041,
+          0.10523208399536088,
+          0.09000874997582287
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.09095266700023785,
+        "candidate": 0.09000874997582287
+      },
+      "candidate_baseline_ratio": 0.9896218873448481,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 2198358,
+        "candidate": 2198292
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 1.3536401981886357e-15,
+          "full_cz_count": 65,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3536401981886357e-15,
+          "full_cz_count": 65,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+        "candidate": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 87,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 14099
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 87,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 14099
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    },
+    {
+      "case": "06/repetition/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "samples_seconds": {
+        "baseline": [
+          0.006352166994474828,
+          0.006289000040851533,
+          0.0064084159675985575,
+          0.006362791988067329,
+          0.0062930420390330255,
+          0.006314083002507687,
+          0.006218708993401378,
+          0.006343165994621813,
+          0.0067968330113217235
+        ],
+        "candidate": [
+          0.006009124976117164,
+          0.006182832992635667,
+          0.006045875023119152,
+          0.006100542028434575,
+          0.006072374992072582,
+          0.006037458952050656,
+          0.006043792003765702,
+          0.00596875004703179,
+          0.006137916992884129
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.006343165994621813,
+        "candidate": 0.006045875023119152
+      },
+      "candidate_baseline_ratio": 0.9531320839223306,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 552760,
+        "candidate": 565196
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 1.1338721664964554e-14,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 59,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1338721664964554e-14,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 59,
+          "verification": "full-operator"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+        "candidate": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    },
+    {
+      "case": "06/repetition/ring",
+      "workflow": "flagquantum-target-artifact",
+      "samples_seconds": {
+        "baseline": [
+          0.1160702919587493,
+          0.11517383297905326,
+          0.09976912499405444,
+          0.1017137499875389,
+          0.11751499999081716,
+          0.1163434999762103,
+          0.11840637499699369,
+          0.11622908303979784,
+          0.10098041704623029
+        ],
+        "candidate": [
+          0.10182366601657122,
+          0.11450575001072139,
+          0.11713554197922349,
+          0.11603629199089482,
+          0.11712800001259893,
+          0.1017346250009723,
+          0.10502783302217722,
+          0.1167477080016397,
+          0.11469383299117908
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.1160702919587493,
+        "candidate": 0.11469383299117908
+      },
+      "candidate_baseline_ratio": 0.9881411604611161,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 2566909,
+        "candidate": 2566859
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 6.761659273861517e-15,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 57,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 6.761659273861517e-15,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 57,
+          "verification": "full-operator"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+        "candidate": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 19996
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 19996
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 19996
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    },
+    {
+      "case": "12/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "samples_seconds": {
+        "baseline": [
+          0.029381582979112864,
+          0.030766290961764753,
+          0.030306458997074515,
+          0.02950541698373854,
+          0.029407208028715104,
+          0.030468416051007807,
+          0.029795666981954128,
+          0.02950212499126792,
+          0.029484083002898842
+        ],
+        "candidate": [
+          0.027637709048576653,
+          0.02809516596607864,
+          0.027745582978241146,
+          0.04424816701794043,
+          0.027566457982175052,
+          0.027582457987591624,
+          0.02757174998987466,
+          0.04306479200022295,
+          0.02774595801020041
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.02950541698373854,
+        "candidate": 0.027745582978241146
+      },
+      "candidate_baseline_ratio": 0.9403555622865014,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 2116779,
+        "candidate": 2135036
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 7.44667872519771e-15,
+          "full_cz_count": 408,
+          "two_body_dependency_depth": 191,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.44667872519771e-15,
+          "full_cz_count": 408,
+          "two_body_dependency_depth": 191,
+          "verification": "three-probes-only"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+        "candidate": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "41e9c50b29fd869acc38be5823fe2f1cb2b5ac14cdef8e87a6cb6370ece720ae",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "restoration_swaps": 0,
+            "restoration_cz_count": 0,
+            "restoration_operations": 0
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    },
+    {
+      "case": "12/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "samples_seconds": {
+        "baseline": [
+          0.5552895829896443,
+          0.5541170419892296,
+          0.5568186250166036,
+          0.5434870420140214,
+          0.5638385420315899,
+          0.5639916670043021,
+          0.5845279159839265,
+          0.5582131660194136,
+          0.568230458011385
+        ],
+        "candidate": [
+          0.5406195419491269,
+          0.5702727499883622,
+          0.5604879170423374,
+          0.5606061659636907,
+          0.5733963749953546,
+          0.5571999580133706,
+          0.5674960410105996,
+          0.5581251250114292,
+          0.5632229999755509
+        ]
+      },
+      "medians_seconds": {
+        "baseline": 0.5582131660194136,
+        "candidate": 0.5606061659636907
+      },
+      "candidate_baseline_ratio": 1.0042868926961028,
+      "compiler_stage_python_peak_bytes": {
+        "baseline": 10118879,
+        "candidate": 10118779
+      },
+      "metrics": {
+        "baseline": {
+          "max_semantic_error": 1.3843020324286894e-14,
+          "full_cz_count": 352,
+          "two_body_dependency_depth": 150,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3843020324286894e-14,
+          "full_cz_count": 352,
+          "two_body_dependency_depth": 150,
+          "verification": "three-probes-only"
+        }
+      },
+      "payload_sha256": {
+        "baseline": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+        "candidate": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6"
+      },
+      "audit": {
+        "baseline": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 432,
+          "accepted_block_rewrites": 38,
+          "serialized_artifact_bytes": 67040
+        },
+        "candidate": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 432,
+          "accepted_block_rewrites": 38,
+          "serialized_artifact_bytes": 67040
+        }
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "matched_quality": true
+        }
+      ],
+      "admission_passed": true
+    }
+  ],
+  "base_commit": "5b9cf3878664393e8667ca175ec8669f37fb3bc9",
+  "baseline_source_sha256": "db959a39468679e74b0bc4d15e81f8da33751add96b7b0bd4fcda821778be568",
+  "ordinary_speed_gate_count": 2,
+  "admission_passed": true
+}
