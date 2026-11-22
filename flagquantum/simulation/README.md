@@ -983,3 +983,18 @@ Run `tests/unit/test_physical_operation_counters.py` for native execution
 replacement, cumulative/clear ownership, the complete frozen binding's lane
 projections and all small feedback/erasure branches through circuit.append(op).
 Source objects remain confined to fixture generation.
+
+### Packed physical scalar lanes
+
+`_packed_word` owns numerical operations over the existing unsigned packed
+integers. It provides lane packing, extraction, wraparound addition, shifts,
+uint32 equality masks, bit updates, caller-owned random draws and diagnostics.
+`physical_basis_rng` and `_packed_chacha` reuse it through their existing entry
+paths. Physical record construction remains in Compiler. No packed value class
+or alternate circuit execution loop is introduced.
+
+Run `tests/unit/test_physical_packed_word.py`, `test_packed_chacha.py` and
+`test_kmx_spin_command.py` for the shortest contribution path. The complete
+source mapping, compiler-specific SSE draw order, architecture evidence and
+AVX source-gate gaps are in
+`docs/development/PHYSICAL_PACKED_WORD_AUDIT.md`.

@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 
+from ._packed_word import broadcast_u32, pack_lanes
+
 _U32 = (1 << 32) - 1
 
 
@@ -75,9 +77,8 @@ class PackedChaCha:
             type(word) is not int or not 0 <= word < 1 << self.width for word in seed
         ):
             raise ValueError("ChaCha seed words must fit their packed width")
-        broadcast = sum(1 << bit for bit in range(0, self.width, 32))
         constants = tuple(
-            value * broadcast
+            broadcast_u32(value, self.width)
             for value in (0x61707865, 0x3320646E, 0x79622D32, 0x6B206574)
         )
         return PackedChaCha(
@@ -94,13 +95,9 @@ class PackedChaCha:
             for offset in range(0, self.width, 32)
         ]
         blocks = [_block(lane, self.rounds) for lane in lanes]
-        state = tuple(
-            sum(lane[k] << (32 * index) for index, lane in enumerate(lanes))
-            for k in range(16)
-        )
+        state = tuple(pack_lanes((lane[k] for lane in lanes), 32) for k in range(16))
         buffer = tuple(
-            sum(block[k] << (32 * index) for index, block in enumerate(blocks))
-            for k in range(16)
+            pack_lanes((block[k] for block in blocks), 32) for k in range(16)
         )
         return PackedChaCha(self.width, self.rounds, state, buffer, 0)
 

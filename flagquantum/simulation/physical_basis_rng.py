@@ -7,6 +7,7 @@
 from collections.abc import Iterator
 
 from ._packed_chacha import PackedChaCha
+from ._packed_word import pack_lanes
 
 _U64 = (1 << 64) - 1
 
@@ -77,7 +78,7 @@ def packed_words(width: int) -> Iterator[int]:
     """Pack consecutive 64-bit draws in source lane order."""
     rng = _mt19937_64(0)
     while True:
-        yield sum(next(rng) << offset for offset in range(0, width, 64))
+        yield pack_lanes((next(rng) for _ in range(0, width, 64)), 64)
 
 
 def packed_chacha8(width: int, words: Iterator[int]) -> Iterator[int]:
