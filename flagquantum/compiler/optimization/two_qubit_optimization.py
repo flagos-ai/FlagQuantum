@@ -129,12 +129,6 @@ _FAMILIES: tuple[str, ...] = (
     "rzz",
 )
 
-# These declared gates are nonidentity at every placement. Their runtime matrices
-# are checked independently; only parameter-free, unoverridden inputs qualify.
-_FIXED_TWO_QUBIT = frozenset(
-    name for name in _FAMILIES if not OPERATOR_SCHEMAS[name].parameters
-)
-
 if (
     frozenset(_FAMILIES) != _DECLARED_TWO_QUBIT
 ):  # pragma: no cover - a schema edit trips this
@@ -522,12 +516,6 @@ def _is_foldable(instruction: Instruction) -> bool:
         and canonical_opcode(instruction.name) not in _FAMILIES
     ):
         return False
-    if (
-        instruction.matrix is None
-        and not instruction.params
-        and instruction.name in _FIXED_TWO_QUBIT
-    ):
-        return True
     return _instruction_matrix(instruction) is not None
 
 
@@ -619,14 +607,6 @@ def _replacement(
     if any(_has_small_component(item) for item in instructions):
         return None
 
-    if len(instructions) == 1:
-        instruction = instructions[0]
-        if (
-            instruction.matrix is None
-            and not instruction.params
-            and instruction.name in _FIXED_TWO_QUBIT
-        ):
-            return None
     product = _block_product(instructions, pair)
     if product is None:  # pragma: no cover - guarded by the caller
         return None

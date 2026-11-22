@@ -1,6 +1,10 @@
-# Lazy numerical validation for fixed two-qubit gates
+# Rejected lazy validation for fixed two-qubit gates
 
 Owner: Compiler. Classification: `single_device_fast_path`.
+
+**Rejected for insufficient complete-workflow benefit.** The production module
+is restored byte for byte to the declared main baseline. The candidate below is
+a historical experiment retained at its published freeze, not an enabled path.
 
 ## Requirement and implementation
 
@@ -95,3 +99,60 @@ Frozen control driver: `fq-fixed-two-qubit-control-20261122.py`, SHA-256
 `91e3ce2f9043966fcfd652b3adf145cff462dfd291000eea051fddf4acb8f5c6`.
 Producer-free replay: `fq-fixed-two-qubit-replay-20261122.py`, SHA-256
 `a3887c493abdae5716c71e60afedbf1daab80ec40bafb8310c1eea72e49dec73`. Both complete sources are embedded in their reports.
+
+
+## First outcome and withdrawal
+
+Published freeze: `00f73d4e26c74ad51986f5de989352401df1627e`.
+Both complete draws accept all 480 observations. All 240 paired output payloads
+and audits are identical. Fresh producer-free replay accepts all 480 again,
+with maximum residuals 6.072657351995283e-14 and 2.8335272960520905e-14
+against unchanged 1e-8. There are 160 full-operator observations and 320 limited
+three-probe observations. No improved CZ count, dependency depth or routing
+quality is established.
+
+The first and only resource observation validates all 144 warmup/timed/traced
+outputs, audits and metrics. All six nonregression and Python-memory gates pass,
+but **zero** ordinary workflows meet the required ratio at most 0.95. Admission
+therefore fails. No favorable rerun, changed threshold or case selection follows.
+The numerical singleton shortcut does not establish a useful end-to-end benefit
+on these declared workflows and does not resolve the draft controlled-gate
+extension's separate failed resource gate.
+
+| Input | Workflow | Baseline median ms | Candidate median ms | Candidate/baseline | Baseline Python peak bytes | Candidate Python peak bytes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 06/qft/grid | ordinary-restored | 7.140 | 7.247 | 1.014927 | 479867 | 478052 |
+| 06/qft/grid | target-artifact | 91.444 | 92.243 | 1.008735 | 2199094 | 2199078 |
+| 06/repetition/ring | ordinary-restored | 6.177 | 6.201 | 1.003906 | 565412 | 565254 |
+| 06/repetition/ring | target-artifact | 118.049 | 117.135 | 0.992260 | 2567421 | 2567371 |
+| 12/qft/grid | ordinary-restored | 28.438 | 28.504 | 1.002324 | 2136960 | 2130504 |
+| 12/qft/grid | target-artifact | 562.677 | 579.800 | 1.030430 | 10118164 | 10118214 |
+
+The production shortcut is withdrawn. The 36 retained behavioral tests exercise
+the unchanged public optimization behavior, including every fixed gate's
+nonidentity against independent runtime matrices, supplied-matrix mutation,
+parameter mutation, trainable/batched refusal and routing evidence preservation.
+The experiment-only assertion requiring zero internal matrix-reader calls is
+removed with the shortcut; this does not weaken any numerical acceptance.
+
+The [inspected index](evidence/fixed-two-qubit-inspected-screen.json) and
+[fresh index](evidence/fixed-two-qubit-fresh-screen.json) preserve every row,
+source/configuration/version/nonce pin, audit and original compile-wall value.
+Their hashed payload files reconstruct both complete raw reports byte for byte,
+preserving field order and original SHA-256. The
+[resource report](evidence/fixed-two-qubit-resources.json) retains all individual
+samples and checks. The [producer-free replay](evidence/fixed-two-qubit-replay.json)
+records its complete source and residuals. The reports embed the frozen protocol
+and runner source. Original raw reports remain distinct from this retrospective
+decision; no measured value is rewritten.
+
+Local sparse-checkout verification and exact-head CI must be reported separately.
+Formal Linux qualification, native-memory measurement, statistical significance,
+cross-SDK rank and global superiority remain unproven.
+
+After withdrawal, the sparse-checkout `smoke or unit or integration` selection
+passes all 387 tests. Strict Linux-targeted mypy passes for the complete
+production optimization module and retained test module. Ruff, Black, changed
+file language checks, Markdown links, revision-field vocabulary checks and
+`git diff --check` pass. Production source is byte-identical to the declared
+baseline. These checks are local evidence; full exact-head CI is outstanding.
