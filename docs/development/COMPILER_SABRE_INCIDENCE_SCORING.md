@@ -77,3 +77,33 @@ The next invocation routed its first warmup input but stopped while reading its
 content hash: the driver called the IR property as a method. No comparison or
 retained timing row completed. This driver error is also retained; using the
 property changes only observation plumbing.
+
+## First complete observations (2026-11-22)
+
+The published corrected driver at `e4df4fa5c20730f8ef38ddf1ada3c18d5f48a71e`
+completed once within its 600-second budget. The prior setup failures are not
+performance samples. Every timed and traced routed output matched its baseline
+content hash. Seven retained samples per variant and all failure logs are in
+[evidence/compiler-sabre-incidence.json](evidence/compiler-sabre-incidence.json).
+
+| Family | Wires | Baseline median ms | Candidate median ms | Time ratio | Traced peak ratio |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| fourier | 16 | 10.527 | 8.237 | 0.7825 | 1.0070 |
+| parity_ladder | 16 | 2.757 | 2.426 | 0.8801 | 1.0148 |
+| graph_cost | 16 | 12.731 | 9.947 | 0.7813 | 1.0052 |
+| matching_layers | 16 | 6.579 | 5.254 | 0.7986 | 1.0101 |
+| fourier | 24 | 37.209 | 28.725 | 0.7720 | 1.0000 |
+| parity_ladder | 24 | 8.728 | 7.251 | 0.8308 | 1.0070 |
+| graph_cost | 24 | 33.700 | 25.778 | 0.7649 | 1.0000 |
+| matching_layers | 24 | 17.482 | 13.360 | 0.7642 | 1.0050 |
+| fourier | 32 | 85.737 | 65.705 | 0.7664 | 1.0000 |
+| parity_ladder | 32 | 18.004 | 14.824 | 0.8233 | 1.0000 |
+| graph_cost | 32 | 70.235 | 54.489 | 0.7758 | 1.0000 |
+| matching_layers | 32 | 44.388 | 34.534 | 0.7780 | 1.0033 |
+
+Median of case time ratios: 0.7797. Worst traced peak ratio: 1.0148.
+All declared performance gates passed on this local development observation.
+The result measures complete explicit SABRE routing, including evidence and
+materialization, rather than the whole automatic compiler or native lowering.
+No dedicated-host, process-memory or inter-SDK performance claim is made.
+Required regression tiers and exact-head CI remain integration conditions.
