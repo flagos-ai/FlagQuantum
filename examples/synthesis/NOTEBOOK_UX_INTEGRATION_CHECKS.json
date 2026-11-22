@@ -1,0 +1,80 @@
+{
+  "source_commit": "1d0613a4c995d7a67e227f9cc2aeca0ae148a639",
+  "main_commit": "d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277",
+  "focused": {
+    "passed": 719,
+    "seconds": 189.74,
+    "selection": "changed Compiler, Services and integration test files; not slow"
+  },
+  "catalog_boundary": {
+    "passed": 42,
+    "seconds": 9.25
+  },
+  "default": {
+    "passed": 21447,
+    "skipped": 801,
+    "failed": 1,
+    "errors": 0,
+    "seconds": 374.57,
+    "workers": 4,
+    "failures": [
+      {
+        "test": "tests.unit.test_evidence_revisions::test_checked_in_evidence_accounts_for_every_recorded_revision",
+        "message": "AssertionError: assert ('artifacts/c... origin', ...) == ()\n  \n  Left contains 99 more items, first extra item: 'artifacts/cuda_target_capabilities_a800_jp171_20260906.json states an origin for 2f279cd6278989bf109784a36ca1f5dfcefe...e-revision-origins.toml, but a clone that fetches this repository obtains that commit, so the revision needs no origin'\n  Use -v to get more diff"
+      }
+    ]
+  },
+  "checks_passed": [
+    "public API snapshot",
+    "Ruff flagquantum tests tools",
+    "Black flagquantum tests tools: 3541 files",
+    "documentation source of truth",
+    "repository hygiene",
+    "handoff links",
+    "catalog generation",
+    "teaching audit",
+    "external delivery ledger validation",
+    "41 historical source hashes and 15 report hashes preserved",
+    "runnable native example and Qmod against independent Circuit full states and clean work"
+  ],
+  "optional_notebook_lint": {
+    "total": 708,
+    "codes": {
+      "I001": 183,
+      "F401": 72,
+      "E402": 419,
+      "F811": 32,
+      "B023": 2
+    },
+    "configured_pr_gate": false,
+    "status": "not clean; retained as presentation-maintenance work"
+  },
+  "raw_log_sha256": {
+    "default-final.log": "1e0811fc834c3774020fc30160d5917ce798beb728eb0cfb05a45dfb9df5d431",
+    "focused-final.log": "3c19dbcb0edcae523ce4a1d7bf337c3094f32d36ee3458c9b6b1abb8413cf35a",
+    "catalog-boundary.log": "a072043963a7bf28bd251be07f8e27b4576f438725543cda38b04565af5bf41f",
+    "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "black.log": "fa693c2e320c61e12dace83ef9733a4306807a0d2a5aa731877234b86cb8c2ec",
+    "user-comparisons.log": "c642953dbc1f86b4c5f2178017c3af3a3614ad57c944a82534c473b1dcbc0b79",
+    "optional-notebook-lint.json": "b4d97df85ab848a178833780bf3944c47438071e401bbe751f4506a4e4571a11",
+    "clean-evidence-origin-final.log": "a95fe8e530f159b214a71de70123711358ccc48c5b013931ed2086ce16283f4b",
+    "clean-origin-comparison.json": "38c28917a20f12dbce218f9cd64998c8f2358fbf147ac8b285e98b56cbcedf88",
+    "clean-evidence-origin.log": "195c6c406594b572d42776f3e89dcd7a6e4808e180b9aea6dd8fb2c1ab3d11b3",
+    "clean-origin-comparison-initial.json": "32124116d4c3bf0157b52ce1973a0763ab4859668e3cf9a4f5fa279ee92b3ede"
+  },
+  "raw_artifacts": "Retained locally under notebook-integration-20261122; hashes bind local logs, not public downloadable attachments.",
+  "interrupted_attempt": "Initial default exhausted temporary storage; focused attempt intentionally interrupted. Raw logs preserved; neither is a passing check.",
+  "independent_origin_check": {
+    "passed": 1,
+    "seconds": 8.5,
+    "main_commit": "d14bd25c647e7d2ec6f82b087cb32f8fe4fa4277",
+    "integration_commit": "1d0613a4c995d7a67e227f9cc2aeca0ae148a639",
+    "main_errors": 0,
+    "integration_errors": 0,
+    "introduced_errors": [],
+    "resolved_errors": [],
+    "method": "Unchanged evidence_errors on exact main/integration source trees in a disposable clone with only the respective branch ref and no extra local tags. Shared repository refs/declarations unchanged.",
+    "initial_comparison_note": "The first local shared clone also copied private local tags and returned 16 errors. That diagnostic and initial comparison are retained separately; they are not a clean-remote namespace result.",
+    "remote_check": "GitHub git/matching-refs/tags/tn-calibration-baseline-20260731 returned [] on November 22, 2026."
+  }
+}
