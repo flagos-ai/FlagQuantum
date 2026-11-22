@@ -475,6 +475,79 @@ _COMMUTATION_MEMO: ContextVar[_CommutationMemo | None] = ContextVar(
 )
 
 
+def _commutation_key(ir: CircuitIR) -> _CommutationKey:
+    return tuple(
+        (gate.name, gate.wires, gate.matrix is not None, bool(gate.params))
+        for gate in ir.instructions
+    )
+
+
+def _preserve_commutation_after_rotation_merge(
+    before: CircuitIR, after: CircuitIR, removed: set[int]
+) -> None:
+    """Remap a scoped partition when earlier equivalent members survive.
+
+    Removing a later duplicate cannot erase a block's boundary witness: its
+    earlier equivalent member remains in that same block on every qubit. Keep
+    the exact logical pair counters by checking each retained boundary again.
+    Zero-sum groups and any unproven structural change leave normal analysis to
+    recompute the partition. No input program or parameter value is retained.
+    """
+    memo = _COMMUTATION_MEMO.get()
+    if memo is None or not memo.active or memo.entry is None:
+        return
+    predicate, key, analysis = memo.entry
+    if predicate is not commute or key != _commutation_key(before):
+        return
+    surviving = tuple(i for i in range(len(key)) if i not in removed)
+    updated_key = _commutation_key(after)
+    if tuple(key[i] for i in surviving) != updated_key:
+        return
+    remap = {position: i for i, position in enumerate(surviving)}
+    blocks_by_qubit: dict[int, tuple[tuple[int, ...], ...]] = {}
+    block_index: dict[tuple[int, int], int] = {}
+    queried = 0
+    commuting = 0
+    for qubit, blocks in analysis.blocks_by_qubit.items():
+        rebuilt = []
+        for block in blocks:
+            seen: set[tuple[str, tuple[int, ...], bool, bool]] = set()
+            for position in block:
+                if position in removed:
+                    if key[position] not in seen:
+                        return
+                else:
+                    seen.add(key[position])
+            retained = tuple(remap[i] for i in block if i in remap)
+            rebuilt.append(retained)
+            for position in retained:
+                block_index[position, qubit] = len(rebuilt) - 1
+            pairs = len(retained) * (len(retained) - 1) // 2
+            queried += pairs
+            commuting += pairs
+        for previous, following in zip(rebuilt, rebuilt[1:], strict=False):
+            candidate = after.instructions[following[0]]
+            for offset, position in enumerate(previous):
+                if not predicate(after.instructions[position], candidate):
+                    queried += offset + 1
+                    commuting += offset
+                    break
+            else:
+                return
+        blocks_by_qubit[qubit] = tuple(rebuilt)
+    if memo.active and commute is predicate:
+        memo.entry = (
+            predicate,
+            updated_key,
+            CommutationAnalysis(
+                MappingProxyType(blocks_by_qubit),
+                MappingProxyType(block_index),
+                queried,
+                commuting,
+            ),
+        )
+
+
 @contextmanager
 def _reuse_commutation_analysis() -> Iterator[None]:
     """Own one structural analysis during one fixed-point optimization call."""
@@ -502,10 +575,7 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
 
     # The predicate reads no parameter values, matrix contents or metadata.
     # Rebuild this key because Instruction parameter dictionaries are mutable.
-    key = tuple(
-        (gate.name, gate.wires, gate.matrix is not None, bool(gate.params))
-        for gate in ir.instructions
-    )
+    key = _commutation_key(ir)
     predicate = commute
     previous = memo.entry
     if previous is not None and previous[0] is predicate and previous[1] == key:
