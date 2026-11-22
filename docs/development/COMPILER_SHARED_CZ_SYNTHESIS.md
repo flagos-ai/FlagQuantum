@@ -119,3 +119,21 @@ python -m pytest tests/unit/test_native_block_optimization.py \
   tests/unit/test_compilation_two_qubit_synthesis.py \
   tests/integration/test_native_block_physical_evidence.py -q
 ```
+
+## Follow-up sparse-product pilot
+
+A separate [rejected pilot](evidence/native-block-sparse-product-pilot.json)
+multiplied sparse matrix rows using one or two nonzero coefficients instead of
+all four. Both variants retained the same matrix reader and every operator
+column; the candidate additionally declined nonfinite coefficients. This was a
+development-only replacement of the private block product, not a production
+change or a proven new support boundary.
+
+The first fixed three-control resource run used two warmups and nine alternating
+samples per variant. Candidate/baseline medians were 0.9941, 1.0002 and 1.0098;
+all three failed the unchanged 5 percent admission requirement. Traced peaks were
+equal or slightly lower. The last saved outputs agree with baseline and pass
+independent acceptance, but no complete application screen or general semantic
+validation was run after this early rejection. The source freeze, exact driver,
+all resource samples and pilot limitations are retained. Do not divide these
+medians by earlier runs or claim a speedup from fewer arithmetic operations.
