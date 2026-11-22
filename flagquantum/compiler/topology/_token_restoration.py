@@ -57,6 +57,7 @@ def _token_swaps(
                 for neighbor in adjacency[node]
                 if distances[neighbor][home] < distances[node][home]
             )
+        moves: tuple[tuple[int, int], ...]
         if tokens[node] == node:
             moves = ((path[-1], node),)
         else:
