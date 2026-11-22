@@ -8,6 +8,15 @@ value = "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4"
 origin = "external_dependency"
 repository = "Qiskit/qiskit"
 
+# Exact upstream source for the unadopted compiler invariant experiment.
+[[artifact]]
+path = "docs/development/evidence/cirq-cz-invariant-pruning.json"
+
+[[artifact.revision]]
+value = "de651a7886d1a1383d595f95f36b93ed3ea91685"
+origin = "external_dependency"
+repository = "quantumlib/Cirq"
+
 # Every revision a checked-in evidence artifact records that a reader of this
 # repository cannot obtain, with the origin that accounts for it.
 #
