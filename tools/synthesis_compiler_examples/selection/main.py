@@ -49,6 +49,7 @@ def main() -> None:
             input_names=("x", "y"),
             preparation=preparation,
             constraints=Constraints(limits),
+            objective="depth",
         )
         assert report.selected is not None and report.selected.target is not None
         row = report.selected
