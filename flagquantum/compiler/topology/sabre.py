@@ -359,6 +359,7 @@ def _select_sabre_trials(
         cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
     )
     best_cost = score(best)
+    dependencies = _build_sabre_dependencies(program.instructions)
     for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):
         candidate = _plan_sabre_trial(
             program,
@@ -367,12 +368,65 @@ def _select_sabre_trials(
             tie_rng=random.Random(seed) if seed is not None else None,
             committed_swap_limit=best_cost,
             layer_lookahead=use_layers,
+            _dependencies=dependencies,
         )
         if candidate is not None:
             candidate_cost = score(candidate)
             if candidate_cost < best_cost:
                 best, best_cost = candidate, candidate_cost
     return best
+
+
+def _build_sabre_dependencies(
+    instructions: tuple[Instruction, ...],
+) -> tuple[list[list[int]], tuple[int, ...]]:
+    """Build read-only successors and initial indegrees for one source program."""
+    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
+    # share a predecessor still reaches zero pending predecessors.
+    successors: list[list[int]] = [[] for _ in range(len(instructions))]
+    pending = [0] * len(instructions)
+    last_on_wire: dict[int, int] = {}
+    for index, instruction in enumerate(instructions):
+        wire_pair = instruction.wires
+        for wire in wire_pair:
+            previous = last_on_wire.get(wire)
+            if previous is not None:
+                successors[previous].append(index)
+                pending[index] += 1
+            last_on_wire[wire] = index
+
+    # Classical order is order that no qubit records. Per bit, a read follows the
+    # write it observes, and a write follows every read it would invalidate and
+    # the earlier write whose value it replaces. A bit no measurement ever writes
+    # contributes no edge, so a program without classical state keeps the
+    # qubit-only graph it had. Processing in program order keeps every edge
+    # forward, so the graph stays acyclic and the front layer still empties on
+    # every program.
+    last_writer: dict[int, int] = {}
+    # Readers on independent qubits have no quantum edge ordering them; keeping
+    # only the most recent reader would let a write overtake an earlier reader.
+    readers_since_write: dict[int, list[int]] = {}
+    for index, instruction in enumerate(instructions):
+        written, read = _classical_accesses(instruction)
+        for bit in read:
+            producer = last_writer.get(bit)
+            if producer is not None:
+                successors[producer].append(index)
+                pending[index] += 1
+        if written is not None:
+            predecessors = (
+                last_writer.get(written),
+                *readers_since_write.pop(written, ()),
+            )
+            for predecessor in predecessors:
+                if predecessor is not None:
+                    successors[predecessor].append(index)
+                    pending[index] += 1
+            last_writer[written] = index
+        for bit in read:
+            readers_since_write.setdefault(bit, []).append(index)
+
+    return successors, tuple(pending)
 
 
 def _plan_sabre_trial(
@@ -383,6 +437,7 @@ def _plan_sabre_trial(
     tie_rng: random.Random | None = None,
     committed_swap_limit: int | None = None,
     layer_lookahead: bool = False,
+    _dependencies: tuple[list[list[int]], tuple[int, ...]] | None = None,
 ) -> SabrePlan | None:
     """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
 
@@ -446,49 +501,13 @@ def _plan_sabre_trial(
             f"{wire_pair[1]} of two-wire instruction {index}"
         )
 
-    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
-    # share a predecessor still reaches zero pending predecessors.
-    successors: list[list[int]] = [[] for _ in range(count)]
-    pending = [0] * count
-    last_on_wire: dict[int, int] = {}
-    for index, wire_pair in enumerate(wires):
-        for wire in wire_pair:
-            previous = last_on_wire.get(wire)
-            if previous is not None:
-                successors[previous].append(index)
-                pending[index] += 1
-            last_on_wire[wire] = index
-
-    # Classical order is order that no qubit records. Per bit, a read follows the
-    # write it observes, and a write follows every read it would invalidate and
-    # the earlier write whose value it replaces. A bit no measurement ever writes
-    # contributes no edge, so a program without classical state keeps the
-    # qubit-only graph it had. Processing in program order keeps every edge
-    # forward, so the graph stays acyclic and the front layer still empties on
-    # every program.
-    last_writer: dict[int, int] = {}
-    # Readers on independent qubits have no quantum edge ordering them; keeping
-    # only the most recent reader would let a write overtake an earlier reader.
-    readers_since_write: dict[int, list[int]] = {}
-    for index, instruction in enumerate(instructions):
-        written, read = _classical_accesses(instruction)
-        for bit in read:
-            producer = last_writer.get(bit)
-            if producer is not None:
-                successors[producer].append(index)
-                pending[index] += 1
-        if written is not None:
-            predecessors = (
-                last_writer.get(written),
-                *readers_since_write.pop(written, ()),
-            )
-            for predecessor in predecessors:
-                if predecessor is not None:
-                    successors[predecessor].append(index)
-                    pending[index] += 1
-            last_writer[written] = index
-        for bit in read:
-            readers_since_write.setdefault(bit, []).append(index)
+    successors, initial_pending = (
+        _build_sabre_dependencies(instructions)
+        if _dependencies is None
+        else _dependencies
+    )
+    # Successors are read-only; each trial consumes its own remaining indegrees.
+    pending = list(initial_pending)
 
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
