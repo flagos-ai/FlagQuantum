@@ -82,3 +82,10 @@ trials, duplicate quantum edges, all classical readers before overwrites, and
 metadata changes between calls. Existing independent operator, symbolic-gradient,
 dynamic execution, recovery, directed-topology and routing-conformance tests
 remain required, alongside exact-head CI before integration.
+
+Before measurement, type checking found two test/runner annotation defects. A
+follow-up test incorrectly mutated the constructor input mapping, which the IR
+copies, rather than the stored metadata. Its run passed 60 tests and failed the
+lifetime case. The test now narrows the stored mapping to its actual dictionary
+type before mutation. The compiler implementation, cases and resource thresholds
+did not change. These setup failures are not passing evidence.
