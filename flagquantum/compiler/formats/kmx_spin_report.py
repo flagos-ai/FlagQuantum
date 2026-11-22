@@ -6,7 +6,7 @@
 _PREFIX = "pnum kMGT"
 
 
-def _si2(value: float) -> str:
+def _si2(value: float, *, truncate_hundreds: bool = False) -> str:
     scale = 4
     while value < 1 and scale > 0:
         value *= 1000
@@ -19,7 +19,7 @@ def _si2(value: float) -> str:
     elif 10 <= value < 100:
         digits = f" {int(value)}"
     elif 100 <= value < 1000:
-        digits = str(int(value))
+        digits = str(int(value / 10) * 10 if truncate_hundreds else int(value))
     else:
         digits = f"{value:g}"
     return f"{digits} {_PREFIX[scale]}"
