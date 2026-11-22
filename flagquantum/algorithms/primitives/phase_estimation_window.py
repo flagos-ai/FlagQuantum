@@ -15,8 +15,15 @@ from ...compiler._component_trace.call_graph import (
     symbolic_call_graph,
 )
 from ...compiler.registers.bits.bitwise import on_each_ir
-from ...core.ir import Instruction
-from ...core.ir.program.register_types import fixed_point_register_type
+from ...compiler.registers.bits.on_each import on_each_word_program
+from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.component_gate_function import bit_gate_function
+from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_types import (
+    fixed_point_register_type,
+    quantum_bit_type,
+)
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.value_math import SymbolicInt, SymbolicReal, ceil, log2, pi
 from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
@@ -96,3 +103,39 @@ def _emit_rectangular(
     adjoint: bool,
 ) -> tuple[Instruction, ...]:
     return on_each_ir(Instruction("h", (0,)), ports["qpe_reg"])
+
+
+def rectangular_window_program(width: SymbolicInt) -> ProgramRecord:
+    """Retain Allocate and repeated-H calls, including a symbolic declaration.
+
+    The RIGHT-only fractional output transfers ownership to the caller. An
+    unresolved repeated-H body stays signature-only and cannot execute until
+    supplied with a concrete definition.
+    """
+    window = RectangularWindowState(width)
+    if type(width) is int and width < 0:
+        raise ValueError("Rectangular window requires a nonnegative width")
+    h = bit_gate_function(
+        "hadamard",
+        (Register("q", quantum_bit_type()),),
+        CircuitIR(1, (Instruction("h", (0,)),)),
+    )
+    each = (
+        on_each_word_program(width, h)
+        if type(width) is int
+        else ProgramRecord(
+            (
+                FunctionRecord(
+                    "each_h",
+                    (),
+                    registers=(Register("q", RegisterType("opaque", width)),),
+                ),
+            )
+        )
+    )
+    builder = ComponentProgramBuilder(window.signature)
+    output = builder.allocate(dtype=window.m_qdtype)
+    returned = builder.call_program(each, {"q": output}, entry=each.functions[0].name)[
+        "q"
+    ]
+    return builder.finalize({"qpe_reg": returned})
