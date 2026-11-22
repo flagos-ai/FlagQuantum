@@ -1,7 +1,7 @@
 # Linear SABRE ready-front maintenance
 
 Owner: Compiler. Classification: `single_device_fast_path`. Status: resource
-admission pending. This is an internal implementation change, with no new API,
+admission rejected; production source restored to main. This pilot changes no API,
 default, dependency, schema, routing trial, gate reorder or capability claim.
 
 ## Problem and implementation
@@ -89,3 +89,40 @@ python -m pytest tests/unit/test_compilation_sabre_frontier_order.py \
   tests/team/compiler/test_routing_conformance.py \
   tests/team/compiler/test_barrier_routing.py -q
 ```
+
+## First observations and rejection
+
+The implementation and declaration above were published before observation at
+`52b116a14f8242883e6bd644004e26326376824e`. The original declaration remains
+available at that revision; the status above records the subsequent decision.
+The first and only resource run completed in 40.0 seconds under its 300-second
+supervisor. Its [complete record](evidence/linear-sabre-frontier-resources.json)
+retains the driver, all samples, source identities and all 144 exact output
+checks, including warmup and traced executions. No result was discarded.
+
+| Workload | Boundary | Candidate/baseline median | Baseline/candidate Python peak bytes |
+| --- | --- | ---: | ---: |
+| 256 qubits, 1,024 local layers | Single trial | 0.874896 | 34,931,184 / 34,931,184 |
+| 512 qubits, 512 local layers | Single trial | 1.083583 | 44,970,392 / 44,970,392 |
+| 6 qubits, 64 CX instructions | Single trial | 0.998808 | 27,456 / 27,672 |
+| 12 qubits, 128 CX instructions | Single trial | 0.988919 | 69,772 / 69,988 |
+| 6 qubits, 64 CX instructions | Public router | 0.995253 | 137,292 / 137,292 |
+| 12 qubits, 128 CX instructions | Public router | 0.996525 | 475,036 / 475,036 |
+
+All output hashes match, but the 512-qubit case fails both its required 5%
+improvement and the 5% regression limit. It regresses by about 8.4% in this
+observation. The 256-qubit improvement does not override that failure. The
+cause of the divergent timing observations has not been isolated; do not
+attribute it to host noise or claim that asymptotic reasoning establishes
+production benefit. Do not repeat the run to obtain a passing median.
+
+The [exact source patch](evidence/linear-sabre-frontier-pilot.json) is retained
+with its SHA-256 and frozen source identity. Production `sabre.py` is restored
+byte-for-byte to main; useful parallel-layer and mixed-frontier regression
+scenarios remain as tests of the existing contract. A different algorithm
+would need a separately declared experiment. No CZ/depth, latency-ranking or
+formal-host claim is admitted by this result.
+
+Both implementation forms passed the same 170 focused tests before resource
+observation; the frozen candidate also passed Ruff, Black and strict mypy for
+the complete touched Python modules. These checks do not certify full CI.

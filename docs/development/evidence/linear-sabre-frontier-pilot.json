@@ -1,0 +1,9 @@
+{
+  "implementation_commit": "52b116a14f8242883e6bd644004e26326376824e",
+  "base_commit": "5b9cf3878664393e8667ca175ec8669f37fb3bc9",
+  "path": "flagquantum/compiler/topology/sabre.py",
+  "candidate_source_sha256": "99a2592671c8c6d8605190d117de6432c33589a14976f323376d91aa77d966e7",
+  "patch_sha256": "520a9a0de2b63335da02923ffb89c6f60a2f69102d56dd73454cdd2f545563fc",
+  "patch": "diff --git a/flagquantum/compiler/topology/sabre.py b/flagquantum/compiler/topology/sabre.py\nindex b88ad2bcd1..388ab62558 100644\n--- a/flagquantum/compiler/topology/sabre.py\n+++ b/flagquantum/compiler/topology/sabre.py\n@@ -660,9 +660,15 @@ def _plan_sabre_trial(\n             index for index in front if not blocks[index] or separation(index) == 1\n         ]\n         if executable:\n+            # Keep blocked instructions ahead of newly released successors,\n+            # without repeatedly shifting the ready list for each removal.\n+            if len(executable) == len(front):\n+                front = []\n+            else:\n+                ready = set(executable)\n+                front = [index for index in front if index not in ready]\n             frontier_lookahead = None\n             for index in executable:\n-                front.remove(index)\n                 placements[index] = tuple(\n                     logical_to_physical[wire] for wire in wires[index]\n                 )\n@@ -677,7 +683,7 @@ def _plan_sabre_trial(\n             seen_layouts.clear()\n             continue\n \n-        blocked_front = [index for index in front if blocks[index]]\n+        blocked_front = front\n         layout = tuple(logical_to_physical)\n         if layout in seen_layouts or stalled >= stalled_limit:\n             # Qiskit's release valve undoes speculation since the last routed\n",
+  "decision": "Rejected by the prospective resource gate; production source restored to baseline"
+}
