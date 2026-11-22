@@ -8,18 +8,23 @@
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_calls
 from ..component_wire_graph import WireCall, wire_component_program
 from ..control.conjunction_program import and_component_program
 from ._component_gates import comparison_bit_functions
 from .less_than import less_than_constant_workspace_size
 
 
-def less_than_constant_program(width: int, threshold: int) -> ProgramRecord:
+def less_than_constant_program(
+    width: int, threshold: int, *, adjoint: bool = False
+) -> ProgramRecord:
     """XOR unsigned x<threshold into a dirty target with source And history.
 
     The equality seed and prefix flags begin clean. Recorded inverse calls erase
     every flag. The out-of-range upper threshold requires just one X gate.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Constant comparison direction must be boolean")
     less_than_constant_workspace_size(width, threshold)
     signature = Signature.build_from_dtypes(
         x=unsigned_register_type(width), target=quantum_bit_type()
@@ -49,4 +54,9 @@ def less_than_constant_program(width: int, threshold: int) -> ProgramRecord:
         calls.append(copy)
         cleanup.append(copy)
     calls.extend(reversed(cleanup))
-    return wire_component_program(signature, ports, ports, calls)
+    record = wire_component_program(signature, ports, ports, calls)
+    if not adjoint:
+        return record
+    return adjoint_component_calls(
+        record, ((x, x), (cx, cx), (compute, erase), (erase, compute))
+    )

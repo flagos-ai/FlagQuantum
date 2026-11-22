@@ -167,3 +167,59 @@ def adjoint_component_hierarchy(
     if diagnostics:
         raise ValueError(f"invalid hierarchical adjoint graph: {diagnostics}")
     return result
+
+
+def adjoint_component_calls(
+    record: ProgramRecord,
+    components: tuple[tuple[ProgramRecord, ProgramRecord], ...],
+) -> ProgramRecord:
+    """Reverse immediate calls using explicit component pairs and owned views.
+
+    Split/Join and clean allocation/free reuse their existing directional
+    definitions. Every computational child must match a supplied forward
+    definition literally. Unknown children fail before constructing an inverse.
+    """
+    from .component_definition_match import matches_component_definition
+    from .component_graph import _namespace_helpers
+    from .component_rebindings import adjoint_word_rebinding
+    from .layout.component_workspace import allocate_word_function, free_word_function
+
+    definitions = list(record.functions)
+    mapping: dict[str, str] = {}
+    used = {op.callee for op in record.functions[0].blocks[0].operations}
+    for index, function in enumerate(record.functions[1:]):
+        if function.name not in used:
+            continue
+        name = f"__fq_inverse_call_{index}"
+        while any(f.name.startswith(name) for f in definitions):
+            name += "_"
+        registers = function.registers or ()
+        for forward, inverse in components:
+            if matches_component_definition(record, function.name, forward):
+                if inverse == forward:
+                    mapping[function.name] = function.name
+                else:
+                    imported = _namespace_helpers(inverse, name)
+                    definitions.extend(imported.functions)
+                    mapping[function.name] = imported.functions[0].name
+                break
+        else:
+            if tuple(reg.name for reg in registers) == ("reg", "reg"):
+                view = adjoint_word_rebinding(function, name)
+            elif len(registers) == 1 and function == allocate_word_function(
+                function.name, registers[0].dtype, False
+            ):
+                view = free_word_function(name, registers[0].dtype, False)
+            elif len(registers) == 1 and function == free_word_function(
+                function.name, registers[0].dtype, False
+            ):
+                view = allocate_word_function(name, registers[0].dtype, False)
+            else:
+                raise ValueError(
+                    f"Missing exact component adjoint for {function.name!r}"
+                )
+            definitions.append(view)
+            mapping[function.name] = name
+    return adjoint_component_program(
+        replace(record, functions=tuple(definitions)), mapping
+    )
