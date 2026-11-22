@@ -69,11 +69,7 @@ from .canonicalization import (
     _is_zero,
     _replace_param,
 )
-from .commutation import (
-    CommutationAnalysis,
-    _preserve_commutation_after_rotation_merge,
-    analyze_commutation,
-)
+from .commutation import CommutationAnalysis, analyze_commutation
 
 #: A group key: the instruction's name, its qubits, and its commuting block on
 #: each of those qubits. Two positions sharing one are the same operator on the
@@ -275,7 +271,7 @@ def merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
     if not removed:
         return ir
 
-    result = replace(
+    return replace(
         ir,
         instructions=tuple(
             rewritten.get(position, instruction)
@@ -283,8 +279,6 @@ def merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
             if position not in removed
         ),
     )
-    _preserve_commutation_after_rotation_merge(ir, result, removed)
-    return result
 
 
 def cancel_commuting_self_inverse(

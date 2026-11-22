@@ -1,6 +1,12 @@
-# Controlled commutation with rotation-analysis preservation
+# Rejected rotation-analysis preservation
 
 Owner: Compiler. Classification: `single_device_fast_path`.
+
+**Rejected resource admission.** The new preservation helper and its key
+extraction are withdrawn. Both production modules are restored byte for byte
+to the earlier draft head `9f307bbd6cbb4aaf39d04e2defb155c875118cb2`.
+The controlled-gate extension itself remains unpromoted. The candidate below is
+a historical experiment, not enabled production behavior.
 
 ## Requirement and mechanism
 
@@ -138,3 +144,68 @@ The default sparse-checkout `smoke or unit` command passes 426 tests, with
 246 deselected. The documented public workflow executes and returns RZ, CX, H.
 Ruff, Black, English-content checks, Markdown links and whitespace checks pass.
 None of these local selections replaces complete exact-head CI.
+
+
+## First outcome and withdrawal
+
+The candidate and declaration were published at
+`3737f8d0262b14b5d34a2afdf5abc5812095f2b2` before observations. Both complete
+draws accept all 480 observations. Every paired CZ count and dependency depth
+is non-increasing; twelve ordinary repetition payloads change per draw and the
+other 108 payload pairs are identical. Producer-free replay accepts all 480,
+with maximum residuals 6.072657351995283e-14 and 3.8949521648662045e-14
+against unchanged 1e-8. There are 160 full-operator and 320 limited three-probe
+observations. No application CZ/depth improvement is established.
+
+All 144 warmup/timed/traced resource executions are independently accepted and
+matched to frozen quality hashes, metrics and audits. The first and only resource
+control fails admission: ordinary repetition6/ring ratio 1.170783 exceeds 1.05.
+The other five time gates and every Python-memory gate pass. No favorable rerun,
+case omission, new allowance or changed threshold follows. Do not infer a
+significant change from the earlier 1.162137 ratio with a different candidate.
+
+| Input | Workflow | Main median ms | Candidate median ms | Candidate/main | Main Python peak bytes | Candidate Python peak bytes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 06/qft/grid | ordinary-restored | 6.953 | 6.935 | 0.997375 | 479760 | 485526 |
+| 06/qft/grid | target-artifact | 90.418 | 89.082 | 0.985220 | 2199144 | 2199078 |
+| 06/repetition/ring | ordinary-restored | 6.085 | 7.124 | 1.170783 | 565333 | 581428 |
+| 06/repetition/ring | target-artifact | 113.739 | 114.033 | 1.002587 | 2567421 | 2567421 |
+| 12/qft/grid | ordinary-restored | 28.204 | 27.511 | 0.975407 | 2136627 | 2160984 |
+| 12/qft/grid | target-artifact | 553.978 | 570.980 | 1.030690 | 10118214 | 10118164 |
+
+Remove the added preservation machinery and the new experiment-specific test
+module. Its exact 32-test source remains in the published freeze with the measured
+candidate. Existing tests and every independent scientific acceptance assertion
+remain unchanged. The incremental proof can be correct while its implementation
+fails to improve the required complete workflow; adding this complexity is not
+justified by these observations.
+
+The [inspected index](evidence/rotation-preservation-inspected-screen.json) and
+[fresh index](evidence/rotation-preservation-fresh-screen.json) preserve every row,
+input pin, audit, original compile-wall value and hashed payload. Their payload
+chunks reconstruct the complete original reports byte for byte, including field
+order and original SHA-256. The [resource report](evidence/rotation-preservation-resources.json)
+contains every sample and per-sample check. The [producer-free replay](evidence/rotation-preservation-replay.json)
+retains its complete source, draw hashes and residuals. Reports embed the frozen
+protocol and complete control source. This retrospective decision does not alter
+any observed numerical data.
+
+The extra fixed-point round remains necessary for the observed nonzero merge.
+Repeated attempts to reduce ancillary work have not met the unchanged resource
+gate. Further compiler work should address delivered routing/target-gate cost or
+the full optimization algorithm rather than accumulating unproven memo layers.
+Full exact-head CI, the separate Integration prerequisite and formal Linux
+qualification remain unresolved. This does not admit draft PR #1304.
+
+The [untimed trigger trace](evidence/rotation-preservation-trigger-trace.json)
+records the earlier clean draft source, both accepted output hashes/audits, and
+every pass change. Its only pre-routing change is the two RZ(pi/4) instructions
+merged into RZ(pi/2). It is causal work evidence, not a latency measurement.
+
+After withdrawal, the default sparse `smoke or unit` selection passes 394 tests
+(246 deselected); the selected physical-evidence and original thermal-reset
+integration files pass all 49 tests. Both production modules exactly match the
+earlier clean draft head. Language, local Markdown links, byte-exact archive
+reconstruction, existing revision-field vocabulary and whitespace checks pass.
+The removed candidate's prior strict checks are historical evidence, not a claim
+that the withdrawn helper remains enabled. Full exact-head CI is outstanding.
