@@ -52,6 +52,17 @@ def source_walk(
             row.update(disposition="source_atomic_refusal", error=type(error).__name__)
             rows.append(row)
             continue
+        except ValueError as error:
+            assert identifier == "hamming_weight_phasing_via_phase_gradient"
+            assert type(source).__name__ == "AddScaledValIntoPhaseReg"
+            assert "Finalizing register dtypes are not consistent x:" in str(error)
+            row.update(
+                disposition="source_dtype_refusal",
+                error=type(error).__name__,
+                message=str(error),
+            )
+            rows.append(row)
+            continue
         actual = _native_trace(record, name)
         expected = _source_trace(SourceCalls, composite)
         observed, original = [], []

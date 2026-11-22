@@ -12,6 +12,7 @@ from ....core.ir.program.register_types import (
 from ....core.ir.program.registers import RegisterType
 from ..arithmetic.addition_component import addition_component_program
 from ..component_builder import ComponentProgramBuilder
+from ..layout.component_cast import cast_word_function
 from ..layout.component_word_views import gather_word_binding
 from .phase_addition import source_phase_add_signature
 from .scaled_phase_addition import scaled_phase_add_terms
@@ -119,4 +120,13 @@ def scaled_phase_add_program(
         words[wires] = returned
         phase = result["phase_grad"]
     x = gather_word_binding(builder, words, indices, dtype)
+    if x.register.dtype != dtype:
+        # Source exact-word lookup can retain the last adder's fractional dtype.
+        # Restore the declared storage view below that source refusal boundary.
+        cast = cast_word_function("restore_cost_view", x.register.dtype, dtype)
+        restored = builder.call_program(
+            ProgramRecord((cast,)), {"reg": x}, entry=cast.name
+        )["reg"]
+        assert isinstance(restored, RegisterBinding)
+        x = restored
     return builder.finalize({"x": x, "phase_grad": phase})
