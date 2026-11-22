@@ -6,10 +6,14 @@ from importlib import import_module
 from pathlib import Path
 
 import pytest
-import tomllib
 
 import flagquantum as fq
 from flagquantum.version import VERSION_INFO, __version__, get_version
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python 3.10
+    import tomli as tomllib
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
