@@ -1,0 +1,39 @@
+/* Copyright 2025 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ * Adapted from Qualtran v0.7.0 docs/_static/qai-theme.css for FlagQuantum.
+ */
+:root {
+  --fq-color-blue-500: #4285f4;
+  --fq-color-blue-700: #1967d2;
+  --fq-color-magenta-400: #d367c4;
+  --fq-color-magenta-500: #b356cd;
+  --fq-color-magenta-700: #7c42c0;
+}
+
+html[data-theme="light"] {
+  --pst-color-primary: var(--fq-color-blue-700);
+  --pst-color-secondary: var(--fq-color-blue-500);
+  --pst-color-inline-code: var(--fq-color-magenta-700);
+  --pst-color-inline-code-links: var(--fq-color-magenta-500);
+  --mystnb-source-margin-color: var(--fq-color-magenta-700);
+}
+
+a[data-theme="light"]:hover {
+  color: var(--fq-color-blue-700);
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: var(--fq-color-blue-500);
+  --pst-color-secondary: var(--fq-color-blue-700);
+  --pst-color-inline-code: var(--fq-color-magenta-400);
+  --pst-color-inline-code-links: var(--fq-color-magenta-500);
+  --mystnb-source-margin-color: var(--fq-color-magenta-700);
+}
+
+a[data-theme="dark"]:hover {
+  color: var(--fq-color-blue-700);
+}
+
+code.literal {
+  border: none;
+}

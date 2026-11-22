@@ -43,3 +43,19 @@ For benchmark methodology and evidence, use the
 [benchmark index](../benchmarks/README.md).
 Repository retention and evidence-placement rules are defined in
 [repository governance](development/REPOSITORY_GOVERNANCE.md).
+
+## HTML documentation
+
+The source-checkout Sphinx entry is `docs/conf.py`, with `docs/index.rst` as
+the landing page. Install the optional development renderers in an isolated
+environment, then build from the repository root.
+
+```console
+python -m pip install 'sphinx==8.1.3' 'myst-nb==1.3.0' 'pydata-sphinx-theme==0.16.1'
+python -m sphinx -b html docs docs/_build/html
+```
+
+Notebook outputs are rendered as stored. Rendering keeps notebook execution off.
+Local project branding reuses `assets/logo_flagquantum.png`. Source-audit
+environment details and site acceptance are recorded in
+[the documentation site audit](development/DOCUMENTATION_SITE_FILE_AUDIT.md).
