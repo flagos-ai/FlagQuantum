@@ -310,3 +310,10 @@ freezes complete quality draws, producer-free replay and every resource sample
 before new observations. It compares the composed candidate against current
 integrated main. Preserve the earlier failed resource observation and draft
 status until the new candidate's independent gates and full CI are resolved.
+
+
+The composed candidate's first [complete result](COMPILER_CONTROLLED_COMMUTATION_INTEGRATED_REUSE.md#first-observations-and-decision)
+passes both correctness draws and all 144 per-sample resource verifications,
+but fails resource admission at 1.162137 for ordinary repetition6/ring. Retain
+the original 1.2000 observation as well. Integrated reuse does not establish a
+solution to the regression; draft status and the performance blocker remain.

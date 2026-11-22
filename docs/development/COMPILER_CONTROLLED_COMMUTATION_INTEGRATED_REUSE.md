@@ -102,3 +102,50 @@ The candidate preserves this complete operator while removing the redundant CX
 pair. The new experiment tests whether its wider structural coverage can meet
 current-main resource bounds. It does not establish improved application routing
 quality merely by passing a focused example.
+
+
+## First observations and decision
+
+The declaration and composed source were published at
+`14b3ded9a058664a23c3ac93f1787d851cad3526` before execution. Both complete
+240-observation draws pass unchanged acceptance, and a fresh process imports
+no producer SDK and replays all 480 observations. The maximum residuals are
+6.072657351995283e-14 and 6.753828751317917e-14 against unchanged 1e-8.
+Each draw changes twelve ordinary repetition payloads; no paired CZ count or
+dependency-depth regression occurs. All other payload pairs are identical.
+These observations still do not improve the application entangler/depth gaps.
+
+The sole resource control completes all six cases and independently checks
+every warmup, timed and traced output against quality hashes, audits and metrics.
+There are 144 checked executions. All Python-memory limits pass.
+
+| Input | Workflow | Main median ms | Candidate median ms | Candidate/main | Main Python peak bytes | Candidate Python peak bytes |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 06/qft/grid | ordinary-restored | 7.280 | 7.307 | 1.003732 | 479969 | 479719 |
+| 06/qft/grid | target-artifact | 92.207 | 93.084 | 1.009512 | 2199032 | 2199016 |
+| 06/repetition/ring | ordinary-restored | 6.225 | 7.234 | 1.162137 | 565486 | 575692 |
+| 06/repetition/ring | target-artifact | 117.038 | 117.050 | 1.000097 | 2567203 | 2567253 |
+| 12/qft/grid | ordinary-restored | 28.249 | 28.131 | 0.995835 | 2139919 | 2139241 |
+| 12/qft/grid | target-artifact | 567.167 | 579.677 | 1.022057 | 10118164 | 10118214 |
+
+**Reject resource admission.** Ordinary repetition6/ring has ratio 1.162137,
+above the prospective 1.05 limit. Integrated analysis reuse alone does not
+resolve the extension's resource regression. The original 1.2000 observation
+and this different composed-candidate observation are both retained; do not
+infer a significant improvement between measurements with different baselines.
+No favorable repeat, changed threshold, case omission or source tuning occurred.
+The implementation stays under draft review and must not be promoted on this
+control's correctness success. A further change must address the remaining
+work and receive its own prospective validation.
+
+The [inspected index](evidence/controlled-integrated-inspected-screen.json) and
+[fresh index](evidence/controlled-integrated-fresh-screen.json) retain every
+observation and hashed payload chunks below the unchanged 1.8 MB artifact limit.
+They reconstruct their complete original reports byte for byte, preserving
+field order, source/nonce/version/configuration pins, failures and compile-wall
+acceptance values. The [producer-free replay](evidence/controlled-integrated-replay.json)
+records all 480 independently accepted outputs and its source. The
+[complete resource report](evidence/controlled-integrated-resources.json) includes
+all samples and their individual verification, full driver and frozen protocol.
+Formal Linux qualification, process RSS, statistical significance, cross-SDK
+ranking and global superiority remain unproven.
