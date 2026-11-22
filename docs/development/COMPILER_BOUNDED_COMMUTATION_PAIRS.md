@@ -108,3 +108,67 @@ The corrected driver is `fq-bounded-pairs-case-mapping-20261122.py`, SHA-256
 `9109aaec86b223ee95b22bd625b2f73e9cc3411eee7cc598f6cd7239a9777bf6`.
 The partial report and corrected complete report are separate evidence; the
 interrupted attempt is not a complete passing run.
+
+
+## First complete result: rejected
+
+The corrected protocol ran at frozen commit
+`b6c41299f201b657d10b650a28b001e4861a6330`. Its production source is
+identical to candidate freeze `c9f2643985f80dec624b9e62f112dd6e9c45edc3`.
+All 120 application observations matched the accepted reference payloads,
+audits and independent evaluator metrics. All 144 resource-run outputs also
+matched, including every warmup and separately traced result. The corrected
+run finished normally under its process-group budget in 60.03 seconds.
+
+| Case | Workflow | Candidate / baseline median | Baseline Python peak (bytes) | Candidate Python peak (bytes) |
+| --- | --- | ---: | ---: | ---: |
+| 06/qft/grid | Ordinary | 1.009826 | 472330 | 473143 |
+| 06/qft/grid | Target artifact | 1.001638 | 2198318 | 2199038 |
+| 06/repetition/ring | Ordinary | 0.996437 | 552637 | 553400 |
+| 06/repetition/ring | Target artifact | 1.017851 | 2566909 | 2566909 |
+| 12/qft/grid | Ordinary | 1.002263 | 2109392 | 2114108 |
+| 12/qft/grid | Target artifact | 0.978462 | 10118879 | 10118779 |
+
+All six regression and Python-memory gates passed, but **zero** ordinary cases
+reached the required 5% improvement; admission required at least two. The
+experiment is rejected. Do not infer a speedup, significant slowdown or causal
+explanation from these small differences. Query hit rate did not establish a
+complete-workflow benefit. No repeat run was used to seek a favorable result.
+
+Production commutation source and its import-boundary test are restored byte
+for byte to baseline. Five added scenario regressions remain: repeated barriers,
+eviction pressure, mutations between calls, symbolic/batched/overridden gates,
+and propagation of predicate failures. These compare behavior independently and
+do not require memoization. No public API or numerical reference changed.
+
+Evidence, retained as originally observed:
+
+- [Complete resources and 120 quality observations](evidence/bounded-commutation-pairs-resources.json),
+  SHA-256 `3c85fbd48cca4d08b58a74ad4dcce053fb74b01b6d48b1fab764c1262b323513`.
+- [Interrupted 40-observation report](evidence/bounded-commutation-pairs-partial.json),
+  SHA-256 `5c39ec55b2005892a1ad1bbfd3f11f33e2d19aac4a1e7fe13a0adfed4d4e2a16`.
+- [Untimed query census](evidence/bounded-commutation-pairs-census.json),
+  SHA-256 `598dcc762ed55992171dcaff7dec5dda3a0ab4758df1ec90c9426aefee915bc0`.
+- [Exact withdrawn patch and setup failure records](evidence/bounded-commutation-pairs-pilot.json).
+
+The reports embed the drivers and protocol. The archived patch includes the
+candidate-specific predicate-count assertion; the retained regression instead
+checks exact blocks, counters and first-failure behavior on the baseline source.
+The initial setup failures and partial quality run remain failures, not passing
+complete runs. These inspected controls establish no new held-out, SDK ranking,
+formal Linux, RSS, CZ-count or depth-improvement claim.
+
+Validation before withdrawal: 141 focused tests and 671 selected local
+smoke/unit/integration tests passed; strict mypy, Ruff and Black passed for all
+three touched Python files, and the executable optimizer golden path passed.
+The first focused attempt retained one failure because the AST import allowlist
+had not yet admitted the standard-library `collections` import. The corrected
+candidate admitted that import explicitly; restoration returns the test and
+source to their exact original contents. This does not weaken the simulation
+layer boundary. Final withdrawal checks are recorded with the pull request.
+
+After withdrawal, the same local tier again passed 671 tests. Strict mypy, Ruff
+and Black passed for the three applicable Python modules. The archived patch
+reconstructs all three candidate files byte for byte; the final production
+module and its import-boundary test match baseline exactly. This selected
+sparse-checkout tier is not a claim that the entire repository suite ran locally.

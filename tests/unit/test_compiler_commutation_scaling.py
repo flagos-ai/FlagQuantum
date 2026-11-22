@@ -103,17 +103,13 @@ def test_large_diagonal_run_avoids_quadratic_predicate_evaluation() -> None:
     assert result.commuting_pairs == result.queried_pairs
 
 
-def test_repeated_barriers_reuse_negative_answers_and_keep_exact_counters() -> None:
+def test_repeated_barriers_keep_exact_counters() -> None:
     ir = CircuitIR(
         1,
         tuple(Instruction(name, (0,)) for _ in range(100) for name in ("h", "x")),
     )
     expected = ungrouped(ir)
-    with patch(
-        "flagquantum.compiler.optimization.commutation.commute", wraps=commute
-    ) as predicate:
-        result = analyze_commutation(ir)
-    assert predicate.call_count == 2
+    result = analyze_commutation(ir)
     assert (
         dict(result.blocks_by_qubit),
         dict(result.block_index),

@@ -49,7 +49,6 @@ reading, and for a `measure` it is also the only correct one.
 
 from __future__ import annotations
 
-from collections import OrderedDict
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -400,14 +399,6 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
     instructions = tuple(ir)
     blocks_by_qubit: dict[int, tuple[tuple[int, ...], ...]] = {}
     block_index: dict[tuple[int, int], int] = {}
-    # Bound reuse to this analysis. Keys retain no instructions, tensors or IR.
-    pair_results: OrderedDict[
-        tuple[
-            tuple[str, tuple[int, ...], bool, bool],
-            tuple[str, tuple[int, ...], bool, bool],
-        ],
-        bool,
-    ] = OrderedDict()
     queried = 0
     commuting = 0
     for qubit, positions in positions_by_qubit.items():
@@ -418,27 +409,12 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
         ] = {}
         for position in positions:
             candidate = instructions[position]
-            key = (
-                canonical_opcode(candidate.name),
-                candidate.wires,
-                candidate.matrix is not None,
-                bool(candidate.params),
-            )
             accepted = True
             compared = len(open_block)
             # commute is parameter-value blind. These classes preserve every rule,
             # including matrix overrides and the empty-parameter fixed-gate check.
-            for member_key, (offset, member) in representatives.items():
-                pair = (member_key, key)
-                answer = pair_results.get(pair)
-                if answer is None:
-                    answer = commute(member, candidate)
-                    if len(pair_results) == 16:
-                        pair_results.popitem(last=False)
-                    pair_results[pair] = answer
-                else:
-                    pair_results.move_to_end(pair)
-                if not answer:
+            for offset, member in representatives.values():
+                if not commute(member, candidate):
                     accepted = False
                     compared = offset + 1
                     break
@@ -448,6 +424,12 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
                 blocks.append(tuple(open_block))
                 open_block = []
                 representatives.clear()
+            key = (
+                canonical_opcode(candidate.name),
+                candidate.wires,
+                candidate.matrix is not None,
+                bool(candidate.params),
+            )
             representatives.setdefault(key, (len(open_block), candidate))
             open_block.append(position)
             block_index[(position, qubit)] = len(blocks)
