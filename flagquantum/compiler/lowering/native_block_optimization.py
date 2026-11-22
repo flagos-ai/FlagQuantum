@@ -410,12 +410,9 @@ def verify_native_block_optimization(
             "native block optimization identity is stale"
         )
     source = result.source_program
-    # Instruction operators and lineage are checked separately. Compare the
-    # remaining serialized semantics without encoding the same instruction list
-    # twice; keep fresh reads so mutable metadata and tensors remain observable.
     if (
-        replace(result.program, instructions=()).content_hash
-        != replace(source, instructions=()).content_hash
+        replace(result.program, instructions=source.instructions).content_hash
+        != source.content_hash
     ):
         raise NativeBlockOptimizationError(
             "native block stage changed noninstruction semantics"

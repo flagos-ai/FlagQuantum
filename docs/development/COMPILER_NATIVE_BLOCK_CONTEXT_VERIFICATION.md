@@ -1,20 +1,23 @@
 # Native block context verification
 
-The private native-CZ verifier compares noninstruction semantics with instructions
-removed from both temporary IR values. The previous comparison inserted the same
-source instructions into the output and then serialized that instruction list in
-both values. The remaining comparison uses the existing canonical serialization
-and hash, including wire count, version, dtype, shape, observables, measurements
-and metadata. No field projection, new contract, dependency or cross-call cache
-is introduced.
+The native-CZ verifier's existing context checks now have explicit positive and
+resealed-tamper tests for wire count, precision, shape, observables, measurements
+and nested metadata, including mutable tensor values. The production verifier
+remains unchanged: it compares the canonical source context while separately
+checking complete identity, replay, operators, lineage and budgets.
 
-This is a `single_device_fast_path` implementation change. Complete source/output
-identity, independent routing/native replay, operator residuals, rewrite lineage,
-resource checks and fresh reads of mutable tensors remain in place. Instruction
-identity verification occurs before the context comparison and operator/lineage
-verification after it. The public API, evidence formats and numerical tolerances
-are unchanged. The [upstream reuse record](COMPILER_UPSTREAM_REUSE.md) describes
-the Qiskit/Cirq algorithms already integrated into native compilation.
+An earlier private optimization removed instructions from both temporary context
+values before comparing canonical hashes. That production change has been
+withdrawn because the measurements below do not show a consistent workflow
+benefit and include a latency regression and higher memory use. The paired record
+is retained as historical evidence of that rejected proposal; it does not describe
+a production optimization in the final change. The seven added scenario tests
+also pass against the original verifier and are retained independently.
+
+This is Compiler-owned `single_device_fast_path` test coverage. No public API,
+evidence schema, numerical tolerance or production algorithm changes. The
+[upstream reuse record](COMPILER_UPSTREAM_REUSE.md) describes the Qiskit/Cirq
+algorithms already integrated into native compilation.
 
 ## Correctness and observations
 
@@ -24,7 +27,7 @@ exact production verifier on main
 source tree. The unchanged SDKBench checkout is pinned to
 `9aa9260920984e2ca05bcb293abb885fccd9c144`. Sixty pairs span widths 6/8/12,
 five applications and four topologies using the previously inspected nonce.
-All 120 independent acceptances pass. Complete normalized outputs, resource
+All 120 independent acceptances of the historical proposal pass. Complete normalized outputs, resource
 metrics, identity endpoint layouts, routing strategy and rewrite statistics
 match within every pair. Six-wire acceptance checks complete operators;
 eight/twelve-wire acceptance checks three probes only.
@@ -70,8 +73,10 @@ twelve-wire case overlapped a 1.36-second local unit run; individual sample
 overlap was not recorded. Retain those observations without interpreting them
 as isolated performance or memory evidence. Shared-host timings, profiler totals
 and Python allocations do not establish qualified latency, process RSS,
-significance, SDK rankings, prospective behavior or scalability. The change
-removes duplicated work; no general speedup is claimed.
+significance, SDK rankings, prospective behavior or scalability. The proposal
+removed duplicated work, but that alone did not justify adopting it. The
+production optimization is withdrawn; these measurements are not evidence of
+a speedup from the retained test-only change.
 
 ## Existing workflow and reproduction
 
@@ -91,3 +96,19 @@ source hashes, acceptances, timing samples, allocation observations and profiles
 Its temporary paths describe the measured setup and must be adjusted elsewhere.
 Use a separate bounded supervisor; do not install an outer signal alarm around
 SDKBench's own stage timer.
+
+
+## Integration boundary
+
+The earlier proposal head failed Linux coverage shard 191 at the unchanged
+wide-disjoint compiler timing assertion. That failure is retained as a failure;
+it does not justify relaxing the threshold or blindly retrying the same code.
+The independent fixed-singleton matrix optimization in PR #1288 addresses
+measured work in that path. Its passing shard does not certify this branch.
+Final test-only verification and full-source CI must run on the revised head.
+
+After restoring the original production verifier, all 144 focused tests pass:
+102 unit and 42 integration tests. The sparse default/runtime tiers pass the
+same seeded selections. Strict Linux-target mypy passes the complete test module;
+Black, Ruff, English, links and whitespace checks pass. The retained scenarios
+therefore validate existing behavior independently of the withdrawn optimization.
