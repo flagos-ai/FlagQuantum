@@ -88,3 +88,10 @@ python -m sphinx_autobuild --host 127.0.0.1 --port 8000 docs docs/_build/html
 The complete nine-entry upstream documentation input, native owners, installed
 tool constraints and actual local rebuild evidence are recorded in
 [the documentation dependency audit](development/DOCUMENTATION_DEPENDENCY_INPUTS_AUDIT.md).
+
+The complete three-stage contributor and publication workflow is described in
+[the documentation build guide](development/DOCUMENTATION_BUILD_WORKFLOW.md).
+The same optional tools are also available through `make -C docs html` and
+`make -C docs live`. Both executable names must be on PATH for the Makefile's
+original preflight. See [the Makefile audit](development/DOCUMENTATION_MAKEFILE_AUDIT.md)
+for target dispatch, actual build/clean and retained publication boundaries.
