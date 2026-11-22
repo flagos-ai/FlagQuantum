@@ -660,9 +660,15 @@ def _plan_sabre_trial(
             index for index in front if not blocks[index] or separation(index) == 1
         ]
         if executable:
+            # Keep blocked instructions ahead of newly released successors,
+            # without repeatedly shifting the ready list for each removal.
+            if len(executable) == len(front):
+                front = []
+            else:
+                ready = set(executable)
+                front = [index for index in front if index not in ready]
             frontier_lookahead = None
             for index in executable:
-                front.remove(index)
                 placements[index] = tuple(
                     logical_to_physical[wire] for wire in wires[index]
                 )
@@ -677,7 +683,7 @@ def _plan_sabre_trial(
             seen_layouts.clear()
             continue
 
-        blocked_front = [index for index in front if blocks[index]]
+        blocked_front = front
         layout = tuple(logical_to_physical)
         if layout in seen_layouts or stalled >= stalled_limit:
             # Qiskit's release valve undoes speculation since the last routed
