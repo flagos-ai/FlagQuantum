@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
@@ -969,6 +970,135 @@ def test_no_rewrite_hash_reuse_keeps_mutation_checks(
     assert fresh is not None
     assert fresh.source_content_hash != result.source_content_hash
     assert fresh.optimization_identity != result.optimization_identity
+
+
+def _nonreducing_cz_source() -> CircuitIR:
+    return CircuitIR(
+        2,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction("rx", (0,), {"theta": 0.37}),
+            Instruction("rz", (1,), {"theta": -0.28}),
+            Instruction("cz", (1, 0)),
+        ),
+    )
+
+
+def test_nonreducing_cz_blocks_keep_resource_rejection_precedence() -> None:
+    source = _nonreducing_cz_source()
+    product = _cz_blocks._product(source.instructions, (0, 1))
+    assert product is not None
+    proposal = _cz_blocks.synthesize_two_qubit(
+        product, qubits=(0, 1), entangler="cz", z_rotation="rz", pulse_opcode="rx"
+    )
+    assert proposal is not None
+    count = sum(item.name == "cz" for item in proposal)
+    assert count == 2
+    bound = count + 10 * (count + 1)
+    for budget in (0, len(proposal) - 1, len(proposal), bound, 256):
+        reasons: list[str] = []
+        assert (
+            _cz_blocks._candidate(
+                source.instructions,
+                (0, 1),
+                max_output_operations=budget,
+                on_rejection=reasons.append,
+            )
+            is None
+        )
+        assert reasons == [
+            (
+                "instruction_growth_rejected"
+                if budget < len(proposal)
+                else "not_lower_cz_cost"
+            )
+        ]
+
+
+def test_general_cz_raw_form_respects_its_instruction_bound() -> None:
+    for seed in range(12):
+        rng = random.Random(seed)
+        instructions: list[Instruction] = []
+        for _ in range(4):
+            instructions.extend(
+                (
+                    Instruction("rx", (0,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("rz", (1,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("cz", (1, 0)),
+                    Instruction("rx", (1,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("rz", (0,), {"theta": rng.uniform(-2, 2)}),
+                )
+            )
+        source = CircuitIR(2, tuple(instructions))
+        proposal = _cz_blocks.synthesize_two_qubit(
+            _operator(source).tolist(),
+            qubits=(0, 1),
+            entangler="cz",
+            z_rotation="rz",
+            pulse_opcode="rx",
+        )
+        assert proposal is not None
+        count = sum(item.name == "cz" for item in proposal)
+        assert count <= 3
+        assert len(proposal) <= count + 10 * (count + 1)
+        _equivalent(source, CircuitIR(2, proposal))
+
+
+@pytest.mark.parametrize(
+    ("instructions", "maximum_czs"),
+    [
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+            ),
+            0,
+            id="refocused-pi-x",
+        ),
+        pytest.param(
+            (
+                Instruction("rz", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+                Instruction("rz", (1,), {"theta": 0.379}),
+            ),
+            0,
+            id="refocused-pi-x-with-frame",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi / 2}),
+                Instruction("cz", (0, 1)),
+            ),
+            1,
+            id="quarter-turn-pauli-product",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (1,), {"theta": 0.379}),
+                Instruction("cz", (0, 1)),
+            ),
+            2,
+            id="mixed-wire-two-cz-reduction",
+        ),
+    ],
+)
+def test_reducing_cz_blocks_preserve_complete_operators(
+    instructions: tuple[Instruction, ...], maximum_czs: int
+) -> None:
+    source = CircuitIR(2, instructions)
+    proposal = _cz_blocks._candidate(
+        source.instructions, (0, 1), max_output_operations=256
+    )
+    assert proposal is not None
+    assert sum(item.name == "cz" for item in proposal) <= maximum_czs
+    _equivalent(source, CircuitIR(2, proposal))
 
 
 def test_native_matrix_reads_preserve_the_operand_position_of_shared_wires() -> None:
