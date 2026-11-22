@@ -34,7 +34,9 @@ def _linear_matrix(
     return tuple(rows)
 
 
-def _lower_eliminate(rows: list[int], section_size: int) -> list[tuple[int, int]]:
+def _lower_eliminate(
+    rows: list[int], section_size: int, operation_limit: int | None = None
+) -> list[tuple[int, int]] | None:
     operations: list[tuple[int, int]] = []
     width = len(rows)
     for start in range(0, width, section_size):
@@ -49,6 +51,8 @@ def _lower_eliminate(rows: list[int], section_size: int) -> list[tuple[int, int]
                 control = patterns[pattern]
                 rows[row] ^= rows[control]
                 operations.append((control, row))
+                if operation_limit is not None and len(operations) >= operation_limit:
+                    return None
             else:
                 patterns[pattern] = row
         for column in range(start, stop):
@@ -58,31 +62,60 @@ def _lower_eliminate(rows: list[int], section_size: int) -> list[tuple[int, int]
                     if not diagonal:
                         rows[column] ^= rows[row]
                         operations.append((row, column))
+                        if (
+                            operation_limit is not None
+                            and len(operations) >= operation_limit
+                        ):
+                            return None
                         diagonal = True
                     rows[row] ^= rows[column]
                     operations.append((column, row))
+                    if (
+                        operation_limit is not None
+                        and len(operations) >= operation_limit
+                    ):
+                        return None
                 # Qiskit's back reduction avoids a dense pivot growing later rows.
                 if (rows[column] & rows[row]).bit_count() > 1:
                     rows[column] ^= rows[row]
                     operations.append((row, column))
+                    if (
+                        operation_limit is not None
+                        and len(operations) >= operation_limit
+                    ):
+                        return None
     return operations
 
 
-def _pmh_synthesize(matrix: tuple[int, ...]) -> tuple[tuple[int, int], ...]:
+def _pmh_synthesize(
+    matrix: tuple[int, ...], *, operation_limit: int | None = None
+) -> tuple[tuple[int, int], ...] | None:
     """Adapt Qiskit's PMH row/column elimination without external matrix types."""
     width = len(matrix)
     if any(type(row) is not int or not 0 <= row < 1 << width for row in matrix):
         raise ValueError("Linear rows must be binary masks within the square matrix")
+    if operation_limit is not None and (
+        type(operation_limit) is not int or operation_limit < 1
+    ):
+        raise ValueError("Linear synthesis operation limit must be a positive integer")
     if not width:
         return ()
     section_size = max(2, math.floor(0.56 * math.log2(width)))
     rows = list(matrix)
-    lower = _lower_eliminate(rows, section_size)
+    lower = _lower_eliminate(rows, section_size, operation_limit)
+    if lower is None:
+        return None
     transposed = [
         sum(((rows[row] >> column) & 1) << row for row in range(width))
         for column in range(width)
     ]
-    upper = _lower_eliminate(transposed, section_size)
+    upper = _lower_eliminate(
+        transposed,
+        section_size,
+        None if operation_limit is None else operation_limit - len(lower),
+    )
+    if upper is None:
+        return None
     if transposed != [1 << wire for wire in range(width)]:
         raise ValueError("Linear synthesis requires an invertible binary matrix")
     return tuple((target, control) for control, target in upper) + tuple(
@@ -99,8 +132,8 @@ def _rewrite_block(
     local = {wire: index for index, wire in enumerate(physical)}
     source = tuple((local[item.wires[0]], local[item.wires[1]]) for item in block)
     matrix = _linear_matrix(source, len(physical))
-    candidate = _pmh_synthesize(matrix)
-    if len(candidate) >= len(block):
+    candidate = _pmh_synthesize(matrix, operation_limit=len(block))
+    if candidate is None:
         return tuple(block)
     if _linear_matrix(candidate, len(physical)) != matrix:
         raise CompilationError("CNOT synthesis changed the exact binary transformation")

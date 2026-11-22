@@ -129,3 +129,15 @@ operation count cannot strictly beat the source block. It must preserve every
 previously accepted proposal and retain a new published implementation before
 repeating the same fixed controls. This is an algorithmic emission budget, not
 a looser wall/memory gate or a smaller fixture. No default admission is granted.
+
+## Bounded emission successor
+
+The successor adds a strictly exclusive operation limit to both elimination
+phases. The first phase stops as soon as its recorded operation count reaches
+the source block count; the second receives only the remaining allowance.
+PMH concatenates these operations without later cancellation, so an exceeded
+allowance cannot become a strictly shorter proposal. Rejected candidates no
+longer allocate an unbounded gate sequence relative to the 256-gate input cap.
+Full binary-map and whole-program depth acceptance still apply. The same
+72-pair inputs, samples and resource thresholds will be retained; the first
+failed observations above remain authoritative for their implementation.

@@ -42,6 +42,7 @@ def test_every_three_wire_binary_matrix_against_its_complete_truth_table() -> No
                 linear._pmh_synthesize(matrix)
         else:
             candidate = linear._pmh_synthesize(matrix)
+            assert candidate is not None
             assert [_apply(candidate, bits) for bits in range(8)] == expected
             accepted += 1
     assert accepted == 168
@@ -58,6 +59,7 @@ def test_seeded_wider_networks_against_independent_bit_execution(width: int) -> 
             )
         )
         candidate = linear._pmh_synthesize(linear._linear_matrix(source, width))
+        assert candidate is not None
         for bits in [0, (1 << width) - 1, *(rng.getrandbits(width) for _ in range(30))]:
             assert _apply(source, bits) == _apply(candidate, bits)
 
@@ -272,3 +274,25 @@ def test_dense_networks_preserve_non_clifford_input_states(width: int) -> None:
         torch.testing.assert_close(
             fq.Circuit.from_ir(result).state(), circuit.state(), atol=1e-13, rtol=0
         )
+
+
+@pytest.mark.parametrize("limit", [0, -1, True])
+def test_invalid_operation_limits_are_refused(limit: int) -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        linear._pmh_synthesize((1, 2), operation_limit=limit)
+
+
+@pytest.mark.parametrize("width", [3, 8, 16])
+def test_emission_budget_preserves_every_strictly_shorter_proposal(width: int) -> None:
+    rng = random.Random(width)
+    for _ in range(20):
+        source = tuple(
+            (a, b) for a, b in (rng.sample(range(width), 2) for _ in range(4 * width))
+        )
+        matrix = linear._linear_matrix(source, width)
+        expected = linear._pmh_synthesize(matrix)
+        assert expected is not None
+        accepted = linear._pmh_synthesize(matrix, operation_limit=len(expected) + 1)
+        assert accepted == expected
+        if expected:
+            assert linear._pmh_synthesize(matrix, operation_limit=len(expected)) is None
