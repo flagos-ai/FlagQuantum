@@ -71,3 +71,46 @@ model, with no gate-level decomposition. Tests compare the original
 window and operand bindings, the full small source joint operator,
 raw measurement histories, and the truncated kickback with a prepared
 and subsequently cleared gradient.
+
+
+## Stored catalog dependency interface
+
+This batch retains the complete locked source-file graph through the existing
+Program and append paths. Words use MSB-first physical labels and caller-owned
+through storage. Textbook q is unsigned. Gradient QFT and approximate QFT keep
+a separate unsigned fractional gradient through word owned by the caller.
+Shared multiplication and controlled addition own their measured carry work,
+which must return to zero. TwoBitFFFT has x/y QBit through ports and no work.
+Its original ignored-adjoint decomposition remains separate from the native
+exact inverse. Existing primitive execution and source-model evidence is reused.
+Compiler owns stored word/call composition, Algorithms owns the already accepted
+fermionic Fourier sequence, and the example provider owns catalog glyphs and
+literal-definition qualification. No protected contract change is required.
+
+
+## Complete catalog graph closure
+
+Both complete source factory roots retain all 32 and 270 ordered calls.
+Their controlled shift-one AddIntoPhaseGrad children remain original atomic
+refusals. Shared native CAdd and its exact adjoint own measured work below
+those boundaries. Final swaps disjoint from the last H occupy its Cirq EARLIEST
+moment; the swap touching that last data bit follows. The stored graph retains
+this source order while the existing flat emitter remains an independent
+execution path. Six-bit/five-gradient-bit literal execution uses 112 T/T-dagger,
+232 CX and 28 measurements on nineteen physical wires. Fifty-bit/25-gradient-bit
+execution uses 7200 T/T-dagger, 16004 CX and 1800 measurements on 123 wires.
+Separate original models are eighteen/1702 Toffoli, T-equivalent 72/6808 and
+QubitCount eleven/75. Complete small joint operators and every forward and
+existing-emitter inverse raw history pass. The large factory uses exact stored
+calls and inventories. Stored construction currently requires at least two
+gradient bits; existing zero/one-bit flat execution and original negative-model
+boundaries remain separately recorded under Q-0637.
+
+An independent immutable-source probe confirms successful stored decompositions
+for `(width, precision)` equal to `(1, 0)`, `(1, 1)`, `(2, 1)` and `(3, 1)`.
+The first contains one Hadamard and has no gradient port. The one-bit-gradient
+cases retain the caller gradient, with zero-width phase-add input omitted from
+the child signature. `(3, 0)` raises the original `KeyError('phase_grad')`.
+Extending the stored native constructor to these successful small-precision
+cases remains a concrete interface-composition gap. The current catalog
+factories use larger precisions and their graph acceptance does not close it.
