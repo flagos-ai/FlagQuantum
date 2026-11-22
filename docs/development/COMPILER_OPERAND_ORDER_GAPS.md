@@ -187,3 +187,57 @@ check remains unqualified because this development repository has additional
 refs resolving 16 historically declared revisions. Its declarations and
 assertions are unchanged. These attempts are not full-suite passes; exact-head
 CI must qualify the complete pull request.
+
+## Subsequent two-body layer projection: also rejected
+
+Cirq 1.7.0's `RouteCQC._get_one_and_two_qubit_ops_as_timesteps` assigns local
+operations around a circuit of two-qubit timesteps. Reviewing that existing
+upstream mechanism exposed a narrower FlagQuantum difference: mixed-instruction
+ready batches can split an otherwise unchanged two-body layer when local gates
+are subdivided. The additional candidate drains ready nonblocking dependencies
+before scoring the ready two-qubit layer, using the existing DAG indegrees and
+unchanged eight-layer/160-operation/32-candidate bounds. Within that budget,
+local subdivisions cannot split the projected layer. Classical joins still wait
+for all predecessors. Pure two-qubit projection and the existing Cirq-derived
+ranking mechanism remain unchanged. No new dependency or public contract is
+introduced; the existing Cirq Apache-2.0 attribution remains with the source.
+
+The [complete candidate and tests](evidence/compiler-layer-projection-candidate.json)
+are frozen for inspection. All 21 focused tests pass, including 300 seeded
+local-subdivision comparisons across widths 4/6/8, input immutability, classical
+joins, unchanged projection/search caps, existing Cirq source comparisons and
+shared-gradient routing. This is a projection invariant, not proof that delivered
+native compilation improves.
+
+The [complete fixed screen](evidence/compiler-layer-projection-screen.json)
+uses the same 60 inspected inputs, seed 11, both workflows and unchanged
+SDKBench acceptance. All 120 outputs pass. Ordinary compilation has 59 equal
+results and one improvement: twelve-wire Ising/ring depth 86 to 85, with 168 CZs.
+Target-artifact compilation has 52 equal, three improvements, three regressions
+and two tradeoffs. Every changed native result is retained below.
+
+| Target-artifact input | Baseline CZ / depth | Candidate CZ / depth |
+| --- | ---: | ---: |
+| 6 / QFT / line | 75 / 52 | 103 / 68 |
+| 8 / QFT / line | 156 / 77 | 184 / 97 |
+| 8 / QFT / ring | 142 / 78 | 134 / 73 |
+| 12 / Ising / ring | 162 / 82 | 162 / 81 |
+| 12 / QFT / line | 396 / 137 | 398 / 135 |
+| 12 / QFT / ring | 322 / 131 | 330 / 114 |
+| 12 / QFT / grid | 352 / 150 | 346 / 144 |
+| 12 / QFT / sparse | 328 / 156 | 402 / 194 |
+
+The selected ordinary QFT/sparse witness and both repetition workflows remain
+unchanged. This projection candidate is also rejected for default use, and its
+code is removed from executable production paths. Improving representation
+invariance or the restored-SWAP objective alone does not guarantee a better
+post-synthesis native cost. A prospective release study or resource measurement
+would not cure these already-observed quality regressions.
+
+The [independent replay](evidence/compiler-layer-projection-replay.json)
+checks all five family-file hashes, complete input/workflow accounting, exact
+reconstruction of the original observation bytes, and all 120 unchanged evaluator
+results without importing producer SDKs. The same inspected-input, probe-only
+larger-width and shared-host limits apply; this adds no latency, memory or SDK
+ranking claim. Both candidate mechanisms remain rejected, rather than being
+selected according to their best examples.
