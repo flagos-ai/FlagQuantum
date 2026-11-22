@@ -49,3 +49,11 @@ physical emitters. Coordinates are scalar MSB-first bounded words with concrete
 extents greater than one. Run `tests/unit/test_majorana_component.py` and
 `tests/unit/test_hubbard_select_component.py` for exact recursive source calls,
 complex amplitudes, raw histories and private-work checks.
+
+`lookup_binding.py` composes complete integer-table initialization and measured
+cleanup using existing recursive lookup and unlookup. Ports are MSB-first,
+clean workspace follows source lease order, and classical phase slots follow
+caller-declared storage. Run `tests/unit/test_lookup_binding.py` for complete
+marked streams, normal append execution and exhaustive small raw branches.
+`docs/development/LOOKUP_BINDING_AUDIT.md` records the original six-address-bit
+work shortfall, failed-call allocation leak and portable table-size boundary.
