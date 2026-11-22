@@ -1203,3 +1203,26 @@ Run `tests/unit/test_operand_union_views.py` with the existing identity, array,
 broadcast, condition-scope and shared erasure regressions after changing this
 boundary. The complete fourteen-file mapping and raw/effective guard accounting
 are recorded in `docs/development/OPERAND_UNION_AUDIT.md`.
+
+### Physical operand array views
+
+`artifacts.operand_array.OperandArray` owns immutable physical identities and
+retains owners across range views. Reverse and clamped prefix/suffix transforms
+preserve static hints. `repeat_false` uses one cell with zero physical stride.
+Private `artifacts._array_views` owns source constructor contexts, truthful type
+hints, metadata recomputation, compact copying and checked family projections.
+The existing register binders consume these same values through normal append.
+
+```python
+from flagquantum.compiler.artifacts.operand_array import OperandArray
+from flagquantum.compiler.registers.layout.operand_word import bind_operand_array
+
+word = bind_operand_array(range(5)).reversed().skip(1).keep(2)
+assert [item.value for item in word] == [3, 2]
+assert len(OperandArray.repeat_false(1_000_000)._owner) == 1
+```
+
+Run `tests/unit/test_operand_array_views.py` with the existing operand/broadcast
+suite. `docs/development/OPERAND_ARRAY_VIEW_AUDIT.md` maps all twelve source files
+and distinguishes native ownership adaptation, source predicate defects, raw
+pointer casts, physical counts and analytical models.
