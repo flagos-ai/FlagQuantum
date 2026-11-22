@@ -88,3 +88,23 @@ This is an SDKBench-checkout workflow using each installed FlagQuantum wheel.
 Expected: 12 selected tests pass for each declared installation. It invokes no
 remote or paid quantum job. Reproducing the full build requires the workflow's
 retained sources, build/runtime locks, wheels and separate interpreters.
+
+## Evidence-origin integration correction
+
+The first PR CI run failed the checked-in provenance-vocabulary check because
+the initial index embedded an `external_dependency` origin. That value is
+supported by the revision declaration table but not by the separate inline
+provenance reader. The final repository index moves this origin to the existing
+`evidence-revision-origins.toml` table and records the original audit-index hash
+and the normalization explicitly. Sources, raw artifacts, hashes, numerical
+evidence and acceptance results are unchanged. No gate or supported-origin
+vocabulary was altered, and no scientific workflow was rerun.
+
+All 58 evidence-revision tests pass in an isolated no-tags checkout containing
+the identical changed bytes. The first local full-file attempt also exposed an
+omitted example-manifest sparse fixture and 16 historical-origin conflicts
+caused by the local-only `tn-calibration-baseline-20260731` tag. Restoring the
+tracked fixture and verifying GitHub has no matching tag explains the setup
+difference; the isolated clone excludes local tags. The source tag and historical
+declarations remain unchanged. The corrected inline-origin test also passes in
+the original worktree. These are provenance checks, not performance reruns.

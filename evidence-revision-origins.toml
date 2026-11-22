@@ -1172,3 +1172,14 @@ path = "docs/development/evidence/"
 value = "9aa9260920984e2ca05bcb293abb885fccd9c144"
 origin = "external_dependency"
 repository = "sdkbench-org/sdkbench"
+
+# Installed-wheel conformance uses this SDKBench workflow revision. Keep the
+# external origin in this authoritative table; inline provenance readers accept
+# repository/producing-host history only.
+[[artifact]]
+path = "docs/development/evidence/compiler-installed-wheel-controls.json"
+
+[[artifact.revision]]
+value = "9cb8f184825e658f7378763a1f3a39c57720233d"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"

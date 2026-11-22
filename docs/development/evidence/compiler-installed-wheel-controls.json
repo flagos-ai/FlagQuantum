@@ -1,7 +1,6 @@
 {
   "scope": "Installed-wheel native conformance, not a prospective benchmark, package release, qualified performance result or SDK ranking",
   "source_commit": "9cb8f184825e658f7378763a1f3a39c57720233d",
-  "source_commit_origin": "external_dependency",
   "source_repository": "sdkbench-org/sdkbench",
   "run_id": 44982483623,
   "run_attempt": 1,
@@ -281,5 +280,7 @@
     "No entropy draw, resource-qualified campaign, build attestation, symbolic/gradient certification, larger widths or scalability claim.",
     "Artifact expires at the recorded GitHub retention deadline; locally retained bytes do not establish indefinite public availability.",
     "Second source predates the separately merged telemetry and identity-restoration PRs; this run does not certify those later source revisions."
-  ]
+  ],
+  "original_audit_index_sha256": "123c6db472a7761eec978ae01dab493f04c862df25db9b8329dc986727f0d1b1",
+  "index_origin_normalization": "The original source_commit_origin external_dependency stamp is represented by the authoritative evidence-revision-origins.toml declaration; all source, result and numerical fields are retained. The original audit index is retained locally under its recorded hash."
 }
