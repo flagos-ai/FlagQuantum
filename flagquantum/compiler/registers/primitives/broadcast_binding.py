@@ -68,3 +68,8 @@ def broadcast_x_ir(target: object) -> tuple[Instruction, ...]:
         )
     )
 
+
+def broadcast_z_ir(target: object) -> tuple[Instruction, ...]:
+    """Emit each Z or scalar sign without folding repeated literal phases."""
+    word = bind_z_word(bind_operand_word(target))
+    return tuple(gate for operand in word for gate in _flip(None, operand))
