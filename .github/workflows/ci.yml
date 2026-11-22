@@ -2490,7 +2490,8 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
+            -p tools.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
@@ -2501,7 +2502,8 @@ jobs:
           plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= -o faulthandler_timeout=300
+            -p tools.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
