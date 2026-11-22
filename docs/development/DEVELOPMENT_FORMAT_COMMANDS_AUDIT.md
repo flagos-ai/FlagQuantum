@@ -105,3 +105,24 @@ Final concentrated regression passed 409 tests with 914 visible warnings and zer
 skips. Strict mypy passed all five changed Python files. Black, Ruff, Integration
 scope, architecture, IR, API and diff checks passed. The shared-query ownership
 change and final version-query failure case were included in this final run.
+
+
+## Complete formatter dependency input
+
+Q-0096 is now accepted as the complete three-entry formatter declaration.
+The frozen input contains Flynt ~=0.60, Black ~=24.8.0 and isort ~=5.10.1 in
+that order. The actual source-comparison tools are Flynt 0.78, Black 24.8.0 and
+isort 5.10.1. All three satisfy their original constraints, retain installed
+license files and execute through the original formatter command evidence.
+Astor remains available as Flynt's conversion dependency. Complete input and
+installed direct-dependency checks run alongside the existing actual format
+and semantic round-trip tests.
+
+Native ownership remains the existing format_command process boundary. Flynt
+retains conversion, while native Black and Ruff import sorting follow the
+existing root pyproject development policy. This explicit configuration and
+sorter adaptation is already measured in the formatter tests. The optional
+source-comparison environment supplies the original isort and Black versions.
+The production and native development dependency authority remains the root
+project metadata. Full source format.env.txt includes the scientific runtime
+and retains its independent Q-0105 acceptance scope.

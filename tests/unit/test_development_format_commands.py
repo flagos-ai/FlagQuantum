@@ -2,6 +2,7 @@
 
 import csv
 import hashlib
+import importlib.metadata
 import itertools
 import json
 import os
@@ -54,6 +55,37 @@ def test_frozen_formatter_and_direct_dependency_sources() -> None:
                 )
                 verified.add(row["编号"])
     assert verified == selected
+
+
+def test_complete_format_dependency_declaration() -> None:
+    from packaging.requirements import Requirement
+    from packaging.utils import canonicalize_name
+
+    lines = (
+        (REFERENCE / "dev_tools/requirements/deps/format.txt").read_text().splitlines()
+    )
+    requirements = [
+        Requirement(line) for line in lines if line and not line.startswith("#")
+    ]
+    assert [str(requirement) for requirement in requirements] == [
+        "flynt~=0.60",
+        "black~=24.8.0",
+        "isort~=5.10.1",
+    ]
+    installed = {
+        str(canonicalize_name(distribution.metadata["Name"])): distribution
+        for distribution in importlib.metadata.distributions(
+            path=[str(REFERENCE / "lint-deps"), str(DEPENDENCIES)]
+        )
+    }
+    for requirement in requirements:
+        distribution = installed[canonicalize_name(requirement.name)]
+        assert distribution.version in requirement.specifier
+        assert any("license" in str(path).lower() for path in distribution.files or [])
+    assert installed["flynt"].version == "0.78"
+    assert installed["black"].version == "24.8.0"
+    assert installed["isort"].version == "5.10.1"
+    assert "astor" in installed
 
 
 def original(
