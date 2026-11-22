@@ -196,3 +196,10 @@ retain the original controlled fanout with atomic Toffoli leaves. Model Toffoli
 cost and emitted atomic gates are reported separately. Run
 `python -m pytest tests/unit/test_subtraction_control.py tests/unit/test_subtraction_foreign_file.py -q`.
 The ordinary `circuit.append(op)` entry remains in `register_subtraction.py`.
+
+`bounded_increment_component.py` binds the existing unit-step emitter beneath
+the original atomic ModAddK boundary. Controls are ordered QBit elements and the
+unsigned word is MSB first. Padding states are fixed. Private clean scratch and
+feedback remain owned by the existing emitter. Run `test_bounded_increment.py`
+and `test_hubbard_stored_graph.py`. Original ModAddK has no primitive recipe, so
+keep its five-Add model separate from literal native gates.
