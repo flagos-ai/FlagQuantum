@@ -7,6 +7,7 @@ import io
 import json
 import os
 import runpy
+import shutil
 import subprocess
 import sys
 import types
@@ -94,6 +95,12 @@ def test_source_render_order_and_toc_equivalence(original: Any, tmp_path: Path) 
     (tmp_path / "docs/bloqs").mkdir(parents=True)
     original.write_toc()
     expected = (tmp_path / "docs/bloqs/index.rst").read_text()
+    committed_index = REFERENCE / "docs/bloqs/index.rst"
+    raw = committed_index.read_bytes()
+    assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == (
+        "db2da97b72b546f02a246d2bb3ef1df39e43d175"
+    )
+    assert expected == committed_index.read_text()
     original_rows = list(original._all_nbspecs())
     source_bloqs = source_globals["SOURCE_DIR"] / "bloqs"
     replacements = [
@@ -289,3 +296,42 @@ def test_actual_publication_module_command(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     assert len(list((tmp_path / "docs/components").glob("*.ipynb"))) == 120
     assert (tmp_path / "docs/components/index.rst").exists()
+
+
+def test_complete_native_library_site_from_authored_notebooks(tmp_path: Path) -> None:
+    pytest.importorskip("sphinx")
+    pytest.importorskip("myst_nb")
+    pytest.importorskip("pydata_sphinx_theme")
+    source = tmp_path / "docs"
+    source.mkdir()
+    for name in ("_static", "_templates"):
+        shutil.copytree(ROOT / "docs" / name, source / name)
+    shutil.copyfile(ROOT / "docs/conf.py", source / "conf.py")
+    (tmp_path / "assets").mkdir()
+    shutil.copyfile(
+        ROOT / "assets/logo_flagquantum.png",
+        tmp_path / "assets/logo_flagquantum.png",
+    )
+    native.publish_notebooks(ROOT / "examples/notebooks", source / "components")
+    (source / "index.rst").write_text(
+        "Component documentation\n=======================\n\n"
+        ".. toctree::\n\n   components/index\n"
+    )
+    output = tmp_path / "html"
+    result = subprocess.run(
+        [sys.executable, "-m", "sphinx", "-b", "html", str(source), str(output)],
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)},
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "ERROR:" not in result.stderr
+    published = tuple((source / "components").glob("*.ipynb"))
+    assert len(published) == 120
+    for path in published:
+        assert (output / "components" / path.with_suffix(".html").name).is_file()
+    index = (output / "components/index.html").read_text()
+    assert "Component Library" in index
+    assert "register_addition.html" in index
+    assert "binary_field_inverse.html" in index

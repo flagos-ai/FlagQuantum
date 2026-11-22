@@ -83,3 +83,30 @@ zero skips. Strict mypy passed both changed Python files. Black, Ruff, Integrati
 team scope, architecture, multi-level IR, public API and whitespace checks passed.
 The previously recorded full default-suite timeout and isolated dependency failure
 remain unresolved and are not represented as a passing whole-repository result.
+
+
+## Committed library index and actual site publication
+
+Q-0133 covers the complete committed `docs/bloqs/index.rst` at the same frozen
+revision. Its Git blob is `db2da97b72b546f02a246d2bb3ef1df39e43d175`.
+The actual unchanged upstream generator produces this exact committed index.
+The existing source-to-native notebook mapping then yields the exact native
+index, including every section, entry, repeated path, caption and depth. The
+only presentation mappings remain the already audited identity and asset paths.
+No separate catalog or registration authority is introduced.
+
+The real native publisher copies all 120 distinct authored notebooks unchanged
+and generates the complete component library. The actual Sphinx CLI renders
+that complete output with the accepted native configuration and execution off.
+All 120 notebook HTML files and the library index are verified, including
+arithmetic and finite-field entries. Content warnings retain ordinary Sphinx
+policy. This acceptance establishes complete catalog publication, while
+warning-free scientific documentation remains open. The local workflow is
+recorded in `docs/README.md`.
+
+This index owns navigation and publication structure. Domain execution,
+complex-amplitude, workspace and separate primitive/model resource evidence
+remain with the existing algorithm owners. The root homepage Q-0135,
+fundamentals Q-0132 and API include Q-0136 remain separate. In particular,
+the complete API generator still retains the previously recorded native
+setter-signature refusal. No additional quantum primitive or model is defined.

@@ -59,3 +59,18 @@ Notebook outputs are rendered as stored. Rendering keeps notebook execution off.
 Local project branding reuses `assets/logo_flagquantum.png`. Source-audit
 environment details and site acceptance are recorded in
 [the documentation site audit](development/DOCUMENTATION_SITE_FILE_AUDIT.md).
+
+The complete component notebook catalog can be published before the same build.
+Publication preserves the authored notebook bytes and uses the explicit section
+order maintained by the existing development tools.
+
+```console
+python -m tools.development.notebook_publication
+python -m sphinx -b html docs docs/_build/html
+```
+
+The generated library entry is `docs/_build/html/components/index.html`, with
+120 distinct authored notebooks. Generated copies under `docs/components` follow
+the checkout's existing publication and retention policy. The root homepage's
+full catalog integration and the API generator's setter-signature refusal are
+tracked separately in the development audits.
