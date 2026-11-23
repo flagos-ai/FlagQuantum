@@ -15,10 +15,10 @@ contains two classes and three tests.
 The scalar ports have no bit-order choice. Native contractions retain surviving
 wires in their original order and sum outer products of unnormalized outcome
 kets. An explicit tensor supplier can request trace over an internal edge or
-provide the identity effect for an isolated input. Automatic discovery of a
-logical quantum discard from a Program-owned operation remains open. A physical
-reset only verifies retirement to zero at fixed width. Those boundaries keep
-Q-0234 open.
+provide the identity effect for an isolated input. At the original audit, binding
+a logical quantum discard from a Program-owned declaration remained open. A
+physical reset verified retirement to zero at fixed width. The explicit typed
+provider closure below resolves that logical binding obligation.
 
 ## Test disposition
 
@@ -53,3 +53,77 @@ with the existing `circuit.append(op)` workflow:
 ```bash
 python -m pytest -q tests/unit/test_register_discard.py tests/unit/test_tensor_network_discard.py
 ```
+
+## Complete typed discard binding on 2026-11-23
+
+The complete source has two classes, two cached signatures, the classical
+callback and two tensor callbacks. Both class declarations and their five
+methods/properties map to existing native responsibilities. The classical signature and callback keep the
+accepted `discard_word_function` and classical execution evidence. Compiler's
+`component_discard.discard_qubit_function` now supplies the exact QBit LEFT `q`
+signature as a bodyless `FunctionRecord`. It retains the original absence of a
+classical action and physical decomposition. It uses the already admitted typed
+declaration contract without adding an opcode, serialization field or root API.
+
+Simulation's `tensor_network/discard.discard_tensor_indices` supplies the single
+incoming bit label for either declaration, replacing the source `DiscardInd`
+wrapper with the existing native integer protocol. The caller binds the exact
+function name through `ComponentTensorProviders`. Compiler selection and mixed
+Simulation supply then consume the same binding. Matching input signatures do
+not imply discard semantics because projection and release can have those
+signatures too. No Python source-name discovery or new registry is introduced.
+
+The owner validates one scalar exact CBit `c` or QBit `q` LEFT port and its
+single nonnegative integer input label. It returns that existing label without
+allocating a numerical edge or tensor. Mixed SSA wiring, conjugate doubling,
+trace merging, contraction and external input effects stay with their existing
+owners. Pure graphs keep their discard/classical-port refusal. Missing providers
+retain the existing explicit failure. Both original standalone mixed discard
+contractions raise KeyError; native direct-input trace effects extend that
+failure to the identity effect and are recorded separately from source matches.
+
+### Complete channel and physical evidence
+
+Both precision profiles, complex64 and complex128, verify full quantum channels
+with an entangling H/S/CNOT prefix, environment phase in two placements and an
+idle coherent spectator. The original gate tensors and unchanged source mixed
+contraction supply the independent channel. Original Cirq gate matrices supply
+every unnormalized complex hidden-outcome sector. The native explicit provider
+also replaces the earlier manually supplied classical discard in a two-basis
+measurement graph with classical array spectators. Complete channels retain the
+original port order and agree within the recorded precision tolerance.
+
+The existing append consumer applies H, S, CX and a physical reset to retain the
+discarded slot. It matches the logical reduced density on survivor axes. Both
+hidden measurement outcomes retain their complete complex amplitudes, while
+the retired physical slot and an independent clean work wire are zero. Full
+input-state gradients agree with an independent direct partial trace. Existing
+source tests retain classical discard's empty result, quantum classical refusal,
+projection-versus-discard distinction and dephasing construction.
+
+| Account | Observed result |
+|---|---|
+| Numerical discard supplier | Zero new tensors, labels, quantum primitives, measurements or workspace |
+| Quantum logical declaration | No stored physical decomposition or classical action, matching source absence |
+| Existing retained-slot append | One H, one S, one CX and one reset, zero exposed result slots |
+| Explicit hidden-outcome inspection | One measurement added only by the branch-inspection fixture, then reset |
+| Original classical discard model | Zero qubits and empty QEC categories |
+| Original quantum discard model | One logical qubit, QEC query raises DecomposeNotImplementedError |
+
+The reset path and modeled source resources remain distinct. No source gate
+stream is invented for an operation with no decomposition. Existing physical
+reset trajectory checks and all raw measurement/parity/feedback histories are
+reused from the accepted dependencies rather than duplicated.
+
+The complete Q-0234 source and direct dependencies are accepted. The final
+concentrated selection passed 694 cases, including all three unchanged original
+tests and all 17 explicit-provider cases, with no skips. The affected local
+integration selection passed 145 cases with 18 existing deprecation warnings.
+Strict typing passed the two implementation files and their test. Black, Ruff,
+both domain scopes, repository language, architecture, IR and API checks passed.
+The dependency-policy scan retains exactly the prior 720 findings, with no new
+findings. All 20 frozen source and dependency blobs were verified unchanged.
+The initial sandbox-only notebook failure required a local Jupyter socket;
+the final socket-enabled rerun passed the same full selection. These results
+qualify the recorded CPU paths and retain the original missing decomposition,
+classical-action refusal and standalone contraction failure described above.

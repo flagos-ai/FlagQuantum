@@ -151,6 +151,15 @@ See [conjugate index trace](../../../docs/development/TENSOR_TRACE_INDICES.md)
 for source reindexing, complete channels, existing partial-trace replacement,
 negative topology checks and measured branch verification.
 
+`discard.py` supplies the original scalar classical/quantum input index for an
+explicitly bound discard leaf. The existing `ComponentTensorProviders` mapping
+selects and supplies that same typed function through mixed SSA wiring. Trace
+requests then reach the existing conjugate and contraction owners above. It
+allocates no label or tensor and requires no new Program operation. Explicit
+binding separates discard from projections or releases with identical port
+signatures. See [discard source family](../../../docs/development/DISCARD_FILE_AUDIT.md)
+for source failures, direct-input effects and physical reset ownership.
+
 Open-system register axes and contraction are owned by
 `register_superoperator_binding.py`; see
 [register superoperator binding](../../../docs/development/REGISTER_SUPEROPERATOR_BINDING.md).
