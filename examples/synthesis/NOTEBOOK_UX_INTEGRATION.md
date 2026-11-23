@@ -147,3 +147,42 @@ the integration commit is claimed.
 Historical acceptance above remains bound to its original commits; it is not
 relabeled as a replay of a later integration tree. Raw post-sync logs are in the
 local `notebook-integration-20261122` evidence directory.
+
+
+## CI repair checkpoint: November 23, 2026
+
+The initial PR head failed strict typing and several integration assertions.
+Main was synchronized through `959f25462c5e869a05b1957cc0cd68ef8900680c`.
+The optional arithmetic candidate now has its actual union type. Capacity tests
+follow the approved root-array bounds, and operation-budget tests use the
+improved candidates while retaining one-below-budget rejection and absolute
+reference-state checks. No production budget or validation rule was weakened.
+The Gaussian and clock resource tests account explicitly for a single
+roundoff-sized Walsh rotation; structural costs and independent states remain
+checked. Original resource receipts are unchanged.
+
+The focused suite passes 195 tests. Thermal verification passes 25 tests plus
+the separately rerun original 50-step complete-density test after correcting its
+old depth assertion. The runnable native/Qmod/Circuit comparison still uses
+nine qubits, 14 logical operations and depth nine.
+
+The raw default run records 21630 passed, 801 skipped, 19 failed and eight errors
+in 394.56 seconds. Six failures and six errors concern local socket permissions;
+12 failures and two errors concern insufficient local storage; one failure
+concerns extra private Git refs. After freeing only completed test scratch and
+rebuildable task caches, the five affected environment-test files pass all
+187 tests with local socket permission. The unchanged origin test passes in a
+disposable checkout with recorded available public refs, including the newly
+referenced evidence branch. Recovering every missing public ancestor stopped at
+its explicit 40-object bound; this is a scoped exact-test recheck, not a claim
+of having cloned every remote ancestor. Original refs and origin declarations
+were not changed. The failed raw default run remains failed.
+
+Strict package mypy, Ruff, Black, architecture, API snapshot, language,
+documentation, tracked-path ownership and evidence-retention checks pass.
+The existing untracked local figure outputs are excluded from the PR; an initial
+ownership scan that included those outputs is retained separately from the
+passing tracked-path scan. The
+[CI repair record](NOTEBOOK_UX_CI_REPAIR.json) binds selections and raw hashes.
+Remote checks must still pass on the pushed head before merge readiness is
+claimed. This checkpoint does not replace the historical 212-workflow receipt.
