@@ -1,0 +1,3257 @@
+{
+  "revision": "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453",
+  "traces": [
+    {
+      "actions": [
+        [
+          "max",
+          7
+        ],
+        [
+          "quantum",
+          2,
+          "data"
+        ],
+        [
+          "classical",
+          2,
+          "out"
+        ],
+        [
+          "alloc_q",
+          3
+        ],
+        [
+          "alloc_b",
+          3
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              2
+            ],
+            [
+              "b",
+              2
+            ],
+            [
+              "q",
+              4
+            ],
+            [
+              "b",
+              4
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          3
+        ],
+        [
+          "alloc_b",
+          3
+        ],
+        [
+          "max",
+          6
+        ],
+        [
+          "max",
+          5
+        ],
+        [
+          "alloc_q",
+          1
+        ],
+        [
+          "max",
+          "inf"
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              0
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              0
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              2
+            ],
+            [
+              "q",
+              2
+            ],
+            [
+              "q",
+              3
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          1
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              2
+            ],
+            [
+              "b",
+              2
+            ],
+            [
+              "b",
+              3
+            ]
+          ]
+        ],
+        [
+          "alloc_b",
+          1
+        ]
+      ],
+      "observations": [
+        {
+          "result": null,
+          "error": null,
+          "max": "7",
+          "free": "7",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q0",
+            "q1"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "5",
+          "allocated": 2,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 0,
+            "registers": 1,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "5",
+          "allocated": 2,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q2",
+            "q3",
+            "q4"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "2",
+          "allocated": 5,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b2",
+            "b3",
+            "b4"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "2",
+          "allocated": 5,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "7",
+          "free": "4",
+          "allocated": 3,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q4",
+            "q2",
+            "q5"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "1",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b4",
+            "b2",
+            "b5"
+          ],
+          "error": null,
+          "max": "7",
+          "free": "1",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "6",
+          "free": "0",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Attempted to set max_qubits lower than the number of currently allocated qubits.\n    allocated: 6\n    requested_max: 5\n    current_max: 6",
+          "max": "6",
+          "free": "0",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Attempted to allocate more qubits than the maximum.\n    allocated: 6\n    requested: 1\n    allocated+requested: 7\n    max: 6",
+          "max": "6",
+          "free": "0",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Freed a qubit that wasn't allocated (or was already freed): q(q0)",
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Freed a bit that wasn't allocated (or was already freed): b(0)",
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Freed a qubit that wasn't allocated (or was already freed): q(q2)",
+          "max": "inf",
+          "free": "inf",
+          "allocated": 5,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Freed a bit that wasn't allocated (or was already freed): b(2)",
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 6,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b0 r1\nAPPEND_TO_REGISTER b1 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 2,
+            "bits": 2,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b0",
+                  "b1"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b0\nq0: -data[0]-----------\n             out[1]=b1\nq1: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0
+            ],
+            "classical": [
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        [
+          "alloc_q",
+          4
+        ],
+        [
+          "alloc_b",
+          4
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              0
+            ],
+            [
+              "q",
+              3
+            ],
+            [
+              "q",
+              1
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              1
+            ],
+            [
+              "b",
+              0
+            ],
+            [
+              "b",
+              3
+            ]
+          ]
+        ],
+        [
+          "quantum",
+          2,
+          "data"
+        ],
+        [
+          "classical",
+          2,
+          "out"
+        ],
+        [
+          "alloc_q",
+          5
+        ],
+        [
+          "alloc_b",
+          5
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              3
+            ],
+            [
+              "bool",
+              1
+            ],
+            [
+              "q",
+              1
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          2
+        ]
+      ],
+      "observations": [
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2",
+            "q3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1",
+            "b2",
+            "b3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 1,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 1,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q4",
+            "q5"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 0,
+            "registers": 1,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: ---------\n\nq1: ---------\n\nq2: ---------\n\nq3: ---------\n\nq4: -data[0]-\n\nq5: -data[1]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b4",
+            "b5"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b4 r1\nAPPEND_TO_REGISTER b5 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 6,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b4",
+                  "b5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b4\nq0: -------------------\n             out[1]=b5\nq1: -------------------\n\nq2: -------------------\n\nq3: -------------------\n\nq4: -data[0]-----------\n\nq5: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q1",
+            "q3",
+            "q0",
+            "q6",
+            "q7"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 8,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b4 r1\nAPPEND_TO_REGISTER b5 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 6,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b4",
+                  "b5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b4\nq0: -------------------\n             out[1]=b5\nq1: -------------------\n\nq2: -------------------\n\nq3: -------------------\n\nq4: -data[0]-----------\n\nq5: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b3",
+            "b0",
+            "b1",
+            "b6",
+            "b7"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 8,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b4 r1\nAPPEND_TO_REGISTER b5 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 6,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b4",
+                  "b5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b4\nq0: -------------------\n             out[1]=b5\nq1: -------------------\n\nq2: -------------------\n\nq3: -------------------\n\nq4: -data[0]-----------\n\nq5: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Don't know how to free true from [km.q(3), True, km.q(1)] (expected qubit ids or bit ids).",
+          "max": "inf",
+          "free": "inf",
+          "allocated": 7,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b4 r1\nAPPEND_TO_REGISTER b5 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 6,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b4",
+                  "b5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b4\nq0: -------------------\n             out[1]=b5\nq1: -------------------\n\nq2: -------------------\n\nq3: -------------------\n\nq4: -data[0]-----------\n\nq5: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q3",
+            "q8"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 9,
+          "circuit": {
+            "text": "APPEND_TO_REGISTER q4 r0\nAPPEND_TO_REGISTER q5 r0\nREGISTER r0 \"data\"\nAPPEND_TO_REGISTER b4 r1\nAPPEND_TO_REGISTER b5 r1\nREGISTER r1 \"out\"",
+            "records": 0,
+            "qubits": 6,
+            "bits": 6,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q4",
+                  "q5"
+                ]
+              ],
+              [
+                [
+                  "name",
+                  "out"
+                ],
+                [
+                  "b4",
+                  "b5"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "             out[0]=b4\nq0: -------------------\n             out[1]=b5\nq1: -------------------\n\nq2: -------------------\n\nq3: -------------------\n\nq4: -data[0]-----------\n\nq5: -data[1]-----------",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5,
+              2,
+              7,
+              4
+            ],
+            "classical": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        [
+          "max",
+          0
+        ],
+        [
+          "alloc_q",
+          0
+        ],
+        [
+          "alloc_b",
+          0
+        ],
+        [
+          "quantum",
+          0,
+          "empty"
+        ],
+        [
+          "classical",
+          0,
+          "empty_classical"
+        ],
+        [
+          "alloc_q",
+          1
+        ],
+        [
+          "alloc_b",
+          2
+        ],
+        [
+          "max",
+          3
+        ],
+        [
+          "quantum",
+          3,
+          "data"
+        ],
+        [
+          "max",
+          2
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              1
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          0
+        ],
+        [
+          "max",
+          18446744073709551615
+        ],
+        [
+          "max",
+          9223372036854775808
+        ],
+        [
+          "max",
+          18446744073709551614
+        ],
+        [
+          "max",
+          1e+100
+        ],
+        [
+          "max",
+          3.4028235677973366e+38
+        ]
+      ],
+      "observations": [
+        {
+          "result": null,
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [],
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [],
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [],
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 1,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [],
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Attempted to allocate more qubits than the maximum.\n    allocated: 0\n    requested: 1\n    allocated+requested: 1\n    max: 0",
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1"
+          ],
+          "error": null,
+          "max": "0",
+          "free": "0",
+          "allocated": 0,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "3",
+          "free": "3",
+          "allocated": 0,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 2,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2"
+          ],
+          "error": null,
+          "max": "3",
+          "free": "0",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Attempted to set max_qubits lower than the number of currently allocated qubits.\n    allocated: 3\n    requested_max: 2\n    current_max: 3",
+          "max": "3",
+          "free": "0",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": "Freed a qubit that wasn't allocated (or was already freed): q(q1)",
+          "max": "3",
+          "free": "0",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [],
+          "error": null,
+          "max": "3",
+          "free": "0",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "9223372036854775808",
+          "free": "9223372036854775805",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "18446744073709551614",
+          "free": "-5",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "REGISTER r0 \"empty\"\nREGISTER r1 \"empty_classical\"\nAPPEND_TO_REGISTER q0 r2\nAPPEND_TO_REGISTER q1 r2\nAPPEND_TO_REGISTER q2 r2\nREGISTER r2 \"data\"",
+            "records": 0,
+            "qubits": 3,
+            "bits": 0,
+            "registers": 3,
+            "register_data": [
+              [
+                [
+                  "name",
+                  "empty"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "empty_classical"
+                ],
+                []
+              ],
+              [
+                [
+                  "name",
+                  "data"
+                ],
+                [
+                  "q0",
+                  "q1",
+                  "q2"
+                ]
+              ]
+            ],
+            "reaction_depth": 0,
+            "text_diagram": "q0: -data[0]-\n\nq1: -data[1]-\n\nq2: -data[2]-",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [
+              3,
+              0,
+              5
+            ],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        [
+          "alloc_q",
+          3
+        ],
+        [
+          "alloc_b",
+          3
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              0
+            ],
+            [
+              "q",
+              1
+            ],
+            [
+              "q",
+              2
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              0
+            ],
+            [
+              "b",
+              1
+            ],
+            [
+              "b",
+              2
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          4
+        ],
+        [
+          "alloc_b",
+          4
+        ]
+      ],
+      "observations": [
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1",
+            "b2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q2",
+            "q1",
+            "q0",
+            "q3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b2",
+            "b1",
+            "b0",
+            "b3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        [
+          "alloc_q",
+          3
+        ],
+        [
+          "alloc_b",
+          3
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              2
+            ],
+            [
+              "q",
+              1
+            ],
+            [
+              "q",
+              0
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              2
+            ],
+            [
+              "b",
+              1
+            ],
+            [
+              "b",
+              0
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          4
+        ],
+        [
+          "alloc_b",
+          4
+        ]
+      ],
+      "observations": [
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1",
+            "b2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2",
+            "q3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1",
+            "b2",
+            "b3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        [
+          "alloc_q",
+          3
+        ],
+        [
+          "alloc_b",
+          3
+        ],
+        [
+          "free",
+          [
+            [
+              "q",
+              1
+            ],
+            [
+              "q",
+              0
+            ],
+            [
+              "q",
+              2
+            ]
+          ]
+        ],
+        [
+          "free",
+          [
+            [
+              "b",
+              1
+            ],
+            [
+              "b",
+              0
+            ],
+            [
+              "b",
+              2
+            ]
+          ]
+        ],
+        [
+          "alloc_q",
+          4
+        ],
+        [
+          "alloc_b",
+          4
+        ]
+      ],
+      "observations": [
+        {
+          "result": [
+            "q0",
+            "q1",
+            "q2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b0",
+            "b1",
+            "b2"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 3,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": null,
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 0,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "q2",
+            "q0",
+            "q1",
+            "q3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        },
+        {
+          "result": [
+            "b2",
+            "b0",
+            "b1",
+            "b3"
+          ],
+          "error": null,
+          "max": "inf",
+          "free": "inf",
+          "allocated": 4,
+          "circuit": {
+            "text": "",
+            "records": 0,
+            "qubits": 0,
+            "bits": 0,
+            "registers": 0,
+            "register_data": [],
+            "reaction_depth": 0,
+            "text_diagram": "",
+            "static_counts": {},
+            "executed_counts": {},
+            "quantum": [],
+            "classical": [],
+            "phases": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "marks": {
+    "text": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER q1 r0\nAPPEND_TO_REGISTER q2 r0\nAPPEND_TO_REGISTER q3 r0\nREGISTER r0 \"data\"\nINFO_TAG \"@enter:reused\"\nCCX q0 q1 q2\nINFO_TAG \"@exit:reused\"\nINFO_TAG \"@enter:reused\"\nCCX q0 q1 q2\nINFO_TAG \"@exit:reused\"\nINFO_TAG \"@enter:outer\"\nINFO_TAG \"@enter:inner <0 & 1>\"\nCCX q1 q2 q3\nINFO_TAG \"@exit:inner <0 & 1>\"\nINFO_TAG \"@exit:outer\"\nINFO_TAG \"@enter:\"\nZ_POW q0 0.1000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625\nINFO_TAG \"@exit:\"\nINFO_TAG \"@enter:failed \\Qblock\\Q\\n\"\nX q3\nINFO_TAG \"@exit:failed \\Qblock\\Q\\n\"\nINFO_TAG \"@enter:first\"\nINFO_TAG \"@enter:second\"\nINFO_TAG \"@exit:first\"\nINFO_TAG \"@exit:second\"\nDEBUG_PRINT q0\nDEBUG_PRINT q3\nDEBUG_PRINT",
+    "records": 24,
+    "qubits": 4,
+    "bits": 0,
+    "registers": 1,
+    "register_data": [
+      [
+        [
+          "name",
+          "data"
+        ],
+        [
+          "q0",
+          "q1",
+          "q2",
+          "q3"
+        ]
+      ]
+    ],
+    "reaction_depth": 2,
+    "text_diagram": "                                                                                                                                                         UNEXPECTED_NON_QUBIT_OPERATION\nq0: -data[0]-@-@-Z^0.1000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625-|----------------------------------\n             | |\nq1: -data[1]-@-@-@----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n             | | |\nq2: -data[2]-X-X-@----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n                 |\nq3: -data[3]-----X-----------------------------------------------------------------------------------------------------------------------------------X-|--------------------------------",
+    "static_counts": {
+      "X": 1,
+      "CCX": 3,
+      "Z_POW": 1,
+      "INFO_TAG": 16,
+      "DEBUG_PRINT": 3
+    },
+    "executed_counts": {
+      "X": 3,
+      "CCX": 9,
+      "Z_POW": 3,
+      "INFO_TAG": 48,
+      "DEBUG_PRINT": 9
+    },
+    "quantum": [
+      3,
+      0,
+      5,
+      5
+    ],
+    "classical": [],
+    "phases": [
+      "17014118346046923173168730371588410573/170141183460469231731687303715884105728",
+      "17014118346046923173168730371588410573/170141183460469231731687303715884105728",
+      "0"
+    ]
+  }
+}

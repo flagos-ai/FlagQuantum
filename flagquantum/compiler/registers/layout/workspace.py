@@ -146,6 +146,15 @@ class RegisterWorkspace:
                 self._available[dirty].extend(reversed(ordered))
 
     @property
+    def live_count(self) -> int:
+        """Count wires with outstanding leases, including partial leases."""
+        return sum(map(len, self._live.values()))
+
+    def available_count(self, *, dirty: bool = False) -> int:
+        """Count reusable wires in the requested ownership pool."""
+        return len(self._available[dirty])
+
+    @property
     def used_wires(self) -> tuple[int, ...]:
         """Return all touched workspace wires in physical wire order."""
         return tuple(sorted(self._used))

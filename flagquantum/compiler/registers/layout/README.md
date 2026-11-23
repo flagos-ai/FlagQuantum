@@ -2,6 +2,14 @@
 
 This package owns partition, cast and bit views, clean and borrowed workspace ownership.
 
+`wire_allocation.WireAllocation` grows one physical ID space for incremental
+construction. It reuses `RegisterWorkspace` leases for temporary storage and
+reserves permanent named-register IDs independently. Freeing individual wires
+retains source LIFO reuse. Formats owns register metadata and operation columns.
+Allocation emits no reset, and callers must restore wires before freeing them.
+Run `tests/unit/test_physical_builder_binding.py` for complete source lifecycle
+transactions, partial failures, copied builders and normal append replacement.
+
 `component_cast.cast_word_function(name, source, target, shape=())` defines a
 typed LEFT-to-RIGHT quantum view using existing Program split/join operations.
 Array elements are row-major; each word retains MSB-first physical wire order.

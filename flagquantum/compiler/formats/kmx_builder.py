@@ -1,16 +1,25 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from locked Kickmix MutableCircuit.
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/circuit/mutable_circuit.cc
+# Register lifetime and mark contexts also follow py/circuit/circuit_builder.pybind.cc.
 
 """Build raw reversible circuits incrementally and freeze a validated value."""
 
 from collections.abc import Sequence
+from copy import deepcopy
 from itertools import chain
-from typing import BinaryIO
+from math import inf
+from types import TracebackType
+from typing import BinaryIO, Literal
 
+from ..artifacts._operand_tags import MAX_NUM_QUBITS as _MAX_WIRES
+from ..artifacts._operand_tags import MAX_NUM_REGISTERS as _MAX_REGISTERS
+from ..artifacts.operand_array import OperandArray
+from ..artifacts.operand_identity import OperandIdentity, OperandKind
+from ..registers.layout.operand_word import bind_operand_word
+from ..registers.layout.wire_allocation import WireAllocation, allocation_count
+from ..registers.primitives.operand_binding import identify_operand
 from .kmb import (
-    _MAX_REGISTERS,
-    _MAX_WIRES,
     _REGISTER_QUANTUM,
     KmxRegister,
     _append_kmx_text,
@@ -28,15 +37,116 @@ class KmxCircuitBuilder:
 
     def __init__(self) -> None:
         self._columns = _Columns()
+        self._quantum_storage = WireAllocation()
+        self._classical_storage = WireAllocation()
+        self._max_qubits: int | float = inf
 
     def __copy__(self) -> "KmxCircuitBuilder":
         duplicate = KmxCircuitBuilder()
+        duplicate._quantum_storage = deepcopy(self._quantum_storage)
+        duplicate._classical_storage = deepcopy(self._classical_storage)
+        duplicate._max_qubits = self._max_qubits
         duplicate._columns.registers = [
             _RegisterData(register.name, register.members.copy())
             for register in self._columns.registers
         ]
         duplicate.append(self)
         return duplicate
+
+    @property
+    def max_qubits(self) -> int | float:
+        return self._max_qubits
+
+    @property
+    def num_allocated_qubits(self) -> int:
+        return self._quantum_storage.allocated_count
+
+    @property
+    def num_free_qubits(self) -> int | float:
+        if self._max_qubits == inf:
+            return inf
+        remaining = int(self._max_qubits) - self.num_allocated_qubits
+        return remaining - (1 << 64) if remaining >= 1 << 63 else remaining
+
+    def set_max_qubits(self, limit: int | float) -> None:
+        """Set the live quantum budget while retaining already allocated wires."""
+        if isinstance(limit, float) and limit >= float.fromhex("0x1.ffffffp+127"):
+            limit = inf
+        elif not isinstance(limit, int) or not 0 <= limit < 1 << 64:
+            raise ValueError(
+                "Quantum budget requires a nonnegative integer or infinity"
+            )
+        else:
+            limit = int.__int__(limit)
+        if limit < self.num_allocated_qubits:
+            raise ValueError("Quantum budget is smaller than the live allocation")
+        self._max_qubits = inf if limit == (1 << 64) - 1 else limit
+
+    def alloc_qubits(self, count: int) -> OperandArray:
+        """Allocate ordered temporary wires without resetting their physical state."""
+        count = self._check_quantum_budget(count)
+        return OperandArray(
+            OperandIdentity(OperandKind.QUANTUM, wire)
+            for wire in self._quantum_storage.allocate(count)
+        )
+
+    def alloc_bits(self, count: int) -> OperandArray:
+        """Allocate classical temporary IDs independently of the quantum budget."""
+        return OperandArray(
+            OperandIdentity(OperandKind.CLASSICAL, wire)
+            for wire in self._classical_storage.allocate(count)
+        )
+
+    def free(self, arg: object) -> None:
+        """Release converted temporary operands sequentially, preserving LIFO reuse."""
+        operands = tuple(identify_operand(value) for value in bind_operand_word(arg))
+        for operand in operands:
+            if operand.kind is OperandKind.QUANTUM:
+                self._quantum_storage.free(operand.value)
+            elif operand.kind is OperandKind.CLASSICAL:
+                self._classical_storage.free(operand.value)
+            else:
+                raise ValueError("Physical release requires quantum or classical IDs")
+
+    def create_quantum_register(self, length: int, name: str) -> OperandArray:
+        """Reserve permanent quantum IDs and append their named membership."""
+        self._check_register_name(name)
+        length = self._check_quantum_budget(length)
+        wires = self._quantum_storage.reserve(length)
+        return self._append_register(wires, name, OperandKind.QUANTUM)
+
+    def create_classical_register(self, length: int, name: str) -> OperandArray:
+        """Reserve permanent classical IDs independently of temporary ownership."""
+        self._check_register_name(name)
+        wires = self._classical_storage.reserve(length)
+        return self._append_register(wires, name, OperandKind.CLASSICAL)
+
+    def _check_register_name(self, name: str) -> None:
+        if not isinstance(name, str):
+            raise TypeError("A physical register name must be a string")
+        if len(self._columns.registers) >= _MAX_REGISTERS:
+            raise ValueError("KMX register count exceeds the format limit")
+
+    def _check_quantum_budget(self, count: int) -> int:
+        count = allocation_count(count)
+        if count + self.num_allocated_qubits > self._max_qubits:
+            raise ValueError("Quantum allocation exceeds the live quantum budget")
+        return count
+
+    def _append_register(
+        self, wires: tuple[int, ...], name: str, kind: OperandKind
+    ) -> OperandArray:
+        quantum = _REGISTER_QUANTUM if kind is OperandKind.QUANTUM else 0
+        self._columns.registers.append(
+            _RegisterData(name, [wire | quantum for wire in wires])
+        )
+        return OperandArray(OperandIdentity(kind, wire) for wire in wires)
+
+    def mark(self, name: str) -> "_BuilderMark":
+        """Create a reusable block context that propagates body exceptions."""
+        if not isinstance(name, str):
+            raise TypeError("A physical block name must be a string")
+        return _BuilderMark(self, name)
 
     @property
     def operation_count(self) -> int:
@@ -136,3 +246,25 @@ class KmxCircuitBuilder:
     def clear(self) -> None:
         """Remove all operation and register state."""
         self._columns = _Columns()
+        self._quantum_storage = WireAllocation()
+        self._classical_storage = WireAllocation()
+        self._max_qubits = inf
+
+
+class _BuilderMark:
+    def __init__(self, builder: KmxCircuitBuilder, name: str) -> None:
+        self._builder = builder
+        self._name = name
+
+    def __enter__(self) -> "_BuilderMark":
+        self._builder.append_info_tag("@enter:" + self._name)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        self._builder.append_info_tag("@exit:" + self._name)
+        return False
