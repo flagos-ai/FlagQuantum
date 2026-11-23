@@ -14,10 +14,11 @@ from typing import BinaryIO, Literal
 
 from ..artifacts._operand_tags import MAX_NUM_QUBITS as _MAX_WIRES
 from ..artifacts._operand_tags import MAX_NUM_REGISTERS as _MAX_REGISTERS
+from ..artifacts._unsigned_size import unsigned_size
 from ..artifacts.operand_array import OperandArray
 from ..artifacts.operand_identity import OperandIdentity, OperandKind
 from ..registers.layout.operand_word import bind_operand_word
-from ..registers.layout.wire_allocation import WireAllocation, allocation_count
+from ..registers.layout.wire_allocation import WireAllocation
 from ..registers.primitives.operand_binding import identify_operand
 from .kmb import (
     _REGISTER_QUANTUM,
@@ -128,7 +129,7 @@ class KmxCircuitBuilder:
             raise ValueError("KMX register count exceeds the format limit")
 
     def _check_quantum_budget(self, count: int) -> int:
-        count = allocation_count(count)
+        count = unsigned_size(count)
         if count + self.num_allocated_qubits > self._max_qubits:
             raise ValueError("Quantum allocation exceeds the live quantum budget")
         return count

@@ -5,25 +5,9 @@
 
 """Grow one physical ID space while reusing authoritative workspace leases."""
 
-from typing import SupportsIndex, SupportsInt
-
 from ...artifacts._operand_tags import MAX_NUM_QUBITS
+from ...artifacts._unsigned_size import unsigned_size
 from .workspace import RegisterWorkspace
-
-
-def allocation_count(value: object) -> int:
-    """Apply the source integer protocol before any allocation side effects."""
-    if isinstance(value, int):
-        result = int.__int__(value)
-    elif isinstance(value, (SupportsInt, SupportsIndex)) and not isinstance(
-        value, float
-    ):
-        result = int(value)
-    else:
-        raise TypeError("Physical allocation requires an integer count")
-    if not 0 <= result < 1 << 64:
-        raise TypeError("Physical allocation count must fit unsigned 64-bit storage")
-    return result
 
 
 class WireAllocation:
@@ -40,7 +24,7 @@ class WireAllocation:
 
     def reserve(self, count: int) -> tuple[int, ...]:
         """Reserve new permanent IDs without consuming reusable temporary IDs."""
-        count = allocation_count(count)
+        count = unsigned_size(count)
         self._check_growth(count)
         result = tuple(range(self._next_wire, self._next_wire + count))
         self._next_wire += count
@@ -49,7 +33,7 @@ class WireAllocation:
 
     def allocate(self, count: int) -> tuple[int, ...]:
         """Reuse the free stack before adopting new IDs into live workspace."""
-        count = allocation_count(count)
+        count = unsigned_size(count)
         reused = min(count, self._workspace.available_count())
         self._check_growth(count - reused)
         previous = self._workspace.allocate(reused).wires if reused else ()
