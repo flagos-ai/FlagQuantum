@@ -171,10 +171,15 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Register quality diagnostic matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/black.json"
+          echo "::add-matcher::.github/problem-matchers/mypy.json"
+          echo "::add-matcher::.github/problem-matchers/pylint.json"
       - name: English repository content
         run: python tools/check_repository_language.py
       - name: Ruff production and test surface
-        run: ruff check flagquantum tests tools
+        run: ruff check --output-format github flagquantum tests tools
       - name: Black production and test surface
         run: black --check flagquantum tests tools
       - name: Strict type check of the whole package
