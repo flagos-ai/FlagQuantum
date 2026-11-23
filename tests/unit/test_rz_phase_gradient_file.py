@@ -225,3 +225,30 @@ def test_original_tensor_fixture_all_branches(
             torch.testing.assert_close(
                 actual, expected * 2 ** (-(width - 1) / 2), atol=2e-12, rtol=0
             )
+
+
+@pytest.mark.parametrize("signed", (False, True))
+def test_logical_root_retains_unbound_cast_calls(signed: bool) -> None:
+    from flagquantum.compiler.registers.phase.rz_phase_gradient_component import (
+        rz_via_phase_gradient_program,
+    )
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.core.ir.program import verify_program_record
+    from flagquantum.core.ir.program.register_types import (
+        fixed_point_register_type,
+        unsigned_register_type,
+    )
+
+    dtype = (
+        fixed_point_register_type(3, 2, signed=True)
+        if signed
+        else unsigned_register_type(Symbol("n", positive=True, integer=True))
+    )
+    record = rz_via_phase_gradient_program(dtype, dtype)
+    assert verify_program_record(record) == ()
+    assert len(record.functions[0].blocks[0].operations) == 5
+    assert len([function for function in record.functions if not function.blocks]) == (
+        4 if signed else 5
+    )
+    with pytest.raises(ValueError):
+        bind_register_program(record, ((0,), (1, 2, 3), (4, 5, 6)), clean=(7, 8))
