@@ -1015,3 +1015,10 @@ Compiler metadata is borrowed through a structural interface. Testing fuzzers
 and Benchmarking workloads use the same numerical owner. Full source disposition
 and the shortest source-comparison path are recorded in
 [the lifecycle audit](../../docs/development/PHYSICAL_BASIS_LIFECYCLE_AUDIT.md).
+
+`_basis_trajectories.BasisTrajectories` composes the persistent physical owner
+into seeded 256-lane chunks. Numerical state and exact valid-prefix operation
+counts stay here. Ecosystem `_physical_basis_session.PhysicalBasisSession`
+resolves Python identifiers, register aliases and NumPy layouts. The complete
+binding mapping and source boundaries are recorded in
+[the physical session audit](../../docs/development/PHYSICAL_BASIS_SESSION_AUDIT.md).
