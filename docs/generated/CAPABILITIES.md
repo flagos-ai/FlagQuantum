@@ -454,7 +454,7 @@ Build, validate, serialize, compile, and inspect quantum circuits through the st
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick example](../../examples/quick_start.py)
 - **Documentation:** [guide](../../docs/reference/API.md)
-- **Known boundary:** IR v1; incompatible schema changes require an explicit migration.
+- **Known boundary:** IR v1; incompatible schema changes require an explicit migration. Version 2 circuit-ir-1.0 artifact payloads admit at most 65,536 mapping/list entries with an independent 4,096-entry structured envelope budget; payload and envelope byte limits remain 16 MiB and 18 MiB. Upgrade receiving readers before sending expanded artifacts; earlier readers reject them. Executable v2 and structured v3 limits, downstream compiler evidence and target budgets are unchanged. Resource qualification for the expanded admission is development evidence only, not a new release or performance certificate.
 
 ### Program optimization and target-aware compilation
 
