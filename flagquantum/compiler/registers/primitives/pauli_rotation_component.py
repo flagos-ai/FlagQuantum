@@ -4,27 +4,18 @@
 
 """Typed single-bit phase powers shared by controlled and gradient graphs."""
 
-from math import pi
-
-from ....core.ir import CircuitIR, Instruction
+from ....core.ir import CircuitIR
 from ....core.ir.program import FunctionRecord
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register
-from ....core.parameters import Parameter, ParameterExpression
 from ..component_gate_function import bit_gate_function
-from .global_phase import _finite_angle
-
-RotationAngle = float | Parameter | ParameterExpression
+from .pauli_rotation import RotationAngle as RotationAngle
+from .pauli_rotation import pauli_power_ir
 
 
 def z_power_function(name: str, exponent: RotationAngle) -> FunctionRecord:
-    angle = (
-        exponent * pi
-        if isinstance(exponent, (Parameter, ParameterExpression))
-        else _finite_angle(exponent, pi)
-    )
     return bit_gate_function(
         name,
         (Register("q", quantum_bit_type()),),
-        CircuitIR(1, (Instruction("phase", (0,), params={"theta": angle}),)),
+        CircuitIR(1, pauli_power_ir("z", 0, exponent)),
     )
