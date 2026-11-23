@@ -28,7 +28,6 @@ from flagquantum.ecosystem.cirq._register_import import (
     import_cirq_register_gate,
     import_cirq_register_optree,
 )
-from flagquantum.errors import SerializationError
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_sorting_declaration import (
     Declaration,
@@ -122,7 +121,7 @@ def test_all_actual_factories_complete_wire_and_native_resolution(name: str) -> 
 
 
 @pytest.mark.parametrize("kind", ("parallel", "merge", "sort"))
-def test_symbolic_length_library_retains_original_assumption_loss_and_array_rejection(
+def test_symbolic_length_library_retains_assumption_loss_and_approved_declaration(
     kind: str,
 ) -> None:
     from qualtran.bloqs.arithmetic.sorting import (
@@ -152,10 +151,13 @@ def test_symbolic_length_library_retains_original_assumption_loss_and_array_reje
         assert registers is not None and arguments
         return FunctionRecord(name, (), registers=registers)
 
-    with pytest.raises(SerializationError, match="array dimensions"):
-        resolve_component_program(
-            library, 0, {library.entries[0].declaration.name: factory}
-        )
+    resolved = resolve_component_program(
+        library, 0, {library.entries[0].declaration.name: factory}
+    )
+    assert resolved.functions[0].registers == library.entries[0].declaration.registers
+    assert not resolved.functions[0].blocks
+    with pytest.raises(ValueError, match="bodies"):
+        bind_register_program(resolved, ())
 
 
 @pytest.mark.parametrize("kind", ("compare", "parallel", "merge", "sort"))

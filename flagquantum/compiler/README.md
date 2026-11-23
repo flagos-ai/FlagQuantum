@@ -1432,3 +1432,11 @@ constructors through the sorting declaration and component owners. Original
 integer-array wire paths retain exact bounded MSB signatures and typed physical
 Programs. Symbolic dimensions retain declarations. Original Shaped/ragged-array
 codec failures remain explicit in `RESOLVER_PERMUTATION_AUDIT.md`.
+
+The complete sorting constructor adapter in formats/legacy_sorting_factories.py
+reuses comparison and sorting declaration/component owners. Source directional
+array ports and retained comparison histories survive wire import, and existing
+bound Programs support circuit.append(op). Symbolic and non-power-of-two merge
+declarations retain explicit execution refusal. See
+../../docs/development/RESOLVER_SORTING_AUDIT.md for physical/model costs and the
+remaining zero-length and zero-width identity gaps.
