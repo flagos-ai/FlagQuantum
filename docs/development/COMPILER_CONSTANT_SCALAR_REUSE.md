@@ -106,3 +106,37 @@ report's unregistered `commutation_revision` field; it is corrected to a nested
 evidence-origin failure includes repository-history availability mismatches.
 Six launch tests and six MPS setup errors encounter blocked local socket/address
 operations in the sandbox. These results are not a passing default tier.
+
+## Follow-up: matrix construction during block admission
+
+A separate rejected candidate asked whether two-qubit block admission could check
+its existing scalar and schema conditions without constructing a 4x4 matrix.
+Explicit matrix overrides retained the original matrix reader. Nonfinite rotation
+angles retained the original numerical constructor, preserving its failure path.
+No source was copied from another project, and no production change was retained.
+
+The [follow-up evidence](evidence/compiler-foldable-admission-study.json) includes
+the full candidate driver, all 22 input results, the published fixture source, and
+an earlier cProfile attribution. The profile is instrumented development data:
+on the inspected eight-wire grid DNN input it records about 0.307 seconds inside
+compilation, 0.280 inside fixed-point optimization, 0.087 inside two-qubit collapse,
+and 0.012 inside SABRE. Nested cumulative times overlap and must not be added.
+It supports investigating the local optimizer rather than assuming routing is
+the dominant latency source. It does not identify a causal bottleneck across all
+programs or permit comparison with another SDK.
+
+The follow-up uses the same six already inspected inputs and sixteen seeded
+controls, with one warmup and nine alternating timing blocks per arm. All exports
+and final layouts matched exactly. External median time ratios are 0.983–1.000;
+control ratios are 0.987–1.095. The eight-wire, 800-operation control is the largest
+observed regression. Three separately traced allocation samples on each external
+input are retained; they exclude native allocations and RSS. A prior timing probe
+that overlapped full tests remains excluded as invalid, and an initial import
+failure before this observation is recorded explicitly.
+
+The candidate is rejected because these observations do not demonstrate a general
+complete-workflow benefit. They do not establish a causal explanation for the
+control regression, independently certify candidate semantics, or qualify as a
+participant comparison. No new semantic support or capability promotion follows.
+The earlier report-only test totals above apply to the earlier report revision;
+the appended evidence has its own validation record and exact-head CI.

@@ -1,0 +1,4761 @@
+{
+  "scope": "Shared macOS development observations; inspected inputs; no qualified comparative or unseen-program claim",
+  "environment": {
+    "torch_threads_requested": 1,
+    "dedicated_host": false,
+    "process_isolation": false,
+    "python": "3.9.6",
+    "platform": "Darwin",
+    "machine": "arm64"
+  },
+  "method": "One warmup per arm; nine alternating timing blocks; three separately traced memory blocks on inspected external inputs; exact export equality",
+  "source": {
+    "baseline_file_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
+    "revision": "bfef2a5ffee085f08cfb2e981a14f755544a2595"
+  },
+  "rows": [
+    {
+      "instance": "EXT-02-GRID-08",
+      "external_inspected": true,
+      "input_sha256": "82ab9ea5069743bde000b441b1304cbd43b9fbf52f787ec08a9c37f6ce51ec76",
+      "seconds": {
+        "baseline": [
+          0.1257401660004689,
+          0.10802416599835851,
+          0.108759791997727,
+          0.10633612500168965,
+          0.12363412500053528,
+          0.1257469169977412,
+          0.12831608399937977,
+          0.10740337499737507,
+          0.10677566600134014
+        ],
+        "candidate": [
+          0.1068117920003715,
+          0.12552779199904762,
+          0.12283308399855741,
+          0.10629345799679868,
+          0.10609416700026486,
+          0.1074640000006184,
+          0.10612666700035334,
+          0.1258514170003764,
+          0.10689291699964087
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9828348789217513
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          4871402,
+          4877543,
+          4869156
+        ],
+        "candidate": [
+          4863437,
+          4862237,
+          4863946
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "EXT-02-LINE-08",
+      "external_inspected": true,
+      "input_sha256": "6f63b2350650e36bf5dedfc04528f91b94f756612f0154dc8eb9a9b9386b7c96",
+      "seconds": {
+        "baseline": [
+          0.10582137500023236,
+          0.10579233299722546,
+          0.12154966700109071,
+          0.12433512499774224,
+          0.12412775000120746,
+          0.10783900000024005,
+          0.1073770830007561,
+          0.10599458399883588,
+          0.10877324999819393
+        ],
+        "candidate": [
+          0.12326016700171749,
+          0.10510937499930151,
+          0.1048127089998161,
+          0.10554366699943785,
+          0.10559645800094586,
+          0.12422266599969589,
+          0.12290904199835495,
+          0.12522275000083027,
+          0.10612945800312445
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9841472751313366
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          4839593,
+          4836274,
+          4835547
+        ],
+        "candidate": [
+          4843259,
+          4834948,
+          4835853
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "EXT-03-GRID-06",
+      "external_inspected": true,
+      "input_sha256": "f79536cda1087c3b197675b1ed817b2475509cc1412a25a86134b8f0ecc84e1f",
+      "seconds": {
+        "baseline": [
+          0.03738112500286661,
+          0.03500891699877684,
+          0.03453245900163893,
+          0.03444533299989416,
+          0.03452058299808414,
+          0.03430050000315532,
+          0.03464404199985438,
+          0.035734790999413235,
+          0.05177808300140896
+        ],
+        "candidate": [
+          0.03630504100146936,
+          0.03424549999908777,
+          0.05234254199967836,
+          0.0342584159989201,
+          0.03448083299736027,
+          0.034361250000074506,
+          0.03517654199822573,
+          0.03594024999983958,
+          0.03453883399924962
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9969631718895502
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          1677474,
+          1671244,
+          1667398
+        ],
+        "candidate": [
+          1670989,
+          1681503,
+          1676721
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "EXT-03-LINE-06",
+      "external_inspected": true,
+      "input_sha256": "18838e1e7af07401d7737b09b6bbbb2682aef7ca968b2c109274dc84f61c7b5e",
+      "seconds": {
+        "baseline": [
+          0.03092833299888298,
+          0.03119370800050092,
+          0.031576459001371404,
+          0.031206457999360282,
+          0.030995165998319862,
+          0.03091883299930487,
+          0.031119417002628325,
+          0.030695584002387477,
+          0.031082792000233894
+        ],
+        "candidate": [
+          0.030643333000625717,
+          0.030874416999722598,
+          0.030706041998200817,
+          0.04670399999668007,
+          0.030596458000218263,
+          0.030908415999874705,
+          0.03047891599999275,
+          0.030711457999132108,
+          0.04732020900337375
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9880533897630884
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          1787731,
+          1784365,
+          1777831
+        ],
+        "candidate": [
+          1784388,
+          1785046,
+          1780614
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "EXT-04-GRID-06",
+      "external_inspected": true,
+      "input_sha256": "f7bcf630fc3653e2de67c71d91c148eee619286c62ba6f7ae31186973bccdca6",
+      "seconds": {
+        "baseline": [
+          0.006657166002696613,
+          0.006552040998940356,
+          0.006460542001150316,
+          0.006531416998768691,
+          0.006859250002889894,
+          0.006518416001199512,
+          0.006590542001504218,
+          0.006529000002046814,
+          0.006588083000679035
+        ],
+        "candidate": [
+          0.006549000001541572,
+          0.006524124997667968,
+          0.006467875002272194,
+          0.0067449170019244775,
+          0.006609957999899052,
+          0.006450875000155065,
+          0.006525707998662256,
+          0.006670916998700704,
+          0.0067530410015024245
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9995358702121558
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          451788,
+          447618,
+          447124
+        ],
+        "candidate": [
+          451251,
+          451416,
+          450553
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "EXT-04-LINE-06",
+      "external_inspected": true,
+      "input_sha256": "9a4149a1a3bf4cd04852da2d5540dd289484ea2f1bf9bdb1d949df5f8508b361",
+      "seconds": {
+        "baseline": [
+          0.006238500001927605,
+          0.006168666997837136,
+          0.006231916999240639,
+          0.006163624999317108,
+          0.006125415999122197,
+          0.006102125000325032,
+          0.00614549999954761,
+          0.00610666700231377,
+          0.006023792000632966
+        ],
+        "candidate": [
+          0.006132541999249952,
+          0.006190708001668099,
+          0.006118917001003865,
+          0.006158667001727736,
+          0.006057541999325622,
+          0.0060745839982701,
+          0.006070458002795931,
+          0.006057458998839138,
+          0.006119832996773766
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.995674396136083
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [
+          398185,
+          395892,
+          396063
+        ],
+        "candidate": [
+          396096,
+          395878,
+          392840
+        ]
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-2-10",
+      "external_inspected": false,
+      "input_sha256": "747e497e5ee1f35e3d7688054dd2726f778cd5b62ca3ede85681a394c9c0c86c",
+      "seconds": {
+        "baseline": [
+          0.0012639170017791912,
+          0.0013164580013835803,
+          0.0012760829995386302,
+          0.0012449999994714744,
+          0.0012344589995336719,
+          0.0012116660000174306,
+          0.001241166999534471,
+          0.0012428330010152422,
+          0.0012029159988742322
+        ],
+        "candidate": [
+          0.0012457920020096935,
+          0.0013664159996551462,
+          0.0012530830026662443,
+          0.0012308750010561198,
+          0.0012285840020922478,
+          0.0012397079990478233,
+          0.0012010419995931443,
+          0.0012417910002113786,
+          0.0012586670018208679
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9991615922629892
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-2-50",
+      "external_inspected": false,
+      "input_sha256": "e1bc70154c33b620d16e2ae65ee0b7de3f99fbf41d8f2bbcd84b36ec07940cca",
+      "seconds": {
+        "baseline": [
+          0.00387475000025006,
+          0.0037657080029021017,
+          0.003780958999413997,
+          0.0039007079976727255,
+          0.003889625000738306,
+          0.003971250000176951,
+          0.004051874999277061,
+          0.0039684999974269886,
+          0.00408695800069836
+        ],
+        "candidate": [
+          0.0037640420014213305,
+          0.003922042000340298,
+          0.003693792001286056,
+          0.0038902090018382296,
+          0.003910542000085115,
+          0.0039608749975741375,
+          0.0038167499988048803,
+          0.004204249999020249,
+          0.003968042001361027
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.002521081408364
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-2-200",
+      "external_inspected": false,
+      "input_sha256": "c395a95cded34976d5d84f5d591ba2bccdc7de989f18adbe96553d4565003475",
+      "seconds": {
+        "baseline": [
+          0.014143583000986837,
+          0.013358292002521921,
+          0.013733499999943888,
+          0.013614874998893356,
+          0.013315583997609792,
+          0.01334304199917824,
+          0.013318332999915583,
+          0.01336937499945634,
+          0.013227583000116283
+        ],
+        "candidate": [
+          0.014123875000223052,
+          0.014209207998646889,
+          0.013273374999698717,
+          0.013870666996808723,
+          0.013666750000993488,
+          0.013678957999218255,
+          0.013223957997979596,
+          0.013191999998525716,
+          0.013122625001415145
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.0230911256029838
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-2-800",
+      "external_inspected": false,
+      "input_sha256": "53216758c2ac3e79caef358b82b50bcd14f553c27fb4452f374b6dad0f7ac56f",
+      "seconds": {
+        "baseline": [
+          0.06380233299933025,
+          0.06349050000062562,
+          0.06342020900046919,
+          0.06322741599797155,
+          0.06379829199795495,
+          0.06335720800052513,
+          0.063836542001809,
+          0.06352691699794377,
+          0.06367870800022501
+        ],
+        "candidate": [
+          0.08049525000024005,
+          0.06350379200011957,
+          0.06294258399793762,
+          0.07906041600290337,
+          0.06267149999985122,
+          0.06349716700060526,
+          0.07927295899935416,
+          0.06287479199818335,
+          0.0640930000008666
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9996359811097878
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-4-10",
+      "external_inspected": false,
+      "input_sha256": "808527ea7fa4de44d1f0b044d82d08d8eb97c95d6539106206af1bcffc9249ff",
+      "seconds": {
+        "baseline": [
+          0.0014707500013173558,
+          0.0013977079979667906,
+          0.0015663750018575229,
+          0.0016369170007237699,
+          0.0015777919979882427,
+          0.0014147080000839196,
+          0.0015292919997591525,
+          0.001459417002479313,
+          0.0014415840014407877
+        ],
+        "candidate": [
+          0.001420832999428967,
+          0.001394374998199055,
+          0.0015017910009191837,
+          0.0016187500004889444,
+          0.0015273750032065436,
+          0.0014983330001996364,
+          0.0015055410003697034,
+          0.0014932499980204739,
+          0.001397124997311039
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.0187543762417641
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-4-50",
+      "external_inspected": false,
+      "input_sha256": "515d829469df6a0275e2a414f983def3ef5e917bcdc7766e77c3276e3ac938e9",
+      "seconds": {
+        "baseline": [
+          0.004615083002136089,
+          0.004770125000504777,
+          0.004515291999268811,
+          0.004560291003144812,
+          0.004471584001294104,
+          0.004401958001835737,
+          0.004436374998476822,
+          0.0044441669997468125,
+          0.004411666999658337
+        ],
+        "candidate": [
+          0.004672791998018511,
+          0.004544209001323907,
+          0.004473207998671569,
+          0.004538249999313848,
+          0.004427250001754146,
+          0.00439991700113751,
+          0.004584624999552034,
+          0.004499500002566492,
+          0.0044064999965485185
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.0062429781626172
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-4-200",
+      "external_inspected": false,
+      "input_sha256": "cb27a1a9d924c1c7453fe75e63b8649a352d0cccdcd442a8bd0dd684719dd442",
+      "seconds": {
+        "baseline": [
+          0.01751791599963326,
+          0.017940707999514416,
+          0.017659791999903973,
+          0.033888916001160396,
+          0.017328916997939814,
+          0.01738399999885587,
+          0.0173770000001241,
+          0.017193333002069267,
+          0.0172751669997524
+        ],
+        "candidate": [
+          0.017700499996863073,
+          0.017260457996599143,
+          0.017636208001931664,
+          0.017566874998010462,
+          0.017326041001069825,
+          0.017474041000241414,
+          0.017136041999037843,
+          0.017243082998902537,
+          0.017219124998518964
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9966659573291613
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-4-800",
+      "external_inspected": false,
+      "input_sha256": "8615a5c7ec6801e530103e5a0cd7dce7c912b4e67c2e30f5f9661933b2a4ea37",
+      "seconds": {
+        "baseline": [
+          0.06628600000112783,
+          0.06458920799923362,
+          0.06465129199932562,
+          0.08108304100096575,
+          0.06322337500023423,
+          0.07927058299901546,
+          0.06315545799952815,
+          0.07845525000084308,
+          0.0654677909988095
+        ],
+        "candidate": [
+          0.06463208299828693,
+          0.08055708399842842,
+          0.06338641699767322,
+          0.06483912499970756,
+          0.06299312500050291,
+          0.06563050000113435,
+          0.06394137499955832,
+          0.065582874998654,
+          0.06457654200130492
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.987234822073991
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-8-10",
+      "external_inspected": false,
+      "input_sha256": "38c7c2aad870f4569c5ed15f61180be0659f3664acb525ffcc08dd73c003217c",
+      "seconds": {
+        "baseline": [
+          0.0018451670002832543,
+          0.0018490419970476069,
+          0.0018519580007705372,
+          0.0017708330015011597,
+          0.0017660420016909484,
+          0.0017486249998910353,
+          0.001906457997392863,
+          0.0017633329989621416,
+          0.0018045830001938157
+        ],
+        "candidate": [
+          0.0017879160004667938,
+          0.0020390419995237608,
+          0.0018000420022872277,
+          0.0018056660010188352,
+          0.0017589170020073652,
+          0.0017925829997693654,
+          0.001805750001949491,
+          0.0018275409966008738,
+          0.0018111249992216472
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.000600139104105
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-8-50",
+      "external_inspected": false,
+      "input_sha256": "75c178f55cd8979de71eeb4a9ce1fe299ac61dcf1cc927298a7ecb98df8c460c",
+      "seconds": {
+        "baseline": [
+          0.022318791001453064,
+          0.006695208001474384,
+          0.0065949170020758174,
+          0.006750166998244822,
+          0.006719416000123601,
+          0.006618917002924718,
+          0.0065999159996863455,
+          0.00669654200100922,
+          0.006881541001348523
+        ],
+        "candidate": [
+          0.006882207999296952,
+          0.006768833001842722,
+          0.006604250000236789,
+          0.0067674160018214025,
+          0.006657582998741418,
+          0.00651550000111456,
+          0.006565707997651771,
+          0.0066115420013375115,
+          0.00694149999981164
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9941822208743064
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-8-200",
+      "external_inspected": false,
+      "input_sha256": "6b36889aad59ae89642acf189357941b10afcee164341641bb948c4f91037a57",
+      "seconds": {
+        "baseline": [
+          0.028081707998353522,
+          0.027558124998904532,
+          0.027235041998210363,
+          0.02756562500144355,
+          0.02853891699851374,
+          0.02722975000142469,
+          0.04300370800046949,
+          0.027430499998445157,
+          0.02885604100083583
+        ],
+        "candidate": [
+          0.027527583999471972,
+          0.027518124999915017,
+          0.04297683299955679,
+          0.027416916000220226,
+          0.02761820900195744,
+          0.027440833000582643,
+          0.02749004200086347,
+          0.027130541999213165,
+          0.027244458000495797
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9972580704926471
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-8-800",
+      "external_inspected": false,
+      "input_sha256": "bc2f3b8f7db4f9e0a44d52120d8f44be92a37528e8a47a92a6a3ba54e23160f0",
+      "seconds": {
+        "baseline": [
+          0.14161562499793945,
+          0.14493324999784818,
+          0.14329500000167172,
+          0.14326679200166836,
+          0.12156133399912505,
+          0.12280570900111343,
+          0.12156304200107115,
+          0.11528041699784808,
+          0.11875608299669693
+        ],
+        "candidate": [
+          0.11675074999948265,
+          0.12133187500148779,
+          0.1264000000010128,
+          0.14128516600248986,
+          0.14356516699990607,
+          0.1367521249994752,
+          0.13347224999961327,
+          0.13441779099957785,
+          0.13486029199702898
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.09455653237065
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-12-10",
+      "external_inspected": false,
+      "input_sha256": "415e36eff4265383d6039d82bf704fbfb56bef27f0ae8cddd35cbd6622f3e874",
+      "seconds": {
+        "baseline": [
+          0.00268520900135627,
+          0.0026447499985806644,
+          0.002858333999029128,
+          0.002896916997997323,
+          0.0027120000013383105,
+          0.0026586249987303745,
+          0.00262875000044005,
+          0.0026653750028344803,
+          0.0028603749997273553
+        ],
+        "candidate": [
+          0.002659333000337938,
+          0.002890208997996524,
+          0.0029281249990162905,
+          0.002817332999256905,
+          0.002664583000296261,
+          0.0026535420001891907,
+          0.0026639999996405095,
+          0.0026353329994890373,
+          0.0028059169999323785
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9923186608380983
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-12-50",
+      "external_inspected": false,
+      "input_sha256": "8a91fb7526cb444f29c265b2ca31586a45ff53a9bc6578ced9cb8a785c12963c",
+      "seconds": {
+        "baseline": [
+          0.009546125002088957,
+          0.009457833999476861,
+          0.009567500001139706,
+          0.009387457997945603,
+          0.009495624999544816,
+          0.010490084001503419,
+          0.009602707999874838,
+          0.009535124998365063,
+          0.009493749999819556
+        ],
+        "candidate": [
+          0.009499207997578196,
+          0.009479624997766223,
+          0.009455791998334462,
+          0.010525458001211518,
+          0.009356041002320126,
+          0.009604917002434377,
+          0.009477874998992775,
+          0.009489459000178613,
+          0.009537417001411086
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 0.9952107604048944
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-12-200",
+      "external_inspected": false,
+      "input_sha256": "9981ab707e80e7fa07b3f91f2ac2876d988738bf65c53dc2885c73b0c466112c",
+      "seconds": {
+        "baseline": [
+          0.03558812499977648,
+          0.052309875001810724,
+          0.037379958001110936,
+          0.037729875002696645,
+          0.03553620900129317,
+          0.035712666998733766,
+          0.038098208999144845,
+          0.054065166998043424,
+          0.03527479200056405
+        ],
+        "candidate": [
+          0.03579637499933597,
+          0.03570262500215904,
+          0.03763700000126846,
+          0.054281583998090355,
+          0.035689125001226785,
+          0.037070334001327865,
+          0.03805362500133924,
+          0.03940879100264283,
+          0.03738962499846821
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.000258614452081
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    },
+    {
+      "instance": "seeded-12-800",
+      "external_inspected": false,
+      "input_sha256": "49269424a225fb1b301a8eea0309787b05685a8e38e685a2dc33535da9c637a0",
+      "seconds": {
+        "baseline": [
+          0.15803170900107943,
+          0.1514309170015622,
+          0.15393233400027384,
+          0.14070237499981886,
+          0.13970858300308464,
+          0.1571183750020282,
+          0.1415187499987951,
+          0.16047975000037695,
+          0.14149637499940582
+        ],
+        "candidate": [
+          0.13652591700156336,
+          0.1586858749979001,
+          0.15465700000277138,
+          0.1566202499998326,
+          0.15157349999935832,
+          0.1541760840009374,
+          0.15538250000099652,
+          0.15799433299980592,
+          0.1538373329967726
+        ]
+      },
+      "median_ratio_to_baseline": {
+        "baseline": 1.0,
+        "candidate": 1.0213039917150861
+      },
+      "python_traced_peak_bytes": {
+        "baseline": [],
+        "candidate": []
+      },
+      "identical_output": true
+    }
+  ],
+  "driver_source": "\"\"\"Paired development observations, not a qualified SDKBench campaign.\"\"\"\nimport ast\nimport signal\nsignal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError(\"Development probe exceeded 240 seconds\")))\nsignal.alarm(240)\nfrom contextlib import ExitStack\nimport gc\nimport hashlib\nimport json\nimport math\nfrom pathlib import Path\nimport random\nimport statistics\nimport subprocess\nimport time\nimport tracemalloc\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\n\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import commutation, two_qubit_optimization as two\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\ntorch.set_num_threads(1)\nroot = Path.cwd()\nresult_path = Path('/private/tmp/fq-foldable-validation-20261123.json')\ntwo_path = 'flagquantum/compiler/optimization/two_qubit_optimization.py'\ncomm_path = 'flagquantum/compiler/optimization/commutation.py'\noriginal = two._is_foldable\n\ndef candidate(instruction):\n    if instruction.metadata.get(\"routing_phase\") is not None or len(instruction.wires) != 2:\n        return False\n    if instruction.matrix is not None:\n        return two._instruction_matrix(instruction) is not None\n    opcode = two.canonical_opcode(instruction.name)\n    if opcode not in two._FAMILIES:\n        return False\n    if any(two._scalar_angle(value) is None for value in instruction.params.values()):\n        return False\n    schema = two.get_operator_schema(opcode)\n    if schema is None:\n        return False\n    if not schema.parameters:\n        return True\n    angle = two._scalar_angle(instruction.params.get(schema.parameters[0]))\n    if angle is None:\n        return False\n    # Preserve the numerical constructor's behavior for NaN and infinity.\n    return math.isfinite(angle) or two._instruction_matrix(instruction) is not None\n\narms = {'baseline': original, 'candidate': candidate}\nresult = {'scope': 'Shared macOS development observations; inspected inputs; no qualified comparative or unseen-program claim', 'environment': {'torch_threads_requested': 1, 'dedicated_host': False, 'process_isolation': False}, 'method': 'One warmup per arm; nine alternating timing blocks; three separately traced memory blocks on inspected external inputs; exact export equality', 'source': {'baseline_file_sha256': hashlib.sha256((root / two_path).read_bytes()).hexdigest()}, 'rows': []}\nfixtures = [(p.stem, json.loads(p.read_text()), True) for p in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json'))]\nrng = random.Random(20261123)\nfor n in (2, 4, 8, 12):\n    for count in (10, 50, 200, 800):\n        operations = []\n        for _ in range(count):\n            name = rng.choice(('h', 'rx', 'ry', 'rz', 'cx', 'cz'))\n            op = {'name': name, 'qubits': rng.sample(range(n), 2 if name in ('cx', 'cz') else 1)}\n            if name in ('rx', 'ry', 'rz'):\n                op['angle'] = rng.uniform(-2.5, 2.5)\n            operations.append(op)\n        fixtures.append((f'seeded-{n}-{count}', {'n_qubits': n, 'operations': operations, 'target_edges': [[i, i+1] for i in range(n-1)]}, False))\nfor name, fixture, external in fixtures:\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    samples = {arm: [] for arm in arms}\n    memory = {arm: [] for arm in arms}\n    expected = None\n    for repeat in range(-1, 9):\n        order = list(arms)\n        shift = max(0, repeat) % len(order)\n        order = order[shift:] + order[:shift]\n        if repeat % 2:\n            order.reverse()\n        for arm in order:\n            foldable = arms[arm]\n            with ExitStack() as stack:\n                stack.enter_context(patch.object(two, '_is_foldable', foldable))\n                started = time.perf_counter()\n                actual = _ordinary_flagquantum_route(adapter, fixture, 0)\n                elapsed = time.perf_counter() - started\n                if expected is None:\n                    expected = actual\n                assert actual == expected, (name, arm)\n                if repeat >= 0:\n                    samples[arm].append(elapsed)\n    if external:\n        for repeat in range(3):\n            for arm in (list(arms) if repeat % 2 == 0 else list(reversed(arms))):\n                foldable = arms[arm]\n                with patch.object(two, '_is_foldable', foldable):\n                    gc.collect()\n                    tracemalloc.start()\n                    try:\n                        actual = _ordinary_flagquantum_route(adapter, fixture, 0)\n                        memory[arm].append(tracemalloc.get_traced_memory()[1])\n                    finally:\n                        tracemalloc.stop()\n                    assert actual == expected, (name, arm)\n    medians = {arm: statistics.median(values) for arm, values in samples.items()}\n    row = {'instance': name, 'external_inspected': external, 'input_sha256': hashlib.sha256(json.dumps(fixture, sort_keys=True).encode()).hexdigest(), 'seconds': samples, 'median_ratio_to_baseline': {arm: medians[arm] / medians['baseline'] for arm in arms}, 'python_traced_peak_bytes': memory, 'identical_output': True}\n    result['rows'].append(row)\n    result_path.write_text(json.dumps(result, indent=2) + '\\n')\n    print(json.dumps({'instance': name, 'ratios': row['median_ratio_to_baseline']}), flush=True)\n\nresult['driver_source'] = Path(__file__).read_text()\nresult_path.write_text(json.dumps(result, indent=2) + '\\n')\n",
+  "decision": "Rejected: no demonstrated general complete-workflow benefit; no production changes",
+  "claim_limits": {
+    "publication_eligible": false,
+    "novelty_certified": false,
+    "scalability_claim_allowed": false
+  },
+  "profile": {
+    "scope": "cProfile attribution on six inspected development inputs; instrumentation perturbs latency; not a SDK comparison",
+    "rows": [
+      {
+        "input": "EXT-02-GRID-08.json",
+        "input_sha256": "148c2ef3feae8aba27d33e72b8adc52792337f507dc9be1a480438b278d4d9ea",
+        "output_sha256": "4d5ad066596e9a6dd5ba8b5f734ca4fbe6c11582c913e71032b03c0d7a4a916f",
+        "total_profiled_seconds": 0.386935762,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.958000000000001e-06,
+            "cumulative_seconds": 0.306665666
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.3751e-05,
+            "cumulative_seconds": 0.306660708
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 4.625000000000001e-06,
+            "cumulative_seconds": 0.27978933300000003
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.7913e-05,
+            "cumulative_seconds": 0.279784708
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 4.5499000000000006e-05,
+            "cumulative_seconds": 0.278705042
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 33,
+            "total_calls": 33,
+            "self_seconds": 7.2871e-05,
+            "cumulative_seconds": 0.278017249
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.0416e-05,
+            "cumulative_seconds": 0.087266124
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.0025682450000000002,
+            "cumulative_seconds": 0.087224125
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 6544,
+            "total_calls": 6544,
+            "self_seconds": 0.010699931000000001,
+            "cumulative_seconds": 0.062935458
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 138122,
+            "total_calls": 138122,
+            "self_seconds": 0.035213764,
+            "cumulative_seconds": 0.058809234
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 1033,
+            "total_calls": 1033,
+            "self_seconds": 0.000516277,
+            "cumulative_seconds": 0.057626562000000006
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.1291e-05,
+            "cumulative_seconds": 0.057279500000000004
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.002393361,
+            "cumulative_seconds": 0.057266834
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 5684,
+            "total_calls": 5684,
+            "self_seconds": 0.012162103,
+            "cumulative_seconds": 0.055730235
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 403,
+            "total_calls": 403,
+            "self_seconds": 0.0026832780000000003,
+            "cumulative_seconds": 0.051249301000000004
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.00030479700000000004,
+            "cumulative_seconds": 0.046527959
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.002632583,
+            "cumulative_seconds": 0.046331625
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.006194509,
+            "cumulative_seconds": 0.045859918
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 2640,
+            "total_calls": 2640,
+            "self_seconds": 0.003626905,
+            "cumulative_seconds": 0.044993154
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 57088,
+            "total_calls": 57088,
+            "self_seconds": 0.009996674,
+            "cumulative_seconds": 0.038658149
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 3654,
+            "total_calls": 3654,
+            "self_seconds": 0.002375421,
+            "cumulative_seconds": 0.038527436000000005
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.4875e-05,
+            "cumulative_seconds": 0.035580625000000005
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000206328,
+            "cumulative_seconds": 0.035534583
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.0028458000000000003,
+            "cumulative_seconds": 0.0350482
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.000740147,
+            "cumulative_seconds": 0.035024916
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.005087194000000001,
+            "cumulative_seconds": 0.034620000000000005
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 5344,
+            "total_calls": 5344,
+            "self_seconds": 0.005281089,
+            "cumulative_seconds": 0.034584775000000005
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 48820,
+            "total_calls": 48820,
+            "self_seconds": 0.019821401000000002,
+            "cumulative_seconds": 0.033724432
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 403,
+            "total_calls": 403,
+            "self_seconds": 0.000679777,
+            "cumulative_seconds": 0.028103908
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.1999000000000001e-05,
+            "cumulative_seconds": 0.024098916
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 603,
+            "total_calls": 603,
+            "self_seconds": 0.000576219,
+            "cumulative_seconds": 0.023002455
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 728,
+            "total_calls": 728,
+            "self_seconds": 0.000367364,
+            "cumulative_seconds": 0.022265411000000002
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 6759,
+            "total_calls": 6759,
+            "self_seconds": 0.0013216430000000002,
+            "cumulative_seconds": 0.021965351
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 24380,
+            "total_calls": 24380,
+            "self_seconds": 0.0042701020000000004,
+            "cumulative_seconds": 0.021779815
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 5040,
+            "total_calls": 5040,
+            "self_seconds": 0.0008186430000000001,
+            "cumulative_seconds": 0.020427274000000002
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 10264,
+            "total_calls": 10264,
+            "self_seconds": 0.005351947,
+            "cumulative_seconds": 0.019472135
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 728,
+            "total_calls": 728,
+            "self_seconds": 0.0008681380000000001,
+            "cumulative_seconds": 0.018630214000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.0009497360000000001,
+            "cumulative_seconds": 0.018259151
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 320,
+            "total_calls": 320,
+            "self_seconds": 9.9448e-05,
+            "cumulative_seconds": 0.017578506
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 320,
+            "total_calls": 1184,
+            "self_seconds": 0.000934668,
+            "cumulative_seconds": 0.017479058000000002
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.9583000000000002e-05,
+            "cumulative_seconds": 0.017394624
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000114766,
+            "cumulative_seconds": 0.017373583
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.003199631,
+            "cumulative_seconds": 0.017309415
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 22736,
+            "total_calls": 22736,
+            "self_seconds": 0.0023332400000000003,
+            "cumulative_seconds": 0.016830557
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.832000000000001e-06,
+            "cumulative_seconds": 0.016295749
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.001084172,
+            "cumulative_seconds": 0.016285625
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 9328,
+            "total_calls": 9328,
+            "self_seconds": 0.0031831750000000003,
+            "cumulative_seconds": 0.015730714
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 7.709e-06,
+            "cumulative_seconds": 0.014484458
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 1.0999000000000001e-05,
+            "cumulative_seconds": 0.014476749
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_seconds": 4.164e-06,
+            "cumulative_seconds": 0.014431917
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 33,
+            "function": "_commutation_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.5e-06,
+            "cumulative_seconds": 0.014426792
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 4168,
+            "total_calls": 4168,
+            "self_seconds": 0.00151359,
+            "cumulative_seconds": 0.014105035
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 6.669e-06,
+            "cumulative_seconds": 0.014094375000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.8875e-05,
+            "cumulative_seconds": 0.014084250000000001
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 10688,
+            "total_calls": 10688,
+            "self_seconds": 0.002060265,
+            "cumulative_seconds": 0.013893022000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.085e-06,
+            "cumulative_seconds": 0.012837959000000001
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 58,
+            "function": "_is_zero",
+            "primitive_calls": 14936,
+            "total_calls": 14936,
+            "self_seconds": 0.007123094000000001,
+            "cumulative_seconds": 0.012603276
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00021450100000000003,
+            "cumulative_seconds": 0.012598792000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 9.600000000000001e-07,
+            "cumulative_seconds": 0.011706084
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.9708000000000002e-05,
+            "cumulative_seconds": 0.011704958000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.003228093,
+            "cumulative_seconds": 0.010461959
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 474,
+            "function": "is_diagonal_one_qubit",
+            "primitive_calls": 3568,
+            "total_calls": 3568,
+            "self_seconds": 0.000741903,
+            "cumulative_seconds": 0.010256663000000001
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 129,
+            "function": "route_to_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 7.458e-06,
+            "cumulative_seconds": 0.009988917
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 111,
+            "function": "_route_persistent_layout",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.000747252,
+            "cumulative_seconds": 0.009846750000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 7.5e-07,
+            "cumulative_seconds": 0.009053666
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000203913,
+            "cumulative_seconds": 0.009043042000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 4.1371e-05,
+            "cumulative_seconds": 0.00903254
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 7200,
+            "total_calls": 7200,
+            "self_seconds": 0.001664144,
+            "cumulative_seconds": 0.008800227
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 3320,
+            "total_calls": 3320,
+            "self_seconds": 0.0009101480000000001,
+            "cumulative_seconds": 0.00873963
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 199,
+            "function": "<genexpr>",
+            "primitive_calls": 13012,
+            "total_calls": 13012,
+            "self_seconds": 0.0013419460000000001,
+            "cumulative_seconds": 0.008624444
+          }
+        ]
+      },
+      {
+        "input": "EXT-02-LINE-08.json",
+        "input_sha256": "527a35cc3992e5b78f5efd1dd165c502019ca1f4c0e6d18afa79cb1b0a0890da",
+        "output_sha256": "5d10f7abef3093bc4f425b22d9477fbd911d2a820006ccd37113cc71ef1f936d",
+        "total_profiled_seconds": 0.3904530029999995,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.6660000000000005e-06,
+            "cumulative_seconds": 0.308841833
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.6081e-05,
+            "cumulative_seconds": 0.308836167
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 3.1260000000000002e-06,
+            "cumulative_seconds": 0.283219209
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.7207e-05,
+            "cumulative_seconds": 0.283216083
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 5.3042000000000005e-05,
+            "cumulative_seconds": 0.282142249
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 33,
+            "total_calls": 33,
+            "self_seconds": 7.5164e-05,
+            "cumulative_seconds": 0.28143670600000004
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.4001e-05,
+            "cumulative_seconds": 0.08939733400000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00260573,
+            "cumulative_seconds": 0.089351208
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 6570,
+            "total_calls": 6570,
+            "self_seconds": 0.010669616,
+            "cumulative_seconds": 0.06350545
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 138259,
+            "total_calls": 138259,
+            "self_seconds": 0.035560668000000004,
+            "cumulative_seconds": 0.05944611700000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 1032,
+            "total_calls": 1032,
+            "self_seconds": 0.000554904,
+            "cumulative_seconds": 0.058695296
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.0917e-05,
+            "cumulative_seconds": 0.058428375000000005
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.0023745930000000004,
+            "cumulative_seconds": 0.058416167000000005
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 5652,
+            "total_calls": 5652,
+            "self_seconds": 0.012593578000000001,
+            "cumulative_seconds": 0.057429981000000005
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 402,
+            "total_calls": 402,
+            "self_seconds": 0.0028099210000000004,
+            "cumulative_seconds": 0.052322635000000006
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.0025951430000000003,
+            "cumulative_seconds": 0.046821333
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.000342719,
+            "cumulative_seconds": 0.046422790000000005
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 2640,
+            "total_calls": 2640,
+            "self_seconds": 0.0036378160000000003,
+            "cumulative_seconds": 0.046016457000000004
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.006137781,
+            "cumulative_seconds": 0.045709958
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 3622,
+            "total_calls": 3622,
+            "self_seconds": 0.002482728,
+            "cumulative_seconds": 0.039807097
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 57159,
+            "total_calls": 57159,
+            "self_seconds": 0.010164919000000001,
+            "cumulative_seconds": 0.039137233
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 7116,
+            "total_calls": 7116,
+            "self_seconds": 0.002863661,
+            "cumulative_seconds": 0.035476188
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.4375e-05,
+            "cumulative_seconds": 0.035422708000000004
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000201413,
+            "cumulative_seconds": 0.035377166
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.00073979,
+            "cumulative_seconds": 0.035335792000000005
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.005112211,
+            "cumulative_seconds": 0.034794434
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 48628,
+            "total_calls": 48628,
+            "self_seconds": 0.020250113,
+            "cumulative_seconds": 0.034513992
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 5348,
+            "total_calls": 5348,
+            "self_seconds": 0.005301819,
+            "cumulative_seconds": 0.034445762000000005
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 402,
+            "total_calls": 402,
+            "self_seconds": 0.0007773540000000001,
+            "cumulative_seconds": 0.028599567000000003
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 605,
+            "total_calls": 605,
+            "self_seconds": 0.000589881,
+            "cumulative_seconds": 0.023376618000000002
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 6070,
+            "total_calls": 6070,
+            "self_seconds": 0.001269633,
+            "cumulative_seconds": 0.023063573
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 7.000000000000001e-06,
+            "cumulative_seconds": 0.022740167000000002
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 728,
+            "total_calls": 728,
+            "self_seconds": 0.00038053200000000005,
+            "cumulative_seconds": 0.02263192
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 24220,
+            "total_calls": 24220,
+            "self_seconds": 0.004338997000000001,
+            "cumulative_seconds": 0.022438139000000003
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 4480,
+            "total_calls": 4480,
+            "self_seconds": 0.000823412,
+            "cumulative_seconds": 0.021410972
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 10280,
+            "total_calls": 10280,
+            "self_seconds": 0.005382076,
+            "cumulative_seconds": 0.019499824000000002
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 728,
+            "total_calls": 728,
+            "self_seconds": 0.000879429,
+            "cumulative_seconds": 0.018822683
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.0009535720000000001,
+            "cumulative_seconds": 0.018287811
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 322,
+            "total_calls": 322,
+            "self_seconds": 0.000100636,
+            "cumulative_seconds": 0.017778870000000002
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 322,
+            "total_calls": 1210,
+            "self_seconds": 0.0009323380000000001,
+            "cumulative_seconds": 0.017678234
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 7112,
+            "total_calls": 7112,
+            "self_seconds": 0.00319343,
+            "cumulative_seconds": 0.017334239
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.95e-05,
+            "cumulative_seconds": 0.017330500000000002
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00011674700000000001,
+            "cumulative_seconds": 0.017309750000000002
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 22608,
+            "total_calls": 22608,
+            "self_seconds": 0.0023563660000000004,
+            "cumulative_seconds": 0.017258441
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.0582000000000001e-05,
+            "cumulative_seconds": 0.016283125000000002
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.001091074,
+            "cumulative_seconds": 0.016271251
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 9328,
+            "total_calls": 9328,
+            "self_seconds": 0.003226922,
+            "cumulative_seconds": 0.01599864
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 7.959000000000001e-06,
+            "cumulative_seconds": 0.014371040000000002
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 1.1873000000000001e-05,
+            "cumulative_seconds": 0.014363081000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_seconds": 3.7080000000000003e-06,
+            "cumulative_seconds": 0.014316
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 33,
+            "function": "_commutation_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.251000000000001e-06,
+            "cumulative_seconds": 0.014311333
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 4170,
+            "total_calls": 4170,
+            "self_seconds": 0.001520511,
+            "cumulative_seconds": 0.014084376000000001
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 10696,
+            "total_calls": 10696,
+            "self_seconds": 0.002061653,
+            "cumulative_seconds": 0.013839889000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.959e-06,
+            "cumulative_seconds": 0.013710792000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.9376000000000002e-05,
+            "cumulative_seconds": 0.013702708000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.374e-06,
+            "cumulative_seconds": 0.012888374000000001
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 58,
+            "function": "_is_zero",
+            "primitive_calls": 14936,
+            "total_calls": 14936,
+            "self_seconds": 0.007260000000000001,
+            "cumulative_seconds": 0.012833657
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00021066500000000002,
+            "cumulative_seconds": 0.012644207000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.7920000000000002e-06,
+            "cumulative_seconds": 0.011272042000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.9917000000000003e-05,
+            "cumulative_seconds": 0.011270042000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 474,
+            "function": "is_diagonal_one_qubit",
+            "primitive_calls": 3568,
+            "total_calls": 3568,
+            "self_seconds": 0.000757768,
+            "cumulative_seconds": 0.010235942000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.003278135,
+            "cumulative_seconds": 0.010064999
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000202427,
+            "cumulative_seconds": 0.009125916000000001
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 279,
+            "function": "_route_sabre",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.000523798,
+            "cumulative_seconds": 0.009019042000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 7182,
+            "total_calls": 7182,
+            "self_seconds": 0.001729056,
+            "cumulative_seconds": 0.008984033
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 199,
+            "function": "<genexpr>",
+            "primitive_calls": 12916,
+            "total_calls": 12916,
+            "self_seconds": 0.0013970920000000002,
+            "cumulative_seconds": 0.008933156000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 3342,
+            "total_calls": 3342,
+            "self_seconds": 0.000902063,
+            "cumulative_seconds": 0.00882978
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 7.5e-07,
+            "cumulative_seconds": 0.008619375
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 4.2667e-05,
+            "cumulative_seconds": 0.008597042000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 343,
+            "function": "_matmul",
+            "primitive_calls": 1958,
+            "total_calls": 1958,
+            "self_seconds": 0.005518235000000001,
+            "cumulative_seconds": 0.008450828
+          }
+        ]
+      },
+      {
+        "input": "EXT-03-GRID-06.json",
+        "input_sha256": "24753f0f65dbbfa809919ce1958bc71b15f680d594307becc45e4cd35eaef9dd",
+        "output_sha256": "16ccfbc4f52d3c71983f99b812d925b7b6faa8581430960e79e928d7ea77d503",
+        "total_profiled_seconds": 0.14737577299999996,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 2.375e-06,
+            "cumulative_seconds": 0.10481475000000001
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 2.0747e-05,
+            "cumulative_seconds": 0.10481237500000001
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 2.042e-06,
+            "cumulative_seconds": 0.09581779200000001
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.2625e-05,
+            "cumulative_seconds": 0.09581575
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 2.8129e-05,
+            "cumulative_seconds": 0.09542779200000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 44,
+            "total_calls": 44,
+            "self_seconds": 4.7824e-05,
+            "cumulative_seconds": 0.095180788
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 2.7581000000000002e-05,
+            "cumulative_seconds": 0.033719291000000005
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.000918955,
+            "cumulative_seconds": 0.033690126
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.00025663000000000004,
+            "cumulative_seconds": 0.030701875000000003
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 432,
+            "total_calls": 432,
+            "self_seconds": 0.00022157900000000001,
+            "cumulative_seconds": 0.023398175
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.3740000000000006e-06,
+            "cumulative_seconds": 0.022697625000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 7.5874e-05,
+            "cumulative_seconds": 0.022615209
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 7.8872e-05,
+            "cumulative_seconds": 0.021446792000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 1010,
+            "total_calls": 1010,
+            "self_seconds": 0.000284761,
+            "cumulative_seconds": 0.021280295
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 665,
+            "function": "_encode_value",
+            "primitive_calls": 3033,
+            "total_calls": 10174,
+            "self_seconds": 0.020632425000000003,
+            "cumulative_seconds": 0.021083159
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 192,
+            "total_calls": 192,
+            "self_seconds": 0.0012687640000000001,
+            "cumulative_seconds": 0.020860586
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 1.0164000000000001e-05,
+            "cumulative_seconds": 0.020726583
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.0008253420000000001,
+            "cumulative_seconds": 0.020715042000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 2058,
+            "total_calls": 2058,
+            "self_seconds": 0.0034044530000000004,
+            "cumulative_seconds": 0.019690207
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 1954,
+            "total_calls": 1954,
+            "self_seconds": 0.004298317,
+            "cumulative_seconds": 0.019602053
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 43583,
+            "total_calls": 43583,
+            "self_seconds": 0.011226596,
+            "cumulative_seconds": 0.018792075000000002
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 8,
+            "total_calls": 8,
+            "self_seconds": 0.0008768280000000001,
+            "cumulative_seconds": 0.014966915
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 1300,
+            "total_calls": 1300,
+            "self_seconds": 0.0008690480000000001,
+            "cumulative_seconds": 0.013865995
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 19444,
+            "total_calls": 19444,
+            "self_seconds": 0.003424007,
+            "cumulative_seconds": 0.013295311
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 8,
+            "total_calls": 8,
+            "self_seconds": 0.000114426,
+            "cumulative_seconds": 0.012195876000000001
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.00166244,
+            "cumulative_seconds": 0.011953125
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 702,
+            "total_calls": 702,
+            "self_seconds": 0.0009619590000000001,
+            "cumulative_seconds": 0.011764722
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 16420,
+            "total_calls": 16420,
+            "self_seconds": 0.006829642,
+            "cumulative_seconds": 0.011415775000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 2384,
+            "total_calls": 2384,
+            "self_seconds": 0.0009441540000000001,
+            "cumulative_seconds": 0.011276238000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 2374,
+            "total_calls": 2374,
+            "self_seconds": 0.001642978,
+            "cumulative_seconds": 0.010654785
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 192,
+            "total_calls": 192,
+            "self_seconds": 0.000248447,
+            "cumulative_seconds": 0.010321958000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 1.5333e-05,
+            "cumulative_seconds": 0.009700084000000001
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 7.270100000000001e-05,
+            "cumulative_seconds": 0.009683417000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 240,
+            "total_calls": 240,
+            "self_seconds": 0.00021990400000000001,
+            "cumulative_seconds": 0.008959411
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 1382,
+            "total_calls": 1382,
+            "self_seconds": 0.0013615300000000001,
+            "cumulative_seconds": 0.008934962000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 288,
+            "total_calls": 288,
+            "self_seconds": 0.000148777,
+            "cumulative_seconds": 0.008678702
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.792000000000001e-06,
+            "cumulative_seconds": 0.008183125000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 8536,
+            "total_calls": 8536,
+            "self_seconds": 0.001554428,
+            "cumulative_seconds": 0.0077508130000000005
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 1440,
+            "total_calls": 1440,
+            "self_seconds": 0.00031183800000000005,
+            "cumulative_seconds": 0.007511879000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 288,
+            "total_calls": 288,
+            "self_seconds": 0.00034141,
+            "cumulative_seconds": 0.007472913
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 1068,
+            "total_calls": 1068,
+            "self_seconds": 0.00023001600000000001,
+            "cumulative_seconds": 0.007175244000000001
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 102,
+            "total_calls": 102,
+            "self_seconds": 3.6463e-05,
+            "cumulative_seconds": 0.006366005
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 102,
+            "total_calls": 384,
+            "self_seconds": 0.00033008,
+            "cumulative_seconds": 0.0063295420000000005
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 3306,
+            "total_calls": 3306,
+            "self_seconds": 0.0017532390000000002,
+            "cumulative_seconds": 0.006278995000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 7816,
+            "total_calls": 7816,
+            "self_seconds": 0.0008157500000000001,
+            "cumulative_seconds": 0.005915569000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.3750000000000005e-06,
+            "cumulative_seconds": 0.005355
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.6498e-05,
+            "cumulative_seconds": 0.005347542
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 2374,
+            "total_calls": 2374,
+            "self_seconds": 0.000321566,
+            "cumulative_seconds": 0.005286175000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 6.083e-06,
+            "cumulative_seconds": 0.00520725
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.000353919,
+            "cumulative_seconds": 0.005199292
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 2952,
+            "total_calls": 2952,
+            "self_seconds": 0.00102867,
+            "cumulative_seconds": 0.005090186
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 2374,
+            "total_calls": 2374,
+            "self_seconds": 0.000931803,
+            "cumulative_seconds": 0.004964609
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 8.751e-06,
+            "cumulative_seconds": 0.004734958
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 5.4543e-05,
+            "cumulative_seconds": 0.004724832
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 1374,
+            "total_calls": 1374,
+            "self_seconds": 0.0005039430000000001,
+            "cumulative_seconds": 0.004514295000000001
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 9.58e-07,
+            "cumulative_seconds": 0.00444675
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.1624000000000001e-05,
+            "cumulative_seconds": 0.004445583
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 3384,
+            "total_calls": 3384,
+            "self_seconds": 0.00077459,
+            "cumulative_seconds": 0.0041574360000000005
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 58,
+            "function": "_is_zero",
+            "primitive_calls": 4718,
+            "total_calls": 4718,
+            "self_seconds": 0.002263788,
+            "cumulative_seconds": 0.003995731000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.001050383,
+            "cumulative_seconds": 0.003910251
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 2764,
+            "total_calls": 2764,
+            "self_seconds": 0.000532997,
+            "cumulative_seconds": 0.0036063090000000003
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 24,
+            "total_calls": 24,
+            "self_seconds": 8.421000000000001e-06,
+            "cumulative_seconds": 0.0036007120000000003
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 24,
+            "total_calls": 24,
+            "self_seconds": 1.2832e-05,
+            "cumulative_seconds": 0.003592291
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 8,
+            "total_calls": 8,
+            "self_seconds": 3.462e-06,
+            "cumulative_seconds": 0.00354096
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 33,
+            "function": "_commutation_blocks",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 4.4990000000000005e-06,
+            "cumulative_seconds": 0.003536458
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 6.67e-07,
+            "cumulative_seconds": 0.003446834
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 1.9790000000000002e-05,
+            "cumulative_seconds": 0.003437625
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 474,
+            "function": "is_diagonal_one_qubit",
+            "primitive_calls": 1134,
+            "total_calls": 1134,
+            "self_seconds": 0.000242617,
+            "cumulative_seconds": 0.0032172230000000004
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 199,
+            "function": "<genexpr>",
+            "primitive_calls": 4628,
+            "total_calls": 4628,
+            "self_seconds": 0.00048639600000000005,
+            "cumulative_seconds": 0.0031373900000000003
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 343,
+            "function": "_matmul",
+            "primitive_calls": 702,
+            "total_calls": 702,
+            "self_seconds": 0.002054099,
+            "cumulative_seconds": 0.003115103
+          }
+        ]
+      },
+      {
+        "input": "EXT-03-LINE-06.json",
+        "input_sha256": "b101e85d22f7a4e6a77b43e6347034f4aa63c816a70e7ce4e3a5236f3642b447",
+        "output_sha256": "d12cd4814edba5be6b2820ba95591106113e43160d79ee7628a2b25947c2164c",
+        "total_profiled_seconds": 0.11646442300000008,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 3.0830000000000004e-06,
+            "cumulative_seconds": 0.09059787500000001
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 2.7748000000000003e-05,
+            "cumulative_seconds": 0.09059479200000001
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 3.626e-06,
+            "cumulative_seconds": 0.07991287500000001
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.9707000000000003e-05,
+            "cumulative_seconds": 0.079909249
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 2.9876000000000003e-05,
+            "cumulative_seconds": 0.079451167
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 33,
+            "total_calls": 33,
+            "self_seconds": 4.6207e-05,
+            "cumulative_seconds": 0.079194334
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.9168000000000003e-05,
+            "cumulative_seconds": 0.025493459000000003
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.0007093210000000001,
+            "cumulative_seconds": 0.025463000000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 2018,
+            "total_calls": 2018,
+            "self_seconds": 0.0033870000000000003,
+            "cumulative_seconds": 0.019236399
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 324,
+            "total_calls": 324,
+            "self_seconds": 0.000174162,
+            "cumulative_seconds": 0.017619177
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 39502,
+            "total_calls": 39502,
+            "self_seconds": 0.010369451,
+            "cumulative_seconds": 0.017323222000000003
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 9.041e-06,
+            "cumulative_seconds": 0.016615957
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00066671,
+            "cumulative_seconds": 0.016605791
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 144,
+            "total_calls": 144,
+            "self_seconds": 0.00096301,
+            "cumulative_seconds": 0.015674502
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 1517,
+            "total_calls": 1517,
+            "self_seconds": 0.0033054760000000003,
+            "cumulative_seconds": 0.015369904
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.00027162700000000003,
+            "cumulative_seconds": 0.013389375
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.00072868,
+            "cumulative_seconds": 0.012835043
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.00011196300000000001,
+            "cumulative_seconds": 0.012598625
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.001690513,
+            "cumulative_seconds": 0.012367249
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 702,
+            "total_calls": 702,
+            "self_seconds": 0.000989113,
+            "cumulative_seconds": 0.012358031
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 17229,
+            "total_calls": 17229,
+            "self_seconds": 0.003099138,
+            "cumulative_seconds": 0.011974686
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 977,
+            "total_calls": 977,
+            "self_seconds": 0.0006528720000000001,
+            "cumulative_seconds": 0.010481179
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 2094,
+            "total_calls": 2094,
+            "self_seconds": 0.0015373460000000002,
+            "cumulative_seconds": 0.010231004
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.4999000000000002e-05,
+            "cumulative_seconds": 0.010020833
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 6.5997e-05,
+            "cumulative_seconds": 0.010004876000000001
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 7.459e-06,
+            "cumulative_seconds": 0.009773
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 1944,
+            "total_calls": 1944,
+            "self_seconds": 0.0008024530000000001,
+            "cumulative_seconds": 0.009705139
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 13182,
+            "total_calls": 13182,
+            "self_seconds": 0.005496951,
+            "cumulative_seconds": 0.009293434
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 1398,
+            "total_calls": 1398,
+            "self_seconds": 0.001388172,
+            "cumulative_seconds": 0.009235454
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 144,
+            "total_calls": 144,
+            "self_seconds": 0.00018831900000000002,
+            "cumulative_seconds": 0.007707625
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 183,
+            "total_calls": 183,
+            "self_seconds": 0.000186312,
+            "cumulative_seconds": 0.007183500000000001
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 110,
+            "total_calls": 110,
+            "self_seconds": 3.7613e-05,
+            "cumulative_seconds": 0.007096544000000001
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 110,
+            "total_calls": 488,
+            "self_seconds": 0.000403583,
+            "cumulative_seconds": 0.007058931
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 218,
+            "total_calls": 218,
+            "self_seconds": 0.000121149,
+            "cumulative_seconds": 0.0069496210000000004
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 6.584000000000001e-06,
+            "cumulative_seconds": 0.006676958
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.0956e-05,
+            "cumulative_seconds": 0.0066664160000000005
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 6608,
+            "total_calls": 6608,
+            "self_seconds": 0.0011781460000000001,
+            "cumulative_seconds": 0.0060189630000000004
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.125e-06,
+            "cumulative_seconds": 0.005716042
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.3417e-05,
+            "cumulative_seconds": 0.005714833000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 218,
+            "total_calls": 218,
+            "self_seconds": 0.000270695,
+            "cumulative_seconds": 0.005703752
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 985,
+            "total_calls": 985,
+            "self_seconds": 0.000221642,
+            "cumulative_seconds": 0.005688345
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 2884,
+            "total_calls": 2884,
+            "self_seconds": 0.001525134,
+            "cumulative_seconds": 0.005509643000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 742,
+            "total_calls": 742,
+            "self_seconds": 0.000173403,
+            "cumulative_seconds": 0.005469662
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 2094,
+            "total_calls": 2094,
+            "self_seconds": 0.00029063200000000003,
+            "cumulative_seconds": 0.005270492000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.001139908,
+            "cumulative_seconds": 0.0052673320000000004
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 2094,
+            "total_calls": 2094,
+            "self_seconds": 0.0009681370000000001,
+            "cumulative_seconds": 0.00497986
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 6068,
+            "total_calls": 6068,
+            "self_seconds": 0.0006378460000000001,
+            "cumulative_seconds": 0.004587587000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.455e-06,
+            "cumulative_seconds": 0.0044777490000000005
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 8.750000000000001e-07,
+            "cumulative_seconds": 0.004455000000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 7.289000000000001e-06,
+            "cumulative_seconds": 0.004451207
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 2.4002e-05,
+            "cumulative_seconds": 0.004448084000000001
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000298006,
+            "cumulative_seconds": 0.004442668
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 7.835e-06,
+            "cumulative_seconds": 0.004433833
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.7925000000000006e-05,
+            "cumulative_seconds": 0.004424749
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.2959e-05,
+            "cumulative_seconds": 0.004388001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 2488,
+            "total_calls": 2488,
+            "self_seconds": 0.00088957,
+            "cumulative_seconds": 0.004373701000000001
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 1152,
+            "total_calls": 1152,
+            "self_seconds": 0.00041679200000000003,
+            "cumulative_seconds": 0.003845985
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 2796,
+            "total_calls": 2796,
+            "self_seconds": 0.000560471,
+            "cumulative_seconds": 0.003734395
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 6.997e-06,
+            "cumulative_seconds": 0.0035457490000000004
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 1.0796000000000001e-05,
+            "cumulative_seconds": 0.003538752
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_seconds": 4.165e-06,
+            "cumulative_seconds": 0.003496208
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 33,
+            "function": "_commutation_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 3.0830000000000004e-06,
+            "cumulative_seconds": 0.003491
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 58,
+            "function": "_is_zero",
+            "primitive_calls": 4006,
+            "total_calls": 4006,
+            "self_seconds": 0.001968632,
+            "cumulative_seconds": 0.00348599
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 2538,
+            "total_calls": 2538,
+            "self_seconds": 0.000601146,
+            "cumulative_seconds": 0.0031498610000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.3761e-05,
+            "cumulative_seconds": 0.0031152500000000004
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 279,
+            "function": "_route_sabre",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 0.000183716,
+            "cumulative_seconds": 0.0030847500000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 1098,
+            "total_calls": 1098,
+            "self_seconds": 0.00031134200000000004,
+            "cumulative_seconds": 0.0029406560000000003
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 474,
+            "function": "is_diagonal_one_qubit",
+            "primitive_calls": 972,
+            "total_calls": 972,
+            "self_seconds": 0.000204081,
+            "cumulative_seconds": 0.002773984
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 665,
+            "function": "_encode_value",
+            "primitive_calls": 3297,
+            "total_calls": 11036,
+            "self_seconds": 0.002254055,
+            "cumulative_seconds": 0.002720147
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 89,
+            "function": "_remap_instruction",
+            "primitive_calls": 216,
+            "total_calls": 216,
+            "self_seconds": 0.000102168,
+            "cumulative_seconds": 0.0024786300000000003
+          }
+        ]
+      },
+      {
+        "input": "EXT-04-GRID-06.json",
+        "input_sha256": "72e73d4d343da4cd32d843d6bdbeec718afe5b9e41dd3fa6d2cde00c7e5455fe",
+        "output_sha256": "7030c37ce4fb507661bbcb6662225da496c8868f2ba859b3e54f010f2401c357",
+        "total_profiled_seconds": 0.02468024000000003,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 2.4170000000000003e-06,
+            "cumulative_seconds": 0.018756584
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.4376000000000001e-05,
+            "cumulative_seconds": 0.018754167000000002
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 2.126e-06,
+            "cumulative_seconds": 0.015566417
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.1711e-05,
+            "cumulative_seconds": 0.015564291000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.6876000000000002e-05,
+            "cumulative_seconds": 0.015374625000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 33,
+            "total_calls": 33,
+            "self_seconds": 3.0084000000000002e-05,
+            "cumulative_seconds": 0.01526329
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 8.96e-06,
+            "cumulative_seconds": 0.005019417
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00016737700000000002,
+            "cumulative_seconds": 0.005009416
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 8.1087e-05,
+            "cumulative_seconds": 0.0038859170000000005
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 77,
+            "total_calls": 77,
+            "self_seconds": 4.1458e-05,
+            "cumulative_seconds": 0.003521751
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 7767,
+            "total_calls": 7767,
+            "self_seconds": 0.0020851560000000003,
+            "cumulative_seconds": 0.003481271
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 396,
+            "total_calls": 396,
+            "self_seconds": 0.0006496820000000001,
+            "cumulative_seconds": 0.003208077
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 38,
+            "total_calls": 38,
+            "self_seconds": 0.00022562000000000003,
+            "cumulative_seconds": 0.0031398750000000003
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.500000000000001e-06,
+            "cumulative_seconds": 0.002964125
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.626e-06,
+            "cumulative_seconds": 0.0025908750000000003
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 3.1237e-05,
+            "cumulative_seconds": 0.002589501
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 239,
+            "total_calls": 239,
+            "self_seconds": 0.0005525360000000001,
+            "cumulative_seconds": 0.0025847490000000003
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.00012763800000000001,
+            "cumulative_seconds": 0.0025842910000000003
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.00036379900000000005,
+            "cumulative_seconds": 0.002530542
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 3445,
+            "total_calls": 3445,
+            "self_seconds": 0.0006294930000000001,
+            "cumulative_seconds": 0.002447079
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.000144279,
+            "cumulative_seconds": 0.0024420830000000003
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 6.125000000000001e-06,
+            "cumulative_seconds": 0.0023462910000000003
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.2204000000000003e-05,
+            "cumulative_seconds": 0.002339167
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.2510000000000005e-06,
+            "cumulative_seconds": 0.0022326670000000002
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.4462000000000001e-05,
+            "cumulative_seconds": 0.002225875
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 29,
+            "total_calls": 29,
+            "self_seconds": 1.1872000000000001e-05,
+            "cumulative_seconds": 0.0020451230000000003
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 29,
+            "total_calls": 191,
+            "self_seconds": 0.000146742,
+            "cumulative_seconds": 0.0020332510000000002
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 8.33e-07,
+            "cumulative_seconds": 0.0019073330000000002
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 8.751e-06,
+            "cumulative_seconds": 0.0019062920000000002
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 104,
+            "total_calls": 104,
+            "self_seconds": 0.000153193,
+            "cumulative_seconds": 0.001875329
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 272,
+            "total_calls": 272,
+            "self_seconds": 0.000277017,
+            "cumulative_seconds": 0.0018719610000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 364,
+            "total_calls": 364,
+            "self_seconds": 0.000152874,
+            "cumulative_seconds": 0.0018037480000000002
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 166,
+            "total_calls": 166,
+            "self_seconds": 0.00011380500000000001,
+            "cumulative_seconds": 0.001779877
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 2204,
+            "total_calls": 2204,
+            "self_seconds": 0.000978939,
+            "cumulative_seconds": 0.0016422540000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.000314691,
+            "cumulative_seconds": 0.0016298760000000002
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.830000000000001e-07,
+            "cumulative_seconds": 0.0015230830000000002
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 1.0749e-05,
+            "cumulative_seconds": 0.0015180410000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 0.00020652500000000002,
+            "cumulative_seconds": 0.001452263
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 35,
+            "total_calls": 35,
+            "self_seconds": 3.5414000000000003e-05,
+            "cumulative_seconds": 0.001330664
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 3.208e-06,
+            "cumulative_seconds": 0.001254125
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.775e-05,
+            "cumulative_seconds": 0.001226125
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 743,
+            "function": "rewrite_of",
+            "primitive_calls": 24,
+            "total_calls": 54,
+            "self_seconds": 9.3131e-05,
+            "cumulative_seconds": 0.001110585
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 532,
+            "total_calls": 532,
+            "self_seconds": 0.00028442100000000003,
+            "cumulative_seconds": 0.001036196
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 1026,
+            "total_calls": 1026,
+            "self_seconds": 0.000205572,
+            "cumulative_seconds": 0.0010022330000000002
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.458e-06,
+            "cumulative_seconds": 0.0009547500000000001
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.9598e-05,
+            "cumulative_seconds": 0.0009491670000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 91,
+            "total_calls": 91,
+            "self_seconds": 2.8907000000000003e-05,
+            "cumulative_seconds": 0.000934785
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 59,
+            "total_calls": 59,
+            "self_seconds": 3.9717e-05,
+            "cumulative_seconds": 0.000907874
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 118,
+            "total_calls": 118,
+            "self_seconds": 3.0094e-05,
+            "cumulative_seconds": 0.000906332
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 25,
+            "total_calls": 25,
+            "self_seconds": 1.7663e-05,
+            "cumulative_seconds": 0.0008536230000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.541e-06,
+            "cumulative_seconds": 0.000848333
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.4359000000000002e-05,
+            "cumulative_seconds": 0.000847334
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 6.296000000000001e-05,
+            "cumulative_seconds": 0.000842666
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 444,
+            "total_calls": 444,
+            "self_seconds": 0.000167121,
+            "cumulative_seconds": 0.000819031
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 4.2733000000000006e-05,
+            "cumulative_seconds": 0.0007846340000000001
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 107,
+            "function": "_gate",
+            "primitive_calls": 162,
+            "total_calls": 162,
+            "self_seconds": 4.008e-05,
+            "cumulative_seconds": 0.000779045
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 956,
+            "total_calls": 956,
+            "self_seconds": 0.000103979,
+            "cumulative_seconds": 0.0007746700000000001
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 544,
+            "total_calls": 544,
+            "self_seconds": 0.00011449600000000001,
+            "cumulative_seconds": 0.0007591410000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 0.000140676,
+            "cumulative_seconds": 0.000741901
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 665,
+            "function": "_encode_value",
+            "primitive_calls": 870,
+            "total_calls": 3352,
+            "self_seconds": 0.0006115840000000001,
+            "cumulative_seconds": 0.000739438
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 279,
+            "function": "_route_sabre",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.3668e-05,
+            "cumulative_seconds": 0.000723292
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 289,
+            "total_calls": 289,
+            "self_seconds": 8.353700000000001e-05,
+            "cumulative_seconds": 0.0007221
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 576,
+            "total_calls": 576,
+            "self_seconds": 0.000132375,
+            "cumulative_seconds": 0.0007211460000000001
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 596,
+            "function": "best_swap",
+            "primitive_calls": 30,
+            "total_calls": 30,
+            "self_seconds": 0.000176009,
+            "cumulative_seconds": 0.000720419
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 206,
+            "total_calls": 206,
+            "self_seconds": 8.6056e-05,
+            "cumulative_seconds": 0.000714545
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 6.6650000000000006e-06,
+            "cumulative_seconds": 0.000707334
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 1.5291e-05,
+            "cumulative_seconds": 0.000700669
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 25,
+            "total_calls": 25,
+            "self_seconds": 3.6238e-05,
+            "cumulative_seconds": 0.000685334
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_seconds": 3.1660000000000003e-06,
+            "cumulative_seconds": 0.000657584
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 543,
+            "function": "__post_init__",
+            "primitive_calls": 28,
+            "total_calls": 28,
+            "self_seconds": 6.6742e-05,
+            "cumulative_seconds": 0.000654706
+          }
+        ]
+      },
+      {
+        "input": "EXT-04-LINE-06.json",
+        "input_sha256": "e4818d2802448f9a6af3221007aed4c7f671aa587280bd85408760fe48e1c29a",
+        "output_sha256": "acb584e555218d44850d68d21e63eafec40819fe2f16214e5b8b782a435e4cad",
+        "total_profiled_seconds": 0.022978389000000026,
+        "functions_by_cumulative": [
+          {
+            "file": "compiler/pipeline.py",
+            "line": 174,
+            "function": "compile",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 2.041e-06,
+            "cumulative_seconds": 0.017840208
+          },
+          {
+            "file": "compiler/lowering/pipeline.py",
+            "line": 25,
+            "function": "compile_circuit",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.2499e-05,
+            "cumulative_seconds": 0.017838167000000002
+          },
+          {
+            "file": "compiler/pipeline.py",
+            "line": 112,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.667e-06,
+            "cumulative_seconds": 0.015176292000000001
+          },
+          {
+            "file": "compiler/optimization/pipeline.py",
+            "line": 67,
+            "function": "_optimize_to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.0460000000000001e-05,
+            "cumulative_seconds": 0.015174625
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 613,
+            "function": "to_fixed_point",
+            "primitive_calls": 2,
+            "total_calls": 2,
+            "self_seconds": 1.5959e-05,
+            "cumulative_seconds": 0.014994667000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 654,
+            "function": "_applied",
+            "primitive_calls": 33,
+            "total_calls": 33,
+            "self_seconds": 2.7874e-05,
+            "cumulative_seconds": 0.014891333000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 88,
+            "function": "_collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 9.166e-06,
+            "cumulative_seconds": 0.005060125
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 711,
+            "function": "collapse_two_qubit_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000165226,
+            "cumulative_seconds": 0.005049917
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 796,
+            "function": "solve",
+            "primitive_calls": 77,
+            "total_calls": 77,
+            "self_seconds": 4.3326000000000005e-05,
+            "cumulative_seconds": 0.00352746
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 612,
+            "function": "canonical_opcode",
+            "primitive_calls": 7418,
+            "total_calls": 7418,
+            "self_seconds": 0.001972007,
+            "cumulative_seconds": 0.003300531
+          },
+          {
+            "file": "compiler/lowering/native_gate_legalization.py",
+            "line": 340,
+            "function": "legalize_native_gates",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 6.867100000000001e-05,
+            "cumulative_seconds": 0.003189875
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 586,
+            "function": "_replacement",
+            "primitive_calls": 38,
+            "total_calls": 38,
+            "self_seconds": 0.000231338,
+            "cumulative_seconds": 0.0031790430000000003
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 374,
+            "function": "__post_init__",
+            "primitive_calls": 344,
+            "total_calls": 344,
+            "self_seconds": 0.000562691,
+            "cumulative_seconds": 0.002947547
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 181,
+            "function": "_instruction_matrix",
+            "primitive_calls": 239,
+            "total_calls": 239,
+            "self_seconds": 0.0005536440000000001,
+            "cumulative_seconds": 0.002607379
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 82,
+            "function": "_collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.291000000000001e-06,
+            "cumulative_seconds": 0.0025960840000000002
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 464,
+            "function": "collapse_one_qubit_runs",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 0.000125594,
+            "cumulative_seconds": 0.002589876
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 484,
+            "function": "analyze_commutation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 2.9613000000000003e-05,
+            "cumulative_seconds": 0.002476125
+          },
+          {
+            "file": "compiler/topology/routing.py",
+            "line": 104,
+            "function": "_route_automatically",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.292e-06,
+            "cumulative_seconds": 0.002447833
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 382,
+            "function": "_sweep_commutation",
+            "primitive_calls": 4,
+            "total_calls": 4,
+            "self_seconds": 0.000351061,
+            "cumulative_seconds": 0.0024225
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 90,
+            "function": "remove_identity_gates",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 0.000142797,
+            "cumulative_seconds": 0.002414832
+          },
+          {
+            "file": "core/operator_schema.py",
+            "line": 617,
+            "function": "get_operator_schema",
+            "primitive_calls": 3249,
+            "total_calls": 3249,
+            "self_seconds": 0.000595569,
+            "cumulative_seconds": 0.002317824
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 76,
+            "function": "_merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.331e-06,
+            "cumulative_seconds": 0.0021199160000000003
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 232,
+            "function": "merge_commuting_rotations",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.1381e-05,
+            "cumulative_seconds": 0.002113667
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 545,
+            "function": "is_identity_one_qubit",
+            "primitive_calls": 356,
+            "total_calls": 356,
+            "self_seconds": 0.000148996,
+            "cumulative_seconds": 0.001790803
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 256,
+            "function": "commute",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 0.00026553700000000004,
+            "cumulative_seconds": 0.0017901290000000001
+          },
+          {
+            "file": "circuit.py",
+            "line": 366,
+            "function": "gate",
+            "primitive_calls": 104,
+            "total_calls": 104,
+            "self_seconds": 0.000147328,
+            "cumulative_seconds": 0.0017863310000000002
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 449,
+            "function": "_lifted_matrix",
+            "primitive_calls": 166,
+            "total_calls": 166,
+            "self_seconds": 0.000114451,
+            "cumulative_seconds": 0.0017844610000000002
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 487,
+            "function": "_select_routing_strategy",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.333e-06,
+            "cumulative_seconds": 0.001740833
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 367,
+            "function": "_estimate_routing_cost",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.4958000000000001e-05,
+            "cumulative_seconds": 0.0017335
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 132,
+            "function": "_polar_angle",
+            "primitive_calls": 2204,
+            "total_calls": 2204,
+            "self_seconds": 0.000984833,
+            "cumulative_seconds": 0.001647793
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 778,
+            "function": "translate",
+            "primitive_calls": 25,
+            "total_calls": 25,
+            "self_seconds": 1.0170000000000001e-05,
+            "cumulative_seconds": 0.0015506690000000002
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 698,
+            "function": "_expand",
+            "primitive_calls": 25,
+            "total_calls": 139,
+            "self_seconds": 0.000109659,
+            "cumulative_seconds": 0.001540499
+          },
+          {
+            "file": "compiler/topology/routing_strategy.py",
+            "line": 345,
+            "function": "_plan_sabre_for_topology",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 1.333e-06,
+            "cumulative_seconds": 0.001422625
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 314,
+            "function": "plan_sabre_swaps",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 8.792e-06,
+            "cumulative_seconds": 0.001421125
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 294,
+            "function": "_normalize_angle",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 0.00020599500000000002,
+            "cumulative_seconds": 0.0014079490000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 483,
+            "function": "_block_product",
+            "primitive_calls": 35,
+            "total_calls": 35,
+            "self_seconds": 3.6085000000000004e-05,
+            "cumulative_seconds": 0.001302252
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 453,
+            "function": "_plan_sabre_trial",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "self_seconds": 0.00029688500000000004,
+            "cumulative_seconds": 0.001181666
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 583,
+            "function": "content_hash",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 5.835e-06,
+            "cumulative_seconds": 0.0010998750000000002
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 347,
+            "function": "_select_sabre_trials",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 5.84e-07,
+            "cumulative_seconds": 0.001098875
+          },
+          {
+            "file": "compiler/topology/sabre.py",
+            "line": 363,
+            "function": "_sabre_trial_costs",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "self_seconds": 1.0499e-05,
+            "cumulative_seconds": 0.0010934990000000002
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 600,
+            "function": "to_json",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.4582000000000003e-05,
+            "cumulative_seconds": 0.0010735410000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 167,
+            "function": "_scalar_angle",
+            "primitive_calls": 1026,
+            "total_calls": 1026,
+            "self_seconds": 0.00019283,
+            "cumulative_seconds": 0.0010067350000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 394,
+            "function": "canonical_euler_angles",
+            "primitive_calls": 500,
+            "total_calls": 500,
+            "self_seconds": 0.000273038,
+            "cumulative_seconds": 0.0009812240000000002
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 522,
+            "function": "_draws_in_as_leading_member",
+            "primitive_calls": 90,
+            "total_calls": 90,
+            "self_seconds": 2.8088000000000003e-05,
+            "cumulative_seconds": 0.0009698370000000001
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 540,
+            "function": "_joins_pair",
+            "primitive_calls": 117,
+            "total_calls": 117,
+            "self_seconds": 3.1131000000000004e-05,
+            "cumulative_seconds": 0.0009450390000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 68,
+            "function": "_cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 4.292000000000001e-06,
+            "cumulative_seconds": 0.0009226670000000001
+          },
+          {
+            "file": "compiler/optimization/commutation_cancellation.py",
+            "line": 284,
+            "function": "cancel_commuting_self_inverse",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.9043e-05,
+            "cumulative_seconds": 0.0009172920000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 485,
+            "function": "close",
+            "primitive_calls": 55,
+            "total_calls": 55,
+            "self_seconds": 3.9705e-05,
+            "cumulative_seconds": 0.000894211
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 413,
+            "function": "_fold_run",
+            "primitive_calls": 25,
+            "total_calls": 25,
+            "self_seconds": 1.6875e-05,
+            "cumulative_seconds": 0.0008408350000000001
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 54,
+            "function": "_remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 3.7920000000000003e-06,
+            "cumulative_seconds": 0.0008231260000000001
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 148,
+            "function": "remove_diagonal_gates_before_measure",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 6.237e-05,
+            "cumulative_seconds": 0.0008181670000000001
+          },
+          {
+            "file": "compiler/optimization/one_qubit_synthesis.py",
+            "line": 529,
+            "function": "_is_identity_angle",
+            "primitive_calls": 444,
+            "total_calls": 444,
+            "self_seconds": 0.000168893,
+            "cumulative_seconds": 0.000817043
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 208,
+            "function": "<genexpr>",
+            "primitive_calls": 956,
+            "total_calls": 956,
+            "self_seconds": 0.00010395100000000001,
+            "cumulative_seconds": 0.0007661030000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 281,
+            "function": "_require_finite_angle",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 4.1048000000000004e-05,
+            "cumulative_seconds": 0.00075392
+          },
+          {
+            "file": "compiler/optimization/two_qubit_optimization.py",
+            "line": 555,
+            "function": "_declines_vocabulary",
+            "primitive_calls": 576,
+            "total_calls": 576,
+            "self_seconds": 0.000138476,
+            "cumulative_seconds": 0.0007439640000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 587,
+            "function": "to_dict",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 2.0518000000000002e-05,
+            "cumulative_seconds": 0.0007422500000000001
+          },
+          {
+            "file": "compiler/optimization/commutation.py",
+            "line": 194,
+            "function": "_is_declared",
+            "primitive_calls": 528,
+            "total_calls": 528,
+            "self_seconds": 0.000111736,
+            "cumulative_seconds": 0.0007273840000000001
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 743,
+            "function": "rewrite_of",
+            "primitive_calls": 20,
+            "total_calls": 38,
+            "self_seconds": 6.5694e-05,
+            "cumulative_seconds": 0.0007270390000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 238,
+            "function": "_holds_only_finite_values",
+            "primitive_calls": 264,
+            "total_calls": 264,
+            "self_seconds": 0.000134986,
+            "cumulative_seconds": 0.000712872
+          },
+          {
+            "file": "compiler/topology/routing_emission.py",
+            "line": 279,
+            "function": "_route_sabre",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "self_seconds": 4.3089e-05,
+            "cumulative_seconds": 0.000699333
+          },
+          {
+            "file": "compiler/optimization/diagonal_before_measure.py",
+            "line": 131,
+            "function": "_is_diagonal",
+            "primitive_calls": 202,
+            "total_calls": 202,
+            "self_seconds": 8.1573e-05,
+            "cumulative_seconds": 0.0006927960000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 536,
+            "function": "__getitem__",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 6.0040000000000005e-06,
+            "cumulative_seconds": 0.000678794
+          },
+          {
+            "file": "compiler/optimization/one_qubit_optimization.py",
+            "line": 290,
+            "function": "_emit",
+            "primitive_calls": 25,
+            "total_calls": 25,
+            "self_seconds": 3.6869e-05,
+            "cumulative_seconds": 0.000675961
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 482,
+            "function": "value",
+            "primitive_calls": 18,
+            "total_calls": 18,
+            "self_seconds": 8.957e-06,
+            "cumulative_seconds": 0.00067279
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 665,
+            "function": "_encode_value",
+            "primitive_calls": 738,
+            "total_calls": 2894,
+            "self_seconds": 0.000534795,
+            "cumulative_seconds": 0.0006505360000000001
+          },
+          {
+            "file": "core/ir/__init__.py",
+            "line": 742,
+            "function": "_instruction_to_dict",
+            "primitive_calls": 245,
+            "total_calls": 245,
+            "self_seconds": 7.1196e-05,
+            "cumulative_seconds": 0.0006398580000000001
+          },
+          {
+            "file": "compiler/optimization/pass_manager.py",
+            "line": 498,
+            "function": "_compute",
+            "primitive_calls": 7,
+            "total_calls": 7,
+            "self_seconds": 2.9590000000000004e-06,
+            "cumulative_seconds": 0.000638833
+          },
+          {
+            "file": "compiler/optimization/pass_registry.py",
+            "line": 33,
+            "function": "_commutation_blocks",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "self_seconds": 1.333e-06,
+            "cumulative_seconds": 0.000634999
+          },
+          {
+            "file": "compiler/optimization/canonicalization.py",
+            "line": 58,
+            "function": "_is_zero",
+            "primitive_calls": 665,
+            "total_calls": 665,
+            "self_seconds": 0.000348583,
+            "cumulative_seconds": 0.000602757
+          },
+          {
+            "file": "compiler/lowering/basis_translation.py",
+            "line": 107,
+            "function": "_gate",
+            "primitive_calls": 114,
+            "total_calls": 114,
+            "self_seconds": 2.7570000000000002e-05,
+            "cumulative_seconds": 0.0005697920000000001
+          }
+        ]
+      }
+    ],
+    "driver_source": "\"\"\"Attribute native compiler costs on inspected development inputs.\"\"\"\nimport cProfile\nimport hashlib\nimport json\nfrom pathlib import Path\nimport pstats\nfrom types import SimpleNamespace\n\nimport flagquantum as fq\nimport torch\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\ntorch.set_num_threads(1)\nrows=[]\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n fixture=json.loads(path.read_text())\n adapter=SimpleNamespace(fq=fq,torch=torch,audit={})\n expected=_ordinary_flagquantum_route(adapter,fixture,0)\n profiler=cProfile.Profile()\n actual=profiler.runcall(_ordinary_flagquantum_route,adapter,fixture,0)\n assert actual==expected\n stats=pstats.Stats(profiler)\n functions=[]\n for (filename,line,function),(primitive,total,selftime,cumulative,callers) in stats.stats.items():\n  if '/flagquantum/' in filename:\n   functions.append({'file':filename.split('/flagquantum/',1)[1],'line':line,'function':function,'primitive_calls':primitive,'total_calls':total,'self_seconds':selftime,'cumulative_seconds':cumulative})\n row={'input':path.name,'input_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'output_sha256':hashlib.sha256(json.dumps(actual,sort_keys=True).encode()).hexdigest(),'total_profiled_seconds':stats.total_tt,'functions_by_cumulative':sorted(functions,key=lambda x:x['cumulative_seconds'],reverse=True)[:70]}\n rows.append(row)\n print(json.dumps({'input':path.name,'seconds':stats.total_tt,'top':row['functions_by_cumulative'][:12]}),flush=True)\nPath('/private/tmp/fq-compiler-workflow-profile-20261123.json').write_text(json.dumps({'scope':'cProfile attribution on six inspected development inputs; instrumentation perturbs latency; not a SDK comparison','rows':rows,'driver_source':Path(__file__).read_text()},indent=2)+'\\n')\n"
+  },
+  "attempts": [
+    {
+      "status": "failed_before_measurement",
+      "reason": "Initial driver import could not locate sdkbench.candidates; corrected source search path before measurement"
+    },
+    {
+      "status": "completed",
+      "wall_budget_seconds": 240,
+      "rows": 22
+    }
+  ],
+  "excluded_preliminary_probe": "Earlier foldable-membership probe overlapped full tests; its timing samples are excluded as invalid. This dataset is a separately executed observation, not a replacement for those samples.",
+  "fixture_source": {
+    "release": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/tag/evidence-compiler-external-2026-11-23.1",
+    "archive": "external-numerical-evidence.tar.gz",
+    "sha256": "2062cab0857de6088abe402d05ea7722dad8d37cc5cb13206a478f79e07428d8",
+    "note": "Previously published inspected development inputs; per-input normalized hashes are recorded in rows. No duplicate fixture payloads are added here."
+  }
+}
