@@ -48,15 +48,20 @@ def lookup_binding(
     _validate_registers(selection, output, workspace)
     if len(workspace) < n:
         raise ValueError("Lookup binding needs one clean lease per address bit")
-    values = tuple(int(cast(SupportsInt, table[k])) for k in range(len(table)))
-    if any(not 0 <= value < 1 << width for value in values):
-        raise ValueError("Converted table integers must fit the target")
-    if width and len(table) != 1 << n:
+    converted_rows = []
+    for index in range(len(table)):
+        value = int(cast(SupportsInt, table[index]))
+        if not 0 <= value < 1 << width:
+            raise ValueError(
+                f"table[{index}]={value!r} isn't in range(0, 2**len(target)) "
+                f"(len(target)={width})"
+            )
+        converted_rows.append(
+            tuple(bool(bit) for bit in split_integer(value, width)) if width else ()
+        )
+    rows = tuple(converted_rows)
+    if width and len(rows) != 1 << n:
         raise ValueError("Table contents must exactly fill the address space")
-    rows = tuple(
-        tuple(bool(bit) for bit in split_integer(value, width)) if width else ()
-        for value in values
-    )
     trace = ComponentTrace()
     operations: tuple[ReversiblePhaseOperation, ...] = ()
     bits = classical_width

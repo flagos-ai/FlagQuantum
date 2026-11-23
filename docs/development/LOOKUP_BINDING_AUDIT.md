@@ -104,3 +104,14 @@ Integration team scope, architecture, internal IR, public API migration and
 whitespace checks pass. Type annotations in the fixture generator were corrected
 and strict typing rerun after the concentrated regression. No physical schedule
 changed in that repair.
+
+## Complete conversion-utility follow-up
+
+The complete utility audit now records cross-byte target widths through 129,
+actual wide packed execution and a sequential conversion failure-order repair.
+Ordinary int/string/float/bytes conversion retains the established behavior.
+The source dynamically honors int-subclass bit_length/to_bytes overrides,
+while the native owner normalizes these values first. This explicit source
+boundary keeps K-0183 open. See LOOKUP_TABLE_CONVERSION_AUDIT.md and the
+immutable source conversion observations. The existing K-0232 source-workspace
+and address-portability boundaries remain independently open.
