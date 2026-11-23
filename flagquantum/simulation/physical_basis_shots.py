@@ -6,7 +6,7 @@
 
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from random import Random
 from typing import Protocol
 
@@ -100,6 +100,7 @@ class PackedBasisState:
     bits: defaultdict[int, int]
     phases: list[int]
     sign: int = 0
+    conditions: list[int] = field(default_factory=list)
 
 
 def apply_packed_basis_records(
@@ -111,17 +112,20 @@ def apply_packed_basis_records(
     debug: Callable[[int, bool], None] | None = None,
     observer: Callable[[BasisRecord, int], None] | None = None,
 ) -> None:
-    """Apply physical records to packed state with a fresh condition stack."""
+    """Apply physical records to packed state while retaining the caller-owned condition stack."""
     q, b, phases = state.qubits, state.bits, state.phases
     shots = len(phases)
     all_lanes = (1 << shots) - 1
-    scopes = [all_lanes]
+    scopes = state.conditions
+    base_condition = scopes[-1] if scopes else all_lanes
     sign = state.sign
 
     for record in records:
         code = record.opcode
         predicate = record.condition_bit
-        active = scopes[-1] if predicate is None else scopes[-1] & b[predicate]
+        active = base_condition
+        if predicate is not None:
+            active &= b[predicate]
         if observer is not None:
             counted = (
                 all_lanes
@@ -130,9 +134,12 @@ def apply_packed_basis_records(
             )
             observer(record, counted)
         if code == "PUSH_CONDITION":
+            base_condition = active
             scopes.append(active)
-        elif code == "POP_CONDITION" and len(scopes) > 1:
-            scopes.pop()
+        elif code == "POP_CONDITION":
+            if scopes:
+                scopes.pop()
+            base_condition = scopes[-1] if scopes else all_lanes
         if code in {"PUSH_CONDITION", "POP_CONDITION", "INFO_TAG"}:
             if counts is not None:
                 counts[code] += shots

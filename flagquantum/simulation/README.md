@@ -1005,3 +1005,13 @@ and layout. Ordered overlapping members retain last-write behavior, and reads
 clear hanging bits. This numerical helper does not construct circuits or choose
 execution policy. Run `tests/unit/test_physical_register_buffer.py` for mixed
 registers, multiword values, lane counts and actual conditional execution.
+
+## Persistent physical basis lifecycle
+
+`_basis_simulation.py` composes the shared packed executor, exact phases,
+conditions, counters, random streams and scalar register buffers. It owns
+configuration, capacity, shot clearing and independent numerical snapshots.
+Compiler metadata is borrowed through a structural interface. Testing fuzzers
+and Benchmarking workloads use the same numerical owner. Full source disposition
+and the shortest source-comparison path are recorded in
+[the lifecycle audit](../../docs/development/PHYSICAL_BASIS_LIFECYCLE_AUDIT.md).

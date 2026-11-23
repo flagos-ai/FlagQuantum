@@ -5,6 +5,7 @@
 """Deterministic word streams for the physical spin benchmark."""
 
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 
 from ._packed_chacha import PackedChaCha
 from ._packed_word import pack_lanes
@@ -60,18 +61,31 @@ def _mt19937_64_seed_sequence(seeds: tuple[int, ...]) -> Iterator[int]:
     return _mt19937_64_state(state)
 
 
+@dataclass
+class _MersenneTwister64(Iterator[int]):
+    """Own the standard engine state so numerical snapshots can fork draws."""
+
+    state: list[int]
+    index: int = field(default=312)
+
+    def __next__(self) -> int:
+        if self.index == 312:
+            lower = (1 << 31) - 1
+            for i in range(312):
+                joined = (self.state[i] & ~lower) | (self.state[(i + 1) % 312] & lower)
+                twist = 0xB5026F5AA96619E9 if joined & 1 else 0
+                self.state[i] = self.state[(i + 156) % 312] ^ (joined >> 1) ^ twist
+            self.index = 0
+        item = self.state[self.index]
+        self.index += 1
+        item ^= (item >> 29) & 0x5555555555555555
+        item ^= (item << 17) & 0x71D67FFFEDA60000
+        item ^= (item << 37) & 0xFFF7EEE000000000
+        return item ^ (item >> 43)
+
+
 def _mt19937_64_state(state: list[int]) -> Iterator[int]:
-    lower = (1 << 31) - 1
-    while True:
-        for i in range(312):
-            joined = (state[i] & ~lower) | (state[(i + 1) % 312] & lower)
-            twist = 0xB5026F5AA96619E9 if joined & 1 else 0
-            state[i] = state[(i + 156) % 312] ^ (joined >> 1) ^ twist
-        for item in state:
-            item ^= (item >> 29) & 0x5555555555555555
-            item ^= (item << 17) & 0x71D67FFFEDA60000
-            item ^= (item << 37) & 0xFFF7EEE000000000
-            yield item ^ (item >> 43)
+    return _MersenneTwister64(state)
 
 
 def packed_words(width: int) -> Iterator[int]:
