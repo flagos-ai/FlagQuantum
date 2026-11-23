@@ -6,9 +6,11 @@
 
 from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
+from ....core.ir.program.register_compatibility import check_register_types_consistent
 from ....core.ir.program.register_types import fixed_point_register_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import SymbolicInt
 from ..component_builder import ComponentProgramBuilder
 from ..primitives.pauli_rotation_component import z_power_function
 from .phase_addition import source_phase_add_signature
@@ -69,17 +71,6 @@ def qvr_phase_gradient_program(
     fraction, width = parameters["fractional_width"], cost.bitsize
     assert isinstance(width, int) and isinstance(fraction, int)
     fmt = qvr_phase_format(width, fraction, coefficient, epsilon)
-    builder = ComponentProgramBuilder(
-        Signature(
-            (
-                cost,
-                Register(
-                    "phase_grad",
-                    fixed_point_register_type(fmt.gradient_width, fmt.gradient_width),
-                ),
-            )
-        )
-    )
     terms = scaled_phase_add_terms(
         width,
         fraction,
@@ -89,7 +80,16 @@ def qvr_phase_gradient_program(
         fmt.coefficient_fraction_bits,
     )
     indices = tuple(range(width))
-    if terms and fraction != width and indices[terms[0][0]] == indices:
+    first_nonempty = next((part for part, _ in terms if indices[part]), None)
+    whole_word_mismatch = (
+        first_nonempty is not None
+        and indices[first_nonempty] == indices
+        and not check_register_types_consistent(
+            cost.dtype, fixed_point_register_type(width, width)
+        )
+    )
+    invalid_slice = any(part.stop < part.start for part, _ in terms)
+    if whole_word_mismatch or invalid_slice:
         # Original exact-word lookup keeps the nonfractional input dtype.
         # QVR's root succeeds, while this scaled child's first Add refuses.
         addition = ProgramRecord(
@@ -114,9 +114,32 @@ def qvr_phase_gradient_program(
             fmt.coefficient_width,
             fmt.coefficient_fraction_bits,
         )
+    return qvr_phase_addition_program(cost, fmt.gradient_width, addition)
+
+
+def qvr_phase_addition_program(
+    cost: Register, gradient_width: SymbolicInt, addition: ProgramRecord
+) -> ProgramRecord:
+    """Thread the named cost and gradient through a supplied scaled addition.
+
+    Unresolved source children retain their typed declaration. Numerical sizing,
+    coefficient encoding and physical execution remain in existing owners.
+    """
+    builder = ComponentProgramBuilder(
+        Signature(
+            (
+                cost,
+                Register(
+                    "phase_grad",
+                    fixed_point_register_type(gradient_width, gradient_width),
+                ),
+            )
+        )
+    )
     result = builder.call_program(
         addition,
         {"x": builder.inputs[cost.name], "phase_grad": builder.inputs["phase_grad"]},
+        entry=addition.functions[0].name,
     )
     return builder.finalize(
         {cost.name: result["x"], "phase_grad": result["phase_grad"]}
