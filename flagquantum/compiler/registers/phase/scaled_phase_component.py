@@ -133,6 +133,18 @@ def scaled_phase_add_program(
     for part, shift in terms:
         wires = indices[part]
         width = len(wires)
+        if width == 0:
+            result = builder.call_program(
+                phase_add_component_program(
+                    0,
+                    gradient_width,
+                    right_shift=shift,
+                    sign=-1 if coefficient < 0 else 1,
+                ),
+                {"phase_grad": phase},
+            )
+            phase = result["phase_grad"]
+            continue
         word = gather_word_binding(
             builder, words, wires, fixed_point_register_type(width, width)
         )

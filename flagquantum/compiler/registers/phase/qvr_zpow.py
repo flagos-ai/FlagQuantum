@@ -108,7 +108,7 @@ def qvr_zpow_schedule(
     """
     _validate_wires(cost)
     width = len(cost)
-    if type(cost_fraction_bits) is not int or not 0 <= cost_fraction_bits <= width:
+    if type(cost_fraction_bits) is not int or cost_fraction_bits > width:
         raise ValueError("QVR Z power requires a valid cost fraction width")
     if type(signed) is not bool or type(adjoint) is not bool:
         raise ValueError("QVR Z power mode flags must be boolean")

@@ -188,8 +188,8 @@ def test_fixed_point_action_components_and_complex_channel(
 
 
 def test_phase_add_validation() -> None:
-    with pytest.raises(ValueError, match="positive"):
-        phase_add_workspace_size(0, 3)
+    assert phase_add_workspace_size(0, 3) == 0
+    assert phase_add_ir((), (0, 1, 2), (), ()) == ()
     with pytest.raises(ValueError, match="nonnegative"):
         phase_add_workspace_size(1, 3, right_shift=-1)
     with pytest.raises(ValueError, match="boolean"):

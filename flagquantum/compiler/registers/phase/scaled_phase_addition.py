@@ -64,13 +64,10 @@ def scaled_phase_add_terms(
         (input_width, input_fraction_bits),
         (coefficient_width, coefficient_fraction_bits),
     ):
-        if (
-            type(width) is not int
-            or type(frac) is not int
-            or not 0 <= frac <= width
-            or not width
-        ):
+        if type(width) is not int or type(frac) is not int or frac > width or not width:
             raise ValueError("Scaled phase addition requires valid fixed-point formats")
+    if coefficient_fraction_bits < 0:
+        raise ValueError("Scaled coefficient requires a nonnegative fraction width")
     if type(gradient_width) is not int or gradient_width < 1:
         raise ValueError("Scaled phase addition requires a positive gradient width")
     magnitude = _coefficient_word(

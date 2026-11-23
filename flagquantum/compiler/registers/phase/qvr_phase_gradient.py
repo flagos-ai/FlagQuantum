@@ -6,7 +6,7 @@
 """Concrete precision selection and lowering for phase-gradient variable rotations."""
 
 from dataclasses import dataclass
-from math import ceil, isfinite, log2, tau
+from math import ceil, isfinite, ldexp, log2, tau
 from typing import cast
 
 from sympy import Expr
@@ -54,7 +54,7 @@ def _optimized_width(
     word: int, fraction: int, magnitude: int, gamma_fraction: int, tolerance: float
 ) -> int:
     """Search the source's worst-case cost word using per-term truncation."""
-    cost = word / (1 << fraction)
+    cost = ldexp(word, -fraction)
     expected = (magnitude / (1 << gamma_fraction) * cost) % 1
     shifts = tuple(
         bit - gamma_fraction - fraction
@@ -92,7 +92,7 @@ def qvr_phase_sizing(
     if (
         type(cost_width) is not int
         or type(cost_fraction_bits) is not int
-        or not 0 <= cost_fraction_bits <= cost_width
+        or cost_fraction_bits > cost_width
         or cost_width < 0
     ):
         raise ValueError("QVR requires a valid unsigned cost format")

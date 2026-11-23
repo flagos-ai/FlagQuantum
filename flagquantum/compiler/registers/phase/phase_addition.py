@@ -68,10 +68,12 @@ def _active_widths(
     if (
         type(input_width) is not int
         or type(gradient_width) is not int
-        or input_width < 1
+        or input_width < 0
         or gradient_width < 1
     ):
-        raise ValueError("Phase addition requires two positive register widths")
+        raise ValueError(
+            "Phase addition requires nonnegative input and positive gradient widths"
+        )
     if type(right_shift) is not int or right_shift < 0:
         raise ValueError("Phase addition right shift must be a nonnegative integer")
     active = min(input_width, max(0, gradient_width - right_shift))
