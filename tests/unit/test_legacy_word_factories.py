@@ -305,7 +305,7 @@ def test_constant_encoding_entire_small_source_domain_and_refusals(dtype: str) -
         assert isinstance(program, FunctionRecord) and not program.blocks
 
 
-def test_on_each_rejects_unresolved_child_dependencies_before_namespacing() -> None:
+def test_on_each_keeps_child_dependencies_in_the_enclosing_namespace() -> None:
     from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
     from flagquantum.core.ir.program.signatures import Signature
 
@@ -315,12 +315,24 @@ def test_on_each_rejects_unresolved_child_dependencies_before_namespacing() -> N
     ).functions[0]
     primitive = replace(primitive, name="leaf")
     builder = ComponentProgramBuilder(Signature.build(q=1), (primitive,), name="nested")
-    nested = builder.finalize(
+    nested_program = builder.finalize(
         builder.call_dict("leaf", {"q": builder.inputs["q"]})
-    ).functions[0]
+    )
+    nested = nested_program.functions[0]
     factory = bitwise_library_factories()["qualtran.bloqs.basic_gates.on_each.OnEach"]
-    with pytest.raises(SerializationError, match="self-contained"):
-        factory("main", None, {"n": 3, "gate": nested})
+    wrapper = factory("main", None, {"n": 3, "gate": nested})
+    assert isinstance(wrapper, ProgramRecord)
+    assert verify_program_record(wrapper)
+    program = replace(
+        wrapper, functions=(*wrapper.functions, *nested_program.functions)
+    )
+    assert verify_program_record(program) == ()
+    bound = bind_register_program(program, ((2, 0, 1),))
+    assert tuple((gate.name, gate.wires) for gate in bound.circuit.instructions) == (
+        ("x", (2,)),
+        ("x", (0,)),
+        ("x", (1,)),
+    )
 
 
 def test_controlled_complement_dependency_context_and_symbolic_boundary() -> None:

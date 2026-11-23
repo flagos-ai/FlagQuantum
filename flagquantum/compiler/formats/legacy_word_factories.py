@@ -111,8 +111,6 @@ def _on_each_factory(
         Signature.build(q=1)
     ):
         raise SerializationError("OnEach requires one scalar QBit THRU port named q")
-    if any(op.callee is not None for block in child.blocks for op in block.operations):
-        raise SerializationError("OnEach requires a self-contained child definition")
     dtype = arguments.get("target_dtype", opaque_register_type(width))
     if (
         not isinstance(dtype, RegisterType)
@@ -124,7 +122,14 @@ def _on_each_factory(
     _check_signature(signature, registers)
     if isinstance(width, sympy.Expr) or dtype.is_symbolic():
         return FunctionRecord(name, (), registers=signature)
-    return _rename_program(on_each_word_program(width, child, target_dtype=dtype), name)
+    # The resolver retains the real child and its helpers in the enclosing module.
+    declaration = replace(child, blocks=())
+    program = on_each_word_program(width, declaration, target_dtype=dtype)
+    program = replace(
+        program,
+        functions=(replace(program.functions[0], name=name), *program.functions[1:]),
+    )
+    return _namespace_helpers(program, name, external=(child.name,))
 
 
 def word_factories(*, encode_constant: ConstantEncoder) -> dict[str, ComponentFactory]:
@@ -132,7 +137,7 @@ def word_factories(*, encode_constant: ConstantEncoder) -> dict[str, ComponentFa
 
     Compiler consumes MSB bits and constructs typed calls. Numerical encoding
     and its dtype-specific validation remain with the injected codec owner.
-    OnEach accepts the existing self-contained scalar QBit child interface.
+    OnEach references the independently resolved scalar QBit child closure.
     Controlled accepts the positive scalar QBit complement dependency. Its
     child must have been resolved in this catalogue, including symbolic views.
     Create a catalogue per compilation to bound retained constructor context.

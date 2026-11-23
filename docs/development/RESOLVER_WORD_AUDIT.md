@@ -112,3 +112,13 @@ in g2-word-published-codec-baseline-failure-20261123.log. Proposal 115 already
 approved and implemented that admission. The test now checks the approved
 unsigned binding against the original raw identity binding, while retaining the
 signed fixed-point refusal. No production physical-admission code changed.
+
+## Resolved child helpers — 2026-11-23
+
+RESOLVER_ON_EACH_AUDIT.md supersedes the earlier self-contained-child limitation.
+OnEach now references the independently resolved real child and all its helpers.
+Only its own Split/Join helpers are namespaced locally. Nested X and SU2 scalar/
+rotation closures execute through the normal append entry with exact phase and
+clean private work. Non-QBit/shaped/directional constructor gaps and pending
+fixed-point storage remain open. Catalogue completion remains 66/303 after the
+separately accepted SU2 constructor, with 237 identifiers remaining.

@@ -172,10 +172,12 @@ def copy_component_program(record: ProgramRecord, entry: str = "main") -> Progra
     return result
 
 
-def _namespace_helpers(module: ProgramRecord, name: str) -> ProgramRecord:
-    """Keep one entry name and isolate its locally constructed definitions."""
+def _namespace_helpers(
+    module: ProgramRecord, name: str, *, external: tuple[str, ...] = ()
+) -> ProgramRecord:
+    """Isolate local definitions and retain references to enclosing definitions."""
     names = {
-        f.name: name if f.name == name else name + "_" + f.name
+        f.name: f.name if f.name == name or f.name in external else name + "_" + f.name
         for f in module.functions
     }
     return replace(
@@ -196,5 +198,6 @@ def _namespace_helpers(module: ProgramRecord, name: str) -> ProgramRecord:
                 ),
             )
             for f in module.functions
+            if f.name not in external
         ),
     )

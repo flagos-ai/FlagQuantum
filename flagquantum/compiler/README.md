@@ -1363,3 +1363,11 @@ suites. The original composite wire format loses isolated zero-port scalar
 occurrences. Native resolution rejects detectable nonzero counted omissions.
 Run tests/unit/test_legacy_disconnected_scalar.py for the unchanged source
 round-trip counterexample. See docs/development/RESOLVER_SU2_AUDIT.md.
+
+OnEach constructor adaptation references the resolver-owned real child closure.
+The existing component_graph namespace helper can retain external child names
+while isolating locally constructed Split/Join helpers. No child body or helper
+closure is copied into the wrapper. The final module verifier checks the complete
+closure. tests/unit/test_legacy_on_each_factories.py covers a full SU2 child,
+exact scalar phase, reversed bindings and restored carrier work. See
+docs/development/RESOLVER_ON_EACH_AUDIT.md for remaining signature/storage gaps.
