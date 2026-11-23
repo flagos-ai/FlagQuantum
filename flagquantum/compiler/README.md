@@ -1408,3 +1408,10 @@ Constructor metadata preserves word ordering and retained history ownership.
 Steps 1 through 5 accept original wire descriptors. Modulus-bearing signatures
 retain the original codec mismatch and refuse it, as documented in
 `docs/development/RESOLVER_MODULAR_INVERSE_AUDIT.md`.
+
+`formats/legacy_product_model_factories.py` supplies all eight original integer
+and fixed-point product declarations. The unchanged roots lack primitive
+bodies, so physical lowering refuses these declarations. Existing executable
+paper constructions and independent cost owners retain their own evidence.
+`docs/development/RESOLVER_PRODUCT_MODELS_AUDIT.md` records the exact directional
+ports, symbolic codec limits and separate execution/model responsibilities.
