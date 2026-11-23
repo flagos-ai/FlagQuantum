@@ -141,3 +141,13 @@ The actual 4+2 four-bit/four-output factory emits 14,953 CX, 6,044 T/TDG and
 separately declares 96 CSwap, 205 And, 2,276 Clifford, 205 measurements and peak
 55 logical wires. Both accounts retain their distinct meanings.
 Q-0205/Q-0206 remain open for the registered execution and source boundaries.
+
+
+## Approved symbolic constructor continuation
+
+Proposal 120 supersedes historical symbolic-array declaration rejection.
+Existing foreign tests now accept bodyless logical signatures and require
+physical binding refusal. The dedicated constructor adapter preserves the
+original root declaration and missing decomposition. Previously accepted native
+physical synthesis and independent source models retain their separate scopes.
+See RESOLVER_LIST_AUDIT.md for the complete constructor dependency closure.

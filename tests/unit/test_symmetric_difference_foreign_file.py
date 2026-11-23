@@ -20,7 +20,6 @@ from flagquantum.compiler.registers.sorting.symmetric_difference_component impor
 )
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register
-from flagquantum.errors import SerializationError
 from tests.unit.test_symmetric_difference import layout
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -83,11 +82,12 @@ def test_all_actual_source_factories_library_and_native_resolution(name: str) ->
         )
         return _namespace_helpers(graph, function_name)
 
-    if name != "_symm_diff":
-        with pytest.raises(SerializationError, match="array dimensions"):
-            resolve_component_program(library, 0, {declaration.name: factory})
-        return
     resolved = resolve_component_program(library, 0, {declaration.name: factory})
+    if name != "_symm_diff":
+        assert resolved.functions[0].registers == declaration.registers
+        with pytest.raises(ValueError, match="bodies"):
+            bind_register_program(resolved, ())
+        return
     a, b, out, flag, clean, _ = layout(4, 2, 4, 4)
     ports = (*a, *b, *out, (flag,))
     actual = bind_register_program(resolved, ports, clean=clean)

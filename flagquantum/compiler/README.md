@@ -1440,3 +1440,10 @@ bound Programs support circuit.append(op). Symbolic and non-power-of-two merge
 declarations retain explicit execution refusal. See
 ../../docs/development/RESOLVER_SORTING_AUDIT.md for physical/model costs and the
 remaining zero-length and zero-width identity gaps.
+
+The list constructor adapters independently own HasDuplicates, SortInPlace and
+SymmetricDifference metadata translation. They reuse existing sorting signatures
+and the literal duplicate graph. Source model-only roots retain bodyless
+Programs. Existing native physical sort/set networks keep their separate
+acceptance and measured inventories. See ../../docs/development/RESOLVER_LIST_AUDIT.md
+for exact ports, symbolic declarations and source erasure boundaries.
