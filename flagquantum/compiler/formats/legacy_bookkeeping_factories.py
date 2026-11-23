@@ -6,12 +6,13 @@
 """Map lifetime and storage-view library constructors to their native owners."""
 
 from collections.abc import Mapping
+from dataclasses import replace
 from functools import partial
 from typing import Literal
 
 import numpy as np
 
-from ...core.ir.program import FunctionRecord
+from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register, RegisterType
 from ...errors import SerializationError
 from ..registers.component_rebindings import join_word_function, split_word_function
@@ -20,9 +21,31 @@ from ..registers.layout.component_workspace import (
     allocate_word_function,
     free_word_function,
 )
+from ..registers.primitives.always_component import always_component_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 
 _Kind = Literal["Allocate", "Free", "Split", "Join", "Cast"]
+
+
+def _always_factory(
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord:
+    if set(arguments) != {"subbloq"}:
+        raise SerializationError("Always requires only subbloq")
+    child = arguments["subbloq"]
+    if not isinstance(child, FunctionRecord) or child.registers is None:
+        raise SerializationError("Always requires a typed child function")
+    if registers is not None and registers != child.registers:
+        raise SerializationError("Invalid register signature for Always")
+    # Resolution already retains the child's real body and all helper definitions.
+    # The declaration view lets the existing wrapper owner construct the root call
+    # without duplicating or renaming that independently resolved closure.
+    declaration = replace(child, blocks=())
+    return always_component_program(
+        ProgramRecord((declaration,)), child.name, name
+    ).functions[0]
 
 
 def _dtype(arguments: Mapping[str, ResolvedArgument], key: str) -> RegisterType:
@@ -96,8 +119,11 @@ def bookkeeping_factories() -> dict[str, ComponentFactory]:
     """
     kinds: tuple[_Kind, ...] = ("Allocate", "Free", "Split", "Join", "Cast")
     return {
-        f"qualtran.bloqs.bookkeeping.{kind.lower()}.{kind}": partial(
-            _bookkeeping_factory, kind
-        )
-        for kind in kinds
+        **{
+            f"qualtran.bloqs.bookkeeping.{kind.lower()}.{kind}": partial(
+                _bookkeeping_factory, kind
+            )
+            for kind in kinds
+        },
+        "qualtran.bloqs.bookkeeping.always.Always": _always_factory,
     }

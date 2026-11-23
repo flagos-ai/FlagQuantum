@@ -247,4 +247,4 @@ def test_invalid_constructor_arguments_and_existing_cast_storage_boundary() -> N
                 "allow_quantum_to_classical": 1,
             },
         )
-    assert len(bookkeeping_factories()) == 5
+    assert len(bookkeeping_factories()) == 6
