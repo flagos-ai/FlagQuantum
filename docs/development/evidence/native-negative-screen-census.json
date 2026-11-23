@@ -1,0 +1,263 @@
+{
+  "scope": "Untimed diagnostic; all original realizations and independent acceptance execute; no speedup or generalization claim",
+  "implementation_commit": "67c33e4c2bcd1510c82a04e8cac414c7c85e2b95",
+  "driver_source": "\"\"\"Untimed census of previously classified non-reducing preview blocks.\"\"\"\nimport collections,json,struct,subprocess,sys\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom functools import partial\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom benchmarks import compiler_sabre_native_cost as native\nfrom benchmarks import compiler_sabre_trial_reuse as reuse\nfrom benchmarks.compiler_sabre_trial_reuse import _select\nfrom flagquantum.compiler.optimization._cz_blocks import _product,_numeric_matrix\nfrom flagquantum.compiler.optimization.two_qubit_synthesis import _is_unitary\nfrom flagquantum.compiler.topology import sabre\nconfig=workflow_configuration('flagquantum-target-artifact')\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\noriginal_bound=native._cz_lower_bound;original_realize=native._realize;original_choose=reuse._choose_native_route\nrows=[]\nfor width,family,topology in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n    costs={};calls=[]\n    def choose(*args,**kwargs):\n        costs.clear()\n        return original_choose(*args,**kwargs)\n    def bound(program,**kwargs):\n        result=original_bound(program,**kwargs)\n        costs.update(kwargs['matrix_costs'])\n        return result\n    def realize(program,limit,**kwargs):\n        reader=kwargs.get('matrix_reader',_numeric_matrix)\n        counts=collections.Counter()\n        for pair,positions in native._blocks(program,matrix_reader=reader):\n            block=[program.instructions[i] for i in positions]\n            before=sum(g.name=='cz' for g in block)\n            if before<2:continue\n            matrix=_product(block,pair,matrix_reader=reader)\n            assert matrix is not None\n            key=b''.join(struct.pack('!dd',v.real,v.imag) for row in matrix for v in row)\n            counts['eligible_blocks']+=1\n            if key in costs:\n                counts['already_classified']+=1\n                if costs[key]>=before and _is_unitary(matrix):counts['known_nonreducing']+=1\n        calls.append(dict(counts))\n        # The authoritative realization always runs; the census skips nothing.\n        return original_realize(program,limit,**kwargs)\n    adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':'flagquantum-target-artifact','compiler_options':config}}))\n    source=fixture(width,family,topology,'01'*32)\n    with patch.object(reuse,'_choose_native_route',choose),patch.object(native,'_cz_lower_bound',bound),patch.object(native,'_realize',realize),patch.object(sabre,'_select_sabre_trials',partial(_select,native_budget=config['options']['max_native_added_operations'])):\n        payload=adapter.execute('route',source,11)\n    row={'case':[width,family,topology],'realizations':calls,'metrics':routing(payload,source,None,bundle.cases[f'ROUTE-LINE-{width:02d}'],0),'audit':dict(adapter.audit)}\n    rows.append(row);print(json.dumps(row),flush=True)\nreport={'scope':'Untimed diagnostic; all original realizations and independent acceptance execute; no speedup or generalization claim','implementation_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=15).strip(),'driver_source':Path(__file__).read_text(),'rows':rows}\nwith Path('/private/tmp/fq-native-screen-local-census-20261123.json').open('x') as stream:stream.write(json.dumps(report,indent=2)+'\\n')\n",
+  "rows": [
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "realizations": [
+        {
+          "eligible_blocks": 28
+        },
+        {
+          "eligible_blocks": 27,
+          "already_classified": 27,
+          "known_nonreducing": 21
+        },
+        {
+          "eligible_blocks": 28
+        },
+        {
+          "eligible_blocks": 27,
+          "already_classified": 27,
+          "known_nonreducing": 21
+        },
+        {
+          "eligible_blocks": 28
+        },
+        {
+          "eligible_blocks": 27,
+          "already_classified": 27,
+          "known_nonreducing": 21
+        }
+      ],
+      "metrics": {
+        "max_semantic_error": 1.3530843112619093e-15,
+        "full_cz_count": 63,
+        "two_body_dependency_depth": 38,
+        "verification": "full-operator"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 87,
+        "accepted_block_rewrites": 6,
+        "serialized_artifact_bytes": 13593
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "realizations": [
+        {
+          "eligible_blocks": 23
+        },
+        {
+          "eligible_blocks": 23,
+          "already_classified": 23,
+          "known_nonreducing": 19
+        },
+        {
+          "eligible_blocks": 23
+        },
+        {
+          "eligible_blocks": 23,
+          "already_classified": 23,
+          "known_nonreducing": 19
+        },
+        {
+          "eligible_blocks": 23
+        },
+        {
+          "eligible_blocks": 23,
+          "already_classified": 23,
+          "known_nonreducing": 19
+        }
+      ],
+      "metrics": {
+        "max_semantic_error": 6.179029502236603e-15,
+        "full_cz_count": 76,
+        "two_body_dependency_depth": 55,
+        "verification": "full-operator"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 84,
+        "accepted_block_rewrites": 4,
+        "serialized_artifact_bytes": 18691
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "realizations": [],
+      "metrics": {
+        "max_semantic_error": 1.3843020324286894e-14,
+        "full_cz_count": 352,
+        "two_body_dependency_depth": 150,
+        "verification": "three-probes-only"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 432,
+        "accepted_block_rewrites": 38,
+        "serialized_artifact_bytes": 67040
+      }
+    }
+  ],
+  "initial_diagnostic": {
+    "admission_status": "Excluded: cost table mistakenly survived independent selection calls; not used to justify an implementation or claim. The corrected census resets it at each selection.",
+    "report": {
+      "scope": "Untimed diagnostic; all original realizations and independent acceptance execute; no speedup or generalization claim",
+      "implementation_commit": "67c33e4c2bcd1510c82a04e8cac414c7c85e2b95",
+      "driver_source": "\"\"\"Untimed census of previously classified non-reducing preview blocks.\"\"\"\nimport collections,json,struct,subprocess,sys\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom functools import partial\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom benchmarks import compiler_sabre_native_cost as native\nfrom benchmarks.compiler_sabre_trial_reuse import _select\nfrom flagquantum.compiler.optimization._cz_blocks import _product,_numeric_matrix\nfrom flagquantum.compiler.optimization.two_qubit_synthesis import _is_unitary\nfrom flagquantum.compiler.topology import sabre\nconfig=workflow_configuration('flagquantum-target-artifact')\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\noriginal_bound=native._cz_lower_bound;original_realize=native._realize\nrows=[]\nfor width,family,topology in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n    costs={};calls=[]\n    def bound(program,**kwargs):\n        result=original_bound(program,**kwargs)\n        costs.update(kwargs['matrix_costs'])\n        return result\n    def realize(program,limit,**kwargs):\n        reader=kwargs.get('matrix_reader',_numeric_matrix)\n        counts=collections.Counter()\n        for pair,positions in native._blocks(program,matrix_reader=reader):\n            block=[program.instructions[i] for i in positions]\n            before=sum(g.name=='cz' for g in block)\n            if before<2:continue\n            matrix=_product(block,pair,matrix_reader=reader)\n            assert matrix is not None\n            key=b''.join(struct.pack('!dd',v.real,v.imag) for row in matrix for v in row)\n            counts['eligible_blocks']+=1\n            if key in costs:\n                counts['already_classified']+=1\n                if costs[key]>=before and _is_unitary(matrix):counts['known_nonreducing']+=1\n        calls.append(dict(counts))\n        # The authoritative realization always runs; the census skips nothing.\n        return original_realize(program,limit,**kwargs)\n    adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':'flagquantum-target-artifact','compiler_options':config}}))\n    source=fixture(width,family,topology,'01'*32)\n    with patch.object(native,'_cz_lower_bound',bound),patch.object(native,'_realize',realize),patch.object(sabre,'_select_sabre_trials',partial(_select,native_budget=config['options']['max_native_added_operations'])):\n        payload=adapter.execute('route',source,11)\n    row={'case':[width,family,topology],'realizations':calls,'metrics':routing(payload,source,None,bundle.cases[f'ROUTE-LINE-{width:02d}'],0),'audit':dict(adapter.audit)}\n    rows.append(row);print(json.dumps(row),flush=True)\nreport={'scope':'Untimed diagnostic; all original realizations and independent acceptance execute; no speedup or generalization claim','implementation_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=15).strip(),'driver_source':Path(__file__).read_text(),'rows':rows}\nwith Path('/private/tmp/fq-native-screen-census-20261123.json').open('x') as stream:stream.write(json.dumps(report,indent=2)+'\\n')\n",
+      "rows": [
+        {
+          "case": [
+            6,
+            "qft",
+            "grid"
+          ],
+          "realizations": [
+            {
+              "eligible_blocks": 28
+            },
+            {
+              "eligible_blocks": 27,
+              "already_classified": 27,
+              "known_nonreducing": 21
+            },
+            {
+              "eligible_blocks": 28,
+              "already_classified": 15,
+              "known_nonreducing": 13
+            },
+            {
+              "eligible_blocks": 27,
+              "already_classified": 27,
+              "known_nonreducing": 21
+            },
+            {
+              "eligible_blocks": 28,
+              "already_classified": 15,
+              "known_nonreducing": 13
+            },
+            {
+              "eligible_blocks": 27,
+              "already_classified": 27,
+              "known_nonreducing": 21
+            }
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 13593
+          }
+        },
+        {
+          "case": [
+            6,
+            "repetition",
+            "ring"
+          ],
+          "realizations": [
+            {
+              "eligible_blocks": 23
+            },
+            {
+              "eligible_blocks": 23,
+              "already_classified": 23,
+              "known_nonreducing": 19
+            },
+            {
+              "eligible_blocks": 23,
+              "already_classified": 18,
+              "known_nonreducing": 17
+            },
+            {
+              "eligible_blocks": 23,
+              "already_classified": 23,
+              "known_nonreducing": 19
+            },
+            {
+              "eligible_blocks": 23,
+              "already_classified": 18,
+              "known_nonreducing": 17
+            },
+            {
+              "eligible_blocks": 23,
+              "already_classified": 23,
+              "known_nonreducing": 19
+            }
+          ],
+          "metrics": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          },
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 18691
+          }
+        },
+        {
+          "case": [
+            12,
+            "qft",
+            "grid"
+          ],
+          "realizations": [],
+          "metrics": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          }
+        }
+      ]
+    }
+  }
+}
