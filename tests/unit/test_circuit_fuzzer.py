@@ -2,7 +2,7 @@
 
 import copy
 import json
-from collections import Counter, defaultdict
+from collections import defaultdict
 from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 
@@ -12,13 +12,13 @@ from flagquantum.compiler.artifacts.phase_angle import PhaseAngle128
 from flagquantum.compiler.formats.kmb import KmxRegister
 from flagquantum.compiler.formats.kmx_builder import KmxCircuitBuilder
 from flagquantum.core._fixed_width_integer import FixedWidthInteger
+from flagquantum.simulation import _basis_simulation as module
 from flagquantum.simulation.physical_basis_rng import _mt19937_64
 from flagquantum.simulation.physical_basis_shots import (
     BasisRecord,
     PackedBasisState,
     apply_packed_basis_records,
 )
-from flagquantum.testing import _circuit_fuzzer as module
 from flagquantum.testing._circuit_fuzzer import CircuitFuzzer, InputSample, OutputSample
 
 pytestmark = pytest.mark.unit
@@ -218,7 +218,7 @@ def test_fuzzer_replaces_packed_execution_with_scalar_lanes(
         state: PackedBasisState,
         draw: Callable[[], int],
         *,
-        counts: Counter[str],
+        observer: Callable[[BasisRecord, int], None],
     ) -> None:
         captured = tuple(records)
         measurements = [draw() for record in captured if record.opcode in ("HMR", "R")]
@@ -234,8 +234,17 @@ def test_fuzzer_replaces_packed_execution_with_scalar_lanes(
                 (state.sign >> lane) & 1,
             )
             outcomes = iter((word >> lane) & 1 for word in measurements)
+
+            def observe_lane(
+                record: BasisRecord, active: int, lane: int = lane
+            ) -> None:
+                observer(record, active << lane)
+
             apply_packed_basis_records(
-                captured, single, outcomes.__next__, counts=counts
+                captured,
+                single,
+                outcomes.__next__,
+                observer=observe_lane,
             )
             for target, source in (
                 (state.qubits, single.qubits),
@@ -262,9 +271,9 @@ def test_fuzzer_measurement_feedback_exact_phase_workspace_and_tail_counts(
         state: PackedBasisState,
         draw: Callable[[], int],
         *,
-        counts: Counter[str],
+        observer: Callable[[BasisRecord, int], None],
     ) -> None:
-        apply_packed_basis_records(records, state, lambda: outcome, counts=counts)
+        apply_packed_basis_records(records, state, lambda: outcome, observer=observer)
         snapshots.append(
             (dict(state.qubits), dict(state.bits), tuple(state.phases), state.sign)
         )

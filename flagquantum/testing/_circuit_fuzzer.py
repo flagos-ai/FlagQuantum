@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Callable, Iterator
 from types import TracebackType
 from typing import Literal
@@ -18,13 +18,8 @@ from ..compiler.formats.kmx_builder import KmxCircuitBuilder
 from ..compiler.formats.kmx_circuit import KmxCircuit
 from ..core._fixed_width_integer import FixedWidthInteger
 from ..drawer.reversible_phase_diagram import render_circuit_text
-from ..simulation._register_buffer import pack_register_buffer, unpack_register_buffer
+from ..simulation._basis_simulation import PackedBasisSimulation
 from ..simulation.fixed_width_sampling import sample_fixed_width
-from ..simulation.physical_basis_rng import packed_chacha8
-from ..simulation.physical_basis_shots import (
-    PackedBasisState,
-    apply_packed_basis_records,
-)
 
 
 class InputSample:
@@ -76,7 +71,7 @@ class CircuitFuzzer:
 
     def __init__(self, draws: Iterator[int]) -> None:
         self.rng = draws
-        self._measurements = packed_chacha8(64, draws)
+        self._sim = PackedBasisSimulation(64, draws)
         self.circuit = KmxCircuit((), ())
         self.disarmed_warning = False
         self.ignore_global_phase = False
@@ -93,9 +88,9 @@ class CircuitFuzzer:
         self._combined_sampler: (
             Callable[[InputSample, OutputSample, Iterator[int]], None] | None
         ) = None
-        self._before: list[list[FixedWidthInteger]] = [[] for _ in range(64)]
-        self._after: list[list[FixedWidthInteger]] = [[] for _ in range(64)]
-        self._expected: list[list[FixedWidthInteger]] = [[] for _ in range(64)]
+        self._before = self._sim.register_buffer
+        self._after = self._sim.new_register_buffer()
+        self._expected = self._sim.expected_buffer
         self._inputs = [InputSample({}, row) for row in self._before]
         self._outputs = [
             OutputSample({}, row, original)
@@ -167,21 +162,16 @@ class CircuitFuzzer:
                 (*built.registers, KmxRegister("@unassigned", unassigned))
             )
         self.circuit = builder.freeze()
-        self._before = self._new_buffer()
-        self._after = self._new_buffer()
-        self._expected = self._new_buffer()
+        self._sim.configure_for(self.circuit)
+        self._before = self._sim.register_buffer
+        self._after = self._sim.new_register_buffer()
+        self._expected = self._sim.expected_buffer
         names = {r.name: i for i, r in enumerate(self.circuit.registers)}
         names = dict(sorted(names.items()))
         self._inputs = [InputSample(names, row) for row in self._before]
         self._outputs = [
             OutputSample(names, row, original)
             for row, original in zip(self._expected, self._before, strict=True)
-        ]
-
-    def _new_buffer(self) -> list[list[FixedWidthInteger]]:
-        return [
-            [FixedWidthInteger(len(r.members)) for r in self.circuit.registers]
-            for _ in range(64)
         ]
 
     def _sample_lane(self, ins: InputSample, outs: OutputSample) -> None:
@@ -236,24 +226,21 @@ class CircuitFuzzer:
                 raise ValueError(f"{message} '{name}'.")
 
     def _batch(self, requested: int) -> int:
+        self._sim.clear_for_shot()
         performed = min(requested, 64)
         for lane in range(performed):
             self._sample_lane(self._inputs[lane], self._outputs[lane])
-        state = PackedBasisState(defaultdict(int), defaultdict(int), [0] * 64)
-        pack_register_buffer(self.circuit.registers, self._before, state)
-        apply_packed_basis_records(
-            self.circuit.records,
-            state,
-            self._measurements.__next__,
-            counts=self.primitive_counts,
-        )
-        unpack_register_buffer(self.circuit.registers, self._after, state)
+        self._sim.copy_register_buffer_into_state()
+        self._sim.apply(self.circuit, counts=self.primitive_counts)
+        self._sim.register_buffer = self._after
+        try:
+            self._sim.copy_state_into_register_buffer()
+        finally:
+            self._sim.register_buffer = self._before
         detail = ""
         for lane in range(performed):
             self.seen_shots += 1
-            actual_phase = PhaseAngle128._from_units(
-                state.phases[lane] + ((state.sign >> lane) & 1) * (1 << 127)
-            )
+            actual_phase = PhaseAngle128._from_units(self._sim.read_shot_phase(lane))
             phase_error = actual_phase != self._outputs[lane].phase_half_turns
             if self._after[lane] != self._expected[lane] or (
                 phase_error and not self.ignore_global_phase
