@@ -133,3 +133,63 @@ execution/device/gradient contract must remain explicit during that work.
 The current production executor and source references retain their accepted
 behavior. The experiment supplies no new channel vocabulary, execution policy
 or accepted integer-range limit. Remaining independent G2 files can proceed.
+
+## Source-ordered sparse Kraus contraction on 2026-11-23
+
+Further isolation fixes the initial density and all source Kraus matrices, then
+compares every channel step. For a matrix with at most one nonzero coefficient
+per row, the channel can gather its selected input entries directly. The source
+contracts the conjugated matrix into the column axes with its coefficient as
+the first complex-multiplication operand. Moving that coefficient to the other
+side changes floating-point rounding even though multiplication is algebraically
+commutative. Separate real/imaginary products and fused multiply-add variants
+fail the same witness. Merely transposing the dense right BMM also fails.
+
+The existing Simulation apply_kraus_density now owns this matrix-first sparse
+contraction for finite, constant CPU operators. Rows may share a selected column
+and may be entirely zero. Batched matrices and state gradients are supported.
+Trainable operator entries retain the existing dense product, including
+derivatives at currently zero entries. Nonfinite tensors and other devices
+retain their existing dense product and catalog ownership. No public entry,
+channel vocabulary, source object or reference matrix is changed.
+
+The complete 95-channel suffix now agrees bitwise with unchanged source
+apply_channel at every step for distance triples (7,3,3), (11,5,5) and (17,7,7),
+using both the source-prepared density and an independent coherent complex
+input. This is local CPU complex128 evidence. Complex64/complex128 state
+and batched-operator derivatives also agree with independent dense products.
+Existing dense catalog routing remains covered separately. The normal factory
+and channel consumers use the repaired owner through their existing IR path.
+
+The complete factory remains open. With native initial preparation, demand
+2,500,000,000,091 still returns 45,137,839,388,432 versus source
+45,137,839,388,431. At demand 10^14, native now returns
+1,805,513,575,471,521 versus source 1,805,513,575,471,519. Native rejection is
+0.0030537435699318216 versus source 0.0030537435699304893. Independent H-factor
+preparation and final projection remain unresolved. This replaces the earlier
+contraction arithmetic hypothesis with a verified source-ordered channel owner.
+It does not establish complete-factory integer-cycle parity.
+
+Channel instruction counts, operands, matrix payloads, logical demand, workspace
+and measurement semantics receive zero additions. The 100-operation schedule
+retains five H instructions and 95 channels. Physical modeled resources remain
+separate from numerical execution arithmetic. Persistent receipts use
+ftqc-reference-env/g2-density-source-contraction-*20261123 and the corresponding
+factory arithmetic probes. Earlier immutable source and complete test-file
+hash verification is reused.
+
+Validation passed 31 focused checks, 242 concentrated density/channel/resource
+checks, 145 relevant local integration checks and strict typing for both Python
+files. Two concentrated accelerator checks skip because CUDA is unavailable.
+The local integration run reports 18 existing wires-deprecation warnings.
+Black, Ruff, Simulation scope, language, architecture, IR and API checks pass;
+the sorted complete 720-finding dependency baseline is identical.
+
+An initial broad integration run was interrupted after 117 seconds with
+465 passes, 109 failures, 13 errors and 226 skips. It exposes unavailable
+notebook socket permissions, localhost distributed setup and a LaTeX iswap
+rendering gap. The published pre-change density module independently reproduces
+both a representative notebook socket failure and the iswap rendering failure.
+The broad suite is not certified by this batch. Its full diagnostic log and
+baseline replay receipts are retained. The bounded 145-case affected integration
+selection passes separately.

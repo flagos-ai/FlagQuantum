@@ -459,10 +459,30 @@ def apply_kraus_density(
         full = expand_operator(op, qubits, n_qubits, dtype=rho.dtype, device=rho.device)
         if full.ndim == 2:
             full = full.expand(rho.shape[0], -1, -1)
-        out = out + _density_bmm(
-            _density_bmm(full, rho), torch.conj(full).transpose(-1, -2)
-        )
+        out = out + _kraus_sandwich(rho, full)
     return out
+
+
+def _kraus_sandwich(rho: torch.Tensor, operator: torch.Tensor) -> torch.Tensor:
+    """Preserve matrix-first complex products for constant CPU row-sparse maps."""
+    if (
+        operator.device.type == "cpu"
+        and not operator.requires_grad
+        and bool(torch.all(torch.count_nonzero(operator, dim=-1) <= 1))
+        and bool(torch.all(torch.isfinite(rho)))
+        and bool(torch.all(torch.isfinite(operator)))
+    ):
+        indices = operator.abs().argmax(dim=-1)
+        coefficients = operator.gather(-1, indices.unsqueeze(-1)).squeeze(-1)
+        dimension = rho.shape[-1]
+        selected = rho.gather(
+            -2, indices.unsqueeze(-1).expand(-1, -1, dimension)
+        ).gather(-1, indices.unsqueeze(-2).expand(-1, dimension, -1))
+        # The source contracts the conjugated matrix into the column axes.
+        # Reversing this complex product can change a later integer ceiling.
+        left = coefficients.unsqueeze(-1) * selected
+        return coefficients.conj().unsqueeze(-2) * left
+    return _density_bmm(_density_bmm(operator, rho), operator.conj().transpose(-1, -2))
 
 
 def density_matrix_from_ir(
