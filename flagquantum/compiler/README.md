@@ -22,6 +22,11 @@ CSwap through the same interface. Run `tests/unit/test_legacy_exchange_factories
 to exercise exact synthesis, complex append execution and isolated helper names.
 `formats/legacy_rotation_factories.py` supplies all eight basic rotation
 constructors. Its focused consumer is `tests/unit/test_legacy_rotation_factories.py`.
+`formats/legacy_conjunction_factories.py` supplies And, MultiAnd and the latter's
+serialized Adjoint dependency. Create its explicit catalog per compilation, then
+use the existing resolver and `circuit.append(op)` consumer. Run
+`tests/unit/test_legacy_conjunction_factories.py` for exact source feedback, all
+small branch histories, complex amplitudes and live-output ownership.
 `formats/symbolic_parameters.py` shares owned expression conversion with the SDK
 adapter, while `registers/primitives/` retains angle and phase execution recipes.
 

@@ -63,5 +63,8 @@ storage-view constructors in `RESOLVER_BOOKKEEPING_AUDIT.md` extend the combined
 built-in coverage to 13 identifiers. The Identity and exchange constructor group
 in `RESOLVER_EXCHANGE_AUDIT.md` adds five more, bringing coverage to 18 identifiers.
 The eight basic rotation constructors in `RESOLVER_ROTATION_AUDIT.md` bring
-combined coverage to 26 identifiers. The remaining 277 source catalogue
-identifiers and generic wrappers keep Q-0876 open.
+combined coverage to 26 identifiers. The complete And/MultiAnd constructors in
+`RESOLVER_CONJUNCTION_AUDIT.md` bring coverage to 28 identifiers. Their scoped
+Adjoint dependency is also executable, while the generic Adjoint identifier
+remains partial. The remaining 275 source catalogue identifiers and generic
+wrapper closure keep Q-0876 open.
