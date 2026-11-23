@@ -1371,3 +1371,11 @@ closure is copied into the wrapper. The final module verifier checks the complet
 closure. tests/unit/test_legacy_on_each_factories.py covers a full SU2 child,
 exact scalar phase, reversed bindings and restored carrier work. See
 docs/development/RESOLVER_ON_EACH_AUDIT.md for remaining signature/storage gaps.
+
+Power constructor adaptation uses formats/legacy_power_factories.py and the
+existing component_power owner. The wrapper retains every THRU register and
+repeated typed call while the resolver owns the real child and all helpers.
+Symbolic declarations and source wire normalization are checked independently
+from finite execution. tests/unit/test_legacy_power_factories.py covers nested
+word/SU2 children, zero-port scalar occurrences and every small CZPow history.
+See docs/development/RESOLVER_POWER_AUDIT.md for precise execution boundaries.
