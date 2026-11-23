@@ -1415,3 +1415,8 @@ bodies, so physical lowering refuses these declarations. Existing executable
 paper constructions and independent cost owners retain their own evidence.
 `docs/development/RESOLVER_PRODUCT_MODELS_AUDIT.md` records the exact directional
 ports, symbolic codec limits and separate execution/model responsibilities.
+
+`formats/legacy_contiguous_index_factories.py` preserves the complete original
+THRU triangular-index declaration. The source root has no primitive body.
+Existing square/add construction and its independent cost model retain their
+own execution evidence. See `docs/development/RESOLVER_CONTIGUOUS_INDEX_AUDIT.md`.
