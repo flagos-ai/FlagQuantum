@@ -212,3 +212,18 @@ def test_qvr_search_can_reject_an_unresolvable_width() -> None:
     # integer-heavy cost. The native search has no accepted width either.
     with pytest.raises(ValueError, match="found no gradient width"):
         qvr_phase_format(47, 4, 2.393029727807961, 0.005779784227676086)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("coefficient", (0.5, -0.1875, 1.5))
+def test_empty_logical_cost_sizing_matches_original(coefficient: float) -> None:
+    from qualtran import QFxp, Register
+    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
+
+    from flagquantum.compiler.registers.phase.qvr_phase_gradient import qvr_phase_format
+
+    source = QvrPhaseGradient(Register("out", QFxp(0, 0)), coefficient, 0.2)
+    actual = qvr_phase_format(0, 0, coefficient, 0.2)
+    assert actual.gradient_width == source.b_grad == 1
+    assert actual.coefficient_width == source.gamma_dtype.bitsize
+    assert actual.coefficient_fraction_bits == source.gamma_dtype.num_frac

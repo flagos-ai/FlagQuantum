@@ -4,15 +4,17 @@
 
 """Compose variable rotations from shared phase powers and scaled addition."""
 
-from ....core.ir.program import ProgramRecord
+from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import fixed_point_register_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from ..primitives.pauli_rotation_component import z_power_function
+from .phase_addition import source_phase_add_signature
 from .qvr_phase_gradient import qvr_phase_format
 from .qvr_zpow import qvr_zpow_schedule
+from .scaled_phase_addition import scaled_phase_add_terms
 from .scaled_phase_component import scaled_phase_add_program
 
 
@@ -78,15 +80,42 @@ def qvr_phase_gradient_program(
             )
         )
     )
-    result = builder.call_program(
-        scaled_phase_add_program(
+    terms = scaled_phase_add_terms(
+        width,
+        fraction,
+        fmt.gradient_width,
+        coefficient,
+        fmt.coefficient_width,
+        fmt.coefficient_fraction_bits,
+    )
+    indices = tuple(range(width))
+    if terms and fraction != width and indices[terms[0][0]] == indices:
+        # Original exact-word lookup keeps the nonfractional input dtype.
+        # QVR's root succeeds, while this scaled child's first Add refuses.
+        addition = ProgramRecord(
+            (
+                FunctionRecord(
+                    "main",
+                    (),
+                    registers=tuple(
+                        source_phase_add_signature(
+                            width, fmt.gradient_width, input_fraction_bits=fraction
+                        )
+                    ),
+                ),
+            )
+        )
+    else:
+        addition = scaled_phase_add_program(
             width,
             fraction,
             fmt.gradient_width,
             coefficient,
             fmt.coefficient_width,
             fmt.coefficient_fraction_bits,
-        ),
+        )
+    result = builder.call_program(
+        addition,
         {"x": builder.inputs[cost.name], "phase_grad": builder.inputs["phase_grad"]},
     )
     return builder.finalize(

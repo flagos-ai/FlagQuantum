@@ -260,3 +260,21 @@ def test_colliding_source_root_filename_keeps_both_dependency_bodies() -> None:
         "QvrPhaseGradient",
     }
     assert len(phase_owners) == 2
+
+
+@pytest.mark.parametrize("width", (2, 3))
+def test_qvr_root_retains_original_refusing_scaled_child(width: int) -> None:
+    from flagquantum.core.ir.program import verify_program_record
+
+    cost = Register("out", fixed_point_register_type(width, 0))
+    record = qvr_phase_gradient_program(cost, 0.1875, 0.2)
+    assert verify_program_record(record) == ()
+    assert len(record.functions[0].blocks[0].operations) == 1
+    assert len([function for function in record.functions if not function.blocks]) == 1
+    gradient = qvr_phase_format(width, 0, 0.1875, 0.2).gradient_width
+    with pytest.raises(ValueError):
+        bind_register_program(
+            record,
+            (tuple(range(width)), tuple(range(width, width + gradient))),
+            clean=tuple(range(width + gradient, width + gradient + 10)),
+        )

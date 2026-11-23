@@ -93,7 +93,7 @@ def qvr_phase_sizing(
         type(cost_width) is not int
         or type(cost_fraction_bits) is not int
         or not 0 <= cost_fraction_bits <= cost_width
-        or cost_width < 1
+        or cost_width < 0
     ):
         raise ValueError("QVR requires a valid unsigned cost format")
     if type(epsilon) not in (int, float) or not 0 < epsilon < tau:
