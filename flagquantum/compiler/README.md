@@ -1426,3 +1426,9 @@ arctangent declaration owners for both complete source constructors. Original
 roots remain bodyless, with numerical, foreign and independent paper/lookup
 execution evidence retained by their existing owners. See
 `docs/development/RESOLVER_TRIGONOMETRIC_AUDIT.md`.
+
+`formats/legacy_permutation_factories.py` binds the complete cycle and permutation
+constructors through the sorting declaration and component owners. Original
+integer-array wire paths retain exact bounded MSB signatures and typed physical
+Programs. Symbolic dimensions retain declarations. Original Shaped/ragged-array
+codec failures remain explicit in `RESOLVER_PERMUTATION_AUDIT.md`.
