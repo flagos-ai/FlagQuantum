@@ -51,6 +51,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env/qualtran"
 CASES = (
     ("XGate", False, "x"),
+    ("ZGate", False, "z"),
+    ("CZ", False, "cz"),
     ("CNOT", False, "cx"),
     ("Hadamard", False, "h"),
     ("CHadamard", False, "ch"),
@@ -117,7 +119,7 @@ def test_frozen_resolver_inventory_and_complete_fixed_gate_sources() -> None:
     names = {ast.literal_eval(key) for key in resolver.keys if key is not None}
     assert len(names) == 303
     assert set(fixed_gate_factories()) <= names
-    assert len(fixed_gate_factories()) == 9
+    assert len(fixed_gate_factories()) == 11
     assert callable(import_module("kickmix").Simulator)
     assert import_module("kickmix").__version__ == "0.1"
 
@@ -234,6 +236,8 @@ def test_complete_unitary_round_trip_and_independent_resource_model(
     )
     keys: dict[str, ResourceCall] = {
         "XGate": CliffordCall("x", 1),
+        "ZGate": CliffordCall("z", 1),
+        "CZ": CliffordCall("cz", 2),
         "CNOT": CliffordCall("cx", 2),
         "Hadamard": CliffordCall("h", 1),
         "CHadamard": CONTROLLED_HADAMARD_COST,
@@ -316,6 +320,6 @@ def test_mapping_is_explicit_replaceable_and_validates_constructor_boundary() ->
     assert bound.circuit.instructions[0].name == "sdg"
     mapping = fixed_gate_factories()
     mapping.clear()
-    assert len(fixed_gate_factories()) == 9
+    assert len(fixed_gate_factories()) == 11
     with pytest.raises(SerializationError, match="No native factory"):
         resolve_component_program(library, 0, mapping)

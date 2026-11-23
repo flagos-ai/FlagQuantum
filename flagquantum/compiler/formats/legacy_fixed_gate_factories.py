@@ -58,6 +58,8 @@ def fixed_gate_factories() -> dict[str, ComponentFactory]:
     )
     definitions = (
         ("x_basis.XGate", "x", single),
+        ("z_basis.ZGate", "z", single),
+        ("z_basis.CZ", "cz", tuple(Signature.build(q1=1, q2=1))),
         ("cnot.CNOT", "cx", controlled),
         ("hadamard.Hadamard", "h", single),
         ("hadamard.CHadamard", "ch", controlled),
