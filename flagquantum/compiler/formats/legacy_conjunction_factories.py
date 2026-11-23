@@ -25,12 +25,16 @@ from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 def _control_value(value: object) -> int | sympy.Expr:
     if isinstance(value, sympy.Expr) and value.free_symbols:
         return value
-    if isinstance(value, (int, np.integer, np.bool_, sympy.Integer)) and value in (
+    if isinstance(
+        value, (int, float, np.integer, np.floating, np.bool_, sympy.Integer)
+    ) and value in (
         0,
         1,
     ):
         return int(value)
-    raise SerializationError("Conjunction physical controls require binary integers")
+    raise SerializationError(
+        "Conjunction physical controls require binary numeric values"
+    )
 
 
 def _checked_program(

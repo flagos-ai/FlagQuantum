@@ -297,3 +297,23 @@ def test_catalog_context_isolated_by_complete_function_and_reusable() -> None:
     atomic_wrapper = import_module("qualtran._infra.adjoint").Adjoint(_source((1, 1)))
     with pytest.raises(SerializationError, match="context"):
         resolve_component_program(_library(atomic_wrapper), 0, factories)
+
+
+@pytest.mark.parametrize("value", (0.0, 1.0, np.float64(0), np.float32(1)))
+@pytest.mark.parametrize("uncompute", (False, True))
+def test_numeric_source_controls_normalize_only_at_constructor_boundary(
+    value: float, uncompute: bool
+) -> None:
+    factory = conjunction_factories()["qualtran.bloqs.mcmt.and_bloq.And"]
+    assert factory(
+        "and", None, {"cv1": value, "cv2": value, "uncompute": uncompute}
+    ) == factory(
+        "and", None, {"cv1": int(value), "cv2": int(value), "uncompute": uncompute}
+    )
+
+
+@pytest.mark.parametrize("value", (0.5, float("nan"), float("inf"), "1"))
+def test_nonbinary_numeric_source_controls_refuse(value: float | str) -> None:
+    factory = conjunction_factories()["qualtran.bloqs.mcmt.and_bloq.And"]
+    with pytest.raises(SerializationError):
+        factory("and", None, {"cv1": value})
