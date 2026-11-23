@@ -126,3 +126,13 @@ child preserve gate operands, feedback, complex phases and clean work. Generic
 serialized child dispatch remains open, so complete catalogue coverage stays
 64/303, with 239 remaining. Source CH rotation estimates remain separate from
 actual primitive counts.
+
+## Atomic scalar constructor batch
+
+RESOLVER_SCALAR_AUDIT.md closes the GlobalPhase constructor and reuses the
+existing positive ZPow dependency. Zero logical ports, exact complex phase,
+nonlinear symbolic parameters and owned carrier cleanup retain their existing
+owners. Its native scalar materialization emits two X and two phase instructions
+on one private carrier, while the unchanged original model remains zero-cost.
+Complete catalogue coverage is 65/303, with 238 remaining. Generic serialized
+control and adjoint wrappers retain their separate gaps.

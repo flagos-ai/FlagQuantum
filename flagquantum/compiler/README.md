@@ -1345,3 +1345,12 @@ name collisions, grouped controls and raw measurement branch checks. Generic
 serialized child dispatch remains partial. See
 docs/development/RESOLVER_CONTROLLED_AUDIT.md for scope and primitive/model
 resource separation.
+
+Atomic GlobalPhase library construction uses formats/legacy_scalar_factories.py.
+Its zero-port logical signature materializes through the existing scalar phase
+recipe on one owned clean carrier, then frees that carrier. Symbolic expressions
+reuse the approved parameter path. Its positive control is the existing ZPow
+constructor. Run tests/unit/test_legacy_scalar_factories.py and the existing
+source-binding and scalar primitive tests. Actual carrier gates/work and the
+original zero-cost model are separated in
+docs/development/RESOLVER_SCALAR_AUDIT.md.
