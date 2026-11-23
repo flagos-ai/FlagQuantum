@@ -73,3 +73,15 @@ and Ruff. Compiler scope, language, architecture, IR and protected API checks
 pass. The dependency baseline is identical at 720 findings. Git HTTPS remains
 blocked after an independent ten-second TLS handshake timeout, recorded in
 g2-git-transport-recheck-20261123.json. Publication remains pending.
+
+## Publication verification
+
+The accepted module is published in the seven-commit range ending at
+05031474d26059a3c531269738aa7b16fa07a923 on PR #1084. The GitHub Git
+database API preserved every local blob, tree and commit SHA and updated the
+integration branch with force disabled. The verified publication supersedes
+the historical local-only transport status above. The combined published
+catalogue covers 85/303 constructor identifiers, with 218 remaining.
+The per-module execution, symbolic, codec and model boundaries remain recorded
+at their original scopes. Exact publication evidence is retained in
+ftqc-reference-env/g2-git-object-publication-20261123.json.
