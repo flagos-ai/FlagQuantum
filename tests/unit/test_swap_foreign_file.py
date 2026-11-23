@@ -1,8 +1,6 @@
 """Close complete swap factories through owned typed word and atomic bodies."""
 
 from collections import Counter
-from collections.abc import Mapping
-from dataclasses import replace
 
 import pytest
 import sympy
@@ -19,27 +17,18 @@ from flagquantum.compiler.formats.legacy_component_library import (
     serialize_component_library,
 )
 from flagquantum.compiler.formats.legacy_component_resolution import (
-    ResolvedArgument,
     resolve_component_program,
 )
-from flagquantum.compiler.registers.component_gate_function import bit_gate_function
-from flagquantum.compiler.registers.component_graph import _namespace_helpers
-from flagquantum.compiler.registers.primitives.controlled_swap import (
-    controlled_swap_bit_ir,
-)
-from flagquantum.compiler.registers.primitives.swap import swap_bit_ir
+from flagquantum.compiler.formats.legacy_exchange_factories import exchange_factories
 from flagquantum.compiler.registers.primitives.swap_component import (
     SwapDeclaration,
     swap_word_program,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program import (
-    FunctionRecord,
-    ProgramRecord,
     verify_program_record,
 )
-from flagquantum.core.ir.program.registers import Register
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_multi_control_component import atomic_leaves
 from tests.unit.test_subtraction_foreign_file import native_signature
@@ -77,33 +66,7 @@ def test_all_original_factories_actual_libraries_and_native_resolution(
     library = deserialize_component_library(
         bloqs_to_proto(source, max_depth=0).SerializeToString()
     )
-    names = {entry.declaration.name for entry in library.entries}
-
-    def factory(
-        name: str,
-        registers: tuple[Register, ...] | None,
-        arguments: Mapping[str, ResolvedArgument],
-    ) -> FunctionRecord | ProgramRecord:
-        assert registers is not None
-        controlled = registers[0].name == "ctrl"
-        if not arguments:
-            gates = controlled_swap_bit_ir(0, 1, 2) if controlled else swap_bit_ir(0, 1)
-            return bit_gate_function(name, registers, CircuitIR(len(registers), gates))
-        assert set(arguments) == {"bitsize"}
-        width = arguments["bitsize"]
-        assert isinstance(width, (int, sympy.Expr))
-        declaration = SwapDeclaration(width, controlled)
-        assert tuple(declaration.signature) == registers
-        if isinstance(width, sympy.Expr):
-            return FunctionRecord(name, (), registers=registers)
-        graph = declaration.program()
-        graph = replace(
-            graph,
-            functions=(replace(graph.functions[0], name=name), *graph.functions[1:]),
-        )
-        return _namespace_helpers(graph, name)
-
-    resolved = resolve_component_program(library, 0, dict.fromkeys(names, factory))
+    resolved = resolve_component_program(library, 0, exchange_factories())
     assert resolved.functions[0].registers == tuple(native_signature(source.signature))
     if symbolic:
         width = sympy.Symbol("n")

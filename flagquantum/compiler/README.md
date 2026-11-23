@@ -17,6 +17,9 @@ locked reference environment to check the serialized-library-to-append path.
 Split, Join and Cast bodies through the same resolver. Its focused consumer is
 `tests/unit/test_legacy_bookkeeping_factories.py`, including explicit clean and
 borrowed ownership and full complex workspace restoration.
+`formats/legacy_exchange_factories.py` supplies Identity, bit/word Swap and
+CSwap through the same interface. Run `tests/unit/test_legacy_exchange_factories.py`
+to exercise exact synthesis, complex append execution and isolated helper names.
 
 The internal [register package guide](registers/README.md) maps arithmetic,
 modular arithmetic, finite fields, lookup, control and the other register

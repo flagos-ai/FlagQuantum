@@ -60,5 +60,6 @@ S/T directions and Toffoli control-array order through ordinary circuit append.
 See `RESOLVER_FIXED_GATE_AUDIT.md` for the complete constructor dependency
 disposition and separate primitive/model accounts. The five lifetime and
 storage-view constructors in `RESOLVER_BOOKKEEPING_AUDIT.md` extend the combined
-built-in coverage to 13 identifiers. The remaining 290 source catalogue
-identifiers keep Q-0876 open.
+built-in coverage to 13 identifiers. The Identity and exchange constructor group
+in `RESOLVER_EXCHANGE_AUDIT.md` adds five more, bringing coverage to 18 identifiers.
+The remaining 285 source catalogue identifiers keep Q-0876 open.
