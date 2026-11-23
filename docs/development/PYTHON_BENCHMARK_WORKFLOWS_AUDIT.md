@@ -48,3 +48,19 @@ body exceptions and conflicting goal units.
 Timing infrastructure adds zero physical primitives, measurements or workspace.
 Its analytical model is None. Source performance goals are recorded separately
 from native measurements and are independent of construction equivalence.
+
+## Array workload
+
+The complete native array workload retains the original 100 quantum identities,
+100 classical identities and 100 alternating Boolean inputs. The existing
+operand-array binder constructs each measured result. Setup occurs once per
+benchmark invocation, while the body is timed repeatedly. The source group name
+km.array is replaced by native OperandArray. This naming adaptation is explicit
+in rendered-oracle comparison.
+
+All 300 input and output elements match the unchanged source at one and three
+body repetitions. Array construction emits no quantum primitives, measurement
+or workspace. The analytical model is None. Original timing goal 2.8 microseconds
+is retained separately. A five-millisecond local timing run observes approximately
+144.53 microseconds per native call, including typed conversion. K-0248 remains
+open for the original performance target.
