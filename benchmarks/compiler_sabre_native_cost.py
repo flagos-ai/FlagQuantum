@@ -37,7 +37,6 @@ from flagquantum.compiler.optimization._cz_blocks import (
 )
 from flagquantum.compiler.optimization.two_qubit_optimization import Matrix
 from flagquantum.compiler.optimization.two_qubit_synthesis import (
-    _is_unitary,
     _prepared_basis,
     _swap_register,
     _weyl_decomposition,
@@ -189,12 +188,6 @@ def _blocks(
     )
 
 
-def _matrix_key(matrix: Matrix) -> bytes:
-    return b"".join(
-        struct.pack("!dd", value.real, value.imag) for row in matrix for value in row
-    )
-
-
 def _cz_lower_bound(
     native: CircuitIR,
     *,
@@ -211,7 +204,11 @@ def _cz_lower_bound(
         matrix = _product(block, pair, matrix_reader=matrix_reader)
         if matrix is None:
             raise ValueError("Unsupported numeric block")
-        key = _matrix_key(matrix)
+        key = b"".join(
+            struct.pack("!dd", value.real, value.imag)
+            for row in matrix
+            for value in row
+        )
         if matrix_costs is not None and key in matrix_costs:
             after = matrix_costs[key]
         else:
@@ -223,11 +220,7 @@ def _cz_lower_bound(
 
 
 def _realize(
-    native: CircuitIR,
-    limit: int,
-    *,
-    matrix_reader: MatrixReader = _numeric_matrix,
-    matrix_costs: dict[bytes, int] | None = None,
+    native: CircuitIR, limit: int, *, matrix_reader: MatrixReader = _numeric_matrix
 ) -> CircuitIR:
     if len(native.instructions) > limit:
         raise ValueError("Native preview exceeds the operation budget")
@@ -235,19 +228,6 @@ def _realize(
     size = len(native.instructions)
     for pair, positions in _blocks(native, matrix_reader=matrix_reader):
         block = [native.instructions[index] for index in positions]
-        if matrix_costs and all(
-            item.name in _BASIS and item.matrix is None and not item.metadata
-            for item in block
-        ):
-            before = sum(item.name == "cz" for item in block)
-            if before >= 2:
-                matrix = _product(block, pair, matrix_reader=matrix_reader)
-                if matrix is not None:
-                    known = matrix_costs.get(_matrix_key(matrix))
-                    if known is not None and known >= before and _is_unitary(matrix):
-                        # This raw CZ proposal is rejected before local cleanup.
-                        # The preview exposes no per-block rejection counters.
-                        continue
         proposal = _candidate(
             block,
             pair,
@@ -347,12 +327,7 @@ def _choose_native_route(
         return incumbent
     candidate, preview, count = shortlist
     delivered = _cost(
-        _realize(
-            preview,
-            count + native_budget,
-            matrix_reader=matrix_reader,
-            matrix_costs=matrix_costs,
-        )
+        _realize(preview, count + native_budget, matrix_reader=matrix_reader)
     )
     # The estimate alone cannot override residual or instruction-growth rejection.
     # Keep both delivered objectives non-increasing rather than hide a tradeoff.

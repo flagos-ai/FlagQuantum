@@ -1,5 +1,10 @@
 # Reusing negative native synthesis classifications
 
+Status: **rejected by the prospective resource filter**. The evaluated
+implementation is retained in history and raw evidence; the benchmark
+implementation is restored exactly to the comparison base. Only gate-class
+boundary and nonunitary-failure regression tests remain.
+
 ## Requirement and ownership
 
 Compiler owns this `single_device_fast_path` experiment. Complete target-CZ
@@ -17,7 +22,7 @@ classification, does not affect incumbent realization and does not change
 production rejection reasons. Reducing blocks still use actual synthesis,
 operation-growth rejection, local cleanup and reconstructed residual checking.
 
-## Implementation boundaries
+## Evaluated implementation boundaries
 
 The existing route-selection-local matrix-cost table is passed only to the
 shortlisted alternative. Keys contain the exact ordered complex matrix bytes;
@@ -107,3 +112,71 @@ observations, all 280 focused unit/integration tests pass. Ruff, Black and
 strict mypy pass both changed Python modules. Full final-head CI remains
 required; the predecessor local full-suite origin failure is documented
 separately and no whole-repository passing result is claimed.
+
+
+## Completed observations and rejection
+
+The implementation and protocol were published at
+`80122e0dd48ffc1b560077f99fe7cc49e0ae8ed0` before application observations.
+The [inspected draw](evidence/native-negative-screen-inspected.json) and
+[fresh draw](evidence/native-negative-screen-fresh.json) each contain 120
+accepted executions. All 120 baseline/candidate pairs have byte-identical
+operation/layout payloads, audits and complete metrics. The fresh nonce is
+`152df9bbb5aae0bcdf381fa6e5462a236a3f15e2cb8283fda05ae197a38ca373`.
+
+[Producer-free replay](evidence/native-negative-screen-replay.json) accepts all
+240 outputs without importing FlagQuantum, Qiskit or Cirq. Maximum residuals are
+`6.072657351995283e-14` for the inspected draw and
+`3.1447209754817776e-14` for the fresh draw. Each draw has 40 full-operator rows
+at width six and 80 three-probe rows at widths eight/twelve. Probe checks do not
+prove full-operator equivalence for the larger widths.
+
+The [complete resource record](evidence/native-negative-screen-resources.json)
+retains all nine timed observations per variant, every warmup and traced
+observation, validated outputs, audits, source hashes and exact drivers.
+The production implementation tree is unchanged from the verified integration
+commit `959f25462c5e869a05b1957cc0cd68ef8900680c`. These local macOS
+measurements do not certify the formal Linux benchmark protocol.
+
+| Control | Production median ms | Baseline experiment ms | Candidate ms | Candidate/baseline | Candidate/production |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 6-wire QFT/grid | 90.560 | 179.381 | 171.009 | 0.9533265 | 1.8883434 |
+| 6-wire repetition/ring | 102.589 | 179.105 | 170.349 | 0.9511097 | 1.6604907 |
+| 12-wire QFT/grid | 572.517 | 573.189 | 581.637 | 1.0147389 | 1.0159296 |
+
+| Control | Production Python peak bytes | Baseline Python peak bytes | Candidate Python peak bytes |
+| --- | ---: | ---: | ---: |
+| 6-wire QFT/grid | 2199118 | 2268606 | 2263348 |
+| 6-wire repetition/ring | 2567429 | 2600089 | 2599633 |
+| 12-wire QFT/grid | 10118234 | 10118164 | 10118214 |
+
+All memory bounds and the per-control maximum time ratio pass. **Zero controls
+meet the required ratio of at most `0.90`; the prospective filter requires at
+least two.** The control runner therefore exits 2 with `completed=true` and
+`admission_passed=false`. There is no timeout, omitted case or favorable rerun.
+The 12-wire control has no native-cost alternatives, so its timing difference
+cannot be credited to the evaluated shortcut.
+
+Correctness preservation and roughly 4.7%/4.9% local median reductions do not
+justify retaining this additional implementation under the published rule.
+The experiment is rejected; no default or production admission is proposed.
+It remains about 89% and 66% slower than the contemporaneous production path
+on the six-wire controls. Native-cost selection still needs a sufficiently
+inexpensive complete implementation and unchanged independent qualification.
+The number of skipped proposals in an untimed census does not establish the
+fraction of total adapter latency those proposals consume.
+
+Quality and resource archives store the production Git tree explicitly as a
+tree object, not as a source revision. Their reconstruction notes restore the
+original manifest field order and payload chunks. All three original reports
+reconstruct byte for byte with their recorded SHA-256 hashes. All observed
+values, failures, source identities and threshold decisions remain unchanged.
+The evaluated implementation remains obtainable at the published commit above.
+
+The retained version adds eleven gate-class boundary and nonunitary-failure
+regression cases. All 254 focused unit/integration tests pass. Ruff, Black and
+strict mypy pass both checked Python modules. The authoritative revision/origin
+checker passes all eleven new evidence records, and local documentation links
+resolve. The benchmark module is byte-identical to the comparison base, as is
+the complete production tree. Full final-head CI is still required before
+integration; no whole-repository passing claim is made.

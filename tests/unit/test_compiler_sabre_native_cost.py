@@ -18,11 +18,7 @@ from benchmarks.compiler_sabre_native_cost import (
     _preview_matrix_reader,
     _realize,
 )
-from flagquantum.compiler.optimization._cz_blocks import (
-    _candidate,
-    _numeric_matrix,
-    _product,
-)
+from flagquantum.compiler.optimization._cz_blocks import _numeric_matrix
 from flagquantum.compiler.optimization.two_qubit_optimization import Matrix
 from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
@@ -296,144 +292,11 @@ def test_matrix_reuse_keeps_lower_bounds_realization_and_actual_budget(
     _assert_equivalent(source, actual)
 
 
-def _nonreducing_native_block() -> CircuitIR:
-    return CircuitIR(
-        2,
-        (
-            Instruction("cz", (0, 1)),
-            Instruction("rx", (0,), {"theta": 0.31}),
-            Instruction("rz", (1,), {"theta": 0.43}),
-            Instruction("cz", (0, 1)),
-            Instruction("rx", (0,), {"theta": 0.27}),
-            Instruction("rz", (1,), {"theta": 0.66}),
-        ),
-    )
-
-
-@pytest.mark.parametrize("budget", (0, 256))
-@pytest.mark.parametrize("reverse", (False, True))
-def test_known_nonreducing_cost_avoids_synthesis_without_changing_output(
-    budget: int, reverse: bool
-) -> None:
-    source = _nonreducing_native_block()
-    if reverse:
-        source = replace(
-            source,
-            instructions=tuple(
-                replace(item, wires=item.wires[::-1]) if len(item.wires) == 2 else item
-                for item in source.instructions
-            ),
-        )
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
-    expected = _realize(source, len(source.instructions) + budget)
-    with (
-        patch.object(native_cost, "_candidate", wraps=_candidate) as synth,
-        patch.object(
-            native_cost,
-            "_weyl_decomposition",
-            side_effect=AssertionError("Unexpected extra classification"),
-        ),
-    ):
-        actual = _realize(source, len(source.instructions) + budget, matrix_costs=costs)
-    assert synth.call_count == 0
-    assert actual == expected
-    _assert_equivalent(source, actual)
-
-
-@pytest.mark.parametrize("cache_state", ("absent", "empty", "unrelated"))
-def test_unknown_cost_keeps_original_synthesis(cache_state: str) -> None:
-    source = _nonreducing_native_block()
-    costs = (
-        None
-        if cache_state == "absent"
-        else ({b"unrelated": 3} if cache_state == "unrelated" else {})
-    )
-    with patch.object(native_cost, "_candidate", wraps=_candidate) as synth:
-        actual = _realize(source, 256, matrix_costs=costs)
-    assert synth.call_count == 1
-    assert actual == _realize(source, 256)
-
-
-@pytest.mark.parametrize("seed", range(8))
-@pytest.mark.parametrize("budget", (0, 256))
-def test_reducing_blocks_still_synthesize_and_obey_growth(
-    seed: int, budget: int
-) -> None:
-    rng = random.Random(seed)
-    source = CircuitIR(
-        2,
-        tuple(
-            item
-            for _ in range(4)
-            for item in (
-                Instruction("cz", (0, 1)),
-                Instruction("rx", (rng.randrange(2),), {"theta": rng.uniform(-2, 2)}),
-                Instruction("rz", (rng.randrange(2),), {"theta": rng.uniform(-2, 2)}),
-            )
-        ),
-    )
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
-    expected = _realize(source, len(source.instructions) + budget)
-    with patch.object(native_cost, "_candidate", wraps=_candidate) as synth:
-        actual = _realize(source, len(source.instructions) + budget, matrix_costs=costs)
-    assert synth.call_count == 1
-    assert actual == expected
-    assert len(actual.instructions) <= len(source.instructions) + budget
-    _assert_equivalent(source, actual)
-
-
-def test_annotations_keep_original_candidate_path() -> None:
-    source = _nonreducing_native_block()
-    source = replace(
-        source,
-        instructions=tuple(
-            replace(item, metadata={"label": "boundary"})
-            for item in source.instructions
-        ),
-    )
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
-    with patch.object(native_cost, "_candidate", wraps=_candidate) as synth:
-        actual = _realize(source, 256, matrix_costs=costs)
-    assert synth.call_count == 1
-    assert actual == _realize(source, 256)
-
-
-def test_cost_table_cannot_hide_nonunitary_failure() -> None:
-    source = _nonreducing_native_block()
-
-    def nonunitary(item: Instruction, pair: tuple[int, int]) -> Matrix | None:
-        result = _numeric_matrix(item, pair)
-        return (
-            None if result is None else [[2 * value for value in row] for row in result]
-        )
-
-    matrix = _product(source.instructions, (0, 1), matrix_reader=nonunitary)
-    assert matrix is not None
-    costs = {native_cost._matrix_key(matrix): 3}
-    with (
-        patch.object(native_cost, "_candidate", wraps=_candidate) as synth,
-        pytest.raises(ValueError, match="matrix must be unitary"),
-    ):
-        _realize(source, 256, matrix_costs=costs, matrix_reader=nonunitary)
-    assert synth.call_count == 1
-
-
-def test_known_cost_does_not_override_initial_operation_budget() -> None:
-    source = _nonreducing_native_block()
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
-    with pytest.raises(ValueError, match="Native preview exceeds the operation budget"):
-        _realize(source, len(source.instructions) - 1, matrix_costs=costs)
-
-
 @pytest.mark.parametrize("cz_count", (2, 3))
 @pytest.mark.parametrize(
     "angle", (0.0, 1e-12, 0.31, 1.5707963267948966, 3.141592653589793)
 )
-def test_classification_reuse_preserves_gate_class_boundaries(
+def test_native_preview_preserves_gate_class_boundaries(
     cz_count: int, angle: float
 ) -> None:
     source = CircuitIR(
@@ -448,28 +311,23 @@ def test_classification_reuse_preserves_gate_class_boundaries(
             )
         ),
     )
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
     for budget in (0, 256):
-        expected = _realize(source, len(source.instructions) + budget)
-        actual = _realize(source, len(source.instructions) + budget, matrix_costs=costs)
-        assert actual == expected
-        _assert_equivalent(source, actual)
+        output = _realize(source, len(source.instructions) + budget)
+        assert len(output.instructions) <= len(source.instructions) + budget
+        assert _cost(output)[0] <= cz_count
+        if angle == 0.0:
+            assert _cost(output)[0] == cz_count % 2
+        _assert_equivalent(source, output)
 
 
-def test_nonnative_block_keeps_translation_and_candidate_validation() -> None:
-    source = _nonreducing_native_block()
-    source = replace(
-        source,
-        instructions=tuple(
-            replace(item, name="cx") if item.name == "cz" else item
-            for item in source.instructions
-        ),
-    )
-    costs: dict[bytes, int] = {}
-    _cz_lower_bound(source, matrix_costs=costs)
-    with patch.object(native_cost, "_candidate", wraps=_candidate) as synth:
-        actual = _realize(source, 256, matrix_costs=costs)
-    assert synth.call_count == 1
-    assert actual == _realize(source, 256)
-    _assert_equivalent(source, actual)
+def test_native_preview_keeps_nonunitary_matrix_failure() -> None:
+    source = _budget_case()
+
+    def nonunitary(item: Instruction, pair: tuple[int, int]) -> Matrix | None:
+        result = _numeric_matrix(item, pair)
+        return (
+            None if result is None else [[2 * value for value in row] for row in result]
+        )
+
+    with pytest.raises(ValueError, match="matrix must be unitary"):
+        _realize(source, 256, matrix_reader=nonunitary)
