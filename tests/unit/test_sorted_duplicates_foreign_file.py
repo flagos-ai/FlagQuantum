@@ -27,7 +27,6 @@ from flagquantum.core.ir.program.registers import Register
 from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
 from flagquantum.ecosystem.cirq._qubit_manager import InteropQubitManager
 from flagquantum.ecosystem.cirq._register_import import import_cirq_register_gate
-from flagquantum.errors import SerializationError
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_register_tensor import native_signature
@@ -127,11 +126,12 @@ def test_actual_factory_libraries_and_native_resolution(
         )
         return _namespace_helpers(record, name)
 
-    if symbolic_length:
-        with pytest.raises(SerializationError, match="array dimensions"):
-            resolve_component_program(library, 0, {declaration.name: factory})
-        return
     resolved = resolve_component_program(library, 0, {declaration.name: factory})
+    if symbolic_length:
+        assert resolved.functions[0].registers == declaration.registers
+        with pytest.raises(ValueError, match="bodies"):
+            bind_register_program(resolved, ())
+        return
     assert resolved.functions[0].registers == declaration.registers
     if symbolic:
         assert declaration.registers is not None

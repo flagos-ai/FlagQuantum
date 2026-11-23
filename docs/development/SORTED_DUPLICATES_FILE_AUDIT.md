@@ -132,11 +132,10 @@ owner, with exact physical circuit and output aliases. Symbolic word widths
 resolve declarations and retain physical-width refusal.
 
 The original symbolic-length factory serializes only at depth zero. At larger
-depths its unchanged serializer rejects HasLength(l-1). Native root resolution
-also retains the existing symbolic array-extent rejection before binding.
-Proposal 103 prerequisite 1.20 explicitly keeps those extents unindexable.
-Neither failure is represented as successful executable admission. Q-0201.07
-remains open with these exact two boundaries.
+depths its unchanged serializer rejects HasLength(l-1). Approved Proposal 120 now permits native root resolution as a bodyless
+symbolic array declaration. The original HasLength serialization failure and
+unresolved physical execution remain explicit boundaries. Updated constructor
+evidence is recorded in RESOLVER_LIST_AUDIT.md.
 
 For two unsigned words of widths one, two and three, both control modes import
 through the current typed SDK path. This SDK interface returns fixed physical
