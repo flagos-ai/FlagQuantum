@@ -1394,3 +1394,10 @@ graph owners. It retains binary activation values, typed MSB ports, exact AddK
 adjoints and symbolic declarations. The complete source-loader and exterior-domain
 failures remain observable. See RESOLVER_MODULAR_SUBTRACTION_AUDIT.md and
 tests/unit/test_legacy_modular_subtraction_factories.py.
+
+`formats/legacy_modular_multiplication_factories.py` assigns the complete modular
+product constructor family to existing doubling, controlled multiplication,
+single-window, through-core and directional Montgomery graph owners. Symbolic
+constructors remain declarations. The original window wire loses modulus
+metadata and fails the exact signature check, as recorded in
+`docs/development/RESOLVER_MODULAR_MULTIPLICATION_AUDIT.md`.
