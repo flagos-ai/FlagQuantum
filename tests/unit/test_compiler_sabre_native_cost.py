@@ -87,13 +87,22 @@ def test_preview_preserves_reversed_control_and_restores_the_final_permutation()
     _assert_equivalent(source, _realize(preview, routed_count + 256))
 
 
-@pytest.mark.parametrize("unsupported", ("annotation", "symbolic"))
+@pytest.mark.parametrize(
+    "unsupported", ("annotation", "symbolic", "batched", "trainable")
+)
 def test_preview_refuses_source_semantics_it_does_not_model(unsupported: str) -> None:
     item = Instruction("rx", (0,), {"theta": 0.4})
     if unsupported == "annotation":
         item = replace(item, metadata={"label": "retained boundary"})
-    else:
+    elif unsupported == "symbolic":
         item = replace(item, params={"theta": Parameter("theta")})
+    else:
+        angle = (
+            torch.tensor([0.2, 0.4])
+            if unsupported == "batched"
+            else torch.tensor(0.4, requires_grad=True)
+        )
+        item = replace(item, params={"theta": angle})
     source = CircuitIR(2, (item, Instruction("cz", (0, 1))))
     coupling = CouplingMap.line(2)
     with pytest.raises(ValueError, match="unannotated|symbolic"):
@@ -181,3 +190,39 @@ def test_reused_native_selector_keeps_custom_topology_objectives() -> None:
 
     expected = sabre._select_sabre_trials(source, coupling, baseline, cost=objective)
     assert _select(source, coupling, baseline, cost=objective) == expected
+
+
+@pytest.mark.parametrize("topology", ("line", "ring"))
+def test_preview_preserves_operators_across_trial_placements(
+    topology: str,
+) -> None:
+    source = CircuitIR(
+        4,
+        (
+            Instruction("h", (3,)),
+            Instruction("cx", (3, 0)),
+            Instruction("rzz", (2, 0), {"theta": 0.29}),
+            Instruction("cx", (0, 3)),
+            Instruction("crz", (1, 3), {"theta": -0.43}),
+        ),
+    )
+    coupling = CouplingMap.line(4) if topology == "line" else CouplingMap.ring(4)
+    plans = [
+        sabre._plan_sabre_trial(source, coupling, tie_rng=random.Random(seed))
+        for seed in range(5)
+    ]
+    assert all(plan is not None for plan in plans)
+    placements: set[tuple[tuple[int, ...], ...]] = set()
+    preview = _native_previews(source, coupling)
+    for plan in plans:
+        assert plan is not None
+        placements.add(plan.placements)
+        actual, count = preview(plan)
+        assert count >= len(source.instructions)
+        _assert_equivalent(source, actual)
+        assert preview(plan) == (actual, count)
+        assert all(
+            len(gate.wires) != 2 or coupling.has_edge(*gate.wires)
+            for gate in actual.instructions
+        )
+    assert len(placements) > 1
