@@ -71,37 +71,49 @@ def _native_previews(
     # Source indices have meaning only in this closure. No value survives a
     # selection call or can be reused for another source or target.
     lowered: dict[tuple[int, tuple[int, ...]], tuple[Instruction, ...]] = {}
+    templates: dict[int, tuple[tuple[int, ...], tuple[Instruction, ...]]] = {}
 
     def lower(index: int, wires: tuple[int, ...]) -> tuple[Instruction, ...]:
         key = (index, wires)
         if key in lowered:
             return lowered[key]
-        item = (
-            Instruction("swap", wires)
-            if index == -1
-            else replace(source.instructions[index], wires=wires)
-        )
-        leaves = (
-            (item,)
-            if item.name in _BASIS
-            else translate(
-                item,
-                can_run=lambda gate: gate.name in _BASIS,
-                z_rotation="rz",
-                pulse_opcode="rx",
+        if index not in templates:
+            item = (
+                Instruction("swap", (0, 1))
+                if index == -1
+                else source.instructions[index]
             )
-        )
-        if leaves is None or any(gate.name not in _BASIS for gate in leaves):
-            raise ValueError("Unsupported preview lowering")
-        for gate in leaves:
-            pair = (
-                (gate.wires[0], (gate.wires[0] + 1) % source.n_wires)
-                if len(gate.wires) == 1
-                else (gate.wires[0], gate.wires[1])
+            leaves = (
+                (item,)
+                if item.name in _BASIS
+                else translate(
+                    item,
+                    can_run=lambda gate: gate.name in _BASIS,
+                    z_rotation="rz",
+                    pulse_opcode="rx",
+                )
             )
-            if _numeric_matrix(gate, pair) is None:
-                raise ValueError("Preview does not support symbolic or batched values")
-        lowered[key] = tuple(leaves)
+            if leaves is None or any(gate.name not in _BASIS for gate in leaves):
+                raise ValueError("Unsupported preview lowering")
+            for gate in leaves:
+                if any(wire not in item.wires for wire in gate.wires):
+                    raise ValueError("Preview lowering introduced workspace wires")
+                pair = (
+                    (gate.wires[0], (gate.wires[0] + 1) % source.n_wires)
+                    if len(gate.wires) == 1
+                    else (gate.wires[0], gate.wires[1])
+                )
+                if _numeric_matrix(gate, pair) is None:
+                    raise ValueError(
+                        "Preview does not support symbolic or batched values"
+                    )
+            templates[index] = item.wires, tuple(leaves)
+        original_wires, template = templates[index]
+        placement = dict(zip(original_wires, wires, strict=True))
+        lowered[key] = tuple(
+            replace(gate, wires=tuple(placement[wire] for wire in gate.wires))
+            for gate in template
+        )
         return lowered[key]
 
     def preview(plan: sabre.SabrePlan) -> tuple[CircuitIR, int]:
