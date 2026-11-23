@@ -213,3 +213,12 @@ Run `tests/unit/test_phase_angle_objects.py` for both frozen source consumers,
 full raw words, binary round trips, native phase composition and the normal
 circuit.append(op) complex-state workflow. See
 `docs/development/PHASE_ANGLE_OBJECT_AUDIT.md` for the complete source scope.
+
+## Private physical observation conversion
+
+`_physical_basis_session.PhysicalBasisSession` resolves native physical operand
+identities, register aliases, external arrays, exact phase inputs and debug
+callbacks. Simulation `_basis_trajectories` owns all numerical state and random
+streams. The adapter reuses existing Compiler metadata, operand binding and
+physical statistics. It imports no reference extension. See
+[the complete session mapping](../../docs/development/PHYSICAL_BASIS_SESSION_AUDIT.md).
