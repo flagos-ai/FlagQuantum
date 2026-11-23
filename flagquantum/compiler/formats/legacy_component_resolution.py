@@ -74,6 +74,21 @@ def _build_composite(
         raise SerializationError(
             "Composite component cannot have constructor arguments"
         )
+    connected = {
+        occurrence.definition_id
+        for occurrence in _ordered_occurrences(entry.connections)
+    }
+    for child, count in entry.counts:
+        if (
+            count != 0
+            and child not in connected
+            and child in entries
+            and entries[child].declaration.registers == ()
+        ):
+            raise SerializationError(
+                "Composite wire omits a zero-port execution child; resource "
+                "counts cannot restore its execution order"
+            )
     signature = Signature(registers)
     nodes: dict[_Owner, int] = {}
     incoming: dict[ComponentPort, ComponentPort] = {}
