@@ -28,6 +28,20 @@ ConstantEncoder = Callable[[RegisterType, object], tuple[int, ...]]
 _Kind = Literal["Xor", "XorK", "BitwiseNot"]
 
 
+def _constant_pattern(
+    encode_constant: ConstantEncoder, dtype: RegisterType, constant: object
+) -> int:
+    bits = encode_constant(dtype, constant)
+    if len(bits) != dtype.num_qubits or any(
+        type(bit) is not int or bit not in (0, 1) for bit in bits
+    ):
+        raise SerializationError("Constant encoder must return one binary MSB word")
+    pattern = 0
+    for bit in bits:
+        pattern = (pattern << 1) | bit
+    return pattern
+
+
 def _rename_program(program: ProgramRecord, name: str) -> ProgramRecord:
     program = replace(
         program,
@@ -67,14 +81,7 @@ def _word_factory(
         return FunctionRecord(name, (), registers=signature)
     pattern = None
     if kind == "XorK":
-        bits = encode_constant(dtype, constant)
-        if len(bits) != dtype.num_qubits or any(
-            type(bit) is not int or bit not in (0, 1) for bit in bits
-        ):
-            raise SerializationError("Constant encoder must return one binary MSB word")
-        pattern = 0
-        for bit in bits:
-            pattern = (pattern << 1) | bit
+        pattern = _constant_pattern(encode_constant, dtype, constant)
     operations: dict[_Kind, Literal["xor", "xor_constant", "bitwise_not"]] = {
         "Xor": "xor",
         "XorK": "xor_constant",
