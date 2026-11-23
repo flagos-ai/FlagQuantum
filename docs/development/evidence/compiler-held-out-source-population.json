@@ -1,0 +1,261 @@
+{
+  "scope": "Prospective external source population only; no draw, source admission, novelty certificate, participant execution or performance claim",
+  "classification": "single_device_fast_path",
+  "source": {
+    "repository": "Veri-Q/Benchmark",
+    "revision": "9be108313844e30c5df5780989a68cac4d966cfe"
+  },
+  "harness": {
+    "repository": "sdkbench-org/sdkbench",
+    "revision": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a"
+  },
+  "metadata_inventory": {
+    "all_qasm_blobs": 966,
+    "matching_width_and_size": 21,
+    "width_pattern": "_(?:n)?(6|8|12)\\.qasm$",
+    "max_source_bytes": 1048576,
+    "complete_tree_response_sha256": "6b44ca64fd61d0bd223cad86d8dd825d049d028082606b7aa441cde4f1d3166a"
+  },
+  "license": {
+    "path": "LICENSE",
+    "spdx": "MIT",
+    "bytes": 1063,
+    "sha256": "0a917bc26100dccf6a95a560226a9f2f1f761f162899e8a075a14bd9066083ce",
+    "upstream_notice_present": false,
+    "retention": "Retain original LICENSE, all selected source bytes and in-source notices; stage a separately identified supplemental provenance NOTICE for the unchanged preparer.",
+    "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/7009e5f4dccba297e54383cda264adee2ff97ca3"
+  },
+  "selection": {
+    "sources_per_width": 2,
+    "widths": [
+      6,
+      8,
+      12
+    ],
+    "entropy_source": "secrets.token_bytes(32), exactly once after the complete public execution freeze",
+    "rank_domain": "fq-compiler-external-holdout-20261123",
+    "rank_encoding": "UTF-8(domain) + NUL + raw 32-byte nonce + NUL + UTF-8(original path)",
+    "sort": "ascending SHA-256 bytes, then original path; first two metadata-eligible paths separately at each width",
+    "replacement_allowed": false,
+    "selected": false
+  },
+  "denominators": {
+    "metadata_eligible_sources": 11,
+    "planned_selected_sources": 6,
+    "targets_per_source": 2,
+    "registered_workflows": 4,
+    "intended_rows_before_any_source_refusal": 48
+  },
+  "files": [
+    {
+      "path": "combinational/bv/bv_12.qasm",
+      "bytes": 471,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/633177a2e97573148312664db67b22392d5bdc99"
+    },
+    {
+      "path": "combinational/bv/bv_6.qasm",
+      "bytes": 254,
+      "filename_width": 6,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/53fbc526de66c4de2f12a2ce48f52457faabacdb"
+    },
+    {
+      "path": "combinational/bv/bv_8.qasm",
+      "bytes": 320,
+      "filename_width": 8,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/5164d9cc9f5fa6ca7663704986ee077ef5d49d31"
+    },
+    {
+      "path": "combinational/pe/pe_12.qasm",
+      "bytes": 2163,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/d1f93bf2b4336c09614d390948a68870e43e4340"
+    },
+    {
+      "path": "combinational/pe/pe_6.qasm",
+      "bytes": 659,
+      "filename_width": 6,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/2dc0d732a2d5ab2df83d279b8272d87d3e4e6568"
+    },
+    {
+      "path": "combinational/pe/pe_8.qasm",
+      "bytes": 1046,
+      "filename_width": 8,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/7d2d899f12b66354ffd75ad867e886b22ca3a16c"
+    },
+    {
+      "path": "combinational/qft/qft_12.qasm",
+      "bytes": 1702,
+      "filename_width": 12,
+      "status": "metadata-excluded",
+      "reason": "previously-inspected-development-family",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/9cf9e281a67f26837103e5b26b03bbb7e4c78130"
+    },
+    {
+      "path": "combinational/qft/qft_6.qasm",
+      "bytes": 449,
+      "filename_width": 6,
+      "status": "metadata-excluded",
+      "reason": "previously-inspected-development-family",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/b22e12a83aec2f36893017268917252a10f15bd3"
+    },
+    {
+      "path": "combinational/qft/qft_8.qasm",
+      "bytes": 761,
+      "filename_width": 8,
+      "status": "metadata-excluded",
+      "reason": "previously-inspected-development-family",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/d38be99e537eb88ebabfec2a39b62f0f1451326f"
+    },
+    {
+      "path": "combinational/rev_circuit/mspk_4_49_12.qasm",
+      "bytes": 233,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/89bed549268c2d2c690571d1b8320d18645daf98"
+    },
+    {
+      "path": "combinational/rev_circuit/mspk_hwb4_12.qasm",
+      "bytes": 233,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/b42b40663186d0c058da5d573cae11e7a82700a4"
+    },
+    {
+      "path": "combinational/rev_circuit/mspk_nth_primes4_12.qasm",
+      "bytes": 251,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/e84c9255ea1af9339a2fa743555dd0aac3a3fa7c"
+    },
+    {
+      "path": "dynamic/pe/dqc_pe_12.qasm",
+      "bytes": 2864,
+      "filename_width": 12,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/bafb4a40e8dba69b4332940f262bc4e4dc7c1f19"
+    },
+    {
+      "path": "dynamic/pe/dqc_pe_6.qasm",
+      "bytes": 929,
+      "filename_width": 6,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/7be1f4c7a80fe3f4991cde6db31164962f9e8768"
+    },
+    {
+      "path": "dynamic/pe/dqc_pe_8.qasm",
+      "bytes": 1442,
+      "filename_width": 8,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/8a96ad2ebb3d55c0b7835fde79a2ad2668fb3fbb"
+    },
+    {
+      "path": "dynamic/qft/dqc_qft_12.qasm",
+      "bytes": 2403,
+      "filename_width": 12,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/42236035f526e4cf6721cffc0b12ffbf366b8ce1"
+    },
+    {
+      "path": "dynamic/qft/dqc_qft_6.qasm",
+      "bytes": 719,
+      "filename_width": 6,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/a1a7185d92ff2698acd937139a35ea0db272b11b"
+    },
+    {
+      "path": "dynamic/qft/dqc_qft_8.qasm",
+      "bytes": 1157,
+      "filename_width": 8,
+      "status": "metadata-excluded",
+      "reason": "outside-static-W03-task",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/92cb995f1e8c035a08fe9b409058aa69c25419f9"
+    },
+    {
+      "path": "variational/EfficientSU2/eff_12.qasm",
+      "bytes": 1126,
+      "filename_width": 12,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/8f608a43f6246db587b08dfdef9fa35ee99fda10"
+    },
+    {
+      "path": "variational/QAOA/qaoa_6.qasm",
+      "bytes": 1674,
+      "filename_width": 6,
+      "status": "metadata-excluded",
+      "reason": "previously-inspected-development-family",
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/0e8cd237a42a026cc4837c7002212d181cb8e0f3"
+    },
+    {
+      "path": "variational/QCNN/qcnn_8.qasm",
+      "bytes": 4028,
+      "filename_width": 8,
+      "status": "metadata-eligible",
+      "reason": null,
+      "source_body_retrieved": false,
+      "participant_outcome_inspected": false,
+      "git_blob_url": "https://api.github.com/repos/Veri-Q/Benchmark/git/blobs/138796a5c96a32b1868c3d2d98db47e9c8fcb700"
+    }
+  ]
+}

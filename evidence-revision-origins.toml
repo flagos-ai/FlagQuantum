@@ -1208,3 +1208,17 @@ path = "docs/development/evidence/compiler-installed-wheel-controls.json"
 value = "9cb8f184825e658f7378763a1f3a39c57720233d"
 origin = "external_dependency"
 repository = "sdkbench-org/sdkbench"
+
+# Public source and unchanged evaluator pins for the prospective holdout population.
+[[artifact]]
+path = "docs/development/evidence/compiler-held-out-source-population.json"
+
+[[artifact.revision]]
+value = "9be108313844e30c5df5780989a68cac4d966cfe"
+origin = "external_dependency"
+repository = "Veri-Q/Benchmark"
+
+[[artifact.revision]]
+value = "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"
