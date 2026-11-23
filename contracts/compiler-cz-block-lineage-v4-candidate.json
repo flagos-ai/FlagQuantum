@@ -129,7 +129,9 @@
     "strict_cz_reduction_required": true,
     "preserve_existing_native_baseline_admission": true,
     "combined_native_growth_budget": "existing caller max_native_added_operations",
-    "serialized_limits": "reuse existing bundle byte/record limits including nested memberships"
+    "serialized_limits": "existing bundle byte/record limits except the approved v4 native-input and aggregate membership budgets",
+    "native_input_instruction_records": 8192,
+    "aggregate_block_memberships": 8192
   },
   "invariants": [
     "source_hash_and_actual_topology_program_retained",
@@ -166,5 +168,10 @@
     "sdkbench_resource_evaluation_complete": false
   },
   "approved_on": "2026-11-18",
-  "approval_scope": "PR #1221 proposal scope approved explicitly by the user; release qualification remains pending"
+  "approval_scope": "PR #1221 proposal scope approved explicitly by the user; release qualification remains pending",
+  "capacity_approval": {
+    "approved_on": "2026-11-23",
+    "proposal": "docs/api-changes/FQ-V4-NATIVE-LINEAGE-CAPACITY-20261123.md",
+    "approval_scope": "Explicit user approval of native input records and aggregate block memberships from 4096 to 8192 only; reader-first migration; all other limits unchanged"
+  }
 }
