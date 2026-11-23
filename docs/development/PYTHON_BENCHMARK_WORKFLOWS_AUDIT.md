@@ -112,3 +112,32 @@ These local CPU observations use five-millisecond target runs and include the
 native construction boundary above. The original goals are declared targets,
 separate from measured extension timings. K-0250 remains open for those targets.
 There is no throughput, SIMD or distributed scalability equivalence claim.
+
+## Complete discovery source
+
+The native runner imports the two maintained physical Python workload files and
+calls main only for a TimingSuite instance. Native filenames use the scoped
+physical_*_perf.py pattern in the existing benchmarks directory. The original
+source's two suites and six registered cases map one-to-one. Glob order, module
+side effects, absent or wrongly typed benchmark fields, import failures and
+empty directories preserve their source behavior. The original filename pattern
+has no recursive directory component. The native pattern retains that property.
+All three actual script entry paths are exercised. Source anonymous module names
+are replaced by a native private import name. Dynamic loading remains in the
+benchmarking edge, separate from compiler and numerical execution.
+
+## Batch acceptance
+
+All 103 focused suite/workload/discovery checks pass. Concentrated regression
+passes 2830 tests, including complete existing CCX, addition, workspace and
+measurement consumers. Local integration passes 121 tests. Strict typing covers
+all eleven changed Python files. Black, Ruff, Verification scope, architecture,
+multilevel IR, protected API and whitespace checks pass. The identical
+720-entry dependency baseline remains. Both original oracles regenerate
+byte-exactly with the locked source and native extension.
+
+The timing-suite and discovery parents K-0249 and K-0251 are accepted. Complete
+functional array and builder workload ports are delivered. K-0248 and K-0250
+remain open for their measured performance-target gaps. No source reference
+was changed, no source failure was hidden, and no performance target is counted
+as an analytical gate-resource estimate.
