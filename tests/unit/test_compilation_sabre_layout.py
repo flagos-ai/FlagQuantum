@@ -6,7 +6,6 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, route_to_topology
-from flagquantum.compiler.topology import sabre as sabre_planner
 from flagquantum.compiler.topology.sabre import plan_sabre_layout, plan_sabre_swaps
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 
@@ -84,17 +83,9 @@ def test_sabre_layout_is_never_worse_than_sabre_routing(
 
     # Preserve the previous single-trial regression values while verifying that
     # the stronger search never sacrifices one of those known layouts.
-    walk = sabre_planner._walk_restore
-    with (
-        patch.object(
-            sabre_planner,
-            "_walk_restore",
-            side_effect=lambda placement, tree, paths: walk(placement, tree, tree),
-        ),
-        patch(
-            "flagquantum.compiler.topology.sabre._select_sabre_trials",
-            side_effect=lambda program, coupling, baseline: baseline,
-        ),
+    with patch(
+        "flagquantum.compiler.topology.sabre._select_sabre_trials",
+        side_effect=lambda program, coupling, baseline: baseline,
     ):
         original_sabre = route_to_topology(program, coupling, strategy="sabre")
         original_layout = route_to_topology(program, coupling, strategy="sabre_layout")
@@ -179,8 +170,6 @@ def test_sabre_layout_preserves_state_and_parameter_gradients() -> None:
     routed_loss.backward()
 
     assert torch.allclose(routed, reference, atol=1e-6)
-    assert theta.grad is not None and routed_theta.grad is not None
-    assert phi.grad is not None and routed_phi.grad is not None
     assert torch.allclose(routed_theta.grad, theta.grad, atol=1e-6)
     assert torch.allclose(routed_phi.grad, phi.grad, atol=1e-6)
 

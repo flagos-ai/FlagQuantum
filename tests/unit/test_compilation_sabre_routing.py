@@ -6,7 +6,6 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, route_to_topology
-from flagquantum.compiler.topology import sabre as sabre_planner
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 
 pytestmark = pytest.mark.unit
@@ -120,8 +119,6 @@ def test_sabre_parameter_gradients_match_original() -> None:
     routed_loss.backward()
 
     assert torch.allclose(routed, reference, atol=1e-6)
-    assert theta.grad is not None and routed_theta.grad is not None
-    assert phi.grad is not None and routed_phi.grad is not None
     assert torch.allclose(routed_theta.grad, theta.grad, atol=1e-6)
     assert torch.allclose(routed_phi.grad, phi.grad, atol=1e-6)
 
@@ -346,17 +343,9 @@ def test_sabre_uses_a_bounded_number_of_swaps_on_a_larger_device() -> None:
 
     routed = route_to_topology(program, coupling, strategy="sabre")
 
-    walk = sabre_planner._walk_restore
-    with (
-        patch.object(
-            sabre_planner,
-            "_walk_restore",
-            side_effect=lambda placement, tree, paths: walk(placement, tree, tree),
-        ),
-        patch(
-            "flagquantum.compiler.topology.sabre._select_sabre_trials",
-            side_effect=lambda program, coupling, baseline: baseline,
-        ),
+    with patch(
+        "flagquantum.compiler.topology.sabre._select_sabre_trials",
+        side_effect=lambda program, coupling, baseline: baseline,
     ):
         original = route_to_topology(program, coupling, strategy="sabre")
     assert original.metadata["routing"]["inserted_swap_count"] == 92

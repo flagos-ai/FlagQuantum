@@ -1,7 +1,10 @@
 # Readiness-guarded physical layout restoration
 
 Owner: Compiler. Classification: `single_device_fast_path`.
-Status: candidate; complete-workflow admission is pending.
+Status: rejected and withdrawn. Production code and existing tests are byte for
+byte identical to the declared integrated baseline. The candidate implementation
+and its independent tests remain at published freeze
+`3561f271169257334dbbed54c65045e611a83c6a`.
 
 The rejected graph-path experiment at
 `0692118febfd7a8f5e3ee17ee32121fc913d494c` showed that fewer restore SWAPs
@@ -133,3 +136,52 @@ Expected: legal routing with physical identity output. Short contributor check:
 ```bash
 python -m pytest -q tests/unit/test_compilation_restoration_readiness.py tests/unit/test_compilation_restore_paths.py tests/unit/test_compilation_sabre_layout.py tests/unit/test_compilation_sabre_trials.py tests/team/compiler/test_routing_conformance.py
 ```
+
+
+The candidate-specific test command above applies to the published freeze;
+that test module was removed with the rejected implementation.
+
+## First outcomes
+
+Both frozen draws complete: all 480 executions pass unchanged numerical,
+topology and physical identity-layout acceptance. Producer-free replay accepts
+all 480 serialized outputs again, with maximum residuals
+6.072657351995283e-14 and 2.6832735025352902e-14 against 1e-8. The scope is
+160 full-operator and 320 limited three-probe observations. Invariant audit
+counts match; derived artifact/rewrite counters remain explicitly recorded.
+
+The inspected draw has three quality violations; the fresh draw has two.
+The first draw changes five payload pairs, the second changes eight (including
+one equal-cost payload change); every payload remains in the archive. Neither
+failure is excused by the readiness proof or the improvements elsewhere.
+
+| Draw / input | Workflow | Baseline CZ / depth | Candidate CZ / depth |
+| --- | --- | ---: | ---: |
+| inspected repetition6/grid | ordinary-restored | 72 / 59 | 72 / 57 |
+| inspected repetition6/grid | target-artifact | 62 / 51 | 66 / 51 |
+| inspected QFT8/sparse | ordinary-restored | 182 / 105 | 164 / 108 |
+| inspected repetition12/sparse | target-artifact | 70 / 58 | 68 / 62 |
+| fresh repetition6/grid | ordinary-restored | 72 / 64 | 72 / 65 |
+| fresh repetition6/grid | target-artifact | 68 / 60 | 68 / 61 |
+| fresh QAOA12/grid | ordinary-restored | 180 / 79 | 162 / 59 |
+| fresh QAOA12/grid | target-artifact | 176 / 77 | 158 / 57 |
+
+No resource phase was run because its prerequisite quality gates failed.
+After withdrawal, 115 focused restoration, routing, artifact and golden-path
+tests pass; production and existing test files match the declared baseline.
+There is no favorable rerun, changed threshold, omitted case or fixture
+exception. This is a within-FlagQuantum development control, not a cross-SDK
+ranking. A max-plus proof for homogeneous SWAP dependencies cannot certify
+post-selection target synthesis. Future work must compare delivered native
+cost/depth without bypassing retained topology replay or paying uncontrolled
+repeated synthesis costs. This proposal is not enabled for any workflow.
+
+[Inspected index](evidence/restoration-readiness-inspected-screen.json),
+[fresh index](evidence/restoration-readiness-fresh-screen.json) and
+[producer-free replay](evidence/restoration-readiness-replay.json) retain the
+complete first observations, source hashes, protocols and exact drivers. Each
+index lists hashed payload chunks and original top-level key order for exact
+reconstruction of the original pretty-printed report plus trailing newline.
+Original report SHA-256 values:
+`b4ef5b516fb5a5c25d913f62e75dbd42ac20cd4d9786f31a1f7d39735a4f0357`
+and `fa25e114f104959b5992bf6a100c1fba1ae80cfac88b2e6fb243c71d9ce347bd`.
