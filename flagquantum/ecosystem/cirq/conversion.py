@@ -8,6 +8,7 @@ from importlib import import_module
 from numbers import Number
 from typing import Any, Literal
 
+from ...compiler.formats.symbolic_parameters import symbolic_parameter_value
 from ...core.classical_control import (
     instruction_condition_clauses,
     validate_classical_control,
@@ -137,61 +138,9 @@ def _flagquantum_parameter_value(
     cirq_symbols = tuple(symbolic.free_symbols)
     if {str(symbol) for symbol in cirq_symbols} != discovered:
         raise ValueError("Cirq and SymPy symbol discovery disagree")
-    parameters_by_name = {
-        str(symbol): Parameter(str(symbol)) for symbol in cirq_symbols
-    }
-    if len(parameters_by_name) != len(cirq_symbols):
+    if len({str(symbol) for symbol in cirq_symbols}) != len(cirq_symbols):
         raise ValueError("distinct Cirq symbols share the same name")
-    parameters_by_symbol = {
-        symbol: parameters_by_name[str(symbol)] for symbol in cirq_symbols
-    }
-
-    def convert(node: Any) -> Any:
-        if isinstance(node, sympy.Symbol):
-            try:
-                return parameters_by_symbol[node]
-            except KeyError as exc:
-                raise ValueError(f"unknown symbol {node!s}") from exc
-        if isinstance(node, (sympy.Number, sympy.NumberSymbol)):
-            converted = complex(node)
-            if converted.imag != 0 or not math.isfinite(converted.real):
-                raise ValueError(f"constant {node!s} is not a finite real scalar")
-            return float(converted.real)
-        if isinstance(node, sympy.Add):
-            args = tuple(convert(arg) for arg in node.args)
-            if not args:
-                return 0.0
-            result = args[0]
-            for arg in args[1:]:
-                result = result + arg
-            return result
-        if isinstance(node, sympy.Mul):
-            args = tuple(convert(arg) for arg in node.args)
-            if not args:
-                return 1.0
-            result = args[0]
-            for arg in args[1:]:
-                result = result * arg
-            return result
-        if isinstance(node, sympy.Pow):
-            base, exponent = node.args
-            if exponent == -1:
-                return ParameterExpression("div", (1.0, convert(base)))
-            return ParameterExpression("pow", (convert(base), convert(exponent)))
-        functions = {
-            sympy.sin: "sin",
-            sympy.cos: "cos",
-            sympy.exp: "exp",
-            sympy.log: "log",
-        }
-        if node.func in functions and len(node.args) == 1:
-            return ParameterExpression(functions[node.func], (convert(node.args[0]),))
-        function_name = getattr(getattr(node, "func", None), "__name__", None)
-        raise ValueError(
-            f"operation {function_name or type(node).__name__!r} is unsupported"
-        )
-
-    return convert(symbolic)
+    return symbolic_parameter_value(symbolic)
 
 
 def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
