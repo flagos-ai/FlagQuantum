@@ -1031,7 +1031,13 @@ remain isolated and resource-budgeted.
 Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
 `/opt/flagquantum-runners/tools/public-wheels` directory when unset. Each private
 environment resolves compatible wheel bytes rather than reusing another job's
-installed packages. Missing Torch wheels retain the
+installed packages. The isolated-Python action creates a private build directory
+under `RUNNER_TEMP` and exports it as `TMPDIR` for its own subprocesses and later
+job steps. Pip and native compiler scratch files therefore use the runner job
+volume even when the host system temporary volume is full. Directory creation
+failure stops setup; it does not fall back to shared `/tmp`. The runner owns
+end-of-job cleanup. This does not remove other jobs' files or change persistent
+runner services. Missing Torch wheels retain the
 bounded mirror and official-index fallback. Self-hosted pip requests use a
 60-second socket timeout and at most two retries within the unchanged job limit.
 Supply-chain dependency installation selects the Aliyun mirror on self-hosted
