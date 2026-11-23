@@ -20,7 +20,6 @@ from flagquantum.compiler.registers.sorting.in_place_sort_component import (
 )
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register
-from flagquantum.errors import SerializationError
 from tests.unit.test_in_place_sort import layout
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -93,11 +92,12 @@ def test_entire_source_library_wire_declaration_and_native_execution(
         )
         return _namespace_helpers(graph, name)
 
-    if mode in {"length_symbol", "plain_symbols", "assumed_symbols"}:
-        with pytest.raises(SerializationError, match="array dimensions"):
-            resolve_component_program(library, 0, {declaration.name: factory})
-        return
     resolved = resolve_component_program(library, 0, {declaration.name: factory})
+    if mode in {"length_symbol", "plain_symbols", "assumed_symbols"}:
+        assert resolved.functions[0].registers == declaration.registers
+        with pytest.raises(ValueError, match="bodies"):
+            bind_register_program(resolved, ())
+        return
     assert resolved.functions[0].registers == declaration.registers
     if executable:
         words, ranks, clean, _ = layout(int(length), int(width))

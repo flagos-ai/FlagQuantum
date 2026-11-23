@@ -168,3 +168,13 @@ baseline's ten files are byte-identical to the batch base. This is concentrated
 batch validation, with that existing repository-wide baseline retained.
 See g2-in-place-sort-evidence.json and named logs in the external evidence
 folder. No parent completion is inferred from these accepted capabilities.
+
+
+## Approved symbolic constructor continuation
+
+Proposal 120 supersedes historical symbolic-array declaration rejection.
+Existing foreign tests now accept bodyless logical signatures and require
+physical binding refusal. The dedicated constructor adapter preserves the
+original root declaration and missing decomposition. Previously accepted native
+physical synthesis and independent source models retain their separate scopes.
+See RESOLVER_LIST_AUDIT.md for the complete constructor dependency closure.
