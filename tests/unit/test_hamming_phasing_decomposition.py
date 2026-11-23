@@ -178,3 +178,21 @@ def test_qualified_count_and_qvr_children_reject_changed_definitions(
             )
             checked += 1
     assert checked >= 2
+
+
+def test_direct_symbolic_phasing_binds_to_accepted_numeric_body() -> None:
+    from flagquantum import Circuit
+    from flagquantum.core.parameters import Parameter
+
+    symbolic = hamming_phasing_program(3, Parameter("theta"), 0.2)
+    bound = bind_register_program(symbolic, ((0, 1, 2),), clean=(3, 4, 5))
+    actual = (
+        Circuit(6)
+        .append(FieldOperation(6, bound.circuit.instructions))
+        .bind_parameters({"theta": 0.375})
+        .to_ir()
+    )
+    expected = bind_register_program(
+        hamming_phasing_program(3, 0.375, 0.2), ((0, 1, 2),), clean=(3, 4, 5)
+    )
+    assert actual.instructions == expected.circuit.instructions
