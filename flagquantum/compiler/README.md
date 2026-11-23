@@ -20,6 +20,10 @@ borrowed ownership and full complex workspace restoration.
 `formats/legacy_exchange_factories.py` supplies Identity, bit/word Swap and
 CSwap through the same interface. Run `tests/unit/test_legacy_exchange_factories.py`
 to exercise exact synthesis, complex append execution and isolated helper names.
+`formats/legacy_rotation_factories.py` supplies all eight basic rotation
+constructors. Its focused consumer is `tests/unit/test_legacy_rotation_factories.py`.
+`formats/symbolic_parameters.py` shares owned expression conversion with the SDK
+adapter, while `registers/primitives/` retains angle and phase execution recipes.
 
 The internal [register package guide](registers/README.md) maps arithmetic,
 modular arithmetic, finite fields, lookup, control and the other register
