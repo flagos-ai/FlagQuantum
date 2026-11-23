@@ -94,7 +94,7 @@ def test_symbolic_declarations_preserve_original_type_graph(
     resolved = resolve_component_program(library, 0, {declaration.name: factory})
     assert resolved.functions[0].registers == declaration.registers
     encoding = "ones_complement" if ones else "signed"
-    with pytest.raises(ValueError, match="unsupported executable"):
+    with pytest.raises(ValueError, match="concrete"):
         sign_extension_program(
             RegisterType(encoding, n), RegisterType(encoding, n + 2), adjoint=truncate
         )

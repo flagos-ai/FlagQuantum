@@ -1,6 +1,7 @@
 """Signed conversion constructors preserve directional ownership and source fanout."""
 
 from collections import Counter
+from functools import partial
 from importlib import import_module
 from typing import Any
 
@@ -42,12 +43,17 @@ def _resolve(source: Any, depth: int = 1) -> ProgramRecord:
     return program
 
 
-@pytest.mark.parametrize("encoding", ("QInt", "QIntOnesComp"))
+@pytest.mark.parametrize(
+    "encoding",
+    ("QInt", "QIntOnesComp", "QAny", "QUInt", "BQUInt", "QMontgomeryUInt", "QFxp"),
+)
 @pytest.mark.parametrize("width,extra", ((2, 1), (2, 3), (3, 2), (8, 8)))
 def test_sign_constructors_named_and_direct_source_gates_roundtrip(
     encoding: str, width: int, extra: int
 ) -> None:
     source_type = getattr(import_module("qualtran"), encoding)
+    if encoding == "QFxp":
+        source_type = partial(source_type, num_frac=0)
     source = import_module(
         "qualtran.bloqs.arithmetic.conversions.sign_extension"
     ).SignExtend(source_type(width), source_type(width + extra))
@@ -135,11 +141,15 @@ def test_symbolic_sign_contracts_and_invalid_metadata() -> None:
         assert isinstance(factory("custom", None, concrete), ProgramRecord)
         invalid: tuple[dict[str, ResolvedArgument], ...] = (
             {},
+            {
+                "inp_dtype": RegisterType("signed", 0),
+                "out_dtype": RegisterType("signed", 0),
+            },
             {"inp_dtype": "bad", "out_dtype": after},
             {"inp_dtype": before, "out_dtype": "bad"},
             {
                 "inp_dtype": RegisterType("uint", 2),
-                "out_dtype": RegisterType("uint", 3),
+                "out_dtype": RegisterType("uint", 3, parameters=(("bound", 4),)),
             },
             {
                 "inp_dtype": RegisterType("signed", 2),
@@ -167,3 +177,123 @@ def test_source_sympy_numeric_difference_remains_symbolic() -> None:
     ):
         result = _resolve(source, 0)
         assert result.functions[0].blocks == ()
+
+
+@pytest.mark.parametrize(
+    "signed,changed_sign", ((False, False), (True, False), (False, True))
+)
+def test_fixed_point_metadata_retains_graph_and_physical_storage_boundary(
+    signed: bool, changed_sign: bool
+) -> None:
+    from qualtran import QFxp
+    from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
+
+    source = SignExtend(
+        QFxp(2, -1, signed=signed), QFxp(5, 3, signed=signed or changed_sign)
+    )
+    forward = _resolve(source, 0)
+    backward = _resolve(source.adjoint(), 0)
+    assert forward.functions[0].blocks and backward.functions[0].blocks
+    assert forward.functions[0].registers is not None
+    assert backward.functions[0].registers is not None
+    assert (
+        forward.functions[0].registers
+        == _library(source, 0).entries[0].declaration.registers
+    )
+    assert (
+        backward.functions[0].registers
+        == _library(source.adjoint(), 0).entries[0].declaration.registers
+    )
+    if signed or changed_sign:
+        with pytest.raises(
+            ValueError, match="unsupported executable register descriptor"
+        ):
+            bind_register_program(
+                forward, ((0, 1),), clean=(3, 4, 5), allow_workspace_outputs=True
+            )
+        return
+    bound = bind_register_program(
+        forward, ((0, 1),), clean=(3, 4, 5), allow_workspace_outputs=True
+    )
+    inverse = bind_register_program(
+        backward, bound.outputs, input_ownership=((3, False), (4, False), (5, False))
+    )
+    for original, actual, inputs, outputs, work in (
+        (source, bound, ((0, 1),), bound.outputs, (3, 4, 5)),
+        (source.adjoint(), inverse, bound.outputs, ((0, 1),), ()),
+    ):
+        assert_source(
+            actual.circuit.instructions,
+            reference_arithmetic_gates(
+                original,
+                {"x": inputs[0]},
+                work,
+                {},
+                expected_outputs={"y": outputs[0]},
+            ),
+        )
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.circuit import Circuit
+
+    raw = torch.arange(1, 9, dtype=torch.float64)
+    amps = torch.complex(raw, 5 - raw)
+    amps /= amps.norm()
+    state = torch.zeros(64, dtype=torch.complex128)
+    state[::8] = amps
+    circuit = Circuit(6, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(6, bound.circuit.instructions))
+    circuit.append(FieldOperation(6, inverse.circuit.instructions))
+    torch.testing.assert_close(circuit.state().flatten(), state, atol=3e-12, rtol=0)
+
+
+def test_unsigned_source_callback_and_msb_graph_disagree_explicitly() -> None:
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
+
+    source = SignExtend(QUInt(2), QUInt(5))
+    assert source.on_classical_vals(x=2) == {"y": 2}
+    assert source.decompose_bloq().call_classically(x=2) == (30,)
+
+
+@pytest.mark.parametrize("encoding", ("QAny", "QUInt", "QInt", "QMontgomeryUInt"))
+def test_empty_word_source_index_failure_retains_bodyless_constructor(
+    encoding: str,
+) -> None:
+    source_type = getattr(import_module("qualtran"), encoding)
+    if encoding == "QFxp":
+        source_type = partial(source_type, num_frac=0)
+    source = import_module(
+        "qualtran.bloqs.arithmetic.conversions.sign_extension"
+    ).SignExtend(
+        source_type(0),
+        source_type(2),
+    )
+    with pytest.raises(IndexError):
+        source.decompose_bloq()
+    graph = _resolve(source, 0)
+    assert not graph.functions[0].blocks
+
+
+@pytest.mark.parametrize("kind", ("bounded", "fixed_point"))
+def test_symbolic_metadata_concrete_widths_retain_source_graph_boundary(
+    kind: str,
+) -> None:
+    from qualtran import BQUInt, QFxp
+    from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
+
+    symbol = sympy.Symbol("p", positive=True, integer=True)
+    source = (
+        SignExtend(BQUInt(2, symbol), BQUInt(5, symbol + 1))
+        if kind == "bounded"
+        else SignExtend(QFxp(2, symbol), QFxp(5, symbol + 1))
+    )
+    graph = _resolve(source, 0)
+    assert graph.functions[0].blocks
+    assert (
+        graph.functions[0].registers
+        == _library(source, 0).entries[0].declaration.registers
+    )
+    with pytest.raises(ValueError, match="unsupported executable"):
+        bind_register_program(
+            graph, ((0, 1),), clean=(2, 3, 4), allow_workspace_outputs=True
+        )

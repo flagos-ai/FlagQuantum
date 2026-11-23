@@ -97,11 +97,9 @@ def test_sign_extension_calls_views_ownership_and_source_gates(
 def test_sign_extension_rejects_invalid_widths_and_encodings() -> None:
     for left, right in (
         (signed_register_type(2), signed_register_type(2)),
-        (RegisterType("uint", 2), RegisterType("uint", 3)),
+        (RegisterType("uint", 2), RegisterType("uint", 3, parameters=(("bound", 4),))),
         (signed_register_type(2), RegisterType("ones_complement", 3)),
         (RegisterType("ones_complement", 1), RegisterType("ones_complement", 2)),
     ):
-        with pytest.raises(
-            ValueError, match="increasing matching signed|unsupported executable"
-        ):
+        with pytest.raises(ValueError, match="increasing matching dtype|bitsize must"):
             sign_extension_program(left, right)

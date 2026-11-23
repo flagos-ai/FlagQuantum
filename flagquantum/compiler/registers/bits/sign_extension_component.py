@@ -7,7 +7,7 @@
 
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.register_verifier import concrete_logical_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
@@ -17,23 +17,33 @@ from .fanout_component import fanout_component_program
 def sign_extension_program(
     input_dtype: RegisterType, output_dtype: RegisterType, *, adjoint: bool = False
 ) -> ProgramRecord:
-    """Consume a signed word and return its wider image, or consume that image.
+    """Consume a word and return its MSB-prefixed image, or consume that image.
 
     Both arguments describe the forward extension. Bits are MSB first and use
-    the same signed encoding. The adjoint clears the correct redundant prefix,
+    the same source dtype class. The adjoint clears the correct redundant prefix,
     frees it and restores the narrow word. An arbitrary prefix cannot be freed.
     """
-    source_width = executable_register_width(input_dtype)
-    target_width = executable_register_width(output_dtype)
+    source_width = concrete_logical_register_width(input_dtype)
+    target_width = concrete_logical_register_width(output_dtype)
     if (
-        input_dtype.encoding not in {"signed", "ones_complement"}
+        input_dtype.encoding
+        not in {
+            "opaque",
+            "uint",
+            "signed",
+            "ones_complement",
+            "montgomery",
+            "fixed_point",
+        }
         or input_dtype.encoding != output_dtype.encoding
+        or ("bound" in dict(input_dtype.parameters))
+        != ("bound" in dict(output_dtype.parameters))
         or source_width < 1
         or target_width <= source_width
         or type(adjoint) is not bool
     ):
         raise ValueError(
-            "Sign extension requires increasing matching signed widths and a boolean direction"
+            "Sign extension requires increasing matching dtype widths and a boolean direction"
         )
     count = target_width - source_width
     before, after = (

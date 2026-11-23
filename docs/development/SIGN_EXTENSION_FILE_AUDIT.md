@@ -152,3 +152,54 @@ Changing the reachable prefix CX operands rejects qualification in both
 directions. The executable owner retains its accepted exact complex action,
 redundant-prefix validation, workspace cleanup and resource evidence. The
 presentation callback adds no gates or storage.
+
+
+## Complete constructor storage-class closure, November 23
+
+The unchanged source validates equality of dtype classes. Compiler format
+resolution now retains matching QAny, QUInt, BQUInt, QMontgomeryUInt, QInt,
+QIntOnesComp and QFxp pairs. Plain and bounded unsigned descriptors remain
+distinct source classes. Fractional widths, fixed-point signedness and bounds
+stay attached to each original directional port. The existing register owner
+constructs the same fanout and exact prefix release from concrete logical widths.
+Physical binding continues to use the executable storage verifier.
+
+The interface consumes LEFT x and returns RIGHT y in MSB order. Extension
+allocates the redundant prefix and transfers it with y. Truncation consumes the
+correct extended image, clears and frees the prefix, and returns the narrow
+word. There is no hidden scratch or measurement history. The consumer remains
+circuit.append(op). Unsigned and opaque inputs copy the original MSB. The
+original unsigned classical callback returns x unchanged, while its physical
+decomposition maps raw 2 on two bits to raw 30 on five bits. Both facts retain
+independent witnesses.
+
+Unsigned fixed-point words execute through approved Proposal 115, including
+different fractional metadata at the two ports. Signed and mixed-sign fixed-point
+constructors retain logical bodies, with physical binding refused under pending
+Proposal 116. Concrete widths with symbolic bounds or fractional metadata retain
+the source logical graph and physical refusal. Symbolic widths retain declarations.
+Zero-width source words fail at original MSB indexing and retain bodyless
+declarations. The original final Join dtype loss, sided generic-wrapper failure
+and unencoded field/classical wire types remain explicit. These boundaries keep
+both constructor identifiers partial.
+
+Each e-bit extension or truncation emits 2e-1 CX, zero T, zero measurements and
+zero hidden work. The independent source model reports one coarse Clifford
+fanout. Small-width full complex states include an entangled spectator, verify
+the exact intermediate prefix, and restore all consumed prefix bits. Original
+source calls, operands and native/decomposed constructor routes are compared
+without altering the frozen source.
+
+
+The final concentrated retry passes 3434 cases, including complete comparison,
+subtraction, fanout, signed-prefix and signed truncation consumers. Local
+integration passes 145 cases. Forty focused constructor cases cover both
+directions, literal source/decomposed routes, full complex spectators and
+fixed-point/symbolic/empty boundaries. Five implicated frozen blobs and the
+real Kickmix 0.1 runtime are freshly verified. The earlier original sixteen
+passes, one skip and one xfail are reused. Five changed Python files pass
+strict typing, Black and Ruff. Scope, language, architecture, IR and API checks
+pass, with the identical 720 dependency findings. The initial ENOSPC interruption
+is recorded separately. Only rebuildable mypy cache was removed, and the final
+strict check disables caching. Full constructor catalogue completion stays
+94 of 303 because the explicit storage and original codec boundaries remain.

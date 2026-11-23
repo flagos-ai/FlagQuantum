@@ -27,19 +27,34 @@ def _sign_factory(
     if (
         not isinstance(before, RegisterType)
         or not isinstance(after, RegisterType)
-        or before.encoding not in {"signed", "ones_complement"}
+        or before.encoding
+        not in {
+            "opaque",
+            "uint",
+            "signed",
+            "ones_complement",
+            "montgomery",
+            "fixed_point",
+        }
         or after.encoding != before.encoding
+        or ("bound" in dict(before.parameters)) != ("bound" in dict(after.parameters))
     ):
-        raise SerializationError("Sign conversion requires matching signed encodings")
+        raise SerializationError(
+            "Sign conversion requires matching source dtype classes"
+        )
     signature = (
         Register("x", before, side=RegisterSide.LEFT),
         Register("y", after, side=RegisterSide.RIGHT),
     )
     if registers is not None and signature != registers:
         raise SerializationError("Invalid register signature for sign conversion")
-    if before.is_symbolic() or after.is_symbolic():
+    if type(before.num_qubits) is not int or type(after.num_qubits) is not int:
         return FunctionRecord(name, (), registers=signature)
     narrow, wide = (after, before) if truncate else (before, after)
+    if narrow.num_qubits >= wide.num_qubits:
+        raise SerializationError("Sign conversion requires increasing forward widths")
+    if narrow.num_qubits == 0:
+        return FunctionRecord(name, (), registers=signature)
     return _rename_program(sign_extension_program(narrow, wide, adjoint=truncate), name)
 
 

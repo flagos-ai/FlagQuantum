@@ -83,8 +83,10 @@ Generic Adjoint/Controlled/Power, arbitrary-target Pauli and full structured
 ControlledViaAnd/CtrlSpecAnd constructor closure remain separate work. Source
 GreaterThanConstant has no numerical body. Signed linear overflow, strict dtype
 mismatches, ge/lt aliases, source HasLength wire failure and model granularity stay
-visible. Signed-only SignExtend/SignTruncate adaptation is partial for the source's
-permissive same-class non-signed constructor inputs. Pending Proposals 116-119 and
+visible. SignExtend/SignTruncate now preserve representable same-class non-signed
+constructor inputs through their existing prefix owner. Signed fixed-point
+execution remains governed by pending Proposal 116, and source empty-word and
+foreign-codec failures remain explicit. Pending Proposals 116-119 and
 whole-repository/GPU/performance acceptance remain open. This batch changes no
 protected storage or numerical admission contract.
 
