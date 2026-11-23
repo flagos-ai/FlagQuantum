@@ -13,6 +13,10 @@ The explicit fixed-unitary library constructors in
 Their source names are data identifiers and resolve to native gate functions.
 Run `python -m pytest tests/unit/test_legacy_fixed_gate_factories.py -q` in the
 locked reference environment to check the serialized-library-to-append path.
+`formats/legacy_bookkeeping_factories.py` supplies the existing Allocate, Free,
+Split, Join and Cast bodies through the same resolver. Its focused consumer is
+`tests/unit/test_legacy_bookkeeping_factories.py`, including explicit clean and
+borrowed ownership and full complex workspace restoration.
 
 The internal [register package guide](registers/README.md) maps arithmetic,
 modular arithmetic, finite fields, lookup, control and the other register

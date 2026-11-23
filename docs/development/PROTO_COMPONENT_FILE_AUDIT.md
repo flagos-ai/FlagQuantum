@@ -58,5 +58,7 @@ The native fixed-gate mapping now supplies eight catalogue identifiers from
 the complete CNOT, Hadamard, S, T, Toffoli and Y source files. It retains both
 S/T directions and Toffoli control-array order through ordinary circuit append.
 See `RESOLVER_FIXED_GATE_AUDIT.md` for the complete constructor dependency
-disposition and separate primitive/model accounts. The remaining 295 source
-catalogue identifiers keep Q-0876 open.
+disposition and separate primitive/model accounts. The five lifetime and
+storage-view constructors in `RESOLVER_BOOKKEEPING_AUDIT.md` extend the combined
+built-in coverage to 13 identifiers. The remaining 290 source catalogue
+identifiers keep Q-0876 open.
