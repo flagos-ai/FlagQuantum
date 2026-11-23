@@ -25,7 +25,8 @@ def half_greater_ir(
 ) -> tuple[Instruction, ...]:
     """Compute (b-a mod 2**(n+1), a>b), or clear the correct computed pair.
 
-    Equal positive-width operands and outputs are big-endian. Difference has
+    Equal-width operands and outputs are big-endian. Unsigned inputs may be
+    empty. Difference has
     n+1 qubits; target and difference are initially zero in forward mode. Two
     zero sign work qubits are always restored. Operands are preserved. Measured
     adjoint requires the correct logical pair and n distinct classical slots;
@@ -34,7 +35,12 @@ def half_greater_ir(
     n = len(left)
     if type(signed) is not bool or type(adjoint) is not bool:
         raise ValueError("Half comparison flags must be boolean")
-    if n < 1 or len(right) != n or len(difference) != n + 1 or len(signs) != 2:
+    if (
+        (signed and n == 0)
+        or len(right) != n
+        or len(difference) != n + 1
+        or len(signs) != 2
+    ):
         raise ValueError(
             "Half comparison requires equal positive inputs, n+1 difference and two sign wires"
         )

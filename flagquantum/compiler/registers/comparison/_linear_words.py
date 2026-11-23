@@ -17,9 +17,11 @@ from ..component_builder import ComponentProgramBuilder
 from ..layout.component_cast import cast_word_function
 
 
-def comparison_width(dtype: RegisterType) -> int:
+def comparison_width(dtype: RegisterType, *, allow_empty: bool = False) -> int:
     """Require the concrete integer encodings admitted by the source family."""
     width = executable_register_width(dtype)
+    if allow_empty and width == 0 and dtype.encoding == "uint":
+        return width
     if width < 1 or dtype.encoding not in {"uint", "signed", "montgomery"}:
         raise ValueError("Linear comparison requires a positive concrete integer dtype")
     return width
@@ -32,7 +34,7 @@ def prepare_difference_words(
     b: RegisterBinding,
 ) -> tuple[RegisterBinding, RegisterBinding]:
     """Widen a/b, complement b and expose unsigned adder views in source order."""
-    width = comparison_width(dtype)
+    width = comparison_width(dtype, allow_empty=True)
     wide = replace(dtype, quantum_bits=width + 1)
     words: list[RegisterBinding] = []
     for word in (a, b):
@@ -69,7 +71,7 @@ def restore_difference_words(
     b: RegisterBinding,
 ) -> tuple[RegisterBinding, RegisterBinding]:
     """Restore casts and b, then clear and free the two redundant prefixes."""
-    width = comparison_width(dtype)
+    width = comparison_width(dtype, allow_empty=True)
     wide = replace(dtype, quantum_bits=width + 1)
     cast = cast_word_function(
         "difference_original", unsigned_register_type(width + 1), wide

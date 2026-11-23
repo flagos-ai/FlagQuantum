@@ -32,7 +32,7 @@ def half_greater_program(
     forward and must contain the forward image when consumed as LEFT inputs.
     The inverse uses measurement-assisted sum erasure and clears temporary work.
     """
-    width = comparison_width(dtype)
+    width = comparison_width(dtype, allow_empty=True)
     if type(adjoint) is not bool:
         raise ValueError("Half comparison direction must be boolean")
     side = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
@@ -94,7 +94,7 @@ def half_comparison_program(
     The source ge/lt inverse returns the two physical input aliases swapped.
     Callers must follow returned a/b bindings when chaining those inverses.
     """
-    comparison_width(dtype)
+    comparison_width(dtype, allow_empty=True)
     if relation not in {"gt", "ge", "lt", "le"} or type(adjoint) is not bool:
         raise ValueError(
             "Half comparison requires a supported relation and boolean direction"

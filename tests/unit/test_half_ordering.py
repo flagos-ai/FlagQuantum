@@ -1,6 +1,6 @@
 """Four half relations preserve their distinct retained-difference contracts."""
 
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 
@@ -99,9 +99,10 @@ def test_half_relations_full_complex_outputs_and_all_branches(
     check_half_amplitudes(n, signed, relation, compute, erase)
 
 
-def test_half_relation_validation() -> None:
+@pytest.mark.parametrize("relation", ["bad"])
+def test_half_relation_validation(relation: Any) -> None:
     with pytest.raises(ValueError, match="relation"):
-        half_compare_ir((0,), (1,), (3, 4), 2, (5, 6), relation="bad")
+        half_compare_ir((0,), (1,), (3, 4), 2, (5, 6), relation=relation)
 
 
 def test_user_append_half_comparison_example() -> None:
@@ -110,18 +111,19 @@ def test_user_append_half_comparison_example() -> None:
     main()
 
 
-def test_output_binding_validation() -> None:
+@pytest.mark.parametrize("relation,adjoint", [("bad", 1)])
+def test_output_binding_validation(relation: Any, adjoint: Any) -> None:
     with pytest.raises(ValueError, match="relation"):
-        half_compare_outputs((0,), (1,), (3, 4), 2, relation="bad")
+        half_compare_outputs((0,), (1,), (3, 4), 2, relation=relation)
     with pytest.raises(ValueError, match="boolean"):
-        half_compare_outputs((0,), (1,), (3, 4), 2, adjoint=1)
+        half_compare_outputs((0,), (1,), (3, 4), 2, adjoint=adjoint)
 
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("relation", ["ge", "lt"])
 @pytest.mark.parametrize("signed", [False, True])
 def test_pinned_reversed_adjoint_port_alias_disagrees_with_classical_model(
-    relation: str, signed: bool
+    relation: Literal["ge", "lt"], signed: bool
 ) -> None:
     pytest.importorskip("qualtran")
     from qualtran import QInt, QUInt
@@ -144,3 +146,52 @@ def test_pinned_reversed_adjoint_port_alias_disagrees_with_classical_model(
     assert half_compare_outputs(
         a, b, difference, target[0], relation=relation, adjoint=True
     ) == {"a": b, "b": a}
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("relation", ["gt", "ge", "lt", "le"])
+def test_unsigned_empty_half_relation_source_and_exact_roundtrip(
+    relation: Literal["gt", "ge", "lt", "le"],
+) -> None:
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic.comparison import (
+        LinearDepthHalfGreaterThan,
+        LinearDepthHalfGreaterThanEqual,
+        LinearDepthHalfLessThan,
+        LinearDepthHalfLessThanEqual,
+    )
+
+    source_cls = {
+        "gt": LinearDepthHalfGreaterThan,
+        "ge": LinearDepthHalfGreaterThanEqual,
+        "lt": LinearDepthHalfLessThan,
+        "le": LinearDepthHalfLessThanEqual,
+    }[relation]
+    a, b, target, difference, signs, bits = layout(0)
+    compute = half_compare_ir(a, b, difference, target[0], signs, relation=relation)
+    erase = half_compare_ir(
+        a,
+        b,
+        difference,
+        target[0],
+        signs,
+        relation=relation,
+        adjoint=True,
+    )
+    assert_half_source(
+        0,
+        False,
+        source_cls(QUInt(0)),
+        compute,
+        erase,
+        flipped=relation in ("ge", "le"),
+        erased_outputs=half_compare_outputs(
+            a,
+            b,
+            difference,
+            target[0],
+            relation=relation,
+            adjoint=True,
+        ),
+    )
+    check_half_amplitudes(0, False, relation, compute, erase)
