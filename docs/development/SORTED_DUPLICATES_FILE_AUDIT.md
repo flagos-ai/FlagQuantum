@@ -221,3 +221,39 @@ are derived from the published export plus the exact 88-node Arithmetic delta,
 covered by full catalog file-equality regression. They are 3825 JSON files,
 3824 diagrams, 234 docs, 3471 contextual children, 73 decomposed roots,
 280 atomic interfaces and 345 qualified descendants. Q-0120 remains open.
+
+
+## Degenerate-domain dependency closure
+
+The source controlled empty-list and singleton graphs contain MultiControlX(1)
+followed by CNOT on the same control and dirty flag. The native typed graph
+retains both CX operations. No half comparison is constructed for either graph.
+Empty xs shape and zero-width signed/unsigned singleton words are retained
+without quantum workspace, classical slots, measurement or reset. Uncontrolled
+empty-list and singleton sources fail on the empty controls port and retain
+bodyless constructor declarations.
+
+For unsigned zero-width lists with comparisons, each half-LT still widens both
+empty words to one clean bit, invokes the existing one-bit out-of-place adder,
+retains its one-bit difference and flag, and consumes both through the original
+inverse graph. All four half relations use this shared unsigned-empty admission.
+Other linear comparison callers retain their existing positive-width validation.
+Signed zero-width half comparison retains the original SignExtend IndexError
+and explicit native physical refusal.
+
+Source-derived operand streams are checked per-wire in dependency order, allowing
+only interleaving of independent gates. Constructor binding preserves identical
+native instruction streams. Coherent dirty flag/control and complex spectator
+channels are checked for controlled lengths zero/one and unsigned zero-width
+lengths two/three/four, with every applicable measurement history and all work
+returned to zero. Ordinary Circuit and DynamicCircuit append paths execute.
+
+Actual empty/singleton controlled emission is two CX and zero private work.
+The frozen source QEC model for length zero has negative comparison multiplicity,
+negative Clifford counts and, for positive word widths, negative And/measurement
+counts. These original estimates remain available separately through
+source_sorted_duplicates_gate_cost. The resource formula reports the actual
+source graph peak of two logical qubits for controlled empty lists. Negative
+model estimates are diagnostic data and are never substituted for measured
+primitive inventories. Existing source three-word invalid And erasure and
+deeper HasLength serialization failures retain their separate witnesses.

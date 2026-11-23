@@ -20,9 +20,12 @@ spectator coherence and clean temporary work. The uncontrolled singleton has a
 source declaration and model but no valid source composite. The controlled
 singleton executes the original two-CX identity. Symbolic dimensions retain
 bodyless declarations through approved Proposal 120. Source HasLength failures
-at deeper original serialization remain explicit. Zero-length controlled roots
-and zero-width identities retain native physical admission gaps, so this
-constructor identifier remains partial.
+at deeper original serialization remain explicit. Controlled zero-length and
+singleton roots now retain their two-CX identity, including zero-width signed
+and unsigned words. Unsigned zero-width adjacent half comparisons reuse the
+existing widened adder and inverse graph. Signed zero-width adjacent comparison
+fails in the original SignExtend and retains a bodyless declaration. The
+constructor identifier remains partial for the original deeper HasLength codec.
 
 SortInPlace has THRU xs and THRU pi arrays, both of length l. pi uses the original
 bounded unsigned index dtype with ceil(log2(l)) bits and bound l. The frozen
@@ -85,3 +88,23 @@ The two declaration/model-only constructor identifiers close. HasDuplicates
 retains explicit original deeper-codec and native degenerate-domain boundaries.
 Catalogue coverage advances from 90 to 92 of 303 identifiers. Publication is
 verified separately against each original module commit SHA.
+
+
+## Degenerate-domain acceptance
+
+The follow-up complete HasDuplicates and direct half-comparison dependency
+closure passes 1472 concentrated list/comparison/classical cases and 145 affected
+local integration cases. This includes the executed original/native lists
+notebook. The earlier unchanged-original 28 passes, 12 skips and three xfails
+are reused at their recorded scope. Twelve frozen source blobs and the real
+Kickmix 0.1 Simulator are freshly verified. Nine changed Python files pass
+strict typing, Black and Ruff. Compiler scope, language, architecture, IR and
+protected API checks pass. Dependency findings remain identical to the existing
+720-line baseline. Catalogue coverage stays 94 of 303 complete identifiers,
+because the original deeper HasLength codec failure keeps HasDuplicates partial.
+
+This batch also corrects the stale next-item selection. The comparison.py
+constructor family was already accepted in commit 2f65031f2 and its certificates
+are reused. It is not counted as a new delivery. The next complete source is
+conversions/sign_extension.py, whose permissive non-signed same-class source
+inputs remain outside the currently signed-only native constructor admission.

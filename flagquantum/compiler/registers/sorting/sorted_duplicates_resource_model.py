@@ -56,13 +56,13 @@ def source_sorted_duplicates_resource_formula(
     Failed uncontrolled-singleton and signed-symbolic source peaks remain
     explicit errors. Their original QEC categories are independently queryable.
     """
-    if isinstance(length, (bool, float)) or isinstance(length, int) and length < 1:
-        raise ValueError("Duplicate model length must be positive or symbolic")
+    if isinstance(length, (bool, float)) or isinstance(length, int) and length < 0:
+        raise ValueError("Duplicate model length must be nonnegative or symbolic")
     gates = source_sorted_duplicates_gate_cost(
         length, width, signed=signed, controlled=controlled
     )
     ports = length * width + 1 + int(controlled)
-    if type(length) is int and length == 1:
+    if type(length) is int and length <= 1:
         if not controlled:
             raise ValueError(
                 "Original uncontrolled singleton peak fails on the empty controls port"

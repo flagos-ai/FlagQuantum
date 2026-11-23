@@ -23,13 +23,13 @@ compares dimension floors using the integer dimension contract and retains the
 original encoded shapes. It still checks names, dtypes, sides and all shapes.
 Concrete positive power-of-two execution delegates to certified owners.
 Positive non-power-of-two merge lengths retain the source declaration and model,
-with explicit physical lowering refusal. Zero-width declarations remain bodyless. The unchanged source fails when an
+with explicit physical lowering refusal. Active zero-width comparisons retain
+bodyless declarations. The unchanged source fails when an
 actual zero-width comparison is required. Its singleton sort and zero-pair
 parallel cases now return physical empty identities in both directions. Native
 execution closes the zero-length parallel identity as well, while the frozen
 source adjoint still exposes its own empty-array finalization defect.
-The original returns an empty identity, while the native owner requires positive
-count. Offset zero fails original signature construction, and negative offsets fail
+Offset zero fails original signature construction, and negative offsets fail
 original decomposition. The frozen source inverse of the zero-count parallel
 identity retains its finalization defect and is recorded as an upstream boundary.
 

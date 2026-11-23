@@ -44,7 +44,8 @@ def _sorted_duplicates_factory(
         type(length) is not int
         or type(dtype.num_qubits) is not int
         or dtype.encoding not in {"uint", "signed"}
-        or (length == 1 and not controlled)
+        or (length <= 1 and not controlled)
+        or (length > 1 and dtype.num_qubits == 0 and dtype.encoding == "signed")
     ):
         return FunctionRecord(name, (), registers=ports)
     return _rename_program(

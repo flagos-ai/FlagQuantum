@@ -40,8 +40,9 @@ def sorted_duplicates_program(
         raise ValueError(
             "Source duplicate detection cannot decompose an uncontrolled singleton"
         )
-    forward = half_comparison_program(dtype, "lt")
-    inverse = half_comparison_program(dtype, "lt", adjoint=True)
+    if length > 1:
+        forward = half_comparison_program(dtype, "lt")
+        inverse = half_comparison_program(dtype, "lt", adjoint=True)
     builder = ComponentProgramBuilder(
         sorted_duplicates_signature(length, dtype, controlled=controlled),
         comparison_bit_functions(),

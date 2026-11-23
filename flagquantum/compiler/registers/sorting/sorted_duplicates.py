@@ -39,13 +39,15 @@ def sorted_duplicate_requirements(
     length: int, width: int, *, controlled: bool = False
 ) -> tuple[int, int]:
     """Return the shared quantum workspace and reusable classical slots."""
-    if type(length) is not int or length < 1 or type(width) is not int or width < 1:
-        raise ValueError(
-            "Duplicate detection requires a nonempty list of nonempty words"
-        )
+    if type(length) is not int or length < 0 or type(width) is not int or width < 0:
+        raise ValueError("Duplicate detection requires nonnegative list and word sizes")
     if type(controlled) is not bool:
         raise ValueError("Duplicate detection controlled mode must be boolean")
-    edges = length - 1
+    if length == 0 and not controlled:
+        raise ValueError(
+            "Source duplicate detection requires a nonempty uncontrolled list"
+        )
+    edges = max(0, length - 1)
     ladder = max(0, edges + controlled - 1)
     return edges * (width + 2) + max(2 if edges else 0, ladder), max(
         width if edges else 0, ladder
@@ -89,14 +91,16 @@ def sorted_duplicates_ir(
         )
     enable = () if control is None else (control,)
     _validate_wires((*enable, flag, *(wire for word in words for wire in word), *work))
-    if len(words) == 1 and control is None:
+    if n == 0 and signed and len(words) > 1:
+        raise ValueError("Signed half comparison requires positive-width inputs")
+    if len(words) <= 1 and control is None:
         if source_aliases:
             raise ValueError(
                 "Source duplicate detection cannot decompose an uncontrolled singleton"
             )
         return (), words
 
-    edges = len(words) - 1
+    edges = max(0, len(words) - 1)
     history = tuple(work[i : i + n + 2] for i in range(0, edges * (n + 2), n + 2))
     scratch = work[edges * (n + 2) :]
     gates: list[Instruction] = []
