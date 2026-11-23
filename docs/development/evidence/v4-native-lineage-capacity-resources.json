@@ -1,0 +1,327 @@
+{
+  "scope": "Local development guardrails, no formal comparative resource claim",
+  "revision": "ceccc29816014a43d3ee1fcbf4445433c3a6846c",
+  "platform": "darwin",
+  "rss_unit": "bytes on macOS",
+  "memory_enforced": false,
+  "wall_budget_seconds_per_worker": 20,
+  "predeclared_observed_rss_guardrail_bytes": 536870912,
+  "driver_source": "\"\"\"Development-only fresh workers; elapsed budget enforced, RSS observed.\"\"\"\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport signal\nimport subprocess\nimport sys\nimport time\n\nROOT = Path('/private/tmp/fq-artifact-capacity-review-20261123')\nPYTHON = '/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python'\nOUTPUT = Path('/private/tmp/fq-v4-capacity-resources-20261123.json')\nworker = '''import importlib.util,json,resource,sys,time\nfrom pathlib import Path\nroot=Path.cwd()\nspec=importlib.util.spec_from_file_location(\"capacity_cases\",root/\"tests/unit/test_compilation_evidence_v4_capacity.py\")\nm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nstart=time.monotonic()\nnative_count,output_count=map(int,sys.argv[1:])\ntry:\n plan=m._plan(native_count,output_count)\n decoded=m.v4.PhysicalPlanEvidenceV4.from_dict(plan.to_dict(),target_snapshot_id=m._DIGEST)\n assert decoded==plan\n bundle=m._bundle(plan);encoded=bundle.to_json()\n assert m.read_compilation_evidence_bundle_json(encoded)==bundle\n result={\"status\":\"accepted\",\"bundle_utf8_bytes\":len(encoded.encode())}\nexcept ValueError as exc:\n result={\"status\":\"rejected\",\"exception\":type(exc).__name__,\"message\":str(exc)}\nresult.update(wall_seconds=time.monotonic()-start,peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)\nprint(json.dumps(result))\n'''\nrows=[]\nhead=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True,timeout=10).strip()\nresult={'scope':'Local development guardrails, no formal comparative resource claim','revision':head,'platform':sys.platform,'rss_unit':'bytes on macOS','memory_enforced':False,'wall_budget_seconds_per_worker':20,'predeclared_observed_rss_guardrail_bytes':512*1024**2,'driver_source':Path(__file__).read_text(),'worker_source':worker,'rows':rows,'complete':False}\nfor repetition in range(3):\n for name,native,outputs,expected in [('native-old',4096,0,'accepted'),('native-new',8192,0,'accepted'),('native-over',8193,0,'rejected'),('membership-old',2048,2048,'accepted'),('membership-new',4096,4096,'accepted'),('membership-over',4098,4095,'rejected')]:\n  row={'case':name,'repetition':repetition,'native_records':native,'output_records':outputs,'expected':expected}\n  started=time.monotonic()\n  p=subprocess.Popen([PYTHON,'-c',worker,str(native),str(outputs)],cwd=ROOT,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)\n  try:\n   stdout,stderr=p.communicate(timeout=20)\n   row.update(exit_code=p.returncode,worker=json.loads(stdout) if p.returncode==0 else None,stderr=stderr)\n  except subprocess.TimeoutExpired:\n   os.killpg(p.pid,signal.SIGTERM)\n   try:stdout,stderr=p.communicate(timeout=3)\n   except subprocess.TimeoutExpired:\n    os.killpg(p.pid,signal.SIGKILL);stdout,stderr=p.communicate(timeout=3)\n   row.update(exit_code=p.returncode,stop_reason='timeout',stdout=stdout,stderr=stderr)\n  row['process_wall_seconds']=time.monotonic()-started\n  row['guardrails_pass']=row.get('worker',{}).get('status')==expected and row['worker']['peak_rss_bytes']<=512*1024**2\n  rows.append(row);OUTPUT.write_text(json.dumps(result,indent=2)+'\\n');print(json.dumps(row),flush=True)\nresult['complete']=True\nresult['all_guardrails_pass']=all(row['guardrails_pass'] for row in rows)\nOUTPUT.write_text(json.dumps(result,indent=2)+'\\n')\n",
+  "worker_source": "import importlib.util,json,resource,sys,time\nfrom pathlib import Path\nroot=Path.cwd()\nspec=importlib.util.spec_from_file_location(\"capacity_cases\",root/\"tests/unit/test_compilation_evidence_v4_capacity.py\")\nm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nstart=time.monotonic()\nnative_count,output_count=map(int,sys.argv[1:])\ntry:\n plan=m._plan(native_count,output_count)\n decoded=m.v4.PhysicalPlanEvidenceV4.from_dict(plan.to_dict(),target_snapshot_id=m._DIGEST)\n assert decoded==plan\n bundle=m._bundle(plan);encoded=bundle.to_json()\n assert m.read_compilation_evidence_bundle_json(encoded)==bundle\n result={\"status\":\"accepted\",\"bundle_utf8_bytes\":len(encoded.encode())}\nexcept ValueError as exc:\n result={\"status\":\"rejected\",\"exception\":type(exc).__name__,\"message\":str(exc)}\nresult.update(wall_seconds=time.monotonic()-start,peak_rss_bytes=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)\nprint(json.dumps(result))\n",
+  "rows": [
+    {
+      "case": "native-old",
+      "repetition": 0,
+      "native_records": 4096,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 891421,
+        "wall_seconds": 0.12389270799758378,
+        "peak_rss_bytes": 222035968
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.846783041,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-new",
+      "repetition": 0,
+      "native_records": 8192,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1787165,
+        "wall_seconds": 0.24235870799748227,
+        "peak_rss_bytes": 232931328
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.7973559579999999,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-over",
+      "repetition": 0,
+      "native_records": 8193,
+      "output_records": 0,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "native_input_instructions exceeds record limit 8192",
+        "wall_seconds": 0.013407958998868708,
+        "peak_rss_bytes": 211894272
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.548852417,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-old",
+      "repetition": 0,
+      "native_records": 2048,
+      "output_records": 2048,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 908038,
+        "wall_seconds": 0.14176800000132062,
+        "peak_rss_bytes": 221822976
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.6798127919999999,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-new",
+      "repetition": 0,
+      "native_records": 4096,
+      "output_records": 4096,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1826598,
+        "wall_seconds": 0.2736207909983932,
+        "peak_rss_bytes": 235585536
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.8189211670000001,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-over",
+      "repetition": 0,
+      "native_records": 4098,
+      "output_records": 4095,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "nested block memberships exceed record limit",
+        "wall_seconds": 0.016719041002943413,
+        "peak_rss_bytes": 212467712
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.5689849159999998,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-old",
+      "repetition": 1,
+      "native_records": 4096,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 891421,
+        "wall_seconds": 0.1229496250016382,
+        "peak_rss_bytes": 221396992
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.7004851250000002,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-new",
+      "repetition": 1,
+      "native_records": 8192,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1787165,
+        "wall_seconds": 0.2370883750008943,
+        "peak_rss_bytes": 232947712
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.7884500000000001,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-over",
+      "repetition": 1,
+      "native_records": 8193,
+      "output_records": 0,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "native_input_instructions exceeds record limit 8192",
+        "wall_seconds": 0.01348508400042192,
+        "peak_rss_bytes": 211959808
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.5757523750000004,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-old",
+      "repetition": 1,
+      "native_records": 2048,
+      "output_records": 2048,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 908038,
+        "wall_seconds": 0.15782299999773386,
+        "peak_rss_bytes": 221446144
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.7550028749999997,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-new",
+      "repetition": 1,
+      "native_records": 4096,
+      "output_records": 4096,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1826598,
+        "wall_seconds": 0.27622387500014156,
+        "peak_rss_bytes": 235569152
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.850279875,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-over",
+      "repetition": 1,
+      "native_records": 4098,
+      "output_records": 4095,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "nested block memberships exceed record limit",
+        "wall_seconds": 0.017040875001839595,
+        "peak_rss_bytes": 212336640
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.5705447499999998,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-old",
+      "repetition": 2,
+      "native_records": 4096,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 891421,
+        "wall_seconds": 0.118474957998842,
+        "peak_rss_bytes": 221970432
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.6611969170000016,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-new",
+      "repetition": 2,
+      "native_records": 8192,
+      "output_records": 0,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1787165,
+        "wall_seconds": 0.2355152909985918,
+        "peak_rss_bytes": 233111552
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.7638398750000004,
+      "guardrails_pass": true
+    },
+    {
+      "case": "native-over",
+      "repetition": 2,
+      "native_records": 8193,
+      "output_records": 0,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "native_input_instructions exceeds record limit 8192",
+        "wall_seconds": 0.013360624998313142,
+        "peak_rss_bytes": 211779584
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.5374267079999999,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-old",
+      "repetition": 2,
+      "native_records": 2048,
+      "output_records": 2048,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 908038,
+        "wall_seconds": 0.1395938749992638,
+        "peak_rss_bytes": 221495296
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.6694212920000009,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-new",
+      "repetition": 2,
+      "native_records": 4096,
+      "output_records": 4096,
+      "expected": "accepted",
+      "exit_code": 0,
+      "worker": {
+        "status": "accepted",
+        "bundle_utf8_bytes": 1826598,
+        "wall_seconds": 0.2819388749994687,
+        "peak_rss_bytes": 235470848
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.8153133340000007,
+      "guardrails_pass": true
+    },
+    {
+      "case": "membership-over",
+      "repetition": 2,
+      "native_records": 4098,
+      "output_records": 4095,
+      "expected": "rejected",
+      "exit_code": 0,
+      "worker": {
+        "status": "rejected",
+        "exception": "ValueError",
+        "message": "nested block memberships exceed record limit",
+        "wall_seconds": 0.01727641699835658,
+        "peak_rss_bytes": 212369408
+      },
+      "stderr": "",
+      "process_wall_seconds": 0.5681783330000005,
+      "guardrails_pass": true
+    }
+  ],
+  "complete": true,
+  "all_guardrails_pass": true
+}
