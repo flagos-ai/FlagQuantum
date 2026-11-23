@@ -262,11 +262,14 @@ def test_unsupported_metadata_has_no_codec_fallback(dtype: RegisterType) -> None
         encode_register_bits(register, np.array(1))
 
 
-def test_logical_metadata_does_not_expand_physical_admission() -> None:
+@pytest.mark.parametrize("signed", [False, True])
+def test_logical_fixed_point_storage_respects_approved_physical_admission(
+    signed: bool,
+) -> None:
     from dataclasses import replace
 
     record = identity_record(2)
-    register = Register("x", types.fixed_point_register_type(2, 1))
+    register = Register("x", types.fixed_point_register_type(2, 1, signed=signed))
     changed = replace(
         record,
         functions=tuple(replace(f, registers=(register,)) for f in record.functions),
@@ -274,8 +277,14 @@ def test_logical_metadata_does_not_expand_physical_admission() -> None:
     assert verify_program_record(changed) == ()
     from flagquantum.compiler.registers.register_binding import bind_register_program
 
-    with pytest.raises(ValueError, match="unsupported executable register"):
-        bind_register_program(changed, ((0, 1),))
+    if signed:
+        with pytest.raises(ValueError, match="unsupported executable register"):
+            bind_register_program(changed, ((0, 1),))
+    else:
+        # Proposal 115 explicitly admits concrete unsigned fixed-point storage.
+        assert bind_register_program(changed, ((0, 1),)) == bind_register_program(
+            record, ((0, 1),)
+        )
 
 
 @pytest.mark.parametrize("depth", [1, 3])
