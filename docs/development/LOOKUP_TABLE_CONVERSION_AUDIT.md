@@ -57,18 +57,34 @@ Conversion itself adds zero primitives, measurements or quantum workspace.
 Caller static histograms and actually activated three-lane counters are separate
 fixture fields. The source utility has no analytical resource model.
 
-## Explicit remaining subclass boundary
+## Original subclass boundary and follow-up closure
+
+### Follow-up contract before implementation
+
+The next complete utility closure retains an int subclass before invoking its
+dynamic bit_length, negativity comparison and to_bytes methods in source order.
+Other values retain the original int conversion. Encoding consumes exactly the
+requested low little-endian bytes and low target-width bits. Extra bytes and
+high padding bits do not enter the table. Zero-width rows still perform all
+three callbacks. Source-defined callback exceptions propagate in order.
+
+Fresh unchanged-source observations cover encoded zero/one, extra bytes,
+padding, underreported width, negative comparison override, zero-width encoding
+and callback failures. Existing full ordinary-value, phase, work-zero and
+small complex-history evidence will be rerun. The source reads short returned
+buffers without checking their size. Native code must reject those buffers
+before reading them. Such source-undefined memory access is not a numerical
+reference observation. No source modification or new execution owner is used.
 
 The source keeps Python int subclasses and dynamically calls their bit_length
-and to_bytes methods. Native lookup_binding normalizes entries with Python int,
-which removes those subclass overrides. An actual unchanged-source subclass
+and to_bytes methods. Before this follow-up, native lookup_binding normalized
+entries with Python int, removing those subclass overrides. An unchanged-source subclass
 with value 1 and an overridden bit_length returning 100 is rejected for a
-one-bit target. The native owner accepts its normalized integer value 1. The
-fixture preserves both outcomes and does not claim their equivalence.
+one-bit target. The earlier native owner accepted its normalized integer value
+1. The original fixture preserved both outcomes without claiming equivalence.
 
-K-0183 remains open for this existing subclass admission/encoding boundary.
-The sequential failure-order repair and complete ordinary integer/caller
-coverage do not close that parent. Source lookup work shortages, partial
+The initial sequential failure-order repair left K-0183 open for this
+subclass admission/encoding boundary. Source lookup work shortages, partial
 source allocator mutation on failure and dense address portability retain
 their separate K-0232 dispositions. All source references are unchanged.
 
@@ -78,4 +94,43 @@ caller tests pass. Strict typing passes the three changed Python files. Black,
 Ruff, Compiler scope, architecture, multilevel IR and protected API checks pass.
 The dependency finding set remains the identical 720-entry baseline. Fixture
 regeneration is byte-exact. This accepts the sequential conversion repair and
-its stated ordinary-value scope while leaving K-0183 open.
+its stated ordinary-value scope while leaving K-0183 open at that time.
+
+### Complete dynamic conversion delivery
+
+The follow-up preserves integer subclass identity through bit_length,
+negativity comparison and to_bytes. It also preserves integer-protocol results
+returned by bit_length. Allocation counts and bit-length casts share one
+Compiler-owned unsigned_size conversion. This relocates the previous
+allocation-only helper without duplicating its conversion rules. Existing
+builder protocol tests run against this replacement.
+
+The byte decoder uses the bytes buffer directly, independent of Python subclass
+indexing or reported length, and consumes exactly the low requested bytes and
+target bits. Full forward and joined erasure streams preserve source callbacks,
+operands, metadata and feedback. All 16 conversion observations retain original
+errors or their complete successful streams. Successful cases also execute both
+forward and joined streams through three actual lanes with exact phases and
+separate static/actual counters. Eight one-bit encoding cases enumerate every
+reset/HMR history on complex spectator inputs, checking exact signed
+unnormalized amplitudes and zero target/work support. The existing wider
+ordinary-table corpus and small arbitrary-address branch evidence are reused.
+
+The earlier subclass mismatch is closed. Native malformed-result diagnostics
+remain native. An encoder must return a bytes buffer with enough storage for
+the requested width. The original unchecked short-buffer read is excluded
+from numerical evidence and explicitly rejected. Source wrapper work shortages,
+post-failure allocation mutation and dense-address portability retain their
+separate K-0232/K-0180 dispositions.
+
+The complete utility parent K-0183 is accepted. All 43 frozen source blobs and
+byte-exact fixture regeneration pass. The final corpus has 42 wide ordinary
+callers and 16 callback observations. Local checks pass 69 focused table cases,
+4541 concentrated cases and 121 integration cases without skips. Strict typing
+passes nine source files. After the Python 3.10-compatible NotRequired import
+correction, 95 focused table/builder checks and strict typing pass again. Black,
+Ruff, Compiler scope, architecture, multilevel IR and API checks pass, with the
+identical 720-entry dependency finding baseline. The conversion adds no primitive,
+measurement or quantum workspace. Static source counts and executed lane counts
+remain separate, and no analytical resource model is claimed. Acceptance evidence
+is recorded in g2-table-subclass-acceptance-20261123.json beside the worktree.

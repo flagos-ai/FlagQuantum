@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from typing import SupportsInt, cast
 
 from ..._component_trace.trace import ComponentCall, ComponentTrace
+from ...artifacts._unsigned_size import unsigned_size
 from ...artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
@@ -49,15 +50,27 @@ def lookup_binding(
     if len(workspace) < n:
         raise ValueError("Lookup binding needs one clean lease per address bit")
     converted_rows = []
+    byte_count = (width + 7) // 8
+    target_mask = (1 << width) - 1
     for index in range(len(table)):
-        value = int(cast(SupportsInt, table[index]))
-        if not 0 <= value < 1 << width:
+        value = table[index]
+        if not isinstance(value, int):
+            value = int(cast(SupportsInt, value))
+        bit_length = unsigned_size(value.bit_length())
+        if value < 0 or bit_length > width:
             raise ValueError(
                 f"table[{index}]={value!r} isn't in range(0, 2**len(target)) "
                 f"(len(target)={width})"
             )
+        encoded = value.to_bytes(byte_count, "little")
+        if not isinstance(encoded, bytes):
+            raise TypeError("Table encoding must return bytes")
+        buffer = memoryview(encoded)
+        if len(buffer) < byte_count:
+            raise ValueError("Table encoding must return enough bytes for the target")
+        word = int.from_bytes(buffer[:byte_count], "little") & target_mask
         converted_rows.append(
-            tuple(bool(bit) for bit in split_integer(value, width)) if width else ()
+            tuple(bool(bit) for bit in split_integer(word, width)) if width else ()
         )
     rows = tuple(converted_rows)
     if width and len(rows) != 1 << n:

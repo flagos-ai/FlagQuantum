@@ -3514,43 +3514,956 @@
   "conversion_observations": [
     {
       "label": "early-invalid",
+      "width": 1,
       "events": [],
+      "text": "",
       "error": "ValueError",
       "message": "table[0]=-1 isn't in range(0, 2**len(target)) (len(target)=1)"
     },
     {
       "label": "later-invalid",
+      "width": 1,
       "events": [
         "first"
       ],
+      "text": "",
       "error": "ValueError",
       "message": "table[1]=-1 isn't in range(0, 2**len(target)) (len(target)=1)"
     },
     {
       "label": "conversion-error",
+      "width": 1,
       "events": [
         "first",
         "second"
       ],
+      "text": "",
       "error": "RuntimeError",
       "message": "second"
     },
     {
       "label": "converted-values",
+      "width": 1,
       "events": [
         "first",
         "second"
       ],
+      "text": "R q1\nINFO_TAG \"@enter:lookup\"\nX q0\nR q2\nCX q0 q2\nX q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"\nX q2\nINFO_TAG \"@enter:lookup\"\nCX q2 q1\nINFO_TAG \"@exit:lookup\"\nHMR q2 b0\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"",
       "error": null,
-      "message": null
+      "message": null,
+      "execution": {
+        "text": "R q1\nINFO_TAG \"@enter:lookup\"\nX q0\nR q2\nCX q0 q2\nX q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"\nX q2\nINFO_TAG \"@enter:lookup\"\nCX q2 q1\nINFO_TAG \"@exit:lookup\"\nHMR q2 b0\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"",
+        "records": 15,
+        "qubits": 3,
+        "bits": 1,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 1,
+        "text_diagram": "q0: -X---@-X----------Z**b0-\n         |\nq1:  |0>-|---X--------------\n         |   |\nq2:  |0>-X-X-@-HMR=b0",
+        "static_counts": {
+          "X": 3,
+          "Z": 1,
+          "R": 2,
+          "HMR": 1,
+          "CX": 2,
+          "INFO_TAG": 6
+        },
+        "executed_counts": {
+          "X": 9,
+          "Z": 2,
+          "R": 6,
+          "HMR": 3,
+          "CX": 6,
+          "INFO_TAG": 18
+        },
+        "quantum": [
+          3,
+          3,
+          0
+        ],
+        "classical": [
+          5
+        ],
+        "phases": [
+          "1",
+          "0",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "first",
+        "second"
+      ],
+      "joined_execution": {
+        "text": "R q1\nINFO_TAG \"@enter:lookup\"\nX q0\nR q2\nCX q0 q2\nX q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"\nX q2\nINFO_TAG \"@enter:lookup\"\nCX q2 q1\nINFO_TAG \"@exit:lookup\"\nHMR q2 b0\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nBIT_STORE0 b0\nBIT_STORE0 b1\nHMR q1 b2\nPUSH_CONDITION if b2\nBIT_INVERT b1\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q1\nX q1\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nX q0\nR q2\nCX q0 q2\nX q0\nINFO_TAG \"@enter:lookup\"\nCZ q2 q1 if b0\nINFO_TAG \"@exit:lookup\"\nX q2\nINFO_TAG \"@enter:lookup\"\nCZ q2 q1 if b1\nINFO_TAG \"@exit:lookup\"\nHMR q2 b2\nZ q0 if b2\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q1 b2\nNEG if b2\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 47,
+        "qubits": 3,
+        "bits": 3,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "                             b0=0         push_cond if b2                                              neg if b2\nq0: -X---@-X----------Z**b0-----------------------------------X---@-X--------------------Z**b2-------------------\n         |                   b0=0         b1^=1                   |\nq1:  |0>-|---X--------------------HMR=b2                  |0>-X---|-Z**b0---Z**b1--------------HMR=b2\n         |   |               b1=0         pop_cond                | |       |\nq2:  |0>-X-X-@-HMR=b0                                         |0>-X-@-----X-@-----HMR=b2",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 3,
+          "X": 7,
+          "Z": 2,
+          "R": 4,
+          "HMR": 4,
+          "CX": 3,
+          "CZ": 2,
+          "INFO_TAG": 18,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 3,
+          "BIT_STORE0": 9,
+          "X": 21,
+          "Z": 4,
+          "R": 12,
+          "HMR": 12,
+          "CX": 9,
+          "CZ": 3,
+          "INFO_TAG": 54,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          3,
+          0,
+          0
+        ],
+        "classical": [
+          0,
+          7,
+          4
+        ],
+        "phases": [
+          "1",
+          "0",
+          "0"
+        ]
+      }
     },
     {
       "label": "subclass-boundary",
+      "width": 1,
       "events": [
         "bit_length"
       ],
+      "text": "",
       "error": "ValueError",
       "message": "table[0]=1 isn't in range(0, 2**len(target)) (len(target)=1)"
+    },
+    {
+      "label": "encoded-zero",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"",
+        "records": 3,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-",
+        "static_counts": {
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 20,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 1,
+        "text_diagram": "         b0=0         push_cond if b1                     neg if b1\nq0:  |0>------HMR=b1                  |0>-X-Z**b0-HMR=b1\n                      pop_cond",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_STORE0": 1,
+          "X": 1,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_STORE0": 3,
+          "X": 3,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          0,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "encoded-one",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "extra-bytes",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "padding",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "underreported",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"",
+        "records": 3,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-",
+        "static_counts": {
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 20,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 1,
+        "text_diagram": "         b0=0         push_cond if b1                     neg if b1\nq0:  |0>------HMR=b1                  |0>-X-Z**b0-HMR=b1\n                      pop_cond",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_STORE0": 1,
+          "X": 1,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_STORE0": 3,
+          "X": 3,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          0,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "negative-override",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "zero-width",
+      "width": 0,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:0:little"
+      ],
+      "text": "",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "",
+        "records": 0,
+        "qubits": 0,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "",
+        "static_counts": {},
+        "executed_counts": {},
+        "quantum": [],
+        "classical": [],
+        "phases": [
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "less_than",
+        "bytes:0:little"
+      ],
+      "joined_execution": {
+        "text": "",
+        "records": 0,
+        "qubits": 0,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "",
+        "static_counts": {},
+        "executed_counts": {},
+        "quantum": [],
+        "classical": [],
+        "phases": [
+          "0",
+          "0",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "bytes-failure",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "",
+      "error": "RuntimeError",
+      "message": "bytes failure"
+    },
+    {
+      "label": "length-failure",
+      "width": 1,
+      "events": [
+        "bit_length"
+      ],
+      "text": "",
+      "error": "RuntimeError",
+      "message": "length failure"
+    },
+    {
+      "label": "int-length",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "length:int",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "length:int",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
+    },
+    {
+      "label": "index-length",
+      "width": 1,
+      "events": [
+        "bit_length",
+        "length:index",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+      "error": null,
+      "message": null,
+      "execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"",
+        "records": 4,
+        "qubits": 1,
+        "bits": 0,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 0,
+        "text_diagram": "q0:  |0>-X-",
+        "static_counts": {
+          "X": 1,
+          "R": 1,
+          "INFO_TAG": 2
+        },
+        "executed_counts": {
+          "X": 3,
+          "R": 3,
+          "INFO_TAG": 6
+        },
+        "quantum": [
+          7
+        ],
+        "classical": [],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      },
+      "joined_events": [
+        "bit_length",
+        "length:index",
+        "less_than",
+        "bytes:1:little"
+      ],
+      "joined_execution": {
+        "text": "R q0\nINFO_TAG \"@enter:lookup\"\nX q0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unlookup\"\nBIT_STORE0 b0\nHMR q0 b1\nPUSH_CONDITION if b1\nBIT_INVERT b0\nPOP_CONDITION\nINFO_TAG \"@enter:binary_to_unary\"\nR q0\nX q0\nINFO_TAG \"@exit:binary_to_unary\"\nINFO_TAG \"@enter:lookup\"\nZ q0 if b0\nINFO_TAG \"@exit:lookup\"\nINFO_TAG \"@enter:unary_to_binary\"\nHMR q0 b1\nNEG if b1\nINFO_TAG \"@exit:unary_to_binary\"\nINFO_TAG \"@exit:unlookup\"",
+        "records": 22,
+        "qubits": 1,
+        "bits": 2,
+        "registers": 0,
+        "register_data": [],
+        "reaction_depth": 2,
+        "text_diagram": "           b0=0         push_cond if b1 pop_cond                     neg if b1\nq0:  |0>-X------HMR=b1                           |0>-X-Z**b0-HMR=b1\n                        b0^=1",
+        "static_counts": {
+          "NEG": 1,
+          "BIT_INVERT": 1,
+          "BIT_STORE0": 1,
+          "X": 2,
+          "Z": 1,
+          "R": 2,
+          "HMR": 2,
+          "INFO_TAG": 10,
+          "POP_CONDITION": 1,
+          "PUSH_CONDITION": 1
+        },
+        "executed_counts": {
+          "NEG": 3,
+          "BIT_INVERT": 2,
+          "BIT_STORE0": 3,
+          "X": 6,
+          "Z": 2,
+          "R": 6,
+          "HMR": 6,
+          "INFO_TAG": 30,
+          "POP_CONDITION": 3,
+          "PUSH_CONDITION": 3
+        },
+        "quantum": [
+          0
+        ],
+        "classical": [
+          3,
+          7
+        ],
+        "phases": [
+          "0",
+          "1",
+          "0"
+        ]
+      }
     }
   ]
 }

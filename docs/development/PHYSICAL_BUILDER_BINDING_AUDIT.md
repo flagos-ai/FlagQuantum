@@ -60,7 +60,7 @@ all mapped dependencies and consumer observations are verified.
 | neg, neg_if, push_condition and pop_condition | Existing exact physical records and lowering preserve guards and nesting |
 | bit_store | Existing classical-store binding and physical record lowering |
 | debug_print, reset and hmr | Existing physical debug codec, reset_x_register_ir and measure_x_clear_register_ir retain ordered lanes and feedback slots |
-| init_lookup and del_lookup | Existing lookup_binding and accepted forward/erasure generators use explicit caller workspace. Complete ordinary tables pass. The original dynamic integer-subclass boundary and failed-wrapper temporary allocation remain open |
+| init_lookup and del_lookup | Existing lookup_binding and accepted forward/erasure generators use explicit caller workspace. The table utility follow-up closes dynamic integer-subclass encoding. Failed-wrapper temporary allocation remains open |
 | iadd and isub | Existing physical_addition_binding retains bounded tolerance and control dispatch |
 | left_rotate and right_rotate | Existing bound_bit_rotation_ir owns signed shift and endian adaptation |
 | multi_controlled_x | Existing physical_multi_controlled_x owns controls, target and workspace |
@@ -130,3 +130,10 @@ and automatic-wrapper mutation gaps. Pending Proposals 116 through 119,
 Q-0910/Q-0911 numerical cycle rounding and previously recorded source defects
 remain independently open. Reference receipts use g2-builder-binding-*20261123
 beside the worktree.
+
+The complete table utility follow-up replaces the allocation-only integer
+converter with shared Compiler unsigned_size. Integer and index protocols,
+integer subclasses, bounded refusal and builder lifetime behavior retain their
+accepted scenarios. Dynamic table encoding now uses the same scalar size
+admission. This closes the K-0183 dependency, while the other K-0180 gaps remain
+as recorded above.
