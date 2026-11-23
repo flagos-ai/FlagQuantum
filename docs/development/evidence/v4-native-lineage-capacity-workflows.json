@@ -48187,6 +48187,8 @@
   ],
   "complete": true,
   "revision": "ceccc29816014a43d3ee1fcbf4445433c3a6846c",
-  "sdkbench_revision": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a",
-  "sdkbench_revision_origin": "external_dependency"
+  "sdkbench": {
+    "repository": "sdkbench-org/sdkbench",
+    "revision": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a"
+  }
 }

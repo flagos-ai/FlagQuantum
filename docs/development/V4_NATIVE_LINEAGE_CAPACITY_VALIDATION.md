@@ -114,3 +114,26 @@ Exact-head GitHub CI and completed required tiers remain necessary before merge.
 The source-capacity dependency and this separate contract change must each meet
 the normal merge gate. Release qualification and prospective held-out neutral
 comparison remain pending.
+
+## Exact-head CI metadata correction
+
+The first Linux CI attempt exposed two metadata errors in this report's evidence:
+`sdkbench_revision` was outside the declared revision field vocabulary, and the
+inline provenance vocabulary does not admit `external_dependency`, even though
+the separate origins ledger does. The earlier standalone checker returned zero
+new errors, but that did not certify these two independent conformance tests.
+The original failed results remain recorded: the default job had 21,511 passes,
+721 skips and two failures; coverage partition 176 had 605 passes, one skip and
+one metadata failure. The quality provenance stage failed on the same two tests.
+
+The final representation uses the existing nested `sdkbench.revision` spelling
+and declares its exact external repository in `evidence-revision-origins.toml`,
+following that ledger's established dependency representation. No checker,
+allowlist, accepted origin vocabulary, numerical payload or compiler behavior
+changes. The original source/evaluator pin remains identical. The first CI
+attempt also retained a Torch wheel availability/network failure and a PyPI
+connection timeout during dependency audit; those are distinct from these
+metadata defects. New exact-head CI remains required after the correction.
+
+Both originally failing metadata tests and all eleven v4 boundary tests pass
+after this correction: 13 tests in 5.13 seconds.
