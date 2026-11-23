@@ -11,20 +11,16 @@ from typing import Literal
 
 import numpy as np
 
-from ...core.ir.program import FunctionRecord, ProgramRecord
-from ...core.ir.program.register_types import quantum_bit_type
+from ...core.ir.program import ProgramRecord
 from ...core.ir.program.registers import Register
-from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
-from ..registers.component_builder import ComponentProgramBuilder
 from ..registers.control.multi_control_component import (
     multi_control_x_program,
     multi_control_z_program,
 )
-from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_conjunction_factories import _control_value
-from .legacy_fixed_gate_factories import fixed_gate_factories
+from .legacy_controlled_factories import controlled_via_and_factories
 from .legacy_word_factories import _rename_program
 
 
@@ -68,69 +64,15 @@ def _multi_factory(
     )
 
 
-def _controlled_factory(
-    name: str,
-    registers: tuple[Register, ...] | None,
-    arguments: Mapping[str, ResolvedArgument],
-) -> ProgramRecord:
-    if set(arguments) != {"subbloq", "ctrl_spec"}:
-        raise SerializationError("ControlledViaAnd requires subbloq and ctrl_spec")
-    child, spec = arguments["subbloq"], arguments["ctrl_spec"]
-    if not isinstance(child, FunctionRecord):
-        raise SerializationError("ControlledViaAnd requires a resolved Pauli child")
-    leaves = fixed_gate_factories()
-    axis: Literal["x", "z"]
-    if child == leaves["qualtran.bloqs.basic_gates.x_basis.XGate"](
-        child.name, None, {}
-    ):
-        axis = "x"
-    elif child == leaves["qualtran.bloqs.basic_gates.z_basis.ZGate"](
-        child.name, None, {}
-    ):
-        axis = "z"
-    else:
-        raise SerializationError("ControlledViaAnd supports the scalar X/Z dependency")
-    if not isinstance(spec, ControlSpecification) or len(spec.clauses) != 1:
-        raise SerializationError("ControlledViaAnd requires one QBit control clause")
-    dtype, activation = spec.clauses[0]
-    if dtype != quantum_bit_type():
-        raise SerializationError("ControlledViaAnd requires QBit control storage")
-    values = _literal_values(activation.reshape(-1))
-    if not values:
-        raise SerializationError("ControlledViaAnd requires nonempty controls")
-    signature = Signature(
-        (Register("ctrl", dtype, activation.shape), Register("q", dtype))
-    )
-    builder = ComponentProgramBuilder(signature)
-    result = builder.call_program(
-        _pauli_program(axis, values),
-        {
-            "controls": np.asarray(builder.inputs["ctrl"]).reshape(-1),
-            "target": builder.inputs["q"],
-        },
-    )
-    controls = np.asarray(result["controls"]).reshape(activation.shape)
-    return _checked(
-        builder.finalize(
-            {
-                "ctrl": controls.item() if not activation.shape else controls,
-                "q": result["target"],
-            }
-        ),
-        name,
-        registers,
-    )
-
-
 def multi_control_factories() -> dict[str, ComponentFactory]:
-    """Supply X/Z specializations and their scalar-Pauli controlled dependency.
+    """Supply X/Z specializations and the shared structured-control constructor.
 
-    Generic controlled children and non-QBit clauses retain their separate
-    admission boundary. Symbolic HasLength fails in the unchanged source codec.
+    Structured controls delegate to the existing predicate and child providers.
+    Symbolic HasLength fails in the unchanged source codec.
     """
     prefix = "qualtran.bloqs.mcmt."
     return {
         prefix + "multi_control_pauli.MultiControlX": partial(_multi_factory, "x"),
         prefix + "multi_control_pauli.MultiControlZ": partial(_multi_factory, "z"),
-        prefix + "controlled_via_and.ControlledViaAnd": _controlled_factory,
+        **controlled_via_and_factories(),
     }

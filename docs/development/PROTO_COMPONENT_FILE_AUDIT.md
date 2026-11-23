@@ -116,3 +116,13 @@ still requiring concrete dimensions. Full gate/feedback and complex branch
 checks retain original ownership and clean consumed outputs. Complete catalogue
 coverage is 64/303, with 239 remaining. Original numpy.uint8/Shaped/HasLength
 serialization defects and generic wrapper gaps remain explicit.
+
+## Structured controlled-constructor orchestration
+
+RESOLVER_CONTROLLED_AUDIT.md records the complete orchestration owner and its
+positive-control provider replacement path. Fixed X/Y/Z/H children, grouped and
+signed controls, nested wrappers, original examples and a stored multi-target
+child preserve gate operands, feedback, complex phases and clean work. Generic
+serialized child dispatch remains open, so complete catalogue coverage stays
+64/303, with 239 remaining. Source CH rotation estimates remain separate from
+actual primitive counts.

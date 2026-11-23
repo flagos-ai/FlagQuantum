@@ -1334,3 +1334,14 @@ tests/unit/test_legacy_predicate_factories.py for source gate/phase conformance.
 Proposal 120 preserves symbolic shapes only in logical declarations.
 See docs/development/RESOLVER_PARTITION_PREDICATE_AUDIT.md for complete scope,
 independent primitive/model accounts and original codec failures.
+
+Structured ControlledViaAnd constructor orchestration is owned by
+formats/legacy_controlled_factories.py. It delegates positive child semantics to
+an injected Program/ControlAdder provider and grouped predicates to the existing
+control owner. The default fixed X/Y/Z/H providers and nested constructor recipes
+retain exact source controls, phases and erasure. Run
+tests/unit/test_legacy_controlled_factories.py for provider replacement,
+name collisions, grouped controls and raw measurement branch checks. Generic
+serialized child dispatch remains partial. See
+docs/development/RESOLVER_CONTROLLED_AUDIT.md for scope and primitive/model
+resource separation.

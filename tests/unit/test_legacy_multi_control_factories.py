@@ -27,8 +27,8 @@ from flagquantum.core.ir.program import (
     verify_program_record,
 )
 from flagquantum.core.ir.program.register_types import (
+    classical_bit_type,
     quantum_bit_type,
-    unsigned_register_type,
 )
 from flagquantum.errors import SerializationError
 from tests.unit.measurement_checks import forced_branch
@@ -168,9 +168,7 @@ def test_multi_control_invalid_inputs_and_scoped_child_boundary() -> None:
         {"subbloq": x, "ctrl_spec": 1},
         {
             "subbloq": x,
-            "ctrl_spec": ControlSpecification(
-                ((unsigned_register_type(2), np.array(1)),)
-            ),
+            "ctrl_spec": ControlSpecification(((classical_bit_type(), np.array(1)),)),
         },
         {
             "subbloq": x,
