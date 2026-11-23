@@ -1324,3 +1324,13 @@ Pauli ControlledViaAnd dependency. Z/CZ reuse the fixed-gate factory. Run
 `tests/unit/test_legacy_comparison_factories.py` and the corresponding sign and
 multi-control factory tests. Full scope and retained source/admission gaps are in
 `docs/development/RESOLVER_COMPARISON_AUDIT.md`.
+
+Partition, Split2 and Join2 constructors use
+formats/legacy_partition_factories.py and existing storage views. Grouped
+CtrlSpecAnd constructors use formats/legacy_predicate_factories.py and the
+existing control predicate owner, composing the existing specialized adjoint
+resolver. Run tests/unit/test_legacy_partition_factories.py and
+tests/unit/test_legacy_predicate_factories.py for source gate/phase conformance.
+Proposal 120 preserves symbolic shapes only in logical declarations.
+See docs/development/RESOLVER_PARTITION_PREDICATE_AUDIT.md for complete scope,
+independent primitive/model accounts and original codec failures.

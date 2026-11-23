@@ -106,3 +106,13 @@ Complete catalogue coverage is 60/303, with 243 remaining. The two signed-only
 conversion mappings stay partial for the unchanged source's permissive same-class
 non-signed inputs. Generic wrappers and structured control dependencies remain
 explicit. No original source or protected numerical admission is changed.
+
+## Partition and grouped-predicate constructor dependency batch
+
+RESOLVER_PARTITION_PREDICATE_AUDIT.md closes Partition, Split2, Join2 and
+CtrlSpecAnd through existing layout and control owners. Proposal 120 admits
+symbolic array shapes in bodyless logical declarations, with finite execution
+still requiring concrete dimensions. Full gate/feedback and complex branch
+checks retain original ownership and clean consumed outputs. Complete catalogue
+coverage is 64/303, with 239 remaining. Original numpy.uint8/Shaped/HasLength
+serialization defects and generic wrapper gaps remain explicit.
