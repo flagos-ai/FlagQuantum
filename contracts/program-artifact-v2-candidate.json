@@ -4,6 +4,14 @@
   "approved_on": "2026-09-10",
   "proposal": "docs/development/API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2.md",
   "approval_token": "approve API_CHANGE_PROPOSAL_022_PROGRAM_ARTIFACT_V2",
+  "capacity_revision": {
+    "approved_on": "2026-11-23",
+    "proposal": "docs/api-changes/FQ-PROGRAM-ARTIFACT-CIRCUIT-CAPACITY-20261123.md",
+    "scope": "v2_circuit_ir_payload_only",
+    "rollout": "upgrade_readers_before_sending_expanded_artifacts",
+    "older_readers_accept_expanded_artifacts": false,
+    "previously_accepted_bytes_and_identities_unchanged": true
+  },
   "envelope_schema": "flagquantum.program_artifact",
   "version": "2.0",
   "initial_kinds": ["circuit", "executable"],
@@ -89,6 +97,11 @@
     "maximum_envelope_utf8_bytes": 18874368,
     "maximum_nesting_depth": 8,
     "maximum_total_entries": 4096,
+    "maximum_total_entries_scope": "structured_envelope_including_payload_field_excluding_payload_descendants",
+    "circuit-ir-1.0": {
+      "maximum_payload_entries": 65536,
+      "maximum_aggregate_entries": 69632
+    },
     "maximum_non_payload_string_utf8_bytes": 4096
   },
   "prohibited_content_scope": "structured_fields_outside_profile_validated_payload",

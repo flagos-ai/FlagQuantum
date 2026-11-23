@@ -197,7 +197,7 @@ def test_v2_limits_and_sensitive_structured_data_fail_closed() -> None:
 
     with pytest.raises(ValueError, match="entry count"):
         ProgramArtifactV2.from_circuit_ir(
-            _circuit(metadata={f"key_{index}": index for index in range(4096)}),
+            _circuit(metadata={f"key_{index}": index for index in range(65536)}),
             producer="phase32-core-tests",
         )
 
