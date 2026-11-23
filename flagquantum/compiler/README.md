@@ -1424,3 +1424,8 @@ implemented adaptations from unported mechanisms and pending pull requests.
 adds a candidate behind the native planner; it preserves the existing restored
 layout and directed-operation obligations. Run the focused routing tests listed
 there before changing this search.
+
+[Bounded structural pair reuse](../../docs/development/COMPILER_COMMUTATION_PAIR_REUSE.md)
+reduces repeated commutation queries inside one sweep while retaining the existing
+partition, logical counters and mutable-operand boundaries. Its development
+measurements include slower controls and do not certify production performance.
