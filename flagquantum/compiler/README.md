@@ -1379,3 +1379,11 @@ Symbolic declarations and source wire normalization are checked independently
 from finite execution. tests/unit/test_legacy_power_factories.py covers nested
 word/SU2 children, zero-port scalar occurrences and every small CZPow history.
 See docs/development/RESOLVER_POWER_AUDIT.md for precise execution boundaries.
+
+The complete modular-addition constructor family delegates to the existing four
+modular component owners through formats/legacy_modular_addition_factories.py.
+ModAddK retains its source model-only declaration. Source ModAdd wire signatures
+lose Montgomery modulus metadata and remain explicitly refused at the existing
+signature check. Direct native ModAdd construction remains available. See
+RESOLVER_MODULAR_ADDITION_AUDIT.md and the complete original modular file audit
+for source-domain, phase, workspace and analytical-model boundaries.
