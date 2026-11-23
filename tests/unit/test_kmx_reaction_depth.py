@@ -8,9 +8,12 @@ import pytest
 
 from flagquantum.compiler.artifacts.reaction_depth import (
     reaction_depth,
+    reaction_depth_for_operations,
     touched_qubit_count,
 )
+from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseOperation
 from flagquantum.compiler.formats.kmx import decode_kmx
+from flagquantum.compiler.formats.kmx_circuit import read_kmx_circuit
 from flagquantum.compiler.formats.kmx_debug import decode_kmx_debug
 
 _CASES = json.loads(
@@ -51,3 +54,27 @@ def test_touched_debug_wires_are_counted_without_changing_depth() -> None:
     )
     assert touched_qubit_count(program, debug_wires=wires) == 2
     assert reaction_depth(program) == 0
+
+
+def test_raw_metadata_and_debug_records_preserve_source_reaction_depth() -> None:
+    import kickmix as km
+
+    source = (
+        'INFO_TAG "@enter:outer"\nCCX q0 q1 q2\n'
+        "HMR q2 b0\nDEBUG_PRINT q0 if b0\n"
+        'DEBUG_PRINT b0\nDEBUG_PRINT\nINFO_TAG "@exit:outer"'
+    )
+    circuit = read_kmx_circuit(source)
+    operations = (
+        ReversiblePhaseOperation(
+            record.opcode.lower(),
+            record.qubits,
+            record.result_bit,
+            record.condition_bit,
+            record.angle,
+        )
+        for record in circuit
+    )
+    assert (
+        reaction_depth_for_operations(operations) == km.Circuit(source).reaction_depth()
+    )

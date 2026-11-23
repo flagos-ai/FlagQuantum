@@ -30,7 +30,13 @@ def reaction_depth_for_operations(
             depth = max(depth, c[op.condition_bit])
         guarded = len(scopes) > 1 or op.condition_bit is not None
         opcode = op.opcode
-        if opcode == "neg":
+        if opcode in {
+            "neg",
+            "info_tag",
+            "debug_print_empty",
+            "debug_print_q",
+            "debug_print_c",
+        }:
             continue
         if opcode == "push_condition":
             scopes.append(depth)
