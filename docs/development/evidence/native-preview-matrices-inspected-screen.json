@@ -26,7 +26,6 @@
       "implementation_commit": "97775484b588a856031dfa1ccbaf234f7d4b3661",
       "base_commit": "959f25462c5e869a05b1957cc0cd68ef8900680c",
       "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
-      "production_tree": "ea182be4a4ab675658741208bb3762f6b46c4ca7",
       "input_nonce": "0101010101010101010101010101010101010101010101010101010101010101",
       "input_status": "inspected",
       "compiler_seed": 11,
@@ -3207,5 +3206,31 @@
     "strictly_improved_pairs": [],
     "admission_passed": true
   },
-  "archive_driver_source": "import hashlib,json,subprocess\nfrom pathlib import Path\nroot=Path('/Users/baai/.codex/worktrees/native-compiler-routing-synthesis/FlagQuantum')\nout=root/'docs/development/evidence'\nwrites={}\nfor draw in ('inspected','fresh'):\n    path=Path('/private/tmp/fq-native-matrix-'+draw+'-20261123.json')\n    raw=path.read_bytes(); report=json.loads(raw)\n    assert report['completed'] and report['admission_passed'] and len(report['rows'])==120\n    payloads=report['payloads'];report['payloads']={}\n    chunks=[];chunk={}\n    for key,value in payloads.items():\n        if chunk and len(json.dumps({**chunk,key:value},separators=(',',':')).encode())>1100000:\n            chunks.append(chunk);chunk={}\n        chunk[key]=value\n    if chunk: chunks.append(chunk)\n    refs=[]\n    for i,chunk in enumerate(chunks):\n        name=f'native-preview-matrices-{draw}-payloads-{i:02d}.json'\n        data=(json.dumps(chunk,separators=(',',':'),allow_nan=False)+'\\n').encode()\n        writes[name]=data;refs.append({'name':name,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)})\n    envelope={'original_report_sha256':hashlib.sha256(raw).hexdigest(),'original_report_bytes':len(raw),'payload_files':refs,'report':report,'archive_driver_source':Path(__file__).read_text()}\n    restored={}\n    for ref in refs: restored.update(json.loads(writes[ref['name']]))\n    report['payloads']=restored\n    assert (json.dumps(report,indent=2,allow_nan=False)+'\\n').encode()==raw\n    report['payloads']={}\n    writes[f'native-preview-matrices-{draw}-screen.json']=(json.dumps(envelope,indent=2,allow_nan=False)+'\\n').encode()\nfor category in ('replay','resources'):\n    writes[f'native-preview-matrices-{category}.json']=Path('/private/tmp/fq-native-matrix-'+category+'-20261123.json').read_bytes()\npaths=['docs/development/evidence/'+name for name in writes]\nsubprocess.run(['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python','tools/check_team_scope.py','--team','compiler','--files',*paths],cwd=root,check=True,timeout=20)\nfor name,data in writes.items():\n    (out/name).write_bytes(data)\n    print(name,len(data),hashlib.sha256(data).hexdigest())\n"
+  "archive_driver_source": "import hashlib,json,subprocess\nfrom pathlib import Path\nroot=Path('/Users/baai/.codex/worktrees/native-compiler-routing-synthesis/FlagQuantum')\nout=root/'docs/development/evidence'\nwrites={}\nfor draw in ('inspected','fresh'):\n    path=Path('/private/tmp/fq-native-matrix-'+draw+'-20261123.json')\n    raw=path.read_bytes(); report=json.loads(raw)\n    assert report['completed'] and report['admission_passed'] and len(report['rows'])==120\n    payloads=report['payloads'];report['payloads']={}\n    chunks=[];chunk={}\n    for key,value in payloads.items():\n        if chunk and len(json.dumps({**chunk,key:value},separators=(',',':')).encode())>1100000:\n            chunks.append(chunk);chunk={}\n        chunk[key]=value\n    if chunk: chunks.append(chunk)\n    refs=[]\n    for i,chunk in enumerate(chunks):\n        name=f'native-preview-matrices-{draw}-payloads-{i:02d}.json'\n        data=(json.dumps(chunk,separators=(',',':'),allow_nan=False)+'\\n').encode()\n        writes[name]=data;refs.append({'name':name,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)})\n    envelope={'original_report_sha256':hashlib.sha256(raw).hexdigest(),'original_report_bytes':len(raw),'payload_files':refs,'report':report,'archive_driver_source':Path(__file__).read_text()}\n    restored={}\n    for ref in refs: restored.update(json.loads(writes[ref['name']]))\n    report['payloads']=restored\n    assert (json.dumps(report,indent=2,allow_nan=False)+'\\n').encode()==raw\n    report['payloads']={}\n    writes[f'native-preview-matrices-{draw}-screen.json']=(json.dumps(envelope,indent=2,allow_nan=False)+'\\n').encode()\nfor category in ('replay','resources'):\n    writes[f'native-preview-matrices-{category}.json']=Path('/private/tmp/fq-native-matrix-'+category+'-20261123.json').read_bytes()\npaths=['docs/development/evidence/'+name for name in writes]\nsubprocess.run(['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python','tools/check_team_scope.py','--team','compiler','--files',*paths],cwd=root,check=True,timeout=20)\nfor name,data in writes.items():\n    (out/name).write_bytes(data)\n    print(name,len(data),hashlib.sha256(data).hexdigest())\n",
+  "production_tree_object": {
+    "git_object_type": "tree",
+    "sha1_octets": [
+      234,
+      24,
+      43,
+      228,
+      164,
+      171,
+      103,
+      86,
+      88,
+      116,
+      18,
+      8,
+      187,
+      55,
+      98,
+      246,
+      180,
+      108,
+      76,
+      167
+    ]
+  },
+  "representation_note": "production_tree is a Git tree object, not a source commit. Its exact SHA-1 bytes are stored as sha1_octets to avoid misclassifying it as a revision. Reinsert its lowercase hexadecimal encoding as report.manifest.production_tree before reconstructing the original report bytes. All observed values are unchanged."
 }

@@ -178,3 +178,17 @@ change, reached approximately 59 percent at its 600-second deadline and was
 terminated by its supervisor. It is not final-head verification. The focused
 243-test pass and static checks above are complete local evidence; full exact-head
 CI remains required before integration.
+
+After the evidence commit, the revision scanner exposed a representation error:
+its full-hex scan interpreted the recorded production Git tree as a source
+commit. The archive now labels that object as a tree and stores its exact SHA-1
+bytes as `sha1_octets`. Its reconstruction note restores the original manifest
+field and order; all three original reports still reconstruct byte for byte.
+No measurement, source revision or checker rule was changed. The resource file
+uses the same original-report envelope as the quality indices.
+
+Seventy-two additional artifact, preflight, local execution, dry-run, routing
+example, compiler golden-path and physical-evidence integration tests pass.
+Local links resolve. The whole evidence revision scan also reports existing
+origin declarations for commits reachable in this checkout; that repository-wide
+condition is separate from these new records and is not represented as a pass.
