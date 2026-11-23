@@ -173,3 +173,43 @@ Before release, rerun default/runtime tiers and the protected API checks on the
 merged revision, repeat resource checks on supported receiver environments, and
 upgrade readers before distributing expanded artifacts. Downstream provenance
 limits and formal SDKBench acceptance remain independent release blockers.
+
+
+## Delivered target-workflow regression check
+
+The [complete outcomes](../development/evidence/program-artifact-delivered-workflows.json)
+run the unchanged SDKBench target-artifact adapter and routing acceptance on six
+previously inspected inputs at candidate revision
+`64c381a467685dc4e198411195ae0bea9df4d9b0`. SDKBench is pinned to
+`5ba03de33f8a9193f86b26d2cb3fa841ede7c98a`. Four workflows pass: QAOA grid and
+line have 66/90 CZ gates and dependency depths 40/58; Simon grid and line have
+36/34 CZ gates and depths 33/31. These are development regression checks, not
+held-out comparisons, qualified resource evidence, or superiority claims.
+
+Both DNN inputs pass source-artifact admission and then fail closed in the v4
+physical-plan constructor: `native_input_instructions exceeds record limit
+4096`. A [read-only diagnostic](../development/evidence/program-artifact-v4-record-counts.json)
+observes array lengths and calls the original unchanged validator. It does not
+raise any limit or bypass validation.
+
+| DNN input | Native inputs | Physical outputs | Transitions | Rewrite blocks | Nested input/output memberships |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Grid, 8 wires | 5,544 | 2,336 | 24 | 64 | 4,904 |
+| Line, 8 wires | 5,586 | 2,320 | 26 | 64 | 4,880 |
+
+Native ancestry topology indices peak at 2,663/2,665 and source indices at
+2,639, within their existing 4,096-entry address space. Both native-input and
+aggregate block-membership counts exceed separate v4 limits. This is a distinct
+serialization contract, outside the approved change. The capacity fix therefore
+does not establish DNN target-artifact support. Changing the downstream contract
+requires its own proposal and explicit authorization. All six source artifacts
+remain subject to the existing target, native growth and evidence byte budgets.
+
+The check ran locally on macOS with one numerical thread requested, existing
+per-stage timeouts, and no enforced memory cgroup or exclusive host reservation.
+The evidence retains failed traces and the complete diagnostic driver. No SDKBench
+acceptance threshold or adapter was changed.
+
+After synchronizing the main CI temporary-directory isolation fix, the focused
+v4 evidence and CI-isolation tests pass: 116 tests in 3.92 seconds. This does not
+replace the pending exact-head default and runtime qualification.
