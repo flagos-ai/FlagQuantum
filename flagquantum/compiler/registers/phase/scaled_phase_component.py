@@ -26,6 +26,7 @@ def phase_add_component_program(
     right_shift: int = 0,
     sign: int = 1,
     controlled: bool = False,
+    control_value: int = 1,
 ) -> ProgramRecord:
     """Implement the atomic source leaf using shared integer Add and its inverse.
 
@@ -47,6 +48,8 @@ def phase_add_component_program(
         raise ValueError(
             "Phase addition requires nonnegative input and positive gradient widths"
         )
+    if type(control_value) is not int or control_value not in (0, 1):
+        raise ValueError("Phase addition control value must be zero or one")
     if type(controlled) is not bool:
         raise ValueError("Phase addition controlled mode must be boolean")
     builder = ComponentProgramBuilder(
@@ -67,6 +70,7 @@ def phase_add_component_program(
         controlled_addition_program(
             RegisterType("uint", active),
             RegisterType("uint", prefix),
+            control_value=control_value,
             adjoint=sign == -1,
         )
         if controlled
