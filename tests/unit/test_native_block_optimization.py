@@ -2,21 +2,28 @@
 
 from __future__ import annotations
 
+import random
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from inspect import getattr_static
+from operator import setitem
 
 import pytest
 import torch
 
 from flagquantum.compiler.lowering import native_block_optimization as blocks
 from flagquantum.compiler.lowering.native_gate_legalization import (
+    NativeGateLegalizationError,
     NativeGateLegalizationResult,
     legalize_native_gates,
 )
 from flagquantum.compiler.optimization import _cz_blocks
+from flagquantum.compiler.optimization.two_qubit_synthesis import synthesize_two_qubit
 from flagquantum.compiler.routing import CouplingMap
 from flagquantum.compiler.topology import topology_legalization as routing
-from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from flagquantum.core._compilation_evidence_v4 import BlockRewriteEvidence
+from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -192,21 +199,79 @@ def test_verified_routing_allows_native_blocks_and_preserves_layout(
         for item in result.program.instructions
     )
     _equivalent(topology.program, result.program)
-    # An initial placement permutes logical input into physical slots. The
-    # full operator check accounts for it instead of assuming a zero input.
+    _equivalent_after_placement(
+        source, result.program, topology.initial_logical_to_physical
+    )
+    assert topology.final_logical_to_physical == tuple(range(source.n_wires))
+
+
+def _equivalent_after_placement(
+    source: CircuitIR, output: CircuitIR, initial_layout: tuple[int, ...]
+) -> None:
+    # An initial placement permutes logical input into physical slots. Checking
+    # every input basis column detects errors hidden by an all-zero input.
     size = 1 << source.n_wires
     placement = torch.zeros((size, size), dtype=torch.complex128)
     for column in range(size):
         row = sum(
             ((column >> (source.n_wires - logical - 1)) & 1)
             << (source.n_wires - physical - 1)
-            for logical, physical in enumerate(topology.initial_logical_to_physical)
+            for logical, physical in enumerate(initial_layout)
         )
         placement[row, column] = 1
-    expected, actual = _operator(source), _operator(result.program) @ placement
+    expected, actual = _operator(source), _operator(output) @ placement
     phase = torch.trace(actual.conj().T @ expected) / size
+    assert float(abs(abs(phase) - 1)) <= 1e-11
     torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+
+
+def _routing_control(case_index: int) -> CircuitIR:
+    rng = random.Random(2026112201)
+    for index in range(case_index + 1):
+        width = 3 if index < 75 else 4
+        instructions = []
+        for step in range(8 + index % 13):
+            if step % 3 == 0:
+                pair = tuple(rng.sample(range(width), 2))
+                instructions.append(Instruction(rng.choice(("cx", "cz", "swap")), pair))
+            else:
+                instructions.append(
+                    Instruction(
+                        rng.choice(("rx", "ry", "rz")),
+                        (rng.randrange(width),),
+                        {"theta": rng.uniform(-3.2, 3.2)},
+                    )
+                )
+    return CircuitIR(width, tuple(instructions))
+
+
+@pytest.mark.parametrize("case_index", (0, 75, 77, 86, 89, 94, 95, 99))
+@pytest.mark.parametrize(
+    "strategy", ("auto", "sabre", "sabre_layout", "persistent_layout")
+)
+def test_routing_and_native_synthesis_preserve_full_operator_or_refuse_budget(
+    case_index: int, strategy: str
+) -> None:
+    source = _routing_control(case_index)
+    try:
+        result, _, topology, coupling = _routed_stage(source, strategy=strategy)
+    except NativeGateLegalizationError as error:
+        # These inspected cases may exceed the unchanged baseline budget.
+        # A better route may make them pass; a new refusal remains a failure.
+        assert strategy == "persistent_layout"
+        assert case_index in (77, 86, 89, 94, 95, 99)
+        assert str(error) == "native-gate decomposition exceeds max_added_operations"
+        return
+
+    _equivalent(topology.program, result.program)
+    _equivalent_after_placement(
+        source, result.program, topology.initial_logical_to_physical
+    )
     assert topology.final_logical_to_physical == tuple(range(source.n_wires))
+    assert all(
+        len(item.wires) != 2 or coupling.has_edge(*item.wires)
+        for item in result.program.instructions
+    )
 
 
 @pytest.mark.parametrize(
@@ -687,6 +752,91 @@ def test_equivalent_baseline_copy_is_not_the_retained_instance() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "alter",
+    [
+        pytest.param(lambda program: replace(program, n_wires=3), id="wire-count"),
+        pytest.param(
+            lambda program: replace(program, dtype="complex128"), id="precision"
+        ),
+        pytest.param(lambda program: replace(program, shape=(2, 2)), id="shape"),
+        pytest.param(
+            lambda program: replace(
+                program, observables=(ObservableNode("z", (1,), coefficient=-0.5),)
+            ),
+            id="observable",
+        ),
+        pytest.param(
+            lambda program: replace(
+                program, measurements=(MeasurementNode("samples", (1,), shots=37),)
+            ),
+            id="measurement",
+        ),
+        pytest.param(
+            lambda program: replace(
+                program, metadata={"purpose": {"calibration": (0.3, 0.7)}}
+            ),
+            id="nested-metadata",
+        ),
+    ],
+)
+def test_resealed_noninstruction_changes_are_rejected(
+    alter: Callable[[CircuitIR], CircuitIR],
+) -> None:
+    result, native = _stage(_source())
+    changed = alter(result.program)
+    forged = _reseal(replace(result, program=changed))
+    with pytest.raises(
+        blocks.NativeBlockOptimizationError, match="noninstruction semantics"
+    ):
+        blocks.verify_native_block_optimization(
+            forged, native, snapshot=_snapshot(), evaluated_at=_NOW
+        )
+
+
+def test_native_rewrites_preserve_noninstruction_tensor_semantics() -> None:
+    coefficient = torch.tensor(0.41, dtype=torch.float64)
+    calibration = torch.tensor([0.2, 0.8], dtype=torch.float64)
+    source = replace(
+        _source(),
+        dtype="complex128",
+        shape=(2, 2),
+        observables=(ObservableNode("z", (0,), coefficient=coefficient),),
+        measurements=(MeasurementNode("samples", (1, 0), shots=37),),
+        metadata={"calibration": calibration, "parameter": Parameter("readout")},
+    )
+    result, native = _stage(source)
+    assert result.rewrites
+    _equivalent(source, result.program)
+    for program in (source, native.program, result.program):
+        payload = program.to_dict()
+        payload.pop("instructions")
+        expected = source.to_dict()
+        expected.pop("instructions")
+        assert payload == expected
+    # Re-sealing the identity cannot legitimize a different observable or
+    # calibration tensor, even though instruction operators are unchanged.
+    for changed in (
+        replace(
+            result.program,
+            observables=(ObservableNode("z", (0,), coefficient=coefficient + 0.1),),
+        ),
+        replace(
+            result.program,
+            metadata=dict(result.program.metadata) | {"calibration": calibration + 0.1},
+        ),
+    ):
+        with pytest.raises(
+            blocks.NativeBlockOptimizationError, match="noninstruction semantics"
+        ):
+            blocks.verify_native_block_optimization(
+                _reseal(replace(result, program=changed)),
+                native,
+                snapshot=_snapshot(),
+                evaluated_at=_NOW,
+            )
+
+
 def test_long_stream_bounds_each_rewrite() -> None:
     source = CircuitIR(2, (Instruction("cz", (0, 1)), Instruction("cz", (1, 0))) * 100)
     result, _ = _stage(source)
@@ -704,8 +854,12 @@ def test_invalid_budgets_fail_before_search(
 ) -> None:
     snapshot = _snapshot()
     native = legalize_native_gates(_source(), snapshot=snapshot, evaluated_at=_NOW)
+    # Deliberately cross the typed boundary to exercise runtime input validation.
+    unchecked: Callable[..., blocks.NativeBlockOptimizationResult | None] = (
+        blocks.optimize_native_blocks
+    )
     with pytest.raises(exception):
-        blocks.optimize_native_blocks(
+        unchecked(
             native, snapshot=snapshot, evaluated_at=_NOW, max_added_operations=budget
         )
 
@@ -725,8 +879,10 @@ def test_no_improvement_keeps_program_and_counters_are_immutable() -> None:
     result, native = _stage(CircuitIR(2, (Instruction("cz", (0, 1)),)))
     assert result.program is native.program
     assert result.rejection_counts["not_lower_cz_cost"] == 1
+    # Attempt the forbidden mutation through Python's runtime assignment boundary.
+    attempt_assignment: Callable[..., None] = setitem
     with pytest.raises(TypeError):
-        result.rejection_counts["not_lower_cz_cost"] = 0
+        attempt_assignment(result.rejection_counts, "not_lower_cz_cost", 0)
 
 
 @pytest.mark.parametrize(
@@ -842,7 +998,7 @@ def test_forged_cancellation_cannot_cross_a_dependency(spectator: Instruction) -
         3, (Instruction("cz", (0, 1)), spectator, Instruction("cz", (1, 0)))
     )
     result, native = _stage(source)
-    rewrite = blocks.BlockRewriteEvidence(
+    rewrite = BlockRewriteEvidence(
         input_instruction_indices=(0, 2),
         output_instruction_indices=(),
         physical_qubits=(0, 1),
@@ -937,13 +1093,17 @@ def test_no_rewrite_hash_reuse_keeps_mutation_checks(
     source = CircuitIR(2, (Instruction("rx", (0,), {"theta": angle}),))
     snapshot = _snapshot()
     native = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
-    original_hash = CircuitIR.content_hash.fget
+    descriptor = getattr_static(CircuitIR, "content_hash")
+    assert isinstance(descriptor, property)
+    original_hash = descriptor.fget
     assert original_hash is not None
     calls: list[CircuitIR] = []
 
     def observed_hash(program: CircuitIR) -> str:
         calls.append(program)
-        return original_hash(program)
+        value = original_hash(program)
+        assert isinstance(value, str)
+        return value
 
     monkeypatch.setattr(CircuitIR, "content_hash", property(observed_hash))
     result = blocks.optimize_native_blocks(native, snapshot=snapshot, evaluated_at=_NOW)
@@ -969,6 +1129,135 @@ def test_no_rewrite_hash_reuse_keeps_mutation_checks(
     assert fresh is not None
     assert fresh.source_content_hash != result.source_content_hash
     assert fresh.optimization_identity != result.optimization_identity
+
+
+def _nonreducing_cz_source() -> CircuitIR:
+    return CircuitIR(
+        2,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction("rx", (0,), {"theta": 0.37}),
+            Instruction("rz", (1,), {"theta": -0.28}),
+            Instruction("cz", (1, 0)),
+        ),
+    )
+
+
+def test_nonreducing_cz_blocks_keep_resource_rejection_precedence() -> None:
+    source = _nonreducing_cz_source()
+    product = _cz_blocks._product(source.instructions, (0, 1))
+    assert product is not None
+    proposal = synthesize_two_qubit(
+        product, qubits=(0, 1), entangler="cz", z_rotation="rz", pulse_opcode="rx"
+    )
+    assert proposal is not None
+    count = sum(item.name == "cz" for item in proposal)
+    assert count == 2
+    bound = count + 10 * (count + 1)
+    for budget in (0, len(proposal) - 1, len(proposal), bound, 256):
+        reasons: list[str] = []
+        assert (
+            _cz_blocks._candidate(
+                source.instructions,
+                (0, 1),
+                max_output_operations=budget,
+                on_rejection=reasons.append,
+            )
+            is None
+        )
+        assert reasons == [
+            (
+                "instruction_growth_rejected"
+                if budget < len(proposal)
+                else "not_lower_cz_cost"
+            )
+        ]
+
+
+def test_general_cz_raw_form_respects_its_instruction_bound() -> None:
+    for seed in range(12):
+        rng = random.Random(seed)
+        instructions: list[Instruction] = []
+        for _ in range(4):
+            instructions.extend(
+                (
+                    Instruction("rx", (0,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("rz", (1,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("cz", (1, 0)),
+                    Instruction("rx", (1,), {"theta": rng.uniform(-2, 2)}),
+                    Instruction("rz", (0,), {"theta": rng.uniform(-2, 2)}),
+                )
+            )
+        source = CircuitIR(2, tuple(instructions))
+        proposal = synthesize_two_qubit(
+            _operator(source).tolist(),
+            qubits=(0, 1),
+            entangler="cz",
+            z_rotation="rz",
+            pulse_opcode="rx",
+        )
+        assert proposal is not None
+        count = sum(item.name == "cz" for item in proposal)
+        assert count <= 3
+        assert len(proposal) <= count + 10 * (count + 1)
+        _equivalent(source, CircuitIR(2, proposal))
+
+
+@pytest.mark.parametrize(
+    ("instructions", "maximum_czs"),
+    [
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+            ),
+            0,
+            id="refocused-pi-x",
+        ),
+        pytest.param(
+            (
+                Instruction("rz", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi}),
+                Instruction("cz", (0, 1)),
+                Instruction("rz", (1,), {"theta": 0.379}),
+            ),
+            0,
+            id="refocused-pi-x-with-frame",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": torch.pi / 2}),
+                Instruction("cz", (0, 1)),
+            ),
+            1,
+            id="quarter-turn-pauli-product",
+        ),
+        pytest.param(
+            (
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (0,), {"theta": 0.173}),
+                Instruction("cz", (0, 1)),
+                Instruction("rx", (1,), {"theta": 0.379}),
+                Instruction("cz", (0, 1)),
+            ),
+            2,
+            id="mixed-wire-two-cz-reduction",
+        ),
+    ],
+)
+def test_reducing_cz_blocks_preserve_complete_operators(
+    instructions: tuple[Instruction, ...], maximum_czs: int
+) -> None:
+    source = CircuitIR(2, instructions)
+    proposal = _cz_blocks._candidate(
+        source.instructions, (0, 1), max_output_operations=256
+    )
+    assert proposal is not None
+    assert sum(item.name == "cz" for item in proposal) <= maximum_czs
+    _equivalent(source, CircuitIR(2, proposal))
 
 
 def test_native_matrix_reads_preserve_the_operand_position_of_shared_wires() -> None:

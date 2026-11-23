@@ -277,7 +277,7 @@ jobs:
           CUDA_VISIBLE_DEVICES=0 python -c "import torch; assert torch.cuda.device_count() == 1"
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
           CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs 2>&1 | tee hardware-run/one-gpu.log
-          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
+          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark --hardware-samples hardware-run/one-gpu-telemetry.jsonl -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
       - if: ${{ always() && !inputs.qng_ablation && !inputs.precision_frontier }}
         run: >-
@@ -405,7 +405,7 @@ jobs:
           python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
           # Batch enough unchanged iterations to average host scheduling jitter;
           # the former 50-iteration samples lasted only about 6-19 ms.
-          python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
+          python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark --hardware-samples hardware-run/two-gpu-telemetry.jsonl -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/two-gpu-performance.json
       - if: always()
         run: >-

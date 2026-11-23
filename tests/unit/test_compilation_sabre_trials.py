@@ -151,3 +151,44 @@ def test_materialization_reuses_the_selected_layout_search() -> None:
         == estimate.planned_inserted_swap_count
     )
     assert _linear_operator(routed) == _linear_operator(source)
+
+
+def test_completed_trial_stream_scores_each_plan_once_and_preserves_ties() -> None:
+    source = _program(6, 3)
+    coupling = CouplingMap.line(6)
+    baseline = sabre._plan_sabre_trial(source, coupling)
+    assert baseline is not None
+    scored: list[sabre.SabrePlan] = []
+
+    def score(plan: sabre.SabrePlan) -> int:
+        scored.append(plan)
+        return sabre._restored_swap_count(plan, coupling)
+
+    trials = list(sabre._sabre_trial_costs(source, coupling, baseline, cost=score))
+    assert scored == [plan for plan, _ in trials]
+    assert trials[0][0] == baseline
+    expected = min(trials, key=lambda item: item[1])[0]
+    assert sabre._select_sabre_trials(source, coupling, baseline) == expected
+    # Equal-cost alternatives must not displace the earlier incumbent.
+    assert (
+        sabre._select_sabre_trials(source, coupling, baseline, cost=lambda plan: 10000)
+        == baseline
+    )
+
+
+def test_local_selection_does_not_call_a_custom_cost_or_create_a_stream() -> None:
+    source = CircuitIR(6, (Instruction("cx", (0, 1)),))
+    coupling = CouplingMap.line(6)
+    baseline = sabre._plan_sabre_trial(source, coupling)
+    assert baseline is not None
+    with patch.object(sabre, "_sabre_trial_costs") as stream:
+        assert (
+            sabre._select_sabre_trials(
+                source,
+                coupling,
+                baseline,
+                cost=lambda plan: pytest.fail("Local fast path must not score trials"),
+            )
+            == baseline
+        )
+    stream.assert_not_called()

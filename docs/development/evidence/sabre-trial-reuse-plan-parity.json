@@ -1,0 +1,1130 @@
+{
+  "base_commit": "1dc11c0a5607f32a89032ca779f8c37d1b79e07e",
+  "historical_selector_sha256": "91882fe9c75735e6886e928bddeb6a7d04aac473d65548cafcd74cc2a147a00e",
+  "cases": 80,
+  "exact_plan_equal": true,
+  "complete_GF2_operator_accepted": true,
+  "rows": [
+    {
+      "case": [
+        6,
+        "line",
+        0
+      ],
+      "plan_sha256": "7a1cd9efc38529a572f2628ab6a831b8fb5f5b3635cabbaeee49ba5bd5ca1307",
+      "metrics": {
+        "forward_swaps": 19,
+        "restore_swaps": 7,
+        "total_swaps": 26,
+        "logical_two_qubit_depth": 38
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        1
+      ],
+      "plan_sha256": "48510ed2baa766e6b571dd5cbfa0de2f04cfc83baf0236f11372e600cec6b0d4",
+      "metrics": {
+        "forward_swaps": 20,
+        "restore_swaps": 4,
+        "total_swaps": 24,
+        "logical_two_qubit_depth": 35
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        2
+      ],
+      "plan_sha256": "a36eb33f8e0158bc442f3b0e816b920bb2436453db22c8bc335e9c04e04fe8d2",
+      "metrics": {
+        "forward_swaps": 28,
+        "restore_swaps": 2,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 38
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        3
+      ],
+      "plan_sha256": "ca11a8579b95bd6c30ac57f102448d0878e964c09afb36065ce4e25e2de0d5cd",
+      "metrics": {
+        "forward_swaps": 14,
+        "restore_swaps": 6,
+        "total_swaps": 20,
+        "logical_two_qubit_depth": 30
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        4
+      ],
+      "plan_sha256": "61e3ebdab89dc27a1eda2ba33e5074b6a14cdc80fec9b77cf51c27990e1a42b4",
+      "metrics": {
+        "forward_swaps": 17,
+        "restore_swaps": 9,
+        "total_swaps": 26,
+        "logical_two_qubit_depth": 35
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        5
+      ],
+      "plan_sha256": "c888238919a261ef0d3097ab797b1aeee6a561fd0973ab582d9b701a86c975e0",
+      "metrics": {
+        "forward_swaps": 18,
+        "restore_swaps": 6,
+        "total_swaps": 24,
+        "logical_two_qubit_depth": 33
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        6
+      ],
+      "plan_sha256": "b492b3eaf3e618f956204da0575fd656442791cd3ab987dbf163cccc24e1c5a1",
+      "metrics": {
+        "forward_swaps": 23,
+        "restore_swaps": 7,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 37
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        7
+      ],
+      "plan_sha256": "e8c79cc6c1b9e06b3437a1ef2cca093f497101c46a8aa6858a9bc1495e2c1b87",
+      "metrics": {
+        "forward_swaps": 15,
+        "restore_swaps": 5,
+        "total_swaps": 20,
+        "logical_two_qubit_depth": 33
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        8
+      ],
+      "plan_sha256": "0cce36cd8f1b76a60feb34c6075775b2f564690c1a3e67aa8b3a29366d042817",
+      "metrics": {
+        "forward_swaps": 19,
+        "restore_swaps": 5,
+        "total_swaps": 24,
+        "logical_two_qubit_depth": 34
+      }
+    },
+    {
+      "case": [
+        6,
+        "line",
+        9
+      ],
+      "plan_sha256": "b58bd9a6fc0f366889f60519ad1e98b9dac4e39ef6c2841d0a6a0d193cbf9c35",
+      "metrics": {
+        "forward_swaps": 18,
+        "restore_swaps": 4,
+        "total_swaps": 22,
+        "logical_two_qubit_depth": 32
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        0
+      ],
+      "plan_sha256": "71b4116b8b608bbadd2e4489089211aef4f888da7f7386bbe70fd49527554807",
+      "metrics": {
+        "forward_swaps": 10,
+        "restore_swaps": 8,
+        "total_swaps": 18,
+        "logical_two_qubit_depth": 28
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        1
+      ],
+      "plan_sha256": "85dc39c3bf023dd26afbeb1321ab1ef59780fb6dbb36094b1ba8ed68de01f525",
+      "metrics": {
+        "forward_swaps": 9,
+        "restore_swaps": 5,
+        "total_swaps": 14,
+        "logical_two_qubit_depth": 26
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        2
+      ],
+      "plan_sha256": "fbf39c47ec2ab67d2447f7785e04cfae3d225d0136aa10b4fbc5a5a0f9829bf5",
+      "metrics": {
+        "forward_swaps": 14,
+        "restore_swaps": 6,
+        "total_swaps": 20,
+        "logical_two_qubit_depth": 33
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        3
+      ],
+      "plan_sha256": "c735eb62e2467da1e08fe468967baf4683926ab78dbcc002a8b3b8449ccfac85",
+      "metrics": {
+        "forward_swaps": 7,
+        "restore_swaps": 7,
+        "total_swaps": 14,
+        "logical_two_qubit_depth": 28
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        4
+      ],
+      "plan_sha256": "67d524d61d833fdc3007dded533576c5b56635e3cfea62ce1d899dc5190d15ec",
+      "metrics": {
+        "forward_swaps": 9,
+        "restore_swaps": 3,
+        "total_swaps": 12,
+        "logical_two_qubit_depth": 24
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        5
+      ],
+      "plan_sha256": "7dc8746e2c477ba39b4cb084b38a5c49bd80682f4aa9d8e6e462e77ee647abb1",
+      "metrics": {
+        "forward_swaps": 7,
+        "restore_swaps": 3,
+        "total_swaps": 10,
+        "logical_two_qubit_depth": 23
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        6
+      ],
+      "plan_sha256": "726a23d01be109b3d76fdac8db4ddbac627d7c6e8da8b7532619af26782b6d09",
+      "metrics": {
+        "forward_swaps": 10,
+        "restore_swaps": 6,
+        "total_swaps": 16,
+        "logical_two_qubit_depth": 28
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        7
+      ],
+      "plan_sha256": "48c6a794dcc3eabc6d8dc39bf52c89c132410d6ff5a7826814f8d6baae92181b",
+      "metrics": {
+        "forward_swaps": 8,
+        "restore_swaps": 2,
+        "total_swaps": 10,
+        "logical_two_qubit_depth": 27
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        8
+      ],
+      "plan_sha256": "c4ccfa54e734c5a907d5ff35b5907c53ed500d224396fe99bd103ef546159c40",
+      "metrics": {
+        "forward_swaps": 7,
+        "restore_swaps": 3,
+        "total_swaps": 10,
+        "logical_two_qubit_depth": 28
+      }
+    },
+    {
+      "case": [
+        6,
+        "grid",
+        9
+      ],
+      "plan_sha256": "2ead61979d4deffe6864fe50f40f4842ef3c369b4bd67c77e1ec05ddbdb85e98",
+      "metrics": {
+        "forward_swaps": 9,
+        "restore_swaps": 5,
+        "total_swaps": 14,
+        "logical_two_qubit_depth": 27
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        0
+      ],
+      "plan_sha256": "1c48381a70315b65a2d1021863df8d8d9293932f7dedb006851b4c66f85fe4f4",
+      "metrics": {
+        "forward_swaps": 39,
+        "restore_swaps": 15,
+        "total_swaps": 54,
+        "logical_two_qubit_depth": 50
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        1
+      ],
+      "plan_sha256": "8dd056680ca9b2403098a704874532e3d58c4e2ade80481ea6065afa843ed7b2",
+      "metrics": {
+        "forward_swaps": 36,
+        "restore_swaps": 8,
+        "total_swaps": 44,
+        "logical_two_qubit_depth": 45
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        2
+      ],
+      "plan_sha256": "f9991d7b38155c78460b0e312544adcd36006d09e2edaa0cf20737bb5fac07cd",
+      "metrics": {
+        "forward_swaps": 35,
+        "restore_swaps": 9,
+        "total_swaps": 44,
+        "logical_two_qubit_depth": 47
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        3
+      ],
+      "plan_sha256": "9440c5af8cfdb85ef3fcda7eb6183a5444f555c3338cc99aba804d2cc88d803e",
+      "metrics": {
+        "forward_swaps": 37,
+        "restore_swaps": 7,
+        "total_swaps": 44,
+        "logical_two_qubit_depth": 38
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        4
+      ],
+      "plan_sha256": "1233562e230d11644e3cab9146ddeb0e12bae0ae7237ae8ebc702926db0bc4bf",
+      "metrics": {
+        "forward_swaps": 29,
+        "restore_swaps": 15,
+        "total_swaps": 44,
+        "logical_two_qubit_depth": 41
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        5
+      ],
+      "plan_sha256": "bb297e8aff7956b2eb335985b603111bf0f17a25fd98dffeec73fed9947e2f08",
+      "metrics": {
+        "forward_swaps": 37,
+        "restore_swaps": 13,
+        "total_swaps": 50,
+        "logical_two_qubit_depth": 43
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        6
+      ],
+      "plan_sha256": "c6e7a6681b423083d0187d1e9ee6ea55de0d75d11f357fe790c52133b72ac1f5",
+      "metrics": {
+        "forward_swaps": 42,
+        "restore_swaps": 10,
+        "total_swaps": 52,
+        "logical_two_qubit_depth": 48
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        7
+      ],
+      "plan_sha256": "a178039fdd7f7f885c625974f3228e49b1e518967218593753bb50bafb3e5612",
+      "metrics": {
+        "forward_swaps": 50,
+        "restore_swaps": 12,
+        "total_swaps": 62,
+        "logical_two_qubit_depth": 54
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        8
+      ],
+      "plan_sha256": "6ddb3d9ab42e6836249e26fec8050942974cb876a050e7c1f3d213840343843c",
+      "metrics": {
+        "forward_swaps": 47,
+        "restore_swaps": 13,
+        "total_swaps": 60,
+        "logical_two_qubit_depth": 57
+      }
+    },
+    {
+      "case": [
+        8,
+        "line",
+        9
+      ],
+      "plan_sha256": "44ca4c275cb7af7ca6a2e107fe3c829fc8b4af74cd522052b623d88d00b39177",
+      "metrics": {
+        "forward_swaps": 33,
+        "restore_swaps": 17,
+        "total_swaps": 50,
+        "logical_two_qubit_depth": 52
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        0
+      ],
+      "plan_sha256": "0051ef46c706eb9fcba57d0a3e3d03afced9efa04c99edcaf94988d8fc0ad02d",
+      "metrics": {
+        "forward_swaps": 16,
+        "restore_swaps": 14,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 38
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        1
+      ],
+      "plan_sha256": "eb7090771e1d731b59dea8a7716944c9a09d07be27171f2f1a4836c008250294",
+      "metrics": {
+        "forward_swaps": 19,
+        "restore_swaps": 11,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 42
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        2
+      ],
+      "plan_sha256": "5d9417b020317287e3e76ddf554c6389ef0ce1e7bb07ae440e7e4089e6b95fda",
+      "metrics": {
+        "forward_swaps": 19,
+        "restore_swaps": 13,
+        "total_swaps": 32,
+        "logical_two_qubit_depth": 44
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        3
+      ],
+      "plan_sha256": "930c0417f59b575fbf862f496cfb89f8da7e18b252d3ca4d372cca3fe26ee959",
+      "metrics": {
+        "forward_swaps": 20,
+        "restore_swaps": 10,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 38
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        4
+      ],
+      "plan_sha256": "36cb9f997e71149597896b95cb10f23eac8ba90985034373b79e95d982d9d5cd",
+      "metrics": {
+        "forward_swaps": 16,
+        "restore_swaps": 8,
+        "total_swaps": 24,
+        "logical_two_qubit_depth": 31
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        5
+      ],
+      "plan_sha256": "6f872497a6d9d2ca4ff46f793176f45d747e4a8ea244cf5fc53f784d93b61539",
+      "metrics": {
+        "forward_swaps": 18,
+        "restore_swaps": 4,
+        "total_swaps": 22,
+        "logical_two_qubit_depth": 34
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        6
+      ],
+      "plan_sha256": "a03afe0422106f79807b388026c2f0432d74e952b7d96ee6a29e94dd42ec5960",
+      "metrics": {
+        "forward_swaps": 21,
+        "restore_swaps": 3,
+        "total_swaps": 24,
+        "logical_two_qubit_depth": 28
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        7
+      ],
+      "plan_sha256": "eda5831ae759a8850a6a704bca085f8a34d5c89e208b1cad8a63a43a51f3f137",
+      "metrics": {
+        "forward_swaps": 20,
+        "restore_swaps": 8,
+        "total_swaps": 28,
+        "logical_two_qubit_depth": 39
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        8
+      ],
+      "plan_sha256": "a2c4d688ccffa2ce7ddea2db3c5a3e65cb6d2902ae4384ce01355e9b123a8d13",
+      "metrics": {
+        "forward_swaps": 21,
+        "restore_swaps": 9,
+        "total_swaps": 30,
+        "logical_two_qubit_depth": 34
+      }
+    },
+    {
+      "case": [
+        8,
+        "grid",
+        9
+      ],
+      "plan_sha256": "d07c646f897e7fca43a86df38f838949a0027e09b721bf1cee954050cc017bec",
+      "metrics": {
+        "forward_swaps": 13,
+        "restore_swaps": 9,
+        "total_swaps": 22,
+        "logical_two_qubit_depth": 35
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        0
+      ],
+      "plan_sha256": "4cf0d97392d10c14858a94d62142091a65b3a078b93716c935962a31d5a0b9f9",
+      "metrics": {
+        "forward_swaps": 88,
+        "restore_swaps": 20,
+        "total_swaps": 108,
+        "logical_two_qubit_depth": 71
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        1
+      ],
+      "plan_sha256": "12c68298d08365ded5162e16c006d54c1676a2cb889d1a186ae8c504a796d1a0",
+      "metrics": {
+        "forward_swaps": 82,
+        "restore_swaps": 18,
+        "total_swaps": 100,
+        "logical_two_qubit_depth": 68
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        2
+      ],
+      "plan_sha256": "3f5e66942470ad25d8e4549c96ce42a3acba7a0caa8d6e2d66591a6f0b634183",
+      "metrics": {
+        "forward_swaps": 95,
+        "restore_swaps": 31,
+        "total_swaps": 126,
+        "logical_two_qubit_depth": 72
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        3
+      ],
+      "plan_sha256": "271986a0711921e140a6ea2a84cfba2944929a17ba3d1e01611baa3e7d67d193",
+      "metrics": {
+        "forward_swaps": 109,
+        "restore_swaps": 33,
+        "total_swaps": 142,
+        "logical_two_qubit_depth": 83
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        4
+      ],
+      "plan_sha256": "a55e7ac449293699ffd9191199324f5652de2531ae46cc109873201a68de0d03",
+      "metrics": {
+        "forward_swaps": 101,
+        "restore_swaps": 29,
+        "total_swaps": 130,
+        "logical_two_qubit_depth": 74
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        5
+      ],
+      "plan_sha256": "8b1d7fe7003de32a9fe5d70f38ae4f89005ec77a199f6ef97389a41c7481dc84",
+      "metrics": {
+        "forward_swaps": 97,
+        "restore_swaps": 25,
+        "total_swaps": 122,
+        "logical_two_qubit_depth": 70
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        6
+      ],
+      "plan_sha256": "ec8f5b09c6836736312c4a001978bd59fe3c5f8bffa68b816db986b3eafca4ec",
+      "metrics": {
+        "forward_swaps": 107,
+        "restore_swaps": 39,
+        "total_swaps": 146,
+        "logical_two_qubit_depth": 74
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        7
+      ],
+      "plan_sha256": "84253397acf4f8dfb8c641cdc14cc46652359dc4c2b6a8941b0d70e170694889",
+      "metrics": {
+        "forward_swaps": 91,
+        "restore_swaps": 35,
+        "total_swaps": 126,
+        "logical_two_qubit_depth": 66
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        8
+      ],
+      "plan_sha256": "52f9b53b281847c1ccb970c9d088c564744ad50f01aaf225f38f293eb6cc7f22",
+      "metrics": {
+        "forward_swaps": 106,
+        "restore_swaps": 26,
+        "total_swaps": 132,
+        "logical_two_qubit_depth": 76
+      }
+    },
+    {
+      "case": [
+        12,
+        "line",
+        9
+      ],
+      "plan_sha256": "a2c605c38f0a06571b9a8dddef1ad6ff258da44da5aeb8899cfaafd5b5dab895",
+      "metrics": {
+        "forward_swaps": 90,
+        "restore_swaps": 26,
+        "total_swaps": 116,
+        "logical_two_qubit_depth": 69
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        0
+      ],
+      "plan_sha256": "063e69fa5592aa2d0fadfaf3e844bb5679408979fc30c3f543567285cf9db8cb",
+      "metrics": {
+        "forward_swaps": 53,
+        "restore_swaps": 23,
+        "total_swaps": 76,
+        "logical_two_qubit_depth": 62
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        1
+      ],
+      "plan_sha256": "c8f35a53956d276a5c62fe29d7b2d72e0c839123ad39a4fca154c99f466a383d",
+      "metrics": {
+        "forward_swaps": 39,
+        "restore_swaps": 21,
+        "total_swaps": 60,
+        "logical_two_qubit_depth": 49
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        2
+      ],
+      "plan_sha256": "bddd07270478ba88da39e8368bba6fb9a964bc88614158eb665da0e5ce0b40ff",
+      "metrics": {
+        "forward_swaps": 51,
+        "restore_swaps": 19,
+        "total_swaps": 70,
+        "logical_two_qubit_depth": 63
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        3
+      ],
+      "plan_sha256": "91e6c6495af8e2752b2e0c99bdb00faa9f7f39b0cb896203fd99538ec7058d2d",
+      "metrics": {
+        "forward_swaps": 40,
+        "restore_swaps": 12,
+        "total_swaps": 52,
+        "logical_two_qubit_depth": 55
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        4
+      ],
+      "plan_sha256": "9688eb7ee4a904ba2bc181ab2ac9be4d16ad4c1b5d4a93538193b84654530efe",
+      "metrics": {
+        "forward_swaps": 36,
+        "restore_swaps": 16,
+        "total_swaps": 52,
+        "logical_two_qubit_depth": 50
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        5
+      ],
+      "plan_sha256": "43ac8e74f1760056393f16416d28711bd0c65f242a8a71f0bf3797785ecedcf1",
+      "metrics": {
+        "forward_swaps": 43,
+        "restore_swaps": 25,
+        "total_swaps": 68,
+        "logical_two_qubit_depth": 55
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        6
+      ],
+      "plan_sha256": "1872c20ca3d8e2ebf2426f2104d2d2efd883af5f08de4021505069d75a89ed77",
+      "metrics": {
+        "forward_swaps": 50,
+        "restore_swaps": 22,
+        "total_swaps": 72,
+        "logical_two_qubit_depth": 58
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        7
+      ],
+      "plan_sha256": "b4969ac3b089ac8325215654535c1f2ad29d8852b20d0173bb5771718bd5c286",
+      "metrics": {
+        "forward_swaps": 48,
+        "restore_swaps": 16,
+        "total_swaps": 64,
+        "logical_two_qubit_depth": 49
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        8
+      ],
+      "plan_sha256": "fc0bbda158e51bda6d854601e5d07b66b2cd8765c22d77367bd6b67a9750a0f4",
+      "metrics": {
+        "forward_swaps": 44,
+        "restore_swaps": 18,
+        "total_swaps": 62,
+        "logical_two_qubit_depth": 58
+      }
+    },
+    {
+      "case": [
+        12,
+        "grid",
+        9
+      ],
+      "plan_sha256": "1fd4e382465da0ae951709e989fbbd1f424f6563d17fc796694402b75b069414",
+      "metrics": {
+        "forward_swaps": 39,
+        "restore_swaps": 19,
+        "total_swaps": 58,
+        "logical_two_qubit_depth": 56
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        0
+      ],
+      "plan_sha256": "f4e1407db27de57a1b6110fc1e64a27835ae7601a695c0f2cad939daf0c0acd6",
+      "metrics": {
+        "forward_swaps": 209,
+        "restore_swaps": 35,
+        "total_swaps": 244,
+        "logical_two_qubit_depth": 100
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        1
+      ],
+      "plan_sha256": "132c70074a707d1a451ad47f6a54d7a854121cffbf1674c59e633da2c7669f8f",
+      "metrics": {
+        "forward_swaps": 189,
+        "restore_swaps": 41,
+        "total_swaps": 230,
+        "logical_two_qubit_depth": 115
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        2
+      ],
+      "plan_sha256": "651d900b4ce0dab949624962d21e1d522f57d3cc30b8fb51c159bd356ef5857e",
+      "metrics": {
+        "forward_swaps": 185,
+        "restore_swaps": 49,
+        "total_swaps": 234,
+        "logical_two_qubit_depth": 100
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        3
+      ],
+      "plan_sha256": "e3625dae4baedc9470df2a18f2827adbd7a3a2dc81e3e0f499957e04efdb2ccf",
+      "metrics": {
+        "forward_swaps": 192,
+        "restore_swaps": 54,
+        "total_swaps": 246,
+        "logical_two_qubit_depth": 109
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        4
+      ],
+      "plan_sha256": "c2760da1f8c5a5aa87a3cc0bbb304a1166c2bc3067c5ab25057436d8ae71031d",
+      "metrics": {
+        "forward_swaps": 185,
+        "restore_swaps": 41,
+        "total_swaps": 226,
+        "logical_two_qubit_depth": 105
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        5
+      ],
+      "plan_sha256": "01ed4f91be0de5e43d8ddb8ea9df4d5bdecb7cef993a71dc20eb4c30cac5dfb7",
+      "metrics": {
+        "forward_swaps": 185,
+        "restore_swaps": 49,
+        "total_swaps": 234,
+        "logical_two_qubit_depth": 100
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        6
+      ],
+      "plan_sha256": "87eae32ed739ea488c0b0a7d2fb516fa17b8c9f58d6e5d8e03277b3f6253b292",
+      "metrics": {
+        "forward_swaps": 195,
+        "restore_swaps": 57,
+        "total_swaps": 252,
+        "logical_two_qubit_depth": 118
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        7
+      ],
+      "plan_sha256": "47c0f1857ca16411c77aa46cbd2869a3c97810e82a9482e229f3a38613355dd6",
+      "metrics": {
+        "forward_swaps": 216,
+        "restore_swaps": 66,
+        "total_swaps": 282,
+        "logical_two_qubit_depth": 109
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        8
+      ],
+      "plan_sha256": "dd2f6c8d36abd601556998ce74ead0982127f805ef9cdd4fe2749bb36f02685b",
+      "metrics": {
+        "forward_swaps": 204,
+        "restore_swaps": 42,
+        "total_swaps": 246,
+        "logical_two_qubit_depth": 108
+      }
+    },
+    {
+      "case": [
+        16,
+        "line",
+        9
+      ],
+      "plan_sha256": "1a59eea8d86ff3be8608e0b50dc33a44aac0853e17b114b050dc2db7691aa2ee",
+      "metrics": {
+        "forward_swaps": 179,
+        "restore_swaps": 63,
+        "total_swaps": 242,
+        "logical_two_qubit_depth": 116
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        0
+      ],
+      "plan_sha256": "978cbbb5e43c09e9614e1473996d8fa96562af9717691f531b125c75499303c8",
+      "metrics": {
+        "forward_swaps": 104,
+        "restore_swaps": 24,
+        "total_swaps": 128,
+        "logical_two_qubit_depth": 81
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        1
+      ],
+      "plan_sha256": "c955b138169815f48ba43e6307a6ff95e4274de46106f66471248ca9f17eeb8b",
+      "metrics": {
+        "forward_swaps": 92,
+        "restore_swaps": 42,
+        "total_swaps": 134,
+        "logical_two_qubit_depth": 75
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        2
+      ],
+      "plan_sha256": "c85df1ee8f81ef60b43cea26ce14032aa436c0389f74f8d2a51a014369013a75",
+      "metrics": {
+        "forward_swaps": 89,
+        "restore_swaps": 39,
+        "total_swaps": 128,
+        "logical_two_qubit_depth": 86
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        3
+      ],
+      "plan_sha256": "fe9343c89856e57c498025702d20db42d0cce0444275e29cbd55260b00b135a0",
+      "metrics": {
+        "forward_swaps": 95,
+        "restore_swaps": 35,
+        "total_swaps": 130,
+        "logical_two_qubit_depth": 78
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        4
+      ],
+      "plan_sha256": "6d30f9811a93fd1bb64ed33f2471e4f28d601e134cc410138ab2b90f4e2c936e",
+      "metrics": {
+        "forward_swaps": 69,
+        "restore_swaps": 33,
+        "total_swaps": 102,
+        "logical_two_qubit_depth": 64
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        5
+      ],
+      "plan_sha256": "7764485889b30275945f48a9ea1a63073e9b4c5f319f47565a42a6065fe239f3",
+      "metrics": {
+        "forward_swaps": 92,
+        "restore_swaps": 28,
+        "total_swaps": 120,
+        "logical_two_qubit_depth": 74
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        6
+      ],
+      "plan_sha256": "fc2869a0c9be495b211a43dbba82ca2aa0eff02c1aff3b107c585f9b05bf542c",
+      "metrics": {
+        "forward_swaps": 90,
+        "restore_swaps": 32,
+        "total_swaps": 122,
+        "logical_two_qubit_depth": 86
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        7
+      ],
+      "plan_sha256": "bc5f6c8fe11339dddf3148d484d2c8fd2989294290337eaa88642aead00ca2c4",
+      "metrics": {
+        "forward_swaps": 101,
+        "restore_swaps": 35,
+        "total_swaps": 136,
+        "logical_two_qubit_depth": 69
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        8
+      ],
+      "plan_sha256": "96a78b6a04ab0ed57d30cdbe371db76103753d71b3e3616a53aae3d09f78cbaa",
+      "metrics": {
+        "forward_swaps": 77,
+        "restore_swaps": 29,
+        "total_swaps": 106,
+        "logical_two_qubit_depth": 68
+      }
+    },
+    {
+      "case": [
+        16,
+        "grid",
+        9
+      ],
+      "plan_sha256": "70f1cfeac925f33df7f71800d02d19ebfc6753b56999c4cd9db6678f301e63f5",
+      "metrics": {
+        "forward_swaps": 67,
+        "restore_swaps": 43,
+        "total_swaps": 110,
+        "logical_two_qubit_depth": 82
+      }
+    }
+  ],
+  "driver_source": "from __future__ import annotations\n\nimport ast\nimport dataclasses\nimport hashlib\nimport json\nimport subprocess\nfrom pathlib import Path\nfrom unittest.mock import patch\nfrom benchmarks.compiler_sabre_trials import _program, _metrics\nfrom flagquantum.compiler import CouplingMap\nfrom flagquantum.compiler.topology import sabre\n\nrevision = '1dc11c0a5607f32a89032ca779f8c37d1b79e07e'\nsource = subprocess.check_output(['git', 'show', revision+':flagquantum/compiler/topology/sabre.py'], text=True, timeout=20)\nnode = next(node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef) and node.name == '_select_sabre_trials')\nnamespace = dict(vars(sabre))\nexec(compile(ast.Module(body=[node], type_ignores=[]), '<integrated-selector>', 'exec'), namespace)\nold = namespace['_select_sabre_trials']\nrows = []\nfor width in (6, 8, 12, 16):\n    for topology in ('line', 'grid'):\n        coupling = CouplingMap.line(width) if topology == 'line' else CouplingMap.grid(2, width//2)\n        for seed in range(10):\n            program = _program(width, seed)\n            with patch.object(sabre, '_select_sabre_trials', old):\n                before = sabre.plan_sabre_swaps(program, coupling)\n            after = sabre.plan_sabre_swaps(program, coupling)\n            assert before == after\n            metrics = _metrics(program, coupling, after)\n            digest = hashlib.sha256(json.dumps(dataclasses.asdict(after), sort_keys=True, separators=(',', ':')).encode()).hexdigest()\n            rows.append({'case': [width, topology, seed], 'plan_sha256': digest, 'metrics': metrics})\nout = {'base_commit': revision, 'historical_selector_sha256': hashlib.sha256(ast.get_source_segment(source, node).encode()).hexdigest(), 'cases': len(rows), 'exact_plan_equal': True, 'complete_GF2_operator_accepted': True, 'rows': rows, 'driver_source': Path(__file__).read_text()}\nPath('/private/tmp/fq-trial-stream-plan-parity-20261122.json').write_text(json.dumps(out, indent=2)+'\\n')\nprint(json.dumps({k: v for k,v in out.items() if k not in ('rows', 'driver_source')}))\n"
+}

@@ -92,3 +92,48 @@ Expected: a legal routed program with restored logical output placement. This
 diagnosis changes no public API or capability maturity. It provides no SDK
 ranking, performance qualification, hardware, or scalability evidence. Formal
 SDKBench qualification remains deferred by the user. No machine was rebooted.
+
+## Separate glued-trees shard cancellation
+
+PR #1291 source `ee767b63f3a1376e91742f424b8444aacd1a4359` has a different
+failure: run `44982319380`, job `137086262724`, coverage shard 149, exhausted
+the unchanged 60-minute PR limit. Its remaining node was
+`tests/integration/test_synthesis_glued_trees_notebook.py::test_wide_full_state_at_original_first_time`.
+The node began at 03:57:48 UTC on November 22, 2026; cancellation arrived at
+04:55:14. A Python watchdog snapshot at 04:05:12 showed the original
+`quantum.evolve(20, 24.0)` statevector execution in fused gate-matrix construction.
+One snapshot cannot establish deadlock, computational progress or root cause.
+
+[The complete record](evidence/compiler-glued-coverage-diagnosis.json) retains
+the cancelled job and log, three diagnostic container outcomes, source launchers,
+native build, resource observations and container cleanup. The original cancelled
+container was still running at 05:10; its exact labels identified the failed
+run. It entered removal at 05:10:44 while a subsequent CI job was starting.
+The diagnostic did not terminate that original container. This exposes a delayed
+cleanup interval, not the cause of the earlier test stall.
+
+The first setup failed to write its native editable extension into the mounted
+source. The second failed while preserving host ownership during a copy under
+rootless container capabilities. Neither ran a test. The corrected setup copied
+the same Git source into container tmpfs without preserving ownership and built
+its native editable installation offline. It used the same host
+`bm-zksg-wx-zone1-d-mc550-64g-2-112`, cpu04 engine, locked image above, Python
+3.12.16, four xdist workers, `COVERAGE_CORE=sysmon`, one numerical thread and
+explicit four-CPU/16-GiB limits. The launcher bounded build plus test at 720
+seconds, retained the first execution and removed its uniquely named container.
+
+The complete, uncropped node passed once: 302.62 seconds in the call and 306.74
+seconds in pytest. It compares all `2**20` complex128 amplitudes against the
+independent original 200-term, ten-repetition NumPy reference at absolute
+tolerance `1e-10`, with no workspace qubits. It crossed pytest's 300-second
+faulthandler dump and exited zero with `OOMKilled=False`. Each diagnostic cleanup
+reported no remaining container under its exact name.
+
+This is not the full shard or its worker history. The isolated run used pytest's
+faulthandler at 300 seconds; the failed CI used `tools.pytest_stack_watchdog`
+at 300 seconds and disabled faulthandler. Source location, installation paths and
+other runner activity also differ. Shared rootless-engine resource accounting
+does not certify per-test memory or host exclusivity. The passing node does not
+resolve the cancellation, justify changing timeouts, or authorize merging failed
+required checks. No same-head CI retry or host/service restart was requested by
+this diagnosis. Keep this incident distinct from the Rainbow worker exits above.

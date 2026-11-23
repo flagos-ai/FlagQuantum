@@ -16,6 +16,10 @@ execution belong to the topology and runtime domains.
   `_cz_blocks.py`. The stage then reuses structural commutation to merge
   generated rotations across CZ gates; see [admission and tests](../../../docs/development/COMPILER_CZ_COMMUTING_ROTATIONS.md).
   See also the [source and evidence record](../../../docs/development/COMPILER_CZ_CIRQ_REUSE.md).
+- `_linear_cnot.py` adapts Qiskit's PMH elimination behind the existing explicit
+  pass hook. It verifies exact binary maps, guards complete-program depth and
+  can decline nonlocal proposals. It is not a default policy; see
+  [scope and controls](../../../docs/development/COMPILER_LINEAR_CNOT.md).
 
 Dependencies may include Core IR and operator semantics, compiler register and
 lowering primitives required by a rewrite, and the circuit math those transforms
@@ -60,3 +64,11 @@ seconds with the butterfly while other acceptance jobs ran. These are diagnostic
 observations, not an isolated benchmark or a public capacity claim. The native
 frontend's protected 256-entry preparation profile is unchanged; admitting
 larger user vectors requires a separate approved contract.
+
+The [shared CZ synthesis experiment](../../../docs/development/COMPILER_SHARED_CZ_SYNTHESIS.md)
+was withdrawn after failing its fixed complete-workflow resource admission.
+
+The [bounded commutation pair experiment](../../../docs/development/COMPILER_BOUNDED_COMMUTATION_PAIRS.md)
+was withdrawn after its first complete-workflow resource control failed the
+prospective improvement threshold. The retained regressions protect partition
+semantics without requiring a cache.
