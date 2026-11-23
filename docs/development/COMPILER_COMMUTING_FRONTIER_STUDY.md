@@ -32,7 +32,7 @@ production API, IR, dependencies, layouts or serialization.
 
 ## Evidence and acceptance
 
-The [retained study](evidence/compiler-commuting-frontier-study.json) records
+The [retained study](evidence/compiler-commuting-frontier-study.json.gz) records
 all fixtures, drivers, per-arm acceptance results, audit, timing samples,
 traced allocation observations, fresh-process RSS and output hashes. Compiler
 baseline: `b8e57f85acc8e0fe05fa67be4482788dc12a9486`. SDKBench revision:
@@ -95,3 +95,27 @@ by documenting why the proposed extra default trial is not adopted.
 
 Documentation-link, public-evidence-privacy and CI-isolation checks pass: 16 tests
 in 4.32 seconds. Full exact-head CI remains required before merge.
+
+## Evidence packaging correction
+
+The first full CI run rejected undeclared `compiler_revision` and
+`sdkbench_revision` fields, an undeclared external SDKBench origin, and the
+report exceeding the 1,800,000-byte tracked-file limit. The full report now uses
+nested `compiler.revision` and `sdkbench.revision` fields from the existing
+vocabulary and deterministic lossless gzip. The small
+[revision and archive index](evidence/compiler-commuting-frontier-study.json)
+keeps all source pins visible to the unchanged repository provenance scanner.
+External SDKBench and Qiskit origins are declared in the existing ledger.
+No recorded revision, measurement, driver, fixture, acceptance result or decision
+has changed. Decompress the archive before inspecting or reproducing the study.
+The index records SHA-256 hashes for the original JSON, normalized decompressed
+JSON and compressed archive. Repository validators and limits are unchanged.
+
+After packaging correction, all 73 selected revision-history/vocabulary, file
+budget, documentation-link and public-evidence-privacy tests pass in 113.96 s
+in an isolated checkout with the verified public branch references. Initial
+local attempts with an inherited worktree override and then missing public refs
+were unsuccessful and do not count as passing verification. Decompressed JSON
+equality with the original was checked after reversing only the four revision
+metadata path changes; archive/index hashes match. The three changed text files
+pass the repository language check. Full new-head CI remains required.
