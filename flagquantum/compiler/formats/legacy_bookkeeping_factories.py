@@ -21,6 +21,7 @@ from ..registers.layout.component_workspace import (
     allocate_word_function,
     free_word_function,
 )
+from ..registers.layout.register_cast import cast_signature
 from ..registers.primitives.always_component import always_component_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 
@@ -86,11 +87,18 @@ def _bookkeeping_factory(
             dimensions.append(extent)
         # Existing native Cast owns storage admission, including its protected
         # quantum/classical boundary even when the foreign permission is true.
-        function = cast_word_function(
-            name,
+        source, target = (
             _dtype(arguments, "inp_dtype"),
             _dtype(arguments, "out_dtype"),
-            tuple(dimensions),
+        )
+        function = (
+            FunctionRecord(
+                name,
+                (),
+                registers=tuple(cast_signature(source, target, tuple(dimensions))),
+            )
+            if source.is_symbolic() or target.is_symbolic()
+            else cast_word_function(name, source, target, tuple(dimensions))
         )
     else:
         dtype = _dtype(arguments, "dtype")

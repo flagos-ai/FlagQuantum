@@ -248,3 +248,21 @@ def test_invalid_constructor_arguments_and_existing_cast_storage_boundary() -> N
             },
         )
     assert len(bookkeeping_factories()) == 6
+
+
+@pytest.mark.parametrize("shape", ((), (2,)))
+def test_symbolic_cast_uses_logical_signature_and_preserves_physical_refusal(
+    shape: tuple[int, ...],
+) -> None:
+    source = pytest.importorskip("qualtran")
+    sympy = pytest.importorskip("sympy")
+    constructor = import_module("qualtran.bloqs.bookkeeping").Cast
+    original = constructor(
+        source.QInt(sympy.Symbol("n")), source.QUInt(sympy.Symbol("n")), shape
+    )
+    record = resolve_component_program(_library(original), 0, bookkeeping_factories())
+    assert verify_program_record(record) == ()
+    assert record.functions[0].registers == tuple(native_signature(original.signature))
+    assert not record.functions[0].blocks
+    with pytest.raises(ValueError, match="component bodies"):
+        bind_register_program(record, ())
