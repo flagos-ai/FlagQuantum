@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Generated protocol bindings retain source visibility as generated code.
+*_pb2.py linguist-generated=true
+*_pb2.pyi linguist-generated=true
