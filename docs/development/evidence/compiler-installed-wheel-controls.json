@@ -709,6 +709,845 @@
       "publication_eligible": false,
       "scalability_claim_allowed": false,
       "source_commit": "f88ebc88f8584cd580802cd219ba16d935fa6715"
+    },
+    "results": {
+      "status": "Completed first measured campaign; independent replay accepted all twelve cases",
+      "publication_eligible": false,
+      "path_classification": "single_device_fast_path",
+      "raw_archive": "compiler-linux-routing-results.tar.gz",
+      "archive_bytes": 12987160,
+      "archive_sha256": "e7d53bf9596142f141d1ce2913c6fa630fc4f50edec856d001b521dc17a6f442",
+      "raw_summary_sha256": "e1e5bb18563d757ce7d641d2419e28b41ab27333eabaed28fd63b626c5aeaff3",
+      "private_host_diagnostics": {
+        "location": "/data/sdkbench-compiler-qualification-20261123/routing-private-audit.tar.gz",
+        "bytes": 13275185,
+        "sha256": "1ccaebd9076722b9534bb49d02cd839789cebeee18f03f12fa9c4d41c7014d27",
+        "scope": "Raw process inventories retained privately; excluded from public archive. No indefinite availability claim."
+      },
+      "campaign": {
+        "attempt": 1,
+        "blocks": 120,
+        "measured_records": 360,
+        "warmups": 240,
+        "returncode": 0,
+        "wall_seconds": 674.7149808458053,
+        "failed_cases": 0,
+        "unsupported_cases": 0
+      },
+      "independent_replay": {
+        "blocks_verified": 120,
+        "bundle_sha256": "fbe0067fa6fc3941aa116889a28d0c8723ed2755c5188ff5f21c4ee44f382f8a",
+        "cases": [
+          {
+            "instance": "ROUTE-LINE-06",
+            "sdk": "fq-integrated-ordinary",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-GRID-08",
+            "sdk": "fq-integrated-ordinary",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-12",
+            "sdk": "fq-integrated-ordinary",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-06",
+            "sdk": "fq-integrated-artifact",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-GRID-08",
+            "sdk": "fq-integrated-artifact",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-12",
+            "sdk": "fq-integrated-artifact",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-06",
+            "sdk": "qiskit-release-restored",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-GRID-08",
+            "sdk": "qiskit-release-restored",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-12",
+            "sdk": "qiskit-release-restored",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-06",
+            "sdk": "cirq-release-restored",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-GRID-08",
+            "sdk": "cirq-release-restored",
+            "status": "accepted"
+          },
+          {
+            "instance": "ROUTE-LINE-12",
+            "sdk": "cirq-release-restored",
+            "status": "accepted"
+          }
+        ],
+        "files_verified": 515,
+        "publication_eligible": false,
+        "schema_version": 1,
+        "scope": "independent record replay; build attestation and publication review remain separate"
+      },
+      "cases": [
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.00012880796566605568,
+            "maximum": 0.01770302699878812,
+            "median": 0.01755411922931671,
+            "minimum": 0.017424223013222218,
+            "q1": 0.017507822485640645,
+            "q3": 0.0176366304513067
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 90,
+            "median": 90.0,
+            "minimum": 90,
+            "q1": 90.0,
+            "q3": 90.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 96,
+            "median": 96.0,
+            "minimum": 96,
+            "q1": 96.0,
+            "q3": 96.0
+          },
+          "instance": "ROUTE-LINE-06",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 26624.0,
+            "maximum": 161677312,
+            "median": 161134592.0,
+            "minimum": 161120256,
+            "q1": 161129472.0,
+            "q3": 161156096.0
+          },
+          "maximum_semantic_error": 1.2911564428300667e-14,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-ordinary",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "full-operator"
+          ],
+          "workflow": "flagquantum-ordinary-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.00013945542741566896,
+            "maximum": 0.02344922488555312,
+            "median": 0.023288228316232562,
+            "minimum": 0.023128891829401255,
+            "q1": 0.023238504538312554,
+            "q3": 0.023377959965728223
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 63,
+            "median": 63.0,
+            "minimum": 63,
+            "q1": 63.0,
+            "q3": 63.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 116,
+            "median": 116.0,
+            "minimum": 116,
+            "q1": 116.0,
+            "q3": 116.0
+          },
+          "instance": "ROUTE-GRID-08",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 22528.0,
+            "maximum": 161366016,
+            "median": 161259520.0,
+            "minimum": 161234944,
+            "q1": 161253376.0,
+            "q3": 161275904.0
+          },
+          "maximum_semantic_error": 9.16943783692128e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-ordinary",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "flagquantum-ordinary-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.0002810881705954671,
+            "maximum": 0.05633201776072383,
+            "median": 0.055849307449534535,
+            "minimum": 0.055443285033106804,
+            "q1": 0.05570929870009422,
+            "q3": 0.05599038687068969
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 206,
+            "median": 206.0,
+            "minimum": 206,
+            "q1": 206.0,
+            "q3": 206.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 432,
+            "median": 432.0,
+            "minimum": 432,
+            "q1": 432.0,
+            "q3": 432.0
+          },
+          "instance": "ROUTE-LINE-12",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 72704.0,
+            "maximum": 167006208,
+            "median": 166938624.0,
+            "minimum": 166801408,
+            "q1": 166892544.0,
+            "q3": 166965248.0
+          },
+          "maximum_semantic_error": 1.2170244290042646e-14,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-ordinary",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "flagquantum-ordinary-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.002382131526246667,
+            "maximum": 0.3410194180905819,
+            "median": 0.32256876048631966,
+            "minimum": 0.32083509396761656,
+            "q1": 0.3219051369233057,
+            "q3": 0.32428726844955236
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 78,
+            "median": 78.0,
+            "minimum": 78,
+            "q1": 78.0,
+            "q3": 78.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 84,
+            "median": 84.0,
+            "minimum": 84,
+            "q1": 84.0,
+            "q3": 84.0
+          },
+          "instance": "ROUTE-LINE-06",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 18432.0,
+            "maximum": 164245504,
+            "median": 164216832.0,
+            "minimum": 163954688,
+            "q1": 164209664.0,
+            "q3": 164228096.0
+          },
+          "maximum_semantic_error": 7.920801340038683e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-artifact",
+          "sdk_reported_accepted_block_rewrites": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 6,
+            "median": 6.0,
+            "minimum": 6,
+            "q1": 6.0,
+            "q3": 6.0
+          },
+          "sdk_reported_native_baseline_cz_count": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 96,
+            "median": 96.0,
+            "minimum": 96,
+            "q1": 96.0,
+            "q3": 96.0
+          },
+          "sdk_reported_native_block_optimization_evidence_available": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 1,
+            "median": 1.0,
+            "minimum": 1,
+            "q1": 1.0,
+            "q3": 1.0
+          },
+          "status": "accepted",
+          "verification": [
+            "full-operator"
+          ],
+          "workflow": "flagquantum-target-artifact"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.0026191680226475,
+            "maximum": 0.3898914298042655,
+            "median": 0.3864956370089203,
+            "minimum": 0.38483277382329106,
+            "q1": 0.385737496195361,
+            "q3": 0.3883566642180085
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 63,
+            "median": 63.0,
+            "minimum": 63,
+            "q1": 63.0,
+            "q3": 63.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 110,
+            "median": 110.0,
+            "minimum": 110,
+            "q1": 110.0,
+            "q3": 110.0
+          },
+          "instance": "ROUTE-GRID-08",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 34816.0,
+            "maximum": 165019648,
+            "median": 164954112.0,
+            "minimum": 164921344,
+            "q1": 164943872.0,
+            "q3": 164978688.0
+          },
+          "maximum_semantic_error": 3.5238720262914985e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-artifact",
+          "sdk_reported_accepted_block_rewrites": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 3,
+            "median": 3.0,
+            "minimum": 3,
+            "q1": 3.0,
+            "q3": 3.0
+          },
+          "sdk_reported_native_baseline_cz_count": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 116,
+            "median": 116.0,
+            "minimum": 116,
+            "q1": 116.0,
+            "q3": 116.0
+          },
+          "sdk_reported_native_block_optimization_evidence_available": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 1,
+            "median": 1.0,
+            "minimum": 1,
+            "q1": 1.0,
+            "q3": 1.0
+          },
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "flagquantum-target-artifact"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.013403163058683276,
+            "maximum": 1.6730215572752059,
+            "median": 1.5632586164865643,
+            "minimum": 1.551933010108769,
+            "q1": 1.5542709720321,
+            "q3": 1.5676741350907832
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 192,
+            "median": 192.0,
+            "minimum": 192,
+            "q1": 192.0,
+            "q3": 192.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 414,
+            "median": 414.0,
+            "minimum": 414,
+            "q1": 414.0,
+            "q3": 414.0
+          },
+          "instance": "ROUTE-LINE-12",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 1350656.0,
+            "maximum": 181010432,
+            "median": 179390464.0,
+            "minimum": 179277824,
+            "q1": 179325952.0,
+            "q3": 180676608.0
+          },
+          "maximum_semantic_error": 4.283147487307544e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "fq-integrated-artifact",
+          "sdk_reported_accepted_block_rewrites": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 9,
+            "median": 9.0,
+            "minimum": 9,
+            "q1": 9.0,
+            "q3": 9.0
+          },
+          "sdk_reported_native_baseline_cz_count": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 432,
+            "median": 432.0,
+            "minimum": 432,
+            "q1": 432.0,
+            "q3": 432.0
+          },
+          "sdk_reported_native_block_optimization_evidence_available": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 1,
+            "median": 1.0,
+            "minimum": 1,
+            "q1": 1.0,
+            "q3": 1.0
+          },
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "flagquantum-target-artifact"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.00016230670735239983,
+            "maximum": 0.008250521030277014,
+            "median": 0.008150571957230568,
+            "minimum": 0.007906937040388584,
+            "q1": 0.00804200954735279,
+            "q3": 0.00820431625470519
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 80,
+            "median": 80.0,
+            "minimum": 80,
+            "q1": 80.0,
+            "q3": 80.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 86,
+            "median": 86.0,
+            "minimum": 86,
+            "q1": 86.0,
+            "q3": 86.0
+          },
+          "instance": "ROUTE-LINE-06",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 98304.0,
+            "maximum": 69697536,
+            "median": 69556224.0,
+            "minimum": 69402624,
+            "q1": 69495808.0,
+            "q3": 69594112.0
+          },
+          "maximum_semantic_error": 4.867939464366314e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "qiskit-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "full-operator"
+          ],
+          "workflow": "qiskit-transpile-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.0001132709439843893,
+            "maximum": 0.017782494891434908,
+            "median": 0.009100014111027122,
+            "minimum": 0.008979516103863716,
+            "q1": 0.009032307309098542,
+            "q3": 0.009145578253082931
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 72,
+            "median": 72.0,
+            "minimum": 68,
+            "q1": 72.0,
+            "q3": 72.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 124,
+            "median": 124.0,
+            "minimum": 118,
+            "q1": 124.0,
+            "q3": 124.0
+          },
+          "instance": "ROUTE-GRID-08",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 17408.0,
+            "maximum": 71483392,
+            "median": 71424000.0,
+            "minimum": 71311360,
+            "q1": 71414784.0,
+            "q3": 71432192.0
+          },
+          "maximum_semantic_error": 3.1007152199735334e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "qiskit-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "qiskit-transpile-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.00030612375121563673,
+            "maximum": 0.021237089298665524,
+            "median": 0.020873370813205838,
+            "minimum": 0.020544961094856262,
+            "q1": 0.020764432614669204,
+            "q3": 0.02107055636588484
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 19.0,
+            "maximum": 252,
+            "median": 238.0,
+            "minimum": 228,
+            "q1": 232.0,
+            "q3": 251.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 6.0,
+            "maximum": 438,
+            "median": 436.0,
+            "minimum": 430,
+            "q1": 432.0,
+            "q3": 438.0
+          },
+          "instance": "ROUTE-LINE-12",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 232448.0,
+            "maximum": 87072768,
+            "median": 86751232.0,
+            "minimum": 86470656,
+            "q1": 86611968.0,
+            "q3": 86844416.0
+          },
+          "maximum_semantic_error": 3.7635168636531295e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "qiskit-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "qiskit-transpile-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.000847848248668015,
+            "maximum": 0.11566154891625047,
+            "median": 0.11485322890803218,
+            "minimum": 0.11398780113086104,
+            "q1": 0.1144211774226278,
+            "q3": 0.11526902567129582
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 80,
+            "median": 80.0,
+            "minimum": 80,
+            "q1": 80.0,
+            "q3": 80.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 86,
+            "median": 86.0,
+            "minimum": 86,
+            "q1": 86.0,
+            "q3": 86.0
+          },
+          "instance": "ROUTE-LINE-06",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 36864.0,
+            "maximum": 155934720,
+            "median": 151478272.0,
+            "minimum": 150777856,
+            "q1": 151471104.0,
+            "q3": 151507968.0
+          },
+          "maximum_semantic_error": 1.8518523378753982e-14,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "cirq-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "full-operator"
+          ],
+          "workflow": "cirq-route-cz-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.0012256046757102013,
+            "maximum": 0.1516791288740933,
+            "median": 0.14861587854102254,
+            "minimum": 0.14764286996796727,
+            "q1": 0.14823346748016775,
+            "q3": 0.14945907215587795
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 91,
+            "median": 91.0,
+            "minimum": 91,
+            "q1": 91.0,
+            "q3": 91.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 138,
+            "median": 138.0,
+            "minimum": 138,
+            "q1": 138.0,
+            "q3": 138.0
+          },
+          "instance": "ROUTE-GRID-08",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 77824.0,
+            "maximum": 152555520,
+            "median": 152408064.0,
+            "minimum": 152301568,
+            "q1": 152358912.0,
+            "q3": 152436736.0
+          },
+          "maximum_semantic_error": 8.549528290691826e-15,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "cirq-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "cirq-route-cz-restored"
+        },
+        {
+          "accepted_records": 30,
+          "complete_block_compile_medians_seconds": {
+            "count": 10,
+            "interquartile_range": 0.003906645812094212,
+            "maximum": 0.52846051286906,
+            "median": 0.5230219115037471,
+            "minimum": 0.5179556170478463,
+            "q1": 0.5213240820448846,
+            "q3": 0.5252307278569788
+          },
+          "dependency_depth_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 240,
+            "median": 240.0,
+            "minimum": 240,
+            "q1": 240.0,
+            "q3": 240.0
+          },
+          "expected_records": 30,
+          "full_cz_count_for_accepted_records": {
+            "count": 30,
+            "interquartile_range": 0.0,
+            "maximum": 456,
+            "median": 456.0,
+            "minimum": 456,
+            "q1": 456.0,
+            "q3": 456.0
+          },
+          "instance": "ROUTE-LINE-12",
+          "kernel_block_memory_peak_bytes": {
+            "count": 10,
+            "interquartile_range": 162816.0,
+            "maximum": 169611264,
+            "median": 169539584.0,
+            "minimum": 169373696,
+            "q1": 169432064.0,
+            "q3": 169594880.0
+          },
+          "maximum_semantic_error": 1.3685637986285428e-14,
+          "measured_record_statuses": {
+            "accepted": 30
+          },
+          "sdk": "cirq-release-restored",
+          "sdk_reported_accepted_block_rewrites": null,
+          "sdk_reported_native_baseline_cz_count": null,
+          "sdk_reported_native_block_optimization_evidence_available": null,
+          "status": "accepted",
+          "verification": [
+            "three-probes-only"
+          ],
+          "workflow": "cirq-route-cz-restored"
+        }
+      ],
+      "metric_notes": [
+        "Counts and dependency depth are recomputed by the independent evaluator.",
+        "Timing uses the median of three accepted measurements within each accepted block.",
+        "Quartiles use inclusive linear interpolation across observed values.",
+        "Incomplete or warmup-failed blocks contribute no timing median; all records remain counted.",
+        "Memory includes the whole supervised block: imports, warmups, measurements and export.",
+        "Accepted-record statistics in a failed case are conditional diagnostics, not case success.",
+        "Six-qubit semantics use the full operator; larger frozen cases use only three probes.",
+        "Restored-layout and free-final-layout workflows are different end-to-end contracts.",
+        "No optimality, global ranking or qualified publication-host claim is made."
+      ],
+      "interruption": "Measurement completed before session interruption. Original replay log was empty with no result. Retained interruption record, successful separately named replay recovery, and successful official report replay. No measurement rerun.",
+      "host_observation": "No foreign CI in measured heartbeats; late post-run baseline matches packages and stable files. Observation gap after interrupted replay prevents continuous host-attestation claim.",
+      "runner_restoration": "All sixteen original scheduling label sets restored; exact record included in archive. No process or service restart or termination.",
+      "limitations": [
+        "Inspected historical controls; not unseen applications or a global ranking.",
+        "Six-wire full operator; eight/twelve wires only three full-state probes.",
+        "Artifact path includes validation, provenance and serialization; ordinary path does not.",
+        "Private default CPython build without PGO/LTO; observed times conditional on frozen environment.",
+        "Full local default tier did not pass; historical-origin failure and disk-related setup errors remain disclosed.",
+        "Original PR metadata failures preserved; fixed only evidence representation."
+      ]
     }
   }
 }
