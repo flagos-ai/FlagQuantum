@@ -1401,3 +1401,10 @@ single-window, through-core and directional Montgomery graph owners. Symbolic
 constructors remain declarations. The original window wire loses modulus
 metadata and fails the exact signature check, as recorded in
 `docs/development/RESOLVER_MODULAR_MULTIPLICATION_AUDIT.md`.
+
+`formats/legacy_modular_inverse_factories.py` assigns the complete nine-class
+Kaliski chain to the existing six step owners, iteration, algorithm and wrapper.
+Constructor metadata preserves word ordering and retained history ownership.
+Steps 1 through 5 accept original wire descriptors. Modulus-bearing signatures
+retain the original codec mismatch and refuse it, as documented in
+`docs/development/RESOLVER_MODULAR_INVERSE_AUDIT.md`.
