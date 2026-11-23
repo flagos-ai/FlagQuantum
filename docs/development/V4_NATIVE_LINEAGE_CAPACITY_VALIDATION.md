@@ -41,7 +41,8 @@ the existing Compiler and independent SDKBench evaluator, not this parser test.
 
 SDKBench is pinned unchanged to
 `5ba03de33f8a9193f86b26d2cb3fa841ede7c98a`. Adapters, numerical acceptance,
-resource policy and fixtures were not modified. Each workflow ran in a fresh
+resource policy and fixtures were not modified. Its revision is explicitly
+classified as an external dependency in the evidence metadata. Each workflow ran in a fresh
 process with a 20-second wall limit. Original six-workflow batch results were
 also retained locally; the checked-in evidence records the fresh-process run.
 The fixture identifiers and SHA-256 values bind the exact inputs.
@@ -87,9 +88,29 @@ remote jobs or private host/process inventories are included.
 
 ## Required verification status
 
-Default and runtime tiers are running at the implementation revision and are not
-yet certified. Exact-head GitHub CI is required before merge. This document does
-not claim completion of those gates; the PR records their current outcome.
+The local default tier stopped after 840.39 seconds and the runtime tier after
+15.00 seconds: the supervisor terminated their owned process groups when free
+disk fell below the 512 MiB headroom guardrail (approximately 307/304 MB free).
+Both are incomplete, with exit code -15, not passing checks. The configured wall
+budgets were 1,500/1,200 seconds. Logs and receipts remain in the local
+`/private/tmp/fq-v4-capacity-required-tiers-20261123` directory; only terminated
+test scratch was removed after confirming the recorded processes had exited.
+The production implementation is the revision named above; documentation and a
+stronger native-overflow fixture were added while the broad tiers ran. These
+attempts do not certify the later documentation/test head.
+
+An initial metadata check found that the SDKBench pin lacked an explicit
+external-dependency origin. After adding that sibling metadata field without
+changing numerical results, the evidence checker reports the same 100 historical
+errors as the earlier baseline and zero errors naming either new capacity file;
+its citation check reports zero errors. Those historical errors are not waived.
+The strengthened overflow fixture keeps all other budgets valid: 8,192 canceled
+CZ inputs plus one unchanged RX tail, one output and 8,192 rewrite memberships.
+All 11 exact-boundary tests passed again (2.24 seconds). After the provenance
+correction, the combined boundary, documentation, privacy and capability check
+passed all 60 tests (17.12 seconds).
+
+Exact-head GitHub CI and completed required tiers remain necessary before merge.
 The source-capacity dependency and this separate contract change must each meet
 the normal merge gate. Release qualification and prospective held-out neutral
 comparison remain pending.

@@ -129,6 +129,40 @@ def test_exact_capacity_roundtrips(native_count: int, output_count: int) -> None
 
 
 def test_native_record_overflow_rejected_before_record_reconstruction() -> None:
+    boundary = _plan(8192)
+    # One unchanged RX(0) tail exceeds only the native count: memberships stay
+    # at 8192, outputs at one, and topology/source ancestry stays below 4096.
+    tail = v4.NativeInputInstructionEvidence(
+        8192, 4095, 4095, 2, "source", "rx", (0, 1), (0,)
+    )
+    output = v4.PhysicalInstructionEvidenceV4(
+        0, 8192, None, None, "rx", (0,), 0, (), ()
+    )
+    with pytest.raises(
+        ValueError, match="native_input_instructions exceeds record limit 8192"
+    ):
+        replace(
+            boundary,
+            native_input_instructions=boundary.native_input_instructions + (tail,),
+            instructions=(output,),
+            schedule_depth=1,
+            maximum_parallel_width=1,
+            critical_path=(0,),
+            plan_identity="",
+        )
+    raw = boundary.to_dict()
+    raw["native_input_instructions"].append(tail.to_dict())
+    raw.update(
+        instructions=[output.to_dict()],
+        schedule_depth=1,
+        maximum_parallel_width=1,
+        critical_path=[0],
+        plan_identity="",
+    )
+    with pytest.raises(
+        ValueError, match="native_input_instructions exceeds record limit 8192"
+    ):
+        v4.PhysicalPlanEvidenceV4.from_dict(raw, target_snapshot_id=_DIGEST)
     plan = _plan(2)
     oversized = (plan.native_input_instructions[0],) * 8193
     with pytest.raises(
