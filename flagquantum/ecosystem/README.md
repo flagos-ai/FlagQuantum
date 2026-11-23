@@ -222,3 +222,11 @@ callbacks. Simulation `_basis_trajectories` owns all numerical state and random
 streams. The adapter reuses existing Compiler metadata, operand binding and
 physical statistics. It imports no reference extension. See
 [the complete session mapping](../../docs/development/PHYSICAL_BASIS_SESSION_AUDIT.md).
+
+`_physical_circuit_files` converts Python paths and caller-owned streams using
+existing Compiler KMX/KMB serializers. It returns native immutable circuit values
+and leaves supplied streams open. It owns no parser, execution kernel or quantum
+workspace. Run `tests/unit/test_physical_circuit_files.py` for source byte
+round trips, failure ordering, resource projections and normal-append/all-branch
+consumer replacement. The complete main-registration disposition is recorded in
+`docs/development/PHYSICAL_MAIN_BINDING_AUDIT.md`.
