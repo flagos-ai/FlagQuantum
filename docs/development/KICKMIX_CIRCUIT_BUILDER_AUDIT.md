@@ -558,3 +558,100 @@ construction measurements. No circuit is executed and no analytical
 resource model is inferred.
 
 Run `python -m benchmarks.reversible_builder_dispatch --iterations 3`.
+
+## Complete raw builder ownership follow-up
+
+The full circuit_builder.cc and circuit_builder.h are being reviewed together
+with their direct dependencies. The existing sections above retain their
+accepted streams and numerical evidence. K-0005 and K-0006 remain open during
+this batch. The explicit source defects in sparse register naming, positive-X
+pending controls and live condition move assignment remain recorded.
+
+The remaining construction-time result ownership uses the existing
+KmxCircuitBuilder and WireAllocation. The allocator retains one physical cursor
+and authoritative RegisterWorkspace leases. Its clean bank serves explicit
+allocations, while its dirty bank holds raw builder helper results. Clean and
+dirty result requests share the helper bank. A fresh clean result emits no
+store. A reused clean result emits BIT_STORE0 before use. Explicit bit frees
+cannot feed the helper bank. Quantum allocation is independent.
+
+result_bit returns an immediately allocated lease with a classical OperandIdentity.
+Its context closes on successful and exceptional exits. measure_result first
+emits HMR and can then push the result as a condition. Closing pops that owned
+condition before LIFO release. disarm transfers both the live bit and pending
+condition cleanup to its caller. C++ move-only storage is represented by an
+explicit Python owner and deterministic context release. Python garbage
+collection does not emit circuit instructions. Clearing a builder invalidates
+outstanding contexts, which fail explicitly on later release.
+
+Physical wire IDs and classical slots keep their existing independent numeric
+spaces. The ordinary typed component and circuit.append(op) entry points remain
+the consumers. Numerical execution stays with existing lowering, Runtime and
+Simulation. Compile-time lease operations add no quantum primitives or model
+estimates. HMR, feedback, clean reuse stores and conditions are counted from
+the complete emitted stream.
+
+### Complete source and header ownership map
+
+Every definition in the 1171-line implementation and every declaration or inline
+body in the 453-line header belongs to the following native owners. Overloads
+share a row only when their tag and operand dispatch were checked together.
+The header includes additional CX, CZ, SWAP and bit-store definitions residing
+in separate source files, whose accepted binding audits are reused here.
+
+| Complete source responsibility | Native owner and retained evidence |
+| --- | --- |
+| append_register, its mixed/array returns, reserve_qubits | KmxCircuitBuilder quantum registration and WireAllocation permanent reservation. PHYSICAL_BUILDER_BINDING_AUDIT.md retains independent ID spaces and lifetime transactions. |
+| append_classical_register overloads and mixed/array returns, reserve_bits | Classical registration, OperandArray and the same scalar allocation owner. No second register-value representation. |
+| reserve_register, append_bit_to_register, append_qubit_to_register | KmxRegister, replace_registers and physical declaration codec. Sparse ID membership and repeated members retain existing byte-exact fixtures. The source allocation-time sparse name displacement remains open on K-0005. |
+| alloc_clean_raii_bit, alloc_dirty_raii_bit, result lease constructors/destructors, disarm and move ownership | Shared WireAllocation banks and deterministic result_bit context. Clean/dirty reuse, nested LIFO, disarm, copy refusal and failed-body release are covered by the raw original helper fixture. Native explicit release replaces C++ destructor timing. |
+| hmr_raii_xbit, hmr_raii_push_condition, XBit conversion | measure_result and OperandIdentity.conjugated_by_h. Shared HMR lowering retains all four complex branches, exact scalar phase and measured-wire zero. |
+| RaiiCircuitBuilderPopPushedCondition constructors, destructor and move assignment | Existing condition codec plus owned measurement condition exit. Source live move-assignment scope leak remains an implementation defect. A pending disarmed condition is explicitly caller-owned. |
+| ControlLike, QuantumTargetLike and ClassicalControlLike | Existing typed operand binding, OperandKind, _Control and _XBasisTarget. Source concepts become tag admission at the existing binding boundary. |
+| c_push overloads, c_resolve overloads, c_resolve_exact and failure explanation | Existing immutable _flip and mixed control resolution. Full supported arities and classical guards retain locked streams. Source false-flag retention on a positive-X target and failure-state pending conditions remain source defects. Native diagnostics retain native ownership. |
+| x overloads, x_if, broadcast_x | Existing unary physical binding, _flip and ordered broadcast_x_ir. Direct physical records retain their opcodes in KmxCircuitBuilder. |
+| z overloads, z_if, z_pow, z_pow_if, neg and neg_if | Existing mixed phase dispatch, PhaseAngle128 and reversible-phase codec. Full exact angle words, phase and actual counters reuse accepted phase and operation binding receipts. |
+| ccx/ccz overloads, conditioned variants, cz_if and cx_if | Existing _mixed_gates, scalar/typed binding and KMX columns. All 160 source scalar streams and unchanged diagram assertions retained. |
+| cccx/cccz concrete and header templates | Existing maximum-arity _flip schedules with explicit clean/borrowed workspace. Templates become one typed dispatch. Full dirty coherence and every small clean branch retain source controls and feedback. |
+| parity_ccx, parity_ccz, parity_cccx and parity_cccz | Existing parity-controlled emitter and accepted 2880 source streams, alias cancellation and clean/borrowed numerical evidence. |
+| broadcast_ccx, broadcast_ccz, broadcast_cswap and cswap/swap_if variants | Existing broadcast and mixed swap owners. Shared-control-dependent lengths, lane operand order and effective guards retain accepted fixtures. |
+| cx/cz/swap scalar, mux and broadcast declarations defined outside this implementation | Existing broadcast_binding, broadcast_swap and typed mux owners. Direct CX/CZ/SWAP source file audits and scalar/array fixtures retained. Source destructive classical self-alias and immutable native partial-failure policy stay documented. |
+| broadcast_hmr, hmr, hmr_if, reset, reset_if and broadcast_reset | Existing ordered measurement/reset primitives and KMX operation columns. Repeated wire/result fixtures and full small reset/HMR branch evidence retained. |
+| reset_and, del_and, del_zero and broadcast_del_zero | Existing broadcast_init_and_ir, broadcast_del_and_ir and X-measurement clear. All 16 source tag pairs and 128 erasure branches retained. |
+| inplace_invert scalar/span/array overloads | Existing operand inversion and shared mixed arithmetic consumers. Literal rebinding and repeated classical slot order retained. |
+| bit_invert, bit_store0/1, guarded variants and bit_store_and | Existing classical assignment binder and Core ClassicalXor. Atomic read-before-write, scope snapshots and alias feedback retain accepted fixtures. |
+| broadcast_bit_store header overloads defined in ops/bit_store.cc | Existing physical_classical_store with complete source broadcast, refused type and sequential feedback cases. |
+| debug_print and debug_print_if overloads | Existing KMX debug records, raw register projection and physical-session output owner. Bare vectors reverse lane order, registered members keep declaration order and constant printing uses the helper bank. Actual debug observer fixtures retain the source instruction sequence. |
+| info_tag, RaiiDeferredMark construction/move/destruction and raii_mark_block_entry | Existing component trace and block-mark codec. The raw unnamed guard emits no marks, while the independently accepted Python mark context emits empty names. These retain their separately recorded source contracts. |
+| for_each and for_each_reversed | Existing reversible pattern owner, affine physical columns and typed row binding. Recipe is bound once and rows expand in forward/reverse lane order. Empty/inverted intervals retain no callback. |
+| finish_circuit, MutableCircuit storage and CircuitPattern field | KmxCircuitBuilder.freeze, KmxCircuit and existing pattern owner. Validation stays at the native boundary. Source arena/pointer layout is replaced by owned columns. |
+| next_qubit_id, next_bit_id, next_register_id, raii_bits and pending-control fields | Existing allocation, register columns and result banks. Immutable gate dispatch has no pending-control queue. No foreign builder state is added to Core or Runtime. |
+| skip_validation | The locked field has no reads in the source subtree. Native finalization retains validation. No inert execution-policy switch is introduced. |
+
+K-0006 declaration and ownership scope can close with this map and successful
+batch acceptance. K-0005 remains open for its recorded source implementation
+boundaries. This does not close K-0180 automatic wrapper failure-state mutation,
+K-0232 lookup defects, numerical factory rounding or source performance gaps.
+
+### Follow-up batch acceptance
+
+K-0006 is accepted for its complete declaration and ownership scope. The full
+114-definition implementation map retains K-0005's recorded implementation
+boundaries. All 53 frozen source/dependency blobs pass verification. The new
+standalone C++ probe compiles three unchanged source files with their 36-header
+closure and regenerates the seven lifecycle observations byte for byte. Each
+observation also executes three original and three native lanes, preserving
+canonical records, outputs, exact phases and separately recorded static/actual
+counts. The accepted original 27 builder tests are reused with their unchanged
+source blob. Existing complete scalar, parity, broadcast and work-zero evidence
+is retained.
+
+Local checks pass 42 focused checks, 4655 concentrated checks, 121 integration
+checks and strict typing for six files. The focused coverage selection including
+existing mutable-circuit tests passes 151 cases. WireAllocation has complete
+statement and branch coverage. The full builder has 209/216 statements covered,
+with 96% combined statement/branch coverage. Black, Ruff, Compiler scope,
+architecture, multilevel IR and API checks pass. The dependency finding set
+remains the identical 720-entry baseline. The replacement HMR construction runs
+every branch of the accepted complex spectator consumer with measured wires
+zero. Receipt g2-raw-builder-acceptance-20261123.json records this scope.

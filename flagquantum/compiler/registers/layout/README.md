@@ -56,3 +56,13 @@ Stored AutoPartition accepts validated typed child declarations as well as
 call bodies. Symbolic partitions retain declarations, and exact packed adjoints
 reverse the original partition sequence. Run `test_component_auto_partition.py`
 and `test_packed_prepare_component.py` when changing that boundary.
+
+Raw construction results share the physical ID cursor with explicit classical
+allocations and retain a separate reuse bank. The existing dirty workspace bank
+owns these helper slots. `KmxCircuitBuilder.result_bit` provides deterministic
+release, optional clean reuse and explicit ownership transfer. `measure_result`
+adds HMR and optional condition ownership. Formats emits stores and condition
+records, while layout owns allocation alone. Run
+`tests/unit/test_physical_builder_results.py` and
+`tests/unit/test_kmx_result_lifetimes.py` for the locked lifecycle and all small
+complex measurement branches through the construction replacement.

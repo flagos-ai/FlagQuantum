@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
+from flagquantum.compiler.formats.kmx_builder import KmxCircuitBuilder
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
@@ -55,9 +56,21 @@ def test_source_clean_and_dirty_reuse_replays_without_expanding_constant_store()
 
 
 @pytest.mark.ftqc_reference
-def test_recycled_hmr_slot_preserves_all_complex_measurement_branches() -> None:
+@pytest.mark.parametrize("construct", [False, True])
+def test_recycled_hmr_slot_preserves_all_complex_measurement_branches(
+    construct: bool,
+) -> None:
     km = pytest.importorskip("kickmix")
-    program = decode_kmx(_HEADER + _HMR)
+    body = _HMR
+    if construct:
+        builder = KmxCircuitBuilder()
+        with builder.measure_result(0, condition=True):
+            builder.append_kmx_line("Z q1")
+        with builder.measure_result(1) as result:
+            builder.append_kmx_line(f"NEG if b{result.bit.value}")
+        body = builder.freeze().to_kmx() + "\n"
+        assert body == _HMR
+    program = decode_kmx(_HEADER + body)
     encoded = encode_kmx(program)
     assert encoded == _HEADER + _HMR
     assert str(km.Circuit(encoded)).strip() == encoded.strip()

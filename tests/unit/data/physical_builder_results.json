@@ -1,0 +1,453 @@
+{
+  "dirty_released": {
+    "columns": {
+      "next": [
+        3
+      ],
+      "free": [
+        2
+      ],
+      "ops": [
+        65
+      ],
+      "b0": [
+        2
+      ],
+      "bc": [],
+      "q0": []
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2",
+      "records": 1,
+      "qubits": 0,
+      "bits": 3,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 0,
+      "text_diagram": " b2=1",
+      "static_counts": {
+        "BIT_STORE1": 1
+      },
+      "executed_counts": {
+        "BIT_STORE1": 3
+      },
+      "quantum": [],
+      "classical": [
+        0,
+        0,
+        7
+      ],
+      "phases": [
+        "0",
+        "0",
+        "0"
+      ]
+    }
+  },
+  "clean_released": {
+    "columns": {
+      "next": [
+        3
+      ],
+      "free": [
+        2
+      ],
+      "ops": [
+        65,
+        64,
+        145
+      ],
+      "b0": [
+        2,
+        2
+      ],
+      "bc": [
+        2
+      ],
+      "q0": [
+        0
+      ]
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2\nBIT_STORE0 b2\nX q0 if b2",
+      "records": 3,
+      "qubits": 1,
+      "bits": 3,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 0,
+      "text_diagram": "      b2=1\nq0: -------X**b2-\n      b2=0",
+      "static_counts": {
+        "BIT_STORE0": 1,
+        "BIT_STORE1": 1,
+        "X": 1
+      },
+      "executed_counts": {
+        "BIT_STORE0": 3,
+        "BIT_STORE1": 3
+      },
+      "quantum": [
+        3
+      ],
+      "classical": [
+        0,
+        0,
+        0
+      ],
+      "phases": [
+        "0",
+        "0",
+        "0"
+      ]
+    }
+  },
+  "nested_released": {
+    "columns": {
+      "next": [
+        4
+      ],
+      "free": [
+        3,
+        2
+      ],
+      "ops": [
+        65,
+        64,
+        145,
+        65
+      ],
+      "b0": [
+        2,
+        2,
+        3
+      ],
+      "bc": [
+        2
+      ],
+      "q0": [
+        0
+      ]
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2\nBIT_STORE0 b2\nX q0 if b2\nBIT_STORE1 b3",
+      "records": 4,
+      "qubits": 1,
+      "bits": 4,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 0,
+      "text_diagram": "      b2=1       b3=1\nq0: -------X**b2------\n      b2=0",
+      "static_counts": {
+        "BIT_STORE0": 1,
+        "BIT_STORE1": 2,
+        "X": 1
+      },
+      "executed_counts": {
+        "BIT_STORE0": 3,
+        "BIT_STORE1": 6
+      },
+      "quantum": [
+        3
+      ],
+      "classical": [
+        0,
+        0,
+        0,
+        7
+      ],
+      "phases": [
+        "0",
+        "0",
+        "0"
+      ]
+    }
+  },
+  "measured_released": {
+    "columns": {
+      "next": [
+        4
+      ],
+      "free": [
+        3,
+        2
+      ],
+      "ops": [
+        65,
+        64,
+        145,
+        65,
+        80,
+        129,
+        16,
+        1
+      ],
+      "b0": [
+        2,
+        2,
+        3,
+        2
+      ],
+      "bc": [
+        2,
+        2
+      ],
+      "q0": [
+        0,
+        1,
+        2
+      ]
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2\nBIT_STORE0 b2\nX q0 if b2\nBIT_STORE1 b3\nHMR q1 b2\nPUSH_CONDITION if b2\nZ q2\nPOP_CONDITION",
+      "records": 8,
+      "qubits": 3,
+      "bits": 4,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 1,
+      "text_diagram": "      b2=1       b3=1         push_cond if b2   pop_cond\nq0: -------X**b2-----------------------------------------\n      b2=0\nq1: ------------------HMR=b2\n\nq2: ------------------------------------------Z----------",
+      "static_counts": {
+        "BIT_STORE0": 1,
+        "BIT_STORE1": 2,
+        "X": 1,
+        "Z": 1,
+        "HMR": 1,
+        "POP_CONDITION": 1,
+        "PUSH_CONDITION": 1
+      },
+      "executed_counts": {
+        "BIT_STORE0": 3,
+        "BIT_STORE1": 6,
+        "Z": 2,
+        "HMR": 3,
+        "POP_CONDITION": 3,
+        "PUSH_CONDITION": 3
+      },
+      "quantum": [
+        3,
+        0,
+        5
+      ],
+      "classical": [
+        0,
+        0,
+        6,
+        7
+      ],
+      "phases": [
+        "0",
+        "0",
+        "1"
+      ]
+    }
+  },
+  "detached": {
+    "columns": {
+      "next": [
+        4
+      ],
+      "free": [
+        3
+      ],
+      "ops": [
+        65,
+        64,
+        145,
+        65,
+        80,
+        129,
+        16,
+        1,
+        64
+      ],
+      "b0": [
+        2,
+        2,
+        3,
+        2,
+        2
+      ],
+      "bc": [
+        2,
+        2
+      ],
+      "q0": [
+        0,
+        1,
+        2
+      ]
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2\nBIT_STORE0 b2\nX q0 if b2\nBIT_STORE1 b3\nHMR q1 b2\nPUSH_CONDITION if b2\nZ q2\nPOP_CONDITION\nBIT_STORE0 b2",
+      "records": 9,
+      "qubits": 3,
+      "bits": 4,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 1,
+      "text_diagram": "      b2=1       b3=1         push_cond if b2   pop_cond\nq0: -------X**b2-----------------------------------------\n      b2=0                                      b2=0\nq1: ------------------HMR=b2\n\nq2: ------------------------------------------Z----------",
+      "static_counts": {
+        "BIT_STORE0": 2,
+        "BIT_STORE1": 2,
+        "X": 1,
+        "Z": 1,
+        "HMR": 1,
+        "POP_CONDITION": 1,
+        "PUSH_CONDITION": 1
+      },
+      "executed_counts": {
+        "BIT_STORE0": 6,
+        "BIT_STORE1": 6,
+        "Z": 2,
+        "HMR": 3,
+        "POP_CONDITION": 3,
+        "PUSH_CONDITION": 3
+      },
+      "quantum": [
+        3,
+        0,
+        5
+      ],
+      "classical": [
+        0,
+        0,
+        0,
+        7
+      ],
+      "phases": [
+        "0",
+        "0",
+        "1"
+      ]
+    }
+  },
+  "remaining": {
+    "columns": {
+      "next": [
+        4
+      ],
+      "free": [
+        3
+      ],
+      "ops": [
+        65,
+        64,
+        145,
+        65,
+        80,
+        129,
+        16,
+        1,
+        64,
+        71
+      ],
+      "b0": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3
+      ],
+      "bc": [
+        2,
+        2
+      ],
+      "q0": [
+        0,
+        1,
+        2
+      ]
+    },
+    "observation": {
+      "text": "BIT_STORE1 b2\nBIT_STORE0 b2\nX q0 if b2\nBIT_STORE1 b3\nHMR q1 b2\nPUSH_CONDITION if b2\nZ q2\nPOP_CONDITION\nBIT_STORE0 b2\nDEBUG_PRINT b3",
+      "records": 10,
+      "qubits": 3,
+      "bits": 4,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 1,
+      "text_diagram": "      b2=1       b3=1         push_cond if b2   pop_cond\nq0: -------X**b2---------------------------------------------------------------\n      b2=0                                      b2=0\nq1: ------------------HMR=b2\n                                                UNEXPECTED_NON_QUBIT_OPERATION\nq2: ------------------------------------------Z--------------------------------",
+      "static_counts": {
+        "BIT_STORE0": 2,
+        "BIT_STORE1": 2,
+        "X": 1,
+        "Z": 1,
+        "HMR": 1,
+        "DEBUG_PRINT": 1,
+        "POP_CONDITION": 1,
+        "PUSH_CONDITION": 1
+      },
+      "executed_counts": {
+        "BIT_STORE0": 6,
+        "BIT_STORE1": 6,
+        "Z": 2,
+        "HMR": 3,
+        "DEBUG_PRINT": 3,
+        "POP_CONDITION": 3,
+        "PUSH_CONDITION": 3
+      },
+      "quantum": [
+        3,
+        0,
+        5
+      ],
+      "classical": [
+        0,
+        0,
+        0,
+        7
+      ],
+      "phases": [
+        "0",
+        "0",
+        "1"
+      ]
+    }
+  },
+  "fresh_clean": {
+    "columns": {
+      "next": [
+        1
+      ],
+      "free": [
+        0
+      ],
+      "ops": [
+        145
+      ],
+      "b0": [],
+      "bc": [
+        0
+      ],
+      "q0": [
+        0
+      ]
+    },
+    "observation": {
+      "text": "X q0 if b0",
+      "records": 1,
+      "qubits": 1,
+      "bits": 1,
+      "registers": 0,
+      "register_data": [],
+      "reaction_depth": 0,
+      "text_diagram": "q0: -X**b0-",
+      "static_counts": {
+        "X": 1
+      },
+      "executed_counts": {},
+      "quantum": [
+        3
+      ],
+      "classical": [
+        0
+      ],
+      "phases": [
+        "0",
+        "0",
+        "0"
+      ]
+    }
+  }
+}

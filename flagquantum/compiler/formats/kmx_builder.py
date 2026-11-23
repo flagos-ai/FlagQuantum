@@ -2,6 +2,7 @@
 # Adapted from locked Kickmix MutableCircuit.
 # https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/circuit/mutable_circuit.cc
 # Register lifetime and mark contexts also follow py/circuit/circuit_builder.pybind.cc.
+# Result leases follow build/circuit_builder.cc and build/circuit_builder.h.
 
 """Build raw reversible circuits incrementally and freeze a validated value."""
 
@@ -108,6 +109,32 @@ class KmxCircuitBuilder:
                 self._classical_storage.free(operand.value)
             else:
                 raise ValueError("Physical release requires quantum or classical IDs")
+
+    def result_bit(self, *, clean: bool = False) -> "_BuilderResult":
+        """Lease a result slot from the helper bank, clearing only reused clean slots.
+
+        Fresh slots retain the physical circuit's zero initial classical state.
+        The context releases ownership on normal or exceptional exit. Explicit
+        classical allocations use their separate reuse bank and the same cursor.
+        """
+        reused = self._classical_storage.available_count(dirty=True) != 0
+        wire = self._classical_storage.allocate(1, dirty=True)[0]
+        result = _BuilderResult(self, OperandIdentity(OperandKind.CLASSICAL, wire))
+        if clean and reused:
+            self.append_kmx_line(f"BIT_STORE0 b{wire}")
+        return result
+
+    def measure_result(self, wire: int, *, condition: bool = False) -> "_BuilderResult":
+        """Measure and clear a wire into a lease, optionally entering its condition."""
+        target = OperandIdentity(OperandKind.QUANTUM, wire)
+        if target.value >= _MAX_WIRES:
+            raise ValueError("Measurement target exceeds the physical operand limit")
+        result = self.result_bit()
+        self.append_kmx_line(f"HMR q{wire} b{result.bit.value}")
+        if condition:
+            self.append_kmx_line(f"PUSH_CONDITION if b{result.bit.value}")
+            result._condition = True
+        return result
 
     def create_quantum_register(self, length: int, name: str) -> OperandArray:
         """Reserve permanent quantum IDs and append their named membership."""
@@ -250,6 +277,57 @@ class KmxCircuitBuilder:
         self._quantum_storage = WireAllocation()
         self._classical_storage = WireAllocation()
         self._max_qubits = inf
+
+
+class _BuilderResult:
+    """Hold one result owner until explicit release or ownership transfer."""
+
+    def __init__(self, builder: KmxCircuitBuilder, bit: OperandIdentity) -> None:
+        self._builder: KmxCircuitBuilder | None = builder
+        self._storage = builder._classical_storage
+        self._condition = False
+        self.bit = bit
+
+    def __copy__(self) -> "_BuilderResult":
+        raise TypeError("A result lease has one owner and cannot be copied")
+
+    def __deepcopy__(self, memo: dict[int, object]) -> "_BuilderResult":
+        raise TypeError("A result lease has one owner and cannot be copied")
+
+    def __enter__(self) -> "_BuilderResult":
+        if self._builder is None:
+            raise ValueError("A released result lease cannot be entered")
+        return self
+
+    def close(self) -> None:
+        """Pop the owned condition before returning the result to its reuse bank."""
+        builder = self._builder
+        if builder is None:
+            return
+        if builder._classical_storage is not self._storage:
+            raise ValueError("A cleared builder invalidates outstanding result leases")
+        if self._condition:
+            builder.append_kmx_line("POP_CONDITION")
+        self._storage.free(self.bit.value)
+        self._builder = None
+
+    def disarm(self) -> OperandIdentity:
+        """Transfer the bit and any pending condition cleanup to the caller."""
+        if self._builder is None:
+            raise ValueError("A released result lease cannot transfer ownership")
+        if self._builder._classical_storage is not self._storage:
+            raise ValueError("A cleared builder invalidates outstanding result leases")
+        self._builder = None
+        return self.bit
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        self.close()
+        return False
 
 
 class _BuilderMark:

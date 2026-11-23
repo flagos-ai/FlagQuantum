@@ -31,15 +31,19 @@ class WireAllocation:
         self._reserved_count += count
         return result
 
-    def allocate(self, count: int) -> tuple[int, ...]:
+    def available_count(self, *, dirty: bool = False) -> int:
+        """Inspect reusable storage in one ownership bank before allocation."""
+        return self._workspace.available_count(dirty=dirty)
+
+    def allocate(self, count: int, *, dirty: bool = False) -> tuple[int, ...]:
         """Reuse the free stack before adopting new IDs into live workspace."""
         count = unsigned_size(count)
-        reused = min(count, self._workspace.available_count())
+        reused = min(count, self._workspace.available_count(dirty=dirty))
         self._check_growth(count - reused)
-        previous = self._workspace.allocate(reused).wires if reused else ()
+        previous = self._workspace.allocate(reused, dirty=dirty).wires if reused else ()
         fresh = tuple(range(self._next_wire, self._next_wire + count - reused))
         if fresh:
-            self._workspace.adopt(fresh)
+            self._workspace.adopt(fresh, dirty=dirty)
         self._next_wire += len(fresh)
         return previous + fresh
 
