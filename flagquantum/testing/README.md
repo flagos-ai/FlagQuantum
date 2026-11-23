@@ -98,3 +98,18 @@ lock surrounds actual kernel/client startup, and the Jupyter setup context owns
 shutdown on success and failure. Numerical execution remains with the ordinary
 FlagQuantum circuit backend. Run the real complex-state append example in
 `tests/unit/test_notebook_execution.py` with Jupyter installed.
+
+## Physical circuit fuzzing
+
+`_circuit_fuzzer.py` composes the existing Compiler builder and Simulation packed
+basis executor for callback-driven conformance checks. Input and expected-output
+samples contain Core immutable fixed-width integers. Assign an updated value
+back to `sample[name]`. `old(name)` retains the input, and expected phases use
+Compiler `PhaseAngle128`. Context management or explicit `close()` owns the
+unused-sampler warning. The helper stays private and is independent of production
+execution decisions.
+
+Run `tests/unit/test_circuit_fuzzer.py` for a three-bit increment, seeded callback
+sampling, measurement feedback and first-failure diagnostics. Full source-file
+closure, native ownership adaptations and resource evidence are recorded in
+`docs/development/CIRCUIT_FUZZER_AUDIT.md`.
