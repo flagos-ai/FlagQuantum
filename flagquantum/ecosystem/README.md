@@ -234,3 +234,7 @@ workspace. Run `tests/unit/test_physical_circuit_files.py` for source byte
 round trips, failure ordering, resource projections and normal-append/all-branch
 consumer replacement. The complete main-registration disposition is recorded in
 `docs/development/PHYSICAL_MAIN_BINDING_AUDIT.md`.
+
+`_component_library.arithmetic_library_factories` binds arithmetic constants
+through the same Simulation stored-value codec as bitwise constructors. Compiler
+owns construction and Simulation owns numerical encoding.

@@ -1,5 +1,6 @@
 """Compose library constructor adaptation with existing native value codecs."""
 
+from ..compiler.formats.legacy_arithmetic_factories import arithmetic_factories
 from ..compiler.formats.legacy_component_resolution import ComponentFactory
 from ..compiler.formats.legacy_word_factories import word_factories
 from ..core.ir.program.registers import Register, RegisterType
@@ -17,3 +18,8 @@ def bitwise_library_factories() -> dict[str, ComponentFactory]:
     typed word calls. It imports no source framework or provider constructor.
     """
     return word_factories(encode_constant=_constant_bits)
+
+
+def arithmetic_library_factories() -> dict[str, ComponentFactory]:
+    """Bind integer arithmetic constants through the same owned stored-value codec."""
+    return arithmetic_factories(encode_constant=_constant_bits)

@@ -74,3 +74,7 @@ The complete bitwise constructor group and its X leaf in
 dependency accepts self-contained scalar children and remains partial for
 generic referenced helper closure. The 271 remaining identifiers include both
 that gap and generic Adjoint/Controlled/Power semantics.
+
+Complete addition.py and negate.py constructor bindings and their direct Always
+dependency are mapped in RESOLVER_ARITHMETIC_AUDIT.md. Generic control/adjoint
+wire wrappers and original one-bit signed Negate refusal remain explicit.

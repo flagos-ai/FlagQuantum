@@ -1293,3 +1293,8 @@ and ordered comma grammar. Ecosystem binds those records to circuit registers.
 Simulation owns all random draws and numerical initialization. Run
 `tests/unit/test_physical_initialization_text.py` for complete locked-source
 format conformance and actual command-binding replacement.
+
+`formats/legacy_arithmetic_factories.py` binds complete addition and negation
+constructors to existing typed arithmetic owners. Bookkeeping Always retains
+the already resolved child closure. Run `tests/unit/test_legacy_arithmetic_factories.py`
+for source gate, phase, output ownership and measured erasure conformance.
