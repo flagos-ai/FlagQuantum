@@ -57,3 +57,12 @@ caller-declared storage. Run `tests/unit/test_lookup_binding.py` for complete
 marked streams, normal append execution and exhaustive small raw branches.
 `docs/development/LOOKUP_BINDING_AUDIT.md` records the original six-address-bit
 work shortfall, failed-call allocation leak and portable table-size boundary.
+
+`_unary_iteration_session.UnaryIterationPass` composes the accepted physical
+cursor with caller-owned operation storage and a shared workspace pool. It owns
+reusable context and iterator lifetimes, exact move/cleanup component marks and
+classical control scopes. Explicit close returns clean workspace. Start with
+`tests/unit/test_unary_iteration_session.py` for full marked source streams,
+normal append replacement and all small complex measurement histories. See
+`docs/development/UNARY_ITERATION_SESSION_AUDIT.md` for source ownership,
+allocation and actual-versus-model resource accounting.
