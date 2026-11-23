@@ -21,6 +21,7 @@ from flagquantum.compiler.formats.legacy_component_library import (
 )
 from flagquantum.compiler.formats.legacy_component_resolution import (
     ComponentFactory,
+    ResolvedArgument,
     resolve_component_program,
 )
 from flagquantum.compiler.formats.legacy_fixed_gate_factories import (
@@ -320,3 +321,56 @@ def test_on_each_rejects_unresolved_child_dependencies_before_namespacing() -> N
     factory = bitwise_library_factories()["qualtran.bloqs.basic_gates.on_each.OnEach"]
     with pytest.raises(SerializationError, match="self-contained"):
         factory("main", None, {"n": 3, "gate": nested})
+
+
+def test_controlled_complement_dependency_context_and_symbolic_boundary() -> None:
+    from flagquantum.compiler.formats.legacy_component_arguments import (
+        ControlSpecification,
+    )
+    from flagquantum.core.ir.program.register_types import quantum_bit_type
+    from flagquantum.ecosystem._component_library import bitwise_library_factories
+
+    np = pytest.importorskip("numpy")
+    factories = bitwise_library_factories()
+    word = factories["qualtran.bloqs.arithmetic.bitwise.BitwiseNot"]
+    wrapper = factories["qualtran._infra.controlled.Controlled"]
+    bit = quantum_bit_type()
+    spec = ControlSpecification(((bit, np.array(1)),))
+    for dtype in (unsigned_register_type(2), unsigned_register_type(sympy.Symbol("n"))):
+        result = word("child", None, {"dtype": dtype})
+        root = result.functions[0] if isinstance(result, ProgramRecord) else result
+        controlled = wrapper("wrapper", None, {"subbloq": root, "ctrl_spec": spec})
+        if isinstance(controlled, ProgramRecord):
+            assert controlled.functions[0].registers is not None
+            assert (
+                wrapper(
+                    "wrapper",
+                    controlled.functions[0].registers,
+                    {"subbloq": root, "ctrl_spec": spec},
+                )
+                == controlled
+            )
+        else:
+            assert controlled.blocks == ()
+        with pytest.raises(SerializationError, match="signature"):
+            wrapper("wrapper", (), {"subbloq": root, "ctrl_spec": spec})
+    concrete = word("concrete", None, {"dtype": unsigned_register_type(2)})
+    assert isinstance(concrete, ProgramRecord)
+    child = concrete.functions[0]
+    invalid: tuple[dict[str, ResolvedArgument], ...] = (
+        {},
+        {"subbloq": FunctionRecord("unknown", ()), "ctrl_spec": spec},
+        {"subbloq": child, "ctrl_spec": 1},
+        {"subbloq": child, "ctrl_spec": ControlSpecification(())},
+        {"subbloq": child, "ctrl_spec": ControlSpecification(((bit, np.array(0)),))},
+        {"subbloq": child, "ctrl_spec": ControlSpecification(((bit, np.array([1])),))},
+        {
+            "subbloq": child,
+            "ctrl_spec": ControlSpecification(
+                ((unsigned_register_type(1), np.array(1)),)
+            ),
+        },
+    )
+    for args in invalid:
+        with pytest.raises(SerializationError):
+            wrapper("bad", None, args)

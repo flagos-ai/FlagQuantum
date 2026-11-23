@@ -14,14 +14,16 @@ from typing import Literal
 import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
-from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterType
 from ...core.ir.program.signatures import Signature
 from ...core.value_parameters import is_symbolic_value
 from ...errors import SerializationError
 from ..registers.bits.bitwise_component import bitwise_word_program
+from ..registers.bits.bitwise_component_control import controlled_bitwise_word_program
 from ..registers.bits.on_each import on_each_word_program
 from ..registers.component_graph import _namespace_helpers
+from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 
 ConstantEncoder = Callable[[RegisterType, object], tuple[int, ...]]
@@ -131,14 +133,62 @@ def word_factories(*, encode_constant: ConstantEncoder) -> dict[str, ComponentFa
     Compiler consumes MSB bits and constructs typed calls. Numerical encoding
     and its dtype-specific validation remain with the injected codec owner.
     OnEach accepts the existing self-contained scalar QBit child interface.
+    Controlled accepts the positive scalar QBit complement dependency. Its
+    child must have been resolved in this catalogue, including symbolic views.
+    Create a catalogue per compilation to bound retained constructor context.
     """
+    complements: dict[FunctionRecord, RegisterType] = {}
+
+    def word_factory(
+        kind: _Kind,
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        result = _word_factory(encode_constant, kind, name, registers, arguments)
+        if kind == "BitwiseNot":
+            root = result.functions[0] if isinstance(result, ProgramRecord) else result
+            assert root.registers is not None
+            complements[root] = root.registers[0].dtype
+        return result
+
+    def controlled_factory(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        if set(arguments) != {"subbloq", "ctrl_spec"}:
+            raise SerializationError("Controlled requires subbloq and ctrl_spec")
+        child, spec = arguments["subbloq"], arguments["ctrl_spec"]
+        if not isinstance(child, FunctionRecord) or child not in complements:
+            raise SerializationError(
+                "Missing controlled complement constructor context"
+            )
+        if not isinstance(spec, ControlSpecification) or len(spec.clauses) != 1:
+            raise SerializationError(
+                "Controlled complement requires one control clause"
+            )
+        control_dtype, values = spec.clauses[0]
+        bit = quantum_bit_type()
+        if control_dtype != bit or values.shape != () or values.item() != 1:
+            raise SerializationError(
+                "Controlled complement requires positive scalar QBit"
+            )
+        dtype = complements[child]
+        signature = tuple(Signature.build_from_dtypes(ctrl=bit, x=dtype))
+        _check_signature(signature, registers)
+        if dtype.is_symbolic():
+            return FunctionRecord(name, (), registers=signature)
+        return _rename_program(
+            controlled_bitwise_word_program(dtype, "bitwise_not"), name
+        )
+
     kinds: tuple[_Kind, ...] = ("Xor", "XorK", "BitwiseNot")
     return {
         **{
-            f"qualtran.bloqs.arithmetic.bitwise.{kind}": partial(
-                _word_factory, encode_constant, kind
-            )
+            f"qualtran.bloqs.arithmetic.bitwise.{kind}": partial(word_factory, kind)
             for kind in kinds
         },
         "qualtran.bloqs.basic_gates.on_each.OnEach": _on_each_factory,
+        "qualtran._infra.controlled.Controlled": controlled_factory,
     }
