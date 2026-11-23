@@ -53,3 +53,10 @@ adaptation of arbitrary foreign gates remain open under Q-0866 and Q-0876.
 Executable import currently covers explicitly registered native definitions
 and finite typed composite connections. Register-encoding and symbolic
 grammar limits remain with their existing owners.
+
+The native fixed-gate mapping now supplies eight catalogue identifiers from
+the complete CNOT, Hadamard, S, T, Toffoli and Y source files. It retains both
+S/T directions and Toffoli control-array order through ordinary circuit append.
+See `RESOLVER_FIXED_GATE_AUDIT.md` for the complete constructor dependency
+disposition and separate primitive/model accounts. The remaining 295 source
+catalogue identifiers keep Q-0876 open.

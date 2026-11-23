@@ -8,6 +8,12 @@ plans, evidence, and target artifacts. `registers/` owns register-level
 decompositions. Documented compiler entry modules remain importable at their
 existing paths.
 
+The explicit fixed-unitary library constructors in
+`formats/legacy_fixed_gate_factories.py` feed the existing typed library resolver.
+Their source names are data identifiers and resolve to native gate functions.
+Run `python -m pytest tests/unit/test_legacy_fixed_gate_factories.py -q` in the
+locked reference environment to check the serialized-library-to-append path.
+
 The internal [register package guide](registers/README.md) maps arithmetic,
 modular arithmetic, finite fields, lookup, control and the other register
 domains to their owning subpackages and focused tests.
