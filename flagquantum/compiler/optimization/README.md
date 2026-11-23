@@ -44,3 +44,8 @@ The tests exercise analyses, admitted passes, convergence, and failure behavior.
 
 The [shared CZ synthesis experiment](../../../docs/development/COMPILER_SHARED_CZ_SYNTHESIS.md)
 was withdrawn after failing its fixed complete-workflow resource admission.
+
+The [bounded commutation pair experiment](../../../docs/development/COMPILER_BOUNDED_COMMUTATION_PAIRS.md)
+was withdrawn after its first complete-workflow resource control failed the
+prospective improvement threshold. The retained regressions protect partition
+semantics without requiring a cache.
