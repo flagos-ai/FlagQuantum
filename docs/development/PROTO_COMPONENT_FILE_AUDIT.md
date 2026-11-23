@@ -95,3 +95,14 @@ positive Controlled(BitwiseNot) dependency are mapped in
 RESOLVER_CONDITIONAL_ADDITION_AUDIT.md. Complete built-in coverage is 42/303,
 with 261 identifiers remaining. The partial Controlled mapping is excluded
 from the complete identifier count.
+
+## Comparison constructor dependency batch
+
+RESOLVER_COMPARISON_AUDIT.md closes the fourteen comparison identifiers through
+existing component owners, including their private half helper. Direct typed
+sign conversion, literal multi-control X/Z, scoped Pauli ControlledViaAnd and Z/CZ
+leaves preserve source operands, directional aliases and measured cleanup.
+Complete catalogue coverage is 60/303, with 243 remaining. The two signed-only
+conversion mappings stay partial for the unchanged source's permissive same-class
+non-signed inputs. Generic wrappers and structured control dependencies remain
+explicit. No original source or protected numerical admission is changed.

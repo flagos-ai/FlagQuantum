@@ -1315,3 +1315,12 @@ conditional addition owner. Its positive scalar Controlled(BitwiseNot) dependenc
 uses exact per-catalogue child context and the existing controlled word owner.
 Run `tests/unit/test_legacy_conditional_addition_factories.py` and the word factory
 suite for the complete constructor closure and explicit generic-control limits.
+
+`formats/legacy_comparison_factories.py` binds the fourteen comparison constructors
+and their private half helper through existing comparison component owners.
+`legacy_sign_extension_factories.py` supplies signed directional prefix views.
+`legacy_multi_control_factories.py` supplies literal X/Z and the scoped scalar
+Pauli ControlledViaAnd dependency. Z/CZ reuse the fixed-gate factory. Run
+`tests/unit/test_legacy_comparison_factories.py` and the corresponding sign and
+multi-control factory tests. Full scope and retained source/admission gaps are in
+`docs/development/RESOLVER_COMPARISON_AUDIT.md`.
