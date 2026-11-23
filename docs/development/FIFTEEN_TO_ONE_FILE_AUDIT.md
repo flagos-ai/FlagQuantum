@@ -93,3 +93,43 @@ collection, without resolving the high-demand precision boundary. The four-file
 batch has zero dependency-policy findings. The whole repository retains 706
 findings, down from 711, recorded in the persistent
 `g2-distillation-collection-dependencies.log` and dependency-scope JSON.
+
+## Shared numerical operation-order isolation on 2026-11-23
+
+A fresh immutable-source intake reproduces the complete high-demand witness.
+The factory, test, channel and QEC-scheme source Git blobs are recorded in
+`g2-factory-numerical-intake-20261123.json`. Earlier full schedule and paper
+receipts are reused. The source simulator first produces five independent H
+states and merges their density products. Their shared initial matrix entry is
+0.031250000000000035. The native expanded-matrix H route has the previously
+recorded distinct rounding.
+
+Using that identical source initial matrix and the identical original Kraus
+matrices isolates the remaining execution arithmetic. Native full BMM,
+axis-based Torch einsum, and explicit one-qubit slice application all yield
+final density differences of 3.0117855110836314e-17 from the original simulator.
+The first rotation already differs by 3.469446951953614e-18. Merely selecting an
+axis contraction or one-qubit slice implementation does not close the witness.
+Direct original apply_channel replay from the same initial matrix is bitwise
+identical to the original final density.
+
+The original channel protocol converts mixtures into Kraus matrices before
+execution. The prior hypothesis that retaining mixture probabilities alone
+would reproduce this path is rejected. All 95 non-H source operators already
+have bitwise identical nonzero native Kraus payloads. Adding a mixture payload
+would not address the observed contraction difference.
+
+Final projection is a further independent boundary. On the identical original
+density, NumPy computes acceptance 0.9969462564300695 and Torch computes
+0.9969462564300696. The source-H/native-BMM experiment computes NumPy acceptance
+0.9969462564300697. At demand 10^14 the resulting cycle values are respectively
+1,805,513,575,471,519 and 1,805,513,575,471,518. The baseline native route still
+returns 1,805,513,575,471,522 at that demand.
+
+Q-0910/Q-0911 remain open. Exact full-range cycle parity requires resolving
+product-state initialization, complex contraction arithmetic and postselection
+reduction together in their shared numerical owners. The supported Torch
+execution/device/gradient contract must remain explicit during that work.
+The current production executor and source references retain their accepted
+behavior. The experiment supplies no new channel vocabulary, execution policy
+or accepted integer-range limit. Remaining independent G2 files can proceed.
