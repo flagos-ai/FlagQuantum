@@ -146,7 +146,12 @@ MPS-accounting files passed. The original failures remain recorded. The new
 evidence artifact's revision and field-name checks pass independently; existing
 origin declarations and historical evidence were not modified.
 
-The full local integration tier and exact-head CI remain separate pending checks;
-record their final outcomes in the pull request before readiness. Performance
+The full local integration tier timed out after 900.338 seconds at approximately
+15% progress (exit -15). It is incomplete, not a pass; the recorded process group
+and child processes were confirmed absent after termination. Exact-head CI is
+required before readiness. Its first attempt exposed an unsupported SDKBench
+origin label in this new evidence file, corrected to `producing_host_history`
+with the separate checkout identified explicitly. Raw numerical samples are
+unchanged. Performance
 qualification still requires a separately admitted host and the unchanged
 independent SDKBench protocol.

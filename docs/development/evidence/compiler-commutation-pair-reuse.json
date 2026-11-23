@@ -1193,8 +1193,9 @@
   ],
   "sdkbench": {
     "source_commit": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a",
-    "source_commit_origin": "external_dependency",
+    "source_commit_origin": "producing_host_history",
     "repository": "https://github.com/sdkbench-org/sdkbench",
+    "origin_detail": "The producing host used this commit from its separate SDKBench checkout; it is not a FlagQuantum repository commit.",
     "adapter_sha256": "fe18b1daed140d37974713da76a3c766577efc13b4929390ba7a6da792c4c64c"
   },
   "profile_predicate_calls": [
