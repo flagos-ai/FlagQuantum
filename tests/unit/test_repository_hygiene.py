@@ -11,6 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 from tools.check_dependency_policy import policy_errors
+from tools.check_docs_links import link_targets
 from tools.check_import_time import sample_imports
 from tools.check_repository_hygiene import (
     DEFAULT_MAX_FILE_BYTES,
@@ -28,7 +29,6 @@ from tools.verify_distribution_artifacts import _forbidden
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 
 def test_repository_has_no_tracked_cache_dataset_model_or_oversized_artifact():
@@ -151,7 +151,7 @@ def test_repository_root_has_no_generated_benchmark_or_retired_logo() -> None:
 def test_local_markdown_links_resolve() -> None:
     broken: list[str] = []
     for document in ROOT.rglob("*.md"):
-        for target in MARKDOWN_LINK.findall(document.read_text(encoding="utf-8")):
+        for _, target in link_targets(document.read_text(encoding="utf-8")):
             if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
             local_target = target.split("#", 1)[0]
