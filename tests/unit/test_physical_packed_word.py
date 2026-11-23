@@ -2,6 +2,7 @@
 
 import copy
 import json
+import lzma
 from collections.abc import Callable, Iterable
 from itertools import islice
 from pathlib import Path
@@ -36,7 +37,10 @@ from tests.unit.test_operand_array_views import (
 )
 
 pytestmark = pytest.mark.unit
-_DATA = json.loads((Path(__file__).with_name("data") / "packed_word.json").read_text())
+with lzma.open(
+    Path(__file__).with_name("data") / "packed_word.json.xz", "rt", encoding="utf-8"
+) as _stream:
+    _DATA = json.load(_stream)
 
 
 def test_complete_original_scalar_operations() -> None:

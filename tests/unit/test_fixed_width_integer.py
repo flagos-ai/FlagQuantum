@@ -211,7 +211,9 @@ def observe(case: IntegerCase) -> list[int] | list[float] | list[str]:
 
 def test_complete_unchanged_source_correspondence() -> None:
     count = 0
-    fixture = Path(__file__).with_name("data") / "fixed_width_integer_reference.jsonl"
+    fixture = (
+        Path(__file__).with_name("data") / "fixed_width_integer_reference.jsonl.xz"
+    )
     for case, line in read_cases(fixture):
         expected: str | list[int] | list[float] | list[str]
         if line == "REJECTED":

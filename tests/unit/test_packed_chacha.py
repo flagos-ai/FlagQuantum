@@ -1,6 +1,7 @@
 """Verify complete source lifecycle and the existing seeded spin consumer."""
 
 import json
+import lzma
 from collections.abc import Iterator
 from dataclasses import replace
 from itertools import islice
@@ -77,9 +78,9 @@ def execute(
 
 
 def test_complete_unchanged_source_lifecycle() -> None:
-    fixture = Path(__file__).with_name("data") / "packed_chacha.jsonl"
+    fixture = Path(__file__).with_name("data") / "packed_chacha.jsonl.xz"
     total = 0
-    with fixture.open() as stream:
+    with lzma.open(fixture, "rt", encoding="utf-8") as stream:
         for line in stream:
             record: object = json.loads(line)
             assert isinstance(record, list) and len(record) == 2

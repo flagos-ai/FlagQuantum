@@ -1,6 +1,7 @@
 """Verify complete striped/paired state against the original packed counter."""
 
 import json
+import lzma
 from pathlib import Path
 
 import pytest
@@ -45,10 +46,10 @@ def run_counter(
 
 
 def test_complete_original_counter_states() -> None:
-    fixture = Path(__file__).with_name("data") / "population_counter.jsonl"
+    fixture = Path(__file__).with_name("data") / "population_counter.jsonl.xz"
     cache: dict[tuple[int, ...], tuple[PopulationCounter, int]] = {}
     count = 0
-    with fixture.open() as stream:
+    with lzma.open(fixture, "rt", encoding="utf-8") as stream:
         for line in stream:
             record: object = json.loads(line)
             assert isinstance(record, list) and len(record) == 2

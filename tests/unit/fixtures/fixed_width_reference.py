@@ -1,6 +1,7 @@
 """Stream validated input/output records for the frozen scalar integer oracle."""
 
 import json
+import lzma
 from collections.abc import Iterator
 from pathlib import Path
 from typing import NamedTuple
@@ -25,7 +26,8 @@ class IntegerCase(NamedTuple):
 
 
 def read_cases(path: Path) -> Iterator[tuple[IntegerCase, str]]:
-    with path.open() as stream:
+    opener = lzma.open if path.suffix == ".xz" else open
+    with opener(path, "rt", encoding="utf-8") as stream:
         for line in stream:
             record: object = json.loads(line)
             if not isinstance(record, list) or len(record) != 2:

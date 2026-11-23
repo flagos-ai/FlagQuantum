@@ -90,7 +90,7 @@ def execute(case: ModularCase) -> tuple[ModularInteger | bool, int]:
 
 def test_complete_original_modular_source_stream() -> None:
     counts: Counter[str] = Counter()
-    fixture = Path(__file__).with_name("data") / "modular_integer.jsonl"
+    fixture = Path(__file__).with_name("data") / "modular_integer.jsonl.xz"
     for case, expected in read_cases(fixture):
         fields = shlex.split(expected)
         if fields[0] == "equal":
@@ -153,7 +153,7 @@ def test_original_scalar_constructor_and_addition_quirks() -> None:
 
 
 def test_source_nonunit_failure_poststate_and_self_move_are_explicit() -> None:
-    fixture = Path(__file__).with_name("data") / "modular_integer.jsonl"
+    fixture = Path(__file__).with_name("data") / "modular_integer.jsonl.xz"
     source = next(
         output
         for case, output in read_cases(fixture)
