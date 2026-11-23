@@ -998,3 +998,10 @@ Run `tests/unit/test_physical_packed_word.py`, `test_packed_chacha.py` and
 source mapping, compiler-specific SSE draw order, architecture evidence and
 AVX source-gate gaps are in
 `docs/development/PHYSICAL_PACKED_WORD_AUDIT.md`.
+
+`_register_buffer.py` transposes existing LSB-first fixed-width scalar register
+rows into packed quantum/classical wire masks and back. The caller owns buffers
+and layout. Ordered overlapping members retain last-write behavior, and reads
+clear hanging bits. This numerical helper does not construct circuits or choose
+execution policy. Run `tests/unit/test_physical_register_buffer.py` for mixed
+registers, multiword values, lane counts and actual conditional execution.
