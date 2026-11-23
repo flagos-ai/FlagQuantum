@@ -26,6 +26,7 @@ _V2_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024
 _V2_MAX_ENVELOPE_BYTES = 18 * 1024 * 1024
 _V2_MAX_DEPTH = 8
 _V2_MAX_ENTRIES = 4096
+_V2_MAX_CIRCUIT_PAYLOAD_ENTRIES = 65_536
 _V2_MAX_STRING_BYTES = 4096
 _V2_FIELDS = {
     "schema",
@@ -207,14 +208,22 @@ class ProgramArtifact:
         return cls(kind=ArtifactKind.CIRCUIT, payload=to_dict(), producer=producer)
 
 
-def _canonical_json_bytes(value: Any) -> bytes:
-    return json.dumps(
-        value,
+def _canonical_json_bytes(value: Any, *, maximum_bytes: int | None = None) -> bytes:
+    encoder = json.JSONEncoder(
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=True,
         allow_nan=False,
-    ).encode("utf-8")
+    )
+    if maximum_bytes is None:
+        return encoder.encode(value).encode("utf-8")
+    encoded = bytearray()
+    for chunk in encoder.iterencode(value):
+        part = chunk.encode("utf-8")
+        if len(encoded) + len(part) > maximum_bytes:
+            raise ValueError("artifact payload exceeds maximum UTF-8 bytes")
+        encoded.extend(part)
+    return bytes(encoded)
 
 
 def _strict_v2_value(
@@ -224,6 +233,7 @@ def _strict_v2_value(
     depth: int = 0,
     counter: list[int] | None = None,
     limit_strings: bool = True,
+    maximum_entries: int = _V2_MAX_ENTRIES,
 ) -> Any:
     if isinstance(value, (Mapping, tuple, list)) and depth > _V2_MAX_DEPTH:
         raise ValueError(f"{owner} exceeds maximum nesting depth {_V2_MAX_DEPTH}")
@@ -231,24 +241,27 @@ def _strict_v2_value(
         counter = [0]
     if isinstance(value, Mapping):
         counter[0] += len(value)
-        if counter[0] > _V2_MAX_ENTRIES:
-            raise ValueError(f"{owner} exceeds maximum entry count {_V2_MAX_ENTRIES}")
+        if counter[0] > maximum_entries:
+            raise ValueError(f"{owner} exceeds maximum entry count {maximum_entries}")
         normalized: dict[str, Any] = {}
         for key, item in value.items():
             if type(key) is not str or not key:
                 raise TypeError(f"{owner} keys must be non-empty strings")
+            if not limit_strings and len(key) > _V2_MAX_PAYLOAD_BYTES:
+                raise ValueError("artifact payload exceeds maximum UTF-8 bytes")
             normalized[key] = _strict_v2_value(
                 item,
                 owner=owner,
                 depth=depth + 1,
                 counter=counter,
                 limit_strings=limit_strings,
+                maximum_entries=maximum_entries,
             )
         return MappingProxyType(normalized)
     if isinstance(value, (tuple, list)):
         counter[0] += len(value)
-        if counter[0] > _V2_MAX_ENTRIES:
-            raise ValueError(f"{owner} exceeds maximum entry count {_V2_MAX_ENTRIES}")
+        if counter[0] > maximum_entries:
+            raise ValueError(f"{owner} exceeds maximum entry count {maximum_entries}")
         return tuple(
             _strict_v2_value(
                 item,
@@ -256,10 +269,19 @@ def _strict_v2_value(
                 depth=depth + 1,
                 counter=counter,
                 limit_strings=limit_strings,
+                maximum_entries=maximum_entries,
             )
             for item in value
         )
     if value is None or type(value) in {bool, int, str}:
+        # A JSON token cannot be shorter than its source string. Bound the
+        # encoder's largest token before it allocates an escaped copy.
+        if (
+            not limit_strings
+            and type(value) is str
+            and len(value) > _V2_MAX_PAYLOAD_BYTES
+        ):
+            raise ValueError("artifact payload exceeds maximum UTF-8 bytes")
         if (
             limit_strings
             and isinstance(value, str)
@@ -397,11 +419,15 @@ class ProgramArtifactV2:
                 self.payload,
                 owner="circuit payload",
                 limit_strings=False,
+                maximum_entries=_V2_MAX_CIRCUIT_PAYLOAD_ENTRIES,
             )
-            circuit = CircuitIR.from_dict(_thaw_v2(payload))
-            if circuit.to_dict() != _thaw_v2(payload):
+            circuit_values = _thaw_v2(payload)
+            payload_bytes = _canonical_json_bytes(
+                circuit_values, maximum_bytes=_V2_MAX_PAYLOAD_BYTES
+            )
+            circuit = CircuitIR.from_dict(circuit_values)
+            if circuit.to_dict() != circuit_values:
                 raise ValueError("circuit-ir-1.0 payload is not canonical CircuitIR")
-            payload_bytes = _canonical_json_bytes(_thaw_v2(payload))
         else:
             if type(self.payload) is not str or not self.payload:
                 raise TypeError("executable artifact payload must be non-empty text")
@@ -417,7 +443,7 @@ class ProgramArtifactV2:
             self.circuit_content_hash,
             owner="circuit_content_hash",
         )
-        if circuit is not None and circuit_hash != circuit.content_hash:
+        if circuit is not None and circuit_hash != payload_digest:
             raise ValueError("circuit_content_hash does not match CircuitIR payload")
 
         parameter_schema = _strict_v2_value(
@@ -526,14 +552,6 @@ class ProgramArtifactV2:
             owner="v2 artifact",
             counter=entry_counter,
         )
-        if isinstance(body["payload"], Mapping):
-            _strict_v2_value(
-                body["payload"],
-                owner="v2 artifact payload",
-                depth=0,
-                counter=entry_counter,
-                limit_strings=False,
-            )
         _reject_sensitive_v2(structured, owner="v2 artifact")
         expected_identity = hashlib.sha256(_canonical_json_bytes(body)).hexdigest()
         if self.artifact_identity and self.artifact_identity != expected_identity:
@@ -607,12 +625,16 @@ class ProgramArtifactV2:
         if not isinstance(circuit_ir, CircuitIR):
             raise TypeError("circuit_ir must be a CircuitIR")
         names = _parameter_names(circuit_ir)
+        payload = circuit_ir.to_dict()
+        payload_bytes = _canonical_json_bytes(
+            payload, maximum_bytes=_V2_MAX_PAYLOAD_BYTES
+        )
         return cls(
             kind=ArtifactKind.CIRCUIT,
             producer=producer,
             profile=_V2_PROFILES["circuit-ir-1.0"],
-            payload=circuit_ir.to_dict(),
-            circuit_content_hash=circuit_ir.content_hash,
+            payload=payload,
+            circuit_content_hash=hashlib.sha256(payload_bytes).hexdigest(),
             requirements=None,
             target=None,
             compilation=None,

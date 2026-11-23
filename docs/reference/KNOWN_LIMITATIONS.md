@@ -1,4 +1,11 @@
 <!-- BEGIN GENERATED KNOWN_LIMITATIONS -->
+
+The approved v2 `circuit-ir-1.0` artifact payload has an independent 65,536-entry
+budget; structured envelopes retain 4,096 entries. Payload/envelope byte limits
+remain 16/18 MiB. Receiving environments must be upgraded before sending expanded
+artifacts: earlier readers reject them. This does not expand downstream compiler
+provenance or target limits. See the [capacity decision](../api-changes/FQ-PROGRAM-ARTIFACT-CIRCUIT-CAPACITY-20261123.md)
+for compatibility and development resource evidence.
 # Known limitations
 
 Do not edit this generated region. Capability boundaries come from
