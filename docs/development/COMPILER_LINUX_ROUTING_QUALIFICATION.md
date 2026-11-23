@@ -158,15 +158,19 @@ remain retained. No measurement was repeated after inspecting its result.
 The unchanged report tool independently replayed 120 blocks and verified 515
 campaign files. Its result remains `publication_eligible=false`.
 
-The [raw evidence archive](evidence/compiler-linux-routing-results.tar.gz)
+The [raw evidence archive](https://github.com/FlagQuantum/FlagQuantum-evidence/releases/download/evidence-compiler-routing-2026-11-23.1/routing-public-evidence.tar.gz)
 contains the exact report, blocks, worker/supervisor logs, registrations, release
 metadata, original freeze, operational drivers, build/preparation failures,
 resource and evaluator controls, activity heartbeats, replay records and runner
 restoration. The [evidence index](evidence/compiler-installed-wheel-controls.json)
 records its byte count and SHA-256, all case statistics, and the private diagnostic
 archive hash. Detailed host process inventories remain on the study host;
-they are excluded from this public archive. Neither location promises indefinite
-artifact retention or independent build/host attestation.
+they are excluded from this public archive. The public archive is retained as a release asset in the existing external
+evidence repository; its downloaded size and SHA-256 were verified before
+publication. The adjacent manifest lists all 573 original file hashes and
+SHA256SUMS binds both assets. The source repository retains this compact report,
+the original freeze and the existing numerical ledger. Neither location
+promises indefinite retention or independent build/host attestation.
 
 The table reports the range across all thirty accepted records for gate count
 and dependency depth. Time is the median of ten block medians, each computed from
@@ -258,6 +262,23 @@ correct those metadata issues without changing validators or scientific inputs.
 Both originally failing tests pass locally after the correction. Fresh exact-head
 CI is still required before this documentation can merge. The unrelated wide-state
 CI termination remains tracked in issue #1318; its cause is not established.
+
+## Evidence-storage CI correction
+
+The first results commit mistakenly tracked the 12987160-byte raw archive in
+this source repository. Quality, the CPU default tier (21477 passed, 721 skipped)
+and coverage shard 186 (602 passed, three skipped) each failed the unchanged
+1800000-byte hygiene limit. The archive has moved byte-for-byte to the existing
+external evidence repository; its original SHA-256 and all scientific results
+are unchanged. No limit, test, skip or allowlist changed.
+
+Other original CI failures remain distinct. Coverage shard 27 failed downloading
+the source artifact before tests. The GPU gate refused GitHub's null binary
+classification for a truncated source blob, then its Git fallback encountered a
+connection reset and SSL timeout before the job was canceled. The narrow source
+metadata repair is a separate integration change. These transport failures are
+not compiler results or passing gates. Fresh complete exact-head CI is required
+before merging this corrected report.
 
 ## Next development decision
 

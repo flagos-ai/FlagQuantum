@@ -714,7 +714,7 @@
       "status": "Completed first measured campaign; independent replay accepted all twelve cases",
       "publication_eligible": false,
       "path_classification": "single_device_fast_path",
-      "raw_archive": "compiler-linux-routing-results.tar.gz",
+      "raw_archive": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/download/evidence-compiler-routing-2026-11-23.1/routing-public-evidence.tar.gz",
       "archive_bytes": 12987160,
       "archive_sha256": "e7d53bf9596142f141d1ce2913c6fa630fc4f50edec856d001b521dc17a6f442",
       "raw_summary_sha256": "e1e5bb18563d757ce7d641d2419e28b41ab27333eabaed28fd63b626c5aeaff3",
@@ -1547,7 +1547,10 @@
         "Private default CPython build without PGO/LTO; observed times conditional on frozen environment.",
         "Full local default tier did not pass; historical-origin failure and disk-related setup errors remain disclosed.",
         "Original PR metadata failures preserved; fixed only evidence representation."
-      ]
+      ],
+      "archive_manifest": "https://github.com/FlagQuantum/FlagQuantum-evidence/releases/download/evidence-compiler-routing-2026-11-23.1/routing-public-evidence.manifest.json",
+      "archive_manifest_sha256": "1bdd5f4f286a39fa2ea068ebfd28eb55d1b202f62342c0201e3a52c6f22ae9e9",
+      "storage_correction": "Original raw bytes moved to existing external evidence release after source-file hygiene failure; download size and SHA-256 verified before publication. No scientific or acceptance change."
     }
   }
 }
