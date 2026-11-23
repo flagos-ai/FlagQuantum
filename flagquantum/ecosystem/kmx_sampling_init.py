@@ -3,13 +3,9 @@
 
 """Resolve physical register initialization for packed sampling commands."""
 
-import re
-
+from ..compiler.formats._register_initialization import parse_initializations
 from ..compiler.formats.kmx_circuit import KmxCircuit
-from ..compiler.formats.unsigned_word import parse_unsigned_word
 from ..simulation.physical_basis_shots import RegisterInitialization
-
-_INIT = re.compile(r"r([0-9]*)([=<])(.*)")
 
 
 def parse_register_initialization(
@@ -17,21 +13,14 @@ def parse_register_initialization(
 ) -> tuple[RegisterInitialization, ...]:
     """Resolve source integer initialization strings to physical members."""
     assignments = []
-    for item in text.removesuffix(",").split(",") if text else ():
-        match = _INIT.fullmatch(item)
-        if match is None:
-            raise ValueError(f"Invalid register initialization {item!r}")
-        index, operator, payload = match.groups()
-        register = int(index or "0")
+    for instruction in parse_initializations(text):
+        register = instruction.register
         if register >= len(circuit.registers):
             raise ValueError(f"Initialization register r{register} is not declared")
-        randomize = operator == "<" or payload == "*"
-        if operator == "=" and payload == "*":
-            value = 0
-        else:
-            value, width = parse_unsigned_word(payload)
-            if randomize and not value and width:
-                raise ValueError("Random initialization modulus is zero")
+        value = instruction.value.value
+        randomize = instruction.randomize
+        if randomize and not value and instruction.value.width:
+            raise ValueError("Random initialization modulus is zero")
         assignments.append(
             RegisterInitialization(
                 circuit.registers[register].members, value, randomize

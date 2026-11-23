@@ -1259,3 +1259,10 @@ path. Include the KMX/KMB and mutable-builder tests for format changes.
 `docs/development/PHYSICAL_WORD_STORAGE_AUDIT.md` maps complete source methods,
 replacement tests, host-memory adaptations, resource observations and measured
 construction overhead.
+
+`formats/_register_initialization.py` owns unresolved physical initialization
+text, its uint32 register indices, declared-width Core values, normalized text
+and ordered comma grammar. Ecosystem binds those records to circuit registers.
+Simulation owns all random draws and numerical initialization. Run
+`tests/unit/test_physical_initialization_text.py` for complete locked-source
+format conformance and actual command-binding replacement.
