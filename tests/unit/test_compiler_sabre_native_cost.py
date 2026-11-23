@@ -10,12 +10,15 @@ from unittest.mock import patch
 import pytest
 import torch
 
+from benchmarks import compiler_sabre_native_cost as native_cost
 from benchmarks.compiler_sabre_native_cost import (
     _cost,
     _cz_lower_bound,
     _native_previews,
+    _preview_matrix_reader,
     _realize,
 )
+from flagquantum.compiler.optimization._cz_blocks import _numeric_matrix
 from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.compiler.topology.sabre import plan_sabre_swaps
@@ -181,3 +184,108 @@ def test_reused_native_selector_keeps_custom_topology_objectives() -> None:
 
     expected = sabre._select_sabre_trials(source, coupling, baseline, cost=objective)
     assert _select(source, coupling, baseline, cost=objective) == expected
+
+
+def test_matrix_reuse_preserves_ordered_basis_and_native_opcode() -> None:
+    cases = (
+        (Instruction("rx", (0,), {"theta": 0.31}), (0, 1)),
+        (Instruction("rx", (3,), {"theta": 0.31}), (3, 7)),
+        (Instruction("rx", (7,), {"theta": 0.31}), (3, 7)),
+        (Instruction("rz", (7,), {"theta": 0.31}), (3, 7)),
+        (Instruction("cz", (3, 7)), (3, 7)),
+        (Instruction("cz", (7, 3)), (3, 7)),
+    )
+    expected = [_numeric_matrix(gate, pair) for gate, pair in cases]
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for _ in range(2):
+            assert [read(gate, pair) for gate, pair in cases] == expected
+        assert original.call_count == 4
+
+
+def test_matrix_reuse_reads_mutable_parameters_and_preserves_signed_zero() -> None:
+    gate = Instruction("rx", (0,), {"theta": 0.0})
+    assert isinstance(gate.params, dict)
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for value in (0.0, -0.0, 0.31, -0.84, 0.31):
+            gate.params["theta"] = value
+            assert read(gate, (0, 1)) == _numeric_matrix(gate, (0, 1))
+        assert original.call_count == 4
+
+
+@pytest.mark.parametrize(
+    "kind",
+    (
+        "tensor",
+        "trainable",
+        "batched",
+        "symbolic",
+        "extra",
+        "annotation",
+        "matrix",
+        "outside",
+    ),
+)
+def test_matrix_reuse_leaves_other_inputs_with_the_original_reader(kind: str) -> None:
+    gate = Instruction("rx", (0,), {"theta": 0.31})
+    if kind == "tensor":
+        gate = replace(gate, params={"theta": torch.tensor(0.31)})
+    elif kind == "trainable":
+        gate = replace(gate, params={"theta": torch.tensor(0.31, requires_grad=True)})
+    elif kind == "batched":
+        gate = replace(gate, params={"theta": torch.tensor([0.31, 0.84])})
+    elif kind == "symbolic":
+        gate = replace(gate, params={"theta": Parameter("theta")})
+    elif kind == "extra":
+        gate = replace(gate, params={"theta": 0.31, "unused": Parameter("unused")})
+    elif kind == "annotation":
+        gate = replace(gate, metadata={"label": "retained boundary"})
+    elif kind == "matrix":
+        gate = replace(gate, matrix=torch.eye(2))
+    else:
+        gate = replace(gate, wires=(2,))
+    expected = _numeric_matrix(gate, (0, 1))
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        assert read(gate, (0, 1)) == expected
+        assert read(gate, (0, 1)) == expected
+        assert original.call_count == 2
+
+
+def test_matrix_reuse_has_bounded_storage_and_isolated_lifetimes() -> None:
+    gates = [Instruction("rz", (0,), {"theta": float(i)}) for i in range(33)]
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for gate in gates:
+            assert read(gate, (0, 1)) == _numeric_matrix(gate, (0, 1))
+        assert original.call_count == 33
+        read(gates[0], (0, 1))
+        assert original.call_count == 34
+        read(gates[-1], (0, 1))
+        assert original.call_count == 34
+        _preview_matrix_reader()(gates[-1], (0, 1))
+        assert original.call_count == 35
+
+
+@pytest.mark.parametrize("budget", (0, 256))
+def test_matrix_reuse_keeps_lower_bounds_realization_and_actual_budget(
+    budget: int,
+) -> None:
+    source = _budget_case()
+    read = _preview_matrix_reader()
+    assert _cz_lower_bound(source, matrix_reader=read) == _cz_lower_bound(source)
+    limit = len(source.instructions) + budget
+    expected = _realize(source, limit)
+    actual = _realize(source, limit, matrix_reader=read)
+    assert actual == expected
+    assert _cost(actual)[0] == (4 if budget == 0 else 2)
+    _assert_equivalent(source, actual)
