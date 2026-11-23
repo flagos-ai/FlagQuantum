@@ -180,3 +180,9 @@ checker passes all eleven new evidence records, and local documentation links
 resolve. The benchmark module is byte-identical to the comparison base, as is
 the complete production tree. Full final-head CI is still required before
 integration; no whole-repository passing claim is made.
+
+After PR #1313 integrated, merge the updated prerequisite/main baseline while
+retaining both independent test additions. All 259 combined focused
+unit/integration cases, Ruff, Black and strict mypy pass. The evaluated benchmark
+source and production tree remain byte-identical to the comparison base. This
+integration update requires fresh final-head CI.
