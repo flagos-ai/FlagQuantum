@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Sequence
+from dataclasses import replace
 from typing import Any
 
 import torch
@@ -467,6 +468,7 @@ def _kraus_sandwich(rho: torch.Tensor, operator: torch.Tensor) -> torch.Tensor:
     """Preserve matrix-first complex products for constant CPU row-sparse maps."""
     if (
         operator.device.type == "cpu"
+        and operator.dtype in (torch.complex64, torch.complex128)
         and not operator.requires_grad
         and bool(torch.all(torch.count_nonzero(operator, dim=-1) <= 1))
         and bool(torch.all(torch.isfinite(rho)))
@@ -483,6 +485,57 @@ def _kraus_sandwich(rho: torch.Tensor, operator: torch.Tensor) -> torch.Tensor:
         left = coefficients.unsqueeze(-1) * selected
         return coefficients.conj().unsqueeze(-2) * left
     return _density_bmm(_density_bmm(operator, rho), operator.conj().transpose(-1, -2))
+
+
+def _hadamard_density_axis(tensor: torch.Tensor, axis: int) -> torch.Tensor:
+    # Adapted from Cirq HPowGate._apply_unitary_, Copyright 2018 The Cirq Developers.
+    # Apache-2.0. Keep the source subtraction/scaling order on each density axis.
+    zero = tensor.select(axis, 0)
+    one = (tensor.select(axis, 1) - zero) * -0.5
+    return torch.stack((zero - one, one), dim=axis) * math.sqrt(2)
+
+
+def _product_density_prefix(
+    ir: CircuitIR, batch_size: int, dtype: torch.dtype, device: torch.device
+) -> tuple[int, torch.Tensor] | None:
+    """Execute independent leading one-qubit gates on explicit zero factors."""
+    if device.type != "cpu" or dtype not in (torch.complex64, torch.complex128):
+        return None
+    prefix = 0
+    for instruction in ir:
+        if (
+            len(instruction.wires) != 1
+            or instruction.metadata.get("is_channel")
+            or _is_dynamic_instruction(instruction)
+        ):
+            break
+        prefix += 1
+    if not prefix:
+        return None
+    zero = torch.zeros(batch_size, 2, 2, dtype=dtype, device=device)
+    zero[:, 0, 0] = 1
+    factors = [zero.clone() for _ in range(ir.n_wires)]
+    for instruction in ir.instructions[:prefix]:
+        wire = instruction.wires[0]
+        factor = factors[wire]
+        if (
+            instruction.name in {"h", "hadamard"}
+            and instruction.matrix is None
+            and not instruction.params
+        ):
+            factors[wire] = _hadamard_density_axis(_hadamard_density_axis(factor, 1), 2)
+        else:
+            matrix = gate_matrix(
+                instruction, bsz=batch_size, device=device, dtype=dtype
+            )
+            factors[wire] = apply_unitary_density(factor, matrix, (0,), 1)
+    product = factors[0]
+    for factor in factors[1:]:
+        dimension = product.shape[-1] * 2
+        product = (product[:, :, None, :, None] * factor[:, None, :, None, :]).reshape(
+            batch_size, dimension, dimension
+        )
+    return prefix, product
 
 
 def density_matrix_from_ir(
@@ -535,6 +588,21 @@ def density_matrix_from_ir(
     else:
         raise TypeError("density_matrix_from_ir expects a Circuit or CircuitIR.")
 
+    if (
+        state.device.type == "cpu"
+        and not state.requires_grad
+        and state.ndim == 2
+        and state.shape[-1] == 2**ir.n_wires
+        and bool(torch.all(state[:, 0] == 1))
+        and bool(torch.count_nonzero(state[:, 1:]) == 0)
+    ):
+        prepared = _product_density_prefix(
+            ir, state.shape[0], target_dtype, target_device
+        )
+        if prepared is not None:
+            prefix, rho = prepared
+            remaining = replace(ir, instructions=ir.instructions[prefix:])
+            return _execute_density(remaining, rho)
     rho = density_matrix(state)
     return _execute_density(ir, rho)
 
