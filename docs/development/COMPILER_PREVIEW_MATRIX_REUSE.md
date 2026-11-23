@@ -126,3 +126,55 @@ The eventual evidence archive must retain its exact source.
 Before application measurement, all 243 focused unit/integration tests pass.
 Ruff, Black and strict mypy pass both changed Python modules. Complete final-head
 CI remains required before integration; this is not full-suite certification.
+
+## Completed observations
+
+The implementation and protocol were published at
+`97775484b588a856031dfa1ccbaf234f7d4b3661` before application observations.
+The [inspected screen](evidence/native-preview-matrices-inspected-screen.json)
+and [fresh screen](evidence/native-preview-matrices-fresh-screen.json) each retain
+all 120 observations. Every workflow passes; all 120 old/new pairs have identical
+operations, final layouts, audit records and metrics. No failures, unsupported
+cases or changed output pairs occurred. This is preservation, not improved gate
+quality. Hashed payload chunks reconstruct both original reports byte for byte.
+
+[Producer-free replay](evidence/native-preview-matrices-replay.json) accepts all
+240 delivered outputs. Maximum residuals are `6.072657351995283e-14` and
+`5.442794468418362e-14`. Width-six acceptance uses complete operators;
+widths eight/twelve use only the three existing probes.
+
+[Resource evidence](evidence/native-preview-matrices-resources.json) retains all
+108 verified warmup, timed and traced observations. The prospective experiment
+filters pass: two new/old median ratios are below 0.90, all three are below 1.05,
+and all allocation limits pass. No repeat was made to seek a favorable result.
+
+| Control | Production median | Old experiment | New experiment | New / old | New / production |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 6-wire QFT, grid | 92.690 ms | 207.348 ms | 171.071 ms | 0.8250 | 1.8456 |
+| 6-wire repetition, ring | 104.104 ms | 205.663 ms | 179.898 ms | 0.8747 | 1.7281 |
+| 12-wire QFT, grid | 564.898 ms | 563.550 ms | 565.084 ms | 1.0027 | 1.0003 |
+
+| Control | Production Python peak bytes | Old experiment | New experiment |
+| --- | ---: | ---: | ---: |
+| 6-wire QFT, grid | 2,199,168 | 2,268,456 | 2,268,506 |
+| 6-wire repetition, ring | 2,567,379 | 2,600,103 | 2,600,139 |
+| 12-wire QFT, grid | 10,118,334 | 10,118,214 | 10,118,164 |
+
+The QFT six-wire outputs retain production 65 CZ / depth 48 versus experimental
+63 / 38; repetition retains production 82 / 57 versus experimental 76 / 55.
+Twelve-wire QFT retains 352 / 150 in all variants. These gate/depth values come
+from the contemporaneous independently accepted workflows, not historical
+latency comparisons. The 12-wire selection has no native-cost alternatives and
+therefore does not call the new reader; its near-equal timing is not a speedup.
+
+The improvement is retained only in the opt-in experimental selector. Six-wire
+experimental compilation still costs approximately 85% and 73% more elapsed
+time than production, with higher Python peaks. The objective of affordable
+default native-cost routing remains incomplete. These shared-host observations
+do not certify statistical significance, process RSS or SDK rankings.
+
+The default-tier local attempt on the same production tree, before this source
+change, reached approximately 59 percent at its 600-second deadline and was
+terminated by its supervisor. It is not final-head verification. The focused
+243-test pass and static checks above are complete local evidence; full exact-head
+CI remains required before integration.
