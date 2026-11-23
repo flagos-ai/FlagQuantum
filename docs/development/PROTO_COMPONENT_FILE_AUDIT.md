@@ -78,3 +78,7 @@ that gap and generic Adjoint/Controlled/Power semantics.
 Complete addition.py and negate.py constructor bindings and their direct Always
 dependency are mapped in RESOLVER_ARITHMETIC_AUDIT.md. Generic control/adjoint
 wire wrappers and original one-bit signed Negate refusal remain explicit.
+
+Complete subtraction.py and multi_target_cnot.py constructor dependencies are
+mapped in RESOLVER_SUBTRACTION_AUDIT.md. Original fanout atomic QEC counts and
+expanded CX inventories are retained separately.

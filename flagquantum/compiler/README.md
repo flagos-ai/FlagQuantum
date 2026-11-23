@@ -1298,3 +1298,8 @@ format conformance and actual command-binding replacement.
 constructors to existing typed arithmetic owners. Bookkeeping Always retains
 the already resolved child closure. Run `tests/unit/test_legacy_arithmetic_factories.py`
 for source gate, phase, output ownership and measured erasure conformance.
+
+`formats/legacy_subtraction_factories.py` binds both subtraction declarations.
+`formats/legacy_fanout_factories.py` reuses the source fanout tree for signed
+prefix extension. Symbolic Cast metadata stays logical until physical binding.
+Run `tests/unit/test_legacy_subtraction_factories.py` for complete dependency checks.
