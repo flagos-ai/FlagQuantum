@@ -1387,3 +1387,10 @@ lose Montgomery modulus metadata and remain explicitly refused at the existing
 signature check. Direct native ModAdd construction remains available. See
 RESOLVER_MODULAR_ADDITION_AUDIT.md and the complete original modular file audit
 for source-domain, phase, workspace and analytical-model boundaries.
+
+ModNeg, CModNeg, ModSub and CModSub constructor adaptation uses
+formats/legacy_modular_subtraction_factories.py and the four existing modular
+graph owners. It retains binary activation values, typed MSB ports, exact AddK
+adjoints and symbolic declarations. The complete source-loader and exterior-domain
+failures remain observable. See RESOLVER_MODULAR_SUBTRACTION_AUDIT.md and
+tests/unit/test_legacy_modular_subtraction_factories.py.
