@@ -1,0 +1,284 @@
+[
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 0,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 3,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 256,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 257,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= 1",
+    "shots": 513,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nZ q0\nX q0",
+    "code": "Z(target)\ntarget ^= 1",
+    "shots": 257,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nZ q0\nX q0",
+    "code": "\n\r  Z(target)\n  target ^= 1",
+    "shots": 257,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "NEG",
+    "code": "neg()",
+    "shots": 3,
+    "exception": "NameError",
+    "result": "name 'Z' is not defined"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nCX q0 q1\nCX q0 q1",
+    "code": "",
+    "shots": 257,
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q1",
+    "code": "",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 0
+      }
+    ],
+    "exception": "AssertionError",
+    "result": "Fuzz testing failed\n    register 'target' = 0 -> 0\n    @phase=0\n    FAIL:@unused=1"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0",
+    "code": "target ^= delta",
+    "shots": 3,
+    "context": {
+      "delta": 0
+    },
+    "samples": [
+      {
+        "target": 0
+      }
+    ],
+    "exception": "AssertionError",
+    "result": "Fuzz testing failed\n    FAIL:register 'target' = 0 -> 1 != 0\n    @phase=0\n    @unused=0\n    var['delta'] = 0"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nZ q0",
+    "code": "",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 1
+      }
+    ],
+    "exception": "AssertionError",
+    "result": "Fuzz testing failed\n    register 'target' = 1 -> 1\n    FAIL:@phase=1 != False)\n    @unused=0"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nZ q0",
+    "code": "",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 1
+      }
+    ],
+    "ignore_phase": true,
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nX q0\nZ q0\nX q1",
+    "code": "",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 0
+      }
+    ],
+    "context": {
+      "note": "all faults"
+    },
+    "exception": "AssertionError",
+    "result": "Fuzz testing failed\n    FAIL:register 'target' = 0 -> 1 != 0\n    FAIL:@phase=1 != False)\n    FAIL:@unused=1\n    var['note'] = 'all faults'"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\n",
+    "code": "target = 0",
+    "shots": 5,
+    "exception": "AssertionError",
+    "result": "Fuzz testing failed\n    FAIL:register 'target' = 1 -> 1 != 0\n    @phase=0\n    @unused=0"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\n",
+    "code": "",
+    "shots": 1,
+    "samples": [
+      {
+        "wrong": 0
+      }
+    ],
+    "exception": "AssertionError",
+    "result": ""
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\n",
+    "code": "del target",
+    "shots": 1,
+    "samples": [
+      {
+        "target": 0
+      }
+    ],
+    "exception": "KeyError",
+    "result": "'target'"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER b0 r0\nX q0\nBIT_INVERT b0",
+    "code": "target ^= 3",
+    "shots": 257,
+    "samples": [
+      {
+        "target": 0
+      },
+      {
+        "target": 1
+      },
+      {
+        "target": 2
+      },
+      {
+        "target": 3
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"left\"\nAPPEND_TO_REGISTER q0 r0\nREGISTER r1 \"right\"\nAPPEND_TO_REGISTER q0 r1",
+    "code": "left = right",
+    "shots": 3,
+    "samples": [
+      {
+        "right": 1,
+        "left": 0
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nREGISTER r1 \"control\"\nAPPEND_TO_REGISTER b0 r1\nX q0 if b0",
+    "code": "if control:\n    target ^= 1",
+    "shots": 257,
+    "samples": [
+      {
+        "target": 0,
+        "control": 0
+      },
+      {
+        "target": 1,
+        "control": 1
+      }
+    ],
+    "result": "passed"
+  },
+  {
+    "circuit": "REGISTER r0 \"target\"\nAPPEND_TO_REGISTER q0 r0\nHMR q1 b1",
+    "code": "",
+    "shots": 513,
+    "result": "passed"
+  },
+  {
+    "circuit": "",
+    "code": "",
+    "shots": 1,
+    "result": "passed"
+  }
+]

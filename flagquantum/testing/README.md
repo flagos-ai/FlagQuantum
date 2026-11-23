@@ -119,4 +119,12 @@ families plus 64-lane truth-table masks. It reuses Compiler operand identities
 and the existing physical numerical session. It adds no production gate logic.
 Run `tests/unit/test_physical_operand_cases.py` for full family ordering and
 source mask read/write comparisons. `PHYSICAL_TESTING_HELPERS_AUDIT.md` records
-the separate original register-fuzz batching defect and its pending replacement.
+the separate original register-fuzz batching defect and its native correction.
+
+
+`_physical_register_fuzz.assert_fuzz_testing_acts_like` checks named physical
+registers against Python specifications using the existing numerical session.
+It preserves source phase/work diagnostics and validates every chunk. Run
+`tests/unit/test_physical_register_fuzz.py` for complete source observations and
+injected later-chunk faults. The source `neg()` namespace failure remains
+explicit in the audit.
