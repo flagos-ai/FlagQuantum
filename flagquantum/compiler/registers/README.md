@@ -251,6 +251,16 @@ actual trajectory/batched execution through unchanged `circuit.append(op)`.
 LEFT port. Core enforces one consumption. Binding deletes the owned handle,
 emits no instruction, and retains earlier bool snapshots of the immutable slot.
 This is classical Discard from pinned Qualtran `basic_gates/discard.py`.
+
+`component_discard.discard_qubit_function(name)` retains the corresponding
+scalar QBit LEFT `q` declaration. It has no classical callback or stored physical
+body, following the original quantum operation. Its numerical trace is selected
+by the existing explicit `ComponentTensorProviders` binding to
+`simulation.tensor_network.discard.discard_tensor_indices`. Classical discard
+uses the same supplier with its existing CBit declaration. Physical slot reset
+stays in `primitives.measurement.discard_qubit_ir`. See
+[discard source family](../../../docs/development/DISCARD_FILE_AUDIT.md) for
+complete channel parity and the separate physical reset account.
 External CBit initialization follows proposal 103 prerequisite 1.17. Physical
 workspace retirement follows prerequisite 1.16. The shortest test path is
 `tests/unit/test_register_classical_discard.py`, including measurement, parity,
