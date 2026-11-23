@@ -10,14 +10,12 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from benchmarks import compiler_sabre_native_cost as native_cost
 from benchmarks.compiler_sabre_native_cost import (
     _cost,
     _cz_lower_bound,
     _native_previews,
     _realize,
 )
-from flagquantum.compiler.lowering.basis_translation import translate
 from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.compiler.topology.sabre import plan_sabre_swaps
@@ -195,7 +193,7 @@ def test_reused_native_selector_keeps_custom_topology_objectives() -> None:
 
 
 @pytest.mark.parametrize("topology", ("line", "ring"))
-def test_preview_templates_reuse_translation_across_trial_placements(
+def test_preview_preserves_operators_across_trial_placements(
     topology: str,
 ) -> None:
     source = CircuitIR(
@@ -215,40 +213,16 @@ def test_preview_templates_reuse_translation_across_trial_placements(
     ]
     assert all(plan is not None for plan in plans)
     placements: set[tuple[tuple[int, ...], ...]] = set()
-    with patch.object(native_cost, "translate", wraps=translate) as lowering:
-        preview = _native_previews(source, coupling)
-        for plan in plans:
-            assert plan is not None
-            placements.add(plan.placements)
-            actual, count = preview(plan)
-            assert count >= len(source.instructions)
-            _assert_equivalent(source, actual)
-            assert preview(plan) == (actual, count)
-            assert all(
-                len(gate.wires) != 2 or coupling.has_edge(*gate.wires)
-                for gate in actual.instructions
-            )
-        assert len(placements) > 1
-        translated = [call.args[0] for call in lowering.call_args_list]
-        assert sorted((gate.name, gate.wires) for gate in translated) == sorted(
-            (gate.name, gate.wires)
-            for gate in (*source.instructions, Instruction("swap", (0, 1)))
+    preview = _native_previews(source, coupling)
+    for plan in plans:
+        assert plan is not None
+        placements.add(plan.placements)
+        actual, count = preview(plan)
+        assert count >= len(source.instructions)
+        _assert_equivalent(source, actual)
+        assert preview(plan) == (actual, count)
+        assert all(
+            len(gate.wires) != 2 or coupling.has_edge(*gate.wires)
+            for gate in actual.instructions
         )
-        assert lowering.call_count == len(source.instructions) + 1
-        first = plans[0]
-        assert first is not None
-        _native_previews(source, coupling)(first)
-        assert lowering.call_count == 2 * (len(source.instructions) + 1)
-
-
-def test_preview_rejects_translation_that_introduces_workspace_wires() -> None:
-    source = CircuitIR(4, (Instruction("cx", (3, 0)),))
-    coupling = CouplingMap.line(4)
-    plan = plan_sabre_swaps(source, coupling)
-    with (
-        patch.object(
-            native_cost, "translate", return_value=(Instruction("cz", (1, 2)),)
-        ),
-        pytest.raises(ValueError, match="workspace wires"),
-    ):
-        _native_previews(source, coupling)(plan)
+    assert len(placements) > 1

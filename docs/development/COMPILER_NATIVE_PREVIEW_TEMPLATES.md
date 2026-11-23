@@ -2,7 +2,7 @@
 
 ## Scope and mechanism
 
-This `single_device_fast_path` experiment reduces repeated work in the opt-in
+This rejected `single_device_fast_path` experiment attempted to reduce repeated work in the opt-in
 native-CZ route selector. It does not enable that selector in production.
 Each preview closure translates and numerically validates each source instruction
 once, then remaps the resulting native leaves to each trial's physical operands.
@@ -100,3 +100,56 @@ experimental change does not alter this default workflow.
 
 Frozen control driver SHA-256: `803bda9c8aa6ddf01f339e6554315e13f06c612b8f51a1e4401df06e126fb869`.
 The evidence archive will include its exact source.
+
+## Observed result and withdrawal
+
+The frozen implementation was published at
+`1f4719cd49f957fd9b2cbd19c2cd0b128dc8c568` before application observations.
+The [inspected archive](evidence/native-preview-templates-inspected-screen.json)
+and [fresh archive](evidence/native-preview-templates-fresh-screen.json) retain
+120 complete workflow observations each. Their hashed payload chunks reconstruct
+the original report bytes exactly. All 120 old/new pairs have identical
+operation/layout payloads, audits and evaluator metrics; there are no failures,
+unsupported cases or changed payload pairs. This demonstrates preservation, not
+improved compilation quality. The fresh draw was frozen after publication and
+is not an independently blinded held-out test.
+
+[Producer-free replay](evidence/native-preview-templates-replay.json) accepts all
+240 outputs, with maximum semantic residuals `6.072657351995283e-14` and
+`5.954448375747785e-14`. The existing full-operator/three-probe scope applies.
+
+[Complete resource observations](evidence/native-preview-templates-resources.json)
+retain every warmup, timed and traced output and audit. All memory and per-case
+nonregression filters pass, but zero controls meet the predeclared `0.90` median
+ratio, below the required two. Do not relax that threshold after observation.
+
+| Inspected control | Old experiment median | Template median | New / old | Old / new Python peak bytes |
+| --- | ---: | ---: | ---: | ---: |
+| 6-wire QFT, grid | 196.732 ms | 189.307 ms | 0.9623 | 2,268,670 / 2,266,428 |
+| 6-wire repetition, ring | 202.667 ms | 198.974 ms | 0.9818 | 2,600,203 / 2,601,809 |
+| 12-wire QFT, grid | 558.141 ms | 558.040 ms | 0.9998 | 10,118,214 / 10,118,164 |
+
+These shared-host development observations establish neither significance nor a
+ranking. The template implementation is withdrawn; the experimental selector
+and all production Python modules are byte-identical to the integrated base.
+Retain the expanded rejection checks for batched/trainable inputs and complete
+small-operator checks across different trial placements. Do not retain tests
+that demand a rejected caching implementation.
+
+Verification before withdrawal: 235 focused tests, Ruff, Black and strict mypy
+for both changed Python modules passed. The required full smoke/unit attempt
+reached approximately 59 percent at its 600-second deadline; the supervisor
+terminated its process group. It is not a passing full-tier result. The initial
+two placement tests failed because they used an invalid private `seed` keyword;
+they were corrected to `tie_rng` before the focused pass. An initial strict
+import and nested-context lint error were corrected without suppressions.
+
+The first PR CI run's CUDA-Q job failed before tests: its bounded dependency
+preparation reached exit 124 while downloading CUDA-Q dependencies. This is a
+dependency-preparation failure, not executed compiler-test evidence. Preserve
+that failed attempt; no protected workflow or timeout is changed here. Full
+required checks remain necessary before integration.
+
+After withdrawal, all 234 focused tests pass; Ruff, Black and strict mypy pass
+the retained test module. Archive reconstruction from saved payload chunks is
+byte-identical to both original reports.
