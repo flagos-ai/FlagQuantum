@@ -27,6 +27,11 @@ serialized Adjoint dependency. Create its explicit catalog per compilation, then
 use the existing resolver and `circuit.append(op)` consumer. Run
 `tests/unit/test_legacy_conjunction_factories.py` for exact source feedback, all
 small branch histories, complex amplitudes and live-output ownership.
+`formats/legacy_word_factories.py` supplies Xor, XorK, BitwiseNot and the
+self-contained OnEach dependency. Its constant encoder is supplied by the
+Ecosystem boundary, reusing the existing Simulation codec. Run
+`tests/unit/test_legacy_word_factories.py` for all original constructors, encoded
+constant boundaries, source-comparable bit order and complete coherent states.
 `formats/symbolic_parameters.py` shares owned expression conversion with the SDK
 adapter, while `registers/primitives/` retains angle and phase execution recipes.
 

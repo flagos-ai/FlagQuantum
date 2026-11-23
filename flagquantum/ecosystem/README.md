@@ -17,6 +17,10 @@ optional framework.
 - `contracts.py`: framework-neutral adapter and conversion-report protocol.
 - `registry.py`: immutable, lazy adapter discovery.
 - `conformance.py`: common round-trip and rejection checks.
+- `_component_library.py`: explicit bitwise library constructor binding to the
+  existing numerical constant codec. Compiler receives owned MSB patterns.
+  Run `tests/unit/test_legacy_word_factories.py` for the serialized-library
+  through ordinary append scenario and encoder replacement.
 - `_semantic_parity.py`: deterministic circuits shared by optional SDK parity lanes.
 - `<framework>/conversion.py`: external object to/from `CircuitIR` conversion.
 - `<framework>/models.py`: adapter-local results and errors.

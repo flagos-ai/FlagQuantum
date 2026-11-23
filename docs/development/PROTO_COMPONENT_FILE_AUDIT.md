@@ -68,3 +68,9 @@ combined coverage to 26 identifiers. The complete And/MultiAnd constructors in
 Adjoint dependency is also executable, while the generic Adjoint identifier
 remains partial. The remaining 275 source catalogue identifiers and generic
 wrapper closure keep Q-0876 open.
+
+The complete bitwise constructor group and its X leaf in
+`RESOLVER_WORD_AUDIT.md` bring complete coverage to 32 identifiers. Its OnEach
+dependency accepts self-contained scalar children and remains partial for
+generic referenced helper closure. The 271 remaining identifiers include both
+that gap and generic Adjoint/Controlled/Power semantics.
