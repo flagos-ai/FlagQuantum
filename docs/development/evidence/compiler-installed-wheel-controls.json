@@ -282,5 +282,433 @@
     "Second source predates the separately merged telemetry and identity-restoration PRs; this run does not certify those later source revisions."
   ],
   "original_audit_index_sha256": "123c6db472a7761eec978ae01dab493f04c862df25db9b8329dc986727f0d1b1",
-  "index_origin_normalization": "The original source_commit_origin external_dependency stamp is represented by the authoritative evidence-revision-origins.toml declaration; all source, result and numerical fields are retained. The original audit index is retained locally under its recorded hash."
+  "index_origin_normalization": "The original source_commit_origin external_dependency stamp is represented by the authoritative evidence-revision-origins.toml declaration; all source, result and numerical fields are retained. The original audit index is retained locally under its recorded hash.",
+  "linux_routing_study": {
+    "original_declaration": {
+      "source_commit": "7c83c5f82480f49143190ed82f98c8fd757722ec",
+      "source_repository": "flagos-ai/FlagQuantum",
+      "raw_archive": "compiler-linux-routing-freeze.json.gz",
+      "raw_json_sha256": "eefcc61f0925d8d55bc5e2017a813bd9d8dd417fd34989b80ad3f96d61b6d95c",
+      "archive_sha256": "aee0ef10dbda9225c9574605d13d49cc4991d037d59b5c3d748734111e262fe8"
+    },
+    "normalization": "The original prospective JSON bytes remain unchanged in the raw gzip and published declaring commit. The index uses the existing source_commit vocabulary and the existing external-dependency origin table for SDKBench. Only metadata naming/origin representation changes; all cases, inputs, configurations, thresholds, budgets, hashes and timestamps are identical. The running campaign continues to read the original frozen bytes.",
+    "declaration": {
+      "schema_version": 1,
+      "status": "Prospective declaration; no campaign executed at freeze",
+      "frozen_at_utc": "2026-11-23T05:05:21Z",
+      "scope": "Historical W03 routing controls; not unseen application or release qualification",
+      "harness": {
+        "source_commit": "9cb8f184825e658f7378763a1f3a39c57720233d",
+        "repository": "https://github.com/sdkbench-org/sdkbench"
+      },
+      "study_root": "/data/sdkbench-compiler-qualification-20261123",
+      "host_alias": "jp-bw1100-10",
+      "cpu": 96,
+      "smt_sibling": 288,
+      "source_artifact_sha256": "0b7ef353d45635b9cb2de14efcbb7cbf4842875a8a483091a0813ef8b13f48ca",
+      "dependency_lock_sha256": "11aeb902bc65b278c9d1b8ac27f50b951d65867686e77b5d5da7debb1f1b60fb",
+      "participants": {
+        "fq-integrated-ordinary": {
+          "workflow": "flagquantum-ordinary-restored",
+          "configuration": {
+            "sdk": "flagquantum",
+            "entrypoint": "compiler.compile; compiler.lowering.native_gate_legalization.legalize_native_gates",
+            "options": {
+              "routing": "default",
+              "optimization_level": "default",
+              "basis": [
+                "h",
+                "x",
+                "y",
+                "z",
+                "s",
+                "sdg",
+                "rx",
+                "ry",
+                "rz",
+                "cz"
+              ],
+              "max_added_operations": 20000,
+              "initial_layout": "identity",
+              "final_layout": "sdk-reported",
+              "compiler_seed_supported": false,
+              "postprocessing": {
+                "final_layout": "identity",
+                "algorithm": "spanning-tree-leaf-token-restoration-v1",
+                "tree_root": 0,
+                "neighbor_order": "ascending",
+                "leaf_order": "ascending",
+                "swap_decomposition": "H-CZ-H CNOT triple",
+                "optimization_after_restoration": false,
+                "timed": true
+              }
+            }
+          }
+        },
+        "fq-integrated-artifact": {
+          "workflow": "flagquantum-target-artifact",
+          "configuration": {
+            "sdk": "flagquantum",
+            "entrypoint": "compile_circuit_artifact_for_target",
+            "options": {
+              "basis": [
+                "rx",
+                "rz",
+                "cz"
+              ],
+              "initial_layout": "identity",
+              "final_layout": "restored",
+              "routing": "default",
+              "compiler_seed_supported": false,
+              "profile": "openqasm-3.0",
+              "max_native_added_operations": 20000,
+              "max_routing_added_operations": 20000,
+              "maximum_program_operations": 20000,
+              "serialize_executable_artifact": true
+            }
+          }
+        },
+        "qiskit-release-restored": {
+          "workflow": "qiskit-transpile-restored",
+          "configuration": {
+            "sdk": "qiskit",
+            "entrypoint": "qiskit.transpile",
+            "options": {
+              "basis": [
+                "cz",
+                "u"
+              ],
+              "optimization_level": 2,
+              "approximation_degree": 1.0,
+              "qubits_initially_zero": false,
+              "num_processes": 1,
+              "initial_layout": "identity",
+              "final_layout": "sdk-reported",
+              "compiler_seed_supported": true,
+              "postprocessing": {
+                "final_layout": "identity",
+                "algorithm": "spanning-tree-leaf-token-restoration-v1",
+                "tree_root": 0,
+                "neighbor_order": "ascending",
+                "leaf_order": "ascending",
+                "swap_decomposition": "H-CZ-H CNOT triple",
+                "optimization_after_restoration": false,
+                "timed": true
+              }
+            }
+          }
+        },
+        "cirq-release-restored": {
+          "workflow": "cirq-route-cz-restored",
+          "configuration": {
+            "sdk": "cirq",
+            "entrypoint": "RouteCQC; optimize_for_target_gateset",
+            "options": {
+              "basis": [
+                "cz",
+                "arbitrary-one-qubit-unitary"
+              ],
+              "allow_partial_czs": false,
+              "synthesis_atol": 1e-12,
+              "initial_mapper": "identity",
+              "initial_layout": "identity",
+              "final_layout": "sdk-reported",
+              "compiler_seed_supported": false,
+              "postprocessing": {
+                "final_layout": "identity",
+                "algorithm": "spanning-tree-leaf-token-restoration-v1",
+                "tree_root": 0,
+                "neighbor_order": "ascending",
+                "leaf_order": "ascending",
+                "swap_decomposition": "H-CZ-H CNOT triple",
+                "optimization_after_restoration": false,
+                "timed": true
+              }
+            }
+          }
+        }
+      },
+      "input_sha256": {
+        "registrations/cirq-release-restored.json": "85365712ffaed4f1432a410de5258740d51720f1837ab1278a92fdc781c6e465",
+        "registrations/fq-integrated-artifact.json": "5591fd59b39cfd58f25c8807a82f5c895e3d2937011171c3e626e9f83ee663c4",
+        "registrations/fq-integrated-ordinary.json": "80afc9d2298f1830e0e605780bc0bcd59262386b2dc1a5cb822adddb922e7400",
+        "registrations/qiskit-release-restored.json": "a255eb253a183127d53282cf6c2ffab3b0309dba0ca15fe5f2ef45707a91777f",
+        "release-metadata/cirq-core-1.7.0.json": "d67e4deffc44a124520b8cdf58c033caf4661fe22394062bf114c9d7d8ecf333",
+        "release-metadata/qiskit-2.6.2.json": "c716594d20348b4c17984c2ceb37e902135aa7401ec7064ac1ed76b20913dc1c"
+      },
+      "wheel_sha256": {
+        "installed-wheels/common/wheels/cirq_core-1.7.0-py3-none-any.whl": "9d2e9610b06e2b2b2195184f44c0df4e94f31485831f8e1c6a96c858b7897bce",
+        "installed-wheels/common/wheels/qiskit-2.6.2-cp310-abi3-manylinux_2_28_x86_64.whl": "e8578003e39facf72289fafae1542e38646e5cae7c93665f004046efa5797669",
+        "installed-wheels/second/build/flagquantum-0.4.0-cp310-abi3-linux_x86_64.whl": "60c5182a0cf09f329cbe9de50ba59a1000e0d5034f6714ee54e616282b8271a3"
+      },
+      "harness_python_sha256": {
+        "src/sdkbench/__init__.py": "771a801da02c96cf8009f869cd914917a44c85f03f29fb24500de7495e996fc6",
+        "src/sdkbench/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+        "src/sdkbench/backends.py": "43a19c699ba9210b17963a263d9219f0f354ac8ee27f68451e287a2a0d9fd7ec",
+        "src/sdkbench/candidates/__init__.py": "904b6ce4fa94014b4970875007af96dd27861a2add0aefab97553018f3464b36",
+        "src/sdkbench/candidates/adapters.py": "fe18b1daed140d37974713da76a3c766577efc13b4929390ba7a6da792c4c64c",
+        "src/sdkbench/candidates/application_bundle.py": "ce624db5e9e58adec0d86c2e68d440b910bcd44fea356d039e794178c22efd82",
+        "src/sdkbench/candidates/applications.py": "4bc9f15ec97841300296ff3eed545816ec268970e4e90fa5d18be6157611f1e1",
+        "src/sdkbench/candidates/cli.py": "8438dcce38f9bca3237016b4d19497261cbf631cff6932ea5f4d25086fc815ee",
+        "src/sdkbench/candidates/environment.py": "780e4049ffab0ba32997e550e3e4c96bb17a267921afa1c2a57fc50aff2d7afb",
+        "src/sdkbench/candidates/layout.py": "88d639247a5f973651e91c9b5f39935119c2936589d7007fc1a70cff15fb5a14",
+        "src/sdkbench/candidates/provenance.py": "cf0c6ab4ddbefb72bacb4882b041793132f72cf7818815babbf80b4f5f1bd7de",
+        "src/sdkbench/candidates/replay.py": "8ee5292b978f1bb790ce135b298e949cb44381ded4d94b562ea70dc0f24e83c4",
+        "src/sdkbench/candidates/response.py": "ba8211d325abc0941a2ba5165a795976a7496b804de957dad5d1e2872d892a47",
+        "src/sdkbench/candidates/revisions.py": "a4546e4eabf3de4813348d92dccc49e758f94d7737bfe84d20c17e5817d14f89",
+        "src/sdkbench/candidates/worker.py": "21e5703cebe858cc561bf053c6a68a8858fc8d7cefbc541e7dc7053e30e1d54f",
+        "src/sdkbench/circuits.py": "07db7ad7b77c31573635a73494324bb2a49dc1cb31d1ad2b4f990a7a72e52b67",
+        "src/sdkbench/cli.py": "48f218eff04ecf3cbe92bff3d23abd283a7646b49143640f0a05b5b1713dc1ae",
+        "src/sdkbench/diagnostics/__init__.py": "c6a94129156c9c8ebffbf1a70c9c664b6f56ae3c3343a34c94c258cb50aecfd3",
+        "src/sdkbench/diagnostics/routing.py": "f8f65fe6c69cadad6f485a4748ee5df72ddf40851e62a48c72bcf9464ef59cf4",
+        "src/sdkbench/diagnostics/worker.py": "9820913e60d8f533b1b1ed3fc5a55ab20f3033d6e1dbe275d1d5861dc008200c",
+        "src/sdkbench/p0/__init__.py": "e9b4328b9398d1b0fdc26873372a0ed0cac132cc7d2c2556c0d066441a93be3f",
+        "src/sdkbench/p0/_isolate.py": "2820c99e629117d3e49661c3c2466330378fda3162216d8d9471ca64c4e49808",
+        "src/sdkbench/p0/bundle.py": "2dc00e7cb2d69d7af168d98b550698803e0a5e72a66b5e3c03cf0105e33f130e",
+        "src/sdkbench/p0/cli.py": "149dce707773c7034c294abfa2db585e9afbf8742d6b5fa4c66b9d1472dcbebf",
+        "src/sdkbench/p0/evaluators.py": "f0aaa675dc682fbc46a6e0311ed41e3f927e11b5cdc80d9f740e2bdaa959a661",
+        "src/sdkbench/p0/execution.py": "77be3c07bfa3e88e5f39aa99e1cf3d0558d0eacd9ba54a04f3eee6cd9000bac3",
+        "src/sdkbench/p0/models.py": "27f9c5c5886d18c7ab7780401ab8e709c5a97ab1457944c085d416e900cfd383",
+        "src/sdkbench/p0/registration.py": "5b76b15ef77696c0eafecc4858c34e0e30b1e11500e0d52144d7d75c87b77a6f",
+        "src/sdkbench/p0/semantics.py": "8430c0d5c854b3ed1ce3ca6ef19209165961d3202c199a8f07fcf0a4c81bbb2b",
+        "src/sdkbench/p0/supervisor.py": "418d0c6be250fa2e1d0461aad9d298575d8e99a27ae3d363828d449131f8cda1",
+        "src/sdkbench/p0/transport.py": "6a9ece57f0c53eb6a7ddb2a046b4687ecfc9a4dd3e4a702fc4bb256b9162fbd7",
+        "src/sdkbench/p1a/__init__.py": "89fc3915c1b0a65f9560e28d46c222ee304119e0a7dc72a0ecab4aeeca1c15b0",
+        "src/sdkbench/p1a/campaign.py": "c088b458f6d58870e64ff9c55505a47f701cc32d8d5d32575b4067a418f34da0",
+        "src/sdkbench/p1a/cirq.py": "840849d93c32ab86ad7c6108cd1c2608e0548f7556a154e8b738ec0a27a522ec",
+        "src/sdkbench/p1a/cli.py": "dc8b50abc54ab51067ec047e2ec5b4c67174f1163d2fd166c890178d9186d979",
+        "src/sdkbench/p1a/common.py": "44e60f8635a4e082783f7171f5d35e9b117f0cde72fdef9685e855183fc72f13",
+        "src/sdkbench/p1a/flagquantum.py": "549bed4e3ca164597071a5adf81ebd147fc63a0dd233275bc789d9bcfbb6e3f4",
+        "src/sdkbench/p1a/provenance.py": "dc70197fece9548944ebefb52b8f5f131a2deb443843668b3f9abc4043d7b229",
+        "src/sdkbench/p1a/qiskit.py": "5e29137305e827b2e60726da0dc049e3abc62ad74b22a8d035432dbe3a2478b2",
+        "src/sdkbench/p1a/worker.py": "53d398defbb9b9427ce1d2537fc775264072648d16d2829802b12ad5291fd2ca",
+        "src/sdkbench/p1b/__init__.py": "eb4bb45e2c90ecac62d2e2e6809aed772acf2b8231c45f6873594aee9ac6aef5",
+        "src/sdkbench/p1b/cirq.py": "cc424ea42b6497384fa411c43f10dfada9d87a614caf540b45e5d2c0663215be",
+        "src/sdkbench/p1b/cli.py": "1d65407d2215abd539599774581e2c39a015d5110c1d9eddb878ce5f15d10c6f",
+        "src/sdkbench/p1b/common.py": "5369453b3b29cfee7a7757f6f76f0a93a6fd9d58c9798291bcadc552beb76f15",
+        "src/sdkbench/p1b/flagquantum.py": "9b1052306812db48403eba0d24cf91dbedf759139f6d3fe7304696364072de61",
+        "src/sdkbench/p1b/qiskit.py": "10f98aa42b1ead4cebb01dc8dd116b6378ab28ecd8375c191eaf53f248e91e39",
+        "src/sdkbench/reference.py": "802ea818c4a528f397c6d2d39a9df2eb5efdcd527d2950fa4f8c1a0e2ef098a9",
+        "src/sdkbench/reporting.py": "a6af83c9b6f91556df4e237e82374c355c23f355b59063b1a3f562d975ad3369",
+        "src/sdkbench/runner.py": "82a7ac7d29b82d114394286847a04caa306fd63a86014f527de7dda98fa93b90"
+      },
+      "bundle_sha256": {
+        "docs/implementation/CANDIDATES.md": "8a26bb93d9873bcd9af8df2b2444e07d64cc4515888d686e22a73957268e439c",
+        "docs/implementation/COHORTS.md": "82ee85c5d51f69228c222294e74d0cd11d382d5fa5c895303430c8231055a7e8",
+        "docs/implementation/FIRST_WAVE.md": "6f8afec561667bf4d49ba5d1d0b197e36524ba55e7495ab554a4e18c9954e77d",
+        "docs/implementation/MEASUREMENT_PROTOCOL.md": "0a7ed439169225ce374c5f53aea89fc64b39e0561ee7d5bfac50834862b226cb",
+        "docs/implementation/P0_FOUNDATION.md": "75adc0238cf8b27e2bee08f702f4d5ca32d6336dd4cf9d1032f2b3644593b42d",
+        "docs/implementation/P1A_ADAPTERS.md": "884fd4e80c24e7a04d5d7fad782980eea04ce89186cb750740e6865065dacfed",
+        "docs/implementation/P1A_QUALIFICATION.md": "b526e153157d4c562d55b85eae8b233947dc35ce4bff049b0ed603c0c487c925",
+        "docs/implementation/P1B_ADAPTERS.md": "fca1a38929105e461810a688c5225d4b69c9dfcd6ecb921ae69b0b0443954cc8",
+        "docs/implementation/P1B_QUALIFICATION.md": "4ce7fac45e8f3d34c4376e55c7dfab128da3c1928c8a5684cd78ccfb18a1f5cd",
+        "docs/implementation/PHASE_ASSIGNMENTS.md": "3fd9df3a17d9d1df05e45d9c8bf2b18e87dae345572da44a2604815c654213d3",
+        "docs/implementation/PRIORITIES.md": "c1be98d249c3f1f3d87d30b68b9adf43e478a8ed6f7f5d18d5bd6571b4ea59b8",
+        "docs/implementation/README.md": "3eb7cfcc5497027148646002da8d32573a0fa114b5ea1095a8a0a75071725fbb",
+        "docs/implementation/REFERENCES.md": "faabf0fb69cc9154f63c2d2002984bdb571fb46a8c5cf5600de3a81704bcc24d",
+        "docs/implementation/ROADMAP.md": "bca0f83e3baf5701e6a190771e5dc9c7ae9a0cdc513675049ff52d21c5c7d981",
+        "docs/implementation/artifacts.json": "fbe0067fa6fc3941aa116889a28d0c8723ed2755c5188ff5f21c4ee44f382f8a",
+        "docs/implementation/candidate-packages.json": "9218894d925af19c7aed00f8372522e2ca70be968536b480baedb535a514ae08",
+        "docs/implementation/fixtures/ADAPT-RESET-LOOP.json": "3cef495bb5a455801b713ba1c6eec6695ff4ff66c8487dba4701560371832679",
+        "docs/implementation/fixtures/ADAPT-TELEPORT.json": "5d4778234ef8afed4468fca0e437c1e01820215ddae64c2cb33abf36b7caa110",
+        "docs/implementation/fixtures/DYN-04-S32.json": "8b97c96c87ed631935336985bf09273d46b15333c7e6208ccd0c6728a807f4ea",
+        "docs/implementation/fixtures/DYN-08-S64.json": "b8f595feb4c5d9d6904064604cd425a348fd040739d0d434c68a34f2adb9898e",
+        "docs/implementation/fixtures/GRAD-04.json": "1dc7763fe3738e2dcf6f4b297889e8e31b2e8e8cfe6747faaa1b1b411dbfadfe",
+        "docs/implementation/fixtures/GRAD-08.json": "7b57604c12daf031aee7d0f5b123108911b9a300d2a6996447a0dea96b180caf",
+        "docs/implementation/fixtures/GRAD-12.json": "5fc574df0de27a3180bd9a847edaea7c94966e7eeb5bb47d9e060536afa8e8c7",
+        "docs/implementation/fixtures/JOB-LOST-ACK.json": "a201c94dd064c8b07d65be430e85bf268f8cffbdb686787ee4c2366c690901b2",
+        "docs/implementation/fixtures/JOB-PARTIAL-CANCEL.json": "66c3ea5334cfc7360df6eb5ab8af98569a7dd025f678726569dba34d338d3e83",
+        "docs/implementation/fixtures/OBS-04.json": "5922c05f291fe4657ce768aea9010c43b76135045ee9f840d41a3da7c76ced82",
+        "docs/implementation/fixtures/OBS-12.json": "731a3e539a988b4c5c66497a3d3cc9047dba71a3a27d2faf0888354f6cb55803",
+        "docs/implementation/fixtures/OBS-20.json": "3f93fcd045fb2188e5f3e92e98dd3c736ac022bdce93c59513406815320d3706",
+        "docs/implementation/fixtures/PARAM-04.json": "fdff19946d585112411cfd22db75b525a59a3f0fd992bf53d294a5a9ccbe2ae3",
+        "docs/implementation/fixtures/PARAM-12.json": "0a0cc33528458512fc84395471f85c9d75b1c3abbdb5ac9d8edffc311b2604ef",
+        "docs/implementation/fixtures/PARAM-24.json": "3bb4e7725a32b31e448d7394d9ca027458d040f6d458bf0a66ec5ac5f88786d8",
+        "docs/implementation/fixtures/ROUND-QASM2.json": "10833cc07eccb9dfac936ea88a767ba0ecf3b79fcf061cc72ac8f45f5bb49b04",
+        "docs/implementation/fixtures/ROUND-QASM3.json": "972b2b24d6eaffe1c4d743b0ee6af4bcef02499d95305233d78f880ba55e143c",
+        "docs/implementation/fixtures/ROUTE-GRID-08.json": "b476ab7da896a7da0103131700e1d218194cf19fe45c0355d1b7564155a4b5f9",
+        "docs/implementation/fixtures/ROUTE-LINE-06.json": "21204eecf01c44a1a30a3b796ad918e0b44444aa38ac82e552bf3e0613e8280a",
+        "docs/implementation/fixtures/ROUTE-LINE-12.json": "680837d86835c44e99b042d2549abfcfab5e51462155516d71f46ed78332cc88",
+        "docs/implementation/fixtures/SAMPLE-03.json": "b8c5d319d0d789cb1371433009e961d1f966547d141098178a04fae496b42064",
+        "docs/implementation/fixtures/SAMPLE-05.json": "30c21a0799c84bba2e4e2a774bab20cc2bf23611b8484c3d466c56f1757b4d39",
+        "docs/implementation/fixtures/TRAIN-04-B16.json": "a7f390e7a8e201ed3ca97556dfaf1849d048474777c519f910aaf107e49ae227",
+        "docs/implementation/fixtures/TRAIN-08-B32.json": "31573e5ad0caa63fd0c1ddd6547e024fa76def6106d895e4e0642c50500436d6",
+        "docs/implementation/p1a-profile.json": "5100f9e4d37dbac94f6aab1b8a1b4fbf9bcf61ec31831407957ac83cde43092d",
+        "docs/implementation/p1b-profile.json": "68a806191a72eec2e1dcee61d1fa0e7efc0f145c3364baadc6a6684753a8d43e",
+        "docs/implementation/priorities.csv": "c0a6712f546f3c60dc01b3e0f8b402252d5b0bc4b4601cef0bc03e504dcb3a3d",
+        "docs/implementation/references/ADAPT-RESET-LOOP.json": "9e8b95bd3c31a1086ef5788716a18e2fa7c8a6e99f58586eb07c12a99d2f885f",
+        "docs/implementation/references/ADAPT-TELEPORT.json": "244a156b97b644c9f3cc47d921110f9b1cfbfdb8a631b6988342126cf24a7c3f",
+        "docs/implementation/references/DYN-04-S32.json": "ca837fb8646ceafe8c2604fc7926a0a87598d1c8f57ec8d5809c5161fbeaf395",
+        "docs/implementation/references/DYN-08-S64.json": "79c12aac1591c130c45d0b29648c8ccb0c2f89587254183fd74fc7f692835326",
+        "docs/implementation/references/GRAD-04.json": "d1c192d931c922aa3d5b78b41b94b6839f8ee17aff287394e233ce1fa1de8a41",
+        "docs/implementation/references/GRAD-08.json": "e6871206877d14b2bcca1010e1c2de4b6e5e589a8dd89e5a762e34e49edc5baa",
+        "docs/implementation/references/GRAD-12.json": "d6a2a9369ace4f539e3b857da7fb6221feb8a2fabc665d529e3b771d9a8929c7",
+        "docs/implementation/references/JOB-LOST-ACK.json": "a2d8180ebceca7fbfee346b1d038ad99478b507c02cd0627cd1470c6c9b731e6",
+        "docs/implementation/references/JOB-PARTIAL-CANCEL.json": "5dfc61900d270e10d8c9731c57234db791e1d48b4b3d2c6987cc56c0135193a1",
+        "docs/implementation/references/OBS-04.json": "f07118bcf9a46093cf638019061766a20dce7a8b51d75ef3b9dcc724cd1e6f3a",
+        "docs/implementation/references/OBS-12.json": "79a44d0b2de3b2c5f8a59fb673fe0fc3cf0e6117e1ecbcdd7d29da0f4bd6d3e9",
+        "docs/implementation/references/OBS-20.json": "cf7dba18e1218ab73746a21fcafb35064ecb8647fabd01fdb6d6793899cdfa47",
+        "docs/implementation/references/PARAM-04.json": "09a9724adeeb51491b092e5f0027ace0ace81ea895c64506fb8219f896f751d4",
+        "docs/implementation/references/PARAM-12.json": "28cfd02883351462af4a3eaf0387e64349413570c4ac4cb5bcfd99e2d4bdb340",
+        "docs/implementation/references/PARAM-24.json": "04f41978cf004f749a2bd4defea69585de017a37cf4691d7dc91b724a3601276",
+        "docs/implementation/references/ROUND-QASM2.json": "60750b6fbc2be607176bdd9328b93c006acdbe5b86235272f068b3d73b05b611",
+        "docs/implementation/references/ROUND-QASM3.json": "6f68c4ecaa2d85d0ca4e242bb745f85560964b8ca4bc46f45286cc0b27cdec42",
+        "docs/implementation/references/ROUTE-GRID-08.json": "f92e6e54d6aa41f608254305756e6e40b7e788b319129071c8541ea8d3a35ecf",
+        "docs/implementation/references/ROUTE-LINE-06.json": "2071d0423708233da58089a1cf92d6dedccc4708eea645e6207c40dbb8717d42",
+        "docs/implementation/references/ROUTE-LINE-12.json": "cc96693eafc0932896fcaea69ea3db7b281cf7f8e43ab6569f912ff4e3d9903e",
+        "docs/implementation/references/SAMPLE-03.json": "f809a99916fb23f9dcbe6578177232e438a3deeb9bfaab0dc52d3aba43f81427",
+        "docs/implementation/references/SAMPLE-05.json": "76360941bf853aef9034ab10c413288adac5178276acade9b44b9dd0811feb05",
+        "docs/implementation/references/TRAIN-04-B16.json": "aad80b5209886c9b40b5bd9549ef7733bfeddba499bec229f19675a71aceafc8",
+        "docs/implementation/references/TRAIN-08-B32.json": "1acac7788da301637a517811b74c8aa20a8461059209bffa47063eca5802cadd",
+        "docs/implementation/roadmap.json": "840e47bbb9bcae03d1923e75d890d57dc64465a8348fae5faeb378051784bf8b"
+      },
+      "cases": [
+        {
+          "id": "ROUTE-LINE-06",
+          "workflow": "W03",
+          "kind": "route",
+          "arguments": {
+            "n": 6,
+            "topology": "line"
+          },
+          "case_wall_limit_seconds": 600,
+          "process_memory_limit_gib": 16,
+          "acceptance": {
+            "per_compile_wall_limit_seconds": 120,
+            "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+            "initial_layout": "identity",
+            "final_layout": "allowed only with explicit logical reconstruction",
+            "semantic_atol": 1e-08,
+            "semantic_rtol": 0.0,
+            "normalization_error_limit": 1e-10,
+            "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+            "target_violations_allowed": 0,
+            "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+          },
+          "reference": "Independent bit-block propagation and separate dense-Kronecker/gate-permutation construction; no optimal-routing oracle is claimed.",
+          "required_negative": "Ignore final layout, emit a nonedge CZ, emit a partial CZ, or erase a noncommuting rotation.",
+          "measurements": "compile wall time;full-CZ count;two-body dependency depth from common scheduling rule;target/semantic failures",
+          "fixture": "fixtures/ROUTE-LINE-06.json",
+          "reference_artifact": "references/ROUTE-LINE-06.json",
+          "state": "parameterized-reference-fixture-only"
+        },
+        {
+          "id": "ROUTE-GRID-08",
+          "workflow": "W03",
+          "kind": "route",
+          "arguments": {
+            "n": 8,
+            "topology": "grid-2x4"
+          },
+          "case_wall_limit_seconds": 900,
+          "process_memory_limit_gib": 16,
+          "acceptance": {
+            "per_compile_wall_limit_seconds": 120,
+            "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+            "initial_layout": "identity",
+            "final_layout": "allowed only with explicit logical reconstruction",
+            "semantic_atol": 1e-08,
+            "semantic_rtol": 0.0,
+            "normalization_error_limit": 1e-10,
+            "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+            "target_violations_allowed": 0,
+            "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+          },
+          "reference": "Independent bit-block propagation and separate dense-Kronecker/gate-permutation construction; no optimal-routing oracle is claimed.",
+          "required_negative": "Ignore final layout, emit a nonedge CZ, emit a partial CZ, or erase a noncommuting rotation.",
+          "measurements": "compile wall time;full-CZ count;two-body dependency depth from common scheduling rule;target/semantic failures",
+          "fixture": "fixtures/ROUTE-GRID-08.json",
+          "reference_artifact": "references/ROUTE-GRID-08.json",
+          "state": "parameterized-reference-fixture-only"
+        },
+        {
+          "id": "ROUTE-LINE-12",
+          "workflow": "W03",
+          "kind": "route",
+          "arguments": {
+            "n": 12,
+            "topology": "line"
+          },
+          "case_wall_limit_seconds": 1800,
+          "process_memory_limit_gib": 16,
+          "acceptance": {
+            "per_compile_wall_limit_seconds": 120,
+            "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+            "initial_layout": "identity",
+            "final_layout": "allowed only with explicit logical reconstruction",
+            "semantic_atol": 1e-08,
+            "semantic_rtol": 0.0,
+            "normalization_error_limit": 1e-10,
+            "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+            "target_violations_allowed": 0,
+            "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+          },
+          "reference": "Independent bit-block propagation and separate dense-Kronecker/gate-permutation construction; no optimal-routing oracle is claimed.",
+          "required_negative": "Ignore final layout, emit a nonedge CZ, emit a partial CZ, or erase a noncommuting rotation.",
+          "measurements": "compile wall time;full-CZ count;two-body dependency depth from common scheduling rule;target/semantic failures",
+          "fixture": "fixtures/ROUTE-LINE-12.json",
+          "reference_artifact": "references/ROUTE-LINE-12.json",
+          "state": "parameterized-reference-fixture-only"
+        }
+      ],
+      "execution_profile": {
+        "id": "CPU1-FP64",
+        "os": "Ubuntu 24.04 x86_64",
+        "python": "3.12.14",
+        "host_minimum_physical_cores": 8,
+        "host_minimum_ram_gib": 64,
+        "pinned_physical_cores_per_process": 1,
+        "threads": 1,
+        "smt": "Do not share the measured physical core with an active sibling; record the actual SMT policy.",
+        "host_identity": "The same physical host and immutable image for every stack in a cohort; exact CPU model/OS/kernel/BIOS, clocks and dependencies must be sealed in the run manifest before any participant timing.",
+        "simultaneous_participant_processes": 1,
+        "process_memory_limit": "Per-case cap, maximum 16 GiB including SDK-owned child processes.",
+        "independent_process_blocks": 10,
+        "deterministic_warmups_per_block": 2,
+        "deterministic_measured_repetitions_per_block": 3,
+        "stochastic_or_training_or_job_warmups": 0,
+        "stochastic_or_training_or_job_measured_repetitions_per_block": 1,
+        "compiler_seeds": [
+          11,
+          23,
+          37,
+          51,
+          73,
+          11,
+          23,
+          37,
+          51,
+          73
+        ],
+        "stochastic_seed_rule": "Take first 8 bytes of SHA256(\"sdkbench-first-wave:0.1-candidate-1:<instance>:<block>:<context>\") modulo 2**32; block is 0..9; context is 0-based fixture order. Same integers requested of participants, not the same RNG stream.",
+        "external_network_during_cases": false,
+        "live_qpu_jobs": 0,
+        "paid_device_spend": 0,
+        "per_environment_install_wall_limit_seconds": 1800,
+        "per_environment_install_disk_limit_gib": 20
+      },
+      "resource_qualification": {
+        "supervisor-qualification.json": {
+          "scope": "Resource positive/negative controls only; not participant measurement or host exclusivity certification",
+          "cpu": 96,
+          "smt_siblings": "96,288",
+          "returncode": 0,
+          "wall_seconds": 4.97254192084074,
+          "log_tail": "...............                                                          [100%]\n15 passed in 4.76s\n",
+          "remaining_child_cgroups": []
+        },
+        "installed-native-conformance.json": {
+          "scope": "Host-local installed-wheel semantic conformance; not measurement",
+          "returncode": 0,
+          "wall_seconds": 17.19389267079532,
+          "log_tail": "............                                                             [100%]\n12 passed, 48 deselected in 16.99s\n"
+        }
+      },
+      "admission": "No measured campaign until public freeze, unchanged inputs, all existing tasks drained, reserved labels verified, host baseline sealed and selected core/sibling idle. Fail closed on missing evidence.",
+      "stopping_rule": "One full attempt; preserve all 120 blocks and 360 measured records plus 240 warmups, including failures. No favorable rerun. On interruption retain every partial output; no release claim.",
+      "publication_eligible": false,
+      "scalability_claim_allowed": false,
+      "source_commit": "f88ebc88f8584cd580802cd219ba16d935fa6715"
+    }
+  }
 }

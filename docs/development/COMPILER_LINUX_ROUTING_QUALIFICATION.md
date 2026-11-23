@@ -1,10 +1,21 @@
 # Linux routing qualification declaration
 
 Status: declared before measured execution on November 23, 2026. The
-[freeze manifest](evidence/compiler-linux-routing-freeze.json) fixes participants,
+[original freeze manifest](evidence/compiler-linux-routing-freeze.json.gz) fixes participants,
 configuration, wheel identities, the complete unchanged SDKBench Python harness,
-fixture/reference bundle, thresholds and budgets. No campaign has run at this
+fixture/reference bundle, thresholds and budgets. No campaign had run at this
 freeze. This study checks inspected historical controls, not unseen applications.
+
+The compressed manifest preserves the exact original JSON bytes (SHA-256
+`eefcc61f0925d8d55bc5e2017a813bd9d8dd417fd34989b80ad3f96d61b6d95c`)
+published at `7c83c5f82480f49143190ed82f98c8fd757722ec`. CI exposed an
+unregistered field name and an inline external-origin stamp unsupported by one
+reader. The [existing evidence index](evidence/compiler-installed-wheel-controls.json)
+now records the same declaration with the established field vocabulary and
+existing external-origin table. This metadata normalization changes no study
+input or limit; the running attempt reads the original bytes. Original CI
+failures remain retained, and no validator, schema allowlist or origin table is
+changed.
 
 The user authorized arranging a dedicated 24-hour window on `jp-bw1100-10`.
 Environment writes stay inside a new study directory under `/data` and a new
