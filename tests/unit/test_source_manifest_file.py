@@ -58,6 +58,11 @@ def test_native_sdist_retains_authoritative_build_inputs(
             "README.md",
             "flagquantum/version.py",
             "flagquantum/__init__.py",
+            "flagquantum/compiler/artifacts/_unsigned_size.py",
+            "flagquantum/compiler/formats/kmx_builder.py",
+            "flagquantum/compiler/registers/layout/wire_allocation.py",
+            "flagquantum/compiler/registers/lookup/lookup_binding.py",
+            "flagquantum/ecosystem/_physical_basis_session.py",
         }
         assert required <= members
         assert any(
