@@ -4,6 +4,8 @@
 
 """Retain constant-load, addition and unload calls for gradient kickback."""
 
+from math import isfinite
+
 from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import (
@@ -31,8 +33,10 @@ def zpow_via_phase_gradient_program(
     """
     if type(adjoint) is not bool:
         raise ValueError("Z power phase gradient adjoint must be boolean")
-    # Reuse the existing finite exponent admission even for a symbolic width.
-    zpow_phase_gradient_constant(exponent, width if type(width) is int else 1)
+    if type(width) is int:
+        zpow_phase_gradient_constant(exponent, width)
+    elif type(exponent) not in (int, float) or not isfinite(exponent):
+        raise ValueError("Z power requires a finite exponent")
     dtype = fixed_point_register_type(width, width)
     if type(width) is int:
         load = controlled_bitwise_word_program(

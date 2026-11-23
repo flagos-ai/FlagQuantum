@@ -254,3 +254,18 @@ def test_original_tensor_cases(exponent: float, width: int, source_module: Any) 
                     abs(actual.get(j, 0) - expected.get(j, 0)) < 2e-12
                     for j in actual.keys() | expected.keys()
                 )
+
+
+def test_symbolic_precision_retains_negative_unencoded_load() -> None:
+    from flagquantum.compiler.registers.phase.zpow_phase_gradient_component import (
+        zpow_via_phase_gradient_program,
+    )
+    from flagquantum.core.ir.program import verify_program_record
+
+    record = zpow_via_phase_gradient_program(
+        -0.5, Symbol("n", positive=True, integer=True)
+    )
+    assert verify_program_record(record) == ()
+    assert len(record.functions[0].blocks[0].operations) == 5
+    with pytest.raises(ValueError, match="nonnegative"):
+        zpow_via_phase_gradient_program(-0.5, 3)
