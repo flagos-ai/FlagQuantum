@@ -15,6 +15,10 @@ runs:
         FQ_SELF_HOSTED_PYPI_INDEX: ${{ inputs.self-hosted-pypi-index }}
         FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
       run: |
+        # Keep build and installer scratch space on the runner's job volume.
+        job_tmp="$(mktemp -d "$RUNNER_TEMP/fq-build.XXXXXX")"
+        export TMPDIR="$job_tmp"
+        echo "TMPDIR=$job_tmp" >> "$GITHUB_ENV"
         unset PYTHONPATH PYTHONHOME
         echo "PYTHONPATH=" >> "$GITHUB_ENV"
         echo "PYTHONHOME=" >> "$GITHUB_ENV"
