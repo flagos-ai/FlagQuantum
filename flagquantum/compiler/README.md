@@ -1420,3 +1420,9 @@ ports, symbolic codec limits and separate execution/model responsibilities.
 THRU triangular-index declaration. The source root has no primitive body.
 Existing square/add construction and its independent cost model retain their
 own execution evidence. See `docs/development/RESOLVER_CONTIGUOUS_INDEX_AUDIT.md`.
+
+`formats/legacy_trigonometric_factories.py` reuses the existing arcsine and
+arctangent declaration owners for both complete source constructors. Original
+roots remain bodyless, with numerical, foreign and independent paper/lookup
+execution evidence retained by their existing owners. See
+`docs/development/RESOLVER_TRIGONOMETRIC_AUDIT.md`.
