@@ -98,3 +98,11 @@ assert [(gate.name, gate.wires) for gate in optimized.instructions] == [("cx", (
 Full default and integration tiers were not run for the rejected implementation.
 The report's own validation and exact-head CI status must be read separately from
 the candidate's focused semantic tests.
+
+The report-only default tier completed in 1,077.05 seconds with 21,549 passed,
+796 skipped, eight failures and six setup errors. One failure exposed this
+report's unregistered `commutation_revision` field; it is corrected to a nested
+`revision` field without changing the recorded source or samples. The other
+evidence-origin failure includes repository-history availability mismatches.
+Six launch tests and six MPS setup errors encounter blocked local socket/address
+operations in the sandbox. These results are not a passing default tier.

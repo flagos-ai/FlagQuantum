@@ -4,8 +4,10 @@
     "revision": "c3154a8c4eb71172d05e999e1d88348fb40e9b2a",
     "baseline_file_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
     "candidate_file_sha256": "f2f726a4f02cb08139892d8ba5591c80a945a1fb0b05b87760f00a7c55bf932c",
-    "commutation_revision": "9d1ce6c6c1ca4803abb7036d18dabd13285b7421",
-    "commutation_sha256": "4e5b8091a55e67f5bd295c14733348e35fcc5ad9af5d896fa1fa78498572b7bb"
+    "commutation_sha256": "4e5b8091a55e67f5bd295c14733348e35fcc5ad9af5d896fa1fa78498572b7bb",
+    "commutation": {
+      "revision": "9d1ce6c6c1ca4803abb7036d18dabd13285b7421"
+    }
   },
   "claim_limits": {
     "publication_eligible": false,
