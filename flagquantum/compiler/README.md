@@ -1447,3 +1447,9 @@ and the literal duplicate graph. Source model-only roots retain bodyless
 Programs. Existing native physical sort/set networks keep their separate
 acceptance and measured inventories. See ../../docs/development/RESOLVER_LIST_AUDIT.md
 for exact ports, symbolic declarations and source erasure boundaries.
+
+formats/legacy_hamming_weight_factories.py reuses Hamming resource-width and
+compression-tree owners. Logical junk/output ownership, symbolic lower bounds
+and original empty-junk failures are recorded in
+../../docs/development/RESOLVER_HAMMING_WEIGHT_AUDIT.md. The concrete bound Program
+continues through the existing circuit.append(op) entry.
