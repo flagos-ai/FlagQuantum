@@ -1,0 +1,1265 @@
+{
+  "scope": "Shared macOS development observations; inspected inputs; no qualified performance or unseen-program claim",
+  "source": {
+    "revision": "4c48612561401ab0d5bb3c822fa47826aa7892d3",
+    "baseline_file_sha256": "366c1bd9d26a99a3bd30568e65640432928f1d9b0142779857c8a64717be3cd2",
+    "candidate_file_sha256": "4e5b8091a55e67f5bd295c14733348e35fcc5ad9af5d896fa1fa78498572b7bb",
+    "candidate_state": "Uncommitted private compiler implementation; all other production files unchanged"
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Darwin",
+    "machine": "arm64",
+    "dedicated_host": false,
+    "process_isolation": false,
+    "timing": "time.perf_counter; one warmup, nine alternating pairs per task; no confidence interval",
+    "torch_threads_requested": 1
+  },
+  "claim_limits": {
+    "publication_eligible": false,
+    "novelty_certified": false,
+    "scalability_claim_allowed": false,
+    "output_check": "Exact exported operation-list and final-layout equality to baseline; existing independent acceptance is not replaced"
+  },
+  "trials": [
+    {
+      "name": "fq-fixed-matrix-probe-20261123",
+      "interpretation": "rejected: no consistent workflow improvement",
+      "driver_source": "\"\"\"Paired local development probe; does not modify production sources.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport json\nimport statistics\nimport time\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import one_qubit_optimization as one\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\noriginal = one._instruction_matrix\nfixed = {}\nfor opcode in one._FIXED_EULER_ANGLES:\n    instruction = one.Instruction(opcode, (0,))\n    matrix = original(instruction)\n    assert matrix is not None\n    fixed[opcode] = tuple(tuple(row) for row in matrix)\n\ndef candidate(instruction):\n    if instruction.matrix is None and not instruction.params:\n        matrix = fixed.get(instruction.name)\n        if matrix is not None:\n            return [list(row) for row in matrix]\n    return original(instruction)\n\nrows = []\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n    fixture = json.loads(path.read_text())\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    times = {'baseline': [], 'candidate': []}\n    expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n    for repeat in range(9):\n        for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n            with patch.object(one, '_instruction_matrix', candidate if name == 'candidate' else original):\n                started = time.perf_counter()\n                result = _ordinary_flagquantum_route(adapter, fixture, 0)\n                times[name].append(time.perf_counter() - started)\n                assert result == expected\n    rows.append({'instance': path.stem, 'times': times, 'median_ratio': statistics.median(times['candidate']) / statistics.median(times['baseline'])})\n    print(json.dumps(rows[-1]), flush=True)\nPath('/private/tmp/fq-fixed-matrix-probe-20261123.json').write_text(json.dumps(rows, indent=2) + '\\n')\n",
+      "rows": [
+        {
+          "instance": "EXT-02-GRID-08",
+          "times": {
+            "baseline": [
+              0.1120664999998553,
+              0.1263395420010056,
+              0.1305162089993246,
+              0.11545316699994146,
+              0.13473424999938288,
+              0.11577529100031825,
+              0.14289783299864212,
+              0.13042816699999094,
+              0.11547750000136148
+            ],
+            "candidate": [
+              0.12847366700043494,
+              0.12758450000001176,
+              0.11630829200112203,
+              0.1317213330003142,
+              0.11528824999913923,
+              0.1351905829997122,
+              0.11671291699894937,
+              0.11662766599874885,
+              0.13581070799955341
+            ]
+          },
+          "median_ratio": 1.0098540645255485
+        },
+        {
+          "instance": "EXT-02-LINE-08",
+          "times": {
+            "baseline": [
+              0.12942708400078118,
+              0.11539370799982862,
+              0.13351712499934365,
+              0.11332325000148558,
+              0.13887712500036287,
+              0.11502695799936191,
+              0.11413220800022827,
+              0.1342212079998717,
+              0.11551699999836273
+            ],
+            "candidate": [
+              0.11517866599933768,
+              0.14148075000048266,
+              0.11473633399873506,
+              0.13433916599933582,
+              0.11390583300089929,
+              0.13227291699877242,
+              0.135034540999186,
+              0.11309091600014654,
+              0.1417835419997573
+            ]
+          },
+          "median_ratio": 1.1450515248893858
+        },
+        {
+          "instance": "EXT-03-GRID-06",
+          "times": {
+            "baseline": [
+              0.03728200000114157,
+              0.03792362499916635,
+              0.03759575000003679,
+              0.05587724999895727,
+              0.038041125000745524,
+              0.04005245799999102,
+              0.03905891700014763,
+              0.03785116700055369,
+              0.037673582999559585
+            ],
+            "candidate": [
+              0.038627040999926976,
+              0.037995124999724794,
+              0.03783225000006496,
+              0.03753912499996659,
+              0.038037541999074165,
+              0.03850741700080107,
+              0.03729824999936682,
+              0.037879292000070564,
+              0.03783275000023423
+            ]
+          },
+          "median_ratio": 0.9988309925779311
+        },
+        {
+          "instance": "EXT-03-LINE-06",
+          "times": {
+            "baseline": [
+              0.0345934999986639,
+              0.03391370899953472,
+              0.03354287500042119,
+              0.03381016699859174,
+              0.03460466600154177,
+              0.03302229199834983,
+              0.03587970900116488,
+              0.03439833399897907,
+              0.03470045900030527
+            ],
+            "candidate": [
+              0.0339157910002541,
+              0.03371429199978593,
+              0.03390337500059104,
+              0.033348667000609566,
+              0.05012554200038721,
+              0.03344024999933026,
+              0.03612595800041163,
+              0.034160250001150416,
+              0.03388104200166708
+            ]
+          },
+          "median_ratio": 0.9856109601586309
+        },
+        {
+          "instance": "EXT-04-GRID-06",
+          "times": {
+            "baseline": [
+              0.0074176250000164146,
+              0.007410750000417465,
+              0.0073445409998385,
+              0.025642042000981746,
+              0.007516459001635667,
+              0.0077362499996525,
+              0.007941332998598227,
+              0.00784104200101865,
+              0.00788795799962827
+            ],
+            "candidate": [
+              0.007578665999972145,
+              0.007339292000324349,
+              0.007419624998874497,
+              0.007680041999265086,
+              0.0073460419989714865,
+              0.007688583000344806,
+              0.00731883299886249,
+              0.007890708000559243,
+              0.007605374999911874
+            ]
+          },
+          "median_ratio": 0.9796304411455895
+        },
+        {
+          "instance": "EXT-04-LINE-06",
+          "times": {
+            "baseline": [
+              0.007693957999435952,
+              0.006932874999620253,
+              0.007036833001620835,
+              0.007168500000261702,
+              0.00731104200167465,
+              0.007244833001095685,
+              0.007198125000286382,
+              0.007166540999605786,
+              0.007217207999929087
+            ],
+            "candidate": [
+              0.007498041999497218,
+              0.0073224579991801875,
+              0.00737370800015924,
+              0.007611791999806883,
+              0.0073114170008921064,
+              0.007414874999085441,
+              0.007334999998420244,
+              0.007322040999497403,
+              0.007120250000298256
+            ]
+          },
+          "median_ratio": 1.0190153683255594
+        }
+      ],
+      "driver_sha256": "4ada2fd653a0acb23eebc003326949cb7037dcedccffbc86883fa7fb9b7ed440"
+    },
+    {
+      "name": "fq-singleton-block-probe-20261123",
+      "interpretation": "rejected: no consistent workflow improvement",
+      "driver_source": "\"\"\"Paired local development probe; does not modify production sources.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport json\nimport statistics\nimport time\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import two_qubit_optimization as two\nfrom flagquantum.core.operator_schema import get_operator_schema\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\noriginal = two._replacement\n\ndef candidate(instructions, *, pair, metadata):\n    if len(instructions) == 1 and instructions[0].matrix is None:\n        schema = get_operator_schema(instructions[0].name)\n        if schema is not None and not schema.parameters:\n            return None\n    return original(instructions, pair=pair, metadata=metadata)\n\nrows = []\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n    fixture = json.loads(path.read_text())\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    times = {'baseline': [], 'candidate': []}\n    expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n    for repeat in range(9):\n        for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n            with patch.object(two, '_replacement', candidate if name == 'candidate' else original):\n                started = time.perf_counter()\n                result = _ordinary_flagquantum_route(adapter, fixture, 0)\n                times[name].append(time.perf_counter() - started)\n                assert result == expected\n    rows.append({'instance': path.stem, 'times': times, 'median_ratio': statistics.median(times['candidate']) / statistics.median(times['baseline'])})\n    print(json.dumps(rows[-1]), flush=True)\nPath('/private/tmp/fq-singleton-block-probe-20261123.json').write_text(json.dumps(rows, indent=2) + '\\n')\n",
+      "rows": [
+        {
+          "instance": "EXT-02-GRID-08",
+          "times": {
+            "baseline": [
+              0.1330051659988385,
+              0.14793945800010988,
+              0.12057445900063612,
+              0.12775362499996845,
+              0.15113600000040606,
+              0.1256531660001201,
+              0.1510913750007603,
+              0.14094445900082064,
+              0.12097095900026034
+            ],
+            "candidate": [
+              0.15035112500117975,
+              0.14163537500098755,
+              0.12571008399936545,
+              0.15145666699936555,
+              0.1370476249994681,
+              0.15724545800003398,
+              0.12649058399983915,
+              0.1416428749998886,
+              0.14551133399982064
+            ]
+          },
+          "median_ratio": 1.0649426579500343
+        },
+        {
+          "instance": "EXT-02-LINE-08",
+          "times": {
+            "baseline": [
+              0.14434041699860245,
+              0.119826957999976,
+              0.1412731669988716,
+              0.12383683299958648,
+              0.12000966699997662,
+              0.12832504200014228,
+              0.11321004199999152,
+              0.13202104199990572,
+              0.11439295799937099
+            ],
+            "candidate": [
+              0.12209645800066937,
+              0.1632582080001157,
+              0.12050887500117824,
+              0.14444566699967254,
+              0.12987725000130013,
+              0.11344666699915251,
+              0.13931795800090185,
+              0.11414250000052562,
+              0.1347188340005232
+            ]
+          },
+          "median_ratio": 1.0487772244767744
+        },
+        {
+          "instance": "EXT-03-GRID-06",
+          "times": {
+            "baseline": [
+              0.0370802499983256,
+              0.0394932079998398,
+              0.03813066700058698,
+              0.05134337499839603,
+              0.03706987500117975,
+              0.037590333000480314,
+              0.03759012499904202,
+              0.03697787500095728,
+              0.037694167000154266
+            ],
+            "candidate": [
+              0.03765150000072026,
+              0.03731062500082771,
+              0.04075150000062422,
+              0.0373195840002154,
+              0.0374115829999937,
+              0.03665825000098266,
+              0.03719487499984098,
+              0.037003749999712454,
+              0.05324749999999767
+            ]
+          },
+          "median_ratio": 0.992797376914393
+        },
+        {
+          "instance": "EXT-03-LINE-06",
+          "times": {
+            "baseline": [
+              0.04091787500146893,
+              0.03389204199993401,
+              0.03414608399907593,
+              0.03340162499989674,
+              0.04837608300113061,
+              0.03326749999905587,
+              0.03246712500003923,
+              0.03326300000117044,
+              0.032963375000690576
+            ],
+            "candidate": [
+              0.0332962079992285,
+              0.03274370800136239,
+              0.03345983399958641,
+              0.033678457999485545,
+              0.032861249999768916,
+              0.03318741700059036,
+              0.033148624999739695,
+              0.03318187500008207,
+              0.0329559159999917
+            ]
+          },
+          "median_ratio": 0.9934209787752738
+        },
+        {
+          "instance": "EXT-04-GRID-06",
+          "times": {
+            "baseline": [
+              0.007174667000072077,
+              0.007100041999365203,
+              0.00707529200008139,
+              0.007045291000395082,
+              0.007105417000275338,
+              0.007032292000076268,
+              0.00705704200117907,
+              0.007121958000425366,
+              0.007244374999572756
+            ],
+            "candidate": [
+              0.007044082998618251,
+              0.007123540999600664,
+              0.007150417000957532,
+              0.007038499999907799,
+              0.0070798329998069676,
+              0.007071209000059753,
+              0.007068375000017113,
+              0.007140167001125519,
+              0.007283250000909902
+            ]
+          },
+          "median_ratio": 0.9971536788711894
+        },
+        {
+          "instance": "EXT-04-LINE-06",
+          "times": {
+            "baseline": [
+              0.006467458000770421,
+              0.006539041998621542,
+              0.006686332999379374,
+              0.006604833999517723,
+              0.006602459001442185,
+              0.006860208999569295,
+              0.006785792000300717,
+              0.0064116670000657905,
+              0.006630542000493733
+            ],
+            "candidate": [
+              0.006623333001698484,
+              0.006642708000072162,
+              0.006440708999434719,
+              0.006526416000269819,
+              0.006575166999027715,
+              0.006288250000579865,
+              0.006521208000776824,
+              0.006686624999929336,
+              0.006498291999378125
+            ]
+          },
+          "median_ratio": 0.9881271809021044
+        }
+      ],
+      "driver_sha256": "9e778f4bd1be6b8987bf4d3ac5467af2237e967b297ee53cc4955de02458162d"
+    },
+    {
+      "name": "fq-commutation-cache-probe-20261123",
+      "interpretation": "precursor wrapper; not the production cache lifetime",
+      "driver_source": "\"\"\"Paired local development probe; does not modify production sources.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport json\nimport statistics\nimport time\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import commutation\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\noriginal = commutation.commute\n\ndef signature(gate):\n    return (gate.name, gate.wires, gate.matrix is not None, bool(gate.params))\n\ncache = {}\ndef candidate(left, right):\n    key = signature(left), signature(right)\n    value = cache.get(key)\n    if value is None:\n        value = original(left, right)\n        if len(cache) < 512:\n            cache[key] = value\n    return value\n\nrows = []\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n    fixture = json.loads(path.read_text())\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    times = {'baseline': [], 'candidate': []}\n    expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n    for repeat in range(9):\n        for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n            cache.clear()\n            with patch.object(commutation, 'commute', candidate if name == 'candidate' else original):\n                started = time.perf_counter()\n                result = _ordinary_flagquantum_route(adapter, fixture, 0)\n                times[name].append(time.perf_counter() - started)\n                assert result == expected\n    rows.append({'instance': path.stem, 'times': times, 'median_ratio': statistics.median(times['candidate']) / statistics.median(times['baseline'])})\n    print(json.dumps(rows[-1]), flush=True)\nPath('/private/tmp/fq-commutation-cache-probe-20261123.json').write_text(json.dumps(rows, indent=2) + '\\n')\n",
+      "rows": [
+        {
+          "instance": "EXT-02-GRID-08",
+          "times": {
+            "baseline": [
+              0.10527108300084365,
+              0.13125637499979348,
+              0.11250141700111271,
+              0.11125220800022362,
+              0.1271365419997892,
+              0.1107262500008801,
+              0.13965304200064566,
+              0.12896320800064132,
+              0.1123314169999503
+            ],
+            "candidate": [
+              0.12572274999911315,
+              0.1063546250006766,
+              0.10595458299940219,
+              0.1231300409999676,
+              0.1113521250008489,
+              0.12295679099952395,
+              0.11313320900080726,
+              0.1153644579990214,
+              0.12310187500042957
+            ]
+          },
+          "median_ratio": 1.0254489327710457
+        },
+        {
+          "instance": "EXT-02-LINE-08",
+          "times": {
+            "baseline": [
+              0.13018804100101988,
+              0.11077825000029407,
+              0.12837674999900628,
+              0.1313655000012659,
+              0.11462483299874293,
+              0.13409787499949744,
+              0.11387562500021886,
+              0.11479462499846704,
+              0.1299289159996988
+            ],
+            "candidate": [
+              0.10624066600030346,
+              0.12572904199987534,
+              0.10427162499945553,
+              0.10780404099932639,
+              0.13092499999947904,
+              0.11258187500061467,
+              0.1110768749986164,
+              0.14016450000053737,
+              0.10520495899982052
+            ]
+          },
+          "median_ratio": 0.8652413696364506
+        },
+        {
+          "instance": "EXT-03-GRID-06",
+          "times": {
+            "baseline": [
+              0.036301915999501944,
+              0.03636091699991084,
+              0.03566187500109663,
+              0.036544999999023275,
+              0.03606054100055189,
+              0.050539333000415354,
+              0.03452666699922702,
+              0.0370106249993114,
+              0.03628633300104411
+            ],
+            "candidate": [
+              0.050476915999752237,
+              0.035045958999035065,
+              0.03503462499975285,
+              0.034992167000382324,
+              0.03515737499947136,
+              0.03488262500104611,
+              0.0332620829994994,
+              0.03318345800107636,
+              0.03499537499919825
+            ]
+          },
+          "median_ratio": 0.964009034665784
+        },
+        {
+          "instance": "EXT-03-LINE-06",
+          "times": {
+            "baseline": [
+              0.03264083300018683,
+              0.03298791700035508,
+              0.032517292000193265,
+              0.032791083000120125,
+              0.03215029099919775,
+              0.03183704200091597,
+              0.05781554200075334,
+              0.031558833001327,
+              0.033339332998366444
+            ],
+            "candidate": [
+              0.03118279200134566,
+              0.04693862500062096,
+              0.0313454589995672,
+              0.03122508400156221,
+              0.03182908300004783,
+              0.031867082998360274,
+              0.03154258399990795,
+              0.03107066700067662,
+              0.0316967079997994
+            ]
+          },
+          "median_ratio": 0.966353524118928
+        },
+        {
+          "instance": "EXT-04-GRID-06",
+          "times": {
+            "baseline": [
+              0.007195000000137952,
+              0.006941124998775194,
+              0.006680582999251783,
+              0.007239374999699066,
+              0.007065208001222345,
+              0.006772459000785602,
+              0.0067881249997299165,
+              0.006817333000071812,
+              0.006964416999835521
+            ],
+            "candidate": [
+              0.007074749999446794,
+              0.006928791999598616,
+              0.00674487499964016,
+              0.006722374999299063,
+              0.006816875000367872,
+              0.006713249998938409,
+              0.006714499999361578,
+              0.006384667000020272,
+              0.006828708999819355
+            ]
+          },
+          "median_ratio": 0.9717264853795798
+        },
+        {
+          "instance": "EXT-04-LINE-06",
+          "times": {
+            "baseline": [
+              0.0066205410003021825,
+              0.006722582998918369,
+              0.006555957999808015,
+              0.006646167001235881,
+              0.006238209000002826,
+              0.00614658300037263,
+              0.006576584000868024,
+              0.0064345840000896715,
+              0.0064415409997309325
+            ],
+            "candidate": [
+              0.006418916000257013,
+              0.0062445410003419966,
+              0.0063551249986630864,
+              0.006370582999807084,
+              0.00613287499982107,
+              0.0060659999999188585,
+              0.006812292000176967,
+              0.0063970829996833345,
+              0.006506833000457846
+            ]
+          },
+          "median_ratio": 0.9717241934731187
+        }
+      ],
+      "driver_sha256": "d0fabeec22b2f89c0b36a18878800167ed796c0db06c240f8543fa1259909602"
+    },
+    {
+      "name": "fq-commutation-sweep-paired-20261123",
+      "interpretation": "implemented sweep-local bounded reuse",
+      "driver_source": "\"\"\"Paired local development probe; does not modify production sources.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport json\nimport statistics\nimport time\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import commutation\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\nimport ast\nimport subprocess\nbaseline_source = subprocess.run(['git', 'show', 'HEAD:flagquantum/compiler/optimization/commutation.py'], check=True, capture_output=True, text=True, timeout=15).stdout\nnode = next(node for node in ast.parse(baseline_source).body if isinstance(node, ast.FunctionDef) and node.name == '_sweep_commutation')\nnamespace = dict(commutation.__dict__)\nexec(compile(ast.Module(body=[node], type_ignores=[]), '<baseline-sweep>', 'exec'), namespace)\noriginal = namespace['_sweep_commutation']\ncandidate = commutation._sweep_commutation\n\nrows = []\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n    fixture = json.loads(path.read_text())\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    times = {'baseline': [], 'candidate': []}\n    expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n    for repeat in range(9):\n        for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n            with patch.object(commutation, '_sweep_commutation', candidate if name == 'candidate' else original):\n                started = time.perf_counter()\n                result = _ordinary_flagquantum_route(adapter, fixture, 0)\n                times[name].append(time.perf_counter() - started)\n                assert result == expected\n    rows.append({'instance': path.stem, 'times': times, 'median_ratio': statistics.median(times['candidate']) / statistics.median(times['baseline'])})\n    print(json.dumps(rows[-1]), flush=True)\nPath('/private/tmp/fq-commutation-sweep-paired-20261123.json').write_text(json.dumps(rows, indent=2) + '\\n')\n",
+      "rows": [
+        {
+          "instance": "EXT-02-GRID-08",
+          "times": {
+            "baseline": [
+              0.10658033400068234,
+              0.11956220799947914,
+              0.10594549999950686,
+              0.1050853750002716,
+              0.11915591599972686,
+              0.10523033299978124,
+              0.12066066600164049,
+              0.12002624999877298,
+              0.10668112500025018
+            ],
+            "candidate": [
+              0.1139942499994504,
+              0.09963062499991793,
+              0.0992557499994291,
+              0.11519487499936076,
+              0.10180012499949953,
+              0.11540329200033739,
+              0.09960670799955551,
+              0.10451449999891338,
+              0.11398583299887832
+            ]
+          },
+          "median_ratio": 0.9796906434823244
+        },
+        {
+          "instance": "EXT-02-LINE-08",
+          "times": {
+            "baseline": [
+              0.1189362089990027,
+              0.10442041699934634,
+              0.1203497080005036,
+              0.12722849999954633,
+              0.1109729999989213,
+              0.13145599999916158,
+              0.10957783300000301,
+              0.10871791599856806,
+              0.12655695799912792
+            ],
+            "candidate": [
+              0.09876170799907413,
+              0.11562387499907345,
+              0.10415400000056252,
+              0.10311687499961408,
+              0.12473316600153339,
+              0.10505349999948521,
+              0.12427866700090817,
+              0.10821533300077135,
+              0.10172579099889845
+            ]
+          },
+          "median_ratio": 0.8832760089096677
+        },
+        {
+          "instance": "EXT-03-GRID-06",
+          "times": {
+            "baseline": [
+              0.035096749999866006,
+              0.035068416998910834,
+              0.03499858299983316,
+              0.03517795900006604,
+              0.03463220900084707,
+              0.04932916699908674,
+              0.033984708999923896,
+              0.03484708399992087,
+              0.03451391599992348
+            ],
+            "candidate": [
+              0.04986891699991247,
+              0.03363329199964937,
+              0.03413962499871559,
+              0.034388666001177626,
+              0.03350175000014133,
+              0.033343707998938044,
+              0.0328962909989059,
+              0.033303167001577094,
+              0.0335441669994907
+            ]
+          },
+          "median_ratio": 0.9584435746913126
+        },
+        {
+          "instance": "EXT-03-LINE-06",
+          "times": {
+            "baseline": [
+              0.030798625000898028,
+              0.03088995799953409,
+              0.030679834000693518,
+              0.030529333000231418,
+              0.0303333339998062,
+              0.030447041999650537,
+              0.044848790999822086,
+              0.03038616600133537,
+              0.030647792000308982
+            ],
+            "candidate": [
+              0.029509750000215718,
+              0.0441447920002247,
+              0.029608500000904314,
+              0.029646875000253203,
+              0.029491541999959736,
+              0.029465667001204565,
+              0.029401249999864376,
+              0.02998562499851687,
+              0.029433416999381734
+            ]
+          },
+          "median_ratio": 0.9628670802750883
+        },
+        {
+          "instance": "EXT-04-GRID-06",
+          "times": {
+            "baseline": [
+              0.006631624999499763,
+              0.006582958998478716,
+              0.0064891669990174705,
+              0.006530874999953085,
+              0.006511499999760417,
+              0.006575832998350961,
+              0.006548957999257254,
+              0.00647654199929093,
+              0.006540332999065868
+            ],
+            "candidate": [
+              0.006518666999909328,
+              0.006363790998875629,
+              0.006479375000708387,
+              0.006514165999760735,
+              0.006353167000270332,
+              0.006443708000006154,
+              0.006376625000484637,
+              0.0062784999990981305,
+              0.006359875000271131
+            ]
+          },
+          "median_ratio": 0.9749694704222839
+        },
+        {
+          "instance": "EXT-04-LINE-06",
+          "times": {
+            "baseline": [
+              0.006039707999661914,
+              0.006039374999090796,
+              0.006062291999114677,
+              0.0060570410005311714,
+              0.006082374999095919,
+              0.005952416999207344,
+              0.00607066699922143,
+              0.006031667000570451,
+              0.006021707999025239
+            ],
+            "candidate": [
+              0.005976332999125589,
+              0.006015083001329913,
+              0.005909957999392645,
+              0.005958207999356091,
+              0.005995749999783584,
+              0.005888792000405374,
+              0.005925417000980815,
+              0.005953792000582325,
+              0.006034958998498041
+            ]
+          },
+          "median_ratio": 0.9865059701047824
+        }
+      ],
+      "driver_sha256": "5d5135a780c9270422f46a2d89dd7180a16bdf5d2492ab4a0dba187f3cdad1d2"
+    },
+    {
+      "name": "fq-commutation-synthetic-paired-20261123",
+      "interpretation": "Seeded development controls; concurrent full local tests; no universal speedup or held-out claim",
+      "driver_source": "\"\"\"Seeded development controls for cache overhead; no held-out claim.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport ast\nimport json\nimport random\nimport statistics\nimport subprocess\nimport time\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import commutation\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\nsource = subprocess.run(['git', 'show', 'HEAD:flagquantum/compiler/optimization/commutation.py'], check=True, capture_output=True, text=True, timeout=15).stdout\nnode = next(node for node in ast.parse(source).body if isinstance(node, ast.FunctionDef) and node.name == '_sweep_commutation')\nnamespace = dict(commutation.__dict__)\nexec(compile(ast.Module(body=[node], type_ignores=[]), '<baseline-sweep>', 'exec'), namespace)\nbaseline = namespace['_sweep_commutation']\ncandidate = commutation._sweep_commutation\nrng = random.Random(20261123)\nrows = []\nfor n in (2, 4, 8, 12):\n    for count in (10, 50, 200, 800):\n        operations = []\n        for _ in range(count):\n            name = rng.choice(('h', 'rx', 'ry', 'rz', 'cx', 'cz'))\n            wires = rng.sample(range(n), 2 if name in ('cx', 'cz') else 1)\n            op = {'name': name, 'qubits': wires}\n            if name in ('rx', 'ry', 'rz'):\n                op['angle'] = rng.uniform(-2.5, 2.5)\n            operations.append(op)\n        fixture = {'n_qubits': n, 'operations': operations, 'target_edges': [[i, i+1] for i in range(n-1)]}\n        adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n        with patch.object(commutation, '_sweep_commutation', baseline):\n            expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n        samples = {'baseline': [], 'candidate': []}\n        for repeat in range(5):\n            for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n                with patch.object(commutation, '_sweep_commutation', baseline if name == 'baseline' else candidate):\n                    started = time.perf_counter()\n                    actual = _ordinary_flagquantum_route(adapter, fixture, 0)\n                    samples[name].append(time.perf_counter() - started)\n                    assert actual == expected\n        row = {'qubits': n, 'input_operations': count, 'times': samples, 'median_ratio': statistics.median(samples['candidate'])/statistics.median(samples['baseline']), 'identical_output': True}\n        rows.append(row)\n        print(json.dumps(row), flush=True)\nPath('/private/tmp/fq-commutation-synthetic-paired-20261123.json').write_text(json.dumps(rows, indent=2)+'\\n')\n",
+      "rows": [
+        {
+          "qubits": 2,
+          "input_operations": 10,
+          "times": {
+            "baseline": [
+              0.0016804169990791706,
+              0.0013618749999295687,
+              0.0013475830000970745,
+              0.001665417001277092,
+              0.001430041998901288
+            ],
+            "candidate": [
+              0.0015779999994265381,
+              0.0014085419988987269,
+              0.0013357499992707744,
+              0.0015265000001818407,
+              0.0013554170000134036
+            ]
+          },
+          "median_ratio": 0.9849654765251092,
+          "identical_output": true
+        },
+        {
+          "qubits": 2,
+          "input_operations": 50,
+          "times": {
+            "baseline": [
+              0.0039835000006860355,
+              0.0037681249996239785,
+              0.003987333000623039,
+              0.0042478750001464505,
+              0.004318125000281725
+            ],
+            "candidate": [
+              0.003974209001171403,
+              0.003883291999954963,
+              0.004179374998784624,
+              0.003915249999408843,
+              0.003948624998884043
+            ]
+          },
+          "median_ratio": 0.9902922575734336,
+          "identical_output": true
+        },
+        {
+          "qubits": 2,
+          "input_operations": 200,
+          "times": {
+            "baseline": [
+              0.01471520899940515,
+              0.01477304199943319,
+              0.016588374999628286,
+              0.015497417000005953,
+              0.014678707999337348
+            ],
+            "candidate": [
+              0.013867834000848234,
+              0.01395254199996998,
+              0.015183665998847573,
+              0.014775291001569713,
+              0.014135333000012906
+            ]
+          },
+          "median_ratio": 0.9568329258493443,
+          "identical_output": true
+        },
+        {
+          "qubits": 2,
+          "input_operations": 800,
+          "times": {
+            "baseline": [
+              0.06928645799962396,
+              0.09133937499973399,
+              0.07072995799899218,
+              0.07145487500019954,
+              0.07114895800077647
+            ],
+            "candidate": [
+              0.06564441599948623,
+              0.0651232499985781,
+              0.06680508399949758,
+              0.0668927500009886,
+              0.08257866700114391
+            ]
+          },
+          "median_ratio": 0.9389467657245032,
+          "identical_output": true
+        },
+        {
+          "qubits": 4,
+          "input_operations": 10,
+          "times": {
+            "baseline": [
+              0.0017087079995690146,
+              0.0015073750000738073,
+              0.0015262920005625347,
+              0.0014900830010446953,
+              0.0014904580002621515
+            ],
+            "candidate": [
+              0.0015489170000364538,
+              0.0015175829994404921,
+              0.0015158339992922265,
+              0.0015116670001589227,
+              0.0015378749994852114
+            ]
+          },
+          "median_ratio": 1.0067720370619022,
+          "identical_output": true
+        },
+        {
+          "qubits": 4,
+          "input_operations": 50,
+          "times": {
+            "baseline": [
+              0.005015208000259008,
+              0.00485333300093771,
+              0.0047752499995112885,
+              0.005156667000846937,
+              0.004943583000567742
+            ],
+            "candidate": [
+              0.005056332998719881,
+              0.004840666000745841,
+              0.004976583999450668,
+              0.004959624999173684,
+              0.00494454099862196
+            ]
+          },
+          "median_ratio": 1.0032450145176282,
+          "identical_output": true
+        },
+        {
+          "qubits": 4,
+          "input_operations": 200,
+          "times": {
+            "baseline": [
+              0.018942583999887574,
+              0.0187387089990807,
+              0.018759624999802327,
+              0.018570374999399064,
+              0.019255375000284403
+            ],
+            "candidate": [
+              0.018845832999431877,
+              0.019003500001417706,
+              0.01861816699965857,
+              0.018467165999027202,
+              0.019057416000578087
+            ]
+          },
+          "median_ratio": 1.0045954010077738,
+          "identical_output": true
+        },
+        {
+          "qubits": 4,
+          "input_operations": 800,
+          "times": {
+            "baseline": [
+              0.06689429200014274,
+              0.08334779200049525,
+              0.06608920799953921,
+              0.06559020900022006,
+              0.0656418329999724
+            ],
+            "candidate": [
+              0.06450125000083062,
+              0.06397870799992234,
+              0.0643315840006835,
+              0.07862916699923517,
+              0.07866991700029757
+            ]
+          },
+          "median_ratio": 0.975972506756025,
+          "identical_output": true
+        },
+        {
+          "qubits": 8,
+          "input_operations": 10,
+          "times": {
+            "baseline": [
+              0.001909332999275648,
+              0.0019509580015437678,
+              0.0018184580003435258,
+              0.0018575419999251608,
+              0.0018034999993687961
+            ],
+            "candidate": [
+              0.0020229170004313346,
+              0.002071958000669838,
+              0.0017865829995571403,
+              0.0019963329996244283,
+              0.0017902500003401656
+            ]
+          },
+          "median_ratio": 1.0747175566985077,
+          "identical_output": true
+        },
+        {
+          "qubits": 8,
+          "input_operations": 50,
+          "times": {
+            "baseline": [
+              0.006837749999249354,
+              0.00674208400050702,
+              0.006646334000834031,
+              0.006709083001624094,
+              0.00670420899950841
+            ],
+            "candidate": [
+              0.006690124999295222,
+              0.006553250001161359,
+              0.006878708998556249,
+              0.0067029580004600575,
+              0.006619082998440717
+            ]
+          },
+          "median_ratio": 0.9971742781652451,
+          "identical_output": true
+        },
+        {
+          "qubits": 8,
+          "input_operations": 200,
+          "times": {
+            "baseline": [
+              0.02964020799845457,
+              0.03040066699941235,
+              0.11537645800126484,
+              0.02963445800014597,
+              0.0290246250006021
+            ],
+            "candidate": [
+              0.030155957998431404,
+              0.02952637499947741,
+              0.06449733299996296,
+              0.05935983299968939,
+              0.02910058299858065
+            ]
+          },
+          "median_ratio": 1.0174003502270876,
+          "identical_output": true
+        },
+        {
+          "qubits": 8,
+          "input_operations": 800,
+          "times": {
+            "baseline": [
+              0.11928208400058793,
+              0.13771450000058394,
+              0.13755216599929554,
+              0.12255641600131639,
+              0.13685329100007948
+            ],
+            "candidate": [
+              0.13882824999927834,
+              0.12115425000047253,
+              0.11888962499870104,
+              0.13497350000034203,
+              0.13725700000031793
+            ]
+          },
+          "median_ratio": 0.9862641885627993,
+          "identical_output": true
+        },
+        {
+          "qubits": 12,
+          "input_operations": 10,
+          "times": {
+            "baseline": [
+              0.003002875000674976,
+              0.002928042000348796,
+              0.00286933300048986,
+              0.0027726660009648185,
+              0.0029918340005679056
+            ],
+            "candidate": [
+              0.0029582499992102385,
+              0.0029862499995942926,
+              0.0028673330016317777,
+              0.002914709000833682,
+              0.002774083999611321
+            ]
+          },
+          "median_ratio": 0.9954464452649497,
+          "identical_output": true
+        },
+        {
+          "qubits": 12,
+          "input_operations": 50,
+          "times": {
+            "baseline": [
+              0.009948666998752742,
+              0.010219125000730855,
+              0.010110750001331326,
+              0.009876792000795831,
+              0.00999533399954089
+            ],
+            "candidate": [
+              0.010458959000970935,
+              0.010130624999874271,
+              0.010022000000390108,
+              0.010198416001003352,
+              0.009793958000955172
+            ]
+          },
+          "median_ratio": 1.013535415658906,
+          "identical_output": true
+        },
+        {
+          "qubits": 12,
+          "input_operations": 200,
+          "times": {
+            "baseline": [
+              0.051876874998924905,
+              0.037194416001511854,
+              0.03685991699967417,
+              0.0517796250005631,
+              0.036753624999619205
+            ],
+            "candidate": [
+              0.036255749999327236,
+              0.03707304199997452,
+              0.03666641600102594,
+              0.036661042000559974,
+              0.0369648750001943
+            ]
+          },
+          "median_ratio": 0.985804320722109,
+          "identical_output": true
+        },
+        {
+          "qubits": 12,
+          "input_operations": 800,
+          "times": {
+            "baseline": [
+              0.15818466699965938,
+              0.1607695419988886,
+              0.16575320800075133,
+              0.1538789580008597,
+              0.1740526250014227
+            ],
+            "candidate": [
+              0.16225783300069452,
+              0.14378037499955099,
+              0.16449862499939627,
+              0.18045941599848447,
+              0.18550937500003783
+            ]
+          },
+          "median_ratio": 1.0231952082101063,
+          "identical_output": true
+        }
+      ],
+      "driver_sha256": "03aaa1f2459d9886013f9834eb17b2c28b2939d14ecece7887abb29a6fdb9c06"
+    },
+    {
+      "name": "fq-commutation-python-memory-20261123",
+      "interpretation": "Three alternating pairs; Python tracemalloc peak only; excludes native tensor allocation, RSS, imports and cgroup accounting; not qualified memory evidence",
+      "driver_source": "\"\"\"Paired local development probe; does not modify production sources.\"\"\"\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nimport json\nimport statistics\nimport time\nimport gc\nimport tracemalloc\nimport flagquantum as fq\nimport torch\nfrom flagquantum.compiler.optimization import commutation\nfrom sdkbench.candidates.adapters import _ordinary_flagquantum_route\n\nimport ast\nimport subprocess\nbaseline_source = subprocess.run(['git', 'show', 'HEAD:flagquantum/compiler/optimization/commutation.py'], check=True, capture_output=True, text=True, timeout=15).stdout\nnode = next(node for node in ast.parse(baseline_source).body if isinstance(node, ast.FunctionDef) and node.name == '_sweep_commutation')\nnamespace = dict(commutation.__dict__)\nexec(compile(ast.Module(body=[node], type_ignores=[]), '<baseline-sweep>', 'exec'), namespace)\noriginal = namespace['_sweep_commutation']\ncandidate = commutation._sweep_commutation\n\nrows = []\nfor path in sorted(Path('/private/tmp/sdkbench-external-input-preparation-20261123/prepared/bundle/fixtures').glob('*.json')):\n    fixture = json.loads(path.read_text())\n    adapter = SimpleNamespace(fq=fq, torch=torch, audit={})\n    times = {'baseline': [], 'candidate': []}\n    expected = _ordinary_flagquantum_route(adapter, fixture, 0)\n    for repeat in range(3):\n        for name in (('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')):\n            with patch.object(commutation, '_sweep_commutation', candidate if name == 'candidate' else original):\n                gc.collect()\n                tracemalloc.start()\n                try:\n                    result = _ordinary_flagquantum_route(adapter, fixture, 0)\n                    times[name].append(tracemalloc.get_traced_memory()[1])\n                finally:\n                    tracemalloc.stop()\n                assert result == expected\n    rows.append({'instance': path.stem, 'python_traced_peak_bytes': times, 'median_ratio': statistics.median(times['candidate']) / statistics.median(times['baseline'])})\n    print(json.dumps(rows[-1]), flush=True)\nPath('/private/tmp/fq-commutation-python-memory-20261123.json').write_text(json.dumps(rows, indent=2) + '\\n')\n",
+      "rows": [
+        {
+          "instance": "EXT-02-GRID-08",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              4875664,
+              4877659,
+              4867704
+            ],
+            "candidate": [
+              4869608,
+              4865176,
+              4870403
+            ]
+          },
+          "median_ratio": 0.9987579127683942
+        },
+        {
+          "instance": "EXT-02-LINE-08",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              4844525,
+              4841043,
+              4839324
+            ],
+            "candidate": [
+              4837196,
+              4838963,
+              4842776
+            ]
+          },
+          "median_ratio": 0.999570340523726
+        },
+        {
+          "instance": "EXT-03-GRID-06",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              1675141,
+              1678987,
+              1673702
+            ],
+            "candidate": [
+              1685783,
+              1682359,
+              1684626
+            ]
+          },
+          "median_ratio": 1.005662209927403
+        },
+        {
+          "instance": "EXT-03-LINE-06",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              1788368,
+              1778486,
+              1793098
+            ],
+            "candidate": [
+              1785774,
+              1786018,
+              1789557
+            ]
+          },
+          "median_ratio": 0.9986859527792937
+        },
+        {
+          "instance": "EXT-04-GRID-06",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              446645,
+              450911,
+              445147
+            ],
+            "candidate": [
+              450302,
+              450213,
+              452321
+            ]
+          },
+          "median_ratio": 1.0081877105979022
+        },
+        {
+          "instance": "EXT-04-LINE-06",
+          "python_traced_peak_bytes": {
+            "baseline": [
+              395273,
+              393603,
+              394795
+            ],
+            "candidate": [
+              396351,
+              396712,
+              398760
+            ]
+          },
+          "median_ratio": 1.004855684595803
+        }
+      ],
+      "driver_sha256": "27ef2e15f45cc68a8027d0e09318a0222e0ad7e1edcda766bdf1f331c28ebbe9"
+    }
+  ],
+  "sdkbench": {
+    "source_commit": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a",
+    "source_commit_origin": "external_dependency",
+    "repository": "https://github.com/sdkbench-org/sdkbench",
+    "adapter_sha256": "fe18b1daed140d37974713da76a3c766577efc13b4929390ba7a6da792c4c64c"
+  },
+  "profile_predicate_calls": [
+    {
+      "instance": "EXT-02-GRID-08",
+      "baseline_predicate_calls": 5344,
+      "candidate_predicate_calls": 596
+    },
+    {
+      "instance": "EXT-02-LINE-08",
+      "baseline_predicate_calls": 5348,
+      "candidate_predicate_calls": 609
+    },
+    {
+      "instance": "EXT-03-GRID-06",
+      "baseline_predicate_calls": 1382,
+      "candidate_predicate_calls": 470
+    },
+    {
+      "instance": "EXT-03-LINE-06",
+      "baseline_predicate_calls": 1398,
+      "candidate_predicate_calls": 475
+    },
+    {
+      "instance": "EXT-04-GRID-06",
+      "baseline_predicate_calls": 272,
+      "candidate_predicate_calls": 157
+    },
+    {
+      "instance": "EXT-04-LINE-06",
+      "baseline_predicate_calls": 264,
+      "candidate_predicate_calls": 149
+    }
+  ],
+  "profile_limits": "Instrumented call counts only; candidate profiles overlapped full local tests and their wall times are not a paired performance comparison.",
+  "validation": {
+    "focused_compiler_tests": {
+      "passed": 229
+    },
+    "public_api_migration_baseline": "passed",
+    "full_default_tier": {
+      "passed": 21540,
+      "skipped": 796,
+      "failed": 9,
+      "setup_errors": 21,
+      "deselected": 16400,
+      "pytest_seconds": 1082.29,
+      "exit_code": 1,
+      "log_sha256": "3cb9ba88d752ba17c62ceb6fced08e493385f18782c629f42b31b25e264aa99a",
+      "limitations": [
+        "Transient disk exhaustion",
+        "Sandbox loopback-socket denial",
+        "Nested pytest inherited the initially supplied PYTEST_ADDOPTS basetemp option",
+        "100 local provenance origin-declaration consistency errors; existing declarations unchanged"
+      ]
+    },
+    "affected_file_recovery": {
+      "passed": 143,
+      "seconds": 1.77,
+      "exit_code": 0,
+      "environment": "Dedicated TMPDIR; no inherited PYTEST_ADDOPTS; permitted local sockets; no source or test changes",
+      "log_sha256": "85ccda92e44bddb7fd5c4b39c6bcaf5e98cf36b2e01eed47a2390164e9d437e0"
+    },
+    "new_artifact_revision_check": "passed; focused only, not a passing whole-repository provenance gate",
+    "full_integration": "pending",
+    "exact_head_ci": "pending"
+  }
+}
