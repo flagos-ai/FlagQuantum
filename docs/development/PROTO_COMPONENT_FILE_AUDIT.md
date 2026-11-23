@@ -89,3 +89,9 @@ metadata, source numeric controls and loaded/carry erasure reuse existing owners
 Combined complete constructor coverage is 41/303, with 262 identifiers remaining.
 Generic serialized wrappers and original signed/drawing/recursion defects remain
 explicit.
+
+Complete controlled_add_or_subtract.py constructor closure and its scoped
+positive Controlled(BitwiseNot) dependency are mapped in
+RESOLVER_CONDITIONAL_ADDITION_AUDIT.md. Complete built-in coverage is 42/303,
+with 261 identifiers remaining. The partial Controlled mapping is excluded
+from the complete identifier count.

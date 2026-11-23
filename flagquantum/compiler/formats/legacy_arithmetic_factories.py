@@ -2,7 +2,7 @@
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Constructors adapted from locked Qualtran v0.7.0 addition.py, negate.py and
-# controlled_addition.py.
+# controlled_addition.py and controlled_add_or_subtract.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
 
 """Resolve integer arithmetic libraries through existing typed component owners."""
@@ -20,6 +20,9 @@ from ...core.ir.program.signatures import Signature
 from ...core.value_parameters import is_symbolic_value
 from ...errors import SerializationError
 from ..registers.arithmetic.addition_component import addition_component_program
+from ..registers.arithmetic.conditional_addition_component import (
+    conditional_addition_program,
+)
 from ..registers.arithmetic.constant_addition_component import constant_addition_program
 from ..registers.arithmetic.controlled_addition_component import (
     controlled_addition_program,
@@ -175,10 +178,41 @@ def _controlled_addition_factory(
     )
 
 
+def _conditional_addition_factory(
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord | ProgramRecord:
+    if (
+        arguments.keys() - {"a_dtype", "b_dtype", "add_when_ctrl_is_on"}
+        or "a_dtype" not in arguments
+    ):
+        raise SerializationError(
+            "Invalid constructor arguments for ControlledAddOrSubtract"
+        )
+    left = _integer_dtype(arguments, "a_dtype")
+    right = _integer_dtype(arguments, "b_dtype") if "b_dtype" in arguments else left
+    # The source tests this unvalidated attrs field by Python truth value.
+    polarity = bool(arguments.get("add_when_ctrl_is_on", True))
+    signature = tuple(
+        Signature.build_from_dtypes(ctrl=quantum_bit_type(), a=left, b=right)
+    )
+    if registers is not None and signature != registers:
+        raise SerializationError(
+            "Invalid register signature for ControlledAddOrSubtract"
+        )
+    if left.is_symbolic() or right.is_symbolic():
+        return FunctionRecord(name, (), registers=signature)
+    return _rename_program(
+        conditional_addition_program(left, right, add_when_control_is_on=polarity),
+        name,
+    )
+
+
 def arithmetic_factories(
     *, encode_constant: ConstantEncoder
 ) -> dict[str, ComponentFactory]:
-    """Bind complete addition and negation constructor groups to owned programs.
+    """Bind integer addition, conditional arithmetic and negation to owned programs.
 
     The caller supplies the existing dtype-aware stored-integer encoder. Generic
     control and adjoint wrappers retain their independent constructor boundary.
@@ -193,4 +227,5 @@ def arithmetic_factories(
         },
         "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": _out_of_place_factory,
         "qualtran.bloqs.arithmetic.controlled_addition.CAdd": _controlled_addition_factory,
+        "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": _conditional_addition_factory,
     }

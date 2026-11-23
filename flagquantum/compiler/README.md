@@ -1309,3 +1309,9 @@ through `registers/arithmetic/controlled_addition_component.py`. Its directly
 serialized And dependencies retain numeric binary control normalization at the
 format boundary. Run `tests/unit/test_legacy_controlled_addition_factories.py`
 for constructor, exact source stream, complex branch and resource checks.
+
+ControlledAddOrSubtract uses the same arithmetic catalogue and existing
+conditional addition owner. Its positive scalar Controlled(BitwiseNot) dependency
+uses exact per-catalogue child context and the existing controlled word owner.
+Run `tests/unit/test_legacy_conditional_addition_factories.py` and the word factory
+suite for the complete constructor closure and explicit generic-control limits.
