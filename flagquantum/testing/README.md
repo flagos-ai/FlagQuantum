@@ -113,3 +113,10 @@ Run `tests/unit/test_circuit_fuzzer.py` for a three-bit increment, seeded callba
 sampling, measurement feedback and first-failure diagnostics. Full source-file
 closure, native ownership adaptations and resource evidence are recorded in
 `docs/development/CIRCUIT_FUZZER_AUDIT.md`.
+
+`_physical_operand_cases` supplies frozen-source scalar, array and broadcast
+families plus 64-lane truth-table masks. It reuses Compiler operand identities
+and the existing physical numerical session. It adds no production gate logic.
+Run `tests/unit/test_physical_operand_cases.py` for full family ordering and
+source mask read/write comparisons. `PHYSICAL_TESTING_HELPERS_AUDIT.md` records
+the separate original register-fuzz batching defect and its pending replacement.
