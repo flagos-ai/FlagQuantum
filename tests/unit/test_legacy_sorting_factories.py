@@ -123,15 +123,15 @@ def test_zero_pair_network_and_one_element_sort_are_physical_identities() -> Non
         assert bound.outputs == ((0, 1),)
 
 
-def test_original_zero_length_parallel_identity_remains_a_native_execution_gap() -> (
-    None
-):
+def test_original_zero_length_parallel_identity_reuses_empty_native_body() -> None:
     from qualtran.bloqs.arithmetic.sorting import ParallelComparators
 
     source = ParallelComparators(0, 1, 2)
     assert not source.decompose_bloq().bloq_instances
-    with pytest.raises(ValueError, match="positive"):
-        resolve_component_program(_library(source, 0), 0, sorting_factories())
+    program = resolve_component_program(_library(source, 0), 0, sorting_factories())
+    assert program.functions[0].blocks
+    bound = bind_register_program(program, (), borrowed=(0,))
+    assert bound.circuit.instructions == () and bound.outputs == ()
 
 
 @pytest.mark.parametrize(

@@ -79,9 +79,13 @@ def _sorting_factory(
     if any(type(value) is not int for value in dimensions):
         return FunctionRecord(name, (), registers=ports)
     # The source declares these domains but cannot supply their physical bodies.
-    if dimensions[-1] == 0 or (
-        kind == "BitonicMerge" and dimensions[0] & (dimensions[0] - 1)
-    ):
+    if (
+        dimensions[-1] == 0
+        and (
+            isinstance(declaration, ComparatorDeclaration)
+            or declaration.num_comparisons != 0
+        )
+    ) or (kind == "BitonicMerge" and dimensions[0] & (dimensions[0] - 1)):
         return FunctionRecord(name, (), registers=ports)
     return _rename_program(declaration.program(), name)
 

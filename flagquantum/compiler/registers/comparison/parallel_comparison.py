@@ -13,9 +13,9 @@ from .comparison_layout import validate_comparison_layout
 
 def parallel_comparison_pairs(count: int, offset: int) -> tuple[tuple[int, int], ...]:
     """Return source block/step order, retaining incomplete trailing blocks."""
-    if type(count) is not int or count < 1 or type(offset) is not int or offset < 1:
+    if type(count) is not int or count < 0 or type(offset) is not int or offset < 1:
         raise ValueError(
-            "Parallel comparison count and offset must be positive integers"
+            "Parallel comparison count must be nonnegative and offset positive"
         )
     pairs = []
     for start in range(0, count, 2 * offset):

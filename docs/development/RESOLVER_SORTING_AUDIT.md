@@ -25,12 +25,13 @@ Concrete positive power-of-two execution delegates to certified owners.
 Positive non-power-of-two merge lengths retain the source declaration and model,
 with explicit physical lowering refusal. Zero-width declarations remain bodyless. The unchanged source fails when an
 actual zero-width comparison is required. Its singleton sort and zero-pair
-parallel cases instead return physical empty identities. Those two zero-width
-native identity cases remain execution gaps.
-A separate original/native gap remains for zero-length ParallelComparators.
+parallel cases now return physical empty identities in both directions. Native
+execution closes the zero-length parallel identity as well, while the frozen
+source adjoint still exposes its own empty-array finalization defect.
 The original returns an empty identity, while the native owner requires positive
-count. Both ParallelComparators and BitonicSort identifiers remain partial. Offset zero fails original
-signature construction, and negative offsets fail original decomposition.
+count. Offset zero fails original signature construction, and negative offsets fail
+original decomposition. The frozen source inverse of the zero-count parallel
+identity retains its finalization defect and is recorded as an upstream boundary.
 
 Exact Program and bound-instruction equality connect the constructor entry to
 accepted source dependency, operand, feedback, complete-complex spectator,
@@ -52,10 +53,23 @@ SORTING_FILE_AUDIT.md is reused. Seven frozen blobs and real Kickmix 0.1 Simulat
 are verified. Strict typing covers all three changed Python files. Black, Ruff,
 Compiler scope, repository language, architecture, IR and protected API checks
 pass. The dependency checker retains its identical 720 baseline findings.
-Comparator and BitonicMerge constructor identifiers close. ParallelComparators
-and BitonicSort remain partial for the zero-length or zero-width identity gaps. Publication is verified separately
+All four sorting constructor identifiers close after the empty-network continuation. Publication is verified separately
 against the exact Git SHA.
 
-Constructor catalogue coverage advances from 88 to 90 of 303 identifiers.
+Constructor catalogue coverage advances from 92 to 94 of 303 identifiers.
 Generic Adjoint/Controlled constructor protocols and the recorded physical
 identity boundaries remain open.
+
+## Empty-network dependency continuation
+
+The remaining sorting identity domains use the existing xs/junk signature and
+ComponentProgramBuilder. Parallel count zero has two empty array ports. A
+zero-width xs element is still a logical register element. The singleton sort
+and every zero-pair parallel layer retain those elements without allocation.
+Forward has RIGHT empty junk, inverse has LEFT empty junk. The empty network
+has zero calls, primitives, measurement slots and work. Shared layout validation
+admits empty logical storage only when all histories, work and slots are empty.
+Active zero-width comparisons keep the original physical refusal. Negative
+counts, nonpositive offsets, mismatched widths and nonboolean directions keep
+explicit validation failures. This continuation is Compiler-owned finite array
+composition using existing Program types.

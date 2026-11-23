@@ -7,13 +7,32 @@
 import numpy as np
 
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
 from ....core.ir.program.registers import Register, RegisterSide
 from ....core.ir.program.signatures import Signature
 from ..comparison.parallel_comparison import parallel_comparison_pairs
 from ..component_builder import ComponentProgramBuilder
 from .bitonic_merge import bitonic_merge_history_count
 from .bitonic_sort import bitonic_sort_history_count
+
+
+def empty_comparison_program(count: int, width: int, *, adjoint: bool) -> ProgramRecord:
+    """Retain xs elements and a directional empty history without child calls."""
+    if type(width) is not int or width < 0:
+        raise ValueError("Empty comparison width must be a nonnegative integer")
+    side = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
+    builder = ComponentProgramBuilder(
+        Signature(
+            (
+                Register("xs", unsigned_register_type(width), (count,)),
+                Register("junk", quantum_bit_type(), (0,), side=side),
+            )
+        )
+    )
+    outputs = {"xs": builder.inputs["xs"]}
+    if not adjoint:
+        outputs["junk"] = np.empty(0, dtype=object)
+    return builder.finalize(outputs)
 
 
 def parallel_comparison_graph(

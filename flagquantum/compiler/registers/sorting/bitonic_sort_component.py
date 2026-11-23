@@ -11,7 +11,7 @@ from ..comparison.compare_exchange_component import (
     compare_exchange_program,
 )
 from .bitonic_sort import bitonic_sort_history_count
-from .network_graph import bitonic_sort_graph
+from .network_graph import bitonic_sort_graph, empty_comparison_program
 
 
 def bitonic_sort_program(
@@ -25,6 +25,7 @@ def bitonic_sort_program(
     """
     if type(adjoint) is not bool:
         raise ValueError("Bitonic sort direction requires a boolean")
-    bitonic_sort_history_count(count)
+    if not bitonic_sort_history_count(count):
+        return empty_comparison_program(count, width, adjoint=adjoint)
     record = bitonic_sort_graph(count, compare_exchange_program(width))
     return adjoint_comparison_network(record, width) if adjoint else record

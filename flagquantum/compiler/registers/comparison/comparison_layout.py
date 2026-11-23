@@ -24,8 +24,14 @@ def validate_comparison_layout(
     """Validate distinct logical words/history/work and explicit stored classical slots."""
     if type(adjoint) is not bool:
         raise ValueError("Comparison direction must be boolean")
-    if not words or not words[0] or any(len(word) != len(words[0]) for word in words):
+    if words and any(len(word) != len(words[0]) for word in words):
         raise ValueError("Comparison layout requires equal positive word widths")
+    if not words or not words[0]:
+        if history_count or histories or workspace or classical_bits:
+            raise ValueError(
+                "Empty comparison layout requires empty history, work and slots"
+            )
+        return
     logical_wires = tuple(wire for word in words for wire in word)
     _validate_wires((*logical_wires, *histories, *workspace))
     q, c = comparison_network_requirements(len(words[0]), history_count)

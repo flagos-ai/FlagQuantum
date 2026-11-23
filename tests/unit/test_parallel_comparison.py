@@ -173,7 +173,7 @@ def test_zero_pairs_and_validation() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.sorting import ParallelComparators
 
-    for k, offset in ((1, 1), (3, 5)):
+    for k, offset in ((0, 1), (1, 1), (3, 5)):
         words, h, w, bits = layout(k, offset, 2)
         source = ParallelComparators(k, offset, 2)
         assert (
@@ -182,7 +182,7 @@ def test_zero_pairs_and_validation() -> None:
         assert parallel_compare_ir(words, offset, h, w, bits) == ()
         assert parallel_compare_ir(words, offset, h, w, bits, adjoint=True) == ()
     words, h, w, bits = layout(4, 1, 2)
-    for k, offset in ((0, 1), (3, 0), (3, True)):
+    for k, offset in ((-1, 1), (3, 0), (3, True)):
         with pytest.raises(ValueError, match="positive"):
             parallel_comparison_pairs(k, offset)
     with pytest.raises(ValueError, match="boolean"):

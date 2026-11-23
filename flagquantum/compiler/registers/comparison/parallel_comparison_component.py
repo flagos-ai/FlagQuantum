@@ -6,7 +6,7 @@
 """Compose the existing offset pair order with directional history arrays."""
 
 from ....core.ir.program import ProgramRecord
-from ..sorting.network_graph import parallel_comparison_graph
+from ..sorting.network_graph import empty_comparison_program, parallel_comparison_graph
 from .compare_exchange_component import (
     adjoint_comparison_network,
     compare_exchange_program,
@@ -24,6 +24,7 @@ def parallel_comparison_program(
     """
     if type(adjoint) is not bool:
         raise ValueError("Parallel comparison direction requires a boolean")
-    parallel_comparison_pairs(count, offset)
+    if not parallel_comparison_pairs(count, offset):
+        return empty_comparison_program(count, width, adjoint=adjoint)
     record = parallel_comparison_graph(count, offset, compare_exchange_program(width))
     return adjoint_comparison_network(record, width) if adjoint else record
