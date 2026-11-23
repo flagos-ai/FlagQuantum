@@ -93,7 +93,7 @@ def main() -> None:
         (0.5, [0, -0.1, 0, 0.6]),
     ):
         clock = iter(ticks)
-        calls = []
+        calls: list[int] = []
         with patch.object(source.time, "monotonic", partial(next, clock)):
             sample = source.BenchmarkSuite("group", target_wait_time_seconds=target).go(
                 partial(calls.append, 1), rates={"ops": 1}
