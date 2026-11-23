@@ -90,6 +90,10 @@ STALLED_SWAP_LIMIT_PER_WIRE = 4
 # improving, so this bound only supplies a hard worst case above the early exits.
 SABRE_LAYOUT_ROUNDS = 5
 
+# Cap scalar edge updates in the all-input readiness proof; over-budget
+# candidates retain the existing tree restore rather than starting a search.
+_RESTORE_READINESS_OPERATION_BUDGET = 65536
+
 
 @dataclass(frozen=True)
 class SabrePlan:
@@ -782,7 +786,7 @@ def _restore_path(
     tree: list[list[int]],
     active: list[bool],
 ) -> list[int]:
-    """Return the remaining tree path from ``start`` to ``goal``, inclusive."""
+    """Return an active graph path from ``start`` to ``goal``, inclusive."""
 
     previous = {start: -1}
     queue: deque[int] = deque([start])
@@ -813,10 +817,9 @@ def restore_swaps(
 
     Replaying a forward plan in reverse only returns the layout that plan started
     from, so a plan that started away from the identity layout needs an explicit
-    restore. The coupling graph is reduced to a spanning forest and one tree leaf
-    at a time is walked to its home qubit along the edges that are still active. A
-    leaf has at most one active edge, so a qubit that has already reached home is
-    never displaced.
+    restore. One leaf of a spanning forest at a time is walked home without
+    displacing fixed qubits. On a graph with cycles, a second walk can use all
+    remaining coupling edges. It replaces the tree walk only if it is shorter and no wire finishes later for any incoming readiness.
 
     Args:
         layout: Physical qubit for each logical qubit.
@@ -865,6 +868,59 @@ def restore_swaps(
         for node in range(n_wires)
     ]
 
+    baseline = _walk_restore(placement, tree, tree)
+    if sum(map(len, adjacency)) == sum(map(len, tree)):
+        return baseline
+    shortcuts = _walk_restore(placement, tree, adjacency)
+    if len(shortcuts) < len(baseline) and _restore_no_later(
+        shortcuts, baseline, n_wires
+    ):
+        return shortcuts
+    return baseline
+
+
+def _restore_no_later(
+    candidate: tuple[tuple[int, int], ...],
+    baseline: tuple[tuple[int, int], ...],
+    n_wires: int,
+) -> bool:
+    """Compare max-plus readiness maps without allocating a dense matrix.
+
+    A SWAP ends on both wires one layer after their maximum incoming readiness.
+    Each output is therefore a maximum of input times plus integer delays. Test
+    one input column at a time, using -1 for an absent dependency. Dominating
+    every column proves nonincrease for all possible incoming wire times.
+    """
+    if n_wires * (len(candidate) + len(baseline)) > _RESTORE_READINESS_OPERATION_BUDGET:
+        return False
+    for source in range(n_wires):
+        columns: list[list[int]] = []
+        for swaps in (candidate, baseline):
+            ready = [-1] * n_wires
+            ready[source] = 0
+            for left, right in swaps:
+                previous = max(ready[left], ready[right])
+                if previous >= 0:
+                    ready[left] = ready[right] = previous + 1
+            columns.append(ready)
+        if any(new > old for new, old in zip(*columns, strict=True)):
+            return False
+    return True
+
+
+def _walk_restore(
+    placement: tuple[int, ...],
+    tree: list[list[int]],
+    paths: list[list[int]],
+) -> tuple[tuple[int, int], ...]:
+    """Fix tree leaves using paths in a graph containing that tree.
+
+    Removing a tree leaf preserves connectivity of the remaining component.
+    Paths exclude fixed vertices, so shortcuts cannot displace restored tokens.
+    Both walks terminate after exactly one leaf removal per circuit wire.
+    """
+
+    n_wires = len(placement)
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
     for logical, physical in enumerate(logical_to_physical):
@@ -884,9 +940,8 @@ def restore_swaps(
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
         physical = logical_to_physical[leaf]
-        # The active tree stays fixed until this token reaches its leaf. Walk
-        # its unique path once; SWAPs move tokens, not the remaining tree edges.
-        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
+        # Only token positions change while walking; the active graph is fixed.
+        path = _restore_path(physical, leaf, paths, active) if physical != leaf else ()
         for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
