@@ -71,3 +71,12 @@ API checks. Update this proposal and its contract evidence only after approval.
 Core/AGENTS.md and PUBLIC_API_PROTECTION.md require explicit approval before
 changing the current accepted Program declaration behavior. The approved declaration boundary is implemented independently of the
 Compiler constructor adapters.
+
+## Implementation evidence
+
+The Core validator separates logical signature validation from finite port
+enumeration. Tests in tests/unit/test_symbolic_array_declarations.py retain
+symbolic multidimensional metadata and explicitly reject its use in bodies and
+calls. Partition wire round trips and physical binding refusals are covered by
+tests/unit/test_legacy_partition_factories.py. The complete dependency batch is
+recorded in RESOLVER_PARTITION_PREDICATE_AUDIT.md.

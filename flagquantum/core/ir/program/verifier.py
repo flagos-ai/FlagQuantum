@@ -35,8 +35,7 @@ from .model import (
     ValueRef,
     opcode_signature,
 )
-from .register_verifier import register_port_types, verify_register_block
-from .registers import RegisterSide
+from .register_verifier import validate_register_declaration, verify_register_block
 from .scalar import scalar_literal_error
 
 __all__ = ("verify_program_record",)
@@ -90,8 +89,7 @@ def _verify_function(
                 )
             )
         try:
-            register_port_types(function, RegisterSide.LEFT)
-            register_port_types(function, RegisterSide.RIGHT)
+            validate_register_declaration(function)
         except (ValueError, TypeError) as exc:
             diagnostics.append(_diagnostic("program.register_type", str(exc)))
         return diagnostics

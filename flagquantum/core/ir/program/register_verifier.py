@@ -254,10 +254,8 @@ def executable_classical_register_width(dtype: RegisterType) -> int:
     return width
 
 
-def register_port_types(
-    function: FunctionRecord, side: RegisterSide
-) -> tuple[RegisterType, ...]:
-    """Flatten quantum-word and owned CBit ports in row-major element order."""
+def validate_register_declaration(function: FunctionRecord) -> Signature:
+    """Validate logical ports without enumerating symbolic array dimensions."""
     if not isinstance(function.registers, tuple):
         raise ValueError("a register function requires immutable declared ports")
     if any(not isinstance(register, Register) for register in function.registers):
@@ -277,8 +275,27 @@ def register_port_types(
             RegisterSide.THRU,
         ):
             raise ValueError(f"unsupported executable register side {register.side!r}")
-        if any(type(size) is not int or size < 0 for size in register.shape_symbolic):
-            raise ValueError("executable array dimensions must be nonnegative integers")
+        if any(
+            not is_symbolic_value(size) and (type(size) is not int or size < 0)
+            for size in register.shape_symbolic
+        ):
+            raise ValueError(
+                "logical array dimensions must be nonnegative integers or symbolic"
+            )
+    return signature
+
+
+def register_port_types(
+    function: FunctionRecord, side: RegisterSide
+) -> tuple[RegisterType, ...]:
+    """Flatten concrete quantum-word and owned CBit ports in row-major order."""
+    signature = validate_register_declaration(function)
+    if any(
+        type(size) is not int or size < 0
+        for register in signature
+        for size in register.shape_symbolic
+    ):
+        raise ValueError("executable array dimensions must be nonnegative integers")
     ports = signature.lefts() if side is RegisterSide.LEFT else signature.rights()
     return tuple(register.dtype for register in ports for _ in register.all_idxs())
 
@@ -341,8 +358,8 @@ def verify_register_block(
                 try:
                     left = register_port_types(callee, RegisterSide.LEFT)
                     right = register_port_types(callee, RegisterSide.RIGHT)
-                except (ValueError, TypeError):
-                    # The callee's own verification reports its invalid ports.
+                except (ValueError, TypeError) as exc:
+                    diagnostics.append(_diagnostic("program.register_type", str(exc)))
                     continue
                 _check_port_types(operation.operands, left, types, diagnostics)
                 types.update(zip(operation.results, right, strict=False))
