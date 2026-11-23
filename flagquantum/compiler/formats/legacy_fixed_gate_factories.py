@@ -57,6 +57,7 @@ def fixed_gate_factories() -> dict[str, ComponentFactory]:
         Register("target", quantum_bit_type()),
     )
     definitions = (
+        ("x_basis.XGate", "x", single),
         ("cnot.CNOT", "cx", controlled),
         ("hadamard.Hadamard", "h", single),
         ("hadamard.CHadamard", "ch", controlled),
