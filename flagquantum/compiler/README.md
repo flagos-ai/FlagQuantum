@@ -1303,3 +1303,9 @@ for source gate, phase, output ownership and measured erasure conformance.
 `formats/legacy_fanout_factories.py` reuses the source fanout tree for signed
 prefix extension. Symbolic Cast metadata stays logical until physical binding.
 Run `tests/unit/test_legacy_subtraction_factories.py` for complete dependency checks.
+
+The same arithmetic catalogue resolves the complete CAdd constructor group
+through `registers/arithmetic/controlled_addition_component.py`. Its directly
+serialized And dependencies retain numeric binary control normalization at the
+format boundary. Run `tests/unit/test_legacy_controlled_addition_factories.py`
+for constructor, exact source stream, complex branch and resource checks.

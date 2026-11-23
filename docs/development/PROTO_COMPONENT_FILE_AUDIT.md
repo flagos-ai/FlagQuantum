@@ -82,3 +82,10 @@ wire wrappers and original one-bit signed Negate refusal remain explicit.
 Complete subtraction.py and multi_target_cnot.py constructor dependencies are
 mapped in RESOLVER_SUBTRACTION_AUDIT.md. Original fanout atomic QEC counts and
 expanded CX inventories are retained separately.
+
+Complete controlled_addition.py constructor closure is mapped in
+RESOLVER_CONTROLLED_ADDITION_AUDIT.md. Both control polarities, integer dtype
+metadata, source numeric controls and loaded/carry erasure reuse existing owners.
+Combined complete constructor coverage is 41/303, with 262 identifiers remaining.
+Generic serialized wrappers and original signed/drawing/recursion defects remain
+explicit.

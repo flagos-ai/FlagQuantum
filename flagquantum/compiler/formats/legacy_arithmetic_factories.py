@@ -1,7 +1,8 @@
 # Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Constructors adapted from locked Qualtran v0.7.0 addition.py and negate.py.
+# Constructors adapted from locked Qualtran v0.7.0 addition.py, negate.py and
+# controlled_addition.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/addition.py
 
 """Resolve integer arithmetic libraries through existing typed component owners."""
@@ -13,13 +14,16 @@ from typing import Literal
 import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
-from ...core.ir.program.register_types import unsigned_register_type
+from ...core.ir.program.register_types import quantum_bit_type, unsigned_register_type
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.ir.program.signatures import Signature
 from ...core.value_parameters import is_symbolic_value
 from ...errors import SerializationError
 from ..registers.arithmetic.addition_component import addition_component_program
 from ..registers.arithmetic.constant_addition_component import constant_addition_program
+from ..registers.arithmetic.controlled_addition_component import (
+    controlled_addition_program,
+)
 from ..registers.arithmetic.negation_component import negation_program
 from ..registers.arithmetic.out_of_place_addition_component import (
     out_of_place_addition_program,
@@ -141,6 +145,36 @@ def _out_of_place_factory(
     )
 
 
+def _controlled_addition_factory(
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord | ProgramRecord:
+    if arguments.keys() - {"a_dtype", "b_dtype", "cv"} or "a_dtype" not in arguments:
+        raise SerializationError("Invalid constructor arguments for CAdd")
+    left = _integer_dtype(arguments, "a_dtype")
+    right = _integer_dtype(arguments, "b_dtype") if "b_dtype" in arguments else left
+    control = arguments.get("cv", 1)
+    if not isinstance(control, (int, float)) or control not in (0, 1):
+        raise SerializationError("CAdd requires a binary numeric control")
+    signature = tuple(
+        Signature.build_from_dtypes(ctrl=quantum_bit_type(), a=left, b=right)
+    )
+    if registers is not None and signature != registers:
+        raise SerializationError("Invalid register signature for CAdd")
+    if (
+        not left.is_symbolic()
+        and not right.is_symbolic()
+        and left.num_qubits > right.num_qubits
+    ):
+        raise SerializationError("CAdd source width exceeds target width")
+    if left.is_symbolic() or right.is_symbolic():
+        return FunctionRecord(name, (), registers=signature)
+    return _rename_program(
+        controlled_addition_program(left, right, control_value=int(control)), name
+    )
+
+
 def arithmetic_factories(
     *, encode_constant: ConstantEncoder
 ) -> dict[str, ComponentFactory]:
@@ -158,4 +192,5 @@ def arithmetic_factories(
             for kind in kinds
         },
         "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": _out_of_place_factory,
+        "qualtran.bloqs.arithmetic.controlled_addition.CAdd": _controlled_addition_factory,
     }
