@@ -16,6 +16,7 @@ from ....core.ir.program.register_types import (
     quantum_bit_type,
 )
 from ....core.ir.program.registers import Register
+from ....core.parameters import Parameter, ParameterExpression
 from ..bits.on_each import on_each_word_program
 from ..component_adjoint import adjoint_component_program
 from ..component_builder import ComponentProgramBuilder
@@ -24,7 +25,7 @@ from ..component_gate_function import bit_gate_function
 from ..component_graph import _namespace_helpers
 from ..component_rebindings import adjoint_word_rebinding
 from ..primitives.controlled_rotation_component import controlled_z_power_program
-from ..primitives.global_phase import _finite_angle
+from ..primitives.pauli_rotation import RotationAngle, _rotation_angle
 from ..primitives.pauli_rotation_component import z_power_function
 from .phase_gradient import (
     source_phase_gradient_state_signature,
@@ -33,7 +34,11 @@ from .phase_gradient import (
 
 
 def phase_gradient_unitary_program(
-    width: int, exponent: float = 1, *, controlled: bool = False, adjoint: bool = False
+    width: int,
+    exponent: RotationAngle = 1,
+    *,
+    controlled: bool = False,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Apply source-ordered Z powers to an MSB-first fractional through word.
 
@@ -43,11 +48,19 @@ def phase_gradient_unitary_program(
     """
     if type(width) is not int or width < 1:
         raise ValueError("Gradient component width must be a positive integer")
-    _finite_angle(exponent)
+    _rotation_angle(exponent)
     if type(controlled) is not bool or type(adjoint) is not bool:
         raise ValueError("Gradient controlled mode and adjoint must be boolean")
+    powers = tuple(
+        (
+            ParameterExpression("div", (exponent, 2**i))
+            if isinstance(exponent, (Parameter, ParameterExpression))
+            else exponent / 2**i
+        )
+        for i in range(width)
+    )
     phases = tuple(
-        z_power_function(f"power_{i}", exponent / 2**i) for i in range(width)
+        z_power_function(f"power_{i}", power) for i, power in enumerate(powers)
     )
     builder = ComponentProgramBuilder(
         source_phase_gradient_unitary_signature(width, controlled=controlled),
@@ -60,7 +73,7 @@ def phase_gradient_unitary_program(
     for i, phase in enumerate(phases):
         if controlled:
             returned = builder.call_program(
-                controlled_z_power_program(exponent / 2**i),
+                controlled_z_power_program(powers[i]),
                 {"q": np.array([control, bits[i]], dtype=object)},
             )["q"]
             control, bits[i] = np.asarray(returned)
@@ -96,16 +109,16 @@ def phase_gradient_unitary_program(
             adjoints[function.name] = inverse.name
         elif not controlled:
             i = int(function.name.removeprefix("power_"))
-            inverse = z_power_function(f"gradient_inverse_power_{i}", -exponent / 2**i)
+            inverse = z_power_function(f"gradient_inverse_power_{i}", -powers[i])
             definitions.append(inverse)
             adjoints[function.name] = inverse.name
         else:
             for i in range(width):
                 if matches_component_definition(
-                    record, function.name, controlled_z_power_program(exponent / 2**i)
+                    record, function.name, controlled_z_power_program(powers[i])
                 ):
                     inverse_record = _namespace_helpers(
-                        controlled_z_power_program(-exponent / 2**i),
+                        controlled_z_power_program(-powers[i]),
                         f"gradient_inverse_cz_{i}",
                     )
                     definitions.extend(inverse_record.functions)
@@ -116,7 +129,9 @@ def phase_gradient_unitary_program(
     )
 
 
-def phase_gradient_state_program(width: int, exponent: float = -1) -> ProgramRecord:
+def phase_gradient_state_program(
+    width: int, exponent: RotationAngle = -1
+) -> ProgramRecord:
     """Produce the source's logical output through Allocate, OnEach and gradient.
 
     Allocation and Hadamards keep the source opaque view. The final gradient
