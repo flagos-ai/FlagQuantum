@@ -77,7 +77,20 @@ def test_full_compile_only_resources_and_stage_map() -> None:
         )
     ]
     assert all(item.n_qubits == compiled.layout.width for item in resources)
-    assert [item.n_operations for item in resources] == [711, 5517, 1546, 218838]
+    assert [item.n_operations for item in resources[:3]] == [711, 5517, 1546]
+    # The clock's Walsh transform may retain one roundoff-sized rotation on
+    # different libm builds. Account for its actual instructions separately;
+    # the remaining source-sized walk must retain its exact structural cost.
+    clock = synth.synthesize(
+        quantum.clock_state,
+        classical_inputs={"weights": list(model.generate().clock)},
+        max_qubits=4,
+        max_workspace=0,
+        memory_limit_bytes=1024**2,
+    )
+    clock_cost = clock.report["resources"].n_operations
+    assert clock_cost in (28, 29)
+    assert resources[-1].n_operations - clock_cost == 218810
     assert resources[-1].used_qubits == 133
     assert resources[-1].depth == 173381
     book = json.loads(

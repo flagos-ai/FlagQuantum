@@ -86,14 +86,15 @@ def test_uninitialized_reads_survive_cancellation_and_zero_coefficient(
         )
 
 
-def test_repeated_phase_specializations_fit_existing_node_budget() -> None:
+@pytest.mark.parametrize("layers", [76, 96])
+def test_repeated_phase_specializations_fit_existing_node_budget(layers: int) -> None:
     entry = definition(
         "word:Output[QNum[8]]",
-        "allocate(word)\nhadamard_transform(word)\nfor layer in range(76):\n    kick((layer+1)*0.000001,word)",
+        f"allocate(word)\nhadamard_transform(word)\nfor layer in range({layers}):\n    kick((layer+1)*0.000001,word)",
         "@qfunc\ndef kick(gamma:float,word:QNum):\n    phase(word*word,gamma)\n",
     )
     program = synth.synthesize(entry, max_workspace=0)
-    total = sum((layer + 1) * 0.000001 for layer in range(76))
+    total = sum((layer + 1) * 0.000001 for layer in range(layers))
     reference = fq.Circuit(8, dtype=torch.complex128)
     for wire in range(8):
         reference.h(wire)
@@ -120,11 +121,13 @@ def test_repeated_phase_specializations_fit_existing_node_budget() -> None:
         synth.synthesize(entry, max_operations=resources.n_operations - 1)
 
 
-def test_larger_phase_specializations_still_refuse_node_budget() -> None:
+def test_phase_specializations_retain_helper_expansion_budget() -> None:
     entry = definition(
         "word:Output[QNum[8]]",
-        "allocate(word)\nhadamard_transform(word)\nfor layer in range(96):\n    kick((layer+1)*0.000001,word)",
+        "allocate(word)\nhadamard_transform(word)\nfor batch in range(2):\n    for layer in range(129):\n        kick((batch*129+layer+1)*0.000001,word)",
         "@qfunc\ndef kick(gamma:float,word:QNum):\n    phase(word*word,gamma)\n",
     )
-    with pytest.raises(HybridVerificationError, match="node budget"):
+    with pytest.raises(
+        HybridVerificationError, match="helper expansion exceeds 256 calls"
+    ):
         synth.synthesize(entry, max_workspace=0)

@@ -182,12 +182,12 @@ def test_integer_root_rejects_bool_float_nonfinite_and_out_of_range(
         synth.synthesize(entry, classical_inputs={"n": value})
 
 
-@pytest.mark.parametrize("values", [[1.0], [True], [2**53 + 1], [], [1] * 4097])
+@pytest.mark.parametrize("values", [[1.0], [True], [2**53 + 1], [], [1] * 16385])
 def test_integer_arrays_keep_element_types_and_shared_binding_budget(
     values: list[int] | list[float],
 ) -> None:
     entry = definition("allocate(q)", "values:list[int],q:Output[QBit]")
-    with pytest.raises(ERRORS, match="integer bindings|4096"):
+    with pytest.raises(ERRORS, match="integer bindings|16384"):
         synth.synthesize(entry, classical_inputs={"values": values})
 
 
@@ -287,9 +287,9 @@ def test_selected_classical_arm_controls_captured_resource_cost() -> None:
 
 def test_shared_total_binding_and_loop_budgets_are_not_reset_by_if_or_helpers() -> None:
     entry = definition("allocate(q)", "first:list[int],second:list[int],q:Output[QBit]")
-    with pytest.raises(ERRORS, match="4096"):
+    with pytest.raises(ERRORS, match="16384"):
         synth.synthesize(
-            entry, classical_inputs={"first": [0] * 2048, "second": [1] * 2049}
+            entry, classical_inputs={"first": [0] * 8192, "second": [1] * 8193}
         )
     for count, diagnostic in ((257, "256 iterations"), (4097, "static integer")):
         entry = definition(

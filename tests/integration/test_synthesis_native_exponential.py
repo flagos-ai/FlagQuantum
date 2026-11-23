@@ -215,10 +215,10 @@ def test_invalid_overlap_refuses(success: float) -> None:
     "limits",
     [
         {"max_qubits": 5},
-        {"max_qubits": 7, "max_operations": 2399},
-        {"max_workspace": 1, "max_operations": 2399},
-        {"max_operations": 2398},
-        {"max_depth": 2045},
+        {"max_qubits": 7, "max_operations": 2264},
+        {"max_workspace": 1, "max_operations": 2264},
+        {"max_operations": 2264},
+        {"max_depth": 1909},
         {"memory_limit_bytes": 1024},
     ],
 )
@@ -233,7 +233,7 @@ def test_resource_budgets_refuse(limits: Limits) -> None:
 
 
 @pytest.mark.parametrize("workspace", (0, 1))
-def test_tighter_workspace_uses_more_gates_and_preserves_full_state(
+def test_bounded_workspace_preserves_full_state_and_operation_budget(
     workspace: int,
 ) -> None:
     program = synth.synthesize(
@@ -245,7 +245,24 @@ def test_tighter_workspace_uses_more_gates_and_preserves_full_state(
     resources = program.report["resources"]
     assert isinstance(resources, ResourceEstimate)
     assert resources.n_qubits <= 6 + workspace
-    assert resources.n_operations > 2399
+    unconstrained = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs()
+    )
+    # The fused modular update also improves the width-bounded candidates.
+    # Compare the actual candidates rather than assuming the old gate tradeoff.
+    assert (
+        unconstrained.report["resources"].n_operations <= resources.n_operations <= 2399
+    )
+    with pytest.raises(
+        (PlanningError, HybridVerificationError), match="budget|limit|exceed|infeasible"
+    ):
+        synth.synthesize(
+            native.main,
+            classical_inputs=native.classical_inputs(),
+            max_workspace=workspace,
+            max_qubits=6 + workspace,
+            max_operations=resources.n_operations - 1,
+        )
     expected = fq.run(reference_circuit(-0.5, native.SUCCESS_AMPLITUDE)).statevector()
     torch.testing.assert_close(
         state(program, 64), expected.reshape(64), atol=1e-11, rtol=0

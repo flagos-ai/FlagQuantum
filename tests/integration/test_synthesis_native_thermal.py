@@ -77,7 +77,7 @@ def test_complete_channel_and_all_reset_environment(
     assert resources.channel_count == 8 * rounds
     assert program.report["workspace_qubits"] == 0
     if rounds == 50 and phase == 0:
-        assert resources.n_operations == 57700
+        assert resources.n_operations == 57600
         original = synth.synthesize(_original())
         original_state = fq.run(original).state
         assert isinstance(original_state, torch.Tensor)
@@ -90,7 +90,7 @@ def test_complete_channel_and_all_reset_environment(
         original_resources = original.report["resources"]
         assert isinstance(original_resources, ResourceEstimate)
         assert original_resources.channel_count == 400
-        assert original_resources.n_operations == 22200
+        assert original_resources.n_operations == 22100
 
 
 @pytest.mark.parametrize("basis", range(-1, 4))

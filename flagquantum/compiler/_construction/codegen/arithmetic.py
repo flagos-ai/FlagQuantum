@@ -1083,6 +1083,7 @@ def schedule_arithmetic(
     )
     if not eligible and conservative is not None:
         return conservative
+    optimized: ArithmeticCandidate | None
     try:
         optimized = _emit_arithmetic(
             (normalization.program,),
