@@ -2,7 +2,9 @@
 
 Owner: Compiler. Classification: `single_device_fast_path`.
 
-Status: experimental candidate; complete-workflow admission is pending.
+Status: rejected. Production code and existing tests are restored byte for byte
+to the declared main baseline. The candidate and its tests remain available at
+published freeze `0692118febfd7a8f5e3ee17ee32121fc913d494c`.
 
 ## Requirement and implementation
 
@@ -120,3 +122,52 @@ Shortest contributor check:
 ```bash
 python -m pytest -q tests/unit/test_compilation_graph_restoration.py tests/unit/test_compilation_restore_paths.py tests/unit/test_compilation_sabre_layout.py tests/unit/test_compilation_sabre_trials.py tests/team/compiler/test_routing_conformance.py
 ```
+
+The candidate-specific test module in that command exists at the published
+freeze; it was withdrawn with the implementation after rejection.
+
+## First outcomes and withdrawal
+
+Both frozen draws complete: all 480 executions pass unchanged semantic,
+topology and identity-layout acceptance. Producer-free replay independently
+accepts all 480 serialized outputs again. Maximum residuals are
+6.072657351995283e-14 and 2.3676223875985362e-14 against 1e-8.
+There are 160 full-operator observations and 320 limited three-probe observations.
+
+The inspected draw has seven paired depth regressions and nine audit differences.
+The fresh draw has no CZ/depth regression but eight audit differences. Its only
+fresh nonce is recorded in its frozen manifest. The audit differences include
+expected numerical changes to baseline CZ counts, accepted block rewrites and
+artifact byte size; they do not demonstrate duplicate compilation or execution.
+Nevertheless the published equality gate fails and is not changed afterwards.
+The inspected depth regressions independently reject this candidate.
+
+| Inspected input | Workflow | Baseline CZ / depth | Candidate CZ / depth |
+| --- | --- | ---: | ---: |
+| repetition6/ring | ordinary-restored | 84 / 59 | 66 / 53 |
+| repetition6/ring | target-artifact | 82 / 57 | 58 / 45 |
+| QFT8/sparse | ordinary-restored | 182 / 105 | 164 / 108 |
+| QAOA12/grid | ordinary-restored | 156 / 78 | 150 / 94 |
+| QAOA12/grid | target-artifact | 150 / 76 | 146 / 92 |
+| QFT12/sparse | target-artifact | 338 / 158 | 326 / 164 |
+| repetition12/sparse | target-artifact | 70 / 58 | 68 / 62 |
+
+These are within-FlagQuantum development controls, not cross-SDK rankings.
+No resource phase was run because its prerequisite quality gates failed.
+After withdrawal, all 115 focused restoration, routing, target-artifact and
+golden-path tests pass. Production and existing test files are byte-identical
+to the declared main baseline.
+No rerun, omitted failure, relaxed threshold or fixture-specific exception follows.
+Fewer restoration SWAPs can change trial selection and increase dependency depth;
+a future candidate must preserve forward-route selection or price delivered depth
+as well. Neither a short local token walk nor semantic correctness is sufficient.
+
+Archive indices preserve all rows, manifests, drivers and protocol source:
+[inspected](evidence/graph-restoration-inspected-screen.json),
+[fresh](evidence/graph-restoration-fresh-screen.json), and
+[producer-free replay](evidence/graph-restoration-replay.json).
+Each index lists hashed payload chunks and original key order, permitting exact
+reconstruction of the original pretty-printed report, including its trailing
+newline. Original report SHA-256 values are
+`15d7a86316139c6491783fa56dd8a52777d525e45ce0e580a798e6d6ca1b8a12`
+and `25ae3e034ed07cd51263a600722038c33da2e6556bfa6f0741133a62254e8b01`.

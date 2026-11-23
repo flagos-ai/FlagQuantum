@@ -782,7 +782,7 @@ def _restore_path(
     tree: list[list[int]],
     active: list[bool],
 ) -> list[int]:
-    """Return an active graph path from ``start`` to ``goal``, inclusive."""
+    """Return the remaining tree path from ``start`` to ``goal``, inclusive."""
 
     previous = {start: -1}
     queue: deque[int] = deque([start])
@@ -813,9 +813,10 @@ def restore_swaps(
 
     Replaying a forward plan in reverse only returns the layout that plan started
     from, so a plan that started away from the identity layout needs an explicit
-    restore. One leaf of a spanning forest at a time is walked home without
-    displacing fixed qubits. On a graph with cycles, a second walk can use all
-    remaining coupling edges. It replaces the tree walk only if it is shorter.
+    restore. The coupling graph is reduced to a spanning forest and one tree leaf
+    at a time is walked to its home qubit along the edges that are still active. A
+    leaf has at most one active edge, so a qubit that has already reached home is
+    never displaced.
 
     Args:
         layout: Physical qubit for each logical qubit.
@@ -864,26 +865,6 @@ def restore_swaps(
         for node in range(n_wires)
     ]
 
-    baseline = _walk_restore(placement, tree, tree)
-    if sum(map(len, adjacency)) == sum(map(len, tree)):
-        return baseline
-    shortcuts = _walk_restore(placement, tree, adjacency)
-    return shortcuts if len(shortcuts) < len(baseline) else baseline
-
-
-def _walk_restore(
-    placement: tuple[int, ...],
-    tree: list[list[int]],
-    paths: list[list[int]],
-) -> tuple[tuple[int, int], ...]:
-    """Fix tree leaves using paths in a graph containing that tree.
-
-    Removing a tree leaf preserves connectivity of the remaining component.
-    Paths exclude fixed vertices, so shortcuts cannot displace restored tokens.
-    Both walks terminate after exactly one leaf removal per circuit wire.
-    """
-
-    n_wires = len(placement)
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
     for logical, physical in enumerate(logical_to_physical):
@@ -903,8 +884,9 @@ def _walk_restore(
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
         physical = logical_to_physical[leaf]
-        # Only token positions change while walking; the active graph is fixed.
-        path = _restore_path(physical, leaf, paths, active) if physical != leaf else ()
+        # The active tree stays fixed until this token reaches its leaf. Walk
+        # its unique path once; SWAPs move tokens, not the remaining tree edges.
+        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
         for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
