@@ -1,8 +1,8 @@
 # Readiness-guarded physical layout restoration
 
 Owner: Compiler. Classification: `single_device_fast_path`.
-Status: rejected and withdrawn. Production code and existing tests are byte for
-byte identical to the declared integrated baseline. The candidate implementation
+Status: rejected and withdrawn. Production code is byte for byte identical to
+the declared integrated baseline. A separate test improvement below is retained. The candidate implementation
 and its independent tests remain at published freeze
 `3561f271169257334dbbed54c65045e611a83c6a`.
 
@@ -185,3 +185,21 @@ reconstruction of the original pretty-printed report plus trailing newline.
 Original report SHA-256 values:
 `b4ef5b516fb5a5c25d913f62e75dbd42ac20cd4d9786f31a1f7d39735a4f0357`
 and `fa25e114f104959b5992bf6a100c1fba1ae80cfac88b2e6fb243c71d9ce347bd`.
+
+
+## Retained layout-input coverage
+
+After withdrawing the optimization, the layout-plan reuse scenario is extended
+independently to include both identity input (seed 3) and a searched nonidentity
+physical input (seed 0). Its exact GF(2) operator oracle initializes each physical
+wire with its declared logical input bit. The nonidentity case explicitly differs
+when incorrectly interpreted as identity-input execution, so it exercises the
+previously absent semantic boundary rather than merely accepting the old sample.
+The existing single-search assertion, estimate/emission count agreement and
+independent exact operator check remain mandatory. Automatic deployment's
+identity-input contract is unchanged.
+
+All 83 selected trial, layout, routing conformance, target-artifact and golden-path
+tests pass after this retained change. Ruff, Black and strict mypy pass the whole
+changed test module. Compiler production sources remain identical to the baseline;
+no claimed CZ/depth improvement is delivered by this test change.
