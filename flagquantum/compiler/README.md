@@ -1354,3 +1354,12 @@ constructor. Run tests/unit/test_legacy_scalar_factories.py and the existing
 source-binding and scalar primitive tests. Actual carrier gates/work and the
 original zero-cost model are separated in
 docs/development/RESOLVER_SCALAR_AUDIT.md.
+
+SU2RotationGate constructors use formats/legacy_su2_factories.py and the existing
+SU2 angle formulas, scalar owner and Rx/Rz constructors. The typed four-call
+chain retains exact global phase and symbolic parameters. Run
+tests/unit/test_legacy_su2_factories.py and the accepted SU2 geometry/source-binding
+suites. The original composite wire format loses isolated zero-port scalar
+occurrences. Native resolution rejects detectable nonzero counted omissions.
+Run tests/unit/test_legacy_disconnected_scalar.py for the unchanged source
+round-trip counterexample. See docs/development/RESOLVER_SU2_AUDIT.md.

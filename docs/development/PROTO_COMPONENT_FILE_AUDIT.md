@@ -136,3 +136,14 @@ owners. Its native scalar materialization emits two X and two phase instructions
 on one private carrier, while the unchanged original model remains zero-cost.
 Complete catalogue coverage is 65/303, with 238 remaining. Generic serialized
 control and adjoint wrappers retain their separate gaps.
+
+## Complete SU(2) constructor dependency batch
+
+RESOLVER_SU2_AUDIT.md closes SU2RotationGate through existing scalar and Rx/Rz
+owners, retaining exact phase, eps/3 rotation precision, typed source calls and
+symbolic binding. The unchanged source composite wire round trip drops isolated
+zero-port GlobalPhase occurrences. Native resolution rejects detectable nonzero
+counted omissions and does not infer execution order from resource counts.
+Named constructor resolution retains the complete source semantics. Complete
+catalogue coverage is 66/303, with 237 remaining. Shallow wire messages without
+counts cannot expose that original omission.
