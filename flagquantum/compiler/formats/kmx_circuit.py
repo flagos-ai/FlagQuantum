@@ -8,7 +8,12 @@ from collections import Counter
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import chain
+from operator import index as integer_index
+from types import NotImplementedType
+from typing import SupportsIndex, overload
 
+from ..artifacts.operand_array import OperandArray
+from ..artifacts.operand_identity import OperandIdentity, OperandKind
 from .kmb import (
     _CLASSICAL_TARGET,
     _CONDITION,
@@ -55,6 +60,62 @@ class KmxCircuit:
 
     registers: tuple[KmxRegister, ...]
     records: tuple[KmxRecord, ...]
+
+    def __len__(self) -> int:
+        return len(self.records)
+
+    @property
+    def register_data(self) -> dict[str | OperandIdentity, OperandArray]:
+        """Return independent named or indexed projections of register contents."""
+        return {
+            register.name
+            or OperandIdentity(OperandKind.REGISTER, index): OperandArray(
+                OperandIdentity(
+                    OperandKind.QUANTUM if kind == "q" else OperandKind.CLASSICAL,
+                    value,
+                )
+                for kind, value in register.members
+            )
+            for index, register in enumerate(self.registers)
+        }
+
+    @overload
+    def __add__(self, other: "KmxCircuit") -> "KmxCircuit": ...
+
+    @overload
+    def __add__(self, other: object) -> "KmxCircuit | NotImplementedType": ...
+
+    def __add__(self, other: object) -> "KmxCircuit | NotImplementedType":
+        if not isinstance(other, KmxCircuit):
+            return NotImplemented
+        if len(self.records) + len(other.records) > _MAX_RECORDS:
+            raise ValueError("KMX circuit exceeds the record limit")
+        return KmxCircuit(
+            self.registers or other.registers, self.records + other.records
+        )
+
+    @overload
+    def __mul__(self, repetitions: SupportsIndex) -> "KmxCircuit": ...
+
+    @overload
+    def __mul__(self, repetitions: object) -> "KmxCircuit | NotImplementedType": ...
+
+    def __mul__(self, repetitions: object) -> "KmxCircuit | NotImplementedType":
+        if not isinstance(repetitions, SupportsIndex):
+            return NotImplemented
+        count = integer_index(repetitions)
+        if not -(1 << 63) <= count < 1 << 63:
+            raise TypeError("Circuit repetitions must fit a signed 64-bit integer")
+        return _repeat_circuit(self, max(0, count))
+
+    @overload
+    def __rmul__(self, repetitions: SupportsIndex) -> "KmxCircuit": ...
+
+    @overload
+    def __rmul__(self, repetitions: object) -> "KmxCircuit | NotImplementedType": ...
+
+    def __rmul__(self, repetitions: object) -> "KmxCircuit | NotImplementedType":
+        return self.__mul__(repetitions)
 
     @property
     def qubits(self) -> int:
@@ -164,11 +225,7 @@ def concatenate_kmx(left: str, right: str) -> str:
     """Append ordered records on shared wire IDs, preferring the left registers."""
     first = read_kmx_circuit(left)
     second = read_kmx_circuit(right)
-    if len(first.records) + len(second.records) > _MAX_RECORDS:
-        raise ValueError("KMX circuit exceeds the record limit")
-    return KmxCircuit(
-        first.registers or second.registers, first.records + second.records
-    ).to_kmx()
+    return (first + second).to_kmx()
 
 
 def repeat_kmx(text: str, repetitions: int) -> str:
@@ -176,11 +233,15 @@ def repeat_kmx(text: str, repetitions: int) -> str:
     if not 0 <= repetitions < 1 << 64:
         raise ValueError("KMX repetitions must fit an unsigned 64-bit integer")
     circuit = read_kmx_circuit(text)
+    return _repeat_circuit(circuit, repetitions).to_kmx()
+
+
+def _repeat_circuit(circuit: KmxCircuit, repetitions: int) -> KmxCircuit:
     if not circuit.records or repetitions == 1:
-        return circuit.to_kmx()
+        return circuit
     if len(circuit.records) * repetitions > _MAX_RECORDS:
         raise ValueError("KMX circuit exceeds the record limit")
-    return KmxCircuit(circuit.registers, circuit.records * repetitions).to_kmx()
+    return KmxCircuit(circuit.registers, circuit.records * repetitions)
 
 
 def decode_kmx_or_kmb(data: bytes) -> str:
