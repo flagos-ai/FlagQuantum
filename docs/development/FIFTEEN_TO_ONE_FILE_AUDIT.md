@@ -193,3 +193,88 @@ both a representative notebook socket failure and the iswap rendering failure.
 The broad suite is not certified by this batch. Its full diagnostic log and
 baseline replay receipts are retained. The bounded 145-case affected integration
 selection passes separately.
+
+## Complete source arithmetic closure on 2026-11-23
+
+The initial-state and projector boundaries above are resolved by shared native
+Simulation owners. The earlier reopened and intermediate channel-only outcomes
+remain historical evidence of the diagnosed failures.
+
+### Independent density factors
+
+The existing density executor now retains a leading sequence of independent
+one-qubit operations as separate density factors, then combines them in wire
+order before executing the remaining IR. Each instruction still executes once.
+Cirq's H subtraction/scaling sequence is ported into the density-axis owner with
+its source notice. It produces the original one-qubit entry
+0.5000000000000001 and ordered five-factor entry 0.031250000000000035.
+
+The optimization admits known CPU zero inputs without a state gradient and the
+existing complex64/complex128 precisions. Circuit and IR entry points share the
+same eligibility check. Entangled input and live input gradients retain their
+existing execution path. Explicit matrix overrides and batched gate parameters
+keep their actual values and derivatives. This fixes a regression caught during
+the batch where the two entry points initially chose different zero-state paths.
+Statevector product components remain with their existing pure-state owner;
+this mixed-state prefix reuses the existing density executor and matrix builder.
+
+### Complex trace reduction
+
+The reference environment uses NumPy 2.5.4 and Cirq 1.7.0 with unchanged locked
+Qualtran 0.7.0 source. The original NumPy complex pairwise reduction declaration
+was fetched read-only and retained as numpy-2.5.4-loops_utils.h.src beside the
+worktree. Simulation density_reduction.py ports its four-complex-accumulator
+ordering, 64-complex-entry blocks, balanced recursion and tail reduction into
+Torch operations. NumPy's complete BSD-3-Clause notice accompanies that owner.
+The trace remains differentiable and supports batched, strided diagonals.
+
+A two-way summation candidate fitted only 10 of 24 initial source cases and was
+rejected. With the correct order, all 24 original projection matrix products
+and accepts agree exactly. Thirty-two independent complex64/complex128 tests
+cover empty, short, block-edge, tail and recursive trace sizes through 129, with
+distinct binary scales and complete gradient checks against the unchanged
+reference and independent analytical gradients.
+
+### Factory composition
+
+The existing QEC factory consumes the shared trace. Reciprocal postselection
+scaling and the target row's complex phase follow the source arithmetic before
+forming its outer product. All production execution remains native Torch and
+scalar Python math. No Qualtran, Cirq or NumPy runtime is called by the factory
+or its new Simulation owners. Existing bounded caches, physical assumptions,
+validation differences and symbolic restrictions retain their documented owners.
+
+The complete 72-case grid covers six distance triples, physical errors
+0/1e-4/1e-3, scalers 0.03/0.1 and thresholds 0.01/0.02. It compares every complex
+entry of the final density bitwise, and compares rejection and conditional
+output error exactly. Seven demand values include zero, the original
+2,500,000,000,091 witness, 10^14, 2^53+1 and 10^18. Integer-cycle comparisons
+convert the source float to an integer first, preventing large integer
+comparisons from silently rounding through float. All 504 demand cases and
+cumulative factory errors agree exactly.
+
+The repaired original witness returns 45,137,839,388,431 on both sides. At
+10^14, both return 1,805,513,575,471,519. Rejection on both sides is
+0.0030537435699304893 and the complete final density difference is zero.
+These are measurements in the qualified CPU complex128 environment. Source
+mathematical validation and unrelated backend qualifications remain separate.
+
+The original full source/test definition map and five original unmodified tests
+are reused. All 100 emitted operations, operand ordering and Kraus payloads
+retain their previous evidence. Actual numerical H/channel operations add no
+quantum instructions, measurements or work. The four X=+1 checks are still
+unmeasured projector postselection, with no measurement-history or clean-ancilla
+claim. Physical modeled costs remain separately reported.
+
+### Acceptance
+
+Q0910 and Q0911 close for the complete factory source and its original test
+file. The concentrated dependency regression passes 373 cases, including all
+five unchanged original tests. Two CUDA cases skip because the accelerator is
+unavailable. The downstream resource consumers pass 146 cases and the affected
+local integration selection passes 145 cases with 18 existing warnings.
+Strict typing passes all six changed Python files. Black, Ruff, owning-team
+scope, language, architecture, IR and protected API checks pass. The complete
+720-finding dependency baseline is identical. The earlier broad-suite diagnostic
+remains open as documented above. CPU arithmetic qualification and the original
+source's mathematical and backend boundaries remain explicit.

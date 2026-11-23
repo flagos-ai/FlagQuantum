@@ -5,9 +5,10 @@
 
 """Five-qubit noisy circuit and postselection for 15-to-1 distillation."""
 
+from cmath import exp
 from dataclasses import dataclass
 from functools import lru_cache
-from math import ceil, sqrt
+from math import ceil, pi, sqrt
 
 import torch
 
@@ -16,6 +17,7 @@ from ...compiler._component_trace.resource_model import GateCost
 from ...core.ir import CircuitIR, Instruction
 from ...core.value_math import SymbolicReal
 from ...simulation.density_matrix import density_matrix_from_ir
+from ...simulation.density_reduction import _pairwise_complex_trace
 from .distillation_channels import noisy_pauli_rotation, storage_error
 from .error_model import LogicalErrorModel, SurfaceCodeScheme
 from .magic_state_factory import MagicStateFactory
@@ -168,16 +170,17 @@ class FifteenToOneFactory(MagicStateFactory):
         density = self._final_state(logical_error_model)
         check = torch.ones((16, 16), dtype=torch.complex128, device="cpu") / 16
         projector = torch.kron(torch.eye(2, dtype=check.dtype, device="cpu"), check)
-        acceptance = float(torch.trace(projector @ density).real)
+        acceptance = float(_pairwise_complex_trace(projector @ density).real)
         if acceptance <= 0:
             raise ValueError("Distillation postselection has zero acceptance")
-        postselected = (projector @ density @ projector.mH) / acceptance
+        postselected = (1 / acceptance) * (projector @ density @ projector.mH)
         target = torch.tensor(
-            (1, complex(1, 1) / sqrt(2)), dtype=check.dtype, device="cpu"
+            ((1, exp(-1j * pi / 4)),), dtype=check.dtype, device="cpu"
+        ) / sqrt(2)
+        target_density = torch.kron(target.mH @ target, check)
+        output_error = 1 - float(
+            _pairwise_complex_trace(postselected @ target_density).real
         )
-        target = target / sqrt(2)
-        target_density = torch.kron(target[:, None] @ target.conj()[None, :], check)
-        output_error = 1 - float(torch.trace(postselected @ target_density).real)
         return acceptance, output_error
 
     def p_fail(self, logical_error_model: LogicalErrorModel) -> float:

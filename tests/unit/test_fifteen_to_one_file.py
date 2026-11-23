@@ -47,6 +47,41 @@ def test_frozen_complete_source_and_factory_contract() -> None:
     assert isinstance(FifteenToOneFactory(7, 3, 3), MagicStateFactory)
 
 
+@pytest.mark.parametrize(
+    "distances", ((1, 1, 1), (2, 2, 2), (7, 3, 3), (9, 3, 3), (11, 5, 5), (17, 7, 7))
+)
+@pytest.mark.parametrize("physical_error", (0.0, 1e-4, 1e-3))
+@pytest.mark.parametrize("scaler", (0.03, 0.1))
+@pytest.mark.parametrize("threshold", (0.01, 0.02))
+def test_complete_factory_exact_numerical_and_large_demand_boundary(
+    distances: tuple[int, int, int],
+    physical_error: float,
+    scaler: float,
+    threshold: float,
+) -> None:
+    native = FifteenToOneFactory(*distances)
+    original = FifteenToOne(*distances)
+    model = LogicalErrorModel(physical_error, SurfaceCodeScheme(scaler, threshold))
+    reference = SourceErrorModel(
+        physical_error=physical_error,
+        qec_scheme=QECScheme(error_rate_scaler=scaler, error_rate_threshold=threshold),
+    )
+    np.testing.assert_array_equal(
+        native._final_state(model).numpy(), original._final_state(reference)
+    )
+    assert native.p_fail(model) == original.p_fail(reference)
+    assert native.p_out(model) == original.p_out(reference)
+    for demand in (0, 1, 3, 2_500_000_000_091, 10**14, 2**53 + 1, 10**18):
+        gates = GateCost(t=demand)
+        source_gates = GateCounts(t=demand)
+        assert native.n_cycles(gates, model) == int(
+            original.n_cycles(source_gates, reference)
+        )
+        assert native.factory_error(gates, model) == original.factory_error(
+            source_gates, reference
+        )
+
+
 @pytest.mark.parametrize("distances", ((7, 3, 3), (9, 3, 3), (11, 5, 5), (17, 7, 7)))
 @pytest.mark.parametrize("threshold,scaler", ((0.01, 0.1), (0.02, 0.03)))
 def test_complete_bound_error_model_and_parallel_composition(
