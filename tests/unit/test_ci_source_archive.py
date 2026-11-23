@@ -177,19 +177,21 @@ def test_redirects_do_not_forward_the_api_token_to_another_host() -> None:
     assert not redirected.has_header("Authorization")
 
 
-@pytest.mark.parametrize("truncated_batch", [False, True])
+@pytest.mark.parametrize("batch_mode", ["rest", "truncated", "unclassified"])
 def test_api_objects_restore_exact_source_and_reuse_cache(
     tmp_path: Path,
     source: _Source,
     monkeypatch: pytest.MonkeyPatch,
-    truncated_batch: bool,
+    batch_mode: str,
 ) -> None:
     import base64
+    import re
 
     from tools.ci_source_archive import _checkout, _materialize_api
 
     directory = source.archive.parent / "source"
     calls = []
+    corrupt = False
 
     def get_json(path: str) -> object:
         calls.append(path)
@@ -206,6 +208,8 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
                 )
             return {"sha": sha, "truncated": False, "tree": entries}
         raw = _git(directory, "cat-file", "blob", sha)
+        if corrupt:
+            raw += b"altered"
         return {
             "sha": sha,
             "encoding": "base64",
@@ -213,15 +217,46 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
         }
 
     get_objects = None
-    if truncated_batch:
+    if batch_mode != "rest":
         from http.client import IncompleteRead
 
         from tools.ci_source_archive import _GraphQLSource
 
-        def truncated_query(self: _GraphQLSource, fields: str) -> dict[str, object]:
-            raise IncompleteRead(b"partial batch")
+        def source_query(self: _GraphQLSource, fields: str) -> dict[str, object]:
+            if batch_mode == "truncated":
+                raise IncompleteRead(b"partial batch")
+            assert (
+                " text" not in fields
+            ), "Unclassified blobs must use verified REST bytes"
+            result: dict[str, object] = {}
+            for alias, sha in re.findall(r'o(\d+):object\(oid:"([0-9a-f]+)"\)', fields):
+                kind = _git(directory, "cat-file", "-t", sha).decode().strip()
+                if kind == "blob":
+                    # GitHub returns null classification for large truncated blobs.
+                    result[f"o{alias}"] = {
+                        "oid": sha,
+                        "byteSize": len(_git(directory, "cat-file", "blob", sha)),
+                        "isBinary": None,
+                        "isTruncated": True,
+                    }
+                else:
+                    entries = []
+                    for record in _git(directory, "ls-tree", "-z", sha).split(b"\0"):
+                        if record:
+                            header, name = record.decode().split("\t", 1)
+                            mode, child_kind, child_sha = header.split()
+                            entries.append(
+                                {
+                                    "mode": int(mode, 8),
+                                    "name": name,
+                                    "type": child_kind,
+                                    "oid": child_sha,
+                                }
+                            )
+                    result[f"o{alias}"] = {"oid": sha, "entries": entries}
+            return result
 
-        monkeypatch.setattr(_GraphQLSource, "_query", truncated_query)
+        monkeypatch.setattr(_GraphQLSource, "_query", source_query)
         client = _GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
 
         def get_objects(missing: list[tuple[str, str]]) -> list[object]:
@@ -241,6 +276,13 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
     (workspace / ".git/objects" / blob[:2] / blob[2:]).unlink()
     assert _materialize_api(workspace, source.commit, get_json, get_objects=get_objects)
     assert calls == [f"/git/blobs/{blob}"]
+    if batch_mode == "unclassified":
+        (workspace / ".git/objects" / blob[:2] / blob[2:]).unlink()
+        corrupt = True
+        with pytest.raises(ValueError, match="SHA"):
+            _materialize_api(
+                workspace, source.commit, get_json, get_objects=get_objects
+            )
 
 
 def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) -> None:
@@ -478,3 +520,33 @@ def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
     _checkout(workspace, source.commit, None)
     assert _git(workspace, "status", "--porcelain") == b""
     assert not marker.exists()
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"byteSize": 1, "isTruncated": True},
+        {"byteSize": 1, "isBinary": None, "isTruncated": False},
+        {"byteSize": 1, "isBinary": "false", "isTruncated": True},
+        {"byteSize": 1, "isBinary": 0, "isTruncated": True},
+        {"byteSize": 1, "isBinary": False, "isTruncated": None},
+        {"byteSize": True, "isBinary": None, "isTruncated": True},
+    ],
+)
+def test_nullable_classification_does_not_admit_malformed_blob_metadata(
+    monkeypatch: pytest.MonkeyPatch, metadata: dict[str, object]
+) -> None:
+    from tools.ci_source_archive import _GraphQLSource
+
+    sha = "a" * 40
+
+    def source_query(self: _GraphQLSource, fields: str) -> dict[str, object]:
+        return {"o0": {"oid": sha, **metadata}}
+
+    def forbidden_rest(path: str) -> object:
+        raise AssertionError("Malformed metadata must be refused before REST")
+
+    monkeypatch.setattr(_GraphQLSource, "_query", source_query)
+    client = _GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
+    with pytest.raises(ValueError, match="incomplete source blob metadata"):
+        client.objects([(sha, "blob")], forbidden_rest)
