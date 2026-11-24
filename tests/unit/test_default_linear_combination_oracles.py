@@ -1,6 +1,7 @@
 """Close actual default oracle roles without inferring omitted source payloads."""
 
 from importlib.metadata import version
+from math import prod
 from typing import Any
 
 import pytest
@@ -37,9 +38,10 @@ def bind(record: ProgramRecord) -> tuple[Any, int]:
     inputs = []
     offset = 0
     for register in record.functions[0].registers or ():
-        size = int(register.total_qubits())
-        inputs.append(tuple(range(offset, offset + size)))
-        offset += size
+        for _ in range(prod(register.shape)):
+            size = int(register.bitsize)
+            inputs.append(tuple(range(offset, offset + size)))
+            offset += size
     provisional = bind_register_program(
         record, tuple(inputs), clean=tuple(range(offset, offset + 32))
     )

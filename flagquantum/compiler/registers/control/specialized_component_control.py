@@ -12,9 +12,13 @@ import numpy as np
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
-from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.register_verifier import (
+    executable_register_width,
+    register_port_types,
+)
 from ....core.ir.program.registers import Register, RegisterSide
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder
 from ..component_graph import _call_entry, _namespace_helpers
@@ -68,6 +72,12 @@ def multi_controlled_component_program(
     Child private work retains its existing lifetime. Invalid entries, control
     ports and nonbinary activations raise ValueError. Inputs remain immutable.
     """
+    declaration = next((f for f in record.functions if f.name == entry), None)
+    if declaration is not None:
+        # The source finite builder materializes array dimensions before it
+        # attempts to invoke the child. Preserve that admission order even for
+        # a declaration whose executable body is not available yet.
+        register_port_types(declaration, RegisterSide.LEFT)
     function = _call_entry(record, entry)
     assert function.registers is not None
     original_controls = tuple(r for r in function.registers if r.name == control_name)
@@ -116,6 +126,26 @@ def multi_controlled_component_program(
     return replace(
         record, canonical_payload=None, functions=builder.finalize(outputs).functions
     )
+
+
+def multi_controlled_component_pair(
+    record: ProgramRecord,
+    inverse: ProgramRecord,
+    control_name: str,
+    values: tuple[int, ...],
+) -> tuple[ProgramRecord, ProgramRecord]:
+    """Own the helper's generic exact inverse, including predicate directions.
+
+    The supplied positive child inverse is explicit. Reverse logical calls with
+    exact compute/erase pairs; never reverse the measured erasure instructions.
+    """
+    forward = multi_controlled_component_program(record, control_name, values)
+    compute = _array_and_program(values, "compute", False)
+    erase = _array_and_program(values, "erase", True)
+    backward = adjoint_component_calls(
+        forward, ((record, inverse), (compute, erase), (erase, compute))
+    )
+    return forward, backward
 
 
 def specialized_component_control_system(
