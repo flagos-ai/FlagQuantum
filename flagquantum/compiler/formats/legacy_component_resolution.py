@@ -70,7 +70,7 @@ def _build_composite(
     registers = entry.declaration.registers
     if registers is None:
         raise SerializationError("Composite component requires a register signature")
-    if entry.declaration.arguments:
+    if entry.declaration.name == _COMPOSITE and entry.declaration.arguments:
         raise SerializationError(
             "Composite component cannot have constructor arguments"
         )
@@ -166,8 +166,10 @@ def resolve_component_program(
 
     The supplied factories own named executable definitions. A constructor
     argument referencing another row receives its resolved native function.
-    Composites use the existing typed builder. Wire IDs and external gate
-    payloads carry data for this boundary and cannot import constructors.
+    Composites and unregistered constructors with stored connection graphs use
+    the existing typed builder. A registered constructor keeps precedence over
+    its stored graph. Wire IDs and external gate payloads carry data for this
+    boundary and cannot import constructors or supply missing executable leaves.
     """
     entries = _entry_index(library.entries)
     definitions: dict[int, FunctionRecord] = {}
@@ -190,7 +192,9 @@ def resolve_component_program(
         entry = entries[row_id]
         declaration = entry.declaration
         name = entry_name if row_id == identifier else f"legacy_component_{row_id}"
-        if declaration.name == _COMPOSITE:
+        if declaration.name == _COMPOSITE or (
+            declaration.name not in factories and entry.connections
+        ):
             for occurrence in _ordered_occurrences(entry.connections):
                 resolve(occurrence.definition_id)
             function = _build_composite(name, entry, entries, definitions, functions)
