@@ -8,24 +8,16 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from math import isclose
 
-import numpy as np
-
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.component_builder import ComponentProgramBuilder
-from ...compiler.registers.component_gate_function import bit_gate_function
-from ...compiler.registers.control.multi_control_component import (
-    multi_control_z_program,
-)
 from ...compiler.registers.layout.partition import unpartition_register
 from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     source_reflection_declared_cost,
 )
-from ...compiler.registers.primitives.global_phase import global_phase_exponent
-from ...compiler.registers.primitives.pauli_rotation_component import z_power_function
-from ...core.ir import CircuitIR, Instruction
+from ...compiler.registers.preparation.prepared_reflection_component import (
+    prepared_reflection_program,
+)
 from ...core.ir.program import ProgramRecord
-from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
@@ -227,75 +219,10 @@ def zero_state_reflection_program(reflection: PreparedStateReflection) -> Progra
     if not isclose(abs(reflection.global_phase), 1, rel_tol=0, abs_tol=1e-12):
         raise ValueError("Reflection global phase must be a unit coefficient")
     preparation = identity_prepare_program(prepare)
-    bit = quantum_bit_type()
-    x = bit_gate_function(
-        "reflection_x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
-    )
-    builder = ComponentProgramBuilder(
-        reflection.signature, (x,) if not reflection.control_value else ()
-    )
-    selected = builder.call_program(
+    return prepared_reflection_program(
         preparation,
-        {reg.name: builder.inputs[reg.name] for reg in prepare.selection_registers},
+        preparation,
+        tuple(reg.name for reg in prepare.selection_registers),
+        control_value=reflection.control_value,
+        global_phase=reflection.global_phase,
     )
-    target = (
-        builder.allocate()
-        if reflection.control_value is None
-        else builder.inputs["control"]
-    )
-    if not reflection.control_value:
-        target = builder.call_dict(x.name, {"q": target})["q"]
-    controls: list[RegisterBinding] = []
-    for reg in prepare.selection_registers:
-        word = selected[reg.name]
-        assert isinstance(word, RegisterBinding)
-        controls.extend([word] if reg.bitsize == 1 else builder.split(word))
-    returned = builder.call_program(
-        multi_control_z_program((0,) * len(controls)),
-        {
-            **({"controls": np.asarray(controls, dtype=object)} if controls else {}),
-            "target": target,
-        },
-    )
-    target = returned["target"]
-    if reflection.global_phase != 1:
-        coefficient = reflection.global_phase
-        gate = (
-            bit_gate_function(
-                "reflection_phase",
-                (Register("q", bit),),
-                CircuitIR(
-                    1, (Instruction({-1: "z", 1j: "s", -1j: "sdg"}[coefficient], (0,)),)
-                ),
-            )
-            if coefficient in (-1, 1j, -1j)
-            else z_power_function(
-                "reflection_phase", global_phase_exponent(coefficient)
-            )
-        )
-        builder.define(gate)
-        target = builder.call_dict(gate.name, {"q": target})["q"]
-    # Cirq EARLIEST places the final open-control X after PREPARE when a
-    # relative phase occupies the intervening target moment.
-    delayed_flip = reflection.control_value == 0 and reflection.global_phase != 1
-    if not reflection.control_value and not delayed_flip:
-        target = builder.call_dict(x.name, {"q": target})["q"]
-    controls = list(np.asarray(returned.get("controls", ())))
-    offset = 0
-    for reg in prepare.selection_registers:
-        width = reg.bitsize
-        assert isinstance(width, int)
-        selected[reg.name] = (
-            controls[offset]
-            if width == 1
-            else builder.join(controls[offset : offset + width])
-        )
-        offset += width
-    selected = builder.call_program(preparation, selected)
-    if delayed_flip:
-        target = builder.call_dict(x.name, {"q": target})["q"]
-    if reflection.control_value is None:
-        assert isinstance(target, RegisterBinding)
-        builder.free(target)
-        return builder.finalize(selected)
-    return builder.finalize({"control": target, **selected})
