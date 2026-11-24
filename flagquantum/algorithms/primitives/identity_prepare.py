@@ -7,11 +7,10 @@
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
-from ...compiler.registers.component_builder import ComponentProgramBuilder
-from ...compiler.registers.primitives.identity import (
-    register_identity_ir,
-    register_identity_program,
+from ...compiler.registers.preparation.identity_preparation_component import (
+    identity_preparation_program,
 )
+from ...compiler.registers.primitives.identity import register_identity_ir
 from ...core.ir import Instruction
 from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_types import opaque_register_type
@@ -90,12 +89,4 @@ def identity_prepare_program(prepare: IdentityPrepare) -> ProgramRecord:
     """
 
     prepare.bind()
-    builder = ComponentProgramBuilder(prepare.signature)
-    result = dict(builder.inputs)
-    for reg in prepare.selection_registers:
-        if type(reg.bitsize) is not int:
-            raise ValueError("Stored identity preparation requires concrete widths")
-        result[reg.name] = builder.call_program(
-            register_identity_program(reg.bitsize), {"q": result[reg.name]}
-        )["q"]
-    return builder.finalize(result)
+    return identity_preparation_program(prepare.selection_registers)
