@@ -9,15 +9,11 @@ from math import pi
 
 import sympy
 
-from ...core.ir import CircuitIR
 from ...core.ir.program import ProgramRecord
-from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.registers import Register
-from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
-from ..registers.component_builder import ComponentProgramBuilder
-from ..registers.component_gate_function import bit_gate_function
-from ..registers.primitives.global_phase import _finite_angle, scalar_phase_ir
+from ..registers.primitives.global_phase import _finite_angle
+from ..registers.primitives.global_phase_component import scalar_phase_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_rotation_factories import _real_argument
 from .legacy_word_factories import _rename_program
@@ -40,20 +36,7 @@ def _global_phase_factory(
         if isinstance(exponent, sympy.Expr)
         else _finite_angle(exponent, pi)
     )
-    gates = scalar_phase_ir(0, angle)
-    builder = ComponentProgramBuilder(Signature(()))
-    if gates:
-        carrier = builder.allocate(1)
-        phase = bit_gate_function(
-            "scalar_phase", tuple(Signature.build(q=1)), CircuitIR(1, gates)
-        )
-        result = builder.call_program(
-            ProgramRecord((phase,)), {"q": carrier}, entry=phase.name
-        )
-        restored = result["q"]
-        assert isinstance(restored, RegisterBinding)
-        builder.free(restored)
-    return _rename_program(builder.finalize({}), name)
+    return _rename_program(scalar_phase_program(angle), name)
 
 
 def scalar_phase_factories() -> dict[str, ComponentFactory]:
