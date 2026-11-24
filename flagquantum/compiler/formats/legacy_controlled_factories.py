@@ -9,7 +9,6 @@ from dataclasses import replace
 
 import numpy as np
 
-from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
@@ -18,11 +17,9 @@ from ...errors import SerializationError
 from ..registers.component_builder import BindingCollection, ComponentProgramBuilder
 from ..registers.component_control import (
     ControlAdder,
-    _stored_control_adder,
     control_component_via_predicate,
     quantum_control_signature,
 )
-from ..registers.component_gate_function import bit_gate_function
 from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_control_specs import control_registers_from_spec
@@ -36,21 +33,35 @@ def _fixed_positive_control(
     child: FunctionRecord,
 ) -> tuple[ProgramRecord, ControlAdder]:
     leaves = fixed_gate_factories()
-    for source, operation in (
-        ("x_basis.XGate", "cx"),
-        ("y_gate.YGate", "cy"),
-        ("z_basis.ZGate", "cz"),
-        ("hadamard.Hadamard", "ch"),
+    for source, target, control_port, data_port in (
+        ("x_basis.XGate", "cnot.CNOT", "ctrl", "target"),
+        ("y_gate.YGate", "y_gate.CYGate", "ctrl", "target"),
+        ("z_basis.ZGate", "z_basis.CZ", "q1", "q2"),
+        ("hadamard.Hadamard", "hadamard.CHadamard", "ctrl", "target"),
     ):
         if child == leaves["qualtran.bloqs.basic_gates." + source](
             child.name, None, {}
         ):
-            function = bit_gate_function(
-                child.name + "_positive",
-                tuple(Signature.build(ctrl=1, q=1)),
-                CircuitIR(2, (Instruction(operation, (0, 1)),)),
+            function = leaves["qualtran.bloqs.basic_gates." + target](
+                child.name + "_positive", None, {}
             )
-            return ProgramRecord((function,)), _stored_control_adder(function)
+            assert isinstance(function, FunctionRecord)
+
+            def add(
+                owner: ComponentProgramBuilder,
+                control: BindingCollection,
+                values: dict[str, BindingCollection],
+                *,
+                callee: str = function.name,
+                control_key: str = control_port,
+                data_key: str = data_port,
+            ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+                outputs = owner.call_dict(
+                    callee, {control_key: control, data_key: values["q"]}
+                )
+                return outputs[control_key], (outputs[data_key],)
+
+            return ProgramRecord((function,)), add
     raise SerializationError(
         "ControlledViaAnd child requires a registered positive-control provider"
     )
