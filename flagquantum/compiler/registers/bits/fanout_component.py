@@ -11,17 +11,20 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from .bitwise import fanout_ir
 
 
-def fanout_component_program(width: int) -> ProgramRecord:
+def fanout_component_program(width: int, *, adjoint: bool = False) -> ProgramRecord:
     """Control an opaque target word, MSB first, including arbitrary dirty targets.
 
     The control and target word remain caller-owned. No workspace, measurement
     or reset is introduced. Invalid or nonpositive concrete widths raise ValueError.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Fanout direction must be boolean")
     if type(width) is not int or width < 1:
         raise ValueError("Fanout requires a positive concrete integer width")
     bit = quantum_bit_type()
@@ -50,6 +53,8 @@ def fanout_component_program(width: int) -> ProgramRecord:
         a, b = result["ctrl"], result["target"]
         assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
         wires[left], wires[right] = a, b
-    return builder.finalize(
+    record = builder.finalize(
         {"control": wires[0], "targets": builder.join(wires[1:], word)}
     )
+    leaf = ProgramRecord((cx,))
+    return adjoint_component_calls(record, ((leaf, leaf),)) if adjoint else record
