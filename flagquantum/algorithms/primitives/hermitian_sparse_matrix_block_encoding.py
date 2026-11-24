@@ -27,6 +27,10 @@ from ...compiler.registers.control.controlled_component_resource_model import (
     controlled_component_cost,
     controlled_component_resource_formula,
 )
+from ...compiler.registers.lookup.matrix_entry_component import entry_signature
+from ...compiler.registers.preparation.hermitian_sparse_matrix_component import (
+    hermitian_sparse_matrix_signature,
+)
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -41,7 +45,6 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
@@ -57,23 +60,14 @@ from .sparse_matrix_oracles import (
 
 def source_sqrt_entry_signature(width: SymbolicInt) -> Signature:
     """Declare the source flag and two ordered scalar index words."""
-    return Signature.build_from_dtypes(
-        q=quantum_bit_type(),
-        i=opaque_register_type(width),
-        j=opaque_register_type(width),
-    )
+    return entry_signature(width)
 
 
 def source_hermitian_sparse_signature(
     width: SymbolicInt, *, controlled: bool = False
 ) -> Signature:
     """Declare the full source block ports for concrete or symbolic widths."""
-    ports = {"ctrl": quantum_bit_type()} if controlled else {}
-    return Signature.build_from_dtypes(
-        **ports,
-        system=opaque_register_type(width),
-        ancilla=opaque_register_type(width + 2),
-    )
+    return hermitian_sparse_matrix_signature(width, controlled=controlled)
 
 
 class SqrtEntryOracle(EntryOracle, Protocol):
