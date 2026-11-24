@@ -36,11 +36,16 @@ def unitary_block_factories(
     *,
     child_owner: UnitaryPairOwner | None = None,
     adjoint_factory: ComponentFactory | None = None,
+    on_pair: (
+        Callable[[FunctionRecord, tuple[ProgramRecord, ProgramRecord]], None] | None
+    ) = None,
 ) -> dict[str, ComponentFactory]:
     """Keep fixed-gate pairs locally and require exact owners for other children.
 
     Original TensorProduct tuple-of-Bloq serialization fails upstream. Its
     direct native graph belongs to layout; this mapping invents no wire codec.
+    Scoped parent constructors can observe the exact pair through on_pair;
+    ordinary resolution does no additional inverse work without that observer.
     """
     children: dict[FunctionRecord, tuple[ProgramRecord, ProgramRecord]] = {}
     recipes: dict[FunctionRecord, _Recipe] = {}
@@ -80,6 +85,15 @@ def unitary_block_factories(
             raise SerializationError("Invalid unitary block register signature")
         record = _rename_program(record, name)
         recipes[record.functions[0]] = recipe
+        if on_pair is not None:
+            exact_inverse = unitary_block_component_program(
+                child,
+                ancilla=ancilla,
+                resource=resource,
+                inverse=inverse,
+                adjoint=not direction,
+            )
+            on_pair(record.functions[0], (record, exact_inverse))
         return record
 
     def unitary(

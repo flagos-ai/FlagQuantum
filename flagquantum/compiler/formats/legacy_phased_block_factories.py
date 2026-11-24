@@ -45,9 +45,9 @@ def phased_block_factories(
     pairs: dict[FunctionRecord, ExactPair] = {}
     roles: dict[FunctionRecord, _Role] = {}
     controls: dict[FunctionRecord, tuple[FunctionRecord, ControlSpecification]] = {}
-    units = unitary_block_factories()
-    unit = units["qualtran.bloqs.block_encoding.unitary.Unitary"]
-    unit_inverse = units["qualtran._infra.adjoint.Adjoint"]
+    units = unitary_block_factories(
+        on_pair=lambda child, pair: pairs.__setitem__(child, pair)
+    )
 
     def store(
         name: str, registers: tuple[Register, ...] | None, pair: ExactPair
@@ -62,19 +62,6 @@ def phased_block_factories(
         result = _rename_program(forward, name)
         pairs[result.functions[0]] = result, inverse
         return result
-
-    def unitary(
-        name: str,
-        registers: tuple[Register, ...] | None,
-        arguments: Mapping[str, ResolvedArgument],
-    ) -> ProgramRecord:
-        forward = unit(name, registers, arguments)
-        assert isinstance(forward, ProgramRecord)
-        inverse = unit_inverse(
-            name + "_inverse", None, {"subbloq": forward.functions[0]}
-        )
-        assert isinstance(inverse, ProgramRecord)
-        return store(name, registers, (forward, inverse))
 
     def phase(
         name: str,
@@ -200,7 +187,6 @@ def phased_block_factories(
 
     return {
         **units,
-        "qualtran.bloqs.block_encoding.unitary.Unitary": unitary,
         "qualtran.bloqs.block_encoding.phase.Phase": phase,
         "qualtran._infra.adjoint.Adjoint": adjoint,
         "qualtran._infra.controlled.Controlled": controlled,
