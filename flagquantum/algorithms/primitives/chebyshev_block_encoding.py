@@ -16,6 +16,9 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
+from ...compiler.registers.preparation.chebyshev_component import (
+    chebyshev_call_sequence,
+)
 from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
@@ -220,15 +223,12 @@ class ChebyshevBlockEncoding:
         gates: list[Instruction] = []
         ports = {"system": system, "ancilla": ancilla, "resource": resource}
         allowed = set((*through, *workspace))
-        stages = reversed(range(self.order)) if adjoint else range(self.order)
-        for index in stages:
-            if not adjoint:
+        for stage in chebyshev_call_sequence(self.order, adjoint=adjoint):
+            if stage == "reflection":
                 gates.extend(reflection)
-            direction = bool(index % 2) ^ adjoint
-            child = bind_child(ports, workspace, classical_bits, direction)
-            gates.extend(_capture_block(child, required, allowed))
-            if adjoint:
-                gates.extend(reflection)
+            else:
+                child = bind_child(ports, workspace, classical_bits, stage == "inverse")
+                gates.extend(_capture_block(child, required, allowed))
         return _BoundBlockOperation(tuple(gates), required)
 
     def _bound_reflection(
