@@ -1,5 +1,7 @@
 # Explicit native linear-combination constructor contexts
 
+Current constructor/control disposition is recorded in [the repeated-control audit](REPEATED_LINEAR_COMBINATION_CONTROL_AUDIT.md). Earlier open-dependency statements below describe their historical acceptance boundary.
+
 Reference: unchanged Qualtran v0.7.0
 `bcb17bb25360ed68ce3bc084645db3e929799389`, Apache-2.0, Google LLC.
 The complete source/test blobs are

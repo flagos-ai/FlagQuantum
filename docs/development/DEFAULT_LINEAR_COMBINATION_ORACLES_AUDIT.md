@@ -1,5 +1,7 @@
 # Default LinearCombination native oracle closure
 
+Current constructor/control disposition is recorded in [the repeated-control audit](REPEATED_LINEAR_COMBINATION_CONTROL_AUDIT.md). Earlier open-dependency statements below describe their historical acceptance boundary.
+
 ## Scope and ownership
 
 The unchanged original `block_encoding/linear_combination.py` example contains
