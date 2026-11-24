@@ -44,3 +44,10 @@ Positive control changes only the swaps. Source return-self adjoints remain
 distinct from generic exact call reversal. The existing Algorithms signature
 helpers delegate here. See `test_hermitian_sparse_matrix_component.py` for
 constructor, recursive call, full complex operator and raw-history evidence.
+
+`linear_combination_component.py` owns packed child-system/ancilla/resource
+partitions around exact PREPARE/SELECT/unprepare Programs. Logical junk remains
+caller-owned. The Algorithms signature helper delegates here. Only SELECT is
+controlled; exact inverses reverse typed calls with supplied child pairs.
+`TYPED_LINEAR_COMBINATION_AUDIT.md` distinguishes this accepted root from the
+still-open source constructor payload and signed Phase dependencies.
