@@ -29,6 +29,7 @@ def prepared_reflection_program(
     control_value: int | None = None,
     global_phase: complex = 1,
     scalar_phase: ProgramRecord | None = None,
+    signal_junk_names: tuple[str, ...] | None = None,
 ) -> ProgramRecord:
     """Own junk words and call exact unprepare, mark-zero and prepare stages.
 
@@ -37,6 +38,9 @@ def prepared_reflection_program(
     junk, including row-major arrays. The caller owns exact inverse semantics.
     Uncontrolled nontrivial phases require an explicit zero-port scalar owner.
     Its carrier and cleanup are private to that owner, not the reflection target.
+    Explicit signal_junk_names retain all junk as caller-owned THRU words.
+    Private mode requires the caller to establish cleanup of the conjugated
+    reflection; an exact PREPARE inverse alone does not prove that property.
     """
     if control_value is not None and (
         type(control_value) is not int or control_value not in (0, 1)
@@ -68,6 +72,25 @@ def prepared_reflection_program(
         raise ValueError("Reflection requires distinct declared selection names")
     selections = tuple(by_name[name] for name in selection_names)
     junk = tuple(reg for reg in ports if reg.name not in selection_names)
+    if signal_junk_names is not None and (
+        len(signal_junk_names) != len(junk)
+        or any(type(name) is not str or not name for name in signal_junk_names)
+        or len(set(signal_junk_names)) != len(signal_junk_names)
+        or set(signal_junk_names) & set(selection_names)
+        or control_value is not None
+        and "control" in signal_junk_names
+    ):
+        raise ValueError(
+            "Signal junk requires distinct caller-owned names for every word"
+        )
+    retained = (
+        tuple(
+            Register(name, reg.dtype, shape=reg.shape, side=reg.side)
+            for reg, name in zip(junk, signal_junk_names, strict=True)
+        )
+        if signal_junk_names is not None
+        else ()
+    )
     bit = quantum_bit_type()
     x = bit_gate_function(
         "reflection_x", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
@@ -76,17 +99,21 @@ def prepared_reflection_program(
         (
             *((Register("control", bit),) if control_value is not None else ()),
             *selections,
+            *retained,
         )
     )
     builder = ComponentProgramBuilder(signature, (x,) if not control_value else ())
     state: dict[str, BindingCollection] = {
         reg.name: builder.inputs[reg.name] for reg in selections
     }
-    for reg in junk:
-        storage = np.empty(reg.shape, dtype=object)
-        for index in reg.all_idxs():
-            storage[index] = builder.allocate(dtype=reg.dtype)
-        state[reg.name] = storage if reg.shape else storage[()]
+    for position, reg in enumerate(junk):
+        if signal_junk_names is not None:
+            state[reg.name] = builder.inputs[retained[position].name]
+        else:
+            storage = np.empty(reg.shape, dtype=object)
+            for index in reg.all_idxs():
+                storage[index] = builder.allocate(dtype=reg.dtype)
+            state[reg.name] = storage if reg.shape else storage[()]
     state = builder.call_program(unprepare, state, entry=unprepare.functions[0].name)
     # The source Cirq-to-Bloq conversion creates the phase-target lifetime at
     # its first use, after PREPARE inverse, rather than at qalloc request time.
@@ -97,6 +124,11 @@ def prepared_reflection_program(
         # The source Cirq conversion assigns the disconnected GlobalPhase its
         # instance after the first target flip, before MultiControlZ.
         builder.call_program(scalar_phase, {}, entry=scalar_phase.functions[0].name)
+    # A registerless final PREPARE occupies the first Cirq moment. The source
+    # converter therefore assigns it before the later mark-zero call whenever
+    # an opening target X already occupies that moment.
+    if not ports and control_value != 1:
+        state = builder.call_program(prepare, state, entry=prepare.functions[0].name)
     controls: list[RegisterBinding] = []
     for reg in selections:
         for word in np.asarray(state[reg.name]).flat:
@@ -110,6 +142,10 @@ def prepared_reflection_program(
         },
     )
     target = returned["target"]
+    if not ports and control_value == 1:
+        # With no opening X, mark-zero is the first target operation. Empty
+        # PREPARE follows it in that moment, before a relative phase gate.
+        state = builder.call_program(prepare, state, entry=prepare.functions[0].name)
     if global_phase != 1 and control_value is not None:
         gate = (
             bit_gate_function(
@@ -143,13 +179,21 @@ def prepared_reflection_program(
                 word[0] if reg.bitsize == 1 else builder.join(word, dtype=reg.dtype)
             )
         state[reg.name] = storage if reg.shape else storage[()]
-    state = builder.call_program(prepare, state, entry=prepare.functions[0].name)
+    if ports:
+        state = builder.call_program(prepare, state, entry=prepare.functions[0].name)
     if delayed_flip:
         target = builder.call_dict(x.name, {"q": target})["q"]
-    for reg in junk:
-        for word in np.asarray(state.pop(reg.name)).flat:
-            assert isinstance(word, RegisterBinding)
-            builder.free(word)
+    if signal_junk_names is not None:
+        signal = {
+            kept.name: state.pop(reg.name)
+            for reg, kept in zip(junk, retained, strict=True)
+        }
+        state.update(signal)
+    else:
+        for reg in junk:
+            for word in np.asarray(state.pop(reg.name)).flat:
+                assert isinstance(word, RegisterBinding)
+                builder.free(word)
     if control_value is None:
         assert isinstance(target, RegisterBinding)
         builder.free(target)

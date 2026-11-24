@@ -47,6 +47,48 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 np = pytest.importorskip("numpy")
 
 
+@pytest.mark.parametrize("control", (None, 0, 1))
+@pytest.mark.parametrize("phase", (1, -1, 1j))
+def test_registerless_preparation_keeps_original_moment_order_and_complex_scalar(
+    control: int | None, phase: complex
+) -> None:
+    from cmath import phase as angle
+
+    from qualtran.bloqs.reflections.reflection_using_prepare import (
+        ReflectionUsingPrepare,
+    )
+
+    from flagquantum.compiler.registers.primitives.global_phase_component import (
+        scalar_phase_program,
+    )
+    from tests.unit.test_default_linear_combination_oracles import bind
+
+    source = ReflectionUsingPrepare.reflection_around_zero(
+        (), control_val=control, global_phase=phase
+    )
+    record = resolve_component_program(_library(source, 0), 0, reflection_factories())
+    assert not verify_program_record(record)
+    terminals = atomic_leaves(record)
+    if control is None and phase != 1:
+        scalar = scalar_phase_program(angle(phase))
+        terminals.update(
+            function.name
+            for function in record.functions[1:]
+            if function.registers == ()
+            and matches_component_definition(record, function.name, scalar)
+        )
+    compare_layers(record, source, terminals)
+    bound, logical = bind(record)
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, logical),
+        torch.as_tensor(source.tensor_contract(), dtype=torch.complex128).reshape(
+            1 << logical, 1 << logical
+        ),
+        atol=3e-11,
+        rtol=0,
+    )
+
+
 @pytest.fixture(scope="module", autouse=True)
 def pinned_reflection() -> None:
     import kickmix
