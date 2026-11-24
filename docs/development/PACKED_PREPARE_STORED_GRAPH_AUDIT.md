@@ -1,5 +1,11 @@
 # Packed preparation stored dependency closure
 
+The current shared packing graph lives in
+`compiler/registers/layout/packed_oracle_component.py`; the existing Algorithms
+entry delegates to it. See `RESOLVER_PACKED_ORACLE_AUDIT.md` for the subsequent
+constructor integration and AutoPartition primitive-child repair. The original
+acceptance observations below retain their historical scope.
+
 ## Ownership and interface
 
 The frozen reference is Qualtran v0.7.0 at

@@ -53,7 +53,7 @@ repeated whole-word access and overlapping shorter slices. Run the phase-gradien
 and variable-rotation decomposition tests to verify view graphs and execution.
 
 Stored AutoPartition accepts validated typed child declarations as well as
-call bodies. Symbolic partitions retain declarations, and exact packed adjoints
+primitive and call bodies. Symbolic partitions retain declarations, and exact packed adjoints
 reverse the original partition sequence. Run `test_component_auto_partition.py`
 and `test_packed_prepare_component.py` when changing that boundary.
 
@@ -66,3 +66,11 @@ records, while layout owns allocation alone. Run
 `tests/unit/test_physical_builder_results.py` and
 `tests/unit/test_kmx_result_lifetimes.py` for the locked lifecycle and all small
 complex measurement branches through the construction replacement.
+
+`packed_oracle_component.py` owns the common PREPARE/SELECT AutoPartition
+wrapper and exact partition adjoints. Callers provide a Core Signature, explicit
+ordered register groups and complete directional child Programs. Logical junk
+and packed words remain caller-owned; packing adds no primitive gates or work.
+The existing Algorithms packed PREPARE entry delegates to this owner. Run
+`test_packed_prepare_component.py` and `test_legacy_packed_oracle_factories.py`
+for source calls, constructor replacement and execution evidence.
