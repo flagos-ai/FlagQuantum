@@ -1,5 +1,11 @@
 # SELECT and LCU block encoding source files
 
+The scoped typed constructor path and its independent control-adder ownership
+are documented in [the constructor audit](RESOLVER_BLOCK_ENCODING_AUDIT.md).
+The Algorithms execution receipts below remain valid evidence for their own
+path; they do not close the original constructor scalar-body or serializer
+boundaries recorded in that audit.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The frozen files under
 `qualtran/bloqs/block_encoding/` are Apache-2.0, copyright Google LLC.
