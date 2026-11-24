@@ -83,3 +83,12 @@ retain private work. Start with `tests/unit/test_packed_block_component.py` for
 native child replacement, ordered source partitions, full complex operators,
 measurement histories and ordinary append. Source wire failures are recorded
 in `docs/development/RESOLVER_PACKED_BLOCK_AUDIT.md`.
+
+`product_block_component.py` owns ordered Product composition and shared Product
+signature/resource-partition checks. Algorithms delegates those existing
+consumers here. Caller-owned flags and unused slices are retained; children own
+private work and exact inverses. Run `tests/unit/test_product_block_component.py`
+for source call order, dirty flags, full complex operators, every small combined
+measurement history and SDK-free build/bind/append. The original tuple wire
+and unequal nonzero resource-width failures remain explicit in
+`docs/development/RESOLVER_PRODUCT_BLOCK_AUDIT.md`.

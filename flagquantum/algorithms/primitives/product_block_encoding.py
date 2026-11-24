@@ -28,11 +28,14 @@ from ...compiler.registers.control.control_predicate_resource_model import (
 )
 from ...compiler.registers.control.multi_control import multi_control_x_ir
 from ...compiler.registers.layout.partition import partition_register
+from ...compiler.registers.layout.product_block_component import (
+    check_product_resource_partition as _check_product_resource_partition,
+)
+from ...compiler.registers.layout.product_block_component import product_block_signature
 from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata
@@ -45,24 +48,7 @@ def source_product_block_signature(
     resources: tuple[SymbolicInt, ...],
 ) -> Signature:
     """Declare the common system, packed success flags and shared child pools."""
-    if not ancillas or len(ancillas) != len(resources):
-        raise ValueError("Product needs matched nonempty child width declarations")
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(
-            cast(SymbolicInt, smax(ancillas)) + len(ancillas) - 1
-        ),
-        resource=opaque_register_type(cast(SymbolicInt, smax(resources))),
-    )
-
-
-def _check_product_resource_partition(
-    resources: tuple[SymbolicInt, ...], shared: SymbolicInt
-) -> None:
-    if any(width != 0 and width != shared for width in resources):
-        raise ValueError(
-            "Locked Product cannot partition unequal nonzero resource widths"
-        )
+    return product_block_signature(system, ancillas, resources)
 
 
 def source_symbolic_product_resource_formula(
