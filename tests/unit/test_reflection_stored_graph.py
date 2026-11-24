@@ -43,16 +43,13 @@ def test_zero_reflection_source_calls_and_complete_small_operators(
     )
 
     reflection = PreparedStateReflection.around_zero(widths, control, coefficient)
-    if control is None and coefficient != 1:
-        with pytest.raises(ValueError, match="Proposal 119"):
-            zero_state_reflection_program(reflection)
-        return
     graph = zero_state_reflection_program(reflection)
     source = ReflectionUsingPrepare.reflection_around_zero(
         widths, control_val=control, global_phase=coefficient
     )
     # Identity is source-atomic; its native per-bit implementation is tested above.
     terminals = atomic_leaves(graph)
+    terminals.update(f.name for f in graph.functions[1:] if f.registers == ())
     for function in graph.functions[1:]:
         if any(
             matches_component_definition(

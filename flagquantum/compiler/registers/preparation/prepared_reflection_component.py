@@ -28,20 +28,30 @@ def prepared_reflection_program(
     *,
     control_value: int | None = None,
     global_phase: complex = 1,
+    scalar_phase: ProgramRecord | None = None,
 ) -> ProgramRecord:
     """Own junk words and call exact unprepare, mark-zero and prepare stages.
 
     Supplied first functions are entries with identical THRU ports. Selection
     ports form the public signature; all remaining ports are clean private
     junk, including row-major arrays. The caller owns exact inverse semantics.
-    Registerless nontrivial scalar phases retain the Proposal 119 boundary.
+    Uncontrolled nontrivial phases require an explicit zero-port scalar owner.
+    Its carrier and cleanup are private to that owner, not the reflection target.
     """
     if control_value is not None and (
         type(control_value) is not int or control_value not in (0, 1)
     ):
         raise ValueError("Reflection control activation must be zero or one")
-    if control_value is None and global_phase != 1:
-        raise ValueError("Registerless reflection phase requires Proposal 119")
+    if control_value is None and global_phase != 1 and scalar_phase is None:
+        raise ValueError(
+            "Registerless reflection phase requires an explicit scalar owner"
+        )
+    if scalar_phase is not None and (
+        control_value is not None
+        or global_phase == 1
+        or scalar_phase.functions[0].registers != ()
+    ):
+        raise ValueError("Uncontrolled reflection scalar owner must have zero ports")
     if not isclose(abs(global_phase), 1, rel_tol=0, abs_tol=1e-12):
         raise ValueError("Reflection global phase must be a unit coefficient")
     ports = prepare.functions[0].registers
@@ -83,6 +93,10 @@ def prepared_reflection_program(
     target = builder.allocate() if control_value is None else builder.inputs["control"]
     if not control_value:
         target = builder.call_dict(x.name, {"q": target})["q"]
+    if scalar_phase is not None:
+        # The source Cirq conversion assigns the disconnected GlobalPhase its
+        # instance after the first target flip, before MultiControlZ.
+        builder.call_program(scalar_phase, {}, entry=scalar_phase.functions[0].name)
     controls: list[RegisterBinding] = []
     for reg in selections:
         for word in np.asarray(state[reg.name]).flat:
@@ -96,7 +110,7 @@ def prepared_reflection_program(
         },
     )
     target = returned["target"]
-    if global_phase != 1:
+    if global_phase != 1 and control_value is not None:
         gate = (
             bit_gate_function(
                 "reflection_phase",

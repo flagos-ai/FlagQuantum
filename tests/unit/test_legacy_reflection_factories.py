@@ -104,10 +104,6 @@ def test_zero_reflection_constructor_source_phases_and_small_complete_operators(
     source = ReflectionUsingPrepare.reflection_around_zero(
         (1, 2), control_val=control, global_phase=phase
     )
-    if control is None and phase != 1:
-        with pytest.raises(ValueError, match="Proposal 119"):
-            resolve_component_program(_library(source, 0), 0, reflection_factories())
-        return
     record = resolve_component_program(_library(source, 0), 0, reflection_factories())
     expected = zero_state_reflection_program(
         PreparedStateReflection.around_zero((1, 2), control, phase)
@@ -135,6 +131,34 @@ def test_zero_reflection_constructor_source_phases_and_small_complete_operators(
         rtol=0,
     )
     assert source.adjoint() is source
+
+
+def test_explicit_scalar_dependency_retains_zero_port_and_control_ownership() -> None:
+    from math import pi
+
+    from flagquantum.compiler.registers.primitives.global_phase_component import (
+        scalar_phase_program,
+    )
+
+    prepare = identity_prepare_program(IdentityPrepare.from_bitsizes((1,)))
+    names = tuple(reg.name for reg in prepare.functions[0].registers or ())
+    with pytest.raises(ValueError, match="explicit scalar owner"):
+        prepared_reflection_program(prepare, prepare, names, global_phase=-1)
+    scalar = scalar_phase_program(pi)
+    for control, coefficient in ((1, -1), (None, 1)):
+        with pytest.raises(ValueError, match="scalar owner"):
+            prepared_reflection_program(
+                prepare,
+                prepare,
+                names,
+                control_value=control,
+                global_phase=coefficient,
+                scalar_phase=scalar,
+            )
+    with pytest.raises(ValueError, match="zero ports"):
+        prepared_reflection_program(
+            prepare, prepare, names, global_phase=-1, scalar_phase=prepare
+        )
 
 
 def test_general_array_junk_exact_inverse_preserves_full_complex_operator() -> None:

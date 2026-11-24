@@ -17,8 +17,10 @@ from ..registers.preparation.identity_preparation_component import (
 from ..registers.preparation.prepared_reflection_component import (
     prepared_reflection_program,
 )
+from ..registers.primitives.global_phase import global_phase_exponent
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_rotation_factories import _real_argument
+from .legacy_scalar_factories import _global_phase_factory
 from .legacy_word_factories import _rename_program
 
 PreparationInverse = Callable[[FunctionRecord], tuple[ProgramRecord, tuple[str, ...]]]
@@ -102,13 +104,26 @@ def reflection_factories(
         coefficient = arguments.get("global_phase", 1)
         if not isinstance(coefficient, (int, float, complex)):
             raise SerializationError("Reflection requires a concrete phase coefficient")
-        _real_argument(arguments, "eps", 1e-11)
+        precision = _real_argument(arguments, "eps", 1e-11)
+        scalar = (
+            _global_phase_factory(
+                "reflection_scalar",
+                (),
+                {
+                    "exponent": global_phase_exponent(complex(coefficient)),
+                    "eps": precision,
+                },
+            )
+            if control is None and coefficient != 1
+            else None
+        )
         record = prepared_reflection_program(
             forward,
             inverse,
             selections,
             control_value=control,
             global_phase=complex(coefficient),
+            scalar_phase=scalar,
         )
         if registers is not None and registers != record.functions[0].registers:
             raise SerializationError("Invalid prepared reflection register signature")

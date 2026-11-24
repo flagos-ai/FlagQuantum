@@ -6,7 +6,7 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from math import isclose
+from math import isclose, pi
 
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.layout.partition import unpartition_register
@@ -17,6 +17,8 @@ from ...compiler.registers.preparation.prepare_reflection import (
 from ...compiler.registers.preparation.prepared_reflection_component import (
     prepared_reflection_program,
 )
+from ...compiler.registers.primitives.global_phase import global_phase_exponent
+from ...compiler.registers.primitives.global_phase_component import scalar_phase_program
 from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
@@ -209,13 +211,11 @@ def zero_state_reflection_program(reflection: PreparedStateReflection) -> Progra
 
     Selection words are MSB-first THRU storage. A missing control owns one clean
     phase target. MultiControlZ owns and erases predicate work. Uncontrolled
-    nontrivial scalar phases need the separately pending registerless contract.
+    nontrivial scalar phases use the shared exact private carrier owner.
     """
     prepare = reflection.prepare_gate
     if not isinstance(prepare, IdentityPrepare):
         raise ValueError("Stored zero reflection requires IdentityPrepare")
-    if reflection.control_value is None and reflection.global_phase != 1:
-        raise ValueError("Registerless reflection phase requires Proposal 119")
     if not isclose(abs(reflection.global_phase), 1, rel_tol=0, abs_tol=1e-12):
         raise ValueError("Reflection global phase must be a unit coefficient")
     preparation = identity_prepare_program(prepare)
@@ -225,4 +225,11 @@ def zero_state_reflection_program(reflection: PreparedStateReflection) -> Progra
         tuple(reg.name for reg in prepare.selection_registers),
         control_value=reflection.control_value,
         global_phase=reflection.global_phase,
+        scalar_phase=(
+            scalar_phase_program(
+                float(global_phase_exponent(reflection.global_phase)) * pi
+            )
+            if reflection.control_value is None and reflection.global_phase != 1
+            else None
+        ),
     )
