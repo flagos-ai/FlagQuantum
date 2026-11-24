@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import operator
+import re
 from typing import TYPE_CHECKING
 
 from ...errors import SerializationError
@@ -55,6 +56,9 @@ _FUNCTIONS = {
 _CURVE_FUNCTIONS = {"ec_times_x", "ec_times_y"}
 _MAX_EXPRESSION_LENGTH = 4096
 _MAX_INTEGER_BITS = 16384
+_TEXT_SYMBOL = re.compile(
+    r"(?<![\w\\])(?:[A-Za-z]\w*_)?\\text\{[A-Za-z][A-Za-z0-9_]*\}(?![\w\\{])"
+)
 
 
 def _check_integer_size(value: Expr) -> None:
@@ -112,6 +116,21 @@ def parse_legacy_expression(text: str) -> Expr:
 
     if len(text) > _MAX_EXPRESSION_LENGTH:
         raise SerializationError("Legacy symbolic expression exceeds the decode budget")
+    # Source signature widths print these atomic symbol names as TeX text,
+    # while constructor arguments carry the same names in structured terms.
+    # Replace only that lexical atom; the existing AST whitelist still owns
+    # all operators and calls. No Python or general TeX parser is evaluated.
+    symbols: dict[str, str] = {}
+    prefix = "fq_text_symbol_"
+    while prefix in text:
+        prefix += "x"
+
+    def text_symbol(match: re.Match[str]) -> str:
+        name = f"{prefix}{len(symbols)}"
+        symbols[name] = match.group()
+        return name
+
+    text = _TEXT_SYMBOL.sub(text_symbol, text)
 
     def condition(node: ast.expr) -> Boolean:
         if isinstance(node, ast.Constant) and type(node.value) is bool:
@@ -161,6 +180,8 @@ def parse_legacy_expression(text: str) -> Expr:
             if type(node.value) is float:
                 return Float(ast.get_source_segment(text, node) or str(node.value))
         elif isinstance(node, ast.Name) and not node.id.startswith("__"):
+            if node.id in symbols:
+                return Symbol(symbols[node.id])
             return getattr(sympy, node.id) if node.id in _CONSTANTS else Symbol(node.id)
         elif isinstance(node, ast.UnaryOp) and isinstance(
             node.op, (ast.UAdd, ast.USub)
