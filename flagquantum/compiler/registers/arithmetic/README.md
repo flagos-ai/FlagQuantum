@@ -1,5 +1,11 @@
 # Integer arithmetic
 
+`sparse_index_component.py` owns the source sided TopLeft identity and banded
+Add/signed-AddK index graphs. Exact inverse pairs retain arithmetic call order
+and measured cleanup. It consumes native widths and bounds, not SDK objects.
+Run `tests/unit/test_sparse_matrix_component.py` for the oracle replacement,
+complete small operators and the separately recorded symbolic-bound storage gap.
+
 This package owns addition, subtraction, integer products, squares and their component costs.
 
 Core, shared Compiler facilities and the register components used by these
