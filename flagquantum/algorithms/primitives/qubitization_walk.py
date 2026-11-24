@@ -25,6 +25,9 @@ from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     source_prepare_reflection_cost,
 )
+from ...compiler.registers.preparation.qubitization_walk_component import (
+    qubitization_walk_signature,
+)
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.registers import Register
@@ -48,10 +51,9 @@ def source_walk_signature(
     Equal descriptors merge while same-name unequal descriptors are refused.
     Targets and logical block junk follow the selection union.
     """
-    selection = tuple(dict.fromkeys((*block_selection, *reflection_selection)))
-    if len({reg.name for reg in selection}) != len(selection):
-        raise ValueError("Walk selection union contains unequal same-name registers")
-    return Signature((*selection, *targets, *junk))
+    return qubitization_walk_signature(
+        block_selection, reflection_selection, targets, junk
+    )
 
 
 @dataclass(frozen=True)
