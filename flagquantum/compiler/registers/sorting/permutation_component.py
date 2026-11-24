@@ -16,6 +16,7 @@ from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..bits.bitwise_component_control import controlled_bitwise_word_program
 from ..comparison.equality_component import equality_constant_program
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from .permutation_graph import permutation_cycle_graph
 
@@ -32,7 +33,7 @@ def _dtype(size: int, width: int) -> RegisterType:
 
 
 def permutation_cycle_program(
-    size: int, cycle: tuple[int, ...], width: int
+    size: int, cycle: tuple[int, ...], width: int, *, adjoint: bool = False
 ) -> ProgramRecord:
     """Apply one source cycle to a bounded MSB-first THRU word.
 
@@ -40,6 +41,8 @@ def permutation_cycle_program(
     Marker and carries return clean. Singleton cycles retain their full source
     work. Invalid or empty cycles raise ValueError.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Permutation cycle direction must be boolean")
     dtype = _dtype(size, width)
     if (
         not cycle
@@ -47,7 +50,7 @@ def permutation_cycle_program(
         or any(type(value) is not int or not 0 <= value < size for value in cycle)
     ):
         raise ValueError("Permutation cycle requires distinct entries in range")
-    return permutation_cycle_graph(
+    record = permutation_cycle_graph(
         dtype,
         cycle,
         partial(equality_constant_program, width),
@@ -55,22 +58,44 @@ def permutation_cycle_program(
             unsigned_register_type(width), "xor_constant", pattern=delta
         ),
     )
+    if not adjoint:
+        return record
+    pairs = []
+    for value, successor in zip(cycle, (*cycle[1:], cycle[0]), strict=True):
+        pairs.append(
+            (
+                equality_constant_program(width, value),
+                equality_constant_program(width, value, adjoint=True),
+            )
+        )
+        xor = controlled_bitwise_word_program(
+            unsigned_register_type(width), "xor_constant", pattern=value ^ successor
+        )
+        pairs.append((xor, xor))
+    return adjoint_component_calls(record, tuple(pairs))
 
 
 def permutation_program(
-    size: int, cycles: tuple[tuple[int, ...], ...], width: int
+    size: int, cycles: tuple[tuple[int, ...], ...], width: int, *, adjoint: bool = False
 ) -> ProgramRecord:
     """Apply source-ordered cycles, including an empty identity sequence.
 
     Cross-cycle overlap retains composition order. Each child releases its marker
     and predicate work before the next cycle. Source dtype views remain explicit.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Permutation direction must be boolean")
     builder = ComponentProgramBuilder(
         Signature.build_from_dtypes(x=_dtype(size, width))
     )
     word = builder.inputs["x"]
+    pairs = []
     for cycle in cycles:
-        word = builder.call_program(
-            permutation_cycle_program(size, cycle, width), {"x": word}
-        )["x"]
-    return builder.finalize({"x": word})
+        forward = permutation_cycle_program(size, cycle, width)
+        word = builder.call_program(forward, {"x": word})["x"]
+        if adjoint:
+            pairs.append(
+                (forward, permutation_cycle_program(size, cycle, width, adjoint=True))
+            )
+    record = builder.finalize({"x": word})
+    return adjoint_component_calls(record, tuple(pairs)) if adjoint else record
