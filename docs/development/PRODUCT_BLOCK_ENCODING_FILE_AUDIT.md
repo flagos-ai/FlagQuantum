@@ -1,5 +1,10 @@
 # Product block encoding source files
 
+The source-ordered typed Product graph, shared signature replacement and exact
+constituent ownership are documented in
+[the typed Product audit](RESOLVER_PRODUCT_BLOCK_AUDIT.md). Original tuple wire
+and resource dtype failures retain their independent scope.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 The frozen files under `qualtran/bloqs/block_encoding/` are Apache-2.0,
