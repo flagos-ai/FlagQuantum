@@ -32,6 +32,7 @@ from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
 from ._gate_metadata import cirq_gate_signature
+from ._named_gate_definitions import _NamedGateDefinitions
 from ._register_import import (
     _operation_ports,
     import_cirq_register_gate,
@@ -44,7 +45,10 @@ def _gate_program(
     gate: Any, signature: Signature, name: str
 ) -> FunctionRecord | ProgramRecord:
     cirq = _cirq()
-    program = import_cirq_register_gate(gate, signature=signature)
+    definitions = _NamedGateDefinitions()
+    program = import_cirq_register_gate(
+        gate, signature=signature, gate_definitions=definitions
+    )
     if program is None:
         if not cirq.is_parameterized(gate) and not cirq.has_unitary(gate):
             return FunctionRecord(name, (), registers=tuple(signature))
@@ -55,6 +59,7 @@ def _gate_program(
             signature=signature,
             in_quregs=inputs,
             out_quregs=outputs,
+            gate_definitions=definitions,
         )
     return _rename_program(program, name)
 

@@ -477,6 +477,7 @@ def import_cirq_register_gate(
     signature: Signature | None = None,
     in_quregs: Mapping[str, object] | None = None,
     out_quregs: Mapping[str, object] | None = None,
+    gate_definitions: Mapping[Hashable, FunctionRecord] | None = None,
 ) -> ProgramRecord | None:
     """Import one declared SDK decomposition with explicit native ownership.
 
@@ -517,4 +518,5 @@ def import_cirq_register_gate(
         signature=signature,
         in_quregs=in_quregs,
         out_quregs=out_quregs,
+        gate_definitions=gate_definitions,
     )
