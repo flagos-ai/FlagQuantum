@@ -30,3 +30,10 @@ preparation junk remains private until unpreparation. Existing Algorithms
 signature consumers delegate here. For the shortest replacement scenario, run
 `tests/unit/test_legacy_block_encoding_factories.py`: substitute native PREPARE
 and SELECT owners, resolve, bind and append without changing the consumer.
+
+`sparse_matrix_component.py` owns packed diffusion and the six-call sparse
+matrix root. It receives exact row/column/entry Programs and retains the MSB
+flag/location split, source Swap and caller-owned inputs. Child owners retain
+private work. Existing Algorithms sparse signature consumers delegate here.
+Run `tests/unit/test_sparse_matrix_component.py` for constructor replacement,
+all original examples, source-free append, complex operators and small histories.

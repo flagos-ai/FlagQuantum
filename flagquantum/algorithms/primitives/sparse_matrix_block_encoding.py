@@ -22,6 +22,9 @@ from ...compiler._component_trace.symbolic_math import (
     smax,
 )
 from ...compiler.registers.layout.auto_partition import AutoPartition
+from ...compiler.registers.preparation.sparse_matrix_component import (
+    sparse_matrix_signature,
+)
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -38,7 +41,6 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
@@ -47,10 +49,7 @@ from .sparse_matrix_oracles import EntryOracle, RowColumnOracle
 
 def source_sparse_matrix_signature(width: SymbolicInt) -> Signature:
     """Declare the ordered sparse-access ports before concrete binding."""
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(width),
-        ancilla=opaque_register_type(width + 1),
-    )
+    return sparse_matrix_signature(width)
 
 
 def _source_sparse_diffusion_resource_formula(
