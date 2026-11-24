@@ -33,7 +33,7 @@ from ._feedback_import import (
 )
 from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
-from ._register_definition import _expand_native_definitions
+from ._register_definition import _expand_native_definitions, _native_definition_module
 from ._register_export import _register_shape
 from ._source_graph_operations import source_graph_operations
 from .conversion import (
@@ -70,9 +70,21 @@ def _register_operations(
     def expand(operations: Iterable[Any], ancestors: tuple[Any, ...]) -> Iterator[Any]:
         original = tuple(operations)
         _check_cirq_symbol_identity(cirq, original)
-        frame = tuple(
-            _scalar_control_operations(cirq, _eigen_phase_operations(cirq, original))
-        )
+        frame = []
+        for operation in original:
+            gate = operation.without_classical_controls().gate
+            definition = declared.get(gate) if isinstance(gate, Hashable) else None
+            if (
+                definition is not None
+                or getattr(gate, "flagquantum_register_definition", None) is not None
+            ):
+                frame.append(operation)
+            else:
+                frame.extend(
+                    _scalar_control_operations(
+                        cirq, _eigen_phase_operations(cirq, (operation,))
+                    )
+                )
         with manager.reserve_qubits(q for op in frame for q in op.qubits):
             for operation in frame:
                 if operation.tags:
@@ -391,7 +403,8 @@ def import_cirq_register_optree(
                 )
         gates.append((gate, qubits, definition))
 
-    builder = ComponentProgramBuilder(signature, definitions.values())
+    definitions = _native_definition_module(definitions.values(), declared)
+    builder = ComponentProgramBuilder(signature)
     live = _WordBindings(builder)
     live.store(signature.lefts(), incoming, builder.inputs)
 
@@ -399,7 +412,13 @@ def import_cirq_register_optree(
         assert function.registers is not None
         ports = Signature(function.registers)
         left, right = _operation_ports(ports, qubits)
-        outputs = builder.call_dict(function.name, live.take_ports(ports.lefts(), left))
+        values = live.take_ports(ports.lefts(), left)
+        if function.name in definitions:
+            outputs = builder.call_program(
+                ProgramRecord(tuple(definitions.values())), values, entry=function.name
+            )
+        else:
+            outputs = builder.call_dict(function.name, values)
         live.store(ports.rights(), right, outputs)
 
     for index, (gate, qubits, definition) in enumerate(gates):

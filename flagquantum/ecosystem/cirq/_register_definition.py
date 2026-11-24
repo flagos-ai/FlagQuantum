@@ -1,6 +1,6 @@
 """Lower explicit native definitions for a shared SDK measurement history."""
 
-from collections.abc import Hashable, Mapping
+from collections.abc import Hashable, Iterable, Mapping
 from typing import Any
 
 from ...compiler.registers._local_register_binding import _bind_local_register_program
@@ -10,12 +10,43 @@ from ._register_gate import RegisterCirqGate
 from .conversion import _cirq
 
 
+def _native_definition_module(
+    roots: Iterable[FunctionRecord], declared: Mapping[Hashable, FunctionRecord]
+) -> dict[str, FunctionRecord]:
+    """Collect called helper definitions while retaining selected root ownership."""
+    definitions: dict[str, FunctionRecord] = {}
+    for function in roots:
+        previous = definitions.setdefault(function.name, function)
+        if previous != function:
+            raise ValueError(f"Conflicting Cirq gate definition {function.name!r}")
+    available: dict[str, list[FunctionRecord]] = {}
+    for function in declared.values():
+        if isinstance(function, FunctionRecord):
+            available.setdefault(function.name, []).append(function)
+    pending = list(definitions.values())
+    while pending:
+        function = pending.pop()
+        for block in function.blocks:
+            for operation in block.operations:
+                name = operation.callee
+                if name is None or name in definitions:
+                    continue
+                candidates = available.get(name, [])
+                if not candidates:
+                    raise ValueError(f"Missing Cirq native helper definition {name!r}")
+                helper = candidates[0]
+                if any(candidate != helper for candidate in candidates[1:]):
+                    raise ValueError(f"Conflicting Cirq gate definition {name!r}")
+                definitions[name] = helper
+                pending.append(helper)
+    return definitions
+
+
 def _expand_native_definitions(
     operations: tuple[Any, ...], declared: Mapping[Hashable, FunctionRecord]
 ) -> tuple[Any, ...]:
     """Preserve native definition precedence and isolate local measurement keys."""
     cirq = _cirq()
-    definitions: dict[str, FunctionRecord] = {}
     selected: list[FunctionRecord | None] = []
     for operation in operations:
         gate = operation.without_classical_controls().gate
@@ -29,10 +60,9 @@ def _expand_native_definitions(
                 "Cirq gate definition requires a typed native FunctionRecord"
             )
         selected.append(definition)
-    for definition in (*declared.values(), *(f for f in selected if f is not None)):
-        previous = definitions.setdefault(definition.name, definition)
-        if previous != definition:
-            raise ValueError(f"Conflicting Cirq gate definition {definition.name!r}")
+    definitions = _native_definition_module(
+        (function for function in selected if function is not None), declared
+    )
     keys = {
         key for operation in operations for key in cirq.measurement_key_names(operation)
     }
