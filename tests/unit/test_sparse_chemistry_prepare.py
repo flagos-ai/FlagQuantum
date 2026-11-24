@@ -42,6 +42,7 @@ def _branch(
     bits = {}
     outcomes = iter(history)
     phase = {
+        "i": 1,
         "t": (1 + 1j) / sqrt(2),
         "tdg": (1 - 1j) / sqrt(2),
         "s": 1j,

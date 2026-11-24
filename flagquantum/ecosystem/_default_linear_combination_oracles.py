@@ -4,6 +4,7 @@
 
 """Replace explicit default LCU oracle objects with native directional Programs."""
 
+from collections.abc import Callable
 from math import pi
 from typing import Any, cast
 
@@ -89,7 +90,9 @@ def default_linear_combination_prepare_pair(source: object) -> ExactPair:
     )
 
 
-def _positive_pair(source: Any) -> ExactPair:
+def _positive_pair(
+    source: Any, child_owner: Callable[[object], ExactPair] | None = None
+) -> ExactPair:
     from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, ZGate
     from qualtran.bloqs.block_encoding.phase import Phase
     from qualtran.bloqs.block_encoding.unitary import Unitary
@@ -101,7 +104,7 @@ def _positive_pair(source: Any) -> ExactPair:
     )
 
     if isinstance(source, SourcePartition):
-        child = _positive_pair(source.bloq)
+        child = _positive_pair(source.bloq, child_owner)
         data = _signature(source.bloq.signature)
         widths = {reg.name: reg.total_qubits() for reg in data}
         layout = AutoPartition(
@@ -125,7 +128,7 @@ def _positive_pair(source: Any) -> ExactPair:
             *child, _signature(source.signature), layout, data_registers=data
         )
     if isinstance(source, Phase):
-        child = _positive_pair(source.block_encoding)
+        child = _positive_pair(source.block_encoding, child_owner)
         # Controlled.adjoint() controls the source child's adjoint. Its visitor
         # still visits the block before the disconnected scalar. This differs
         # from the generic Adjoint(Controlled(Phase)) call decomposition.
@@ -134,7 +137,7 @@ def _positive_pair(source: Any) -> ExactPair:
             controlled_block_phase_program(child[1], -source.phi),
         )
     if isinstance(source, Unitary):
-        child = _positive_pair(source.U)
+        child = _positive_pair(source.U, child_owner)
         data = _signature(source.U.signature)
         from qualtran import Controlled, CtrlSpec
 
@@ -190,12 +193,16 @@ def _positive_pair(source: Any) -> ExactPair:
             for sign in (1, -1)
         )
         return pair[0], pair[1]
+    if child_owner is not None:
+        return child_owner(source)
     raise SerializationError(
         "Default LCU SELECT requires an explicit native owner for this child"
     )
 
 
-def default_linear_combination_select_pair(source: object) -> ExactPair:
+def default_linear_combination_select_pair(
+    source: object, *, positive_child_owner: Callable[[object], ExactPair] | None = None
+) -> ExactPair:
     """Own original default indexed SELECT and its positive controlled wrapper."""
     from qualtran import Controlled, CtrlSpec
     from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
@@ -220,7 +227,9 @@ def default_linear_combination_select_pair(source: object) -> ExactPair:
         raise SerializationError(
             "Already controlled indexed oracle requires an explicit owner"
         )
-    leaves = tuple(_positive_pair(child) for child in raw.ops.flat)
+    leaves = tuple(
+        _positive_pair(child, positive_child_owner) for child in raw.ops.flat
+    )
     selectors, targets = _signature(raw.selection_registers), _signature(
         raw.target_registers
     )
