@@ -1,5 +1,10 @@
 # Unitary block encoding source files
 
+The shared typed graph, exact child-pair constructor binding and original
+deep-wire failures are documented in
+[the packed-block constructor audit](RESOLVER_PACKED_BLOCK_AUDIT.md).
+The execution and metadata receipts below retain their original scope.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The frozen files under
 `qualtran/bloqs/block_encoding/` are Apache-2.0, copyright Google LLC.

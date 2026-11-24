@@ -1,5 +1,10 @@
 # Tensor-product block encoding source files
 
+The shared typed graph, explicit inverse ownership and original tuple-of-Bloq
+wire failures are documented in
+[the packed-block constructor audit](RESOLVER_PACKED_BLOCK_AUDIT.md).
+Direct native graph parity does not imply successful original serialization.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 The frozen files under `qualtran/bloqs/block_encoding/` are Apache-2.0,
