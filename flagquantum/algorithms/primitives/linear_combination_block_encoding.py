@@ -31,8 +31,10 @@ from ...compiler.registers.control.controlled_component_resource_model import (
     extended_controlled_component_cost,
 )
 from ...compiler.registers.layout.partition import partition_register
+from ...compiler.registers.preparation.linear_combination_component import (
+    linear_combination_signature,
+)
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from ._block_metadata import _BlockMetadata
@@ -60,19 +62,13 @@ def source_linear_combination_signature(
     to `Signature.n_qubits()`. The declaration does not build symbolic
     coefficient tables or admit a symbolic SELECT circuit.
     """
-    if len(constituent_ancillas) < 2 or len(constituent_ancillas) != len(
-        constituent_resources
-    ):
-        raise ValueError("LCU signature needs matching widths for at least two terms")
-    if type(controlled) is not bool:
-        raise ValueError("LCU signature control flag must be boolean")
-    ancilla = cast(SymbolicInt, smax(constituent_ancillas))
-    resource = cast(SymbolicInt, smax(constituent_resources))
-    return Signature.build_from_dtypes(
-        ctrl=opaque_register_type(int(controlled)),
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(prepare_selection + ancilla),
-        resource=opaque_register_type(resource + prepare_junk),
+    return linear_combination_signature(
+        system,
+        constituent_ancillas,
+        constituent_resources,
+        prepare_selection=prepare_selection,
+        prepare_junk=prepare_junk,
+        controlled=controlled,
     )
 
 
