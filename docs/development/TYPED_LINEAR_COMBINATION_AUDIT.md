@@ -1,5 +1,12 @@
 # Typed linear-combination root and dependency disposition
 
+The later [explicit context audit](RESOLVER_LINEAR_COMBINATION_CONTEXT_AUDIT.md)
+extends this root with SDK-boundary role capture, scoped native constructor
+resolution and exact predicate controls. It also corrects the scalar-phase
+interpretation below: the default fixture's active forward chain has no
+registerless GlobalPhase, so its default native owner work can proceed without
+Proposal 119. Full constructor closure is still open.
+
 Unchanged Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`, source/test blobs
 `a3d8aa7fafa7a6f3fcaf095826751209427cd255` and
@@ -70,10 +77,12 @@ precision and the control flag. Different operators can therefore have the
 same surviving payload; inferring one would be incorrect. Original deeper
 object/ragged array codecs and specialized inverse enum codecs also fail.
 
-The original default signed SELECT additionally needs Phase scalar bodies
-under pending Proposal 119. That protected behavior is not implemented here.
-Full constructor closure requires explicit native role/child metadata and its
-Ecosystem boundary, signed Phase admission when authorized, and remaining
-source constructor/control/alias chain validation. These gaps stay owned by
+The original default signed SELECT uses controlled Phase stages. The later
+active-chain probe establishes that their executed signs become one-bit ZPow,
+with no registerless GlobalPhase in this fixture's forward path. Genuine
+registerless scalar behavior elsewhere still requires pending Proposal 119.
+Full constructor closure requires the explicit native role/child metadata
+boundary and remaining default PREPARE/SELECT and constructor/control/alias
+chain validation. These gaps stay owned by
 open Q-0876, alongside other G2 constructor work; the older Algorithm evidence
 does not discharge them. G2 and G3 status are unchanged.

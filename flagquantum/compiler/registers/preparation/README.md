@@ -50,4 +50,7 @@ partitions around exact PREPARE/SELECT/unprepare Programs. Logical junk remains
 caller-owned. The Algorithms signature helper delegates here. Only SELECT is
 controlled; exact inverses reverse typed calls with supplied child pairs.
 `TYPED_LINEAR_COMBINATION_AUDIT.md` distinguishes this accepted root from the
-still-open source constructor payload and signed Phase dependencies.
+still-open source constructor dependencies. The explicit context and actual
+controlled-Phase disposition are documented in
+`RESOLVER_LINEAR_COMBINATION_CONTEXT_AUDIT.md`; the default signed fixture does
+not execute a registerless scalar phase in its forward chain.

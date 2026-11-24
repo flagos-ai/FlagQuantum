@@ -1,5 +1,7 @@
 """Compare native packed LCU graphs with the unchanged source root."""
 
+from typing import Any
+
 import pytest
 import torch
 
@@ -64,17 +66,16 @@ def test_source_free_native_construction_binding_and_append(
         assert circuit.to_ir().instructions == (Instruction("cx", (1, 0)),)
 
 
-@pytest.mark.parametrize("inverse", (False, True))
-@pytest.mark.parametrize("controlled", (False, True))
-def test_supplied_oracles_exact_root_calls_and_complex_operator(
-    inverse: bool, controlled: bool
-) -> None:
+def native_oracle_fixture(
+    controlled: bool,
+) -> tuple[
+    Any, tuple[ProgramRecord, ProgramRecord], tuple[ProgramRecord, ProgramRecord]
+]:
     from hashlib import sha1
     from importlib.metadata import version
     from pathlib import Path
 
     import kickmix
-    from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.basic_gates import XGate
     from qualtran.bloqs.block_encoding import linear_combination
     from qualtran.bloqs.block_encoding.unitary import Unitary
@@ -179,6 +180,17 @@ def test_supplied_oracles_exact_root_calls_and_complex_operator(
                 adders[function.name] = bookkeeping
             controlled_modules.append(control_component_hierarchy(module, adders))
         native_select = controlled_modules[0], controlled_modules[1]
+    return source, native_prepare, native_select
+
+
+@pytest.mark.parametrize("inverse", (False, True))
+@pytest.mark.parametrize("controlled", (False, True))
+def test_supplied_oracles_exact_root_calls_and_complex_operator(
+    inverse: bool, controlled: bool
+) -> None:
+    from qualtran._infra.adjoint import Adjoint
+
+    source, native_prepare, native_select = native_oracle_fixture(controlled)
     record = linear_combination_component_program(
         linear_combination_signature(
             1,
