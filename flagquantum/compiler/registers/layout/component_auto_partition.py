@@ -1,4 +1,5 @@
 # Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 AutoPartition.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping/auto_partition.py
@@ -8,10 +9,13 @@
 from dataclasses import replace
 
 from ....core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
+from ....core.ir.program.register_types import opaque_register_type
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import ssum
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_graph import _namespace_helpers
 from .auto_partition import AutoPartition
 from .component_partition import partition_component_program, partition_signature
 
@@ -161,3 +165,53 @@ def auto_partition_component_program(
             *(f for f in module.functions if f.name not in names),
         ),
     )
+
+
+def auto_partition_component_pair(
+    child: ProgramRecord,
+    ports: tuple[Register, ...],
+    layout: AutoPartition,
+    inverse: ProgramRecord | None,
+) -> tuple[ProgramRecord, ProgramRecord | None]:
+    """Return an isolated source wrapper and its explicitly owned exact inverse."""
+    native = _namespace_helpers(child, "partition_child")
+    record = auto_partition_component_program(
+        native, layout, entry=native.functions[0].name, name="main", packed_ports=ports
+    )
+    record = replace(
+        record,
+        functions=tuple(sorted(record.functions, key=lambda f: f.name != "main")),
+    )
+    if inverse is None:
+        return record, None
+    registers = {reg.name: reg for reg in child.functions[0].registers or ()}
+    pairs = [(child, inverse)]
+    for _, group in layout._layouts():
+        parts = tuple(
+            (
+                registers[name]
+                if name in registers
+                else Register(name, opaque_register_type(width))
+            )
+            for name, width in group
+        )
+        partitions = []
+        for reverse in (False, True):
+            if all(type(register.bitsize) is int for register in parts):
+                partition = partition_component_program(parts, "partition", reverse)
+            else:
+                partition = ProgramRecord(
+                    (
+                        FunctionRecord(
+                            "partition",
+                            (),
+                            registers=tuple(
+                                partition_signature(parts, reverse=reverse)
+                            ),
+                        ),
+                    )
+                )
+            partitions.append(partition)
+        split, join = partitions
+        pairs.extend(((split, join), (join, split)))
+    return record, adjoint_component_calls(record, tuple(pairs))

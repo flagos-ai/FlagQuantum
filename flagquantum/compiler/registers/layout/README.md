@@ -92,3 +92,10 @@ for source call order, dirty flags, full complex operators, every small combined
 measurement history and SDK-free build/bind/append. The original tuple wire
 and unequal nonzero resource-width failures remain explicit in
 `docs/development/RESOLVER_PRODUCT_BLOCK_AUDIT.md`.
+
+`component_auto_partition.auto_partition_component_pair` owns an isolated
+AutoPartition graph and its explicit exact inverse. Packed oracles, Product
+and sparse diffusion share it. Symbolic partition helpers stay declarations;
+concrete partitions reuse Split/Join. Run `test_packed_prepare_component.py`,
+`test_product_block_component.py` and `test_sparse_matrix_component.py` for the
+replacement, including symbolic views and unchanged gate/work lifetimes.

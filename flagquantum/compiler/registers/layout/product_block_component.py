@@ -4,7 +4,6 @@
 
 """Compose source-ordered products with shared words and explicit success flags."""
 
-from dataclasses import replace
 from typing import cast
 
 from ....core.ir import CircuitIR, Instruction
@@ -17,10 +16,10 @@ from ....core.value_math import SymbolicInt, smax
 from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
-from ..component_graph import _collections, _elements, _namespace_helpers
+from ..component_graph import _collections, _elements
 from ..control.multi_control_component import multi_control_x_program
 from .auto_partition import AutoPartition, PartitionGroups
-from .component_auto_partition import auto_partition_component_program
+from .component_auto_partition import auto_partition_component_pair
 from .component_partition import partition_component_program
 from .packed_block_component import packed_block_signature
 
@@ -48,39 +47,6 @@ def check_product_resource_partition(
         raise ValueError(
             "Locked Product cannot partition unequal nonzero resource widths"
         )
-
-
-def _constituent(
-    child: ProgramRecord,
-    ports: tuple[Register, ...],
-    layout: AutoPartition,
-    inverse: ProgramRecord | None,
-) -> tuple[ProgramRecord, ProgramRecord | None]:
-    native = _namespace_helpers(child, "product_child")
-    record = auto_partition_component_program(
-        native, layout, entry=native.functions[0].name, name="main", packed_ports=ports
-    )
-    record = replace(
-        record,
-        functions=tuple(sorted(record.functions, key=lambda f: f.name != "main")),
-    )
-    if inverse is None:
-        return record, None
-    registers = {reg.name: reg for reg in child.functions[0].registers or ()}
-    pairs = [(child, inverse)]
-    for _, group in layout._layouts():
-        parts = tuple(
-            (
-                registers[name]
-                if name in registers
-                else Register(name, opaque_register_type(width))
-            )
-            for name, width in group
-        )
-        split = partition_component_program(parts, "partition", False)
-        join = partition_component_program(parts, "partition", True)
-        pairs.extend(((split, join), (join, split)))
-    return record, adjoint_component_calls(record, tuple(pairs))
 
 
 def product_block_component_program(
@@ -167,7 +133,7 @@ def product_block_component_program(
         if resources[index]:
             groups.append(("resource", (("resource", resources[index]),)))
             public.append(Register("resource", opaque_register_type(resources[index])))
-        forward, inverse = _constituent(
+        forward, inverse = auto_partition_component_pair(
             children[index],
             tuple(public),
             AutoPartition(cast(PartitionGroups, tuple(groups))),

@@ -4,24 +4,14 @@
 
 """Own one exact AutoPartition boundary around typed oracle components."""
 
-from dataclasses import replace
-
-from ....core.ir.program import FunctionRecord, ProgramRecord
+from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_types import opaque_register_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import ssum
-from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
-from ..component_graph import _namespace_helpers
 from .auto_partition import AutoPartition
-from .component_auto_partition import (
-    auto_partition_component_program,
-)
-from .component_partition import (
-    partition_component_program,
-    partition_signature,
-)
+from .component_auto_partition import auto_partition_component_pair
 
 
 def packed_oracle_component_program(
@@ -40,56 +30,28 @@ def packed_oracle_component_program(
     """
     if type(adjoint) is not bool:
         raise ValueError("Packed oracle direction must be boolean")
-    child = _namespace_helpers(prepare, "prepare")
     layout = AutoPartition(
         tuple(
             (name, tuple((r.name, r.total_qubits()) for r in regs))
             for name, regs in groups
         )
     )
-    auto = auto_partition_component_program(
-        child,
-        layout,
-        entry=child.functions[0].name,
-        name="main",
-        packed_ports=tuple(
+    auto, reverse = auto_partition_component_pair(
+        prepare,
+        tuple(
             Register(
                 name,
                 opaque_register_type(ssum(reg.total_qubits() for reg in registers)),
             )
             for name, registers in groups
         ),
-    )
-    auto = replace(
-        auto, functions=tuple(sorted(auto.functions, key=lambda f: f.name != "main"))
+        layout,
+        inverse if adjoint else None,
     )
     if adjoint:
-        if inverse is None:
+        if reverse is None:
             raise ValueError("Packed oracle requires an explicit exact inverse")
-        pairs = [(prepare, inverse)]
-        for _, registers in groups:
-            partitions = []
-            for reverse in (False, True):
-                if all(type(reg.bitsize) is int for reg in registers):
-                    partition = partition_component_program(
-                        registers, "partition", reverse
-                    )
-                else:
-                    partition = ProgramRecord(
-                        (
-                            FunctionRecord(
-                                "partition",
-                                (),
-                                registers=tuple(
-                                    partition_signature(registers, reverse=reverse)
-                                ),
-                            ),
-                        )
-                    )
-                partitions.append(partition)
-            split, join = partitions
-            pairs.extend(((split, join), (join, split)))
-        auto = adjoint_component_calls(auto, tuple(pairs))
+        auto = reverse
     builder = ComponentProgramBuilder(signature)
     state = dict(builder.inputs)
     inputs = {name: state.pop(name) for name, _ in groups}
