@@ -91,4 +91,7 @@ def packed_oracle_component_program(
             pairs.extend(((split, join), (join, split)))
         auto = adjoint_component_calls(auto, tuple(pairs))
     builder = ComponentProgramBuilder(signature)
-    return builder.finalize(builder.call_program(auto, builder.inputs))
+    state = dict(builder.inputs)
+    inputs = {name: state.pop(name) for name, _ in groups}
+    state.update(builder.call_program(auto, inputs))
+    return builder.finalize(state)

@@ -16,12 +16,14 @@ from ...circuit import _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.packed_block_component import (
+    tensor_product_block_signature,
+)
 from ...compiler.registers.layout.partition import partition_register
 from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata
@@ -32,14 +34,7 @@ def source_tensor_product_block_signature(
     widths: tuple[tuple[SymbolicInt, SymbolicInt, SymbolicInt], ...],
 ) -> Signature:
     """Pack child widths declared in system, ancilla and resource order."""
-    if not widths:
-        raise ValueError("Tensor product requires at least one block")
-    system, ancilla, resource = (sum(port) for port in zip(*widths, strict=True))
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(ancilla),
-        resource=opaque_register_type(resource),
-    )
+    return tensor_product_block_signature(widths)
 
 
 def source_symbolic_tensor_product_resource_formula(

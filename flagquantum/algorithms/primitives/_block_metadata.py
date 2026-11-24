@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Protocol, TypeVar
 
-from ...core.ir.program.register_types import opaque_register_type
+from ...compiler.registers.layout.packed_block_component import packed_block_signature
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt, SymbolicReal
 from .black_box_prepare import BlackBoxPrepare
@@ -48,8 +48,4 @@ def _packed_block_signature(
     system: SymbolicInt, ancilla: SymbolicInt, resource: SymbolicInt
 ) -> Signature:
     """Declare ordered opaque ports, omitting the source's zero widths."""
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(ancilla),
-        resource=opaque_register_type(resource),
-    )
+    return packed_block_signature(system, ancilla, resource)

@@ -22,6 +22,7 @@ from ...compiler.registers.control.controlled_component import controlled_compon
 from ...compiler.registers.control.controlled_component_resource_model import (
     controlled_component_cost,
 )
+from ...compiler.registers.layout.packed_block_component import unitary_block_signature
 from ...compiler.registers.layout.partition import (
     RegisterLayout,
     partition_register,
@@ -52,9 +53,7 @@ def source_unitary_block_signature(
     child: Signature, *, ancilla: SymbolicInt = 0, resource: SymbolicInt = 0
 ) -> Signature:
     """Declare source widths, which sum the child element widths independently of shape."""
-    if not child.thru_registers_only:
-        raise ValueError("Block encoded unitary must have all THRU registers")
-    return _packed_block_signature(sum(reg.bitsize for reg in child), ancilla, resource)
+    return unitary_block_signature(child, ancilla=ancilla, resource=resource)
 
 
 def source_unitary_block_resource_formula(

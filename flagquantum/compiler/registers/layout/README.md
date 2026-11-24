@@ -74,3 +74,12 @@ and packed words remain caller-owned; packing adds no primitive gates or work.
 The existing Algorithms packed PREPARE entry delegates to this owner. Run
 `test_packed_prepare_component.py` and `test_legacy_packed_oracle_factories.py`
 for source calls, constructor replacement and execution evidence.
+
+`packed_block_component.py` owns Unitary and TensorProduct typed root composition
+and shared packed block signatures. Algorithms signature consumers delegate
+here; metadata and cost formulas keep their existing owners. Auxiliary words
+are caller-owned bystanders. Child owners supply exact inverse Programs and
+retain private work. Start with `tests/unit/test_packed_block_component.py` for
+native child replacement, ordered source partitions, full complex operators,
+measurement histories and ordinary append. Source wire failures are recorded
+in `docs/development/RESOLVER_PACKED_BLOCK_AUDIT.md`.
