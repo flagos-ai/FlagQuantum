@@ -83,16 +83,17 @@ class _NamedGateDefinitions(Mapping[Hashable, FunctionRecord]):
             self._unknown.add(gate)
             raise KeyError(gate)
         source, arguments = selected
+        import numpy as np
         import sympy
 
-        arguments = {
-            key: (
-                float(value)
-                if isinstance(value, sympy.Expr) and not value.free_symbols
-                else value
-            )
-            for key, value in arguments.items()
-        }
+        normalized: dict[str, ResolvedArgument] = {}
+        for key, value in arguments.items():
+            if isinstance(value, np.float64):
+                value = float(value)
+            if isinstance(value, sympy.Expr) and not value.free_symbols:
+                value = float(value)
+            normalized[key] = value
+        arguments = normalized
         name = f"named_gate_{len(self._definitions)}"
         resolved = self._factories["qualtran.bloqs.basic_gates." + source](
             name, None, arguments
