@@ -5,7 +5,6 @@
 """Resolve clean lookup constructors without replacing the source erasure leaf."""
 
 from collections.abc import Mapping
-from dataclasses import replace
 from math import prod
 from typing import cast
 
@@ -20,50 +19,9 @@ from ..registers.lookup.qroam_clean_component import qroam_clean_program
 from ..registers.lookup.qrom_table import QromTable
 from ..registers.lookup.source_qroam_clean import QroamCleanTable
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
-from .legacy_modular_addition_factories import _integer
+from .legacy_lookup_metadata import read_blocked_lookup_arguments
 from .legacy_qrom_factories import _dimensions
 from .legacy_word_factories import _rename_program
-
-
-def _metadata(
-    arguments: Mapping[str, ResolvedArgument],
-) -> tuple[QromTable, tuple[int, ...]]:
-    required = {
-        "data_or_shape",
-        "selection_bitsizes",
-        "target_bitsizes",
-        "log_block_sizes",
-    }
-    if not required <= arguments.keys() or arguments.keys() - required - {
-        "target_shapes",
-        "num_controls",
-    }:
-        raise SerializationError("Invalid clean QROAM constructor arguments")
-    data = arguments["data_or_shape"]
-    if (
-        not isinstance(data, (tuple, list, np.ndarray))
-        or isinstance(data, np.ndarray)
-        and data.ndim == 0
-        or len(data) == 0
-    ):
-        raise SerializationError("Serialized clean QROAM requires concrete datasets")
-    widths = _dimensions(arguments["target_bitsizes"])
-    raw_shapes = arguments.get("target_shapes", ((),) * len(widths))
-    if not isinstance(raw_shapes, (tuple, list, np.ndarray)):
-        raise SerializationError("Clean QROAM target shapes require nested vectors")
-    shapes = tuple(_dimensions(shape) for shape in raw_shapes)
-    table = QromTable.from_data(
-        *data,
-        target_bitsizes=widths,
-        target_shapes=shapes,
-        num_controls=_integer(
-            {"num_controls": arguments.get("num_controls", 0)}, "num_controls"
-        ),
-    )
-    table = replace(
-        table, selection_bitsizes=_dimensions(arguments["selection_bitsizes"])
-    )
-    return table, _dimensions(arguments["log_block_sizes"])
 
 
 def _erasure_signature(table: QromTable) -> tuple[Register, ...]:
@@ -103,7 +61,7 @@ def qroam_factories() -> dict[str, ComponentFactory]:
         registers: tuple[Register, ...] | None,
         arguments: Mapping[str, ResolvedArgument],
     ) -> ProgramRecord:
-        base, logs = _metadata(arguments)
+        base, logs = read_blocked_lookup_arguments(arguments)
         if any(base.target_shapes):
             raise SerializationError("QROAMClean requires scalar dataset targets")
         assert base.datasets is not None
@@ -128,7 +86,7 @@ def qroam_factories() -> dict[str, ComponentFactory]:
         registers: tuple[Register, ...] | None,
         arguments: Mapping[str, ResolvedArgument],
     ) -> FunctionRecord:
-        base, _ = _metadata(arguments)
+        base, _ = read_blocked_lookup_arguments(arguments)
         signature = _erasure_signature(base)
         _check_signature(signature, registers)
         return FunctionRecord(name, (), registers=signature)
