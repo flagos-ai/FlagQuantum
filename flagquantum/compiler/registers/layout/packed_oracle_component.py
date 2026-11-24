@@ -7,8 +7,10 @@
 from dataclasses import replace
 
 from ....core.ir.program import FunctionRecord, ProgramRecord
+from ....core.ir.program.register_types import opaque_register_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import ssum
 from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from ..component_graph import _namespace_helpers
@@ -50,7 +52,13 @@ def packed_oracle_component_program(
         layout,
         entry=child.functions[0].name,
         name="main",
-        packed_ports=tuple(signature),
+        packed_ports=tuple(
+            Register(
+                name,
+                opaque_register_type(ssum(reg.total_qubits() for reg in registers)),
+            )
+            for name, registers in groups
+        ),
     )
     auto = replace(
         auto, functions=tuple(sorted(auto.functions, key=lambda f: f.name != "main"))
