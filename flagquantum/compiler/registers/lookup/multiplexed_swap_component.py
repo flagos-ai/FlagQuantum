@@ -4,20 +4,28 @@
 
 """Retain bounded unary traversal and exact word-exchange child calls."""
 
+from itertools import product
 from math import prod
 
 import numpy as np
 
+from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
+from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.registers import Register
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_gate_function import bit_gate_function
 from ..control.conjunction_program import and_component_program, conjunction_program
 from ..control.unary_component_calls import append_bounded_unary_calls
 from ..primitives.controlled_swap_component import controlled_swap_program
 from .multiplexed_swap import MultiplexedSwapLayout
 
 
-def multiplexed_swap_program(layout: MultiplexedSwapLayout) -> ProgramRecord:
+def multiplexed_swap_program(
+    layout: MultiplexedSwapLayout, *, adjoint: bool = False
+) -> ProgramRecord:
     """Thread MSB-first selectors, row-major targets and caller-owned output.
 
     The existing layout validates concrete dimensions and source refusals. Unary
@@ -25,6 +33,8 @@ def multiplexed_swap_program(layout: MultiplexedSwapLayout) -> ProgramRecord:
     on first use, retaining the source's nested import order. Final joins preserve
     native bounded descriptors, where the original returns generic QAny storage.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Multiplexed swap direction must be boolean")
     shape, _, count, word = layout._concrete_dimensions()
     builder = ComponentProgramBuilder(layout.signature)
     selectors: dict[int, tuple[RegisterBinding, ...]] = {}
@@ -125,6 +135,27 @@ def multiplexed_swap_program(layout: MultiplexedSwapLayout) -> ProgramRecord:
             if register.bitsize == 1
             else builder.join(selectors[axis], register.dtype)
         )
-    return builder.finalize(
+    record = builder.finalize(
         {**outputs, "targets": targets.reshape(shape), "output": output}
     )
+    if not adjoint:
+        return record
+    pairs = [(child, child)]
+    for left, right in product((0, 1), repeat=2):
+        control_values = (left, right)
+        compute = and_component_program(control_values, name="compute")
+        erase = and_component_program(control_values, name="erase", uncompute=True)
+        pairs.extend(((compute, erase), (erase, compute)))
+    if count > 2:
+        compute = conjunction_program((1,) * count, name="compute")
+        erase = conjunction_program((1,) * count, name="erase", uncompute=True)
+        pairs.extend(((compute, erase), (erase, compute)))
+    for gate, ports in (("x", ("q",)), ("cx", ("ctrl", "target"))):
+        function = bit_gate_function(
+            gate,
+            tuple(Register(port, quantum_bit_type()) for port in ports),
+            CircuitIR(len(ports), (Instruction(gate, tuple(range(len(ports)))),)),
+        )
+        primitive = ProgramRecord((function,))
+        pairs.append((primitive, primitive))
+    return adjoint_component_calls(record, tuple(pairs))
