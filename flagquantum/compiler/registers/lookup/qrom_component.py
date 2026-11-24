@@ -21,13 +21,17 @@ from .qrom_table import QromTable
 from .source_qrom import _uniform
 
 
-def qrom_program(table: QromTable) -> ProgramRecord:
+def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> ProgramRecord:
     """XOR row-major data into dirty THRU targets with source predicate lifetimes.
 
     Selection words are MSB-first and target arrays retain row-major order.
     Unknown data remains a bodyless declaration. Concrete lookup owns and
     measurement-erases all predicate work, while target storage remains live.
+    reserve_workspace retains each loop's source-ordered scratch storage,
+    including clean slots whose last predicate has already been erased.
     """
+    if type(reserve_workspace) is not bool:
+        raise ValueError("QROM workspace reservation must be boolean")
     if table.datasets is None:
         return ProgramRecord(
             (FunctionRecord("main", (), registers=tuple(table.signature)),)
@@ -147,6 +151,7 @@ def qrom_program(table: QromTable) -> ProgramRecord:
             leaf,
             control=active,
             break_early=folded,
+            reserve_workspace=reserve_workspace,
         )
         return active
 

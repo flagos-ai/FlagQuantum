@@ -55,6 +55,28 @@ def and_component_program(
     return _namespace_helpers(builder.finalize(outputs), name)
 
 
+def _and_storage_program(
+    values: tuple[int, int], *, name: str, uncompute: bool
+) -> ProgramRecord:
+    """Apply the shared And body to an already-owned clean target slot.
+
+    The caller retains the storage lease across exact measurement erasure.
+    This models a source generator's preallocated traversal scratch.
+    """
+    registers = (
+        Register("ctrl", quantum_bit_type(), (2,)),
+        Register("target", quantum_bit_type()),
+    )
+    gates = multi_and_ir(
+        (0, 1),
+        values,
+        (2,),
+        classical_bits=(0,) if uncompute else (),
+        uncompute=uncompute,
+    )
+    return ProgramRecord((bit_gate_function(name, registers, CircuitIR(3, gates)),))
+
+
 def conjunction_declaration(
     count: int, *, name: str = "conjunction", uncompute: bool = False
 ) -> ProgramRecord:

@@ -17,7 +17,7 @@ from ....core.ir.program.registers import Register
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from ..lookup.unary_iteration import _walk_bounded_unary_tree, unary_iteration_workspace
-from .conjunction_program import and_component_program
+from .conjunction_program import _and_storage_program, and_component_program
 
 
 def append_bounded_unary_calls(
@@ -29,6 +29,7 @@ def append_bounded_unary_calls(
     control: RegisterBinding | None = None,
     lower: int = 0,
     break_early: Callable[[int, int], bool] | None = None,
+    reserve_workspace: bool = False,
 ) -> tuple[tuple[RegisterBinding, ...], RegisterBinding | None]:
     """Append a forward typed traversal and return successor selector/control bits.
 
@@ -37,7 +38,11 @@ def append_bounded_unary_calls(
     And calls allocate predicate storage in the logical graph. The Program adjoint owner
     reverses these calls using exact caller-supplied And and leaf adjoints.
     All supplied bindings are one-bit quantum elements from the same builder.
+    reserve_workspace retains the source generator's ordered scratch word for
+    the whole loop; erased target slots stay owned until that loop returns.
     """
+    if type(reserve_workspace) is not bool:
+        raise ValueError("Unary workspace reservation must be boolean")
     if not selection:
         raise ValueError("Bounded unary calls require a nonempty selector")
     count = len(selection)
@@ -47,6 +52,11 @@ def append_bounded_unary_calls(
         bindings[count] = control
     start = count + int(control is not None)
     work_ids = tuple(range(start, start + unary_iteration_workspace(count, control_id)))
+    storage = (
+        builder.allocate(len(work_ids)) if reserve_workspace and work_ids else None
+    )
+    if storage is not None:
+        bindings.update(zip(work_ids, builder.split(storage), strict=True))
 
     def emit_gate(gate: Instruction) -> None:
         size = len(gate.wires)
@@ -71,16 +81,21 @@ def append_bounded_unary_calls(
         left: int, right: int, target: int, values: tuple[int, int], erase: bool
     ) -> None:
         name = f"__fq_unary_and_{values[0]}{values[1]}" + ("_dg" if erase else "")
-        program = and_component_program(values, name=name, uncompute=erase)
+        program = (
+            _and_storage_program(values, name=name + "_storage", uncompute=erase)
+            if reserve_workspace
+            else and_component_program(values, name=name, uncompute=erase)
+        )
+        entry = program.functions[0].name
         arguments: dict[str, object] = {
             "ctrl": np.array([bindings[left], bindings[right]], dtype=object)
         }
-        if erase:
+        if erase or reserve_workspace:
             arguments["target"] = bindings[target]
-        outputs = builder.call_program(program, arguments, entry=name)
+        outputs = builder.call_program(program, arguments, entry=entry)
         controls = np.asarray(outputs["ctrl"])
         bindings[left], bindings[right] = controls[0], controls[1]
-        if erase:
+        if erase and not reserve_workspace:
             del bindings[target]
         else:
             output = outputs["target"]
@@ -101,6 +116,22 @@ def append_bounded_unary_calls(
         lower=lower,
         break_early=break_early,
     )
+    if storage is not None:
+        # Return one ordered loop frame before releasing its scratch. These
+        # existing storage views couple SSA successors without a quantum gate,
+        # preventing physical scheduling from freeing erased slots before a
+        # later nested leaf completes on the loop's selector/control outputs.
+        frame_ids = (
+            *range(count),
+            *((control_id,) if control_id is not None else ()),
+            *work_ids,
+        )
+        frame = builder.join([bindings[index] for index in frame_ids])
+        bindings.update(zip(frame_ids, builder.split(frame), strict=True))
+        restored = builder.join(
+            [bindings[index] for index in work_ids], storage.register.dtype
+        )
+        builder.free(restored)
     return tuple(bindings[index] for index in range(count)), (
         bindings.get(control_id) if control_id is not None else None
     )
