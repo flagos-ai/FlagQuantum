@@ -60,6 +60,21 @@ def _table(
     return QromTable(tuple(values.shape), (width, width), (precision,), ((),))
 
 
+def _sqrt_angle(value: ResolvedArgument) -> float:
+    """Preserve the source sqrt then arccos order and default Ry precision."""
+    import numpy as np
+
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise SerializationError(
+            "Uniform square-root entries require a real numeric value"
+        )
+    if not 0 <= value <= 1:
+        raise SerializationError(
+            "Uniform square-root entry must be finite and in [0,1]"
+        )
+    return float(2 * np.arccos(np.sqrt(value)))
+
+
 def sparse_matrix_library_factories(
     *,
     index_context: IndexContext | None = None,
@@ -70,6 +85,7 @@ def sparse_matrix_library_factories(
     return sparse_matrix_factories(
         entry_angle=_angle,
         entry_table=_table,
+        sqrt_entry_angle=_sqrt_angle,
         index_context=index_context,
         entry_context=entry_context,
         adjoint_factory=adjoint_factory,
