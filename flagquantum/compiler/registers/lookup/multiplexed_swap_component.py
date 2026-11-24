@@ -4,21 +4,19 @@
 
 """Retain bounded unary traversal and exact word-exchange child calls."""
 
-from itertools import product
 from math import prod
 
 import numpy as np
 
-from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_types import quantum_bit_type
-from ....core.ir.program.registers import Register
 from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_gate_function import bit_gate_function
 from ..control.conjunction_program import and_component_program, conjunction_program
-from ..control.unary_component_calls import append_bounded_unary_calls
+from ..control.unary_component_calls import (
+    append_bounded_unary_calls,
+    bounded_unary_adjoint_pairs,
+)
 from ..primitives.controlled_swap_component import controlled_swap_program
 from .multiplexed_swap import MultiplexedSwapLayout
 
@@ -140,22 +138,9 @@ def multiplexed_swap_program(
     )
     if not adjoint:
         return record
-    pairs = [(child, child)]
-    for left, right in product((0, 1), repeat=2):
-        control_values = (left, right)
-        compute = and_component_program(control_values, name="compute")
-        erase = and_component_program(control_values, name="erase", uncompute=True)
-        pairs.extend(((compute, erase), (erase, compute)))
+    pairs = [(child, child), *bounded_unary_adjoint_pairs()]
     if count > 2:
         compute = conjunction_program((1,) * count, name="compute")
         erase = conjunction_program((1,) * count, name="erase", uncompute=True)
         pairs.extend(((compute, erase), (erase, compute)))
-    for gate, ports in (("x", ("q",)), ("cx", ("ctrl", "target"))):
-        function = bit_gate_function(
-            gate,
-            tuple(Register(port, quantum_bit_type()) for port in ports),
-            CircuitIR(len(ports), (Instruction(gate, tuple(range(len(ports)))),)),
-        )
-        primitive = ProgramRecord((function,))
-        pairs.append((primitive, primitive))
     return adjoint_component_calls(record, tuple(pairs))

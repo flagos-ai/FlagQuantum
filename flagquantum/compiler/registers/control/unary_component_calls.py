@@ -20,6 +20,25 @@ from ..lookup.unary_iteration import _walk_bounded_unary_tree, unary_iteration_w
 from .conjunction_program import _and_storage_program, and_component_program
 
 
+def bounded_unary_adjoint_pairs() -> tuple[tuple[ProgramRecord, ProgramRecord], ...]:
+    """Own exact compute/erase and involutory primitive pairs for typed loops."""
+    pairs: list[tuple[ProgramRecord, ProgramRecord]] = []
+    for left in (0, 1):
+        for right in (0, 1):
+            compute = and_component_program((left, right), name="compute")
+            erase = and_component_program((left, right), name="erase", uncompute=True)
+            pairs.extend(((compute, erase), (erase, compute)))
+    for gate, ports in (("x", ("q",)), ("cx", ("ctrl", "target"))):
+        function = bit_gate_function(
+            gate,
+            tuple(Register(port, quantum_bit_type()) for port in ports),
+            CircuitIR(len(ports), (Instruction(gate, tuple(range(len(ports)))),)),
+        )
+        primitive = ProgramRecord((function,))
+        pairs.append((primitive, primitive))
+    return tuple(pairs)
+
+
 def append_bounded_unary_calls(
     builder: ComponentProgramBuilder,
     selection: tuple[RegisterBinding, ...],
