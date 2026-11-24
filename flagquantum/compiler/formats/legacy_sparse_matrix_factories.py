@@ -7,6 +7,7 @@
 from collections.abc import Callable, Mapping
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
@@ -15,15 +16,21 @@ from ..registers.arithmetic.sparse_index_component import (
     banded_index_program,
     top_left_index_program,
 )
+from ..registers.component_control import ControlAdder, _stored_control_adder
 from ..registers.lookup.matrix_entry_component import (
     explicit_entry_program,
     uniform_entry_program,
 )
 from ..registers.lookup.qrom_table import QromTable
+from ..registers.preparation.hermitian_sparse_matrix_component import (
+    hermitian_sparse_matrix_component_program,
+)
 from ..registers.preparation.sparse_matrix_component import (
     sparse_matrix_component_program,
 )
+from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
+from .legacy_controlled_factories import controlled_via_and_factories
 from .legacy_modular_addition_factories import _integer
 from .legacy_rotation_factories import _real_argument
 from .legacy_word_factories import _rename_program
@@ -41,6 +48,7 @@ def sparse_matrix_factories(
     *,
     entry_angle: EntryAngle,
     entry_table: EntryTable,
+    sqrt_entry_angle: EntryAngle | None = None,
     index_context: IndexContext | None = None,
     entry_context: EntryContext | None = None,
     adjoint_factory: ComponentFactory | None = None,
@@ -53,6 +61,7 @@ def sparse_matrix_factories(
     recipes: dict[FunctionRecord, tuple[_Directional, bool]] = {}
     indices: dict[FunctionRecord, tuple[SymbolicInt, SymbolicInt, ExactPair]] = {}
     entries: dict[FunctionRecord, tuple[SymbolicInt, ExactPair]] = {}
+    positive_builders: dict[FunctionRecord, _Directional] = {}
 
     def make(
         name: str,
@@ -78,9 +87,10 @@ def sparse_matrix_factories(
             "SymmetricBandedRowColumnOracle": {"bandsize"},
             "UniformEntryOracle": {"entry"},
             "ExplicitEntryOracle": {"data", "entry_bitsize"},
+            "UniformSqrtEntryOracle": {"entry", "eps"},
         }
         allowed = {"system_bitsize", *fields[kind]}
-        required = allowed - {"_num_nonzero"}
+        required = allowed - {"_num_nonzero", "eps"}
         if not required <= arguments.keys() or arguments.keys() - allowed:
             raise SerializationError("Invalid sparse oracle constructor arguments")
         width = _integer(arguments, "system_bitsize")
@@ -121,8 +131,16 @@ def sparse_matrix_factories(
                 (record, band_build(True)),
             )
             return record
-        if kind == "UniformEntryOracle":
-            angle = entry_angle(arguments["entry"])
+        if kind in ("UniformEntryOracle", "UniformSqrtEntryOracle"):
+            convert = entry_angle
+            if kind == "UniformSqrtEntryOracle":
+                if sqrt_entry_angle is None:
+                    raise SerializationError(
+                        "Missing square-root entry payload converter"
+                    )
+                convert = sqrt_entry_angle
+                _real_argument({"eps": arguments.get("eps", 1e-11)}, "eps")
+            angle = convert(arguments["entry"])
 
             def entry_build(direction: bool) -> ProgramRecord:
                 return uniform_entry_program(width, angle, adjoint=direction)
@@ -137,6 +155,64 @@ def sparse_matrix_factories(
 
         record = make(name, registers, entry_build)
         entries[record.functions[0]] = width, (record, entry_build(True))
+        return record
+
+    def index_owner(
+        child: FunctionRecord,
+    ) -> tuple[SymbolicInt, SymbolicInt, ExactPair]:
+        if child in indices:
+            return indices[child]
+        if index_context is not None:
+            return index_context(child)
+        raise SerializationError("Missing exact native sparse index context")
+
+    def entry_owner(child: FunctionRecord) -> tuple[SymbolicInt, ExactPair]:
+        if child in entries:
+            return entries[child]
+        if entry_context is not None:
+            return entry_context(child)
+        raise SerializationError("Missing exact native sparse entry context")
+
+    def hermitian(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> ProgramRecord:
+        if arguments.keys() != {"col_oracle", "entry_oracle", "eps"}:
+            raise SerializationError(
+                "Hermitian sparse matrix requires column, entry and eps"
+            )
+        _real_argument(arguments, "eps")
+        column, entry = arguments["col_oracle"], arguments["entry_oracle"]
+        if not isinstance(column, FunctionRecord) or not isinstance(
+            entry, FunctionRecord
+        ):
+            raise SerializationError(
+                "Hermitian sparse matrix requires native oracle functions"
+            )
+        width, sparsity, column_pair = index_owner(column)
+        entry_width, entry_pair = entry_owner(entry)
+        if width != entry_width:
+            raise SerializationError("Column and entry oracles must have same bitsize")
+
+        def build(direction: bool) -> ProgramRecord:
+            return hermitian_sparse_matrix_component_program(
+                width, sparsity, column_pair, entry_pair, adjoint=direction
+            )
+
+        record = make(name, registers, build)
+
+        def positive_build(direction: bool) -> ProgramRecord:
+            return hermitian_sparse_matrix_component_program(
+                width,
+                sparsity,
+                column_pair,
+                entry_pair,
+                controlled=True,
+                adjoint=direction,
+            )
+
+        positive_builders[record.functions[0]] = positive_build
         return record
 
     def matrix(
@@ -161,23 +237,9 @@ def sparse_matrix_factories(
                 "Sparse matrix requires resolved native oracle functions"
             )
 
-        def index_owner(
-            child: FunctionRecord,
-        ) -> tuple[SymbolicInt, SymbolicInt, ExactPair]:
-            if child in indices:
-                return indices[child]
-            if index_context is not None:
-                return index_context(child)
-            raise SerializationError("Missing exact native sparse index context")
-
         row_width, row_sparse, row_pair = index_owner(row)
         column_width, column_sparse, column_pair = index_owner(column)
-        if entry in entries:
-            entry_width, entry_pair = entries[entry]
-        elif entry_context is not None:
-            entry_width, entry_pair = entry_context(entry)
-        else:
-            raise SerializationError("Missing exact native sparse entry context")
+        entry_width, entry_pair = entry_owner(entry)
         if row_width != column_width or row_width != entry_width:
             raise SerializationError(
                 "Row, column, and entry oracles must have same bitsize"
@@ -211,7 +273,13 @@ def sparse_matrix_factories(
             and child in recipes
         ):
             build, direction = recipes[child]
-            return make(name, registers, build, not direction)
+            record = make(name, registers, build, not direction)
+            if child in positive_builders:
+                original = positive_builders[child]
+                positive_builders[record.functions[0]] = lambda reverse: original(
+                    not reverse
+                )
+            return record
         if adjoint_factory is not None:
             return adjoint_factory(name, registers, arguments)
         raise SerializationError("Missing exact sparse component adjoint context")
@@ -226,7 +294,46 @@ def sparse_matrix_factories(
 
         return factory
 
+    def positive(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:
+        if child not in positive_builders:
+            raise SerializationError(
+                "Missing exact Hermitian sparse positive-control owner"
+            )
+        record = _rename_program(
+            positive_builders[child](False), child.name + "_positive"
+        )
+        return record, _stored_control_adder(record.functions[0])
+
+    def controlled(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> ProgramRecord:
+        child, spec = arguments.get("subbloq"), arguments.get("ctrl_spec")
+        if arguments.keys() != {"subbloq", "ctrl_spec"} or not isinstance(
+            child, FunctionRecord
+        ):
+            raise SerializationError(
+                "Controlled sparse matrix requires child and control specification"
+            )
+        if not isinstance(spec, ControlSpecification) or len(spec.clauses) != 1:
+            raise SerializationError(
+                "Controlled sparse matrix requires one positive scalar QBit"
+            )
+        dtype, values = spec.clauses[0]
+        if dtype != quantum_bit_type() or values.shape or int(values) != 1:
+            raise SerializationError(
+                "Controlled sparse matrix requires one positive scalar QBit"
+            )
+        if child not in positive_builders:
+            raise SerializationError(
+                "Missing exact Hermitian sparse positive-control owner"
+            )
+        return make(name, registers, positive_builders[child])
+
     return {
+        **controlled_via_and_factories(control_system=positive),
+        "qualtran._infra.controlled.Controlled": controlled,
         **{
             _PREFIX + kind: bind(kind)
             for kind in (
@@ -237,5 +344,9 @@ def sparse_matrix_factories(
             )
         },
         _PREFIX + "SparseMatrix": matrix,
+        "qualtran.bloqs.block_encoding.sparse_matrix_hermitian.UniformSqrtEntryOracle": bind(
+            "UniformSqrtEntryOracle"
+        ),
+        "qualtran.bloqs.block_encoding.sparse_matrix_hermitian.SparseMatrixHermitian": hermitian,
         "qualtran._infra.adjoint.Adjoint": adjoint,
     }
