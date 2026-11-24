@@ -1,5 +1,12 @@
 # Hermitian sparse matrix block encoding source files
 
+The native constructor and typed-call extension is documented in
+[the constructor audit](RESOLVER_HERMITIAN_SPARSE_MATRIX_AUDIT.md).
+It retains the source epsilon omission in the Ry child and distinguishes the
+return-self adjoint from an explicitly constructed generic Adjoint. Earlier
+callback and padded primitive evidence below remains applicable to its stated
+execution boundary.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 The frozen files under `qualtran/bloqs/block_encoding/` are Apache-2.0,
