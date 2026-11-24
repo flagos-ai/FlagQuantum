@@ -1,5 +1,11 @@
 # General sparse matrix block encoding source files
 
+The shared typed root, scoped constructor and numerical payload paths are
+documented in [the constructor audit](RESOLVER_SPARSE_MATRIX_AUDIT.md). Existing
+Algorithms execution receipts below retain their scope; symbolic-bound storage,
+original private-field loss and original resolver/codec failures are separately
+recorded in that audit.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 The frozen files under `qualtran/bloqs/block_encoding/` are Apache-2.0,
