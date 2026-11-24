@@ -37,3 +37,10 @@ flag/location split, source Swap and caller-owned inputs. Child owners retain
 private work. Existing Algorithms sparse signature consumers delegate here.
 Run `tests/unit/test_sparse_matrix_component.py` for constructor replacement,
 all original examples, source-free append, complex operators and small histories.
+
+`hermitian_sparse_matrix_component.py` owns the explicit a/location/b Partition,
+six unconditional Always calls and two swaps, with exact child-pair cleanup.
+Positive control changes only the swaps. Source return-self adjoints remain
+distinct from generic exact call reversal. The existing Algorithms signature
+helpers delegate here. See `test_hermitian_sparse_matrix_component.py` for
+constructor, recursive call, full complex operator and raw-history evidence.
