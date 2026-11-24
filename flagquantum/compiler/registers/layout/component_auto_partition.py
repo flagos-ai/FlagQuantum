@@ -12,7 +12,6 @@ from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import ssum
 from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_graph import _call_entry
 from .auto_partition import AutoPartition
 from .component_partition import partition_component_program, partition_signature
 
@@ -72,21 +71,21 @@ def auto_partition_component_program(
     ports and consumes the packed inputs. The existing layout owns validation
     of names and unused slices. Only concrete admitted quantum types enter
     physical binding. Symbolic-width partitions remain typed declarations in
-    the stored call graph. A bodyless child retains its typed declaration.
+    the stored call graph. Primitive typed bodies are retained without requiring a call decomposition.
+    A bodyless child retains its typed declaration.
     Invalid layouts, output sets and entry/name
     collisions raise ValueError. The partitions add no primitive gates or work.
     """
     child = next(
         (function for function in record.functions if function.name == entry), None
     )
-    if child is None or child.blocks:
-        child = _call_entry(record, entry)
-    elif (
-        verify_program_record(record)
+    if (
+        child is None
+        or verify_program_record(record)
         or record.physical_context is not None
         or child.registers is None
     ):
-        raise ValueError("AutoPartition requires a valid typed component declaration")
+        raise ValueError("AutoPartition requires a valid typed component entry")
     assert child.registers is not None
     signature = Signature(child.registers)
     public = auto_partition_signature(signature, layout, packed_ports=packed_ports)

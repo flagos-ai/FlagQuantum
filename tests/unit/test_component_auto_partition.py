@@ -120,7 +120,9 @@ def test_original_swap_layouts_preserve_every_amplitude_and_resource(
     )
     measurements = len(work) * width
 
-    def leaf(bloq, inputs, desired):
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
         partition = source_partition_leaf(bloq, inputs, desired)
         if partition is not None:
             return partition
@@ -196,11 +198,11 @@ def test_original_swap_layouts_preserve_every_amplitude_and_resource(
     amplitudes /= amplitudes.norm()
     destinations = []
     for index in range(1 << offset):
-        values = {
+        basis_inputs = {
             name: (index >> (offset - wires[-1] - 1)) & ((1 << len(wires)) - 1)
             for name, wires in packed.items()
         }
-        output = source.call_classically(**values)
+        output = source.call_classically(**basis_inputs)
         destination = 0
         for word, wires in zip(output, packed.values(), strict=True):
             destination = (destination << len(wires)) | int(word)
@@ -593,3 +595,43 @@ def test_partition_helper_names_avoid_existing_definitions() -> None:
     module = auto_partition_component_program(record, AutoPartition(LAYOUTS[0]))
     assert verify_program_record(module) == ()
     assert any(f.name == "__fq_partition_1_split0" for f in module.functions)
+
+
+def test_atomic_typed_child_keeps_source_partition_calls_and_entangled_bystander() -> (
+    None
+):
+    """AutoPartition can call an existing typed primitive without inventing a graph."""
+    from qualtran.bloqs.basic_gates import CNOT
+
+    from flagquantum.compiler.registers.component_gate_function import bit_gate_function
+    from flagquantum.core.ir import CircuitIR, Instruction
+    from flagquantum.core.ir.program import ProgramRecord
+    from flagquantum.core.ir.program.register_types import quantum_bit_type
+    from flagquantum.core.ir.program.registers import Register
+    from tests.unit.test_multiplexed_source_binding import logical_operator
+
+    bit = quantum_bit_type()
+    child = ProgramRecord(
+        (
+            bit_gate_function(
+                "cx",
+                (Register("ctrl", bit), Register("target", bit)),
+                CircuitIR(2, (Instruction("cx", (0, 1)),)),
+            ),
+        )
+    )
+    layout = AutoPartition((("packed", (("ctrl", 1), ("target", 1), (None, 1))),))
+    module = auto_partition_component_program(child, layout, entry="cx")
+    expected = source_partition(CNOT(), layout)
+    assert _native_trace(module, "packed") == _source_trace(
+        _source(Signature(())), expected.decompose_bloq()
+    )
+    bound = bind_register_program(module, ((0, 1, 2),), entry="packed")
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, 3),
+        torch.as_tensor(expected.tensor_contract(), dtype=torch.complex128),
+        atol=8e-12,
+        rtol=0,
+    )
+    assert not bound.events
+    assert bound.circuit.instructions == (Instruction("cx", (0, 1)),)
