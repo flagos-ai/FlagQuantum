@@ -148,7 +148,7 @@ class PhaseBlockEncoding:
             bystander_qubits=ports,
         )
         child = CostCall(positive_child)
-        calls = (child, scalar) if adjoint else (scalar, child)
+        calls = (child, scalar)
         return controlled_component_cost(
             ComponentCost("PhaseBlockEncoding", ports + 1, calls=calls),
             registers,
@@ -208,7 +208,9 @@ class PhaseBlockEncoding:
                 required,
                 {predicate, *payload, *workspace},
             )
-            return (*child, *scalar) if adjoint else (*scalar, *child)
+            # The original Controlled visitor visits the block before the
+            # disconnected scalar, also when controlling Phase.adjoint().
+            return (*child, *scalar)
 
         gates = controlled_component_ir(
             controls, control_registers, emit, control_workspace, control_classical_bits

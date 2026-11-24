@@ -433,8 +433,17 @@ def test_generic_control_phase_tensor_branches_and_model(
     )
     instructions = DynamicCircuit(total).append(operation).to_ir().instructions
     core = tuple(g for g in instructions if g.name in ("ch", "phase"))
-    assert [g.name for g in core] == (["ch", "phase"] if adjoint else ["phase", "ch"])
-    gate = core[-1 if adjoint else 0]
+    from qualtran.bloqs.basic_gates import ZPowGate
+
+    positive = source.controlled(CtrlSpec())
+    if adjoint:
+        positive = positive.adjoint()
+    source_order = [
+        "phase" if isinstance(instance.bloq, ZPowGate) else "ch"
+        for instance, _, _ in positive.decompose_bloq().iter_bloqsoqs()
+    ]
+    assert [g.name for g in core] == source_order
+    gate = next(gate for gate in core if gate.name == "phase")
     assert gate.wires == (predicate,)
     assert gate.params["theta"] == (-phi if adjoint else phi) * pi
     assert sum(g.name == "measure" for g in instructions) == len(work)
