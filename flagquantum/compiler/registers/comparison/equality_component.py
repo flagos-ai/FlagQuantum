@@ -12,16 +12,21 @@ from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..bits.bitwise_component import bitwise_word_program
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from ..control.multi_control_component import multi_control_x_program
 
 
-def equality_constant_program(width: int, value: int) -> ProgramRecord:
+def equality_constant_program(
+    width: int, value: int, *, adjoint: bool = False
+) -> ProgramRecord:
     """XOR equality into a dirty QBit, preserving the MSB-first unsigned input.
 
     The control component owns its clean predicate work and measurement erasure.
     Invalid widths or constants outside the represented domain raise ValueError.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Equality direction must be boolean")
     if (
         type(width) is not int
         or width < 1
@@ -41,9 +46,10 @@ def equality_constant_program(width: int, value: int) -> ProgramRecord:
     result = builder.call_program(
         child, {"controls": builder.split(word), "target": builder.inputs["target"]}
     )
-    return builder.finalize(
+    record = builder.finalize(
         {"x": builder.join(result["controls"], dtype), "target": result["target"]}
     )
+    return adjoint_component_calls(record, ((child, child),)) if adjoint else record
 
 
 def equality_program(dtype: RegisterType) -> ProgramRecord:
