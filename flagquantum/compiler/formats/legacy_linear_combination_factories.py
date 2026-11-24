@@ -14,6 +14,10 @@ from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...errors import SerializationError
 from ..registers.component_control import ControlAdder, _stored_control_adder
+from ..registers.control.specialized_component_control import (
+    multi_controlled_component_pair,
+    specialized_component_control_system,
+)
 from ..registers.preparation.linear_combination_component import (
     linear_combination_component_program,
 )
@@ -21,6 +25,7 @@ from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_controlled_factories import controlled_via_and_factories
 from .legacy_modular_addition_factories import _integer
+from .legacy_multi_control_factories import _literal_values
 from .legacy_word_factories import _rename_program
 
 ExactPair = tuple[ProgramRecord, ProgramRecord]
@@ -77,6 +82,9 @@ def linear_combination_factories(
     bindings = dict(contexts)
     recipes: dict[FunctionRecord, tuple[LinearCombinationContext, bool]] = {}
     controls: dict[FunctionRecord, tuple[FunctionRecord, ControlSpecification]] = {}
+    specialized: dict[
+        FunctionRecord, tuple[FunctionRecord, tuple[int, ...], str, bool]
+    ] = {}
 
     def make(
         name: str,
@@ -125,6 +133,15 @@ def linear_combination_factories(
         if (
             arguments.keys() == {"subbloq"}
             and isinstance(child, FunctionRecord)
+            and child in specialized
+        ):
+            original, values, control_name, inverse = specialized[child]
+            return make_specialized(
+                name, registers, original, values, control_name, not inverse
+            )
+        if (
+            arguments.keys() == {"subbloq"}
+            and isinstance(child, FunctionRecord)
             and child in recipes
         ):
             context, inverse = recipes[child]
@@ -151,14 +168,21 @@ def linear_combination_factories(
         )
 
     def positive(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:
-        if child not in recipes or positive_context is None:
+        if child not in recipes:
             raise SerializationError(
                 "Missing explicit positive linear-combination context"
             )
         context, inverse = recipes[child]
         if context.controlled:
+            record = _rename_program(
+                context.program(adjoint=inverse), child.name + "_positive"
+            )
+            return specialized_component_control_system(
+                record, "ctrl", 1, 1, entry=record.functions[0].name
+            )
+        if positive_context is None:
             raise SerializationError(
-                "Existing controlled LCU needs its specialized extension owner"
+                "Missing explicit positive linear-combination context"
             )
         selected = positive_context(context)
         if not selected.controlled or tuple(selected.signature)[1:] != tuple(
@@ -199,8 +223,61 @@ def linear_combination_factories(
         controls[function] = child, spec
         return result
 
+    def make_specialized(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        child: FunctionRecord,
+        values: tuple[int, ...],
+        control_name: str,
+        inverse: bool,
+    ) -> ProgramRecord:
+        if child not in recipes:
+            raise SerializationError(
+                "Missing specialized linear-combination child context"
+            )
+        context, child_inverse = recipes[child]
+        if not context.controlled or control_name != "ctrl":
+            raise SerializationError(
+                "Specialized LCU requires its existing positive ctrl port"
+            )
+        pair = multi_controlled_component_pair(
+            context.program(adjoint=child_inverse),
+            context.program(adjoint=not child_inverse),
+            control_name,
+            values,
+        )
+        record = pair[int(inverse)]
+        if registers is not None and registers != record.functions[0].registers:
+            raise SerializationError("Invalid specialized linear-combination signature")
+        result = _rename_program(record, name)
+        specialized[result.functions[0]] = child, values, control_name, inverse
+        return result
+
+    def specialize(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> ProgramRecord:
+        child = arguments.get("ctrl_bloq")
+        control_name = arguments.get("ctrl_reg_name")
+        if (
+            arguments.keys() != {"ctrl_bloq", "ctrl_reg_name", "cvs"}
+            or not isinstance(child, FunctionRecord)
+            or not isinstance(control_name, str)
+        ):
+            raise SerializationError("Invalid specialized linear-combination arguments")
+        return make_specialized(
+            name,
+            registers,
+            child,
+            _literal_values(arguments["cvs"]),
+            control_name,
+            False,
+        )
+
     return {
         "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": forward,
         "qualtran._infra.adjoint.Adjoint": adjoint,
         "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": controlled,
+        "qualtran.bloqs.mcmt.specialized_ctrl._MultiControlledFromSinglyControlled": specialize,
     }
