@@ -4,6 +4,11 @@ These are dependencies of the still-open complete `block_encoding/linear_combina
 batch. They do not close the LinearCombination constructor or increment its
 constructor catalogue acceptance.
 
+The subsequent default native PREPARE/SELECT and complete example evidence is
+recorded in [the default oracle audit](DEFAULT_LINEAR_COMBINATION_ORACLES_AUDIT.md).
+The remaining default assembly obligations below describe this dependency's
+earlier acceptance boundary; that audit records their current disposition.
+
 ## Ownership and interface
 
 `registers/control/indexed_selection_component.py` owns typed row-major
