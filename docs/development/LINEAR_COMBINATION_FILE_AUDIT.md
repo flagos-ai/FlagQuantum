@@ -1,5 +1,12 @@
 # Linear combination source files
 
+The later [typed root audit](TYPED_LINEAR_COMBINATION_AUDIT.md) separates native
+Program composition from the earlier Algorithm acceptance below. The shared
+root is available, but complete constructor closure remains open under Q-0876:
+the original producer drops private payloads and signed Phase storage still
+awaits its approved contract. Earlier callback evidence does not close those
+constructor gaps.
+
 Reference: Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 The frozen files under `qualtran/bloqs/block_encoding/` are Apache-2.0,
