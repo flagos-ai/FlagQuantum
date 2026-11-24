@@ -22,3 +22,11 @@ uniform source calls and explicit exact adjoints. The shared comparison and
 conjunction owners retain their own cleanup. Stored multi-control Hadamards use
 source predicate work. Run `tests/unit/test_uniform_preparation_component.py`
 for complete source graphs, small complex operators and raw measurement histories.
+
+`block_encoding_component` owns typed SELECT-only and LCU call composition and
+their shared signatures. It accepts native oracle Programs, exact inverse pairs
+and source control adders; it does not discover external SDK children. RIGHT
+preparation junk remains private until unpreparation. Existing Algorithms
+signature consumers delegate here. For the shortest replacement scenario, run
+`tests/unit/test_legacy_block_encoding_factories.py`: substitute native PREPARE
+and SELECT owners, resolve, bind and append without changing the consumer.

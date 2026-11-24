@@ -13,6 +13,9 @@ from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, partition_register
+from ...compiler.registers.preparation.block_encoding_component import (
+    select_block_signature,
+)
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
@@ -35,7 +38,7 @@ def source_select_block_signature(
     selection: tuple[Register, ...], target: tuple[Register, ...]
 ) -> Signature:
     """Expose the SELECT ports while leaving PREPARE junk in the signal state."""
-    return Signature((*selection, *target))
+    return select_block_signature(selection, target)
 
 
 @dataclass(frozen=True)

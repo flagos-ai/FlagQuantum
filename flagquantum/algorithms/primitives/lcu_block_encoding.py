@@ -11,9 +11,11 @@ from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, partition_register
+from ...compiler.registers.preparation.block_encoding_component import (
+    lcu_block_signature,
+)
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import quantum_bit_type
-from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicReal
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
@@ -32,15 +34,7 @@ def source_lcu_block_signature(
     Selection and target descriptors keep their original shape, type and
     side. The source exports only THRU junk through the conjugation.
     """
-    control = (Register("ctrl", quantum_bit_type()),) if controlled else ()
-    return Signature(
-        (
-            *control,
-            *selection,
-            *(reg for reg in junk if reg.side == RegisterSide.THRU),
-            *target,
-        )
-    )
+    return lcu_block_signature(selection, junk, target, controlled=controlled)
 
 
 @dataclass(frozen=True)
