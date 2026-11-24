@@ -1,5 +1,12 @@
 # Table lookup and selection
 
+`matrix_entry_component.py` owns uniform and QROM-driven entry call graphs.
+Numerical table conversion is supplied through the Ecosystem boundary and the
+existing Algorithms table owner. QROM owns predicate work; the entry graph
+owns its angle-word lifetime. Source controlled Ry is atomic. Run
+`tests/unit/test_sparse_matrix_component.py` for all source calls, eight-bit
+operators, raw histories and unchanged scalar precision during quantization.
+
 This package owns qROM, QROAM, selected swaps, unary traversal and measured unlookup.
 
 Core, shared Compiler facilities and the register components used by these
