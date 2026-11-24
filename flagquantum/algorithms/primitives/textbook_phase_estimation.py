@@ -9,31 +9,19 @@ from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass
 from typing import TypeVar
 
-import numpy as np
-
 from ...compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler.registers.component_builder import (
-    BindingCollection,
-    ComponentProgramBuilder,
-)
-from ...compiler.registers.component_control import control_component_program
-from ...compiler.registers.component_power import power_word_program
 from ...compiler.registers.layout.partition import partition_register
-from ...compiler.registers.phase.textbook_qft_component import textbook_qft_program
-from ...compiler.registers.primitives.circuit_binding import bind_primitive_circuit
-from ...compiler.registers.primitives.controlled_rotation_component import (
-    controlled_z_power_program,
+from ...compiler.registers.phase.phase_estimation_component import (
+    rectangular_z_phase_estimation_program,
 )
-from ...compiler.registers.primitives.pauli_rotation_component import z_power_function
+from ...compiler.registers.primitives.circuit_binding import bind_primitive_circuit
 from ...core.ir import Instruction
 from ...core.ir.program import ProgramRecord
-from ...core.ir.program.register_bindings import RegisterBinding
-from ...core.ir.program.register_types import quantum_bit_type
-from ...core.ir.program.registers import Register, RegisterSide, RegisterType
+from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
@@ -257,53 +245,9 @@ class TextbookPhaseEstimation:
 
 
 def textbook_z_phase_estimation_program(width: int, exponent: float) -> ProgramRecord:
-    """Store the source Z-power QPE example with unfused controlled powers.
-
-    q is arbitrary caller-owned target storage. qpe_reg is a newly allocated
-    MSB-first fractional output. Each controlled phase owns its measured And
-    workspace. Powers retain repeated calls, followed by the exact QFT adjoint.
-    """
+    """Store source Z-power QPE through the shared controlled-power graph owner."""
     if type(width) is not int or width < 1:
         raise ValueError("Stored phase estimation requires a positive width")
-    preparation = rectangular_window_program(width)
-    target = Register("q", quantum_bit_type())
-    phase = (preparation.functions[0].registers or ())[0]
-    builder = ComponentProgramBuilder(Signature((phase, target)))
-    word = builder.call_program(preparation, {})["qpe_reg"]
-    assert isinstance(word, RegisterBinding)
-    bits = [word] if width == 1 else builder.split(word)
-    q = builder.inputs["q"]
-    controlled = controlled_z_power_program(exponent)
-
-    def add_control(
-        owner: ComponentProgramBuilder,
-        ctrl: BindingCollection,
-        inputs: dict[str, BindingCollection],
-    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-        result = owner.call_program(
-            controlled, {"q": np.array([ctrl, inputs["q"]], dtype=object)}
-        )["q"]
-        control, data = np.asarray(result)
-        return control, (data,)
-
-    phase_function = z_power_function("unitary", exponent)
-    for index in range(width):
-        if index == 0:
-            result = builder.call_program(
-                controlled, {"q": np.array([bits[-1], q], dtype=object)}
-            )["q"]
-            bits[-1], q = np.asarray(result)
-        else:
-            power = power_word_program(phase_function, 2**index)
-            power = control_component_program(power, {"unitary": add_control})
-            values = builder.call_program(power, {"ctrl": bits[-index - 1], "q": q})
-            control = values["ctrl"]
-            assert isinstance(control, RegisterBinding)
-            bits[-index - 1], q = control, values["q"]
-    phase_word = (
-        bits[0] if width == 1 else builder.join(bits, RegisterType("uint", width))
+    return rectangular_z_phase_estimation_program(
+        rectangular_window_program(width), exponent
     )
-    output = builder.call_program(
-        textbook_qft_program(width, adjoint=True), {"q": phase_word}
-    )["q"]
-    return builder.finalize({"qpe_reg": output, "q": q})
