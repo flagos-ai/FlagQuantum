@@ -30,7 +30,10 @@ def reference_runtime() -> None:
 def test_alias_reflection_retains_signal_environment_and_restores_joint_state(
     weights: tuple[float, float],
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError:
+        pytest.skip("The locked Cirq reference environment is required")
     from qualtran import Adjoint
     from qualtran._infra.gate_with_registers import get_named_qubits
     from qualtran.bloqs.reflections.reflection_using_prepare import (
