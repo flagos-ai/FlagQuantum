@@ -172,6 +172,11 @@ def alias_preparation_factories(
                 "Missing exact alias PREPARE inverse constructor context"
             )
         signature, lookup, rows, selection, sparse, inverse = recipes[child]
+        if any(reg.name != selection for reg in signature):
+            raise SerializationError(
+                "Alias reflection requires caller-owned signal junk; "
+                "source reflection ports cannot retain that environment"
+            )
         return make(
             child.name + "_inverse",
             None,

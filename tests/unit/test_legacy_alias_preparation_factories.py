@@ -198,7 +198,7 @@ def test_original_symbolic_shape_codec_refusal_is_not_repaired(
         _library(source, 0)
 
 
-def test_original_alias_reflection_compiles_automatic_inverse_without_source_import(
+def test_original_alias_reflection_rejects_implicit_dirty_signal_release(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import sys
@@ -209,13 +209,9 @@ def test_original_alias_reflection_compiles_automatic_inverse_without_source_imp
     libraries = (_library(source, 0), _library(source, 1))
     with monkeypatch.context() as patch:
         patch.setitem(sys.modules, "qualtran", None)
-        records = tuple(
-            resolve_component_program(library, 0, alias_preparation_factories())
-            for library in libraries
-        )
-    assert verify_program_record(records[0]) == verify_program_record(records[1]) == ()
-    assert matches_component_definition(records[0], "main", records[1])
-    compare_layers(records[0], source, atomic_leaves(records[0]))
+        for library in libraries:
+            with pytest.raises(SerializationError, match="caller-owned signal junk"):
+                resolve_component_program(library, 0, alias_preparation_factories())
 
 
 @pytest.mark.parametrize("arguments", ({}, {"selection_registers": 3}, {"n": 4}))
