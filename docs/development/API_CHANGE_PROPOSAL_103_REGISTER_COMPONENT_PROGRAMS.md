@@ -2127,3 +2127,16 @@ expression and proven-real global-phase scope supersedes prerequisite 1.24's
 nonlinear refusal. The original 1.24 implementation and evidence retain their
 historical scope. Follow the separate machine contract, compatibility fixtures
 and domain implementation commits specified by Proposal 107.
+
+### Approved signed and empty fixed-point storage follow-up
+
+On 2026-11-25 the user explicitly approved Proposal 116. Canonical signed
+positive-width quantum fixed-point storage and unsigned zero-width storage now
+join the previously approved unsigned positive-width profile. Existing logical
+type validation governs canonical parameters and fractional/sign constraints.
+Concrete widths and fractional widths are still required for physical binding.
+Signed zero-width storage, symbolic storage and the existing signed/multi-bit
+fixed-point control exclusions remain outside this admission. No codec,
+arithmetic, public entry, opcode or serialized vocabulary is changed. Follow
+Proposal 116 for exact scope and acceptance; the old refusal evidence remains
+historical rather than the current approved storage contract.

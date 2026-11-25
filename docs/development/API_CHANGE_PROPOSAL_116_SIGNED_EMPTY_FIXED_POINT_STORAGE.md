@@ -2,9 +2,10 @@
 
 ## Review status
 
-Pending explicit user approval. Proposal 115 explicitly retains signed and
-zero-width fixed-point rejection. This proposal records the remaining storage
-requirements demonstrated by the complete OnEach source audit.
+Explicitly approved by the user on 2026-11-25. This proposal supersedes Proposal
+115's signed and zero-width fixed-point storage rejection in the narrow profiles
+below. Implementation and local acceptance are documented in
+`SIGNED_EMPTY_FIXED_POINT_STORAGE.md`. Signed zero-width remains separate.
 
 ## Requirement and frozen evidence
 
@@ -59,5 +60,5 @@ control refusal boundaries. Run focused and concentrated tests, local integratio
 strict typing, format, scope, architecture, IR and public API checks.
 
 Core/AGENTS.md and PUBLIC_API_PROTECTION.md require explicit approval before
-implementing this accepted-input extension. No corresponding implementation is
-included with the pending proposal.
+implementing this accepted-input extension. Approval is recorded above; the
+implementation reuses the existing shared storage validator.
