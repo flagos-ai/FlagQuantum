@@ -38,8 +38,13 @@ A width-n rectangular preparation emits exactly n H and uses n logical output
 wires, no private work, measurement or feedback. Its source model separately
 reports n Clifford and zero T. The single empty measurement history applies.
 Original zero-width rectangular allocation/OnEach graphs remain representable,
-while original tensor contraction raises ValueError. Native physical zero-bit
-fixed-point storage retains its existing refusal.
+while original tensor contraction raises ValueError. At initial acceptance,
+native physical zero-bit fixed-point storage retained its refusal. Approved
+Proposal 116 now admits the unsigned empty word; with a live borrowed carrier
+the stored zero-width Program returns that empty output and emits no gates.
+Standalone binding still requires at least one physical wire. The source/native
+H/window/T context's full operator is verified in
+[the current test acceptance](WINDOW_SOURCE_TEST_ACCEPTANCE.md).
 
 Kaiser has no original decomposition. The constructor remains a bodyless
 source declaration, with explicit physical binding refusal. Exact coefficients

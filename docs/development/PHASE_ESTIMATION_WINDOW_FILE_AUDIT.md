@@ -59,6 +59,28 @@ binding while preserving the fractional output descriptor. This does not certify
 the upstream strict type check. At width zero, the frozen tensor raises
 `ValueError: not enough values to unpack (expected 2, got 0)`.
 The native declaration and zero-count graph remain available, while physical
-binding refuses this source-unsupported body explicitly. Q-0628 remains open for
-these original test boundaries. Q-0627 closes the complete source responsibility
+the Algorithms binding refuses this standalone source-unsupported body explicitly.
+Q-0628 was initially retained for these original test boundaries. Q-0627 closes the complete source responsibility
 mapping with those boundaries recorded. No reference source was modified.
+
+## Complete original test-file closure, November 25
+
+Both original test functions and both examples now have independent observations
+under every original autotester mode. The complete n=4 tensor and numeric/symbolic
+construction, decomposition and serialization assertions retain native evidence.
+Original count checks remain UNVERIFIED with only decomposition counts. Strict
+typing remains UNVERIFIED for QFxp -> QAny. No skipped assertion becomes a pass.
+See [the complete test matrix](WINDOW_SOURCE_TEST_ACCEPTANCE.md).
+
+Approved Proposal 116 admits unsigned empty fixed-point storage. The old native
+constructor witness incorrectly expected its earlier storage rejection. A
+standalone physical circuit now reaches the existing one-physical-wire guard.
+With a live borrowed spectator, the empty RIGHT output binds and emits zero
+gates. The unmodified source H/window/T context and native append agree on their
+full two-by-two complex operator at absolute tolerance 2e-15, without phase
+alignment. Every allocation has empty storage and the spectator remains live.
+The standalone source tensor failure and Algorithms bind refusal are unchanged.
+
+Q-0628 closes its actual complete original assertions and source-protocol
+disposition. The contextual proof explains the current failure stage without
+weakening storage, phase or output assertions.
