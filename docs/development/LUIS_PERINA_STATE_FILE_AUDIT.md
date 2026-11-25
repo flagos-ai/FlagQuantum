@@ -104,3 +104,82 @@ files, Algorithms scope, architecture, multi-level IR and protected API checks
 pass. Logs use `g2-lp-state-` in the external reference workspace. Kickmix 0.1
 and its native Simulator were verified before execution. Q-0624 closes the
 complete source responsibility mapping. Q-0625 retains the boundaries above.
+
+## All original numerical widths and historical resource mode, November 25
+
+The complete original test file has nine test functions and two independent
+closed-form state helpers. The current batch fills the remaining positive-width
+numerical and historical-accounting obligations while retaining the open stored
+root and SDK-default obligations. Q-0625 remains unchecked.
+
+| Complete original assertions | Current native evidence |
+|---|---|
+| Interim and full LP autotesters | Each of the two actual examples is observed independently in all five raw protocol modes. Both make/decompose/serialize pass upstream; both default count checks FAIL and become original xfails. Interim strict typing passes; full LP strict typing is UNVERIFIED. Original statuses are preserved. Full stored LP execution still needs the approved scalar-effect contract under pending Proposal 119. |
+| Symbolic LP T complexity | Native source_t_complexity reuses the existing typed predicate and historical budget query. Full symbolic T, Clifford and rotation fields match unchanged upstream, including 4n+4 T. |
+| Quick interim/full state at n=3 | Existing full complex and exhaustive raw-branch certificates remain applicable. |
+| Slow interim tensors at n=1,3,5,7,9,11,13 | Native source-ordered interim stream, full prepared/coherent complex state and mathematical inverse now cover every original width, with no new source path or matrix fallback. |
+| Slow full LP tensors at all seven widths | Actual native append IR is evaluated by the existing test-only sparse interpreter, including a coherent spectator. Every output amplitude matches the original get_resource_state helper. Final work residual is independently bounded. |
+| Full LP historical resource equations at all seven widths | Native historical T/Clifford/rotation fields match the unchanged original and its exact 4n+4 / 26n+33 / 6n+6 formulas. |
+| Interim historical resource equations at all seven widths | Existing modern interim categories and the shared historical budget give 0 T, 3n+2 Clifford and 2n+1 rotations, exactly matching upstream. |
+
+### Why historical counting needs the typed call chain
+
+Folding an already aggregated modern LP QEC cost loses the different historical
+Clifford charge of the measured And inverse. It underestimates the original
+historical Clifford field by 2(n+1). The new source_t_complexity query retains
+the all-zero predicate's existing compute/erase resource calls until the shared
+historical query prices them. It reuses the interim owner and accounts for the
+two reflection carrier X plus final CZ/X/X and three Ry. No independent
+conjunction formula, primitive synthesis or SDK dependency is introduced.
+
+For resolved positive widths the historical fields are 4n+4 T, 26n+33 Clifford
+and 6n+6 rotations. For symbolic width, the original unspecified control values
+instead give 22n+25 Clifford; that source symbolic/concrete distinction is
+preserved. The historical query supports positive integer widths and symbolic
+declarations. Unsupported resolved widths fail explicitly. The existing modern
+QEC query and its input contract remain unchanged.
+
+At n=13 the emitted inventory has 56 T-family, 162 CX, 14 measurements and
+17 clean work wires. The independent historical model is 56 T, 371 Clifford
+and 84 rotations. The modern QEC model is 14 And, 203 Clifford, 84 rotations
+and 14 measurements. These are separate accounts, with no claim that modeled
+Cliffords equal the scan of the emitted stream.
+
+### Branch and cleanup proof at the original large widths
+
+The new state comparison retains all complex amplitudes, including an entangled
+spectator, over native output widths up to 13 and physical widths up to 31.
+It uses sparse primitive evaluation as a test diagnostic, not a production
+backend, scalability benchmark or dense-to-sparse runtime fallback. The helper
+adds literal Ry and identity handling; other supported gate semantics are
+unchanged. Dense interim execution remains independently checked.
+
+The existing erasure certificate proves every measured predicate inverse has
+the same operator with positive scalar 1/sqrt(2) in both outcomes. It proves
+branch identity, with final interference cleanup checked separately on the full
+prepared input state. Consequently the independently evaluated branch and its
+workspace residual apply to every raw history. Existing small-width tests still
+enumerate the forward and forward/reverse Cartesian histories explicitly.
+
+Across the original seven widths the maximum complete complex error is below
+2.1e-16 and work leakage probability below 2.4e-31. The acceptance bounds are
+2e-12 per amplitude and 1e-28 total work probability. Literal bitwise-zero
+assertions would reject floating-point Ry/H cancellation at about 2e-16; the
+residual is measured and recorded, not dropped from the cleanup assertion.
+The full state norm stays within 2e-15 of one.
+
+The complete unchanged original suite still reports 38 passes, one source
+strict-type skip and two source count xfails. No original failure is patched.
+The generic LP adjoint's minus sign and SDK-default opaque leaf synthesis remain
+separate open boundaries. The new numerical and resource proof does not close
+the full stored scalar-effect graph or its constructor. Receipts use
+g2-lp-full-widths-*20261125 and g2-lp-original-protocol-matrix-20261125.json.
+
+Current batch acceptance passes 387 concentrated cases, 42 LP cases on Cirq 1.6
+and 145 local integration cases. Strict typing covers all three changed Python
+files. Black, Ruff, Integration and Algorithms scope, links, language,
+architecture, IR and protected API checks pass. The existing 720 dependency
+findings are unchanged; the global dependency check is not green. The original
+41-case suite includes every slow parameter and has no deselected test. Full
+LP stored-root/scalar-effect and SDK-default boundaries still prevent Q-0625
+closure. No parent or constructor count is increased by this batch.
