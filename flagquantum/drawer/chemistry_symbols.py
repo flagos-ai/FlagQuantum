@@ -82,3 +82,16 @@ def contiguous_index_wire_symbol(
         return "Text", {"text": "", "fontsize": 10}
     label = {"mu": "μ", "nu": "ν"}.get(register.name, "⊕ν(ν-1)/2+μ")
     return "TextBox", {"text": label}
+
+
+# Source: Qualtran v0.7.0 chemistry/trotter/grid_ham/qvr.py.
+def grid_qvr_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Preserve the original grid phase root label and opaque port box."""
+    if register is None:
+        return "Text", {"text": "e^{i*phi}", "fontsize": 10}
+    suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
+    return "TextBox", {"text": register.name + suffix}
