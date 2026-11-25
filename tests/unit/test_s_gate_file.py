@@ -11,9 +11,8 @@ from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
 from flagquantum.compiler._component_trace.resource_generalization import PhaseCall
 from flagquantum.core.ir import Instruction
 from flagquantum.drawer.register_score_data import adjoint_wire_symbol
-from flagquantum.ecosystem.cirq import CirqConversionError, from_cirq, to_cirq
+from flagquantum.ecosystem.cirq import from_cirq, to_cirq
 from flagquantum.ecosystem.pennylane import (
-    PennyLaneConversionError,
     from_pennylane,
     to_pennylane,
 )
@@ -81,8 +80,13 @@ def test_original_h_s_sdagger_path_and_cirq_contract() -> None:
         rtol=0,
         atol=1e-12,
     )
-    with pytest.raises(CirqConversionError, match="unsupported_operation"):
-        to_cirq(forward.to_ir())
+    reference_on_native_wire = cirq.Circuit(reference).transform_qubits(
+        {next(iter(reference.all_qubits())): cirq.LineQubit(0)}
+    )
+    assert to_cirq(forward.to_ir()) == reference_on_native_wire
+    assert (
+        from_cirq(to_cirq(forward.to_ir())).instructions == forward.to_ir().instructions
+    )
 
 
 def test_s_pennylane_forward_adapter_matches_original() -> None:
@@ -99,5 +103,6 @@ def test_s_pennylane_forward_adapter_matches_original() -> None:
         get_unitary(forward), torch.as_tensor(qml.matrix(gate)), rtol=0, atol=1e-12
     )
     inverse = Circuit(1).append(FieldOperation(1, (Instruction("sdg", (0,)),)))
-    with pytest.raises(PennyLaneConversionError, match="unsupported_operation"):
-        to_pennylane(inverse.to_ir())
+    inverse_script = to_pennylane(inverse.to_ir())
+    assert inverse_script.operations[0] == SGate().adjoint().as_pl_op(wires=[0])
+    assert from_pennylane(inverse_script).instructions == inverse.to_ir().instructions

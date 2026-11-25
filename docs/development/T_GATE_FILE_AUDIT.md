@@ -7,8 +7,8 @@ Google LLC 2023 Apache-2.0 attribution.
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
 | Q-0262 `t_gate.ipynb` | `cbdf39584e2062b270487bdcee8e27465c44b108` | Closed by the complete native T gate tutorial. |
-| Q-0263 `t_gate.py` | `77cc66bbed4f0fcf35d2565e338075890b0889f6` | Atomic matrices, T/adjoint resources and positive external conversion verified. Adjoint external export remains open. |
-| Q-0264 `t_gate_test.py` | `3bfc107c313fc5757b4b715a493713852681e4c1` | Original suite and executable counterparts verified. Full native adapter reproduction of the original three-gate Cirq diagram remains open. |
+| Q-0263 `t_gate.py` | `77cc66bbed4f0fcf35d2565e338075890b0889f6` | Complete native source disposition, including approved Proposal 123 inverse conversion through both adapters. |
+| Q-0264 `t_gate_test.py` | `3bfc107c313fc5757b4b715a493713852681e4c1` | Original tests and full native three-gate Cirq diagram/adapter assertions covered. |
 
 The original factory owns a single QBit `q` THRU port. Forward and adjoint
 each emit one instruction, `t` and `tdg` respectively, and preserve the locked
@@ -28,8 +28,8 @@ reference test compares its full complex operator and the exact reversed
 |---|---|
 | `test_t_gate`, `test_call_graph` | The exact original factory signature and terminal count match the native signature and call graph. Both directions cost one T. |
 | `test_tensors` | The native matrices agree with the pinned tensors in both directions. The original suite verifies the Cirq matrices independently. |
-| `test_to_cirq` | Forward T round-trips through native interop. Native H/T/T-adjoint restores the entire H matrix. The bridge reports `unsupported_operation` for `tdg` under the current contract. |
-| `test_pl_interop` | Native T round-trips as the same PennyLane operation and matches its complete matrix. The adjoint export is outside the current contract. |
+| `test_to_cirq` | Full H/T/T-adjoint now round-trips as the exact ordered atoms and restores the entire H matrix. |
+| `test_pl_interop` | Native T and T-adjoint round-trip as the corresponding built-in PennyLane operations and match their complete matrices. |
 | `test_test_t_state`, `test_test_t_state_tensor_adjoint` | The native through operation and its adjoint match the original fixture and compose to the exact identity. |
 
 Both notebooks ran in independent kernels. The native kernel rejected
@@ -69,5 +69,26 @@ and original test blobs remain unchanged.
 Each direction emits exactly one phase-family primitive. Independently, the
 source QEC model declares one Clifford for S-family or one T for T-family, and
 one logical qubit. These physical and model accounts remain separate. The public
-Cirq/PennyLane inverse-export contract boundary above remains open, so this
-follow-up does not close the implementation or original-test parent inventory.
+Cirq/PennyLane inverse-export boundary was the remaining gap at that follow-up;
+Proposal 123 now closes it, completing Q-0263 and Q-0264.
+
+## Approved whole-file closure
+
+The user approved Proposal 123 on 2026-11-25. Static Cirq exports T inverse;
+static PennyLane exports the built-in one-level adjoint T, with exact `tdg`
+reimport. Full complex operators on both physical placements, spectator phases,
+source three-atom circuits, exact inverse restoration and SDK-free native append
+pass. No private work or measurement branch applies to these atomic adapters.
+One emitted T-adjoint remains separate from the original one-T resource model.
+
+The shared acceptance receipts and full two-version regression counts are in
+the approved closure section of `S_GATE_FILE_AUDIT.md`. All original definitions,
+tests and direct dependencies retain their earlier source/tensor/model/display,
+control and tutorial evidence. Unknown adjoints and controlled wrappers do not
+gain static admission. No original source, public entry or Core opcode changed.
+
+The frozen `TGate` constructor has only `is_adjoint`, with no precision field.
+Its atom costs one T; the existing controlled-owner resource comparisons also
+pass. The early ledger note about a precision-sensitive terminal does not
+describe a missing TGate parameter. Generic rotation precision remains owned
+by the separate rotation resource inventory.

@@ -6,8 +6,8 @@ Google LLC 2023 Apache-2.0 attribution.
 
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
-| Q-0253 `s_gate.py` | `6111677a1e55ccab022e988598366a0f1bdcfc94` | Native execution, tensor and resource parity verified. External S-adjoint conversion remains open under the current interop contracts. |
-| Q-0254 `s_gate_test.py` | `98ed87f00f6788bd20a54eeed8b3770e738f13a8` | Original test scenarios mapped. Full native reproduction of the original Cirq diagram through the S-adjoint adapter remains open. |
+| Q-0253 `s_gate.py` | `6111677a1e55ccab022e988598366a0f1bdcfc94` | Complete native source disposition, including approved Proposal 123 inverse conversion through both adapters. |
+| Q-0254 `s_gate_test.py` | `98ed87f00f6788bd20a54eeed8b3770e738f13a8` | Original tests and native diagram/adapter assertions covered in both directions. |
 
 Both directions have the scalar `q` THRU signature, emit one `s` or `sdg`
 instruction and preserve the source complex matrices. The adjoint toggles
@@ -21,13 +21,12 @@ histories for multi-control variants.
 |---|---|
 | `test_s_gate` | The locked factory binds to the native diagonal tutorial and executes as one atomic gate. The original harness skips decomposition, counts and decomposition-dependent dtype modes. |
 | `test_call_graph` | The native graph and the locked graph each retain one leaf and zero edges for S and S-adjoint. |
-| `test_to_cirq` | The native H-and-S prefix round-trips through the bridge as the original ordered operations. The full native H/S/S-adjoint state agrees with the original Cirq circuit. Native `sdg` export currently raises `unsupported_operation`, so exact adapter reproduction of the three-operation diagram remains open. |
-| `test_pl_interop` | The native S export produces the same PennyLane operation as the locked source, round-trips, and matches the full complex matrix. Native S-adjoint export raises `unsupported_operation`. |
+| `test_to_cirq` | The full native H/S/S-adjoint circuit now matches the source operations after mapping its single allocated virtual wire to native LineQubit zero. The complete complex state and exact native instruction roundtrip agree. |
+| `test_pl_interop` | Native S and S-adjoint produce the same PennyLane operations as the locked source, round-trip, and match the full complex matrices. |
 | `test_tensors` | Full complex S and S-adjoint matrices are checked against the locked tensors. The unchanged source suite also compares both against Cirq. |
 
-The Cirq and PennyLane contracts currently classify `sdg` as unsupported.
-The new reference tests verify that boundary explicitly. Enabling `sdg` in
-either converter needs the corresponding interop contract change.
+Proposal 123, explicitly approved on 2026-11-25, extends both static contracts
+for `sdg` and `tdg`. The earlier inverse-export gap is closed below.
 
 The unchanged source suite recorded six passes and three mode skips. The
 98-case native regression included the Cirq and PennyLane conformance paths
@@ -67,5 +66,32 @@ and original test blobs remain unchanged.
 Each direction emits exactly one phase-family primitive. Independently, the
 source QEC model declares one Clifford for S-family or one T for T-family, and
 one logical qubit. These physical and model accounts remain separate. The public
-Cirq/PennyLane inverse-export contract boundary above remains open, so this
-follow-up does not close the implementation or original-test parent inventory.
+Cirq/PennyLane inverse-export boundary was the remaining gap at that follow-up;
+the approved closure below completes the implementation and test inventories.
+
+## Approved whole-file closure
+
+Proposal 123 reuses existing Core phase atoms. Cirq exports canonical S inverse;
+PennyLane exports the built-in adjoint S. Static reimport restores `sdg`, its
+operand and exact absolute phase. No general phase substitution, extra gate,
+private work, measurement or feedback is introduced. The one-level PennyLane
+recognizer rejects arbitrary adjoints, powers, controlled wrappers and subclasses
+with the same display name. Other adapter exclusions remain unchanged.
+
+Both complete S/T families reuse the accepted source method, factory, DocSpec,
+display, tensor, resource, control-history and notebook evidence. The new adapter
+batch passes 153 cases on Cirq 1.7.0/PennyLane 0.44.1 and 153 on
+Cirq 1.6.1/PennyLane 0.45.1, plus 145 local integration cases. Fourteen execution
+and research-provider cases are intentionally outside this static batch, not
+silent skips. The unchanged S/T suites pass fourteen cases with six expected
+atomic-mode skips. The downloaded second PennyLane wheel identity is recorded.
+Strict typing covers seven touched Python files; formatting, scopes, both
+contracts, language, architecture, IR and public API checks pass. Final adapter
+and contract checks pass 26 cases on each version combination.
+
+Receipts: `g2-static-phase-1.7-0.44.1-20261125.log`,
+`g2-static-phase-1.6-0.45.1-20261125.log`,
+`g2-static-phase-original-20261125.log`,
+`g2-static-phase-quality-20261125.json` and
+`g2-static-phase-wheel-sha256-20261125.txt`. The source files are unchanged.
+Q-0253 and Q-0254 have complete-file closure evidence.

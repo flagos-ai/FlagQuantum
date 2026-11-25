@@ -10,9 +10,8 @@ from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_c
 from flagquantum.compiler._component_trace.resource_generalization import PhaseCall
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.ecosystem.cirq import CirqConversionError, from_cirq, to_cirq
+from flagquantum.ecosystem.cirq import from_cirq, to_cirq
 from flagquantum.ecosystem.pennylane import (
-    PennyLaneConversionError,
     from_pennylane,
     to_pennylane,
 )
@@ -96,7 +95,13 @@ def test_original_t_forward_bridges_and_adjoint_boundary() -> None:
     torch.testing.assert_close(
         get_unitary(full), get_unitary(Circuit(1, dtype=torch.complex128).h(0))
     )
-    with pytest.raises(CirqConversionError, match="unsupported_operation"):
-        to_cirq(full.to_ir())
-    with pytest.raises(PennyLaneConversionError, match="unsupported_operation"):
-        to_pennylane(full.to_ir())
+    assert to_cirq(full.to_ir()) == cirq.Circuit(
+        cirq.H(cirq.LineQubit(0)),
+        cirq.T(cirq.LineQubit(0)),
+        (cirq.T**-1)(cirq.LineQubit(0)),
+    )
+    assert from_cirq(to_cirq(full.to_ir())).instructions == full.to_ir().instructions
+    assert (
+        from_pennylane(to_pennylane(full.to_ir())).instructions
+        == full.to_ir().instructions
+    )
