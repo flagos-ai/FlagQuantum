@@ -23,7 +23,9 @@ integer dimension floor identity when serialization drops symbol assumptions.
 The original encoded output-width expression is retained. The one-bit native
 Program is validated against the unchanged SDK primitive path. The original
 one-bit generic Bloq conversion and qubit-count failures remain separate source
-boundaries. Generic outer Adjoint resolution remains independently open.
+boundaries. Compilation-scoped outer Adjoint resolution now uses the existing exact native
+inverse; see [the inverse constructor update](HAMMING_INVERSE_CONSTRUCTOR.md).
+The original failed generic one-bit source decomposition remains unchanged.
 
 The constructor Program and bound-instruction equality reuse full dependency,
 operand, feedback, complex spectator, small measured-history and inverse cleanup

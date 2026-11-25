@@ -1453,3 +1453,7 @@ compression-tree owners. Logical junk/output ownership, symbolic lower bounds
 and original empty-junk failures are recorded in
 ../../docs/development/RESOLVER_HAMMING_WEIGHT_AUDIT.md. The concrete bound Program
 continues through the existing circuit.append(op) entry.
+The same table now resolves outer Adjoint through compilation-scoped exact
+Hamming recipes, with an optional explicit inverse owner for unrelated children.
+Empty logical junk ownership and source failures remain distinct; see
+../../docs/development/HAMMING_INVERSE_CONSTRUCTOR.md.
