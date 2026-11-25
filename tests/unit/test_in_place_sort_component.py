@@ -1,7 +1,8 @@
 """Stored sort composes shared owners and restores coherent distinct words."""
 
 from collections import Counter
-from itertools import product
+from collections.abc import Iterator
+from itertools import permutations, product
 
 import pytest
 import torch
@@ -12,41 +13,77 @@ from flagquantum.compiler.registers.sorting.in_place_sort import in_place_sort_i
 from flagquantum.compiler.registers.sorting.in_place_sort_component import (
     in_place_sort_program,
 )
-from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import verify_program_record
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
-from tests.unit.test_in_place_sort import expected_budget, layout, samples
+from tests.unit.test_in_place_sort import expected_budget, layout, pack, samples
+from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
+
+
+def integer_samples(
+    count: int, width: int, work: int, signed: bool
+) -> Iterator[tuple[tuple[int, ...], tuple[int, ...]]]:
+    if not signed:
+        yield from samples(count, width, work)
+        return
+    limit = 1 << (width - 1)
+    rank_width = (count - 1).bit_length()
+    for words in permutations(range(-limit, limit), count):
+        ordered = tuple(sorted(words))
+        ranks = tuple(ordered.index(word) for word in words)
+        yield (
+            pack(words, (0,) * count, width, rank_width, work),
+            pack(ordered, ranks, width, rank_width, work),
+        )
 
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("count,width", ((1, 1), (2, 1), (2, 2), (3, 2), (4, 2)))
 @pytest.mark.parametrize("adjoint", (False, True))
+@pytest.mark.parametrize("signed", (False, True))
 def test_full_typed_sort_signature_resources_and_all_small_distinct_inputs(
-    count: int, width: int, adjoint: bool
+    count: int, width: int, adjoint: bool, signed: bool
 ) -> None:
-    from qualtran import QUInt
+    from qualtran import QInt, QUInt
     from qualtran.bloqs.arithmetic.lists.sort_in_place import SortInPlace
     from qualtran.serialization.registers import register_to_proto
 
     from flagquantum.compiler.formats.legacy_registers import deserialize_register
 
     words, ranks, clean, slots = layout(count, width)
-    graph = in_place_sort_program(count, width, adjoint=adjoint)
+    graph = in_place_sort_program(count, width, adjoint=adjoint, signed=signed)
     assert graph.functions[0].registers == tuple(
         deserialize_register(register_to_proto(r).SerializeToString(deterministic=True))
-        for r in SortInPlace(count, QUInt(width)).signature
+        for r in SortInPlace(count, (QInt if signed else QUInt)(width)).signature
     )
     assert verify_program_record(graph) == ()
     bound = bind_register_program(graph, (*words, *ranks), clean=clean)
     assert bound.outputs == (*words, *ranks)
     assert CircuitIR.from_json(bound.circuit.to_json()) == bound.circuit
     reference = in_place_sort_ir(words, ranks, clean, slots, adjoint=adjoint)
+    if signed and count > 1:
+        bias = tuple(Instruction("x", (word[0],)) for word in words)
+        reference = (*bias, *reference, *bias)
     counts = Counter(g.name for g in bound.circuit.instructions)
     assert counts == Counter(g.name for g in reference)
-    before, after = zip(*samples(count, width, len(clean)), strict=True)
+    if signed:
+        child = bind_register_program(
+            in_place_sort_program(count, width, adjoint=adjoint),
+            (*words, *ranks),
+            clean=clean,
+        )
+        # The stored and flat owners have different temporary-wire lifetimes.
+        # Compare this wrapper to the unchanged stored child it actually calls.
+        bias = (
+            tuple(Instruction("x", (word[0],)) for word in words) if count > 1 else ()
+        )
+        assert_source(
+            bound.circuit.instructions, (*bias, *child.circuit.instructions, *bias)
+        )
+    before, after = zip(*integer_samples(count, width, len(clean), signed), strict=True)
     inputs, expected = (after, before) if adjoint else (before, after)
     t_count, measurements = expected_budget(count, width)
     assert counts["t"] + counts["tdg"] == t_count
@@ -65,20 +102,24 @@ def test_full_typed_sort_signature_resources_and_all_small_distinct_inputs(
 
 
 @pytest.mark.parametrize("adjoint", (False, True))
+@pytest.mark.parametrize("signed", (False, True))
 def test_complete_complex_spectator_every_measurement_branch_and_append(
     adjoint: bool,
+    signed: bool,
 ) -> None:
     words, ranks, clean, _ = layout(2, 1)
     logical = 4
     pool = tuple(q + 1 for q in clean)
     bound = bind_register_program(
-        in_place_sort_program(2, 1, adjoint=adjoint), (*words, *ranks), clean=pool
+        in_place_sort_program(2, 1, adjoint=adjoint, signed=signed),
+        (*words, *ranks),
+        clean=pool,
     )
     total = logical + 1 + len(pool)
     initial, target = (
         torch.zeros(1 << total, dtype=torch.complex128) for _ in range(2)
     )
-    rows = tuple(samples(2, 1, len(pool)))
+    rows = tuple(integer_samples(2, 1, len(pool), signed))
     raw = torch.arange(1, len(rows) * 2 + 1, dtype=torch.float64)
     amplitudes = torch.complex(raw, 2 - 7 * raw)
     amplitudes /= amplitudes.norm()
@@ -112,14 +153,19 @@ def test_invalid_shapes_preserve_existing_validation(count: int, width: int) -> 
 
 
 @pytest.mark.parametrize("adjoint", (False, True))
-def test_three_word_padded_complex_channel_and_clean_workspace(adjoint: bool) -> None:
+@pytest.mark.parametrize("signed", (False, True))
+def test_three_word_padded_complex_channel_and_clean_workspace(
+    adjoint: bool, signed: bool
+) -> None:
     from tests.unit.sparse_register_execution import execute_sparse_register
 
     words, ranks, clean, _ = layout(3, 2)
     bound = bind_register_program(
-        in_place_sort_program(3, 2, adjoint=adjoint), (*words, *ranks), clean=clean
+        in_place_sort_program(3, 2, adjoint=adjoint, signed=signed),
+        (*words, *ranks),
+        clean=clean,
     )
-    rows = tuple(samples(3, 2, len(clean)))
+    rows = tuple(integer_samples(3, 2, len(clean), signed))
     raw = torch.arange(1, 2 * len(rows) + 1, dtype=torch.float64)
     amplitudes = torch.complex(raw, 1 - raw * 3)
     amplitudes /= amplitudes.norm()

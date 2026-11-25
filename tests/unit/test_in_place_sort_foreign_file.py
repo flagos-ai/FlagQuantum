@@ -1,4 +1,4 @@
-"""Original SortInPlace libraries resolve typed unsigned execution explicitly."""
+"""Original SortInPlace libraries resolve typed integer execution explicitly."""
 
 from collections.abc import Mapping
 from dataclasses import replace
@@ -71,7 +71,7 @@ def test_entire_source_library_wire_declaration_and_native_execution(
         bloqs_to_proto(source, max_depth=0).SerializeToString()
     )
     declaration = library.entries[0].declaration
-    executable = kind == "unsigned" and mode in {"one", "three"}
+    executable = kind in {"unsigned", "signed"} and mode in {"one", "three"}
 
     def factory(
         name: str,
@@ -84,7 +84,7 @@ def test_entire_source_library_wire_declaration_and_native_execution(
         assert all(r.side.name == "THRU" for r in registers)
         if not executable:
             return FunctionRecord(name, (), registers=registers)
-        graph = in_place_sort_program(int(length), int(width))
+        graph = in_place_sort_program(int(length), int(width), signed=kind == "signed")
         assert graph.functions[0].registers == registers
         graph = replace(
             graph,
@@ -103,7 +103,7 @@ def test_entire_source_library_wire_declaration_and_native_execution(
         words, ranks, clean, _ = layout(int(length), int(width))
         actual = bind_register_program(resolved, (*words, *ranks), clean=clean)
         expected = bind_register_program(
-            in_place_sort_program(int(length), int(width)),
+            in_place_sort_program(int(length), int(width), signed=kind == "signed"),
             (*words, *ranks),
             clean=clean,
         )

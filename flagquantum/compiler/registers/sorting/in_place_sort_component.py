@@ -96,19 +96,22 @@ def _sorted_copy(
 
 
 def in_place_sort_program(
-    count: int, width: int, *, adjoint: bool = False
+    count: int, width: int, *, adjoint: bool = False, signed: bool = False
 ) -> ProgramRecord:
-    """Sort distinct unsigned THRU words with clean, bounded THRU permutation pi.
+    """Sort distinct integer THRU words with clean, bounded THRU permutation pi.
 
     Inputs and pi use MSB-first order. Forward requires pi zero. Inverse requires
     ascending distinct words and the corresponding original-to-sorted ranks,
     restores the original words and clears pi. The root owns its sorted copy,
     padded keys and child histories. All work returns clean. This composes the
     existing paper construction, since frozen SortInPlace supplies no root gates.
+    Signed words use two's-complement order through reversible sign-bit bias.
     """
     rank_width, _, _ = in_place_sort_requirements(count, width)
-    if type(adjoint) is not bool:
-        raise ValueError("In-place sort direction requires a boolean")
+    if type(adjoint) is not bool or type(signed) is not bool:
+        raise ValueError("In-place sort direction and signed flag require booleans")
+    if signed:
+        return _signed_sort_program(count, width, adjoint=adjoint)
     dtype = RegisterType("uint", width)
     builder = ComponentProgramBuilder(in_place_sort_signature(count, dtype))
     words = np.asarray(builder.inputs["xs"]).copy()
@@ -151,3 +154,31 @@ def in_place_sort_program(
         dtype=object,
     )
     return builder.finalize({"xs": words, "pi": pi})
+
+
+def _signed_sort_program(count: int, width: int, *, adjoint: bool) -> ProgramRecord:
+    dtype = RegisterType("signed", width)
+    unsigned = RegisterType("uint", width)
+    builder = ComponentProgramBuilder(in_place_sort_signature(count, dtype))
+    if count == 1:
+        return builder.finalize(builder.inputs)
+    mask = bitwise_word_program(unsigned, "xor_constant", pattern=1 << (width - 1))
+
+    def bias(
+        words: NDArray[np.object_], output_dtype: RegisterType
+    ) -> NDArray[np.object_]:
+        result = words.copy()
+        for i, word in enumerate(words):
+            raw = builder.join(builder.split(word), unsigned)
+            changed = builder.call_program(mask, {"x": raw})["x"]
+            assert isinstance(changed, RegisterBinding)
+            result[i] = builder.join(builder.split(changed), output_dtype)
+        return result
+
+    words = bias(np.asarray(builder.inputs["xs"]), unsigned)
+    sorted_values = builder.call_program(
+        in_place_sort_program(count, width, adjoint=adjoint),
+        {"xs": words, "pi": builder.inputs["pi"]},
+    )
+    restored = bias(np.asarray(sorted_values["xs"]), dtype)
+    return builder.finalize({"xs": restored, "pi": sorted_values["pi"]})
