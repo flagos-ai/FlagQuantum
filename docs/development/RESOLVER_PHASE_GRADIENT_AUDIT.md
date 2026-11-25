@@ -189,3 +189,51 @@ caller supplies two unused clean wires, yielding width eight; this is not a
 claim that either circuit requires eight wires. Both original model peaks are
 six, while their respective model gate counts are zero and one Toffoli. This
 source estimate is kept separate from the actual zero/one-CX streams.
+
+
+## Complete integer multiplier and unreachable-control closure, 2026-11-25
+
+The original AddIntoPhaseGrad sign field is an arbitrary integer multiplier,
+not only a choice between plus and minus. The component now computes the
+original truncated input word first, then adds its weighted low slices modulo
+the gradient word. Truncation is never moved across multiplication. Multiplier
+zero and modular multiples produce an executable identity. Negative multipliers
+use the existing exact Add inverse. Binary expansion bounds child calls by the
+gradient width rather than the multiplier magnitude; a large integer is not
+implemented by linearly repeating an adder. The root retains all nominal input
+words and existing controlled-add predicate, carry ownership and feedback.
+
+The original controlled_by integer can also lie outside zero and one. Neither
+binary control value then activates its arithmetic, so Formats binds an exact
+identity with unchanged caller aliases. Even a negative right_shift has this
+always-off identity upstream. This is not an extension of binary controls:
+phase_add_component_program(control_value=2) still refuses the value. No Core
+predicate, opcode or control representation is added. Noninteger control values
+remain refused. Negative shifts with a reachable control retain a declaration
+and original invalid-domain disposition.
+
+Complete logical operators compare all columns against the original ArithmeticGate
+for zero, positive, negative and large multipliers, both control polarities,
+truncated input widths and exhausted gradient precision. Complex inputs with a
+spectator agree on every raw forward history. Independently checking every
+inverse branch on the common target proves all forward/inverse history pairs
+by linearity, including absolute phase and zero work. The original gate has no
+primitive decomposition; native integer-add bodies below that atomic boundary
+are not labeled as original primitive streams. Literal comparable child evidence
+is reused. All 108 sampled old plus/minus complete Programs are
+structurally identical to the previously published owner.
+
+The affected batch passes 346 concentrated cases and the final 274-case expanded
+source grid; the additional Cirq 1.6 lane passes all 274 cases. Strict checks are recorded
+in the batch receipts. Local integration passes 145. Source file blob/Kickmix checks
+are exercised in the affected source suite. Receipts use
+`g2-phase-add-multiplier-*20261125` in the reference workspace. Twenty resource
+rows separate original static atomic estimates from actual weighted-adder
+instructions, caller-reserved scratch, touched scratch and feedback. Source
+models remain independent of multiplier/control reachability as in the original.
+
+This supersedes the preceding sections' unsupported integer-sign and unreachable
+integer-control gaps. Original negative small-width model values, source
+signed-input classical failure, full-word nominal dtype mismatch, symbolic
+physical extents and protected pending scopes retain their existing dispositions.
+Q-0671 remains open under those full-file criteria; no parent count is inflated.
