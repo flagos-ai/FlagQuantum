@@ -36,9 +36,15 @@ _KEY = _PREFIX + "arctan.ArcTan"
     "kind,arguments",
     (
         ("arcsin", {"bitsize": 10, "num_frac": 7}),
+        ("arcsin", {"bitsize": 0, "num_frac": 0}),
+        ("arcsin", {"bitsize": 0, "num_frac": -1}),
+        ("arcsin", {"bitsize": 0, "num_frac": -2}),
         ("arcsin", {"bitsize": 4, "num_frac": 4, "num_iters": 3, "degree": 6}),
         ("arcsin", {"bitsize": sympy.Symbol("n"), "num_frac": sympy.Symbol("p")}),
         ("arctan", {"selection_bitsize": 1, "target_bitsize": 1}),
+        ("arctan", {"selection_bitsize": 0, "target_bitsize": 3}),
+        ("arctan", {"selection_bitsize": 3, "target_bitsize": 0}),
+        ("arctan", {"selection_bitsize": 0, "target_bitsize": 0}),
         ("arctan", {"selection_bitsize": 3, "target_bitsize": 5}),
         (
             "arctan",

@@ -16,7 +16,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 @pytest.mark.parametrize(
-    "width,fraction", ((1, 0), (1, 1), (4, -2), (4, 0), (4, 4), (10, 7))
+    "width,fraction",
+    ((0, 0), (0, -1), (0, -2), (1, 0), (1, 1), (4, -2), (4, 0), (4, 4), (10, 7)),
 )
 @pytest.mark.parametrize("iterations,degree", ((4, 4), (3, 6), (0, 0)))
 def test_complete_arcsine_fields_signature_and_model(

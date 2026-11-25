@@ -8,6 +8,7 @@
 from dataclasses import dataclass
 
 from ....core.ir.program.register_types import fixed_point_register_type
+from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import SymbolicInt
 from ....core.value_parameters import is_symbolic_value
@@ -35,7 +36,7 @@ class ArcsineDeclaration:
     @property
     def signature(self) -> Signature:
         word = fixed_point_register_type(self.bitsize, self.num_frac)
-        return Signature.build_from_dtypes(x=word, result=word)
+        return Signature((Register("x", word), Register("result", word)))
 
     def direct_calls(self) -> dict[str, SymbolicInt]:
         """Declare original Toffoli demand without inventing a source gate body."""
