@@ -164,3 +164,10 @@ integration passes 145. Both changed Python files pass strict typing, Black and
 Ruff; scope, language, links, architecture, IR and protected API checks pass.
 The two frozen source/test blobs and real Kickmix 0.1 Simulator are reverified.
 Receipts use `g2-window-codec-*-20261125`.
+
+The subsequent Kaliski closure extracts the exact omission predicate and typed
+Cast composition into `formats/montgomery_port_views.py`, shared by the two
+constructor families. Their arithmetic owners stay independent. All four
+directional window-product Programs are exactly equal to this publication,
+and the complete product constructor suite passes in both Cirq lanes. See
+RESOLVER_MODULAR_INVERSE_AUDIT.md for the shared-boundary verification.
