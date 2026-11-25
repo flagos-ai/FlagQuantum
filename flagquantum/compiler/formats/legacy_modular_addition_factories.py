@@ -129,9 +129,15 @@ def modular_addition_factories() -> dict[str, ComponentFactory]:
         "CModAddK",
         "CtrlScaleModAdd",
     )
-    return {
+    factories: dict[str, ComponentFactory] = {
         f"qualtran.bloqs.mod_arithmetic.mod_addition.{kind}": partial(
             _modular_factory, kind
         )
         for kind in kinds
     }
+    # These exact package aliases are present in the frozen source resolver.
+    for kind in ("ModAdd", "CModAddK"):
+        factories[f"qualtran.bloqs.mod_arithmetic.{kind}"] = factories[
+            f"qualtran.bloqs.mod_arithmetic.mod_addition.{kind}"
+        ]
+    return factories
