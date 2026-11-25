@@ -14,12 +14,13 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.arithmetic.arithmetic_resource_model import (
     source_sum_of_squares_cost,
 )
+from ...compiler.registers.arithmetic.grid_potential_signature import (
+    grid_pair_potential_signature,
+)
 from ...compiler.registers.arithmetic.out_of_place_add_resource_model import (
     source_out_of_place_add_cost,
 )
 from ...compiler.registers.lookup.qrom_resource_model import source_qrom_cost
-from ...core.ir.program.register_types import opaque_register_type
-from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from .grid_inverse_sqrt import (
     grid_inverse_sqrt_qrom_data,
@@ -34,10 +35,7 @@ def source_grid_pair_potential_signature(coordinate: int) -> Signature:
     """Declare the two ordered three-axis through ports of the source pair."""
     if type(coordinate) is not int or coordinate < 1:
         raise ValueError("Grid pair potential requires a positive coordinate width")
-    word = opaque_register_type(coordinate)
-    return Signature(
-        (Register("system_i", word, shape=(3,)), Register("system_j", word, shape=(3,)))
-    )
+    return grid_pair_potential_signature(coordinate)
 
 
 def source_grid_potential_signature(electrons: int, grid_points: int) -> Signature:
@@ -53,6 +51,7 @@ def source_grid_pair_potential_cost(
     target: int = 24,
     *,
     legacy_shims: bool = False,
+    qrom_data: tuple[tuple[int, ...], ...] | None = None,
 ) -> ComponentCost:
     """Model the source pair graph, retaining its shorter coefficient table."""
     signature = source_grid_pair_potential_signature(coordinate)
@@ -63,7 +62,11 @@ def source_grid_pair_potential_cost(
     poly = source_grid_inverse_sqrt_polynomial_cost(
         distance, polynomial, polynomial, legacy_shims=legacy_shims
     )
-    data = grid_inverse_sqrt_qrom_data(distance - 2, polynomial)
+    data = (
+        grid_inverse_sqrt_qrom_data(distance - 2, polynomial)
+        if qrom_data is None
+        else qrom_data
+    )
     lookup = source_qrom_cost(
         0,
         (distance,),
