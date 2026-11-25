@@ -94,6 +94,10 @@ def test_actual_symbolic_factories_complete_wire_and_native_declaration(
         "unsigned",
         "signed",
         "fixed",
+        "signed_fixed",
+        "signed_fixed_negative_fraction",
+        "empty_fixed",
+        "empty_fixed_negative_fraction",
         "ones_complement",
         "bounded",
         "montgomery",
@@ -122,6 +126,10 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         "unsigned": QUInt(3),
         "signed": QInt(3),
         "fixed": QFxp(3, -2),
+        "signed_fixed": QFxp(3, 1, signed=True),
+        "signed_fixed_negative_fraction": QFxp(3, -2, signed=True),
+        "empty_fixed": QFxp(0, 0),
+        "empty_fixed_negative_fraction": QFxp(0, -2),
         "ones_complement": QIntOnesComp(3),
         "bounded": BQUInt(3, 5),
         "montgomery": QMontgomeryUInt(3),
@@ -144,23 +152,33 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         builder.finalize({}),
         (),
         clean=() if dirty else wires,
-        borrowed=wires if dirty else (),
+        borrowed=(width,) if width == 0 else wires if dirty else (),
     )
     assert bound.circuit.instructions == () and bound.outputs == ()
     assert [(event.kind, event.wires, event.dirty) for event in bound.events] == [
         ("allocate", wires, dirty),
         ("free", wires, dirty),
     ]
-    source_pool = SourceWorkspace(() if dirty else wires, wires if dirty else ())
-    operation, outputs = allocation.as_cirq_op(source_pool)
-    assert operation is None and release.as_cirq_op(source_pool, **outputs) == (
-        None,
-        {},
-    )
-    assert not source_pool.live
-    assert source_pool.events == [
-        (event.kind, event.wires, event.dirty) for event in bound.events
-    ]
+    if width:
+        source_pool = SourceWorkspace(() if dirty else wires, wires if dirty else ())
+        operation, outputs = allocation.as_cirq_op(source_pool)
+        assert operation is None and release.as_cirq_op(source_pool, **outputs) == (
+            None,
+            {},
+        )
+        assert not source_pool.live
+        assert source_pool.events == [
+            (event.kind, event.wires, event.dirty) for event in bound.events
+        ]
+    else:
+        import cirq
+
+        # An empty qfree carries no qubits from which a tracking pool could
+        # recover its dirty flag. Use the actual SDK manager for this profile.
+        manager = cirq.SimpleQubitManager()
+        operation, outputs = allocation.as_cirq_op(manager)
+        assert operation is None and outputs["reg"].shape == (0,)
+        assert release.as_cirq_op(manager, **outputs) == (None, {})
     assert allocation.as_pl_op(wires=wires) is None
     assert release.as_pl_op(wires=wires) is None
     # Dirty storage may be coherently entangled with the spectator. Clean storage
@@ -176,7 +194,11 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
     for source in (allocation, release):
         assert get_cost_value(source, QECGatesCost()).asdict() == {}
         assert get_cost_value(source, QubitCount()) == width
-    assert allocation.on_classical_vals()["reg"] == 0
+    if width:
+        assert allocation.on_classical_vals()["reg"] == 0
+    else:
+        with pytest.raises(ValueError, match="invalid literal for int"):
+            allocation.on_classical_vals()
     assert release.on_classical_vals(reg=0) == {}
 
 
