@@ -1,0 +1,105 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Literal composition follows Qualtran v0.7.0 chemistry/thc/select_bloq.py.
+
+"""Retain THC SELECT's shared angle lifetime and original positive swap controls."""
+
+import numpy as np
+
+from ....core.ir import CircuitIR, Instruction
+from ....core.ir.program import FunctionRecord, ProgramRecord
+from ....core.ir.program.register_bindings import RegisterBinding
+from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
+from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_gate_function import bit_gate_function
+
+
+def thc_selection_program(
+    signature: Signature,
+    rotations: tuple[FunctionRecord, FunctionRecord, FunctionRecord, FunctionRecord],
+    system_swap: ProgramRecord,
+    flag_swap: ProgramRecord,
+    address_swap: ProgramRecord,
+    phases: tuple[ProgramRecord, ProgramRecord],
+) -> ProgramRecord:
+    """Compose the complete source root with four explicitly directional leaves.
+
+    The angle word is allocated once, passed through all rotation leaves and
+    clean-freed. The source supplies no executable rotation body. An optional
+    external control remains untouched, as in the original root. Caller words
+    are THRU; predicate work belongs to the supplied phase/swap components.
+    """
+    builder = ComponentProgramBuilder(signature, rotations)
+    state: dict[str, BindingCollection] = dict(builder.inputs)
+
+    def swap(program: ProgramRecord, control: str, left: str, right: str) -> None:
+        result = builder.call_program(
+            program,
+            {
+                "ctrl": state.pop(control),
+                "x": state.pop(left),
+                "y": state.pop(right),
+            },
+            entry=program.functions[0].name,
+        )
+        state.update({control: result["ctrl"], left: result["x"], right: result["y"]})
+
+    def rotate(function: FunctionRecord) -> None:
+        result = builder.call_dict(
+            function.name,
+            {
+                "nu_eq_mp1": state.pop("nu_eq_mp1"),
+                "data": state.pop("data"),
+                "sel": state.pop("mu"),
+                "trg": state.pop("sys_a"),
+            },
+        )
+        state.update(
+            nu_eq_mp1=result["nu_eq_mp1"],
+            data=result["data"],
+            mu=result["sel"],
+            sys_a=result["trg"],
+        )
+
+    def phase(program: ProgramRecord, controls: tuple[str, ...]) -> None:
+        result = builder.call_program(
+            program,
+            {
+                "ctrls": tuple(state.pop(name) for name in controls),
+                "system": state.pop("sys_b"),
+            },
+            entry=program.functions[0].name,
+        )
+        output = result["ctrls"]
+        assert isinstance(output, np.ndarray)
+        for i, name in enumerate(controls):
+            state[name] = output[i]
+        state["sys_b"] = result["system"]
+
+    swap(system_swap, "plus_b", "sys_a", "sys_b")
+    dtype = Signature(rotations[0].registers or ()).get_left("data").dtype
+    state["data"] = builder.allocate(dtype=dtype)
+    rotate(rotations[0])
+    phase(phases[0], ("succ",))
+    rotate(rotations[1])
+    swap(system_swap, "plus_b", "sys_a", "sys_b")
+    bit = quantum_bit_type()
+    x = bit_gate_function(
+        "thc_flip", (Register("q", bit),), CircuitIR(1, (Instruction("x", (0,)),))
+    )
+    state["plus_mn"] = builder.call_program(
+        ProgramRecord((x,)), {"q": state.pop("plus_mn")}, entry=x.name
+    )["q"]
+    swap(flag_swap, "nu_eq_mp1", "plus_a", "plus_b")
+    swap(address_swap, "nu_eq_mp1", "mu", "nu")
+    swap(system_swap, "plus_b", "sys_a", "sys_b")
+    rotate(rotations[2])
+    phase(phases[1], ("succ", "nu_eq_mp1"))
+    rotate(rotations[3])
+    swap(system_swap, "plus_b", "sys_a", "sys_b")
+    data = state.pop("data")
+    assert isinstance(data, RegisterBinding)
+    builder.free(data)
+    return builder.finalize(state)
