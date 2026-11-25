@@ -147,11 +147,12 @@ and symbolic word widths retain declaration-only resolution. Symbolic list
 extents still reject Program construction under Proposal 103 prerequisite 1.20.
 The source supplies no factories and its DocSpec has no examples.
 
-Signed root execution, duplicate inputs and occupied-pi sorting remain outside
-the existing unsigned distinct-word execution contract. The shared indexing
-operations' occupied XOR targets do not extend the sorting root contract.
-Q-0204 and Q-0204.05 remain open for those boundaries, symbolic array execution,
-and the original root's missing executable reference. The source zero-length
+At this publication, signed root execution, duplicate inputs and occupied-pi
+sorting were outside the unsigned distinct-word contract. The signed extension
+below closes the first boundary. Shared indexing operations' occupied XOR
+targets still do not extend the sorting root contract. Q-0204 and Q-0204.05
+remain open for duplicates, occupied pi, symbolic physical array execution and
+the original root's missing executable reference. The source zero-length
 QubitCount failure retains its existing audit. Existing Comparator/Xor frozen
 primitive and resource evidence is reused without changing reference code.
 
@@ -178,3 +179,64 @@ physical binding refusal. The dedicated constructor adapter preserves the
 original root declaration and missing decomposition. Previously accepted native
 physical synthesis and independent source models retain their separate scopes.
 See RESOLVER_LIST_AUDIT.md for the complete constructor dependency closure.
+
+## Signed distinct-word execution interface
+
+The native stored synthesis extends `in_place_sort_program` with an internal
+`signed` boolean, default false. Its signed xs port uses the original QInt
+nominal descriptor and MSB-first two's-complement words. Pi retains the original
+bounded THRU array. Forward still requires distinct words and clean pi; inverse
+requires ascending signed words with their matching ranks and clears pi.
+Duplicates, arbitrary occupied pi and symbolic physical extents remain outside
+this executable contract.
+
+XOR of each sign bit maps signed order to unsigned order. Nominal Split/Join
+views pass those biased words through the existing unsigned stored sort in
+either direction; a second sign-bit XOR restores the original representation.
+The unsigned child retains all private sorted-copy, padded-key and measured
+predicate ownership. The wrapper owns no new scratch or measurement results.
+This is native synthesis of the documented sorting map. The frozen source root
+still has no decomposition or classical callback, so no root gate-stream parity
+is claimed. Its Comparator/Xor count model remains independent.
+
+The complete stored unsigned child is unchanged at all five existing finite
+profiles, both directions, compared to published 7637a662e. The signed wrapper's
+primitive operands, per-wire order and measurement feedback match that actual
+child with the two sign-bias layers. The older flat synthesis has different
+temporary-wire lifetimes, so its physical labels are not used as the oracle for
+this wrapper; its primitive inventory remains separately equal apart from the
+explicit sign X gates. Full signed basis maps are generated independently from
+Python integer sorting and original-to-sorted indices, not by copying the bias
+implementation.
+
+Actual QInt source libraries at depths 0/1/2 retain their typed ports and bind
+through the same explicit native replacement used for unsigned execution.
+Default source constructor factories stay bodyless. Both directions cover all
+small distinct signed inputs, including minimum negative, minus one, zero and
+maximum positive values. Two one-bit words exhaust every raw measurement
+history with complete complex spectator amplitudes and zero private work.
+Padded three-word/two-bit channels also preserve complete coherent valid-input
+states and clean scratch under the existing sparse trajectory executor; their
+exponential raw histories are certified per valid basis rather than enumerated.
+Singleton signed sorting is a true identity with zero emitted bias gates.
+
+The extension adds exactly two X gates per word for non-singletons, no extra
+measurements, no T-family gates and no private workspace beyond the unsigned
+child. Independent original QInt root models remain separate from native
+emission. The ten directional resource rows and unsigned compatibility proof
+are recorded in `g2-signed-sort-resources-20261125.json`.
+
+For three two-bit signed words, each direction emits 344 X, 1608 CX, 396 H,
+360 T, 324 T-dagger, 108 S, 108 measurements, 108 feedback CZ and 108 resets,
+with 32 peak owned clean bits. The original model remains 108 CSwap, 162 And,
+1998 Cliffords, 162 measurements and twelve logical bits. These different
+levels are not combined or relabeled as equal gate counts.
+
+The concentrated stored-sort/index/list regression passes 281 cases. The full
+sort/source-interface lane passes 76 cases under Cirq 1.6, and local integration
+passes 145. All three changed Python files pass strict typing, Black and Ruff;
+scope, language, links, architecture, IR and protected API checks pass. Frozen
+source identity and real Kickmix 0.1 Simulator are verified. The first literal
+comparison used the unrelated flat temporary labels and failed; the final
+comparison above uses the unchanged stored child actually invoked, preserving
+all operand, feedback, semantic and workspace assertions at their stated scopes.
