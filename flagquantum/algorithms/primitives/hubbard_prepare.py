@@ -8,9 +8,11 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
-from math import acos, isfinite, sqrt
+from math import isfinite, sqrt
 
 from ...circuit import Circuit
+from ...compiler._component_trace.resource_classification import classify_resource_gate
+from ...compiler._component_trace.resource_generalization import RotationCall
 from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
@@ -23,6 +25,9 @@ from ...compiler.registers.arithmetic.bounded_increment import (
 )
 from ...compiler.registers.bits.bitwise import _validate_wires, xor_ir
 from ...compiler.registers.control.multi_control import multi_and_ir
+from ...compiler.registers.layout.hubbard_signatures import (
+    hubbard_preparation_signature,
+)
 from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
@@ -33,12 +38,29 @@ from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import (
-    bounded_unsigned_register_type,
     opaque_register_type,
 )
 from ...core.ir.program.registers import Register
 from ...dynamic import DynamicCircuit
 from .prepare_oracle import PrepareOracle
+
+
+def _hubbard_normalization(dimension: int, t: float, u: float) -> float:
+    modes = 2 * dimension**2
+    return 2 * modes * t + (modes * u) // 2
+
+
+def _hubbard_preparation_angles(
+    dimension: int, t: float, u: float
+) -> tuple[float, float]:
+    """Retain the frozen source's numerator order, floor and NumPy arccos."""
+    import numpy as np
+
+    modes = 2 * dimension**2
+    return (
+        float(2 * np.arccos(sqrt(t * modes / _hubbard_normalization(dimension, t, u)))),
+        float(2 * np.arccos(np.sqrt(1 / 5))),
+    )
 
 
 def hubbard_selection_layout(dimension: int) -> RegisterLayout:
@@ -78,8 +100,7 @@ class PrepareHubbard(PrepareOracle):
 
     @property
     def alpha(self) -> float:
-        modes = 2 * self.dimension**2
-        return 2 * modes * self.t + (modes * self.u) // 2
+        return _hubbard_normalization(self.dimension, self.t, self.u)
 
     @property
     def l1_norm_of_coeffs(self) -> float:
@@ -87,15 +108,7 @@ class PrepareHubbard(PrepareOracle):
 
     @cached_property
     def selection_registers(self) -> tuple[Register, ...]:
-        return tuple(
-            Register(
-                name,
-                bounded_unsigned_register_type(
-                    width, self.dimension if name in {"p_x", "p_y", "q_x", "q_y"} else 2
-                ),
-            )
-            for name, width in self.selection_layout
-        )
+        return tuple(hubbard_preparation_signature(self.dimension))[:-1]
 
     @cached_property
     def junk_registers(self) -> tuple[Register, ...]:
@@ -132,11 +145,18 @@ class PrepareHubbard(PrepareOracle):
         direction_swap = ComponentCost(
             "CSwap", 4 * width + 3, GateCost(cswap=2 * width + 1)
         )
+        angle, _ = _hubbard_preparation_angles(self.dimension, self.t, self.u)
+        family = classify_resource_gate(RotationCall("ry", angle))
+        rotation_cost = GateCost(
+            t=int(family == "t"),
+            clifford=int(family == "clifford"),
+            rotation=int(family == "rotation"),
+        )
         return ComponentCost(
             "PrepareHubbard",
             ports + 2,
             calls=(
-                CostCall(ComponentCost("Ry", 1, GateCost(rotation=1))),
+                CostCall(ComponentCost("Ry", 1, rotation_cost)),
                 CostCall(ComponentCost("Controlled", 2, GateCost(rotation=1))),
                 CostCall(uniform, 2, bystander_qubits=ports - width),
                 CostCall(ComponentCost("Hadamard", 1, GateCost(clifford=1)), 2),
@@ -191,17 +211,16 @@ class PrepareHubbard(PrepareOracle):
             width, self.dimension, 2
         )
         sign = -1 if adjoint else 1
+        angle, conditional_angle = _hubbard_preparation_angles(
+            self.dimension, self.t, self.u
+        )
         angles = (
             Instruction(
                 "ry",
                 (v,),
-                params={
-                    "theta": sign
-                    * 2
-                    * acos(sqrt(self.t * 2 * self.dimension**2 / self.alpha))
-                },
+                params={"theta": sign * angle},
             ),
-            Instruction("cry", (v, u), params={"theta": sign * 2 * acos(sqrt(1 / 5))}),
+            Instruction("cry", (v, u), params={"theta": sign * conditional_angle}),
         )
         phase_select = (
             Instruction("cx", (u, v)),

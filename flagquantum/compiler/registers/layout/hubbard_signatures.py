@@ -9,9 +9,31 @@ from ....core.ir.program.register_types import (
     opaque_register_type,
     quantum_bit_type,
 )
-from ....core.ir.program.registers import Register
+from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import SymbolicInt, ceil, log2
+
+
+def _selection_ports(coordinate: RegisterType) -> tuple[Register, ...]:
+    flag = bounded_unsigned_register_type(1, 2)
+    return (
+        Register("U", flag),
+        Register("V", flag),
+        Register("p_x", coordinate),
+        Register("p_y", coordinate),
+        Register("alpha", flag),
+        Register("q_x", coordinate),
+        Register("q_y", coordinate),
+        Register("beta", flag),
+    )
+
+
+def hubbard_preparation_signature(dimension: int) -> Signature:
+    """Keep PREPARE's exact integer widths and caller-owned two-bit temp word."""
+    coordinate = bounded_unsigned_register_type((dimension - 1).bit_length(), dimension)
+    return Signature(
+        (*_selection_ports(coordinate), Register("temp", opaque_register_type(2)))
+    )
 
 
 def hubbard_signature(
@@ -34,16 +56,7 @@ def hubbard_signature(
             Register("y", coordinate),
         )
     elif kind == "select":
-        ports = (
-            Register("U", flag),
-            Register("V", flag),
-            Register("p_x", coordinate),
-            Register("p_y", coordinate),
-            Register("alpha", flag),
-            Register("q_x", coordinate),
-            Register("q_y", coordinate),
-            Register("beta", flag),
-        )
+        ports = _selection_ports(coordinate)
     else:
         raise ValueError("Unknown Hubbard port family")
     return Signature(
