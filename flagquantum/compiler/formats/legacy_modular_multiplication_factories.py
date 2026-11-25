@@ -13,7 +13,10 @@ import sympy
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import montgomery_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
+from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
+from ..registers.component_builder import ComponentProgramBuilder
+from ..registers.layout.component_cast import cast_word_function
 from ..registers.modular.modular_doubling_component import modular_doubling_program
 from ..registers.modular.modular_multiplication_component import (
     modular_multiplication_program,
@@ -36,6 +39,47 @@ _Kind = Literal[
     "_DirtyOutOfPlaceMontgomeryModMulImpl",
     "DirtyOutOfPlaceMontgomeryModMul",
 ]
+
+
+def _source_modulus_omission(outer: Register, inner: Register) -> bool:
+    return (
+        outer.name == inner.name
+        and outer.side == inner.side
+        and outer.shape_symbolic == inner.shape_symbolic
+        and inner.dtype.encoding == "montgomery"
+        and tuple(name for name, _ in inner.dtype.parameters) == ("modulus",)
+        and outer.dtype == montgomery_register_type(inner.dtype.num_qubits)
+    )
+
+
+def _restore_source_ports(
+    program: ProgramRecord, registers: tuple[Register, ...]
+) -> ProgramRecord:
+    """Bridge only validated source modulus omissions with existing typed views."""
+    native = program.functions[0].registers
+    assert native is not None
+    builder = ComponentProgramBuilder(Signature(registers))
+    arguments = dict(builder.inputs)
+    for outer, inner in zip(registers, native, strict=True):
+        if outer.side & RegisterSide.LEFT and outer.dtype != inner.dtype:
+            name = f"modulus_input_{outer.name}"
+            builder.define(
+                cast_word_function(name, outer.dtype, inner.dtype, outer.shape)
+            )
+            arguments[outer.name] = builder.call_dict(
+                name, {"reg": arguments[outer.name]}
+            )["reg"]
+    outputs = builder.call_program(program, arguments)
+    for outer, inner in zip(registers, native, strict=True):
+        if outer.side & RegisterSide.RIGHT and outer.dtype != inner.dtype:
+            name = f"modulus_output_{outer.name}"
+            builder.define(
+                cast_word_function(name, inner.dtype, outer.dtype, outer.shape)
+            )
+            outputs[outer.name] = builder.call_dict(name, {"reg": outputs[outer.name]})[
+                "reg"
+            ]
+    return builder.finalize(outputs)
 
 
 def _modular_factory(
@@ -100,11 +144,19 @@ def _modular_factory(
             ]
     signature = tuple(ports)
     if registers is not None and registers != signature:
-        # The original wire codec omits Montgomery modulus metadata. Preserve
-        # the source constructor signature instead of discarding this mismatch.
-        raise SerializationError(f"Invalid register signature for {kind}")
+        if (
+            word
+            or len(registers) != len(signature)
+            or not all(
+                outer == inner or _source_modulus_omission(outer, inner)
+                for outer, inner in zip(registers, signature, strict=True)
+            )
+        ):
+            raise SerializationError(f"Invalid register signature for {kind}")
     if any(isinstance(item, sympy.Expr) for item in (width, window, modulus, value)):
-        return FunctionRecord(name, (), registers=signature)
+        return FunctionRecord(
+            name, (), registers=signature if registers is None else registers
+        )
     assert isinstance(modulus, int) and isinstance(width, int)
     assert isinstance(window, int) and isinstance(value, int)
     if kind == "ModDbl":
@@ -119,6 +171,8 @@ def _modular_factory(
         program = montgomery_multiplication_program(
             width, window, modulus, adjoint=inverse
         )
+    if registers is not None and registers != signature:
+        program = _restore_source_ports(program, registers)
     return _rename_program(program, name)
 
 

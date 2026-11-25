@@ -31,8 +31,15 @@ from flagquantum.compiler.registers.modular.windowed_multiplication_component im
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
-from flagquantum.core.ir.program.register_types import unsigned_register_type
-from flagquantum.core.ir.program.registers import RegisterSide
+from flagquantum.core.ir.program.register_types import (
+    montgomery_register_type,
+    unsigned_register_type,
+)
+from flagquantum.core.ir.program.register_verifier import (
+    executable_register_width,
+    register_port_types,
+)
+from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.errors import SerializationError
 from tests.unit.test_legacy_arithmetic_factories import _library
 from tests.unit.test_modular_multiplication_component import source_stream
@@ -44,9 +51,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 _PREFIX = "qualtran.bloqs.mod_arithmetic.mod_multiplication."
 
 
-def _resolve(source: Any) -> ProgramRecord:
+def _resolve(source: Any, depth: int = 0) -> ProgramRecord:
     program = resolve_component_program(
-        _library(source, 0), 0, modular_multiplication_factories()
+        _library(source, depth), 0, modular_multiplication_factories()
     )
     assert verify_program_record(program) == ()
     return program
@@ -114,38 +121,91 @@ def test_all_word_examples_resolve_with_original_signature(name: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "kind,inverse",
+    "kind,inverse,profile",
     (
-        ("SingleWindowModMul", False),
-        ("_DirtyOutOfPlaceMontgomeryModMulImpl", False),
-        ("DirtyOutOfPlaceMontgomeryModMul", False),
-        ("DirtyOutOfPlaceMontgomeryModMul", True),
+        ("SingleWindowModMul", False, (4, 2, 5)),
+        ("_DirtyOutOfPlaceMontgomeryModMulImpl", False, (4, 2, 5)),
+        ("DirtyOutOfPlaceMontgomeryModMul", False, (4, 2, 5)),
+        ("DirtyOutOfPlaceMontgomeryModMul", True, (4, 2, 5)),
+        ("SingleWindowModMul", False, (1, 1, 1)),
+        ("_DirtyOutOfPlaceMontgomeryModMulImpl", False, (3, 1, 3)),
+        ("DirtyOutOfPlaceMontgomeryModMul", False, (3, 1, 3)),
+        ("DirtyOutOfPlaceMontgomeryModMul", True, (3, 1, 3)),
     ),
 )
 def test_window_constructor_delegation_and_original_wire_loss(
-    kind: str, inverse: bool
+    kind: str, inverse: bool, profile: tuple[int, int, int]
 ) -> None:
     module = import_module(_PREFIX[:-1])
-    arguments: dict[str, Any] = {"bitsize": 4, "window_size": 2, "mod": 5}
+    width, window, modulus = profile
+    arguments: dict[str, Any] = {
+        "bitsize": width,
+        "window_size": window,
+        "mod": modulus,
+    }
     if kind == "DirtyOutOfPlaceMontgomeryModMul":
         arguments["uncompute"] = inverse
     source = getattr(module, kind)(**arguments)
     factory = modular_multiplication_factories()[_PREFIX + kind]
     direct = (
-        single_window_program(4, 2, 5)
+        single_window_program(width, window, modulus)
         if kind == "SingleWindowModMul"
         else (
-            windowed_multiplication_program(4, 2, 5)
+            windowed_multiplication_program(width, window, modulus)
             if kind.startswith("_")
-            else montgomery_multiplication_program(4, 2, 5, adjoint=inverse)
+            else montgomery_multiplication_program(
+                width, window, modulus, adjoint=inverse
+            )
         )
     )
     program = factory("test_product", None, arguments)
     assert program == _rename_program(direct, "test_product")
     assert isinstance(program, ProgramRecord) and verify_program_record(program) == ()
-    # This is a concrete source codec counterexample, not repaired metadata.
-    with pytest.raises(SerializationError, match="signature"):
-        _resolve(source)
+    library = _library(source, 0)
+    declared = library.entries[0].declaration.registers
+    assert declared is not None
+    assert declared != direct.functions[0].registers
+    # The source wire still loses modulus metadata. The outer ports retain
+    # that loss; explicit zero-gate views bridge to the unchanged child.
+    for register in declared:
+        if register.dtype.encoding == "montgomery":
+            assert register.dtype.parameters == ()
+    resolved = _resolve(source)
+    assert resolved.functions[0].registers == declared
+    for depth in (1, 2):
+        assert _resolve(source, depth) == resolved
+    widths = tuple(
+        executable_register_width(dtype)
+        for dtype in register_port_types(direct.functions[0], RegisterSide.LEFT)
+    )
+    inputs = []
+    logical = 0
+    for width in widths:
+        inputs.append(tuple(range(logical, logical + width)))
+        logical += width
+    options: dict[str, Any] = {
+        "clean": tuple(range(logical + 1, logical + 100)),
+        "borrowed": (logical,),
+        "allow_workspace_outputs": kind.startswith("_")
+        or kind == "DirtyOutOfPlaceMontgomeryModMul"
+        and not inverse,
+    }
+    if inverse or kind.startswith("_"):
+        options["input_ownership"] = tuple(
+            (wire, False) for port in inputs[2:] for wire in port
+        )
+    actual = bind_register_program(resolved, tuple(inputs), **options)
+    expected = bind_register_program(direct, tuple(inputs), **options)
+    assert actual.circuit == expected.circuit and actual.outputs == expected.outputs
+    # Added view operations change expanded logical positions, not physical
+    # lifetime order or the emitted instruction offset of any ownership event.
+    assert [
+        (event.kind, event.wires, event.dirty, event.instruction_offset)
+        for event in actual.events
+    ] == [
+        (event.kind, event.wires, event.dirty, event.instruction_offset)
+        for event in expected.events
+    ]
 
 
 def test_all_symbolic_window_declarations_retain_source_shapes_and_directions() -> None:
@@ -174,6 +234,51 @@ def test_all_symbolic_window_declarations_retain_source_shapes_and_directions() 
                 assert declaration.registers[-1].side is (
                     RegisterSide.LEFT if inverse else RegisterSide.RIGHT
                 )
+            source = getattr(import_module(_PREFIX[:-1]), kind)(**arguments)
+            resolved = _resolve(source)
+            assert (
+                resolved.functions[0].registers
+                == _library(source, 0).entries[0].declaration.registers
+            )
+            assert not resolved.functions[0].blocks
+            with pytest.raises(ValueError, match="bodies"):
+                bind_register_program(resolved, ())
+
+
+@pytest.mark.parametrize(
+    "changed",
+    ("modulus", "encoding", "width", "classical", "name", "shape", "side", "count"),
+)
+def test_source_modulus_bridge_rejects_every_other_signature_change(
+    changed: str,
+) -> None:
+    from qualtran.bloqs.mod_arithmetic.mod_multiplication import SingleWindowModMul
+
+    arguments: dict[str, Any] = {"bitsize": 4, "window_size": 2, "mod": 5}
+    declaration = (
+        _library(SingleWindowModMul(**arguments), 0).entries[0].declaration.registers
+    )
+    assert declaration is not None
+    registers = list(declaration)
+    original = registers[1]
+    dtype = {
+        "modulus": montgomery_register_type(4, 7),
+        "encoding": unsigned_register_type(4),
+        "width": montgomery_register_type(5),
+        "classical": RegisterType("montgomery", 4, 1),
+    }.get(changed, original.dtype)
+    registers[1] = Register(
+        "other" if changed == "name" else original.name,
+        dtype,
+        (1,) if changed == "shape" else original.shape,
+        RegisterSide.LEFT if changed == "side" else original.side,
+    )
+    if changed == "count":
+        registers.pop()
+    with pytest.raises(SerializationError, match="signature"):
+        modular_multiplication_factories()[_PREFIX + "SingleWindowModMul"](
+            "bad", tuple(registers), arguments
+        )
 
 
 def test_invalid_constructor_metadata_preserves_early_failure() -> None:
