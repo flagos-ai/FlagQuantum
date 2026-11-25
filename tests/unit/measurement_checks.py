@@ -54,9 +54,11 @@ def forced_branch(
             flush()
             if not active:
                 continue
-            mask = 1 << (width - 1 - gate.wires[0])
+            reset_mask = 1 << (width - 1 - gate.wires[0])
             # Reset follows a projective measurement; sum the disjoint sectors.
-            state = torch.where((data & mask) == 0, state + state[data ^ mask], 0)
+            state = torch.where(
+                (data & reset_mask) == 0, state + state[data ^ reset_mask], 0
+            )
         elif active:
             pending.append(
                 Instruction(gate.name, gate.wires, gate.params, matrix=gate.matrix)
@@ -68,16 +70,23 @@ def forced_branch(
 def certified_and_channel_map(
     gates: tuple[Instruction, ...], basis_bits: tuple[tuple[int, ...], ...]
 ) -> tuple[tuple[tuple[int, ...], ...], int]:
-    """Prove all erasure branches on basis inputs using certified primitive blocks.
+    """Prove the positive-amplitude permutation and every exact-erasure history."""
+    outputs, phases, events = certified_and_monomial_map(gates, basis_bits)
+    torch.testing.assert_close(phases, torch.ones_like(phases), atol=1e-14, rtol=0)
+    return outputs, events
 
-    Each exact And-compute block has positive unit amplitude on a zero target.
-    Each exact erase block has identical normalized outputs in both outcomes
-    iff its target is the controls' And. Check that invariant for every basis
-    input and every block. Linearity then gives the same map / sqrt(2**events)
-    for every branch on every superposition of these inputs. Only unconditional
-    X/CX/CCX and literal known And/exact-CSwap blocks are accepted. CSwap columns
-    are independently proved on all eight inputs before composition. This is a test certificate,
-    not an execution backend or a sampled branch check.
+
+def certified_and_monomial_map(
+    gates: tuple[Instruction, ...], basis_bits: tuple[tuple[int, ...], ...]
+) -> tuple[tuple[tuple[int, ...], ...], torch.Tensor, int]:
+    """Prove a phased permutation from actual primitives and exact And blocks.
+
+    Literal And compute/erase and exact CSwap blocks have already-proved positive
+    local branch scalars. Track every input's bits and complex phase across them
+    and unconditional monomial gates. Erase requires the actual And invariant;
+    its two histories give the same map divided by sqrt(2). Linearity extends
+    the resulting columns to coherent states and every combined raw history.
+    Unknown gates, unbalanced erase targets and conditional atoms fail closed.
     """
     from flagquantum.compiler.registers.primitives.and_compute import (
         and_compute_ir,
@@ -92,6 +101,7 @@ def certified_and_channel_map(
     width = len(basis_bits[0])
     assert all(len(word) == width and set(word) <= {0, 1} for word in basis_bits)
     values = torch.tensor(basis_bits, dtype=torch.uint8).T.contiguous()
+    phases = torch.ones(len(basis_bits), dtype=torch.complex128)
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
@@ -131,16 +141,76 @@ def certified_and_channel_map(
                 events += 1
             i += len(block)
             continue
-        assert gate.name in {"x", "cx", "ccx"} and not gate.metadata and not gate.params
+        assert not instruction_condition_clauses(gate)
+        assert gate.matrix is None
+        assert len(set(gate.wires)) == len(gate.wires)
+        assert all(0 <= wire < width for wire in gate.wires)
+        assert set(gate.metadata) <= {"exact_scalar_sign"}
+        arities = {
+            "i": 1,
+            "x": 1,
+            "y": 1,
+            "z": 1,
+            "s": 1,
+            "sdg": 1,
+            "t": 1,
+            "tdg": 1,
+            "phase": 1,
+            "rz": 1,
+            "cx": 2,
+            "cy": 2,
+            "cz": 2,
+            "swap": 2,
+            "ccx": 3,
+        }
+        assert len(gate.wires) == arities.get(gate.name, -1)
+        assert set(gate.params) == (
+            {"theta"} if gate.name in {"phase", "rz"} else set()
+        )
         if gate.name == "x":
             values[gate.wires[0]] ^= 1
-        elif gate.name == "cx":
-            values[gate.wires[1]] ^= values[gate.wires[0]]
-        else:
-            a, b, target = gate.wires
-            values[target] ^= values[a] & values[b]
+        elif gate.name in {"cx", "cy"}:
+            control, target = gate.wires
+            if gate.name == "cy":
+                phases *= torch.where(
+                    values[control].bool(),
+                    1j * (1 - 2 * values[target].to(torch.int64)),
+                    1,
+                )
+            values[target] ^= values[control]
+        elif gate.name == "ccx":
+            left, right, target = gate.wires
+            values[target] ^= values[left] & values[right]
+        elif gate.name == "y":
+            target = gate.wires[0]
+            phases *= 1j * (1 - 2 * values[target].to(torch.int64))
+            values[target] ^= 1
+        elif gate.name == "swap":
+            left, right = gate.wires
+            values[left], values[right] = values[right].clone(), values[left].clone()
+        elif gate.name == "cz":
+            left, right = gate.wires
+            phases *= 1 - 2 * (values[left] & values[right]).to(torch.int64)
+        elif gate.name in {"z", "s", "sdg", "t", "tdg", "phase", "rz"}:
+            from math import pi
+
+            target_values = values[gate.wires[0]].to(torch.float64)
+            angles = {"z": pi, "s": pi / 2, "sdg": -pi / 2, "t": pi / 4, "tdg": -pi / 4}
+            angle = (
+                angles[gate.name]
+                if gate.name in angles
+                else float(gate.params["theta"])
+            )
+            exponent = (
+                angle * (target_values - 0.5)
+                if gate.name == "rz"
+                else angle * target_values
+            )
+            phases *= torch.exp(1j * exponent)
+        elif gate.name != "i":
+            raise AssertionError(f"Uncertified monomial gate: {gate.name}")
         i += 1
-    return tuple(tuple(word) for word in values.T.tolist()), events
+    return tuple(tuple(word) for word in values.T.tolist()), phases, events
 
 
 def expand_reset_branches(
