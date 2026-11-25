@@ -1,7 +1,7 @@
 # Proposal 125 — Nonbinary quantum field word storage
 
-Status: explicitly approved by the user on 2026-11-25 with the instruction
-"批准，按 Proposal 125 实施". Proposals 109 and 111 cover binary quantum polynomials and nonbinary
+Status: explicitly approved by the user on 2026-11-25 for implementation.
+Proposals 109 and 111 cover binary quantum polynomials and nonbinary
 classical field words respectively; quantum field storage remains binary.
 
 ## Verified complete-file requirement

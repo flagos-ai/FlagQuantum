@@ -1,0 +1,28 @@
+schema = "flagquantum.nonbinary_quantum_field_storage_contract"
+version = "1.0"
+proposal = "docs/development/API_CHANGE_PROPOSAL_125_NONBINARY_QUANTUM_FIELD_STORAGE.md"
+approval = "explicit_user_approval_2026-11-25"
+implementation_status = "implemented_pending_freeze"
+owner = "core"
+public_methods_added = []
+
+[admission]
+encodings = ["finite_field", "finite_field_polynomial"]
+storage = "quantum_raw_bits"
+quantum_width = "positive_concrete_integer"
+classical_width = 0
+metadata_validation = "existing_structural_field_validator"
+coefficient_order = "existing_descending_power_MSB_words"
+unused_raw_encodings = "preserved_by_storage_views"
+superseded_scope = "Proposal_111_quantum_field_scope_existing_binary_only"
+
+[boundaries]
+classical_semantics = "unchanged"
+external_numeric_range = "unchanged"
+binary_arithmetic = "retains_binary_only_validation"
+field_controls = "retains_existing_approved_binary_single_bit_scope"
+source_foreign_codecs = "original_QGF_QGFPoly_failure_retained"
+
+[compatibility]
+existing_binary_artifacts = "exact_Program_repr_Circuit_json_hash_aliases_and_slots"
+new_encoding_or_opcode = false
