@@ -12,6 +12,10 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.arithmetic.arithmetic_resource_model import (
     source_sum_of_squares_cost,
 )
+from ...compiler.registers.arithmetic.grid_kinetic_signature import (
+    grid_coordinate_width,
+    grid_kinetic_signature,
+)
 from ...compiler.registers.arithmetic.integer_square import (
     sum_of_squares_ir,
     sum_of_squares_requirements,
@@ -19,8 +23,6 @@ from ...compiler.registers.arithmetic.integer_square import (
 from ...compiler.registers.layout.partition import unpartition_register
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import opaque_register_type
-from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...dynamic import DynamicCircuit
 from .grid_qvr import grid_qvr_ir, source_grid_qvr_cost
@@ -29,22 +31,15 @@ from .grid_qvr import grid_qvr_ir, source_grid_qvr_cost
 def _coordinate_width(grid_points: int) -> int:
     if type(grid_points) is not int or grid_points < 1:
         raise ValueError("Grid requires a positive number of points per axis")
-    return (grid_points - 1).bit_length() + 1
+    return grid_coordinate_width(grid_points)
 
 
 def source_grid_kinetic_signature(electrons: int, grid_points: int) -> Signature:
     """Declare the source through port in electron, axis, and wire order."""
     if type(electrons) is not int or electrons < 1:
         raise ValueError("Grid kinetic energy requires a positive electron count")
-    return Signature(
-        (
-            Register(
-                "system",
-                opaque_register_type(_coordinate_width(grid_points)),
-                shape=(electrons, 3),
-            ),
-        )
-    )
+    _coordinate_width(grid_points)
+    return grid_kinetic_signature(electrons, grid_points)
 
 
 def source_grid_kinetic_cost(electrons: int, grid_points: int) -> ComponentCost:
