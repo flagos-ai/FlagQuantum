@@ -165,11 +165,18 @@ zero-width fixed-point descriptors. Native metadata and logical construction
 succeed while binding retains that refusal. The exact steps/errors are recorded
 in `ftqc-reference-env/g2-on-each-fixed-storage-intake.json`.
 
-Proposal 116 records this storage extension for explicit approval. Its pending
-draft changes no executable admission. Q-0246 remains open for these concrete
-storage requirements. Existing fixed-point control predicate boundaries remain
-separate. Original unsupported child decompositions, symbolic physical dimensions
-and serialized symbol-assumption loss remain documented source boundaries.
+The user approved Proposal 116 on 2026-11-25. Signed positive-width words and
+empty unsigned fixed-point words now execute through the existing Core admission
+owner, without changing codecs or control predicates. The complete dependency
+evidence is in `SIGNED_EMPTY_FIXED_POINT_STORAGE.md`.
+
+The extended audit also found source-valid signed zero-width words with negative
+fractional widths. Their Split/Join and real H/T spectator context execute in
+the original source, but Proposal 116 explicitly excludes them. Proposal 124
+records that additional approval requirement and native refusal. Q-0246 remains
+open for this exact profile. Original unsupported child decompositions, symbolic
+physical dimensions and serialized symbol-assumption loss remain documented
+source boundaries.
 
 The current batch passes 1,219 concentrated cases and 17 local integration
 cases. All 109 foreign/body/presentation cases also pass with Cirq 1.6.1, and

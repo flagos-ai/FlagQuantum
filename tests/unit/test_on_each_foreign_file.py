@@ -56,9 +56,18 @@ def native_declaration(source: Any, child: FunctionRecord) -> OnEachDeclaration:
     [
         (width, kind)
         for width in (0, 1, 3, "n")
-        for kind in ("default", "unsigned", "signed", "ones", "fixed")
+        for kind in (
+            "default",
+            "unsigned",
+            "signed",
+            "ones",
+            "fixed",
+            "signed_fixed",
+            "signed_fraction",
+        )
         if not (kind == "ones" and width in (0, 1))
         and not (kind == "signed" and width == 0)
+        and not (kind in {"signed_fixed", "signed_fraction"} and width in (0, 1))
     ],
 )
 def test_generic_declaration_and_actual_foreign_library_resolution(
@@ -77,6 +86,8 @@ def test_generic_declaration_and_actual_foreign_library_resolution(
     }
     if kind in {"signed", "ones"}:
         targets[kind] = QInt(n) if kind == "signed" else QIntOnesComp(n)
+    if kind in {"signed_fixed", "signed_fraction"}:
+        targets[kind] = QFxp(n, -2 if kind == "signed_fixed" else 1, signed=True)
     source = OnEach(n, XGate(), targets[kind])
     native = native_declaration(source, bit_child("x"))
     assert native.signature == native_signature(source.signature)
@@ -120,10 +131,6 @@ def test_generic_declaration_and_actual_foreign_library_resolution(
 
     resolved = resolve_component_program(library, 0, dict.fromkeys(names, factory))
     assert resolved.functions[0].registers == tuple(native.signature)
-    if n == 0 and kind == "fixed":
-        with pytest.raises(ValueError, match="unsupported executable"):
-            bind_register_program(native.program(), ((),), borrowed=(0,))
-        return
     if isinstance(n, int):
         direct = bind_register_program(
             native.program(), (tuple(range(n)),), borrowed=(n,)
@@ -136,7 +143,10 @@ def test_generic_declaration_and_actual_foreign_library_resolution(
             native.program()
 
 
-@pytest.mark.parametrize("kind", ("opaque", "uint", "signed", "ones", "fixed"))
+@pytest.mark.parametrize(
+    "kind",
+    ("opaque", "uint", "signed", "ones", "fixed", "signed_fixed", "signed_fraction"),
+)
 @pytest.mark.parametrize("opcode", ("x", "h", "s", "sdg", "t", "tdg"))
 def test_actual_typed_sdk_body_and_spectator_complex_roundtrip(
     kind: str, opcode: str
@@ -151,6 +161,8 @@ def test_actual_typed_sdk_body_and_spectator_complex_roundtrip(
         "signed": QInt(3),
         "ones": QIntOnesComp(3),
         "fixed": QFxp(3, -2),
+        "signed_fixed": QFxp(3, -2, signed=True),
+        "signed_fraction": QFxp(3, 1, signed=True),
     }
     leaves = {
         "x": XGate(),
