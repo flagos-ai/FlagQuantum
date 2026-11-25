@@ -12,12 +12,12 @@ from ....compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ....core.ir.program.register_types import (
-    bounded_unsigned_register_type,
-    opaque_register_type,
-    quantum_bit_type,
+from ....compiler.registers.layout.thc_signatures import (
+    thc_rotation_signature as _rotation_signature,
 )
-from ....core.ir.program.registers import Register
+from ....compiler.registers.layout.thc_signatures import (
+    thc_selection_signature as _selection_signature,
+)
 from ....core.ir.program.signatures import Signature
 from ..chemistry_number_phase import ChemistryNumberPhase
 
@@ -34,17 +34,10 @@ def thc_rotations_signature(
     num_mu: int, num_spin_orb: int, num_bits_theta: int
 ) -> Signature:
     """Describe the source rotation leaf's shared data and through ports."""
-    orbitals = _spatial_orbitals(num_mu, num_spin_orb)
+    _spatial_orbitals(num_mu, num_spin_orb)
     if type(num_bits_theta) is not int or num_bits_theta < 2:
         raise ValueError("THC requires at least two angle bits")
-    return Signature(
-        (
-            Register("nu_eq_mp1", quantum_bit_type()),
-            Register("data", opaque_register_type(num_bits_theta)),
-            Register("sel", opaque_register_type(num_mu.bit_length())),
-            Register("trg", opaque_register_type(orbitals)),
-        )
-    )
+    return _rotation_signature(num_mu, num_spin_orb, num_bits_theta)
 
 
 def select_thc_signature(
@@ -55,32 +48,15 @@ def select_thc_signature(
     control_value: int | None = None,
 ) -> Signature:
     """Describe the source selection order and its optional pass-through bit."""
-    orbitals = _spatial_orbitals(num_mu, num_spin_orb)
+    _spatial_orbitals(num_mu, num_spin_orb)
     if type(keep_bitsize) is not int or keep_bitsize < 1:
         raise ValueError("THC keep width must be a positive integer")
     if control_value is not None and (
         type(control_value) is not int or control_value not in (0, 1)
     ):
         raise ValueError("THC SELECT control value must be zero, one or None")
-    control = (
-        () if control_value is None else (Register("control", quantum_bit_type()),)
-    )
-    bit = bounded_unsigned_register_type(1)
-    orbital = bounded_unsigned_register_type(num_mu.bit_length(), num_mu + 1)
-    system = opaque_register_type(orbitals)
-    return Signature(
-        (
-            *control,
-            Register("succ", bit),
-            Register("nu_eq_mp1", bit),
-            Register("mu", orbital),
-            Register("nu", orbital),
-            *(Register(name, bit) for name in ("plus_mn", "plus_a", "plus_b")),
-            Register("sigma", bounded_unsigned_register_type(keep_bitsize)),
-            Register("rot", bit),
-            Register("sys_a", system),
-            Register("sys_b", system),
-        )
+    return _selection_signature(
+        num_mu, num_spin_orb, keep_bitsize, control_value=control_value
     )
 
 
