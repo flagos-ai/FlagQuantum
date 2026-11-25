@@ -84,13 +84,11 @@ teaching consumer explicitly requests one-level multiplier declarations, which
 continue to refuse physical binding. It does not claim those declarations are
 identities or that a large graph was physically executed.
 
-The original numerical make_on emitter is frozen for its existing explicit
-workspace and reusable classical-slot contract. This batch does not replace it
-or claim its physical binding record equals the fresh-SSA Program binder. Its
-removal requires a verified binding adapter preserving that contract. The
-shared Program replaces the former duplicate traversal in the tutorial and
-adds the source-library execution route; this is not a claim that all numerical
-consumers have migrated.
+The numerical `make_on` entry now delegates to the shared ModExp Program.
+An explicit private classical-scratch pass follows ordinary fresh-SSA binding,
+retaining the existing workspace and caller-slot budgets. The former flat
+multiplier traversal is removed from this consumer. The default Program binder
+and its fresh classical output contract are unchanged.
 
 The new constructor checks depth-zero, one and two libraries against original
 root calls, named operands and exact child primitives/feedback on moduli three,
@@ -126,9 +124,9 @@ Forward signed comparison remains unchanged. The ModExp inverse consumes x
 only on the prepared image and returns the exponent; it is an adjoint isometry,
 not an assertion of clean release for arbitrary result inputs.
 
-Q-0471 remains open for the original full-width demonstration and remaining
-numerical binding migration obligations. The new source-constructor inverse is
-not substituted for those obligations. No Core schema, backend selection, G3
+Q-0471 remains open for the original full-width physical demonstration. The
+numerical binding migration is implemented separately below; source constructors
+and logical diagrams do not substitute for full-width physical evidence. No Core schema, backend selection, G3
 or automatic PR merge is part of this batch.
 
 
@@ -164,3 +162,42 @@ Program uses 48 measurement SSA slots and a different private wire order, first
 visible at instruction 41. No identity of the complete binding streams is
 claimed. This is concrete evidence for the next allocation/binding adapter,
 not a reason to alter the original source or add arithmetic gates.
+
+## Numerical binding replacement
+
+The existing numerical entry keeps its public signature, validation, MSB-first
+operands, exact workspace requirements and `circuit.append(op)` protocol. It now
+binds the shared typed Program and assigns its private measurement SSA values to
+the caller's existing scratch slots. Private quantum leases use the authoritative
+register workspace allocator. The scratch pass adds no gates and changes no
+quantum operands, parameters, output aliases or lease events. Exported classical
+values cannot be recycled. No Core contract or serialized vocabulary changes.
+
+The old and shared schedules have equal primitive inventories, but are not
+related by a single global wire permutation: independent work operations can
+appear in a different order, and lease reuse changes physical identities. The
+old schedule first differs in work placement at instruction 41 and gate order at
+instruction 77 in the two-bit example. These differences are recorded rather
+than hidden by a gate multiset comparison. Actual numerical instructions are
+compared in order with untouched source child generators, using the new concrete
+allocation lifetimes and caller feedback slots; original root Soquet edges are
+checked independently. The previous hand-coded old-layout reference is removed.
+
+Tests exercise repeated multiplier one, reversed physical bindings, all input
+columns and the compositional every-history certificate, complex sparse states,
+empty exponents, source tensor amplitudes and minimal work. The source-free
+replacement test disables the former flat emitter and executes both native
+strategies with an entangled spectator. Caller slots are the only destinations;
+their values remain the latest assignments in the emitted schedule. This does
+not promise equality to the old schedule's internal scratch identities or raw
+measurement histories. The full 2048-bit physical graph remains unverified.
+
+The replacement batch passes 56 concentrated cases in Cirq 1.7.0, three new
+native/replacement/tensor cases and 18 affected full ordered source-stream cases
+in Cirq 1.6.1. It also passes 145 local integration cases, strict typing of six
+Python files, Black/Ruff, owner scope, language/links, architecture, IR and API
+checks. Existing exact inverse dependency evidence is reused. The one-bit
+numerical entry emits 1155 instructions, including 206 T/Tdag, 524 CX and 48
+measurements on 16 wires using exactly four caller slots. Its source default
+T estimate remains 200; explicitly pricing the exact swap at seven gives 206.
+Zero exponent emits one X on two result wires with no measurement or scratch.
