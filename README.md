@@ -219,6 +219,12 @@ experiment guide for task binding and the scope of hardware validation.
 decoding, and correction. Logical operations and hardware feedback are longer-term
 research goals.
 
+**Build and inspect register algorithms.** Browse the
+[register component library](docs/reference/registers/index.rst) for arithmetic,
+lookup and phase operations composed through `circuit.append(op)`. The
+[resource model guide](docs/development/COMPONENT_RESOURCE_MODEL.md) distinguishes
+analytical estimates from instructions emitted by an executable decomposition.
+
 [Quantum AI tutorials](examples/single_machine_quantum_ai/README.md) ·
 [Distributed statevector](examples/distributed_statevector_topologies/README.md) ·
 [Distributed MPS](examples/distributed_mps/README.md) ·
@@ -255,6 +261,10 @@ the same file, so a citation does not have to be assembled by hand.
 Cite the version you ran rather than `main`: a result is reproducible against
 the release it was measured on. The file records 0.3.1; adjust the version and
 date if you ran an earlier release.
+
+When using adapted algorithm components, also cite the relevant
+[upstream software and papers](docs/reference/UPSTREAM_SOFTWARE.md).
+Source attribution is retained in [NOTICE](NOTICE) and the adapted modules.
 
 <!-- BEGIN GENERATED CAPABILITY_SUMMARY -->
 Support varies by execution path. See the [capability catalog](docs/generated/CAPABILITIES.md) for maturity and limitations.

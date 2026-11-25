@@ -127,6 +127,28 @@ must not be merged until they pass.
 
 ---
 
+### Register components and upstream adaptations
+
+Place reusable register transformations with their existing Compiler owner;
+numerical execution belongs to Simulation and SDK conversion to Ecosystem.
+Follow the [architecture map](ARCHITECTURE.md) and
+[register component guide](docs/reference/registers/index.rst).
+Compose existing typed components before adding an independent implementation.
+Keep the user operation compatible with `circuit.append(op)`.
+
+For source adaptations, retain the original copyright, license and frozen
+revision, and describe changes at the owning module. Compare actual calls,
+operands and feedback where an upstream decomposition exists. Check complex
+amplitudes, applicable measurement branches and work cleanup; report emitted
+primitive counts separately from analytical resource estimates. Record missing
+upstream decompositions and known counterexamples explicitly. The
+[upstream software references](docs/reference/UPSTREAM_SOFTWARE.md) and
+[NOTICE](NOTICE) describe attribution without changing FlagQuantum's identity.
+
+Use this repository's review and API-change policies for FlagQuantum changes.
+An upstream project's contributor agreement and submission rules apply to
+submissions to that upstream project; they are not replaced by a local port.
+
 ## Styleguides
 
 ### Git Commit Messages
