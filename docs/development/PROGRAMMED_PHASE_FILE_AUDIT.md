@@ -58,9 +58,47 @@ conditional work reset, and the corrected and uncorrected terminal outcomes.
 
 ## Remaining source boundaries
 
-Q-0677 is covered. Q-0676 remains open for physical early exit. The original
+Q-0677 is covered. The original
 adaptive Bloq supplies a worst-case call graph and omits a gate
 decomposition. In the native flat circuit, inactive rounds measure a clean
-zero work qubit as padding. Symbolic declarations are modeled before
+zero work qubit as padding in the original compatibility schedule. Symbolic declarations are modeled before
 binding concrete execution parameters. Q-0666 remains open for the other
 rotation exports.
+
+
+## Physical early-exit closure, 2026-11-26
+
+Q-0676's remaining execution requirement is now implemented through the existing
+internal guarded-effect contract. The normal example append path requests early
+exit; later measurement destinations receive a classical zero initializer, then
+the existing shared guard owner predicates each measurement on all preceding
+failures. A successful attempt therefore executes no later measurement, while
+fixed-width result records keep zero suffixes. The source remains model-only
+for consumption; this is the separately specified Jones channel, not an invented
+Qualtran primitive body.
+
+Full unnormalized complex amplitudes agree with the certified padded route for
+all histories through four rounds, including impossible histories, arbitrary
+slot order, spectators and exact failure scalars. Both local execution strategies
+verify the number of actual measurements against attempted rounds. Density
+channels agree with and without final correction. The work returns to zero.
+Prepared output ownership, all five source factories and resource-model evidence
+are retained. Composed symbolic queries now use the same shared fresh-angle
+allocator as the original source, avoiding accidental node coalescing.
+
+Three rounds still emit three potential H, phase, CX, measurement and conditional
+X instructions, plus two classical initializers; only active quantum effects
+execute. There is one reusable work qubit and three caller-owned outcome slots.
+For generic exponents the separate original worst-case model remains nine
+Cliffords, three measurements and three precision-sensitive rotations. No primitive-to-model equality or
+unimplemented source consumption body is claimed. Public conditional-measurement
+construction and unsupported typed result merges remain unchanged.
+
+
+The concrete exponent 1/8, three-round, 256-shot receipt executes 444
+measurements in trajectory mode and 448 in batched mode (seed 42), versus
+768 padded measurements. This is a measured per-run count, not a worst-case
+estimate. The unchanged source model classifies that special angle as ten
+Cliffords, one T, one rotation and three measurements; terminal correction adds
+one Clifford. Both synthesis estimates are 54 T. Different strategies need not
+consume the same random stream, and each is checked against its actual histories.

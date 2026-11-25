@@ -77,3 +77,29 @@ The second row reuses the previously certified adaptive implementation. The
 source class itself has no primitive stream. Failed histories without final
 correction retain their original different net rotation and branch-dependent
 complex phase. Symbolic round counts remain declared models until concretized.
+
+## Composed symbolic call identities, 2026-11-26
+
+The complete file and all five examples were rechecked against the existing
+owners. One source-success gap remained in resource graph composition: the
+native symbolic-round declaration always used the literal placeholder
+`_\phi0`. The original obtains a fresh angle from the containing graph's
+`SympySymbolAllocator`. Reusing the native declaration in that graph could
+therefore incorrectly combine distinct resource-state nodes.
+
+`ProgrammedRotationModel.direct_calls` and `terminal_calls` now accept the
+existing shared `SymbolAllocator`. The same allocator reaches the symbolic
+ancilla, including when earlier graph nodes have already allocated angles.
+An independent query still starts with the original deterministic first name.
+Tests compare three successive direct declarations and two terminal expansions
+with the unmodified source allocator, with and without final correction.
+Precision division, multiplicities and correction angles remain unchanged.
+
+No emitted instruction, physical binding, public Core behavior or source file
+changes. Existing full complex branch amplitudes, zero work, preparation call
+wiring, all five constructors and source resource formulas are reused in the
+affected regression. The allocator fix itself does not provide conditional
+measurement. The related physical early-exit consumer now reuses the already
+existing internal guarded effect and local executors; see
+`PROGRAMMED_PHASE_FILE_AUDIT.md`. The source adaptive constructor remains a
+declaration without an invented upstream body.

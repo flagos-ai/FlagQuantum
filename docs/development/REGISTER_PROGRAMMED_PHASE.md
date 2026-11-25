@@ -32,7 +32,7 @@ correction enabled, the all-ones history applies a phase at the next
 doubled exponent. The resource and correction tolerances follow the
 locked Qualtran call graph. [Jones et al., Figs. 3–4](https://arxiv.org/pdf/1204.0567#page=7)
 
-FlagQuantum's public flat IR rejects conditional measurement. Later
+The original padded route uses public flat IR, which rejects conditional measurement. Later
 rounds predicate preparation and CX on all preceding failures, and
 measure the idle zero work wire after an earlier success. Zero also
 encodes the padded slots. With correction disabled, all ones identifies
@@ -51,5 +51,31 @@ checked through the local trajectory executor.
 For an ideal trajectory with (k) attempts, (3-k) measurements are
 padding. The preparation and entangling gates execute (k) times, and
 X executes once per failed attempt. Literal phase counts are before
-synthesis. Physically skipping the padding measurements requires a
-control-flow contract beyond this flat-IR implementation.
+synthesis. This records the original padded implementation; the existing
+internal guarded-effect route below supersedes that execution limit.
+
+
+## Physical early exit
+
+`ProgrammedRotationExample` now selects `early_exit=True` in the shared emitter.
+It reuses the existing internal `apply_control_guards` and local guarded-effect
+execution. Before each measurement after the first, a classical XOR initializes
+that round's result slot to zero. The measurement executes only if all earlier
+rounds failed; otherwise the initialized zero remains without a projection or
+RNG draw. Preparation, CX and reset already carry the same failure predicates.
+The work wire remains clean after every attempt and after early success.
+
+The lower-level emitter retains its existing padded default for literal-stream
+comparisons. Both routes have identical complete complex branch maps and density
+channels; the guarded route uses fewer executed measurements. Result records
+retain fixed-width zero suffixes, but these suffixes are classical initialization,
+not physical measurements. Three rounds add two classical initializers, no
+quantum scratch and no analytical T cost. The original worst-case model remains
+three CNOT, three X, three measurements and three resource states.
+
+Acceptance compares every raw history through four rounds, arbitrary outcome
+slot order, coherent spectators, exact failure phases and restored work. Local
+trajectory and batched execution check the actual measurement count equals the
+sum of attempted rounds, with and without terminal correction. Public
+conditional measurement, typed conditional-result merges, remote provider and
+hybrid-session support are unchanged; no new Core contract is required.
