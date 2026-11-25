@@ -1,0 +1,18 @@
+FlagQuantum
+
+This distribution includes code adapted from Qualtran, copyright Google LLC,
+licensed under the Apache License, Version 2.0. The integration reference is
+Qualtran v0.7.0, commit bcb17bb25360ed68ce3bc084645db3e929799389.
+https://github.com/quantumlib/Qualtran
+
+It also includes code adapted from the Kickmix subtree of quantumlib/Qualtran,
+copyright 2026 Google LLC, licensed under the Apache License, Version 2.0.
+The integration reference is commit 9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453.
+
+Original copyright notices and source references remain in adapted files.
+FlagQuantum modifications integrate those components into the FlagQuantum
+program, compiler, execution, resource and documentation owners. The software
+is distributed as FlagQuantum, independently of the upstream projects.
+
+The Apache License, Version 2.0 is included in LICENSE. Additional bundled
+asset licenses remain in their package-local license directories.

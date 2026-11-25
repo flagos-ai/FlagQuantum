@@ -56,6 +56,9 @@ def test_native_sdist_retains_authoritative_build_inputs(
             "pyproject.toml",
             "MANIFEST.in",
             "README.md",
+            "LICENSE",
+            "NOTICE",
+            "CITATION.cff",
             "flagquantum/version.py",
             "flagquantum/__init__.py",
             "flagquantum/compiler/artifacts/_unsigned_size.py",
@@ -83,3 +86,4 @@ def test_native_sdist_retains_authoritative_build_inputs(
     assert metadata["Name"] == "flagquantum"
     assert metadata["Version"] == __version__
     assert "torch<2.15,>=2.10" in metadata.get_all("Requires-Dist", [])
+    assert "NOTICE" in metadata.get_all("License-File", [])

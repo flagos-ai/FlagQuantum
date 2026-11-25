@@ -16,6 +16,7 @@ authors = [
 license = "Apache-2.0 AND MIT AND LPPL-1.3c AND CDDL-1.0"
 license-files = [
     "LICENSE",
+    "NOTICE",
     "flagquantum/drawer/tex/licenses/*.txt",
     "flagquantum/drawer/_assets/licenses/*.txt",
 ]
