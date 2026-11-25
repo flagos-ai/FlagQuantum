@@ -15,14 +15,16 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
+from ...compiler.registers.layout.fermionic_signatures import (
+    four_mode_signature,
+    spin_word_signature,
+)
 from ...compiler.registers.phase.hamming_weight_phasing import (
     source_hamming_weight_phasing_cost,
 )
 from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
-from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
-from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt, SymbolicReal, smax
 from .fermionic_fourier import source_two_bit_fermionic_fourier_cost
@@ -43,13 +45,9 @@ def _source_rz_cost(angle: float) -> ComponentCost:
     )
 
 
-def _spin_signature(length: SymbolicInt) -> Signature:
-    return Signature((Register("system", opaque_register_type(length), shape=(2,)),))
-
-
 def source_hubbard_interaction_signature(length: SymbolicInt) -> Signature:
     """Declare the two side-width through words in both interaction variants."""
-    return _spin_signature(length)
+    return spin_word_signature(length)
 
 
 def source_hubbard_interaction_cost(
@@ -70,14 +68,14 @@ def source_hubbard_interaction_cost(
 
 def source_hubbard_hopping_plaquette_signature() -> Signature:
     """Declare the source four-qubit through array."""
-    return Signature((Register("qubits", quantum_bit_type(), shape=(4,)),))
+    return four_mode_signature()
 
 
 def source_hubbard_hopping_tile_signature(length: SymbolicInt) -> Signature:
     """Declare the source's two opaque spin words at the lattice side width."""
     if isinstance(length, int) and length % 2:
         raise ValueError("Only even length lattices are supported")
-    return _spin_signature(length)
+    return spin_word_signature(length)
 
 
 def source_hubbard_hopping_plaquette_cost(kappa: float) -> ComponentCost:

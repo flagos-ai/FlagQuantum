@@ -2,6 +2,15 @@
 
 This package owns partition, cast and bit views, clean and borrowed workspace ownership.
 
+`fermionic_signatures.py` owns the shared source layouts for the ordered x/y
+Fourier pair, four-mode plaquette array and two opaque spin words. The latter
+contains two L-bit words in source metadata; it is distinct from Algorithms'
+two L**2-mode physical lattice arrays. Formats constructs declarations through
+these signatures, and the existing Algorithms signature helpers delegate here.
+There are no owned work bits or measurement slots in these through ports.
+Run `python -m pytest tests/unit/test_hubbard_source_constructors.py -q` in the
+locked reference environment for metadata and constructor conformance.
+
 `wire_allocation.WireAllocation` grows one physical ID space for incremental
 construction. It reuses `RegisterWorkspace` leases for temporary storage and
 reserves permanent named-register IDs independently. Freeing individual wires

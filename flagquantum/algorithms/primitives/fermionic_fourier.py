@@ -18,6 +18,7 @@ from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.component_builder import ComponentProgramBuilder
 from ...compiler.registers.component_gate_function import bit_gate_function
+from ...compiler.registers.layout.fermionic_signatures import fermionic_pair_signature
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
@@ -35,9 +36,7 @@ def _fourier_angle(k: int, n: int) -> float:
 
 def source_two_bit_fermionic_fourier_signature() -> Signature:
     """Describe the two through bit ports in the source order."""
-    return Signature(
-        (Register("x", quantum_bit_type()), Register("y", quantum_bit_type()))
-    )
+    return fermionic_pair_signature()
 
 
 def source_two_bit_fermionic_fourier_calls(
