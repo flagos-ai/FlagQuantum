@@ -237,3 +237,45 @@ integer-control gaps. Original negative small-width model values, source
 signed-input classical failure, full-word nominal dtype mismatch, symbolic
 physical extents and protected pending scopes retain their existing dispositions.
 Q-0671 remains open under those full-file criteria; no parent count is inflated.
+
+
+## Zero-gradient constructor closure, 2026-11-25
+
+The original finite AddIntoPhaseGrad with a zero-bit destination is an identity,
+including its empty-signature instance. Formats now uses the existing
+ComponentProgramBuilder to retain an executable through identity with exactly
+the original omitted ports. Source-positive zero-width gradient cases no longer
+remain bodyless. Unreachable integer controls share this same identity owner.
+Reachable negative shifts retain their original invalid-domain refusal, even
+when the multiplier is zero: the source still evaluates its invalid fixed-point
+input before multiplication. No source failure is silently replaced by identity.
+
+The original matrices and actual serialized depths zero, one and two agree at
+input widths zero and two, no control and controls zero/one/two, and negative,
+zero and positive integer multipliers. The bound outputs alias all caller
+inputs. No allocation, instruction, feedback or classical result is emitted.
+A caller-owned borrowed spectator supplies the physical circuit for the empty
+signature without introducing a zero-qubit Core API or claiming pending scalar
+phase Proposal 119. It is never leased or modified; arbitrary complex amplitudes
+and entanglement with the remaining caller words are preserved through the
+ordinary circuit.append(op) path.
+
+Resource rows distinguish zero actual gates/work/feedback from the original
+source model's negative Toffoli counts: minus two uncontrolled and minus four
+controlled. The original model peak remains three despite source empty ports;
+no negative count is relabeled as a physical estimate or corrected upstream.
+Source-positive execution, original resource-model defects and source-negative
+shift failures retain separate tests and receipts.
+
+Q-0671 retains its original abstract primitive-decomposition, signed-input
+classical, nominal dtype and resource-model boundaries. This batch closes the
+finite zero-gradient execution gap only. Pending Proposals 118, 119, 124, 126
+and 127 remain unimplemented in their protected scopes. Proposal 127's local
+draft is separate from the published source changes.
+
+Receipts use `g2-phase-add-zero-*20261125` in the reference workspace. The
+concentrated source/storage regression passes 390 cases; the final 25-case zero-gradient witness passes. The independent Cirq lane
+passes 298 cases plus the final negative-shift witness. Local
+integration passes 145. Strict typing covers the two changed Python files,
+with format, Compiler scope, language, links, architecture, IR and API checks.
+The source suite revalidates frozen phase-gradient files and real Kickmix.
