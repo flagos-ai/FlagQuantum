@@ -948,11 +948,38 @@ def test_logical_register_calls_keep_fixed_point_metadata():
     )
 
 
-def test_logical_register_admission_does_not_authorize_physical_lowering():
+def test_approved_signed_fixed_storage_authorizes_physical_lowering() -> None:
     from flagquantum.compiler.registers.register_binding import bind_register_program
     from flagquantum.compiler.registers.register_programs import lower_register_program
 
     record = _fixed_point_identity_program()
+    assert level_boundary.verify_program_record(record) == ()
+    assert level_boundary.verify_program_record(lower_register_program(record)) == ()
+    bound = bind_register_program(record, (tuple(range(8)),))
+    assert bound.outputs == (tuple(range(8)),)
+    assert bound.circuit.instructions == () and bound.events == ()
+
+
+def test_logical_symbolic_fraction_still_refuses_physical_lowering() -> None:
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.compiler.registers.register_programs import lower_register_program
+    from flagquantum.core.ir.program.register_types import fixed_point_register_type
+
+    sympy = pytest.importorskip("sympy")
+    record = _fixed_point_identity_program()
+    registers = record.functions[0].registers
+    assert registers is not None
+    (register,) = registers
+    dtype = fixed_point_register_type(8, sympy.Symbol("f", integer=True), signed=True)
+    function = dataclasses.replace(
+        record.functions[0],
+        registers=(
+            type(register)(
+                register.name, dtype, shape=register.shape, side=register.side
+            ),
+        ),
+    )
+    record = dataclasses.replace(record, functions=(function,))
     assert level_boundary.verify_program_record(record) == ()
     with pytest.raises(ValueError, match="unsupported executable"):
         lower_register_program(record)

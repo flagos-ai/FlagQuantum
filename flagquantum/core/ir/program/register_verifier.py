@@ -88,8 +88,8 @@ def executable_register_width(dtype: RegisterType) -> int:
 
     Execution admits concrete bit, opaque, integer storage and binary fields,
     including packed polynomials over those binary fields (Proposal 109).
-    Proposals 113 through 115 admit concrete unsigned fixed-point storage with
-    integer fractional widths at most the quantum width.
+    Proposals 113 through 116 admit concrete unsigned fixed-point storage,
+    including empty words, and positive-width signed fixed-point words.
     Canonical parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
@@ -102,8 +102,8 @@ def executable_register_width(dtype: RegisterType) -> int:
         parameters = dict(dtype.parameters)
         if (
             type(width) is int
-            and width >= 1
-            and parameters["signed"] is False
+            and width >= 0
+            and (width > 0 or parameters["signed"] is False)
             and type(parameters["fractional_width"]) is int
             and parameters["fractional_width"] <= width
         ):

@@ -255,10 +255,9 @@ def test_fixed_point_split_join_and_symbolic_allocation_keep_metadata() -> None:
     record = builder.finalize({"q": output})
     assert verify_program_record(record) == ()
     assert output.register.dtype == dtype
-    with pytest.raises(ValueError, match="unsupported executable"):
-        lower_register_program(record)
-    with pytest.raises(ValueError, match="unsupported executable"):
-        bind_register_program(record, ((0, 1, 2),))
+    assert verify_program_record(lower_register_program(record)) == ()
+    bound = bind_register_program(record, ((0, 1, 2),))
+    assert bound.outputs == ((2, 1, 0),) and bound.circuit.instructions == ()
     n = sympy.Symbol("n", positive=True, integer=True)
     builder = ComponentProgramBuilder(Signature(()))
     work = builder.allocate(dtype=fixed_point_register_type(n, 1))

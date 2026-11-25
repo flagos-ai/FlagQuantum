@@ -1,4 +1,4 @@
-"""Proposals 113 through 115 admit canonical unsigned quantum fixed-point storage."""
+"""Approved fixed-point storage preserves canonical and symbolic boundaries."""
 
 from dataclasses import replace
 
@@ -21,8 +21,7 @@ def test_canonical_bit_storage(fraction: int) -> None:
 @pytest.mark.parametrize(
     "dtype",
     [
-        fixed_point_register_type(2, 1, True),
-        fixed_point_register_type(0, 0),
+        fixed_point_register_type(0, -2, True),
         fixed_point_register_type(-1, -2),
         RegisterType(
             "fixed_point", True, parameters=(("fractional_width", 1), ("signed", False))

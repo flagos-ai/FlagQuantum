@@ -149,7 +149,8 @@ INTERNAL_ONLY_NAMES = (
 RULE_READERS: dict[str, tuple[str, ...]] = {
     "logical_registers": (
         "test_logical_register_calls_keep_fixed_point_metadata",
-        "test_logical_register_admission_does_not_authorize_physical_lowering",
+        "test_approved_signed_fixed_storage_authorizes_physical_lowering",
+        "test_logical_symbolic_fraction_still_refuses_physical_lowering",
     ),
     "register_workspace": (
         "test_register_workspace_keeps_zero_width_ownership",
