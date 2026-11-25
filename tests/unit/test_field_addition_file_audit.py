@@ -7,9 +7,9 @@
 from __future__ import annotations
 
 import ast
-import csv
 import hashlib
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -52,21 +52,21 @@ def locked_source_assets() -> None:
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as handle:
-        rows = [
-            r
-            for r in csv.DictReader(handle)
-            if r["编号"]
-            in {"Q-0509", "Q-0510", "Q-0511", "Q-0512", "Q-0513", "Q-0514", "Q-0524"}
-        ]
-    assert len(rows) == 7
-    for row in rows:
-        data = (REFERENCE / row["源文件"]).read_bytes()
+    # These are the original seven ledger blobs, including notebooks and converter.
+    blobs = {
+        "gf2_add_k.ipynb": "6e8ab3396ad7b60f1680b6ee4f9e41756c9a6df8",
+        "gf2_add_k.py": "41e380ea8bcaa7035837c0b3040072c6fe522cc1",
+        "gf2_add_k_test.py": "0add69ae4e42c2b7ed8fa17a5618d5a2cbce3ab7",
+        "gf2_addition.ipynb": "e5a299a88e983878bad3dc9bcc6a97551c66f776",
+        "gf2_addition.py": "c63b50340bbe9a7653d8e23c497b4dfcf81f081d",
+        "gf2_addition_test.py": "ed1ed34345933257551e206d1df2ca045883dc4c",
+        "gf_utils.py": "3ecc74fb2657ff92c19ca0097ddf2c3d73720c5d",
+    }
+    for filename, blob in blobs.items():
+        data = (REFERENCE / "qualtran/bloqs/gf_arithmetic" / filename).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == row["源对象"]
+            == blob
         )
 
 
@@ -92,6 +92,84 @@ def test_complete_original_test_function_inventory() -> None:
         assert {
             node.name for node in tree.body if isinstance(node, ast.FunctionDef)
         } == names
+
+
+@pytest.mark.parametrize("constant", (False, True))
+@pytest.mark.parametrize("symbolic", (False, True))
+def test_actual_factory_protocols_and_native_stored_graph_boundaries(
+    constant: bool, symbolic: bool
+) -> None:
+    import qualtran.testing as checks
+    from qualtran import BloqExample
+    from qualtran.bloqs.gf_arithmetic.gf2_add_k import (
+        _gf2_add_k_symbolic,
+        _gf16_add_k,
+    )
+    from qualtran.bloqs.gf_arithmetic.gf2_addition import (
+        _gf2_addition_symbolic,
+        _gf16_addition,
+    )
+
+    from examples.algorithms import field_ui_export as native
+    from flagquantum.compiler.registers.finite_field.addition_component import (
+        field_addition_program,
+    )
+    from flagquantum.core.ir.program import verify_program_record
+    from flagquantum.core.ir.program.physical_codec import native_program_to_dict
+    from flagquantum.errors import SerializationError
+
+    example = (
+        (_gf2_add_k_symbolic if symbolic else _gf16_add_k)
+        if constant
+        else (_gf2_addition_symbolic if symbolic else _gf16_addition)
+    )
+    original = example.make()
+    signature = native.signature(example.name)
+    assert [(r.name, r.bitsize, r.shape_symbolic, r.side.name) for r in signature] == [
+        (r.name, r.bitsize, r.shape_symbolic, r.side.name) for r in original.signature
+    ]
+    expected = {
+        "make": "PASS",
+        "decompose": "NA" if symbolic else "PASS",
+        "counts": "UNVERIFIED" if symbolic else "FAIL",
+        "serialize": "FAIL",
+        "qtyping": "NA" if symbolic else "PASS",
+    }
+    protocols: dict[str, Callable[[BloqExample], object]] = {
+        "make": checks.assert_bloq_example_make,
+        "decompose": checks.assert_bloq_example_decompose,
+        "counts": checks.assert_equivalent_bloq_example_counts,
+        "serialize": checks.assert_bloq_example_serializes,
+        "qtyping": checks.assert_bloq_example_qtyping,
+    }
+    for mode, check in protocols.items():
+        try:
+            check(example)
+        except checks.BloqCheckException as error:
+            assert error.check_result.name == expected[mode]
+            if mode == "serialize":
+                assert "QGF" in error.msg
+            if mode == "counts" and not symbolic:
+                assert "Split" in error.msg and "Join" in error.msg
+        else:
+            assert expected[mode] == "PASS"
+
+    record = native.decomposition(example.name)
+    if symbolic:
+        assert record is None
+        assert dict(signature[0].dtype.parameters)["degree"] == original.bitsize
+    else:
+        assert record is not None and verify_program_record(record) == ()
+        assert record == field_addition_program(
+            signature[0].dtype, constant=1 if constant else None
+        )
+        assert dict(signature[0].dtype.parameters)["polynomial"] == int(
+            original.qgf.irreducible_poly
+        )
+        # This codec admits physical-context Programs, not logical field graphs.
+        # Bound CircuitIR JSON and execution are checked in test_typed_field_addition.
+        with pytest.raises(SerializationError, match="requires a physical context"):
+            native_program_to_dict(record)
 
 
 @pytest.mark.parametrize("width", range(1, 9))
