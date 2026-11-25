@@ -34,7 +34,7 @@ from flagquantum.compiler._component_trace.resource_model import (
 from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 from flagquantum.core.ir import Instruction
 from flagquantum.simulation.value_dimensions import SymbolicSequenceLength
-from tests.unit.measurement_checks import forced_branch
+from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -159,6 +159,50 @@ def test_complete_executable_loader_source_stream_and_all_complex_histories() ->
     assert sum(g.name in ("t", "tdg") for g in actual) == 4
     assert native.qrom.workspace_size == 1
     assert Circuit(8).append(operation).to_ir().validate().instructions == actual
+
+
+def test_original_example_all_valid_addresses_through_native_measured_lookup() -> None:
+    native, original = example_scope_loader(), source._load_scopes()
+    address_width, output_width = native.m_dtype.num_qubits, native.scope_bitsize
+    assert isinstance(address_width, int) and isinstance(output_width, int)
+    work_width = native.qrom.workspace_size
+    address = tuple(range(address_width))
+    output = tuple(range(address_width, address_width + output_width))
+    work = tuple(
+        range(address_width + output_width, address_width + output_width + work_width)
+    )
+    width = address_width + output_width + work_width + 1
+    gates = (
+        Circuit(width)
+        .append(
+            native.make_on(
+                address,
+                output,
+                workspace=work,
+                classical_bits=tuple(range(100, 100 + work_width)),
+            )
+        )
+        .to_ir()
+        .instructions
+    )
+    before, after = [], []
+    for j, (scope, _) in enumerate(original.inst.batched_scopes):
+        expected_j, expected_scope = original.call_classically(j=j)
+        assert expected_j == j and expected_scope == original.inst.scope_as_int(scope)
+        for target in (0, (1 << output_width) - 1):
+            for spectator in (0, 1):
+                incoming = (
+                    (j << (width - address_width))
+                    | (target << (work_width + 1))
+                    | spectator
+                )
+                outgoing = incoming ^ (int(expected_scope) << (work_width + 1))
+                before.append(tuple(map(int, f"{incoming:0{width}b}")))
+                after.append(tuple(map(int, f"{outgoing:0{width}b}")))
+    events = sum(g.name == "measure" for g in gates)
+    assert events == 3
+    assert certified_and_channel_map(gates, tuple(before)) == (tuple(after), events)
+    assert certified_and_channel_map(gates, tuple(after)) == (tuple(before), events)
 
 
 @pytest.mark.parametrize("symbolic", (False, True))
