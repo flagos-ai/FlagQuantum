@@ -22,27 +22,31 @@ def arctan_lookup_program(source_width: int, target_width: int) -> ProgramRecord
     branch. Bounds and table rounding reuse the existing flat lookup owner.
     """
     arctan_lookup_requirements(source_width, target_width)
-    signs = (0,) + (1,) * ((1 << source_width) - 1)
-    table = QromTable.from_data(
-        signs,
-        _arctan_magnitude_words(source_width, target_width),
-        target_bitsizes=(1, target_width),
-    )
     builder = ComponentProgramBuilder(
         ArctangentDeclaration(source_width, target_width).signature
     )
+    if source_width == 0:
+        return builder.finalize(builder.inputs)
+    signs = (0,) + (1,) * ((1 << source_width) - 1)
+    data = (
+        (signs, _arctan_magnitude_words(source_width, target_width))
+        if target_width
+        else (signs,)
+    )
+    table = QromTable.from_data(
+        *data, target_bitsizes=(1, target_width) if target_width else (1,)
+    )
+    arguments = {
+        "selection": builder.inputs["select"],
+        "target0_": builder.inputs["sign"],
+    }
+    if target_width:
+        arguments["target1_"] = builder.inputs["target"]
     result = builder.call_program(
         qrom_program(table, reserve_workspace=True),
-        {
-            "selection": builder.inputs["select"],
-            "target0_": builder.inputs["sign"],
-            "target1_": builder.inputs["target"],
-        },
+        arguments,
     )
-    return builder.finalize(
-        {
-            "select": result["selection"],
-            "sign": result["target0_"],
-            "target": result["target1_"],
-        }
-    )
+    outputs = {"select": result["selection"], "sign": result["target0_"]}
+    if target_width:
+        outputs["target"] = result["target1_"]
+    return builder.finalize(outputs)

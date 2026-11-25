@@ -107,10 +107,13 @@ def test_default_iteration_degree_and_invalid_metadata_reuse_original_owner() ->
 
 
 @pytest.mark.parametrize("depth", (0, 1, 2))
-def test_actual_constructor_replacement_retains_model_only_default(depth: int) -> None:
+@pytest.mark.parametrize("source,target", ((0, 0), (0, 3), (2, 0), (2, 8)))
+def test_actual_constructor_replacement_retains_model_only_default(
+    depth: int, source: int, target: int
+) -> None:
     from qualtran.bloqs.arithmetic.trigonometric import ArcTan
 
-    library = _library(ArcTan(2, 8), depth)
+    library = _library(ArcTan(source, target), depth)
     default = resolve_component_program(library, 0, trigonometric_factories())
     assert not default.functions[0].blocks
     with pytest.raises(ValueError, match="bodies"):
@@ -120,17 +123,26 @@ def test_actual_constructor_replacement_retains_model_only_default(depth: int) -
     concrete = resolve_component_program(library, 0, factories)
     assert verify_program_record(concrete) == ()
     assert concrete.functions[0].registers == default.functions[0].registers
-    bound = bind_register_program(
-        concrete, ((0, 1), (2,), tuple(range(3, 11))), clean=(11,)
+    logical = source + 1 + target
+    ports = tuple(
+        p
+        for p in (
+            tuple(range(source)),
+            (source,),
+            tuple(range(source + 1, logical)),
+        )
+        if p
     )
+    work = tuple(range(logical, logical + max(0, source - 1)))
+    bound = bind_register_program(concrete, ports, clean=work)
     direct = bind_register_program(
-        arctan_lookup_program(2, 8), ((0, 1), (2,), tuple(range(3, 11))), clean=(11,)
+        arctan_lookup_program(source, target), ports, clean=work
     )
     assert bound.circuit.instructions == direct.circuit.instructions
 
 
 def test_explicit_lookup_preserves_profile_and_constructor_validation() -> None:
-    for source, target in ((0, 8), (13, 8), (2, 0), (2, 33), (True, 8)):
+    for source, target in ((-1, 8), (13, 8), (2, -1), (2, 33), (True, 8)):
         with pytest.raises(ValueError):
             arctan_lookup_program(source, target)
     arguments = {"selection_bitsize": 2, "target_bitsize": 8}

@@ -18,7 +18,9 @@ from tests.unit.sparse_register_execution import execute_sparse_register
 pytestmark = pytest.mark.unit
 
 
-def layout(n, p):
+def layout(
+    n: int, p: int
+) -> tuple[tuple[int, ...], int, tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
     work, slots = arctan_lookup_requirements(n, p)
     return (
         tuple(range(n)),
@@ -29,8 +31,10 @@ def layout(n, p):
     )
 
 
-@pytest.mark.parametrize("n,p", [(1, 1), (2, 3), (3, 4), (4, 6)])
-def test_all_inputs_and_occupied_outputs(n, p):
+@pytest.mark.parametrize(
+    "n,p", [(0, 0), (0, 3), (1, 0), (2, 0), (3, 0), (1, 1), (2, 3), (3, 4), (4, 6)]
+)
+def test_all_inputs_and_occupied_outputs(n: int, p: int) -> None:
     bound = layout(n, p)
     gates = arctan_lookup_ir(*bound)
     count = Counter(gate.name for gate in gates)
@@ -38,7 +42,7 @@ def test_all_inputs_and_occupied_outputs(n, p):
     assert count["t"] + count["tdg"] == 4 * count["measure"]
     assert count["ccx"] == 0
 
-    def bits(word, width):
+    def bits(word: int, width: int) -> tuple[int, ...]:
         return tuple(word >> j & 1 for j in reversed(range(width)))
 
     before, after = [], []
@@ -53,7 +57,7 @@ def test_all_inputs_and_occupied_outputs(n, p):
 
 
 @pytest.mark.ftqc_reference
-def test_maximum_supported_table_words_from_literal_source():
+def test_maximum_supported_table_words_from_literal_source() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
@@ -74,7 +78,7 @@ def test_maximum_supported_table_words_from_literal_source():
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("n,p", [(1, 2), (2, 3), (3, 3)])
-def test_literal_arctan_matrix_and_source_qrom(n, p):
+def test_literal_arctan_matrix_and_source_qrom(n: int, p: int) -> None:
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
     pytest.importorskip("qualtran")
@@ -138,13 +142,13 @@ def test_literal_arctan_matrix_and_source_qrom(n, p):
 @pytest.mark.parametrize(
     "n,p,match",
     [
-        (0, 4, "source bits"),
+        (-1, 4, "source bits"),
         (13, 4, "source bits"),
         (True, 4, "source bits"),
-        (3, 0, "target bits"),
+        (3, -1, "target bits"),
         (3, 33, "target bits"),
     ],
 )
-def test_arctan_rejects_excessive_table_formats(n, p, match):
+def test_arctan_rejects_excessive_table_formats(n: int, p: int, match: str) -> None:
     with pytest.raises(ValueError, match=match):
         arctan_lookup_requirements(n, p)

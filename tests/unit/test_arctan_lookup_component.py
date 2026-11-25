@@ -42,7 +42,10 @@ def pinned_arctangent() -> None:
     )
 
 
-@pytest.mark.parametrize("source_width,target_width", ((1, 1), (2, 3), (3, 8), (4, 6)))
+@pytest.mark.parametrize(
+    "source_width,target_width",
+    ((1, 0), (2, 0), (3, 0), (1, 1), (2, 3), (3, 8), (4, 6)),
+)
 def test_stored_lookup_preserves_source_qrom_operands_feedback_and_resources(
     source_width: int, target_width: int
 ) -> None:
@@ -53,10 +56,14 @@ def test_stored_lookup_preserves_source_qrom_operands_feedback_and_resources(
 
     original = ArcTan(source_width, target_width)
     logical = source_width + 1 + target_width
-    ports = (
-        tuple(range(source_width)),
-        (source_width,),
-        tuple(range(source_width + 1, logical)),
+    ports = tuple(
+        p
+        for p in (
+            tuple(range(source_width)),
+            (source_width,),
+            tuple(range(source_width + 1, logical)),
+        )
+        if p
     )
     work = tuple(range(logical, logical + source_width - 1))
     program = arctan_lookup_program(source_width, target_width)
@@ -67,17 +74,32 @@ def test_stored_lookup_preserves_source_qrom_operands_feedback_and_resources(
     bound = bind_register_program(program, ports, clean=work)
     assert bound.outputs == ports
     rows = tuple(original.apply(x, 0, 0) for x in range(1 << source_width))
+    data = (
+        (np.array([r[1] for r in rows]), np.array([r[2] for r in rows]))
+        if target_width
+        else (np.array([r[1] for r in rows]),)
+    )
     qrom = QROM(
-        (np.array([r[1] for r in rows]), np.array([r[2] for r in rows])),
+        data,
         (source_width,),
-        (1, target_width),
-        ((), ()),
+        (1, target_width) if target_width else (1,),
+        ((), ()) if target_width else ((),),
     )
     # Each source measurement event binds to its native SSA result, even when
     # the flat emitter reuses a classical slot for successive erasures.
     expected = reference_arithmetic_gates(
         qrom,
-        dict(zip(("selection", "target0_", "target1_"), ports, strict=True)),
+        dict(
+            zip(
+                (
+                    ("selection", "target0_", "target1_")
+                    if target_width
+                    else ("selection", "target0_")
+                ),
+                ports,
+                strict=True,
+            )
+        ),
         work,
         MeasurementSlots(bound.circuit.instructions),
         cirq_style=True,
@@ -96,7 +118,17 @@ def test_stored_lookup_preserves_source_qrom_operands_feedback_and_resources(
 
 
 @pytest.mark.parametrize(
-    "source_width,target_width,repeats", ((1, 8, 2), (2, 3, 2), (3, 3, 1))
+    "source_width,target_width,repeats",
+    (
+        (0, 0, 1),
+        (0, 3, 2),
+        (1, 0, 2),
+        (2, 0, 2),
+        (3, 0, 1),
+        (1, 8, 2),
+        (2, 3, 2),
+        (3, 3, 1),
+    ),
 )
 def test_composed_lookup_full_complex_spectator_every_history_and_zero_work(
     source_width: int, target_width: int, repeats: int
@@ -113,10 +145,14 @@ def test_composed_lookup_full_complex_spectator_every_history_and_zero_work(
         )
     program = builder.finalize(values)
     logical = source_width + 1 + target_width
-    ports = (
-        tuple(range(source_width)),
-        (source_width,),
-        tuple(range(source_width + 1, logical)),
+    ports = tuple(
+        p
+        for p in (
+            tuple(range(source_width)),
+            (source_width,),
+            tuple(range(source_width + 1, logical)),
+        )
+        if p
     )
     work = tuple(range(logical + 1, logical + source_width))
     bound = bind_register_program(program, ports, clean=work, borrowed=(logical,))

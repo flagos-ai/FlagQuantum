@@ -13,11 +13,11 @@ from .source_qrom import source_qrom_ir
 
 def arctan_lookup_requirements(source_width: int, target_width: int) -> tuple[int, int]:
     """Return clean workspace and slots for a concrete ArcTan table."""
-    if type(source_width) is not int or not 1 <= source_width <= 12:
-        raise ValueError("ArcTan lookup requires 1 to 12 source bits")
-    if type(target_width) is not int or not 1 <= target_width <= 32:
-        raise ValueError("ArcTan lookup requires 1 to 32 target bits")
-    size = source_width - 1
+    if type(source_width) is not int or not 0 <= source_width <= 12:
+        raise ValueError("ArcTan lookup requires 0 to 12 source bits")
+    if type(target_width) is not int or not 0 <= target_width <= 32:
+        raise ValueError("ArcTan lookup requires 0 to 32 target bits")
+    size = max(0, source_width - 1)
     return size, size
 
 
@@ -44,13 +44,18 @@ def arctan_lookup_ir(
     arctan_lookup_requirements(len(source), len(target))
     size = 1 << len(source)
     signs = (0,) + (1,) * (size - 1)
-    magnitude = _arctan_magnitude_words(len(source), len(target))
+    targets = (((sign,),), (target,)) if target else (((sign,),),)
+    datasets = (
+        (signs, _arctan_magnitude_words(len(source), len(target)))
+        if target
+        else (signs,)
+    )
     return source_qrom_ir(
         (),
         (source,),
         (size,),
-        (((sign,),), (target,)),
-        (signs, magnitude),
+        targets,
+        datasets,
         workspace,
         classical_bits,
     )
