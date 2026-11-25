@@ -2,6 +2,13 @@
 
 This package owns uniform and rank-aware preparation and reflections.
 
+The `thc_uniform_source_component`, `thc_preparation_component` and
+`thc_preparation_metadata` owners retain literal THC calls and shared ports.
+Source model leaves and invalid cleanup remain explicit physical refusals;
+the existing mathematical Algorithms operation has separate execution evidence.
+See `docs/development/THC_PREPARATION_SOURCE_AUDIT.md` for the full disposition
+and the constructor tests, including the original eight-bit table.
+
 `sparse_chemistry_prepare_component` owns the eighteen sparse source calls and
 their explicit directional dependencies. A clean lookup supplies RIGHT banks;
 an independently verified bank-unitary dependency instead threads caller-owned

@@ -9,6 +9,13 @@ operators, raw histories and unchanged scalar precision during quantization.
 
 This package owns qROM, QROAM, selected swaps, unary traversal and measured unlookup.
 
+Clean QROAM retains the native reserved-workspace profile by default. Literal
+source preparation factories explicitly request `reserve_workspace=False`:
+the reserved profile inserts bookkeeping calls that are absent from the source
+graph. These logical calls are separate from emitted primitive gate counts.
+See `docs/development/THC_PREPARATION_SOURCE_AUDIT.md` for the strengthened
+directional preparation comparison and the original validation blind spot.
+
 `qroam_bank_unitary_component.qroam_bank_unitary_pair` operates on caller-owned
 arbitrary bank words through shared batch XOR and relative-phase routing. Its
 inverse reverses routing before XOR; bank storage is never measurement-erased.
