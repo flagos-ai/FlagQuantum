@@ -17,7 +17,7 @@ from tests.unit.sparse_register_execution import execute_sparse_register
 pytestmark = pytest.mark.unit
 
 
-def cubic_word(distance, precision):
+def cubic_word(distance: int, precision: int) -> int:
     if not distance:
         return 0
     with localcontext() as context:
@@ -58,7 +58,9 @@ def cubic_word(distance, precision):
 @pytest.mark.parametrize(
     "width,precision,values", [(4, 5, tuple(range(16))), (3, 16, (0, 1, 3, 6))]
 )
-def test_table_cubic_inverse_sqrt_clean_words(width, precision, values):
+def test_table_cubic_inverse_sqrt_clean_words(
+    width: int, precision: int, values: tuple[int, ...]
+) -> None:
     work, slots = grid_cubic_inverse_sqrt_requirements(width, precision)
     inputs = tuple(range(width))
     out = tuple(range(width, width + precision + 1))

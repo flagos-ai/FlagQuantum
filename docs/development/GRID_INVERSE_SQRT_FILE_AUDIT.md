@@ -81,5 +81,8 @@ The bank builder admits at least two address bits and 1–63 coefficient
 bits. The source gives no arithmetic representation for every arbitrary
 coefficient input or primitive polynomial/Newton decomposition. The
 explicit native fixed-point convention and original resource declaration
-therefore retain separate evidence. Complete measurement-branch coverage
-of the larger table/interpolation circuit remains open.
+therefore retain separate evidence. The formerly open representative complete-chain branch coverage is now proved
+for both existing 4/5 and 3/16 profiles by literal And-channel composition; see
+[complete source binding](GRID_INVERSE_SQRT_SOURCE_BINDING.md). The optional
+coefficient conversion and original resource-only constructor capabilities are
+also complete there; original opaque arithmetic ambiguity remains explicit.

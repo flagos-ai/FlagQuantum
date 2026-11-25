@@ -1457,3 +1457,13 @@ The same table now resolves outer Adjoint through compilation-scoped exact
 Hamming recipes, with an optional explicit inverse owner for unrelated children.
 Empty logical junk ownership and source failures remain distinct; see
 ../../docs/development/HAMMING_INVERSE_CONSTRUCTOR.md.
+
+
+`formats/legacy_grid_inverse_sqrt_factories.py` binds both original grid
+inverse-root declarations through `registers/fixed_point/grid_inverse_sqrt_signature.py`.
+Algorithms reuses that signature owner for concrete model calls; Ecosystem owns
+conversion of supplied coefficient banks. Original roots remain bodyless and
+cannot silently select independent polynomial/Newton execution. Focused checks:
+`python -m pytest tests/unit/test_legacy_grid_inverse_sqrt_factories.py`.
+See `docs/development/GRID_INVERSE_SQRT_SOURCE_BINDING.md` for complete source,
+complex branch, work ownership and separate measured/model evidence.
