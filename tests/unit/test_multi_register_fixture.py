@@ -134,13 +134,7 @@ def test_typed_companions_metadata_and_original_invalid_binding() -> None:
             else:
                 assert params == {} and executable_register_width(ns.dtype) == 8
                 continue
-            if isinstance(ss.dtype, QFxp) and ss.dtype.signed:
-                with pytest.raises(
-                    ValueError, match="unsupported executable register descriptor"
-                ):
-                    executable_register_width(ns.dtype)
-            else:
-                assert executable_register_width(ns.dtype) == ss.dtype.num_qubits
+            assert executable_register_width(ns.dtype) == ss.dtype.num_qubits
     for atom in sources[:2]:
         with pytest.raises(DecomposeNotImplementedError):
             atom.decompose_bloq()
