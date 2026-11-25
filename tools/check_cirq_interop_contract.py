@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import tomllib
+    tomllib = importlib.import_module("tomllib")
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
-    import tomli as tomllib
+    tomllib = importlib.import_module("tomli")
 
 from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
@@ -177,7 +177,8 @@ EXPECTED_CUSTOM_UNITARY_CONTRACT = {
 
 
 def load_toml(path: Path) -> dict[str, Any]:
-    return tomllib.loads(path.read_text(encoding="utf-8"))
+    result: dict[str, Any] = tomllib.loads(path.read_text(encoding="utf-8"))
+    return result
 
 
 def conversion_issue_codes(path: Path = CONVERSION) -> set[str]:
@@ -253,9 +254,9 @@ def contract_errors(
     excluded = set(unsupported.get("flagquantum_opcodes", ()))
     operations = contract.get("operations", ())
     mapped = [
-        operation.get("flagquantum")
+        operation["flagquantum"]
         for operation in operations
-        if isinstance(operation, dict)
+        if isinstance(operation, dict) and isinstance(operation.get("flagquantum"), str)
     ]
     if len(mapped) != len(set(mapped)):
         errors.append("Cirq operation mappings must be unique")
@@ -266,12 +267,26 @@ def contract_errors(
     }
     if pairs != _CIRQ_SYMBOL_TO_FLAGQUANTUM:
         errors.append("Cirq operation contract and adapter mapping drifted")
-    expected = set(OPERATOR_SCHEMAS) - excluded
-    if set(mapped) != expected:
+    controlled_h = [
+        op
+        for op in operations
+        if isinstance(op, dict) and op.get("flagquantum") == "ch"
+    ]
+    if controlled_h != [
+        {
+            "cirq_symbol": "CH",
+            "cirq_gate_type": "ControlledGate",
+            "cirq_form": "one_positive_binary_control;HPowGate_exponent=1;global_shift=0",
+            "flagquantum": "ch",
+        }
+    ]:
+        errors.append("Cirq controlled-Hadamard contract drifted from Proposal 122")
+    expected_opcodes = set(OPERATOR_SCHEMAS) - excluded
+    if set(mapped) != expected_opcodes:
         errors.append(
             "Cirq opcode coverage drifted: "
-            f"missing={sorted(expected-set(mapped))}, "
-            f"unexpected={sorted(set(mapped)-expected)}"
+            f"missing={sorted(expected_opcodes-set(mapped))}, "
+            f"unexpected={sorted(set(mapped)-expected_opcodes)}"
         )
     for operation in operations:
         if not isinstance(operation, dict):
@@ -310,6 +325,9 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         if tuple(unitary_protocol(probe).shape) != (2, 2):
             errors.append("Cirq MatrixGate unitary protocol shape drifted")
     constructors = {
+        "CH": cirq.H.controlled(),
+        "ZPowGate": cirq.ZPowGate(exponent=0.5),
+        "CZPowGate": cirq.CZPowGate(exponent=0.5),
         "rx": cirq.rx(0.5),
         "ry": cirq.ry(0.5),
         "rz": cirq.rz(0.5),

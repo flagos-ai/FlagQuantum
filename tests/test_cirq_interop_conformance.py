@@ -3,12 +3,14 @@ from __future__ import annotations
 import math
 import random
 from importlib import import_module
+from typing import Any
 
 import pytest
 import torch
 
 from flagquantum import Circuit
 from flagquantum.ecosystem._semantic_parity import (
+    SemanticParityCase,
     maximum_error_up_to_global_phase,
     reference_state,
     semantic_parity_cases,
@@ -25,6 +27,7 @@ _CATALOG = (
     ("y", 1),
     ("z", 1),
     ("h", 1),
+    ("ch", 2),
     ("s", 1),
     ("t", 1),
     ("rx", 1),
@@ -39,7 +42,7 @@ _CATALOG = (
 
 
 @pytest.mark.parametrize("case", semantic_parity_cases(), ids=lambda case: case.name)
-def test_shared_cross_framework_semantics(case) -> None:
+def test_shared_cross_framework_semantics(case: SemanticParityCase) -> None:
     exported = to_cirq(case.program)
     qubits = cirq.LineQubit.range(case.program.n_wires)
     external_state = torch.as_tensor(
@@ -56,12 +59,13 @@ def test_shared_cross_framework_semantics(case) -> None:
     assert maximum_error_up_to_global_phase(round_trip_state, expected) <= 1e-10
 
 
-def _cirq_gate(name: str, angle: float | None):
+def _cirq_gate(name: str, angle: float | None) -> Any:
     fixed = {
         "x": cirq.X,
         "y": cirq.Y,
         "z": cirq.Z,
         "h": cirq.H,
+        "ch": cirq.H.controlled(),
         "s": cirq.S,
         "t": cirq.T,
         "cx": cirq.CNOT,
@@ -92,10 +96,12 @@ def test_seeded_cirq_differential_round_trip(seed: int) -> None:
     for _ in range(14):
         name, arity = rng.choice(_CATALOG)
         wires = tuple(rng.sample(range(n_wires), arity))
-        angle = rng.uniform(-math.pi, math.pi) if name in {"rx", "ry", "rz"} else None
-        params = {"theta": angle} if angle is not None else {}
+        rotation_angle = (
+            rng.uniform(-math.pi, math.pi) if name in {"rx", "ry", "rz"} else None
+        )
+        params = {"theta": rotation_angle} if rotation_angle is not None else {}
         flagquantum = flagquantum.gate(name, wires, params=params)
-        gate = _cirq_gate(name, angle)
+        gate = _cirq_gate(name, rotation_angle)
         moments.append(
             cirq.Moment([gate.on(*(cirq.LineQubit(wire) for wire in wires))])
         )

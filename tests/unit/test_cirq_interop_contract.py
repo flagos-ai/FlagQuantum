@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -10,7 +11,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _inputs() -> tuple[dict, dict]:
+def _inputs() -> tuple[dict[str, Any], dict[str, Any]]:
     return (
         load_toml(ROOT / "contracts" / "cirq-interop-contract.toml"),
         load_toml(ROOT / "dependency-policy.toml"),
@@ -19,6 +20,16 @@ def _inputs() -> tuple[dict, dict]:
 
 def test_cirq_interop_contract_is_current() -> None:
     assert contract_errors(*_inputs()) == ()
+
+
+def test_controlled_hadamard_rejects_unapproved_control_contract_drift() -> None:
+    contract, policy = _inputs()
+    entry = next(op for op in contract["operations"] if op["flagquantum"] == "ch")
+    entry["cirq_form"] = "arbitrary_controls"
+    assert (
+        "Cirq controlled-Hadamard contract drifted from Proposal 122"
+        in contract_errors(contract, policy)
+    )
 
 
 def test_contract_rejects_public_api_and_version_drift() -> None:

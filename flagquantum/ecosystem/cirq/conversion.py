@@ -32,6 +32,7 @@ _CIRQ_SYMBOL_TO_FLAGQUANTUM = {
     "Y": "y",
     "Z": "z",
     "H": "h",
+    "CH": "ch",
     "S": "s",
     "T": "t",
     "ZPowGate": "phase",
@@ -492,6 +493,14 @@ def _lower_gate(
         return "i", {}
     if isinstance(gate, cirq.CSwapGate):
         return "cswap", {}
+    if (
+        isinstance(gate, cirq.ControlledGate)
+        and isinstance(gate.sub_gate, cirq.HPowGate)
+        and gate.sub_gate.exponent == 1
+        and gate.sub_gate.global_shift == 0
+        and gate == cirq.H.controlled()
+    ):
+        return "ch", {}
     if isinstance(
         gate,
         (
@@ -771,6 +780,7 @@ def _export_gate(cirq: Any, instruction: Instruction, params: list[Any]) -> Any:
         "y": cirq.Y,
         "z": cirq.Z,
         "h": cirq.H,
+        "ch": cirq.H.controlled(),
         "s": cirq.S,
         "t": cirq.T,
         "cx": cirq.CNOT,
