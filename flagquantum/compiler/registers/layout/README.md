@@ -126,3 +126,15 @@ and sparse diffusion share it. Symbolic partition helpers stay declarations;
 concrete partitions reuse Split/Join. Run `test_packed_prepare_component.py`,
 `test_product_block_component.py` and `test_sparse_matrix_component.py` for the
 replacement, including symbolic views and unchanged gate/work lifetimes.
+
+`classical_storage.bind_classical_scratch` explicitly assigns private classical
+scratch values after ordinary register binding. The default binder still emits
+fresh measurement SSA slots. The pass preserves quantum instructions, parameters,
+output wires and lease events; only scratch destinations and their feedback reads
+are renamed. It refuses exported classical outputs and insufficient storage.
+Whole-bit live intervals include redefinitions, conditional old destinations,
+XOR sources and guarded effects. Free slots cycle in the supplied order; each
+physical slot retains its latest assignment. It owns no execution or quantum
+allocator. Run `tests/unit/test_classical_scratch_binding.py` for all small complex
+branches and `tests/unit/test_modexp_binding_replacement.py` for the numerical
+ModExp consumer with four caller-provided slots and normal append.
