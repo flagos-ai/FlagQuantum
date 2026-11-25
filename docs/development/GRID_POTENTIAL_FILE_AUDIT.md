@@ -1,6 +1,6 @@
 # Grid potential file audit
 
-This audit covers Q-0429 and Q-0430 in Qualtran v0.7.0 at `bcb17bb25360ed68ce3bc084645db3e929799389`. The unchanged original test file returned ten passes and three skips. Q-0430 closes with the original cases and the native comparisons. Q-0429 retains the execution gaps below.
+This audit covers Q-0429 and Q-0430 in Qualtran v0.7.0 at `bcb17bb25360ed68ce3bc084645db3e929799389`. The unchanged original test file returned ten passes and three skips. The follow-ups below close Q-0429 with its complete source call graph, data binding, symbolic resource queries and separately specified native channels. Q-0430 retains its original-case acceptance. Source defects and unavailable primitive bodies remain explicit dispositions, not claims of physical equivalence.
 
 The pair takes two opaque through registers, `system_i` and `system_j`, with three equal-width axis words each. Total potential takes one opaque `system` register shaped `(electrons, 3)`, using the same coordinate layout as grid kinetic energy. Tests check source port shapes, order, and row-major indices. The upper-triangular traversal reuses each electron's returned wires in the next incident pair and returns the final wires in their original positions.
 
@@ -38,8 +38,8 @@ one-update fixture emits 3,104 T/T† and 776 measurements, borrowing
 177 work wires and 13 feedback slots. The output support certifies work
 cleanup.
 
-Q-0424 closes the package's three export mappings. Q-0429 retains its
-source addition, angle, arbitrary coefficient and release boundaries.
+Q-0424 closes the package's three export mappings. At that historical checkpoint,
+Q-0429 retained source addition, angle, arbitrary coefficient and release boundaries.
 
 
 ## Complete constructor follow-up: interface and ownership
@@ -157,7 +157,7 @@ The native protocol preserves its existing SerializationError wrapper; no
 pickle fallback or new serialized vocabulary is introduced. A bound concrete
 library uses the existing supported protocol and resolver.
 
-**Q0429 remains open for symbolic resource queries.** New direct reference
+**Historical resource gap at 2194baa9a.** New direct reference
 intake establishes that symbolic coordinate width has a successful QubitCount
 expression, although QECGatesCost raises TypeError for an undecidable selection
 bound. Symbolic polynomial width has both a successful gate formula and a
@@ -177,3 +177,56 @@ the separate dependency-restored QREF run passes all 12. The other lane passes
 all 367 directly. Local integration passes 145 cases. Strict typing of the
 four changed Python files, formatting, lint, Compiler scope, repository
 language, documentation links, architecture, IR and public API checks pass.
+
+## Complete symbolic resource queries and source-file disposition
+
+Algorithms now queries the same data-bearing input graph through the existing
+typed resolver, Program QEC query and Program logical-width query. The stored
+root connections remain authoritative. Source leaf formulas reuse shared
+out-of-place addition, actual-data QROM traversal and inverse-root owners.
+Allocation, release and Cast retain their existing native bodies: replacing
+them by ordinary declarations incorrectly changed greedy lifetime priorities
+and overestimated the baseline peak by 15 qubits. This discrepancy was found
+and corrected before acceptance.
+
+The inverse-root symbolic helper now forwards the selected legacy-shim profile
+to its existing addition and concrete model owners. Default behavior is
+unchanged. Whole-root comparisons cover both gate-cost profiles, symbolic
+polynomial/target widths, coordinate width, joint symbols and composite
+expressions. Full peak expressions agree algebraically, without substituting
+small numerical examples for a symbolic comparison. Custom nonuniform five-
+and sixteen-row banks retain their actual data-dependent gate counts.
+The query works with reference SDK imports blocked.
+
+Two original failures remain explicit. An undecidable selection bound raises
+the original TypeError with the same message in both gate queries; peak width
+still succeeds. Uniform data with symbolic dimensions requests an unavailable
+source Cirq decomposition and raises DecomposeTypeError upstream. The native
+model reports NotImplementedError at that same unsupported path, without
+importing the SDK exception into Algorithms. Its independent peak query still
+matches upstream. Neither failure is replaced by an invented successful count.
+
+For the original small bank fixture at coordinate width one and target width
+five, the symbolic default estimate is 3*p**2 + 8*p + floor(p**2/2) + 4 Toffoli,
+3*p + 10 And, 21*p + 67 Clifford, five rotations and 3*p + 10 measurements.
+These are source model categories, not emitted primitive counts. The native
+numerical primitive/storage table above is unchanged.
+
+Q-0429 closes the complete source file and its direct dependency obligations:
+constructor metadata/signatures, both original examples/DocSpecs, drawings,
+literal pair and upper-triangle call chains, data-bearing symbolic graphs,
+binding and original protocol boundaries, concrete/symbolic resource queries,
+and the separately specified native complex-channel/workspace evidence.
+The original unsigned addition, bodyless polynomial/Newton, unspecified QVR
+angle and clean-Free behavior remain preserved in the source recipe. This
+closure does not turn the independent signed-distance numerical operator into
+an upstream primitive decomposition or remove the recorded source defects.
+
+Model follow-up receipts use g2-grid-potential-symbolic-model-*-20261126.
+Final concentrated regression passes all 450 cases in each Cirq lane with no
+skips. Local integration passes 145 cases. Three changed Python files pass
+strict typing, formatting and lint; Algorithms scope, language, links,
+architecture, Program IR and public API checks pass. The original frozen
+potential source/test blob identities, Qualtran 0.7.0 and real Kickmix 0.1
+Simulator are checked in the source regression. Earlier full original examples,
+drawings and admitted numerical-channel evidence are reused unchanged.
