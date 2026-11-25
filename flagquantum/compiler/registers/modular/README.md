@@ -54,8 +54,8 @@ exponent-bit traversal and shared controlled multipliers. Its RIGHT result
 belongs to the caller; private multiplication work must close. The source
 constructor uses executable bodies, while the existing component tutorial
 explicitly retains declaration-only leaves for large logical drawings. The
-numerical make_on path remains frozen under its original explicit workspace
-and slot contract until an exact binding replacement is verified. See
+numerical make_on path delegates to the shared Program and an explicit classical
+scratch pass while retaining its original workspace and slot budgets. See
 `docs/development/RSA_MODEXP_FILE_AUDIT.md` for source inverse and large-width
 boundaries. Run `tests/unit/test_legacy_modular_exponentiation_factories.py`
 and `tests/unit/test_register_component_infrastructure.py` for this change.
@@ -64,3 +64,12 @@ modular add, constant, scaled and multiply owners before physical lowering.
 Scoped ModExp constructor recipes reuse these inverse bodies and consume the
 logical result only on the prepared image. The original signed comparator
 inverse port-name failure remains an explicit negative boundary.
+
+Scaled modular addition imports each distinct reduced constant's Program once
+per construction and calls that local definition for every original source bit.
+The compute/add/erase order, repeated source operations, negative scales, exact
+inverse pairs and measured feedback remain unchanged. There is no cross-call
+cache or second definition registry. Full Program and bound-record comparison
+against published 4551a7e11 verifies this construction reuse before reusing its
+source amplitude/resource evidence. Source models and literal primitives retain
+their separate owners; this change does not remove gates or lower cost estimates.

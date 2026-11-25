@@ -50,22 +50,27 @@ def scaled_modular_addition_program(
         (compute, erase),
         (erase, compute),
     ]
+    additions: dict[int, str] = {}
     for i in range(width):
         result = builder.call_program(
             compute, {"ctrl": np.array([ctrl, xs[i]])}, entry="scale_and"
         )
         constant = (scale * 2 ** (width - 1 - i)) % modulus
-        addition = controlled_modular_constant_program(width, modulus, constant)
-        if adjoint:
-            pairs.append(
-                (
-                    addition,
-                    controlled_modular_constant_program(
-                        width, modulus, constant, adjoint=True
-                    ),
+        if constant not in additions:
+            addition = controlled_modular_constant_program(width, modulus, constant)
+            additions[constant] = builder.import_program(addition)
+            if adjoint:
+                pairs.append(
+                    (
+                        addition,
+                        controlled_modular_constant_program(
+                            width, modulus, constant, adjoint=True
+                        ),
+                    )
                 )
-            )
-        added = builder.call_program(addition, {"ctrl": result["target"], "x": y})
+        added = builder.call_dict(
+            additions[constant], {"ctrl": result["target"], "x": y}
+        )
         restored = builder.call_program(
             erase,
             {"ctrl": result["ctrl"], "target": added["ctrl"]},
