@@ -13,20 +13,24 @@ from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from ..primitives.controlled_swap_component import controlled_swap_program
 from .scaled_modular_addition_component import scaled_modular_addition_program
 
 
 def modular_multiplication_program(
-    dtype: RegisterType, modulus: int, multiplier: int
+    dtype: RegisterType, modulus: int, multiplier: int, *, adjoint: bool = False
 ) -> ProgramRecord:
     """Multiply a valid MSB-first residue under the source positive control.
 
     The source's result word is allocated until after both scale-add calls and
     the exact controlled swap. The inverse scale keeps its original negative
     representative. The source full-ring loader failure stays observable.
+    The exact inverse retains both scales and reverses their typed calls.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Modular multiplication direction requires a boolean")
     width = executable_register_width(dtype)
     if dtype.encoding not in {"uint", "montgomery"}:
         raise ValueError("Modular multiplication requires unsigned or Montgomery words")
@@ -57,4 +61,28 @@ def modular_multiplication_program(
     cleared_result = swapped["y"]
     assert isinstance(cleared_result, RegisterBinding)
     builder.free(cleared_result)
-    return builder.finalize({"ctrl": swapped["ctrl"], "x": swapped["x"]})
+    record = builder.finalize({"ctrl": swapped["ctrl"], "x": swapped["x"]})
+    if not adjoint:
+        return record
+    scale = scaled_modular_addition_program(width, modulus, multiplier)
+    inverse_scale = -pow(multiplier, -1, modulus)
+    clear = scaled_modular_addition_program(width, modulus, inverse_scale)
+    swap = controlled_swap_program(width)
+    return adjoint_component_calls(
+        record,
+        (
+            (
+                scale,
+                scaled_modular_addition_program(
+                    width, modulus, multiplier, adjoint=True
+                ),
+            ),
+            (
+                clear,
+                scaled_modular_addition_program(
+                    width, modulus, inverse_scale, adjoint=True
+                ),
+            ),
+            (swap, swap),
+        ),
+    )
