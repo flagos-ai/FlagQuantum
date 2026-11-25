@@ -116,7 +116,7 @@ linear gate total.
   evidence is reused through `test_kickmix_field_inverse`. This batch's raw
   source-chain and clean XOR execution are coherent, with zero measurements.
 
-Q-0515 closes as a complete teaching asset. Q-0516 and Q-0517 remain open for the
+Q-0515 closes as a complete teaching asset. Q-0516 remains open for the
 inherited `SynthesizeLRCircuit` adjoint defect and full generic
 Program/foreign/automatic inverse/serialization admission. The reference remains
 unchanged. Native exact linear inverses match the explicitly repaired reference
@@ -278,3 +278,65 @@ consolidation. Combined catalog inventory is 4104 JSON files, 4103 diagrams,
 interfaces and 427 qualified descendants. Three qualified descendants across
 all field groups are explicitly labeled native exact linear inverses.
 Receipts use `g2-field-power-ui-*-20261122` in the reference evidence directory.
+
+## Complete original test closure — 2026-11-25
+
+All six original test functions and their full slow/numeric parameter domains
+are retained in the whole-file inventory. A new three-way count comparison
+closes a previous evidence gap: for every degree 1–16, actual untouched source
+decomposition counts equal source manual annotation and native retained child
+identity/direction/multiplicity counts. Both original generalizers,
+ignore_split_join and ignore_alloc_free, are applied exactly as in the original
+test. This does not substitute annotation for actual decomposition or strip
+nodes from an assertion that originally required them. Concrete original
+GF16 factory counts also pass its own declared generalizers.
+
+All ten raw inverse factory protocols are independently observed:
+
+| Factory | Make | Decompose | Counts | Serialize | Strict types |
+|---|---|---|---|---|---|
+| gf16_inverse | PASS | PASS | PASS | FAIL | PASS |
+| gf2_inverse_symbolic | PASS | NA | UNVERIFIED | FAIL | NA |
+
+Both codec failures must identify QGF. The concrete native UI root equals the
+existing field_inverse_program, retains every typed port and passes the shared
+verifier. The symbolic source factory uses positive integer m. Its native domain
+catalog accepts that exact symbol, retaining full signature and junk shape,
+while the body remains unavailable. The original DocSpec deliberately exposes
+only the concrete example, so the native UI index also omits the symbolic one.
+The initial conformance test incorrectly looked it up in that index; using the
+existing domain catalog corrects the test without expanding the UI catalog.
+
+The physical-context Program codec refuses the concrete logical root. Existing
+bound CircuitIR JSON, full original captured GF16 graph, coherent spectator,
+reversed binding and raw logical junk evidence retain their separate roles.
+Captured original forward emission is 104 CX, 18 CCX and twelve binding SWAPs,
+with twelve logical wires and no private work or measurements. Counts and
+physical-versus-logical output aliases remain separate resource accounts.
+Mathematical callback/correct native inverse and the original circuit's
+linear-adjoint defect are explicitly different witnesses. The source generic
+backward capture still fails on MeasureX arity. No physical or mathematical
+equivalence claim is inferred from count equality.
+
+The unchanged complete square/inverse suites report 36 passes, six source skips
+and five source xfails. Twenty independent raw protocols combine to nine PASS,
+five FAIL, four NA and two UNVERIFIED. The new shared observer preserves raw
+diagnostics and propagates unexpected errors; it replaces repeated protocol
+orchestration in the addition test. Five original inverse lock blobs, including
+the multiplication and square dependencies, retain identical values under
+English repository paths. No reference file or production module changed.
+
+These checks close Q-0517's actual original test responsibilities. Q-0516's
+generic construction, automatic inverse, codec and source arithmetic/erasure
+boundaries remain open. Receipts use `g2-square-inverse-test-closure-*-20261125`
+and `g2-field-square-inverse-original-protocol-matrix-20261125.json`.
+
+The final concentrated regression passes 315 cases, including the refactored
+addition consumer, all complete square/inverse owner tests, actual foreign
+capture, stored graphs, numerical execution and catalog export. Independent
+Cirq 1.6 passes 172 cases. Strict mypy passes all four touched Python files;
+Black, Ruff, Integration scope, language, local links, architecture, multi-level
+IR and protected API checks pass. Production owners are unchanged, so the
+accepted 145 local integration cases and unchanged 720 dependency baseline from
+the preceding production batch are explicitly reused. Primitive counts remain
+separate from the source resource model. All batch jobs are terminal.
