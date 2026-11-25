@@ -16,14 +16,112 @@ from flagquantum.algorithms.primitives.luis_perina_state import (
     LuisPerinaState,
 )
 from flagquantum.circuit import Circuit
+from flagquantum.compiler._component_trace.gate_budget import legacy_gate_budget
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
+from tests.unit.measurement_certificate import certify_erasure_histories
 from tests.unit.measurement_checks import forced_branch
+from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_controlled_unitary_synthesis import assert_source_stream
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.mark.parametrize("width", (0, -1, True))
+def test_historical_cost_requires_a_resolved_positive_width(width: int) -> None:
+    with pytest.raises(ValueError, match="positive width"):
+        LuisPerinaState(width).source_t_complexity()
+
+
+@pytest.mark.parametrize(
+    "n", [1, 3, 5, 7, 9, 11, 13, sympy.Symbol("n", positive=True, integer=True)]
+)
+def test_complete_original_historical_cost_assertions(n: int | sympy.Expr) -> None:
+    from qualtran.bloqs.phase_estimation.lp_resource_state import (
+        LPResourceState,
+        LPRSInterimPrep,
+    )
+
+    actual = LuisPerinaState(n).source_t_complexity()
+    original = LPResourceState(n).t_complexity()
+    for field in ("t", "rotations", "clifford"):
+        assert sympy.simplify(actual[field] - getattr(original, field)) == 0
+    assert sympy.simplify(actual["t"] - (4 * n + 4)) == 0
+    interim = legacy_gate_budget(LuisPerinaInterim(n).source_gate_cost())
+    source_interim = LPRSInterimPrep(n).t_complexity()
+    for field in ("t", "rotations", "clifford"):
+        assert sympy.simplify(interim[field] - getattr(source_interim, field)) == 0
+    if isinstance(n, int):
+        assert actual == {
+            "t": 4 * n + 4,
+            "rotations": 6 * n + 6,
+            "clifford": 26 * n + 33,
+        }
+        assert interim == {"t": 0, "rotations": 2 * n + 1, "clifford": 3 * n + 2}
+
+
+@pytest.mark.parametrize("n", range(1, 14, 2))
+def test_full_original_width_preparation_state_all_branch_certificate(n: int) -> None:
+    from qualtran.bloqs.phase_estimation.lp_resource_state_test import (
+        get_resource_state,
+    )
+
+    native = LuisPerinaState(n)
+    work, slots = native.requirements()
+    total = 1 + n + work
+    phase = tuple(range(1, n + 1))
+    workspace = tuple(range(n + 1, total))
+    op = native.bind().make_on(
+        selection=phase,
+        junk=(),
+        workspace=workspace,
+        classical_bits=tuple(range(slots)),
+    )
+    gates = DynamicCircuit(total, dtype=torch.complex128).append(op).to_ir()
+    # The certificate proves that every raw measurement history has the same
+    # normalized operator. Numeric cleanup of one branch then proves cleanup
+    # for the prepared input in every history, including entangled spectators.
+    events = certify_erasure_histories(
+        gates.instructions,
+        n_wires=total,
+        zero_wires=tuple(range(1, total)),
+        check_clean_output=False,
+    )
+    assert events == slots == n + 1
+    counts = Counter(g.name for g in gates.instructions)
+    assert counts["t"] + counts["tdg"] == 4 * (n + 1)
+    assert counts["measure"] == counts["reset"] == events
+    spectator = (sqrt(0.3), 1j * sqrt(0.7))
+    initial = {0: spectator[0], 1 << (total - 1): spectator[1]}
+    actual = execute_sparse_register(gates, initial, seed=20261125 + n)
+    values = get_resource_state(n)
+    expected = {
+        ((s << n) | word) << work: complex(coefficient * value)
+        for s, coefficient in enumerate(spectator)
+        for word, value in enumerate(values)
+    }
+    assert (
+        max(
+            abs(actual.get(word, 0) - expected.get(word, 0))
+            for word in actual.keys() | expected.keys()
+        )
+        < 2e-12
+    )
+    # Ry/H cancellation is floating point. Bound the full residual probability,
+    # including retained near-zero entries, rather than requiring bitwise zeros.
+    assert (
+        sum(
+            abs(value) ** 2
+            for word, value in actual.items()
+            if word & ((1 << work) - 1)
+        )
+        < 1e-28
+    )
+    assert sum(abs(value) ** 2 for value in actual.values()) == pytest.approx(
+        1, abs=2e-12
+    )
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -39,7 +137,7 @@ def frozen_complete_sources() -> None:
         assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
 
 
-@pytest.mark.parametrize("n", [1, 2, 3, 5, 13])
+@pytest.mark.parametrize("n", [1, 2, 3, 5, 7, 9, 11, 13])
 def test_complete_interim_stream_operands_both_directions_and_complex_state(
     n: int,
 ) -> None:

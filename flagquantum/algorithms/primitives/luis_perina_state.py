@@ -13,7 +13,12 @@ from ...compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from ...compiler._component_trace.gate_budget import legacy_gate_budget
 from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
+from ...compiler._component_trace.resource_generalization import (
+    CliffordCall,
+    PredicateControlledCall,
+)
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.bits.bitwise import on_each_ir
 from ...compiler.registers.bits.on_each import on_each_word_program
@@ -316,3 +321,29 @@ class LuisPerinaState(PhaseEstimationWindow):
             + reflection
             + QECGateCost(rotation=3, clifford=3)
         )
+
+    def source_t_complexity(self) -> dict[str, SymbolicInt]:
+        """Query the original historical T, rotation and Clifford model.
+
+        Keep the reflection predicate's compute/erase calls until the shared
+        historical query has priced them. Folding already aggregated modern
+        QEC categories loses the source's different erasure Clifford charge.
+        This declaration does not count emitted primitives or synthesize angles.
+        Resolved widths must be positive; symbolic widths retain the source model.
+        """
+        n = self.bitsize
+        if isinstance(n, int) and (type(n) is not int or n < 1):
+            raise ValueError("Luis–Perina cost requires a positive width")
+        width = n + 2
+        controls = (0,) * width if isinstance(width, int) else width
+        mark = query_qec_gate_cost(
+            PredicateControlledCall(CliffordCall("cz", 2), controls),
+            legacy_shims=True,
+        )
+        # Two reflection carrier X gates, then final CZ/X/X, plus three Ry.
+        cost = (
+            LuisPerinaInterim(n).source_gate_cost() * 3
+            + mark
+            + QECGateCost(rotation=3, clifford=5)
+        )
+        return legacy_gate_budget(cost)
