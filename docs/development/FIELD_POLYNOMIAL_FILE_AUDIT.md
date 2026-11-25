@@ -133,6 +133,15 @@ remain visible in declared graphs and emit no primitive gates.
 
 ## Central remaining boundaries
 
+The subsequent [polynomial view source acceptance](POLYNOMIAL_VIEW_SOURCE_ACCEPTANCE.md)
+closes Q-0534's complete original assertion/protocol mapping. Proposal 125
+supersedes the older nonbinary quantum *storage* refusal, and exact per-connection
+view tensor factors now cover binary and nonbinary fields. Q-0533 remains open
+for generic/symbolic logical declarations and applicable source bindings.
+The classic polynomial tensor-index counterexample is in conditional control,
+not the Split/Join factors. The historical table below describes the earlier
+batch and does not revoke these later results.
+
 | Parents | Explicit remaining behavior | Owner and closure condition |
 |---|---|---|
 | Q-0527/Q-0531 | Original concrete register count assertion omits two polynomial split and two join nodes. The native/source direct diagnostic preserves the entire mismatch. The constant count assertion passes. | Resource/test owners. Preserve original declarations and complete decomposition evidence until disposition under original closure rules. Physical CX parity does not certify the original count check. |
