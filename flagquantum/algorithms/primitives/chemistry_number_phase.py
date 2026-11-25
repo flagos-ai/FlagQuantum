@@ -9,8 +9,9 @@ from dataclasses import dataclass
 
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
 from ...compiler.registers.control.multi_control import multi_control_z_ir
-from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
-from ...core.ir.program.registers import Register
+from ...compiler.registers.primitives.controlled_z_word_component import (
+    controlled_z_word_signature as _word_signature,
+)
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 
@@ -32,12 +33,7 @@ class ChemistryNumberPhase:
 
     @property
     def signature(self) -> Signature:
-        return Signature(
-            (
-                Register("ctrls", quantum_bit_type(), shape=(len(self.values),)),
-                Register("system", opaque_register_type(self.system_width)),
-            )
-        )
+        return _word_signature(self.system_width, len(self.values))
 
     def resource_model(self, name: str = "ApplyControlledZs") -> ComponentCost:
         """Use the locked Toffoli declaration and the predicate's logical peak."""
