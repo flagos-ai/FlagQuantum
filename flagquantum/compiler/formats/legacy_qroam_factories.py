@@ -47,7 +47,7 @@ def _check_signature(
         raise SerializationError("Invalid clean QROAM register signature")
 
 
-def qroam_factories() -> dict[str, ComponentFactory]:
+def qroam_factories(*, reserve_workspace: bool = True) -> dict[str, ComponentFactory]:
     """Keep forward recipes and reshape calls local to one library compilation.
 
     Native forward lookup uses shared source-reserved unary storage. The source
@@ -72,6 +72,7 @@ def qroam_factories() -> dict[str, ComponentFactory]:
                 cast(tuple[int, ...], base.target_bitsizes),
                 selection_widths=cast(tuple[int, ...], base.selection_bitsizes),
                 num_controls=cast(int, base.num_controls),
+                reserve_workspace=reserve_workspace,
             ),
             name,
         )

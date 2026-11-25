@@ -14,9 +14,9 @@ from flagquantum.compiler.formats.legacy_sparse_preparation_factories import (
     native_sparse_preparation_factories,
 )
 from flagquantum.core.ir.program import verify_program_record
+from tests.unit.preparation_reference import preparation_terminals
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_legacy_arithmetic_factories import _library
-from tests.unit.test_multi_control_component import atomic_leaves
 from tests.unit.test_qubitization_walk_component import (
     reference_runtime as reference_runtime,
 )
@@ -61,11 +61,14 @@ def test_complete_constructor_depths_calls_and_sdk_free_append(
             _library(source, depth), 0, native_sparse_preparation_factories()
         )
         assert not verify_program_record(record)
-        leaves = atomic_leaves(record) | {
-            f.name
-            for f in record.functions
-            if f.name.endswith("native_qroam_erase_leaf")
-        }
+        leaves = preparation_terminals(
+            record,
+            native_boundaries=(
+                f.name
+                for f in record.functions
+                if f.name.endswith("native_qroam_erase_leaf")
+            ),
+        )
         compare_layers(record, source, leaves)
         with patch.dict(sys.modules, {"qualtran": None, "cirq": None}):
             bound, _ = bind_used_workspace(record, allow_workspace_outputs=True)
@@ -91,9 +94,12 @@ def test_original_walk_65_row_twelve_bit_constructor(inverse: bool) -> None:
             _library(source, depth), 0, native_sparse_preparation_factories()
         )
         assert not verify_program_record(record)
-        leaves = atomic_leaves(record) | {
-            f.name
-            for f in record.functions
-            if f.name.endswith("native_qroam_erase_leaf")
-        }
+        leaves = preparation_terminals(
+            record,
+            native_boundaries=(
+                f.name
+                for f in record.functions
+                if f.name.endswith("native_qroam_erase_leaf")
+            ),
+        )
         compare_layers(record, source, leaves)

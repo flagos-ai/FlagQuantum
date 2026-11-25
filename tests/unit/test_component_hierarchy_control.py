@@ -91,9 +91,10 @@ def compare_layers(
         # Ordered signatures above and named operands here preserve port order.
         for actual_row, expected_row in zip(actual, expected, strict=True):
             assert isinstance(actual_row, tuple) and isinstance(expected_row, tuple)
-            assert actual_row[0] == expected_row[0]
-            assert dict(actual_row[1]) == dict(expected_row[1])
-            assert actual_row[2] == expected_row[2]
+            context = (name, type(pairs[name]).__name__, actual_row, expected_row)
+            assert actual_row[0] == expected_row[0], context
+            assert dict(actual_row[1]) == dict(expected_row[1]), context
+            assert actual_row[2] == expected_row[2], context
         operations = functions[name].blocks[0].operations
         for instance, _, _ in composite.iter_bloqsoqs():
             target = operations[instance.i].callee

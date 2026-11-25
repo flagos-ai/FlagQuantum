@@ -23,9 +23,9 @@ from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.core.ir.program.registers import RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.ecosystem._default_linear_combination_oracles import _signature
+from tests.unit.preparation_reference import preparation_terminals
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_hubbard_hamiltonian_gqsp import _source_sparse_branch
-from tests.unit.test_multi_control_component import atomic_leaves
 from tests.unit.test_qubitization_walk_component import (
     reference_runtime as reference_runtime,
 )
@@ -58,7 +58,7 @@ def native_pair(source: Any) -> tuple[ProgramRecord, ProgramRecord]:
         Signature(_signature(source.signature)),
         source.num_non_zero,
         (
-            qroam_clean_program(table, widths),
+            qroam_clean_program(table, widths, reserve_workspace=False),
             qroam_measurement_erasure_program(table, widths),
         ),
     )
@@ -126,11 +126,14 @@ def test_small_original_forward_complex_output_and_native_joint_roundtrip(
     pair = native_pair(source)
     for inverse, record in enumerate(pair):
         assert not verify_program_record(record)
-        terminals = atomic_leaves(record) | {
-            f.name
-            for f in record.functions
-            if f.name.endswith("native_qroam_erase_leaf")
-        }
+        terminals = preparation_terminals(
+            record,
+            native_boundaries=(
+                f.name
+                for f in record.functions
+                if f.name.endswith("native_qroam_erase_leaf")
+            ),
+        )
         compare_layers(record, source.adjoint() if inverse else source, terminals)
     forward, left = bind_used_workspace(pair[0], allow_workspace_outputs=True)
     named = get_named_qubits(source.signature)

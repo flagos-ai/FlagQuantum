@@ -72,6 +72,8 @@ def load_lookup_banks(
     control: BindingCollection | None,
     high: SelectionBindings,
     banks: BankBindings,
+    *,
+    reserve_workspace: bool = True,
 ) -> BindingCollection | None:
     batched = QromTable(
         table.batch_shape,
@@ -88,7 +90,9 @@ def load_lookup_banks(
     selected = [reg for reg in batched.signature if reg.name.startswith("selection")]
     for axis, register in zip(axes, selected, strict=True):
         inputs[register.name] = high[axis]
-    loaded = builder.call_program(qrom_program(batched, reserve_workspace=True), inputs)
+    loaded = builder.call_program(
+        qrom_program(batched, reserve_workspace=reserve_workspace), inputs
+    )
     for axis, register in zip(axes, selected, strict=True):
         high[axis] = loaded[register.name]
     for i in banks:

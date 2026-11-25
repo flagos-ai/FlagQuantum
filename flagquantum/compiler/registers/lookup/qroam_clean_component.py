@@ -27,12 +27,15 @@ def qroam_clean_program(
     *,
     selection_widths: tuple[int, ...] | None = None,
     num_controls: int = 0,
+    reserve_workspace: bool = True,
 ) -> ProgramRecord:
     """Return selected targets and retained banks with caller-owned RIGHT ports.
 
     Dataset and bank cells are row-major; bits are MSB-first. Only QROM predicate
     work is private and measurement-erased. This forward component does not
     supply a body for the source's model-only adjoint leaf.
+    Source call-graph binding can disable the native lexical workspace frame;
+    that frame adds bookkeeping calls without changing the lookup operation.
     """
     widths = (
         selection_widths
@@ -76,6 +79,7 @@ def qroam_clean_program(
         builder.inputs.get("control"),
         high,
         banks,
+        reserve_workspace=reserve_workspace,
     )
     route_lookup_banks(builder, table, target_widths, low, banks)
     outputs = unpartition_lookup_selection(builder, signature, table, parts, high, low)

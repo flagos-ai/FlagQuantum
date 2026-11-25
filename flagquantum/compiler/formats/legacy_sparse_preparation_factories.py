@@ -140,7 +140,7 @@ def native_sparse_preparation_factories(
         ):
             raise SerializationError("Sparse PREPARE data must fit its target storage")
         lookup = (
-            qroam_clean_program(table, widths),
+            qroam_clean_program(table, widths, reserve_workspace=False),
             qroam_measurement_erasure_program(table, widths),
         )
         return store(
