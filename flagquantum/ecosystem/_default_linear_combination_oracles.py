@@ -8,11 +8,6 @@ from collections.abc import Callable
 from math import pi
 from typing import Any, cast
 
-from ..compiler.formats.legacy_alias_preparation_factories import (
-    alias_preparation_factories,
-)
-from ..compiler.formats.legacy_component_library import deserialize_component_library
-from ..compiler.formats.legacy_component_resolution import resolve_component_program
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
 from ..compiler.formats.legacy_linear_combination_factories import ExactPair
 from ..compiler.formats.legacy_registers import deserialize_registers
@@ -37,6 +32,7 @@ from ..core.ir.program.register_types import quantum_bit_type
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from ..errors import SerializationError
+from ._alias_preparation_component_library import capture_alias_preparation_pair
 
 
 def _signature(registers: Any) -> tuple[Register, ...]:
@@ -51,7 +47,6 @@ def default_linear_combination_prepare_pair(source: object) -> ExactPair:
     from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
         StatePreparationAliasSampling,
     )
-    from qualtran.serialization.bloq import bloqs_to_proto
 
     if not isinstance(source, BlackBoxPrepare) or not isinstance(
         source.prepare, StatePreparationAliasSampling
@@ -61,16 +56,7 @@ def default_linear_combination_prepare_pair(source: object) -> ExactPair:
         )
     foreign = cast(Any, source)
     oracle = foreign.prepare
-    pair = tuple(
-        resolve_component_program(
-            deserialize_component_library(
-                bloqs_to_proto(child, max_depth=0).SerializeToString()
-            ),
-            0,
-            alias_preparation_factories(),
-        )
-        for child in (oracle, oracle.adjoint())
-    )
+    pair = capture_alias_preparation_pair(oracle)
     groups = (
         ("selection", _signature(oracle.selection_registers)),
         ("junk", _signature(oracle.junk_registers)),
