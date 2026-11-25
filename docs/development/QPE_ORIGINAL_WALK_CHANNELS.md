@@ -141,3 +141,16 @@ prior 145-case local integration evidence remains applicable. A first concentrat
 invocation omitted the existing OpenFermion reference path; the diagnosed missing
 module was corrected using that installed path before the passing 53-case run.
 No dependency was installed or reference code modified.
+
+## Original-parameter GQSP update, 2026-11-25
+
+The original time-five, `1e-7`-precision Hubbard GQSP now has an actual native
+binding and complete source/native child-channel comparison. A generic precision
+or constructor refusal is not the current blocker. The exact degree-127 case
+leaves probability `0.3289881219704` in the two outer junk bits that the original
+graph frees. Native retains these bits; dropping them fails its contract.
+See [the full-degree GQSP proof](HUBBARD_GQSP_FULL_DEGREE.md) for full complex
+amplitude, all-history/private-work and separate resource evidence. This source
+counterexample is not repaired or reclassified as clean QPE workspace. The
+whole-file Q-0634 obligation remains open, with the numerical boundary now
+explicit rather than an unverified small-degree extrapolation.

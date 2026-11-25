@@ -99,3 +99,16 @@ The concentrated textbook-QPE, window, LP, QFT-package, phase-gradient and GQSP
 file regression reports 103 passed. Strict mypy covers both new Python files.
 Black, Ruff, Algorithms scope, architecture, multi-level IR and protected API
 checks pass. Evidence logs use `g2-textbook-qpe-` in the reference workspace.
+
+## Original-parameter GQSP update, 2026-11-25
+
+The original time-five, `1e-7`-precision Hubbard GQSP now has an actual native
+binding and complete source/native child-channel comparison. A generic precision
+or constructor refusal is not the current blocker. The exact degree-127 case
+leaves probability `0.3289881219704` in the two outer junk bits that the original
+graph frees. Native retains these bits; dropping them fails its contract.
+See [the full-degree GQSP proof](HUBBARD_GQSP_FULL_DEGREE.md) for full complex
+amplitude, all-history/private-work and separate resource evidence. This source
+counterexample is not repaired or reclassified as clean QPE workspace. The
+whole-file Q-0634 obligation remains open, with the numerical boundary now
+explicit rather than an unverified small-degree extrapolation.
