@@ -44,10 +44,16 @@ def acceptance_summary(
     }
 
 
-def classifier_run(steps: int) -> dict[str, object]:
+def classifier_run(steps: int, backend: str = "pytorch") -> dict[str, object]:
     fqt.seed_everything(480)
     model = HybridQuantumClassifier(
-        deployment_binding={"provider": "local", "target": "simulator"}
+        policy=fq.RuntimePolicy(
+            execution_options=fq.ExecutionOptions(
+                backend=backend, allow_backend_fallback=False
+            ),
+            observable_qubits=(1,),
+        ),
+        deployment_binding={"provider": "local", "target": "simulator"},
     )
     inputs = torch.tensor([[-1.0, -0.5], [-0.7, 0.8], [0.6, -0.9], [0.9, 0.7]])
     targets = torch.tensor([-1.0, -1.0, 1.0, 1.0])
@@ -62,13 +68,20 @@ def classifier_run(steps: int) -> dict[str, object]:
         losses.append(float(loss.detach()))
     elapsed = time.perf_counter() - started
     accuracy = float((torch.sign(model(inputs).detach()) == targets).float().mean())
+    with torch.no_grad():
+        angles = model.encoder(inputs) + model.quantum.parameters_tensor
+        details = model.quantum.execute(parameters=angles[0])
     return acceptance_summary(
         model="HybridQuantumClassifier",
         policy=model.quantum.policy.to_dict(),
         correctness={"finite": bool(torch.isfinite(torch.tensor(losses)).all())},
         accuracy={"classification_accuracy": accuracy, "losses": losses},
         performance={"elapsed_seconds": elapsed, "steps": steps},
-        deployment=model.deployment_parameters()["binding"],
+        deployment={
+            **model.deployment_parameters()["binding"],
+            "runtime_backend": details.runtime["backend"],
+            "fallback_used": details.compatibility["fallback_used"],
+        },
     )
 
 
@@ -112,7 +125,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=2)
     args = parser.parse_args()
     report = (
-        classifier_run(args.steps)
+        classifier_run(args.steps, args.backend)
         if args.model == "classifier"
         else energy_run(args.steps, args.backend)
     )
