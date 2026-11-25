@@ -2,6 +2,15 @@
 
 This package owns boolean/classical/quantum gate dispatch, temporary AND, controlled swaps, measurement cleanup.
 
+`ising_component.py` stores the periodic Ising X/ZZ Split/call/Join paths with
+existing rotation and CNOT dependencies. The caller supplies the ordered system;
+this owner allocates no work and performs no numerical execution. Run
+`tests/unit/test_ising_source_constructors.py` for original source factories,
+exact call/operand streams, complex operators, symbolic binding and normal
+`circuit.append(op)` execution. The
+[file audit](../../../../docs/development/ISING_TROTTER_FILE_AUDIT.md) separates
+primitive counts, source models and unsupported dimensions.
+
 `controlled_z_word_component.py` owns the shaped-control/opaque-word signature
 and exact Split/MultiControlZ/Join wrapper that phases the first system bit.
 Formats and Algorithms share this signature; the existing multi-control owner
