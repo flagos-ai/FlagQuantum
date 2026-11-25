@@ -71,8 +71,8 @@ empty ArcSin profiles and three iteration/degree pairs. Negative estimates remai
 raw source-model values, not measured primitive counts. No physical body is added:
 default constructor resolution still refuses physical binding for both roots.
 Existing independently implemented lookup and approximation evidence is unchanged.
-In particular, the explicit native ArcTan lookup still requires positive input
-and target widths even though original empty-profile operator oracles exist; that
-separate execution gap remains recorded. Whole-file Q-0224 and Q-0226 remain open
+The subsequent explicit native ArcTan lookup closure admits empty input and
+target widths using the original operator oracles and shared QROM described in
+REGISTER_ARCTAN.md. Whole-file Q-0224 and Q-0226 remain open
 for the previously documented numerical, decomposition and execution boundaries.
 Receipts use `ftqc-reference-env/g2-trigonometric-empty-*`.

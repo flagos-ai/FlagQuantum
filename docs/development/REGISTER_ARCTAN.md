@@ -7,7 +7,7 @@ fraction. The sign mask is zero at x=0 and one otherwise. Both
 outputs may start occupied. Clean workspace is restored, so repeating
 the operation clears the same masks. [Locked ArcTan source](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/trigonometric/arctan.py)
 
-This concrete path supports 1–12 input bits and 1–32 output fraction
+This concrete path supports 0–12 input bits and 0–32 output fraction
 bits. The table grows exponentially with input width. The emitter
 uses the existing unary QROM with two target words and one shared
 address traversal. The magnitude follows the source's truncating
@@ -16,6 +16,12 @@ were compared with the locked method. At this precision, nontrivial
 entries are at least 5.57e−5 scaled units away from an integer in
 the measured binary64 evaluation. Smaller fractional widths discard
 low bits of the same table.
+
+An empty input fixes x to zero, so the lookup preserves the occupied sign and
+target without allocating work. An empty magnitude target omits that dataset
+and loads only the sign mask through the same QROM. The default source
+constructor remains a declaration with no physical body; the explicit native
+lookup is a separate implementation of its arithmetic map.
 
 Tests compare complete complex outputs with the original Cirq
 arithmetic-gate matrix, including superpositions over occupied sign

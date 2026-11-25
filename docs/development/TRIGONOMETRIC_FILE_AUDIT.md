@@ -177,3 +177,36 @@ changed Python files. Format, lint, scope, language, architecture, IR and public
 API checks pass. The dependency scan retains the same 720 existing findings,
 ignoring line-number movement; it is not globally green. Receipts use the
 `g2-arctan-program-*-20261125` prefix in the reference evidence directory.
+
+## Empty lookup dependency closure
+
+The explicit native lookup now accepts input widths 0 through 12 and magnitude
+widths 0 through 32. The original ArcTan signature omits empty select/target
+ports but always retains sign. At input width zero, its complete arithmetic
+operator is identity, including occupied outputs; the stored Program therefore
+returns its live inputs without work or calls. For a nonempty input and empty
+magnitude, both native emitters reuse a single sign dataset in the existing
+QROM. MSB order, shared predicate ownership and measured cleanup remain there.
+No artificial zero-width target is passed to QROM and no source body is invented.
+
+Actual source-library depths 0/1/2 resolve through the explicit replacement
+factory with the same signatures and emitted gates as direct construction.
+Source QROM gate order, operands and feedback are checked for sign-only widths
+1, 2 and 3. Full complex source matrices, coherent external spectators, every
+small measurement history and applicable double-lookup cleanup are checked for
+empty-input and sign-only profiles. Existing positive-profile Programs and flat
+IR are exactly equal to published f9a824789 at 1/1, 2/3, 3/8 and 4/6.
+
+| Input / target | Emitted CX | Emitted T + Tdg | Measurements | Reserved clean work | ArcTan model T |
+|---|---:|---:|---:|---:|---|
+| 0 / 0 | 0 | 0 | 0 | 0 | 0 |
+| 0 / 3 | 0 | 0 | 0 | 0 | 72 c |
+| 1 / 0 | 1 | 0 | 0 | 0 | 0 |
+| 2 / 0 | 9 | 4 | 1 | 1 | 0 |
+| 3 / 0 | 17 | 8 | 2 | 2 | 0 |
+
+These are measured native counts, separate from the original symbolic model.
+The model's zero at empty target is not a claim of zero physical work. Native
+lookup and the independent approximate arithmetic path retain separate scopes;
+Q-0226 remains open for the latter's existing quantization differences. Receipts
+use `g2-arctan-empty-*-20261125`.
