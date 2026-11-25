@@ -27,4 +27,6 @@ def resolve_binary_field_encoding(dtype: RegisterType) -> FiniteFieldEncoding:
     executable_register_width(dtype)
     if dtype.encoding != "finite_field":
         raise ValueError("binary field resolution requires finite-field metadata")
+    if dict(dtype.parameters).get("characteristic") != 2:
+        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     return resolve_finite_field_encoding(dtype)
