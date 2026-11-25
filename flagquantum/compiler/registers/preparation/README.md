@@ -2,6 +2,13 @@
 
 This package owns uniform and rank-aware preparation and reflections.
 
+`sparse_chemistry_prepare_component` owns the eighteen sparse source calls and
+their explicit directional dependencies. A clean lookup supplies RIGHT banks;
+an independently verified bank-unitary dependency instead threads caller-owned
+THRU banks. Reflections must retain signal words unless actual private cleanup
+is proved. Run `tests/unit/test_sparse_preparation_bank_unitary.py` for arbitrary
+bank roundtrips and the controlled/global-phase selection projector checks.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow

@@ -83,6 +83,9 @@ def sparse_prepare_component_pair(
     forward lookup supplies RIGHT target/bank words, consumed by its paired
     inverse. A native measured inverse is an explicit dependency, not a
     decomposition attributed to the source model-only erasure leaf.
+    An explicit caller-bank lookup pair instead consumes and returns matching
+    THRU bank words. That dependency must independently establish a unitary on
+    arbitrary banks before this composition is used inside a reflection.
     """
     mu = signature.get_left("sigma").bitsize
     orbital = signature.get_right("p").bitsize
@@ -133,7 +136,19 @@ def sparse_prepare_component_pair(
     builder = ComponentProgramBuilder(signature)
     state = dict(builder.inputs)
     state["d"] = builder.call_program(uniform[0], {"target": state.pop("d")})["target"]
-    loaded = builder.call_program(lookup_pair[0], {"selection": state.pop("d")})
+    lookup_inputs = {"selection": state.pop("d")}
+    lookup_lefts = {
+        reg.name
+        for reg in Signature(lookup_pair[0].functions[0].registers or ()).lefts()
+    }
+    for index, name in enumerate(SPARSE_PREPARE_TARGETS):
+        for port, outer in (
+            (f"target{index}_", name),
+            (f"junk_target{index}_", "jnk_" + name),
+        ):
+            if port in lookup_lefts:
+                lookup_inputs[port] = state.pop(outer)
+    loaded = builder.call_program(lookup_pair[0], lookup_inputs)
     state["d"] = loaded.pop("selection")
     for index, name in enumerate(SPARSE_PREPARE_TARGETS):
         state[name] = loaded.pop(f"target{index}_")
