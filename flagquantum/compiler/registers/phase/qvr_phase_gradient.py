@@ -137,6 +137,17 @@ def qvr_phase_format(
     return qvr_phase_sizing(cost_width, cost_fraction_bits, coefficient, epsilon).format
 
 
+def source_qvr_gradient_bound(epsilon: SymbolicReal) -> tuple[SymbolicInt, SymbolicInt]:
+    """Return original phase precision and fallback gradient width before binding."""
+    from sympy import pi as symbolic_pi
+
+    pi = symbolic_pi if isinstance(epsilon, Expr) else tau / 2
+    phase = source_ceil(source_log2(2 * pi / epsilon))
+    error_terms = (phase + 2) // 2
+    width = source_ceil(source_log2(error_terms * 2 * pi / epsilon))
+    return phase, width
+
+
 def source_symbolic_qvr_gradient_cost(
     cost_width: SymbolicInt,
     cost_fraction_bits: SymbolicInt,
@@ -144,12 +155,7 @@ def source_symbolic_qvr_gradient_cost(
     epsilon: SymbolicReal,
 ) -> SymbolicResourceFormula:
     """Model the source path with a symbolic coefficient, before binding."""
-    from sympy import pi as symbolic_pi
-
-    pi = symbolic_pi if isinstance(epsilon, Expr) else tau / 2
-    phase = source_ceil(source_log2(2 * pi / epsilon))
-    error_terms = (phase + 2) // 2
-    width = source_ceil(source_log2(error_terms * 2 * pi / epsilon))
+    phase, width = source_qvr_gradient_bound(epsilon)
     integer_width = cast(SymbolicInt, smax(0, bit_length(abs(coefficient))))
     coefficient_width = integer_width + cost_width - cost_fraction_bits + phase
     return SymbolicResourceFormula(
