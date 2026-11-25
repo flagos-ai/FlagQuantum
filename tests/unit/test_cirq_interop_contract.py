@@ -43,7 +43,7 @@ def test_contract_rejects_public_api_and_version_drift() -> None:
 
 def test_contract_rejects_incomplete_opcode_partition() -> None:
     contract, policy = _inputs()
-    contract["unsupported"]["flagquantum_opcodes"].remove("sdg")
+    contract["unsupported"]["flagquantum_opcodes"].remove("sx")
     errors = contract_errors(contract, policy)
     assert any("Cirq opcode coverage drifted" in error for error in errors)
 

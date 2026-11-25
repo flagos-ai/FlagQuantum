@@ -326,6 +326,8 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append("Cirq MatrixGate unitary protocol shape drifted")
     constructors = {
         "CH": cirq.H.controlled(),
+        "SDG": cirq.S**-1,
+        "TDG": cirq.T**-1,
         "ZPowGate": cirq.ZPowGate(exponent=0.5),
         "CZPowGate": cirq.CZPowGate(exponent=0.5),
         "rx": cirq.rx(0.5),
