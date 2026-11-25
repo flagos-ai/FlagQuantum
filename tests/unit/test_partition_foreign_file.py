@@ -1,6 +1,7 @@
 """Resolve original partition factories without moving SDK objects into runtime."""
 
 from collections.abc import Mapping
+from math import prod
 from typing import Any
 
 import pytest
@@ -120,31 +121,47 @@ def test_all_actual_factories_preserve_native_foreign_signature_and_sdk_disposit
 
 
 @pytest.mark.parametrize("reverse", (False, True))
+@pytest.mark.parametrize(
+    "profile", ("opaque", "signed", "signed_negative", "empty", "empty_negative")
+)
+@pytest.mark.parametrize("shape", ((2,), (1, 2), (0, 2)))
 def test_shaped_concrete_foreign_partition_and_inverse_match_every_complex_amplitude(
     reverse: bool,
+    profile: str,
+    shape: tuple[int, ...],
 ) -> None:
     np = pytest.importorskip("numpy")
-    from qualtran import QAny
+    from qualtran import QAny, QFxp
     from qualtran import Register as OriginalRegister
     from qualtran.bloqs.bookkeeping import Partition
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
+    dtype = {
+        "opaque": QAny(2),
+        "signed": QFxp(2, 1, signed=True),
+        "signed_negative": QFxp(2, -2, signed=True),
+        "empty": QFxp(0, 0),
+        "empty_negative": QFxp(0, -2),
+    }[profile]
+    width = int(dtype.num_qubits)
+    packed_width = prod(shape) * width + 2
     source = Partition(
-        6,
-        (OriginalRegister("words", QAny(2), (2,)), OriginalRegister("tail", QAny(2))),
+        packed_width,
+        (OriginalRegister("words", dtype, shape), OriginalRegister("tail", QAny(2))),
         partition=not reverse,
     )
     program = resolve_original(source, 1)
-    wires = tuple(reversed(range(6)))
+    wires = tuple(reversed(range(packed_width)))
     ports = {
-        "words": np.asarray(wires[:4]).reshape(2, 2),
-        "tail": np.asarray(wires[4:]),
+        "words": np.asarray(wires[:-2]).reshape((*shape, width)),
+        "tail": np.asarray(wires[-2:]),
     }
     inputs = (
         tuple(
             tuple(int(wire) for wire in port)
-            for value in ports.values()
-            for port in value.reshape(-1, value.shape[-1])
+            for reg in source.regs
+            for index in reg.all_idxs()
+            for port in (ports[reg.name][index],)
         )
         if reverse
         else (wires,)
@@ -160,29 +177,37 @@ def test_shaped_concrete_foreign_partition_and_inverse_match_every_complex_ampli
         if reverse
         else tuple(
             tuple(word)
-            for port in views.values()
-            for word in port.reshape(-1, port.shape[-1])
+            for reg in source.regs
+            for index in reg.all_idxs()
+            for word in (views[reg.name][index],)
         )
     )
     bound = bind_register_program(program, inputs)
     assert bound.outputs == expected_outputs
     assert bound.events == () and bound.circuit.instructions == ()
     state = torch.randn(
-        128, dtype=torch.complex128, generator=torch.Generator().manual_seed(816)
+        1 << (packed_width + 1),
+        dtype=torch.complex128,
+        generator=torch.Generator().manual_seed(816),
     )
     state /= state.norm()
     matrix = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128).reshape(
-        64, 64
+        1 << packed_width, 1 << packed_width
     )
-    order = (*wires, 6)
+    order = (*wires, packed_width)
     expected = (
-        (matrix @ state.reshape((2,) * 7).permute(order).reshape(64, 2))
-        .reshape((2,) * 7)
+        (
+            matrix
+            @ state.reshape((2,) * (packed_width + 1))
+            .permute(order)
+            .reshape(1 << packed_width, 2)
+        )
+        .reshape((2,) * (packed_width + 1))
         .permute(order)
         .flatten()
     )
-    circuit = Circuit(7, inputs=state, dtype=torch.complex128)
-    circuit.append(FieldOperation(7, bound.circuit.instructions))
+    circuit = Circuit(packed_width + 1, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(packed_width + 1, bound.circuit.instructions))
     torch.testing.assert_close(circuit.state().flatten(), expected, rtol=0, atol=2e-12)
     assert get_cost_value(source, QECGatesCost()).asdict() == {}
-    assert get_cost_value(source, QubitCount()) == 6
+    assert get_cost_value(source, QubitCount()) == packed_width

@@ -27,7 +27,7 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-def test_original_notebook_shaped_partition_and_join_keep_port_order():
+def test_original_notebook_shaped_partition_and_join_keep_port_order() -> None:
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
     from qualtran import QAny, Register
@@ -81,7 +81,7 @@ def test_original_notebook_shaped_partition_and_join_keep_port_order():
 
 
 @pytest.mark.ftqc_reference
-def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map():
+def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map() -> None:
     cirq = pytest.importorskip("cirq")
     from qualtran import BloqBuilder, Signature
     from qualtran.bloqs.bookkeeping import Partition
@@ -156,7 +156,7 @@ def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map():
 
 
 @pytest.mark.ftqc_reference
-def test_source_partition_shaped_ports_and_join():
+def test_source_partition_shaped_ports_and_join() -> None:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
@@ -186,16 +186,18 @@ def test_source_partition_shaped_ports_and_join():
         ((0, 0), (("a", 2),), "distinct nonnegative wires"),
     ],
 )
-def test_partition_rejects_bad_layout(packed, ports, message):
+def test_partition_rejects_bad_layout(
+    packed: tuple[int, ...], ports: tuple[tuple[str, int], ...], message: str
+) -> None:
     with pytest.raises(ValueError, match=message):
         partition_register(packed, ports)
 
 
-def test_zero_width_named_partition():
+def test_zero_width_named_partition() -> None:
     assert partition_register((), (("empty", 0),)) == {"empty": ()}
 
 
-def test_unpartition_checks_names_widths_and_aliases():
+def test_unpartition_checks_names_widths_and_aliases() -> None:
     layout = (("high", 1), ("low", 1))
     with pytest.raises(ValueError, match="port names"):
         unpartition_register({"high": (2,), "typo": (3,)}, layout)
@@ -209,7 +211,9 @@ def test_unpartition_checks_names_widths_and_aliases():
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("widths", [(0, 0), (0, 3), (3, 0), (2, 3), (5, 2)])
-def test_split2_join2_match_source_physical_bindings_and_resources(widths):
+def test_split2_join2_match_source_physical_bindings_and_resources(
+    widths: tuple[int, int],
+) -> None:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
@@ -239,7 +243,7 @@ def test_split2_join2_match_source_physical_bindings_and_resources(widths):
 
 
 @pytest.mark.ftqc_reference
-def test_split2_join2_symbolic_width_and_integer_boundaries():
+def test_split2_join2_symbolic_width_and_integer_boundaries() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.bookkeeping import Join2, Split2
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -284,7 +288,7 @@ def test_split2_join2_symbolic_width_and_integer_boundaries():
 
 
 @pytest.mark.ftqc_reference
-def test_partition_inverse_preserves_spectator_complex_amplitudes():
+def test_partition_inverse_preserves_spectator_complex_amplitudes() -> None:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
@@ -334,7 +338,7 @@ def test_partition_inverse_preserves_spectator_complex_amplitudes():
 
 
 @pytest.mark.ftqc_reference
-def test_admitted_mixed_partition_preserves_word_types_and_physical_bindings():
+def test_admitted_mixed_partition_preserves_word_types_and_physical_bindings() -> None:
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
     from qualtran import QGF, QBit, QUInt
@@ -433,23 +437,15 @@ def test_partition_retains_signed_and_fixed_point_metadata_at_execution_boundary
             (p.name, p.shape, p.bitsize, p.side.value) for p in declared
         ) == tuple((p.name, p.shape, p.bitsize, p.side.value) for p in locked.signature)
         assert tuple(p.dtype for p in declared[1:]) == tuple(p.dtype for p in native)
-        if reverse:
-            # Logical Split/Join construction retains the signed storage descriptor.
-            program = partition_component_program(native, "restricted", reverse)
-            from flagquantum.compiler.registers.register_binding import (
-                bind_register_program,
-            )
+        program = partition_component_program(native, "admitted", reverse)
+        from flagquantum.compiler.registers.register_binding import (
+            bind_register_program,
+        )
 
-            with pytest.raises(
-                ValueError, match="unsupported executable register descriptor"
-            ):
-                bind_register_program(
-                    program,
-                    ((0, 1), (2, 3, 4), (5, 6, 7), (8, 9, 10, 11)),
-                    entry="restricted",
-                )
-        else:
-            with pytest.raises(
-                ValueError, match="unsupported executable register descriptor"
-            ):
-                partition_component_program(native, "restricted", reverse)
+        parts = ((0, 1), (2, 3, 4), (5, 6, 7), (8, 9, 10, 11))
+        packed = tuple(range(12))
+        bound = bind_register_program(
+            program, parts if reverse else (packed,), entry="admitted"
+        )
+        assert bound.outputs == ((packed,) if reverse else parts)
+        assert bound.circuit.instructions == () and bound.events == ()

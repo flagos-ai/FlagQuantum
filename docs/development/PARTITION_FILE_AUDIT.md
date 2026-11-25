@@ -107,3 +107,14 @@ including pending Proposal 116, and unresolved-width executable Program bodies.
 The batch reuses accepted numerical, drawing, notebook and measured downstream
 consumer evidence. `g2-partition-foreign-*` records 776 concentrated, 17 local
 integration and 122 Cirq 1.6.1 passes plus strict three-file and repository guards.
+
+## Approved storage dependency closure — 2026-11-25
+
+The stale signed fixed-point rejection is corrected to verify both physical directions, nominal metadata, exact aliases and zero gates. Actual source libraries cover signed/empty fixed-point arrays in one, two and zero-extent dimensions with coherent spectators. Approved nonbinary coefficient and packed views reuse the same builder. Unresolved symbolic physical bodies and the original dictionary-order SDK discrepancy remain separate.
+
+Earlier pending-Proposal-116 refusals above are historical and superseded. See
+[the shared implementation audit](NONBINARY_QUANTUM_FIELD_STORAGE.md) for the
+approved scope, exact original failure dispositions, regression and resource
+evidence. Existing owners and circuit.append(op) are reused. This closes the
+approved storage dependency; it does not infer unrestricted dtype or symbolic
+physical support or close the remaining whole-file parent boundaries.
