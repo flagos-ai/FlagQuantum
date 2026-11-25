@@ -6,6 +6,7 @@
 
 from collections.abc import Callable, Mapping
 from itertools import combinations
+from typing import cast
 
 import numpy as np
 
@@ -25,8 +26,12 @@ from ..registers.arithmetic.grid_potential_signature import (
     grid_pair_potential_signature,
 )
 from ..registers.component_builder import ComponentProgramBuilder
+from ..registers.lookup.qrom_table import QromTable
 from .legacy_arithmetic_factories import _out_of_place_factory
 from .legacy_bookkeeping_factories import bookkeeping_factories
+from .legacy_component_arguments import ComponentArgument, ComponentArgumentValue
+from .legacy_component_export import component_library_from_program
+from .legacy_component_library import ComponentDeclaration, ComponentLibrary
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_grid_inverse_sqrt_factories import grid_inverse_sqrt_factories
 from .legacy_grid_qvr_factories import grid_qvr_factories
@@ -40,7 +45,9 @@ _TOTAL = "qualtran.bloqs.chemistry.trotter.grid_ham.potential.PotentialEnergy"
 
 
 def grid_potential_factories(
-    *, coefficient_data: CoefficientData | None = None
+    *,
+    coefficient_data: CoefficientData | None = None,
+    _pair_graphs: dict[str, ComponentLibrary] | None = None,
 ) -> dict[str, ComponentFactory]:
     """Keep numerical coefficient conversion outside source recipe construction."""
     children = {
@@ -77,9 +84,9 @@ def grid_potential_factories(
         signature = grid_pair_potential_signature(width)
         if registers is not None and registers != tuple(signature):
             raise SerializationError("Invalid pair potential register signature")
-        if any(type(value) is not int for value in (width, poly)):
+        symbolic_lookup = any(type(value) is not int for value in (width, poly))
+        if symbolic_lookup and _pair_graphs is None:
             return FunctionRecord(name, (), registers=tuple(signature))
-        assert isinstance(width, int) and isinstance(poly, int)
         raw = arguments["qrom_data"]
         if not isinstance(raw, (tuple, list, np.ndarray)) or len(raw) != 4:
             raise SerializationError(
@@ -94,6 +101,7 @@ def grid_potential_factories(
                 raise SerializationError("Coefficient banks must be concrete vectors")
             data.append(tuple(bank))
         builder = ComponentProgramBuilder(signature, name=name)
+        call_declarations: list[ComponentDeclaration] = []
         system_i, system_j = (
             np.asarray(builder.inputs[key], dtype=object)
             for key in ("system_i", "system_j")
@@ -105,13 +113,44 @@ def grid_potential_factories(
             args: Mapping[str, ResolvedArgument],
             bindings: Mapping[str, object],
         ) -> dict[str, object]:
-            factory = _out_of_place_factory if key == "adder" else children[key]
-            record = factory(name + "_" + role, None, args)
+            if key == "qualtran.bloqs.data_loading.qrom.QROM" and symbolic_lookup:
+                concrete = QromTable.from_data(*data)
+                table = QromTable(
+                    concrete.shape,
+                    (2 * (width + 1) + 2,),
+                    (poly,) * 4,
+                    ((),) * 4,
+                    datasets=concrete.datasets,
+                )
+                record: FunctionRecord | ProgramRecord = FunctionRecord(
+                    name + "_" + role, (), registers=tuple(table.signature)
+                )
+            else:
+                factory = _out_of_place_factory if key == "adder" else children[key]
+                record = factory(name + "_" + role, None, args)
             module = (
                 record
                 if isinstance(record, ProgramRecord)
                 else ProgramRecord((record,))
             )
+            if _pair_graphs is not None:
+                identifier = (
+                    "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder"
+                    if key == "adder"
+                    else key
+                )
+                call_declarations.append(
+                    ComponentDeclaration(
+                        identifier,
+                        tuple(
+                            ComponentArgument(
+                                field, cast(ComponentArgumentValue, value)
+                            )
+                            for field, value in args.items()
+                        ),
+                        module.functions[0].registers,
+                    )
+                )
             return dict(
                 builder.call_program(module, bindings, entry=module.functions[0].name)
             )
@@ -240,7 +279,28 @@ def grid_potential_factories(
                 {"dtype": value.register.dtype},
                 {"reg": value},
             )
-        return builder.finalize({"system_i": system_i, "system_j": system_j})
+        program = builder.finalize({"system_i": system_i, "system_j": system_j})
+        if _pair_graphs is not None:
+            declarations = {
+                name: ComponentDeclaration(
+                    _PAIR,
+                    tuple(
+                        ComponentArgument(field, cast(ComponentArgumentValue, value))
+                        for field, value in arguments.items()
+                    ),
+                    tuple(signature),
+                )
+            }
+            operations = program.functions[0].blocks[0].operations
+            for operation, declaration in zip(
+                operations, call_declarations, strict=True
+            ):
+                assert operation.callee is not None
+                declarations.setdefault(operation.callee, declaration)
+            _pair_graphs[name] = component_library_from_program(
+                program, name, declarations, name=name
+            )
+        return program
 
     def total(
         name: str,
