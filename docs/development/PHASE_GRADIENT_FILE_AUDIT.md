@@ -247,3 +247,39 @@ files pass strict typing, Black and Ruff. Compiler/integration scope,
 architecture, multi-level IR, protected API and whitespace checks pass.
 A mistyped test filename caused an initial empty collection diagnostic, which
 is retained separately from the corrected passing execution run.
+
+## Successful symbolic-exponent resource queries
+
+Concrete-width unitary and state resource helpers now accept the original
+symbolic exponent domain. Previously their finite-float guard raised TypeError
+for theta even though the unchanged original query succeeded. The common
+symbolic-value protocol now bypasses only that numerical check; the existing
+phase-key construction and gate-family classifier remain authoritative.
+Nonfinite numerical values keep their rejection. No emitter, precision rule,
+helper graph or physical workspace requirement changes.
+
+Whole-root QEC categories and successful recursive peak queries match the
+unmodified source for prepared states, ordinary unitaries and controlled
+unitaries at widths one and four. Unknown expressions, composite expressions,
+SymPy zero and SymPy rational constants are compared without coercing them to
+floats. The source treats SymPy constants as parameterized rotations, including
+mathematical zero. The source symbolic-width declaration also retains rotation
+count n for zero or algebraically cancelled exponents; the existing symbolic
+width formula was already correct and is unchanged. Original dictionary-key
+coalescing at finite width remains distinct from literal emitted gate counts.
+
+An independent comparison against published 63a27499b verifies 112 concrete
+unitary/state/direct-Hamming/gradient-Hamming cost trees unchanged, including
+all child multiplicities, live widths and categories. Final concentrated
+regression passes 685 cases in each Cirq lane; local integration passes 145.
+Five changed Python files pass strict typing, format/lint, Compiler scope,
+language/links, architecture, Program IR and public API checks. Frozen source
+assets and actual Kickmix0.1 Simulator are verified in the affected source
+suite. Related resource and symbolic logical-graph receipts use
+g2-phase-symbolic-resources-*-20261126.
+
+This closes the source-positive symbolic cost-query gap. Q-0671 retains its
+previous complete-file boundaries; no parent is accepted on the strength of
+this model extension alone. Source signed classical assertions, nominal dtype
+refusals, abstract primitive leaves and invalid small-width model estimates
+remain separate from the measured native instruction streams above.

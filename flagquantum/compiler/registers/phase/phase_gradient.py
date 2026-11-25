@@ -17,6 +17,7 @@ from ....core.ir.program.register_types import (
 )
 from ....core.ir.program.registers import Register, RegisterSide
 from ....core.ir.program.signatures import Signature
+from ....core.value_parameters import is_symbolic_value
 from ..._component_trace.resource_classification import classify_resource_gate
 from ..._component_trace.resource_generalization import (
     ControlledZPowerCall,
@@ -83,10 +84,18 @@ def source_phase_gradient_unitary_calls(
 
 
 def source_phase_gradient_unitary_cost(
-    width: int, exponent: float = 1, *, controlled: bool = False, epsilon: float = 1e-10
+    width: int,
+    exponent: SymbolicReal = 1,
+    *,
+    controlled: bool = False,
+    epsilon: float = 1e-10,
 ) -> ComponentCost:
     """Model the source's distinct Z or CZ power declarations."""
-    if type(width) is not int or width < 1 or not isfinite(exponent):
+    if (
+        type(width) is not int
+        or width < 1
+        or (not is_symbolic_value(exponent) and not isfinite(exponent))
+    ):
         raise ValueError(
             "Phase-gradient cost requires positive width and finite exponent"
         )
@@ -125,7 +134,9 @@ def source_phase_gradient_unitary_cost(
     return ComponentCost("PhaseGradientUnitary", logical_width, calls=tuple(calls))
 
 
-def source_phase_gradient_state_cost(width: int, exponent: float = -1) -> ComponentCost:
+def source_phase_gradient_state_cost(
+    width: int, exponent: SymbolicReal = -1
+) -> ComponentCost:
     """Model state preparation as a Hadamard layer followed by the unitary."""
     unitary = source_phase_gradient_unitary_cost(width, exponent)
     return ComponentCost(
