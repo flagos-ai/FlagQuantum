@@ -151,6 +151,45 @@ batch and does not revoke these later results.
 Earlier GF2Square matrix/linear-adjoint and Karatsuba source defects remain in
 their existing audits. This batch does not modify or reinvestigate those sources.
 
+## Complete addition original test acceptance (2026-11-25)
+
+Q-0530 and Q-0531 now have complete original assertion and protocol mappings.
+This closes the two four-function test files, not implementation parents Q-0527
+and Q-0529. The unchanged complete original selection reports 13 passes, six
+original skips and five original xfails. No source fixture or assertion changed.
+The concentrated regression passes 54 cases and the independent Cirq 1.6
+factory/component selection passes 21. Strict typing, Black, Ruff, Integration
+scope, language, links, architecture, IR and protected API checks pass.
+
+| Complete original assertion | Owned acceptance evidence |
+|---|---|
+| Concrete and symbolic factories in both files | All four actual factories and 20 raw protocols in `test_polynomial_addition_source_protocols.py`; complete typed catalog signatures, one-level/full source graphs and costs in the existing file audit. |
+| Register-add classical simulation, including all original polynomial pairs | `test_finite_field_polynomial_addition.py` includes every original polynomial and additional values, preserves the source object, and compares actual callbacks. |
+| Constant-add classical simulation and leading zero coefficients | The same numerical owner checks all original values against actual source callbacks; coefficient layout and existing exact primitive/component tests preserve padding and degree order. |
+| Concrete and symbolic register-add resources | Complete source/native graph leaves and QEC costs in the file audit; measured default factory has 15 CX and no private work or measurement. |
+| Concrete and symbolic constant-add resources | Complete graph/model assertions preserve the seven actual X gates, symbolic width bound and original zero-polynomial symbolic example. A symbolic estimate does not claim a physical allocation. |
+
+The four factories have nine PASS, five FAIL, four NA and two UNVERIFIED raw
+observations. All four original QGFPoly serialization failures remain visible.
+The concrete register-add count failure is proved separately: its actual direct
+graph has exactly two GFPolySplit and two GFPolyJoin nodes absent from its
+annotation, in addition to five GF2Addition calls. Both view kinds cost zero
+Clifford; the primitive and QEC total remains 15. The constant-add count protocol
+passes. Removing view nodes from a count comparison is a separately named
+generalization, not a repair of the failing original annotation.
+
+Existing actual-factory tests reuse complete source-word sparse complex
+coverage for the 30-bit register adder, two target words per input and an
+entangled spectator. The constant adder preserves all 15-bit amplitudes and a
+spectator. Both directions have exact operand/dependency streams, typed views,
+zero private work and SDK-blocked `circuit.append(op)` execution. Small dense
+coherent tests and mathematical self-inverse evidence retain their scopes.
+
+The implementation parents remain open for generic/symbolic logical Program
+declarations and applicable foreign construction/codec boundaries. Proposal 125
+closed concrete nonbinary raw storage; it does not authorize binary polynomial
+arithmetic over nonbinary fields. Proposed Proposal 126 is not yet approved.
+
 ## Batch verification
 
 - 50 focused checks, including reused G2-GFP01/02/03, pass.
