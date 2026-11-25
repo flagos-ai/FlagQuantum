@@ -38,10 +38,11 @@ The three window constructors reconstruct modulus-bearing signatures from mod,
 but their original stored register descriptors lose that modulus. Direct native
 constructor resolution retains the original source signature and equals the
 existing graph exactly. Resolution of the original wire fails the declared
-signature comparison. The generic resolver and dtype schema keep their existing
-contracts. The original private implementation also lacks a built-in resolver
-entry, so its native explicit mapping is tested separately. Window identifiers
-remain partial until the codec mismatch has an approved, tested disposition.
+signature comparison in the historical constructor batch. The typed-view
+continuation below closes that native binding gap without changing the codec.
+The generic resolver and dtype schema keep their existing contracts. The
+original private implementation also lacks a built-in resolver entry, so its
+native explicit mapping is tested separately.
 
 The wrapper wire serializes boolean uncompute as integer zero or one. Both are
 accepted and normalized to the existing boolean owner argument. Other direction
@@ -67,9 +68,10 @@ Window erasure contributes independently measured gates and events where the
 source supplies a model-only leaf. The source model and emitted inventory remain
 separate, including the earlier whole-file audit's measured substitution tables.
 
-Two complete identifiers raise local accepted catalogue coverage from 75/303
-to 77/303 after publication. SingleWindowModMul and
-DirtyOutOfPlaceMontgomeryModMul remain partial for the original wire mismatch.
+At that historical publication, two complete identifiers raised local catalogue
+coverage from 75/303 to 77/303. SingleWindowModMul and
+DirtyOutOfPlaceMontgomeryModMul still had the original wire mismatch, closed by
+the continuation below. Other recorded constructor domains remain separate.
 Q-0576 and Q-0876 remain open for the listed whole-file and generic admission
 boundaries. Receipts use ftqc-reference-env/g2-modular-multiplication-constructor-*.
 
@@ -96,3 +98,69 @@ catalogue covers 85/303 constructor identifiers, with 218 remaining.
 The per-module execution, symbolic, codec and model boundaries remain recorded
 at their original scopes. Exact publication evidence is retained in
 ftqc-reference-env/g2-git-object-publication-20261123.json.
+
+## Source-wire Montgomery view interface
+
+Approved Proposal 103 prerequisite 0.5 already admits optional Montgomery
+modulus metadata, and existing Cast owns exact width-preserving nominal views.
+The native window constructor now accepts only the source codec's demonstrated
+omission: outer Montgomery ports have no parameters; the inner port has only
+the constructor's modulus. Names, directions, shapes, quantum widths and
+classical extents must otherwise match. Wrong explicit moduli, encodings,
+widths, classical storage, shapes, directions, names and port counts still fail
+before composition. This does not change Core admission, a schema, a public
+entry point or any reference codec.
+
+The outer Program retains the exact source-wire ports. Existing typed Casts
+adapt its LEFT/THRU inputs, call the unchanged product owner and restore
+RIGHT/THRU outputs. The views emit no gates, allocation, feedback or numerical
+conversion. Source modulus arguments remain the child arithmetic authority.
+Direct native construction with no supplied source signature retains its exact
+previous Program. Symbolic source-wire declarations retain their actual outer
+ports and remain bodyless and physically refused.
+
+The internal through-going Montgomery core may release and replace caller
+product storage. It still requires explicit input ownership transfer and
+permission to return owned workspace. The public wrapper allocates these words
+in the forward direction and consumes matching owned LEFT inputs in reverse.
+Metadata views do not grant ownership or hide these requirements. Expanded
+logical operation indices change when views are inserted; physical primitive
+order, ownership wire/flag order and instruction offsets are compared separately.
+
+## Window source-wire acceptance
+
+Eight concrete direction/profile combinations retain exact original library
+bytes and resolve at depths 0/1/2 to identical native Programs. Complete bound
+CircuitIR equality with the previous direct owners proves unchanged primitive
+operands, measurement feedback and slot identities, not merely matching counts.
+Ordered output aliases and every lifetime's wire/dirty flag/instruction offset
+also match. Direct native Programs with no outer signature remain exact.
+Actual symbolic source libraries retain their wire signatures and physical
+body refusal. Eight malformed-port profiles fail before typed composition.
+
+Existing complete complex-state, source-callback/decomposition comparisons,
+spectators, one-bit all-history and larger selected-history cleanup evidence is
+reused through exact bound-circuit equality and rerun with the window owners.
+No extra clean bit, primitive, measurement or classical result is introduced.
+At n=4, w=2, p=5, a single window retains 231 CX, 100 T-family gates and 31
+measurements; the source declares 23 And, 106 Cliffords and 23 measurements.
+The Montgomery core and wrapper retain 533 CX, 228 T-family gates and 69
+measurements; the source declares 53 And, 255 Cliffords and 53 measurements.
+The existing model-only lookup erase substitution remains the explanation for
+these separate accounting levels. Resource rows also distinguish allocated
+work peak from returned owned outputs and original logical peak estimates.
+
+The source's actual dtype codec still omits modulus. Its private-core built-in
+reconstruction still raises ValueError; native explicit constructor mapping is
+separate and succeeds. Frozen source and test blobs remain unchanged. Generic
+truth-valued directions, symbolic physical execution, non-divisible private
+windows and the previous arithmetic/lookup/source counterexamples remain open.
+No whole-file acceptance or new global constructor count is inferred here.
+
+The concentrated constructor/window/product/Cast regression passes 98 cases;
+its final expanded constructor module passes all 26 cases in both Cirq lanes.
+The independently selected window-owner Cirq 1.6 run passes 43 cases, and local
+integration passes 145. Both changed Python files pass strict typing, Black and
+Ruff; scope, language, links, architecture, IR and protected API checks pass.
+The two frozen source/test blobs and real Kickmix 0.1 Simulator are reverified.
+Receipts use `g2-window-codec-*-20261125`.
