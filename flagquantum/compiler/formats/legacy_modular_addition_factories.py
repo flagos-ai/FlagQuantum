@@ -32,6 +32,7 @@ from ..registers.modular.scaled_modular_addition_component import (
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_multi_control_factories import _literal_values
 from .legacy_word_factories import _rename_program
+from .montgomery_port_views import restore_montgomery_ports, source_modulus_omission
 
 _Kind = Literal["ModAdd", "ModAddK", "CModAdd", "CModAddK", "CtrlScaleModAdd"]
 
@@ -88,7 +89,15 @@ def _modular_factory(
         ports.append(Register("y", dtype))
     signature = tuple(ports)
     if registers is not None and registers != signature:
-        raise SerializationError(f"Invalid register signature for {kind}")
+        if (
+            kind != "ModAdd"
+            or len(registers) != len(signature)
+            or not all(
+                outer == inner or source_modulus_omission(outer, inner)
+                for outer, inner in zip(registers, signature, strict=True)
+            )
+        ):
+            raise SerializationError(f"Invalid register signature for {kind}")
     value = _integer(arguments, "k") if kind in {"CModAddK", "CtrlScaleModAdd"} else 0
     if kind == "ModAddK":
         _integer({"add_val": arguments.get("add_val", 1)}, "add_val")
@@ -102,7 +111,9 @@ def _modular_factory(
         isinstance(item, sympy.Expr) for item in (width, modulus, value)
     ):
         # The original ModAddK supplies a value permutation and a model, no body.
-        return FunctionRecord(name, (), registers=signature)
+        return FunctionRecord(
+            name, (), registers=signature if registers is None else registers
+        )
     assert (
         isinstance(width, int) and isinstance(modulus, int) and isinstance(value, int)
     )
@@ -117,6 +128,8 @@ def _modular_factory(
         program = controlled_modular_constant_program(width, modulus, value)
     else:
         program = scaled_modular_addition_program(width, modulus, value)
+    if registers is not None and registers != signature:
+        program = restore_montgomery_ports(program, registers)
     return _rename_program(program, name)
 
 

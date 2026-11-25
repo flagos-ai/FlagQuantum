@@ -43,19 +43,18 @@ def test_complete_named_graph_dependency_stream_operands_feedback_and_inventory(
     kind: str, cv: int
 ) -> None:
     direct, source = fixture(kind, 2, 3, 1, cv)
-    if kind == "mod":
-        with pytest.raises(SerializationError, match="signature"):
-            _resolve(source)
-        # The source wire drops the constructor's Montgomery modulus metadata.
-        resolved = modular_addition_factories()[
-            "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd"
-        ]("main", None, {"bitsize": 2, "mod": 3})
-        assert isinstance(resolved, ProgramRecord)
-    else:
-        resolved = _resolve(source)
+    resolved = _resolve(source)
     bound, ports, _ = bind_case(resolved)
     expected, _, _ = bind_case(direct)
-    assert bound == expected
+    if kind == "mod":
+        # Explicit metadata Casts add logical call positions, not physical work.
+        assert bound.circuit.instructions == expected.circuit.instructions
+        assert bound.outputs == expected.outputs
+        assert tuple(
+            (e.kind, e.wires, e.instruction_offset) for e in bound.events
+        ) == tuple((e.kind, e.wires, e.instruction_offset) for e in expected.events)
+    else:
+        assert bound == expected
     assert_source(bound.circuit.instructions, source_stream(source, bound, ports))
     counts = Counter(gate.name for gate in bound.circuit.instructions)
     from qualtran.resource_counting import QECGatesCost, get_cost_value
@@ -86,10 +85,6 @@ def test_all_original_examples_keep_declared_signatures_and_symbolic_boundaries(
     source = getattr(
         import_module("qualtran.bloqs.mod_arithmetic.mod_addition"), name
     )()
-    if name == "_mod_add":
-        with pytest.raises(SerializationError, match="signature"):
-            _resolve(source)
-        return
     program = _resolve(source)
     assert program.functions[0].registers is not None
     assert tuple(register.name for register in program.functions[0].registers) == tuple(
@@ -139,7 +134,7 @@ def test_modular_constructor_errors_keep_invalid_metadata_outside_execution() ->
     assert isinstance(declaration, FunctionRecord) and not declaration.blocks
 
 
-def test_original_montgomery_signature_loss_stays_an_explicit_wire_boundary() -> None:
+def test_original_montgomery_signature_loss_uses_shared_typed_views() -> None:
     from qualtran.bloqs.mod_arithmetic import ModAdd
     from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
 
@@ -151,5 +146,51 @@ def test_original_montgomery_signature_loss_stays_an_explicit_wire_boundary() ->
     registers = library.entries[0].declaration.registers
     assert registers is not None
     assert all(register.dtype.parameters == () for register in registers)
+    program = resolve_component_program(library, 0, modular_addition_factories())
+    assert program.functions[0].registers == registers
+    assert any(
+        function.name.endswith("modulus_input_x") for function in program.functions
+    )
+
+
+@pytest.mark.parametrize(
+    "changed",
+    ("modulus", "encoding", "width", "classical", "name", "shape", "side", "count"),
+)
+def test_modadd_codec_bridge_does_not_accept_other_signature_changes(
+    changed: str,
+) -> None:
+    from qualtran.bloqs.mod_arithmetic import ModAdd
+
+    from flagquantum.core.ir.program.register_types import (
+        montgomery_register_type,
+        unsigned_register_type,
+    )
+    from flagquantum.core.ir.program.registers import (
+        Register,
+        RegisterSide,
+        RegisterType,
+    )
+
+    original = _library(ModAdd(2, 3), 0).entries[0].declaration.registers
+    assert original is not None
+    registers = list(original)
+    word = registers[0]
+    dtype = {
+        "modulus": montgomery_register_type(2, 2),
+        "encoding": unsigned_register_type(2),
+        "width": montgomery_register_type(3),
+        "classical": RegisterType("montgomery", 2, 1),
+    }.get(changed, word.dtype)
+    registers[0] = Register(
+        "other" if changed == "name" else word.name,
+        dtype,
+        (1,) if changed == "shape" else word.shape,
+        RegisterSide.LEFT if changed == "side" else word.side,
+    )
+    if changed == "count":
+        registers.pop()
     with pytest.raises(SerializationError, match="signature"):
-        resolve_component_program(library, 0, modular_addition_factories())
+        modular_addition_factories()[
+            "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd"
+        ]("bad", tuple(registers), {"bitsize": 2, "mod": 3})

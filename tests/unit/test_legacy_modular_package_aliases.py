@@ -25,7 +25,6 @@ from flagquantum.compiler.formats.legacy_modular_subtraction_factories import (
     modular_subtraction_factories,
 )
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
-from flagquantum.errors import SerializationError
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_modular_addition_component import bind_case
 
@@ -85,12 +84,6 @@ def test_same_source_bytes_alias_and_canonical_constructor_paths(
     factories = _factories()
     module = "mod_addition" if kind in {"CModAddK", "ModAdd"} else "mod_subtraction"
     assert factories[_PREFIX + kind] is factories[_PREFIX + module + "." + kind]
-    if kind == "ModAdd":
-        # Frozen wire omits Montgomery modulus metadata for both spellings.
-        for alias in (False, True):
-            with pytest.raises(SerializationError, match="signature"):
-                _resolve(source, alias)
-        return
     canonical, legacy = _resolve(source, False), _resolve(source, True)
     assert canonical == legacy
     if symbolic:
@@ -105,7 +98,7 @@ def test_same_source_bytes_alias_and_canonical_constructor_paths(
     )
     from tests.unit.test_register_subtraction import assert_source
 
-    stream = add_stream if kind == "CModAddK" else sub_stream
+    stream = add_stream if kind in {"CModAddK", "ModAdd"} else sub_stream
     assert_source(bound.circuit.instructions, stream(source, bound, ports))
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
@@ -116,7 +109,8 @@ def test_same_source_bytes_alias_and_canonical_constructor_paths(
 
 
 @pytest.mark.parametrize(
-    "kind,cv", (("CModAddK", 1), ("ModSub", 1), ("CModSub", 0), ("CModSub", 1))
+    "kind,cv",
+    (("CModAddK", 1), ("ModAdd", 1), ("ModSub", 1), ("CModSub", 0), ("CModSub", 1)),
 )
 def test_alias_full_complex_branches_and_zero_private_work(kind: str, cv: int) -> None:
     source = _source(kind, cv)
@@ -134,7 +128,9 @@ def test_alias_full_complex_branches_and_zero_private_work(kind: str, cv: int) -
             new = (ctrl << 2) | ((x + 1) % 2 if ctrl else x)
         else:
             old = (x << 2) | y
-            new = (x << 2) | ((y - x) % 2 if ctrl == cv else y)
+            new = (x << 2) | (
+                (y + x if kind == "ModAdd" else y - x) % 2 if ctrl == cv else y
+            )
             if kind == "CModSub":
                 old |= ctrl << 4
                 new |= ctrl << 4
