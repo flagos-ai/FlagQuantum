@@ -4,6 +4,12 @@ The reference is unchanged Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The native audit verifies all
 three original Git blobs before compiling the source notebook fixture cells.
 
+Current status, 2026-11-25: approved Proposal 116 target storage and Proposal 125
+nonbinary target storage are now validated through the actual public callbacks.
+The latest scope and remaining boundaries are recorded in the final section.
+Earlier pending-116/117 statements below describe the dated 2026-11-21 batches;
+116 is implemented, and approved Proposal 122 covers the old static-CH gap.
+
 | Frozen asset | Git blob | Ledger item |
 | --- | --- | --- |
 | `specialized_ctrl.ipynb` | `67c4664b39c2c1043d59312e76d9453c9a294cea` | Q-0560 |
@@ -180,3 +186,71 @@ fixed-point physical admission, unresolved physical widths and previously
 recorded original callback defects retain their separate dispositions. Pending
 Proposals 116, 117 and 118 are outside this delivery. No complete parent is
 newly accepted by this batch.
+
+## Approved target-storage dependency closure, 2026-11-25
+
+The complete 378-line locked source file and all direct control/AutoPartition
+responsibilities above remain the acceptance unit. This batch completes the
+previously unverified approved storage combinations in the actual source
+callbacks. Existing algorithms, primitive emitters and reference source are
+unchanged. Control ports remain QBit; storage labels belong to data targets.
+No fixed-point or finite-field control predicate contract is expanded.
+
+| Target profile | Completed source/native path |
+| --- | --- |
+| Signed QFxp(3,-2), QFxp(3,1), QFxp(3,2) | Both directions, both polarities, one/two packed layers and all five shaped callback cases |
+| Unsigned QFxp(0,0), QFxp(0,-2) | Scalar and shaped zero-width ownership, all four old/new polarities, both raw erasure outcomes and self-adjoint roundtrip |
+| GF(3), GF(5), GF(9) | Raw storage callbacks on two-, three- and four-bit words, with all old/new polarities and shapes |
+| Degree-one polynomials over GF(3), GF(5), GF(9) | Raw storage callbacks on four-, six- and eight-bit words with the same complete shaped grid |
+| Degree-zero GF(5) polynomial | Three-bit packed callback, including one/two layers and both exact directions |
+
+The unchanged public source helper and actual returned adders are invoked.
+Stored dependency calls, operand identities, dictionary mutation, nominal dtype,
+shape, physical output aliases, exact gate parameters/order, measurement feedback,
+JSON and ordinary circuit.append(op) are checked. CH acts on the first raw bit
+of each nonempty target word. Numerical field arithmetic and external value
+validation retain their existing contracts. Unused binary encodings are covered
+as raw storage, including coherent superpositions.
+
+Zero-width words remain logical bindings and array elements. They emit no CH,
+while the source's predicate compute/erase is preserved. Both measurement
+outcomes agree in unnormalized complex phase, private work returns to zero,
+and every joint forward/self-adjoint history restores the input and spectator.
+An empty array and an array of zero-width words are checked separately.
+
+Existing dense complex-state scenarios up to 16 physical wires are retained.
+Wider field/polynomial arrays additionally have an exact factorization proof:
+every emitted instruction is restricted to the two controls, each word's first
+bit, and the one work bit. Output aliases retain all bystander positions. The
+complete active operator, every erasure history and zero work are verified from
+actual primitive IR against an independent conditional tensor-H oracle. The
+operator squares to identity. The untouched data factor is exactly identity,
+so the channel equality extends to all joint amplitudes and arbitrary entangled
+bystanders. The largest case describes 35 source/working wires plus a spectator;
+this is not represented as a dense 36-wire Runtime execution. No simulation
+backend or numerical execution path is added to Compiler.
+
+The three-bit typed grid covers 14 descriptors and both exact directions at one
+and two packed layers. The shaped grid covers 21 descriptors, all five shapes
+and four old/new polarity combinations. Source-success and old source failures
+remain separate. The full admitted storage/context scope passes without skips.
+
+Actual primitive inventories and original QEC models remain separate. A resource
+receipt independently checks 420 shaped rows against the unchanged source. The
+one private work wire and one feedback slot are restored/reused between calls;
+partition views add zero gates. Source QubitCount equals actual bound width
+before adding the external spectator. Root model estimates are not rewritten
+to match decomposed primitive counts.
+
+Receipts use `g2-specialized-approved-storage-*20261125` in the reference
+workspace. Original complete-source tests, tutorial, source callback defects
+and previous storage/lifetime evidence are reused. Six frozen source/dependency
+blobs, Qualtran 0.7.0 and real Kickmix 0.1 native Simulator are reverified.
+
+Q-0561 remains open under its complete representation criteria. Signed-zero
+storage awaits Proposal 124; classical view/cast and symbolic field scopes
+retain their independent pending contracts. Unresolved physical extents,
+original symbolic-shape construction failure, nonleading-control permutations,
+repeated-control np.concatenate TypeError and invalid generic tutorial callbacks
+keep their existing dispositions. No failed reference implementation is edited
+or substituted, and no whole-file or catalogue acceptance count is inflated.
