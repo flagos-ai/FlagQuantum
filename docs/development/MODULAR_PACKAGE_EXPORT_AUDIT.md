@@ -43,14 +43,19 @@ CModSub identifier: those defining-module names are absent from its resolver.
 The old package aliases do deserialize. This is retained as a source failure;
 the reference registry is not patched. The native reader supports both forms.
 
-ModAdd's source wire drops Montgomery modulus metadata. Source reconstruction
-recovers it from constructor arguments, whereas native signature validation
-still rejects that wire for both spellings. Registering its alias does not fix
-or conceal that separate boundary. Symbolic classes remain logical declarations;
+ModAdd's source wire drops Montgomery modulus metadata. The alias-only batch
+retained native signature rejection. The subsequent source-port batch now uses
+the existing multiplication/inverse metadata bridge: preserve the original
+external width-only ports, Cast into constructor-owned modulus-bearing views,
+execute the unchanged ModAdd body, and Cast outputs back. Both spellings bind
+the same program. Wrong explicit modulus, width, encoding, quantum/classical
+kind, port name, shape, side or port count still fails before execution.
+Symbolic declarations retain the original external ports without pretending to
+provide a numerical body. No upstream wire or Core schema changes. Symbolic classes remain logical declarations;
 ModAddK remains an atomic source-model declaration without an original primitive
 body. No alias is invented for exports absent from the frozen resolver.
 
-Complete complex amplitudes are checked for actual alias-bound CModAddK, ModSub
+Complete complex amplitudes are checked for actual alias-bound CModAddK, ModAdd, ModSub
 and both CModSub polarities, with private work zero. The new width-two fixtures use three explicit raw histories plus the existing
 all-history And-channel certificate on every valid basis column; exhaustive
 small-history checks remain in the reused arithmetic evidence. Previously
@@ -70,6 +75,7 @@ Private leases close in every case; live peak is not pool capacity.
 
 | Operation | Control | Actual T/Tdag | Actual CX | Actual measurements | Actual live peak | Source QEC And / Clifford / measurements | Source qubits |
 | --- | --- | ---: | ---: | ---: | ---: | --- | ---: |
+| ModAdd | none | 28 | 76 | 7 | 10 | 7 / 54 / 7 | 10 |
 | CModAddK(k=1) | 1 | 44 | 119 | 11 | 13 | 11 / 84 / 11 | 13 |
 | ModSub | none | 36 | 94 | 9 | 10 | 9 / 74 / 9 | 10 |
 | CModSub | 0 | 52 | 137 | 13 | 13 | 13 / 104 / 13 | 13 |

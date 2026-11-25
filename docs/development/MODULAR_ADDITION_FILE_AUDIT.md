@@ -185,3 +185,32 @@ established docstring-coverage failure remains recorded. Its failing test and
 nine reported modules are byte-identical to the prior published baseline.
 The existing KMX primitive transport and original 446-case/356-slow source
 intake are reused. G2 parent Q-0570 remains open for the specific boundaries above.
+
+
+## ModAdd source-wire metadata closure
+
+The original wire serializes x/y as width-only Montgomery words, while its
+constructor signature includes the declared modulus. Both the canonical and
+package-alias constructor now use the same existing `montgomery_port_views`
+bridge already used by multiplication and inverse. The caller-facing signature
+stays byte-for-byte faithful to the decoded wire. Explicit input Casts enter
+the modulus-bearing shared arithmetic body; output Casts restore the external
+views. No Core descriptor, serializer or source implementation is changed.
+
+This bridge admits only the known omitted-modulus case. Eight negative signature
+categories retain rejection: wrong explicit modulus, width, encoding,
+quantum/classical kind, name, shape, side and count. Symbolic declarations keep
+the source external signature and remain bodyless until execution can bind
+concrete sizes. Explicit correct modulus signatures and direct numerical users
+continue through their original path.
+
+The actual primitive stream, output aliases and allocation/release instruction
+offsets match the existing authoritative body. Logical call positions differ
+because of the explicit Cast views and are not claimed identical. Original
+source-walker operands and measurement feedback, valid-residue complex branches,
+all-history work cleanup certificates, exact inverse evidence and separate
+primitive/model resources remain authoritative. The source constructor and
+package alias resolve to equal Programs and equal complete bound records.
+This closes the wire-metadata gap; original target-at-modulus cleanup,
+full-ring source loader failures, symbolic physical bodies and model-only
+ModAddK are not relabeled as solved. Q-0570 therefore remains open.

@@ -38,7 +38,8 @@ The original key `qualtran.bloqs.chemistry.trotter.trotterized_unitary`
 resolves to a module, not the TrotterizedUnitary class. Four modular arithmetic
 package aliases now reuse their authoritative addition/subtraction factories;
 [their wire audit](MODULAR_PACKAGE_EXPORT_AUDIT.md) distinguishes successful
-legacy reads from the retained source canonical-name and ModAdd signature failures.
+legacy reads from retained source canonical-name failures and documents the
+shared ModAdd modulus-view bridge.
 
 ## One-to-one inventory
 
