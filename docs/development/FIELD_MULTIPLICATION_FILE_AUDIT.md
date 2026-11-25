@@ -617,3 +617,41 @@ selection exclusions and fourteen existing notebook escape warnings in 388.67
 seconds. Combined inventory is 4046 JSON files, 4045 diagrams, 234 documents,
 3692 contextual children, 82 decomposed roots and 271 atomic interfaces. The 412
 qualified descendants include the explicitly distinct native exact inverse.
+
+## Complete original test-file acceptance (2026-11-25)
+
+Q-0520 now has a complete assertion and protocol disposition. This closes the
+42-function test file, not implementation parent Q-0519. The unchanged original
+non-slow selection passed 276 cases with three skips and three xfails; its
+entire slow selection separately passed all 22 cases in 137.18 seconds. Both
+receipts are retained, including the superseded interrupted attempt. The
+original and native notebook kernel evidence above is reused.
+
+| Original function group (all 42 functions) | Owned assertion mapping |
+|---|---|
+| Two factory autotesters | Existing nine-factory native catalog/signature/graph and physical snapshot owners plus `test_field_multiplication_source_protocols.py` raw results. |
+| Three linear synthesis tests | Existing PLU and exact-inverse matrix callbacks in `test_finite_field_multiplication.py`, literal source dependencies in `test_field_linear_foreign_factories.py`, and symbolic model assertions in the file audit. The defective source physical adjoint remains explicit. |
+| Four product/accumulation classical tests | Every small product pair and accumulator triple, arbitrary-target complex spectator states, actual source forward/inverse snapshot and native append. |
+| Five constant multiplication tests | All-small constants, value/matrix/ordered-CX and count owners, plus original invalid-field admission. |
+| One notebook test | Complete original 60-cell and SDK-blocked native 62-cell kernel evidence above. |
+| Four scaled-polynomial tests | Whole recursive decomposition/count graphs, source callbacks, arbitrary target sparse amplitudes, clean padding and exact native inverse. |
+| Five binary-polynomial tests | Same recursive/value/state owners plus all eleven power-of-two resource assertions through width 1024. Models do not claim statevector execution at width 1024. |
+| Eight left/right shift tests | Original modulus/shift grid, numerical callbacks, exact returned aliases, both directions, literal stream, source models and physical binding overhead. |
+| Eight Karatsuba tests | Recursive decomposition/generalized counts, classical product and adjoint callbacks, cost powers, invalid input, exact source graph snapshots and retained mathematical counterexample. |
+| Two measured-uncompute tests | Actual original MBU/Parity/Discard builder replacement, ordered feedback operands, small complete branch states, zero work and broader numerical/original slow evidence. |
+
+The nine actual factories have 45 raw observations before pytest skip policy:
+25 PASS, 15 FAIL, three UNVERIFIED and two NA. Six count mismatches and all nine
+serialization failures remain failures. Two serializers fail during constructor
+deserialization rather than QGF dtype encoding; tests preserve that distinction.
+No source assertion, source body or serializer was repaired to obtain parity.
+
+The concentrated source/protocol/physical/value/erasure regression passes 275
+cases; the independent Cirq 1.6 source/snapshot selection passes 36. Strict
+typing, Black, Ruff, Integration scope, language, links, architecture, IR and
+API checks pass. The view and multiplication test-file closures do not admit unresolved
+symbolic field Programs: the six source-success/native-refusal witnesses are
+tracked in proposed Proposal 126. Q-0519 retains that generic declaration gap,
+the source linear-adjoint/Karatsuba defects, generic measured inverse dispatch
+and full eight-bit coherent history enumeration. Existing mathematical native
+inverse evidence does not turn a defective original inverse into a pass.
