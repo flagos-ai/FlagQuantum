@@ -5,6 +5,7 @@
 
 """Project verified Program SSA connections into legacy library rows."""
 
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import replace
 
@@ -16,6 +17,7 @@ from ..registers.component_graph import _call_entry
 from .legacy_component_library import (
     ComponentConnection,
     ComponentDeclaration,
+    ComponentLibrary,
     ComponentLibraryEntry,
     ComponentOccurrence,
     ComponentPort,
@@ -98,4 +100,51 @@ def component_entry_from_program(
         replace(declaration, registers=function.registers),
         tuple(connections),
         counts,
+    )
+
+
+def component_library_from_program(
+    record: ProgramRecord,
+    entry: str,
+    declarations: Mapping[str, ComponentDeclaration],
+    *,
+    name: str = "",
+) -> ComponentLibrary:
+    """Project one call layer with complete caller-owned constructor metadata.
+
+    Child rows retain their constructor declarations, not an invented expansion
+    of their bodies. Symbolic metadata and static data remain in the owned
+    library input until parameters are bound and a Program can be constructed.
+    """
+    function = _call_entry(record, entry)
+    identifiers = {entry: 0}
+    counts: Counter[int] = Counter()
+    for operation in function.blocks[0].operations:
+        assert operation.callee is not None
+        identifier = identifiers.setdefault(operation.callee, len(identifiers))
+        counts[identifier] += 1
+    missing = identifiers.keys() - declarations.keys()
+    if missing:
+        raise SerializationError(
+            f"Missing constructor declarations: {sorted(missing)!r}"
+        )
+    root = component_entry_from_program(
+        record, entry, identifiers, declarations[entry], counts=tuple(counts.items())
+    )
+    functions = {item.name: item for item in record.functions}
+    return ComponentLibrary(
+        name,
+        (
+            root,
+            *(
+                ComponentLibraryEntry(
+                    identifier,
+                    replace(
+                        declarations[callee], registers=functions[callee].registers
+                    ),
+                )
+                for callee, identifier in identifiers.items()
+                if callee != entry
+            ),
+        ),
     )
