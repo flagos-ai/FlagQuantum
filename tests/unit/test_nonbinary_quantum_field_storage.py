@@ -15,6 +15,8 @@ from qualtran.serialization.bloq import bloqs_to_proto
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum import Circuit
+from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
 from flagquantum.compiler.registers.component_rebindings import (
     join_word_function,
     split_word_function,
@@ -26,9 +28,12 @@ from flagquantum.compiler.registers.finite_field.field_polynomial_layout import 
     FieldPolynomialLayout,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
+from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.register_verifier import executable_register_width
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 from flagquantum.simulation.finite_field_polynomial_encoding import (
     FiniteFieldPolynomialEncoding,
@@ -207,3 +212,75 @@ def test_numeric_decode_still_refuses_unused_raw_encodings(
         field.from_bits(bits)
     with pytest.raises(ValueError):
         source.from_bits(bits)
+
+
+@pytest.mark.parametrize("characteristic,degree", PROFILES)
+@pytest.mark.parametrize("polynomial", (False, True))
+def test_raw_field_allocation_and_free_preserve_the_complete_spectator_state(
+    characteristic: int, degree: int, polynomial: bool
+) -> None:
+    from qualtran import BloqBuilder
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.resource_counting import QubitCount
+
+    field = FiniteFieldEncoding(characteristic, degree)
+    dtype = (
+        FiniteFieldPolynomialEncoding(1, field).register_type()
+        if polynomial
+        else field.register_type()
+    )
+    source_dtype = (
+        QGFPoly(1, QGF(characteristic, degree))
+        if polynomial
+        else QGF(characteristic, degree)
+    )
+    width = executable_register_width(dtype)
+    leaves = tuple(
+        bit_gate_function(
+            gate,
+            (Register("q", quantum_bit_type()),),
+            CircuitIR(1, (Instruction(gate, (0,)),)),
+        )
+        for gate in ("h", "t")
+    )
+    builder = ComponentProgramBuilder(Signature.build(s=1), leaves)
+    word = builder.allocate(dtype=dtype)
+    builder.free(word)
+    s = builder.call_dict("h", {"q": builder.inputs["s"]})["q"]
+    s = builder.call_dict("t", {"q": s})["q"]
+    program = builder.finalize({"s": s})
+    assert verify_program_record(program) == ()
+    bound = bind_register_program(program, ((width,),), clean=tuple(range(width)))
+    assert bound.outputs == ((width,),) and len(bound.events) == 2
+    assert all(width not in event.wires for event in bound.events)
+    assert [(g.name, g.wires) for g in bound.circuit.instructions] == [
+        ("h", (width,)),
+        ("t", (width,)),
+    ]
+    source_builder, inputs = BloqBuilder.from_signature(SourceSignature.build(s=1))
+    temporary = source_builder.allocate(dtype=source_dtype)
+    source_builder.free(temporary)
+    source_s = source_builder.add(Hadamard(), q=inputs["s"])
+    source_s = source_builder.add(TGate(), q=source_s)
+    source = source_builder.finalize(s=source_s)
+    spectator = torch.tensor([1 + 2j, 3 - 1j], dtype=torch.complex128) / 15**0.5
+    before = torch.zeros(1 << (width + 1), dtype=torch.complex128)
+    before[:2] = spectator
+    expected = torch.zeros_like(before)
+    expected[:2] = (
+        torch.as_tensor(source.tensor_contract(), dtype=torch.complex128) @ spectator
+    )
+    actual = (
+        Circuit(width + 1, inputs=before, dtype=torch.complex128)
+        .append(FieldOperation(width + 1, bound.circuit.instructions))
+        .state()
+        .flatten()
+    )
+    torch.testing.assert_close(actual, expected, atol=2e-15, rtol=0)
+    model = get_cost_value(source, QECGatesCost())
+    assert model.t == model.clifford == 1 and model.measurement == 0
+    # Retain the original DAG estimate separately from this explicitly live
+    # caller spectator and the supplied physical work pool.
+    assert get_cost_value(source, QubitCount()) == width
+    assert bound.circuit.n_wires == width + 1

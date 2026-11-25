@@ -112,3 +112,14 @@ Black, Ruff, approved Integration/Compiler/Simulation scopes, language, local
 links, architecture, IR and protected API checks. The dependency scan retains
 exactly the prior 720 findings, not a globally clean result. No baseline,
 compatibility fixture or reference algorithm was weakened or rewritten.
+
+A completion audit additionally checks allocation and consumption for all six
+scalar/polynomial profiles in a real H/T spectator context. Both ownership
+events exclude the caller wire, and the complete physical state returns all
+allocated words to zero. Only H/T are emitted, matching one source Clifford
+and one T. The source DAG QubitCount estimate is n for each profile, while this
+explicitly live caller spectator plus the chosen n-wire clean pool uses n+1
+physical wires. Both numbers are retained; the source model is not changed or
+presented as the measured physical allocation. The initial n+1 source-model
+assertion was an incorrect scope assumption, corrected after inspecting all
+six actual source values. The final storage owner now covers 31 cases.
