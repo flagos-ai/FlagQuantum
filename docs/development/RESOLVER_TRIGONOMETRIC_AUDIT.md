@@ -55,3 +55,24 @@ blobs and the real Kickmix 0.1 Simulator are verified. Both Python files pass
 strict typing, Black and Ruff. Compiler scope, language, architecture, IR and
 protected API checks pass. The dependency checker retains its identical 720
 baseline findings. Publication is verified separately against the exact Git SHA.
+
+## Empty-register constructor closure
+
+The original ArcSin explicitly constructs both named THRU registers, including
+at width zero. The native declaration now preserves those registers instead of
+using the convenience signature builder that omits empty words. Actual serialized
+source libraries for fractional widths 0, -1 and -2 resolve and verify with both
+ports intact. Positive-width and symbolic constructor signatures retain the same
+owners. ArcTan instead uses the original convenience builder; its empty select
+or target ports remain omitted, while its sign bit remains present.
+
+The declaration regression compares the original resource formula for all three
+empty ArcSin profiles and three iteration/degree pairs. Negative estimates remain
+raw source-model values, not measured primitive counts. No physical body is added:
+default constructor resolution still refuses physical binding for both roots.
+Existing independently implemented lookup and approximation evidence is unchanged.
+In particular, the explicit native ArcTan lookup still requires positive input
+and target widths even though original empty-profile operator oracles exist; that
+separate execution gap remains recorded. Whole-file Q-0224 and Q-0226 remain open
+for the previously documented numerical, decomposition and execution boundaries.
+Receipts use `ftqc-reference-env/g2-trigonometric-empty-*`.
