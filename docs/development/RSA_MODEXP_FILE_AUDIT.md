@@ -201,3 +201,47 @@ numerical entry emits 1155 instructions, including 206 T/Tdag, 524 CX and 48
 measurements on 16 wires using exactly four caller slots. Its source default
 T estimate remains 200; explicitly pricing the exact swap at seven gives 206.
 Zero exponent emits one X on two result wires with no measurement or scratch.
+
+## Repeated component construction and bounded graph profile
+
+Component import now has an explicit builder-owned operation returning the local
+callee name without consuming handles or emitting a call. Ordinary call_program
+still performs exactly import followed by call_dict. Scaled modular addition
+imports a distinct reduced constant once inside each builder, while retaining
+every original per-bit compute/add/erase operation and explicit inverse pair.
+The mapping expires with the construction; there is no persistent cache or new
+function registry. This removes repeated construction and validation, not gates.
+
+Eleven complete Programs are unchanged from published 4551a7e11: eight scale
+cases include zero, positive, negative and repeated residues, forward/inverse
+and widths two/four/eight; three ModExp cases cover moduli three/fifteen and
+widths two/four/eight. All eight scale cases also retain the complete bound
+record, including instruction order, parameters, classical feedback, output
+aliases and workspace events. Existing source and absolute-amplitude evidence
+for these identical artifacts is reused. New explicit-import tests cover name
+conflicts, failed imports, no-call ownership and every small coherent measurement
+branch. The original import test file is retained unchanged.
+
+The final affected regression passes 194 cases in Cirq 1.7 and 117 cases in
+Cirq 1.6. Local integration passes 145 cases; the source/environment lock passes
+separately. Three changed Python files pass strict typing, format, lint, owner
+scope, language/links, architecture, IR and API checks. The earlier run before
+restoring the existing test file is archived and is not the final regression.
+
+The stored graph profile for exponent three, base four and modulus fifteen is:
+
+| Result bits | Definitions | Unique structural bodies | Stored operations | Observed process RSS peak |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 3866 | 97 | 35770 | 259817472 bytes |
+| 64 | 3866 | 97 | 106330 | 253837312 bytes |
+| 256 | 3866 | 97 | 388570 | 445366272 bytes |
+
+Structural fingerprints normalize private function and recursive call names;
+all other fields remain present. These are observations of existing graph
+representation, not physical primitive counts, source cost models, a benchmark
+speedup claim or evidence of full-width execution. The first 2048-bit attempt
+reached its 90-second observation limit with peak observed RSS 632569856 bytes;
+it was terminated and reaped. A separate extended-budget attempt is recorded
+independently. No complete 2048-bit graph or literal physical stream is claimed.
+The next work must distinguish stored graph completion, physical stream
+expansion and numerical simulation instead of treating them as one result.
