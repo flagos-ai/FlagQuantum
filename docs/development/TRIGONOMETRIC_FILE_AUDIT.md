@@ -117,8 +117,9 @@ unchanged numerical/SDK owners are verified in `g2-trigonometric-foreign-evidenc
 
 Q-0225 and Q-0227 close with original 10-pass/3-skip source evidence retained.
 Q-0224 remains open for the unrecovered original minimax coefficient obligation.
-Q-0226 remains open for the independent arithmetic path's four of 256 +1-ulp
-words. Their missing original gate bodies remain explicit source limitations.
+At that publication, Q-0226 remained open for its generic callback and the
+independent arithmetic path's four of 256 +1-ulp words. Their missing original
+gate bodies remain explicit source limitations.
 This batch completes generic interfaces and foreign consumers without claiming
 those independent scientific gaps are resolved.
 
@@ -166,7 +167,7 @@ binds and appends the native Program through the existing operation protocol.
 The actual inventory and independent models are recorded in
 `g2-arctan-program-resources-20261125.json`. ArcTan primitive counts remain
 unavailable, not zero. This closes the stored lookup/constructor execution
-path. Q-0226 remains open for the separately implemented arithmetic
+path. At that publication Q-0226 remained open with the separately implemented arithmetic
 approximation's four of 256 +1-ulp words; it does not mean the exact table has
 four wrong rows. No parent completion or constructor-count increase is claimed.
 
@@ -208,5 +209,123 @@ IR are exactly equal to published f9a824789 at 1/1, 2/3, 3/8 and 4/6.
 These are measured native counts, separate from the original symbolic model.
 The model's zero at empty target is not a claim of zero physical work. Native
 lookup and the independent approximate arithmetic path retain separate scopes;
-Q-0226 remains open for the latter's existing quantization differences. Receipts
+Q-0226's closure is reviewed below; the latter's quantization differences remain. Receipts
 use `g2-arctan-empty-*-20261125`.
+
+## Complete scalar callback and source-definition review
+
+Planning section 2 distinguishes source formula-only components from separately
+specified executable decompositions. G2 batch rule 5 also preserves existing
+source-defect acceptance requirements. This review records both scopes; it does
+not declare the original minimax table recovered or the independent arithmetic
+path bit-exact. The following table accounts for all thirteen source definitions.
+
+| Frozen definition | Native owner or explicit source disposition |
+|---|---|
+| ArcSin | `ArcsineDeclaration` fields, immutable metadata and defaults |
+| ArcSin.__attrs_post_init__ | Declaration validates the original fraction/width relation; symbolic validation remains deferred |
+| ArcSin.signature | Explicit named x/result THRU ports, including empty words, in the same declaration |
+| ArcSin.on_classical_vals | `simulation.classical_arcsine.source_arcsine_classical_values`, including unmasked overflow and binary64 assertion |
+| ArcSin.build_call_graph | Declaration delegates the unchanged direct Toffoli polynomial to `trigonometric_resource_model` |
+| _arcsin | Existing actual factory/library depths 0/1/2, native example, graph and complete notebook disposition |
+| ArcTan | `ArctangentDeclaration` fields and immutable metadata |
+| ArcTan.signature | Declaration preserves select/sign/target and the original omitted empty ports |
+| ArcTan.registers | Declaration's binary digit dimensions, including symbolic refusal and empty tuples |
+| ArcTan.with_registers | Original hook raises NotImplementedError; no native dimension-changing gate operation is invented |
+| ArcTan.apply | New Simulation normalized-angle owner plus Ecosystem scalar XOR callback and the existing real fixed-point codec |
+| ArcTan.build_call_graph | Declaration preserves fresh symbolic multiplicity of PlusEqualProduct, independent of physical lookup counts |
+| ArcTan.adjoint | Declaration returns itself; existing occupied-target quantum lookup proves its XOR inverse separately |
+
+The actual missing original feature was generic ArcTan.apply. Its native
+counterpart now composes `simulation/classical_arctangent.py` for binary64
+normalization with `ecosystem/classical_arctangent.py` for the scalar XOR and
+existing optional fxpmath conversion. Ecosystem retains external-object and
+optional-dependency ownership. Simulation imports no fxpmath or Ecosystem;
+Compiler receives no numerical execution dependency. The existing reviewed
+fixed-point conversion contract and entry points are reused. No Core export,
+IR vocabulary, public schema or quantum lookup bound changes.
+
+The callback retains the input integer and does not mask occupied sign/target
+values. It has no 12-bit input/32-bit target lookup restriction. The 33-bit
+target profile executes exactly like the original. In ten target profiles
+0/1/2/8/32/33/53/64/80/128, the same fourteen scalar selections produce the
+same results or exception classes. NumPy refuses a sufficiently large Python
+integer; the locked fxpmath version also overflows on some 64/80-bit conversions
+and all tested 128-bit conversions. These are explicit source failures, not
+silently skipped inputs. A large finite selection rounds the angle magnitude
+to one in binary64; original wrapping yields zero rather than clipping to the
+maximum encoded word. Both native normalization and conversion preserve it.
+
+Scalar successes cover occupied and exterior raw outputs, both signs and double
+application. Reference-blocked execution demonstrates that neither Qualtran nor
+Cirq is needed. Removing the optional codec still allows Simulation math and
+causes the explicit Ecosystem conversion to fail, rather than substituting a
+different quantizer. Source-comparable small quantum operators retain ordinary
+append, complete complex spectator amplitudes in every raw history and zero
+work. Classical callback evaluation is not assigned a zero-gate quantum count.
+Independent source resource formulas and measured QROM primitive inventory keep
+their existing separate owners.
+
+The additional ArcSin intake compares source success/failure and unmasked values
+at widths 0 through 1024 without finding a new mismatch. Existing whole-small
+domain and symbolic callback tests are reused. It does not claim exhaustive
+enumeration at large widths. Source/test blobs, actual factories, notebook and
+SDK consumers retain their accepted evidence.
+
+Parent conclusions remain explicit: Q-0224 retains its open original-coefficient
+and separately registered chemistry/decomposition obligations. Q-0226 closes
+only through the exact callback and quantum operator coverage below, not by
+declaring the independent approximation exact. Its recorded four differing words
+remain unchanged. No missing source primitive stream is invented.
+Final receipts use `g2-trigonometric-scalar-*-20261126`; the November 25 intake retains the original success/failure samples.
+
+## ArcTan complete source-file closure
+
+Q-0226 now has native ownership and executable evidence for every original
+definition, its generic scalar callback, typed declarations, symbolic estimate,
+original SDK operator and unsupported dimension-changing hook. The exact
+callback composes with the existing generic typed QROM for quantum execution;
+it is independent of the narrower convenience lookup profile. This uses the
+existing-equivalent-capability disposition in planning section 2, rather than
+substituting a new approximation or requiring a nonexistent original primitive
+body. Source exceptions, original test assets and declaration-only primitive
+lowering retain their explicit dispositions.
+
+The 13-input-bit/one-target-bit operator covers all 32768 occupied logical basis
+inputs with measured-And cleanup certificates, compares every primitive operand
+and feedback event with the unchanged original QROM, and preserves a coherent
+sample with a spectator under sparse execution. This is not a claim of dense
+simulation over all physical work states or raw-history enumeration.
+The one-input-bit/33-target-bit operator is X/CX-only with no phase or work. Its
+zero and basis-vector images determine the complete affine occupied-target
+operator, and coherent sparse execution preserves the corresponding amplitudes.
+Both datasets equal literal original ArcTan.apply values. Consumers retain
+ordinary circuit.append(op); no new Core instruction or gate API is needed.
+
+The independent polynomial-size implementation remains explicitly approximate:
+four of 256 words differ by one ulp at the previously certified profile. Its
+existing scoped acceptance is not changed, and it is not used as the exact
+source-file replacement. Q-0226.02 records verification that the original only
+supplies its count formula and ArithmeticGate callback, not a primitive recipe.
+Q-0224 and all its open coefficient/chemistry work remain open. Closing this
+one source file does not complete G2 or waive any other parent requirement.
+
+
+## Published-batch verification and resource separation
+
+The concentrated regression passes 290 cases; the Cirq 1.6 lane passes 170,
+and local integration passes 145. Strict typing of the four changed Python
+files, formatting, lint, both owner scopes, language, links, architecture,
+Program IR and public API checks pass. The frozen-source audit covers all
+thirteen definitions above and verifies the real Kickmix 0.1 Simulator.
+
+| Exact generic QROM profile | Measured primitive inventory | Reserved clean work | Independent source models |
+|---|---|---|---|
+| select 13, target 1 | 26 X, 36 H, 24 T, 24 Tdg, 110 CX, 12 S, 12 measure, 12 CZ, 12 reset | 12 | QROM: 12 And, 52 Clifford, 12 measurements; ArcTan: `8*_c0` T |
+| select 1, target 33 | 2 X, 2 CX | 0 | QROM: 4 Clifford; ArcTan: `8712*_c0` T |
+
+The QROM count graph and its measured decomposition use different categories.
+The ArcTan estimate retains the original fresh unknown multiplicity `_c0`;
+it is not a prediction of this table-based implementation. The scalar callback
+has no measured quantum inventory. Receipts include the complete primitive
+comparison and `g2-trigonometric-scalar-resources-20261126.json`.
