@@ -69,6 +69,7 @@ class ProgrammedRotationExample:
                 exponent=theta,
                 epsilon=epsilon,
                 apply_final_correction=model.apply_final_correction,
+                early_exit=True,
             )
         elif model.apply_final_correction:
             # With no attempts the terminal correction is unconditional.
@@ -84,7 +85,10 @@ def main() -> None:
     circuit = DynamicCircuit(2)
     circuit.append(op)
     counts = Counter(gate.name for gate in circuit.to_ir().instructions)
-    assert counts == dict.fromkeys(("h", "phase", "cx", "measure", "x"), 2)
+    assert counts == {
+        **dict.fromkeys(("h", "phase", "cx", "measure", "x"), 2),
+        "classical_xor": 1,
+    }
     print("Emitted instructions", dict(counts))
     print("Source worst-case logical resources", op.model.resource_formula())
     print("Source precision-sensitive T estimate", op.model.synthesis_t_count())

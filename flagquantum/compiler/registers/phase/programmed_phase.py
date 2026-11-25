@@ -7,8 +7,10 @@
 
 from math import isfinite, pi
 
+from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..bits.bitwise import _validate_wires
+from ..primitives.control_binding import apply_control_guards
 
 
 def programmed_phase_ir(
@@ -40,18 +42,22 @@ def programmed_phase_rotation_ir(
     exponent: float,
     epsilon: float = 1e-11,
     apply_final_correction: bool = False,
+    early_exit: bool = False,
 ) -> tuple[Instruction, ...]:
     """Emit a bounded programmed rotation with one reusable clean work qubit.
 
     Each outcome slot belongs to one round. Zero indicates success or padding.
     With correction disabled, a one in every slot indicates failure. The work
-    qubit returns to zero. The flat IR measures the idle zero qubit in skipped
-    rounds, since measurement itself cannot be predicated.
+    qubit returns to zero. Early exit uses the existing internal guarded effect
+    and initializes inactive result slots to zero without measuring. The default
+    retains the original padded schedule for callers comparing literal streams.
     """
     _validate_wires((data, work))
     _validate_wires(outcomes)
     if type(apply_final_correction) is not bool:
         raise ValueError("programmed phase correction flag must be boolean")
+    if type(early_exit) is not bool:
+        raise ValueError("programmed phase early-exit flag must be boolean")
     if type(epsilon) not in (int, float) or not isfinite(epsilon) or epsilon <= 0:
         raise ValueError("programmed phase requires a finite positive epsilon")
 
@@ -66,11 +72,16 @@ def programmed_phase_rotation_ir(
             for gate in prepare
         )
         instructions.append(Instruction("cx", (data, work), metadata=metadata))
-        instructions.append(
-            Instruction(
-                "measure", (work,), metadata={"is_dynamic": True, "classical_bit": bit}
-            )
+        measurement = Instruction(
+            "measure", (work,), metadata={"is_dynamic": True, "classical_bit": bit}
         )
+        if early_exit and failures:
+            instructions.append(ClassicalXor((), bit).instruction())
+            instructions.extend(
+                apply_control_guards((measurement,), tuple(b for b, _ in failures))
+            )
+        else:
+            instructions.append(measurement)
         failures = tuple(sorted((*failures, (bit, 1))))
         instructions.append(
             Instruction("x", (work,), metadata={"conditions": failures})

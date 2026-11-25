@@ -8,9 +8,8 @@
 from dataclasses import dataclass, fields
 from math import isfinite
 
-from sympy import Symbol
-
 from ....core.ir.program.register_types import quantum_bit_type
+from ..._component_trace.call_graph import SymbolAllocator
 from ..._component_trace.qec_gate_cost import query_qec_gate_cost
 from ..._component_trace.resource_generalization import (
     BookkeepingCall,
@@ -69,7 +68,10 @@ class ProgrammedRotationModel:
             raise ValueError("Programmed rotation failure bound must lie in (0, 1]")
         return cls(exponent, precision, ceil(log2(1 / p)))
 
-    def direct_calls(self) -> dict[ResourceCall | ProgrammedAncillaCall, SymbolicInt]:
+    def direct_calls(
+        self, *, allocator: SymbolAllocator | None = None
+    ) -> dict[ResourceCall | ProgrammedAncillaCall, SymbolicInt]:
+        """Retain fresh angle identities throughout a containing graph query."""
         n = self.rounds
         calls: dict[ResourceCall | ProgrammedAncillaCall, SymbolicInt] = {
             CliffordCall("cx", 2): n,
@@ -84,14 +86,17 @@ class ProgrammedRotationModel:
                 child = ProgrammedAncillaCall(2**i * self.exponent, tolerance)
                 calls[child] = calls.get(child, 0) + 1
         else:
-            calls[ProgrammedAncillaCall(Symbol(r"_\phi0"), tolerance)] = n
+            symbols = allocator if allocator is not None else SymbolAllocator()
+            calls[ProgrammedAncillaCall(symbols.new_symbol(r"\phi"), tolerance)] = n
         if self.apply_final_correction:
             calls[RotationCall("zpow", 2**n * self.exponent, tolerance)] = 1
         return calls
 
-    def terminal_calls(self) -> dict[ResourceCall, SymbolicInt]:
+    def terminal_calls(
+        self, *, allocator: SymbolAllocator | None = None
+    ) -> dict[ResourceCall, SymbolicInt]:
         terminals: dict[ResourceCall, SymbolicInt] = {}
-        for call, count in self.direct_calls().items():
+        for call, count in self.direct_calls(allocator=allocator).items():
             children = (
                 call.direct_calls()
                 if isinstance(call, ProgrammedAncillaCall)
