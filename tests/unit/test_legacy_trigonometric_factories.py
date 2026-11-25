@@ -10,10 +10,14 @@ from flagquantum.compiler.formats.legacy_component_resolution import (
     resolve_component_program,
 )
 from flagquantum.compiler.formats.legacy_trigonometric_factories import (
+    arctan_lookup_factory,
     trigonometric_factories,
 )
 from flagquantum.compiler.registers.fixed_point.arcsine_declaration import (
     ArcsineDeclaration,
+)
+from flagquantum.compiler.registers.lookup.arctan_lookup_component import (
+    arctan_lookup_program,
 )
 from flagquantum.compiler.registers.lookup.arctangent_declaration import (
     ArctangentDeclaration,
@@ -25,6 +29,7 @@ from tests.unit.test_legacy_arithmetic_factories import _library
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 _PREFIX = "qualtran.bloqs.arithmetic.trigonometric."
+_KEY = _PREFIX + "arctan.ArcTan"
 
 
 @pytest.mark.parametrize(
@@ -93,3 +98,41 @@ def test_default_iteration_degree_and_invalid_metadata_reuse_original_owner() ->
         factories[key]("bad", None, {"bitsize": 4, "num_frac": 5})
     with pytest.raises(SerializationError, match="signature"):
         factories[key]("bad", (), {"bitsize": 4, "num_frac": 3})
+
+
+@pytest.mark.parametrize("depth", (0, 1, 2))
+def test_actual_constructor_replacement_retains_model_only_default(depth: int) -> None:
+    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+
+    library = _library(ArcTan(2, 8), depth)
+    default = resolve_component_program(library, 0, trigonometric_factories())
+    assert not default.functions[0].blocks
+    with pytest.raises(ValueError, match="bodies"):
+        bind_register_program(default, ())
+    factories = trigonometric_factories()
+    factories[_KEY] = arctan_lookup_factory
+    concrete = resolve_component_program(library, 0, factories)
+    assert verify_program_record(concrete) == ()
+    assert concrete.functions[0].registers == default.functions[0].registers
+    bound = bind_register_program(
+        concrete, ((0, 1), (2,), tuple(range(3, 11))), clean=(11,)
+    )
+    direct = bind_register_program(
+        arctan_lookup_program(2, 8), ((0, 1), (2,), tuple(range(3, 11))), clean=(11,)
+    )
+    assert bound.circuit.instructions == direct.circuit.instructions
+
+
+def test_explicit_lookup_preserves_profile_and_constructor_validation() -> None:
+    for source, target in ((0, 8), (13, 8), (2, 0), (2, 33), (True, 8)):
+        with pytest.raises(ValueError):
+            arctan_lookup_program(source, target)
+    arguments = {"selection_bitsize": 2, "target_bitsize": 8}
+    with pytest.raises(SerializationError, match="signature"):
+        arctan_lookup_factory("bad", (), arguments)
+    with pytest.raises(SerializationError, match="arguments"):
+        arctan_lookup_factory("bad", None, {**arguments, "unexpected": 1})
+    with pytest.raises(SerializationError, match="concrete"):
+        arctan_lookup_factory(
+            "symbolic", None, {**arguments, "target_bitsize": sympy.Symbol("p")}
+        )
