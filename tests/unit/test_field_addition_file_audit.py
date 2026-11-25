@@ -9,7 +9,6 @@ from __future__ import annotations
 import ast
 import hashlib
 from collections import Counter
-from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +38,7 @@ from flagquantum.simulation.finite_field_addition import (
     field_add_constant_classical_value,
 )
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+from tests.unit.source_example_protocols import source_example_protocols
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -99,8 +99,6 @@ def test_complete_original_test_function_inventory() -> None:
 def test_actual_factory_protocols_and_native_stored_graph_boundaries(
     constant: bool, symbolic: bool
 ) -> None:
-    import qualtran.testing as checks
-    from qualtran import BloqExample
     from qualtran.bloqs.gf_arithmetic.gf2_add_k import (
         _gf2_add_k_symbolic,
         _gf16_add_k,
@@ -135,24 +133,11 @@ def test_actual_factory_protocols_and_native_stored_graph_boundaries(
         "serialize": "FAIL",
         "qtyping": "NA" if symbolic else "PASS",
     }
-    protocols: dict[str, Callable[[BloqExample], object]] = {
-        "make": checks.assert_bloq_example_make,
-        "decompose": checks.assert_bloq_example_decompose,
-        "counts": checks.assert_equivalent_bloq_example_counts,
-        "serialize": checks.assert_bloq_example_serializes,
-        "qtyping": checks.assert_bloq_example_qtyping,
-    }
-    for mode, check in protocols.items():
-        try:
-            check(example)
-        except checks.BloqCheckException as error:
-            assert error.check_result.name == expected[mode]
-            if mode == "serialize":
-                assert "QGF" in error.msg
-            if mode == "counts" and not symbolic:
-                assert "Split" in error.msg and "Join" in error.msg
-        else:
-            assert expected[mode] == "PASS"
+    observed = source_example_protocols(example)
+    assert {mode: status for mode, (status, _) in observed.items()} == expected
+    assert "QGF" in observed["serialize"][1]
+    if not symbolic:
+        assert "Split" in observed["counts"][1] and "Join" in observed["counts"][1]
 
     record = native.decomposition(example.name)
     if symbolic:
