@@ -59,3 +59,48 @@ def test_roundoff_boundary_retains_columns_and_controlled_absolute_phase(
     if factor == 1_000_000.0:
         assert abs(matrix[7, 0]) > 1e-10
         assert gates
+
+
+@pytest.mark.parametrize("control_count", [1, 2, 4])
+def test_controlled_block_keeps_absolute_phase_with_two_clean_work_bits(
+    control_count: int,
+) -> None:
+    """Phase compensation survives both full and borrowed-control predicates."""
+    import cmath
+
+    from flagquantum.compiler._construction.semantics.unitary import _controlled_block
+
+    target = control_count
+    gates = _controlled_block(
+        (Instruction("u3", (target,), {"theta": 0.37, "phi": -0.42, "lbd": 0.73}),),
+        tuple(range(control_count)),
+        (target + 1, target + 2),
+        global_phase=-0.31,
+    )
+    cosine, sine = math.cos(0.37 / 2), math.sin(0.37 / 2)
+    matrix = torch.tensor(
+        [
+            [cosine, -cmath.exp(0.73j) * sine],
+            [cmath.exp(-0.42j) * sine, cmath.exp(0.31j) * cosine],
+        ],
+        dtype=torch.complex128,
+    ) * cmath.exp(-0.31j)
+    n_qubits = control_count + 3
+    logical_size = 2 ** (control_count + 1)
+    for column in range(logical_size):
+        preparation = tuple(
+            Instruction("x", (bit,))
+            for bit in range(target + 1)
+            if column & (1 << (target - bit))
+        )
+        circuit = fq.Circuit.from_ir(
+            CircuitIR(n_qubits, (*preparation, *gates)), dtype=torch.complex128
+        )
+        actual = fq.run(circuit).statevector().flatten()
+        expected = torch.zeros(2**n_qubits, dtype=torch.complex128)
+        if column // 2 == 2**control_count - 1:
+            expected[(logical_size - 2) * 4] = matrix[0, column % 2]
+            expected[(logical_size - 1) * 4] = matrix[1, column % 2]
+        else:
+            expected[column * 4] = 1
+        torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)

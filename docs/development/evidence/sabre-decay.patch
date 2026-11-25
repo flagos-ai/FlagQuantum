@@ -1,0 +1,63 @@
+diff --git a/flagquantum/compiler/topology/sabre.py b/flagquantum/compiler/topology/sabre.py
+index d1543133d..efec4dc40 100644
+--- a/flagquantum/compiler/topology/sabre.py
++++ b/flagquantum/compiler/topology/sabre.py
+@@ -384,6 +384,7 @@ def _plan_sabre_trial(
+     tie_rng: random.Random | None = None,
+     committed_swap_limit: int | None = None,
+     layer_lookahead: bool = False,
++    decay: bool = False,
+ ) -> SabrePlan | None:
+     """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
+
+@@ -501,6 +502,8 @@ def _plan_sabre_trial(
+     progress_swap_start = 0
+     seen_layouts: set[tuple[int, ...]] = set()
+     frontier_lookahead: list[int] | None = None
++    swap_decay = [1.0] * n_wires if decay else None
++    decay_steps = 0
+
+     def exchange(left: int, right: int) -> None:
+         left_logical = physical_to_logical[left]
+@@ -564,7 +567,7 @@ def _plan_sabre_trial(
+                     )
+         if not candidates:
+             return None
+-        if n_wires > 12:
++        if n_wires > 12 and swap_decay is None:
+             return _relative_score_swap(
+                 candidates,
+                 wires,
+@@ -597,6 +600,8 @@ def _plan_sabre_trial(
+                     )
+                     weight *= LOOKAHEAD_DECAY
+                 score += LOOKAHEAD_WEIGHT * lookahead / len(extended)
++            if swap_decay is not None:
++                score *= max(swap_decay[left], swap_decay[right])
+             if best is None or score < best_score:
+                 best = (left, right)
+                 best_score = score
+@@ -617,6 +622,8 @@ def _plan_sabre_trial(
+         ]
+         if executable:
+             frontier_lookahead = None
++            if swap_decay is not None:
++                swap_decay[:] = [1.0] * n_wires
+             for index in executable:
+                 front.remove(index)
+                 placements[index] = tuple(
+@@ -694,6 +701,14 @@ def _plan_sabre_trial(
+             )
+         left, right = choice
+         record_swap(left, right, blocked_front[0])
++        if swap_decay is not None:
++            decay_steps += 1
++            if decay_steps >= 5:
++                swap_decay[:] = [1.0] * n_wires
++                decay_steps = 0
++            else:
++                swap_decay[left] += 0.001
++                swap_decay[right] += 0.001
+         stalled += 1
+
+     if executed != count:

@@ -26,6 +26,18 @@ shared code, compatible images, resource selection, and supported outputs.
 The adapter interfaces are experimental; reserved chip names do not imply
 implemented hardware support.
 
+Native project jobs submitted by `fq.submit(..., project=...)` recover result
+chunks through `POST /api/v1/telemetry/logs/query`. The adapter queries application
+logs for the submitted job and cluster, follows forward cursors, and verifies
+chunk completeness and SHA-256 before decoding the result. It uses integer
+telemetry enums (`workload_type=1`, `log_source=1`, `direction=2`). Grafana
+datasource discovery is no longer required. Both gateway camelCase pagination
+fields and the documented snake_case fields are accepted. Existing receipts
+resolve their cluster from the authenticated project queue when it was not recorded.
+Queries cover at most the last 30 days; results outside the platform's log
+retention period cannot be recovered from logs. Missing chunks remain a pending
+result, so waiting never submits a replacement job.
+
 ## Change and verify
 
 Start in [jiuding.py](jiuding.py) for the client,

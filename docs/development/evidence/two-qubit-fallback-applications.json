@@ -1,0 +1,4337 @@
+{
+  "scope": "Development semantic regression only; fixed public development nonce; not held-out, resource-qualified, memory evidence, SDK comparison or ranking. Widths above six check only three probes.",
+  "compiler_head": "cf5fc36c29c3f9162b6b58054f8163c98944e33d",
+  "outcomes": [
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.839491700847658e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 43,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 2.76132350001717
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2591559389004138e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 41,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 15236
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6808253340132069
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1285466194284042e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5198071670019999
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 7.221785298249065e-16,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 8428
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5942329999816138
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2866924762521453e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5170402500079945
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.005932084973443e-16,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 22,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 9242
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6033988329872955
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1443916996305594e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 26,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5174449170008302
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.984540463862221e-16,
+          "full_cz_count": 34,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 8155
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5974706659908406
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.920475055707584e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5216441660013516
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.828406534472335e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 54,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 11707
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6180549999990035
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.1643258253722617e-15,
+          "full_cz_count": 48,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5198944159783423
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.344434768182728e-15,
+          "full_cz_count": 44,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 48,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 9740
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6255548329791054
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.6209553459836724e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.522673958010273
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.574283909837767e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 9355
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5999064169882331
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.920475055707584e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.520747125003254
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.828406534472335e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 54,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 11707
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6177845830097795
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2782828767791348e-14,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 71,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5276765830058139
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.63506723974103e-15,
+          "full_cz_count": 66,
+          "two_body_dependency_depth": 65,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 19174
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6884013340168167
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2782828767791348e-14,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 71,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5291410000063479
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.63506723974103e-15,
+          "full_cz_count": 66,
+          "two_body_dependency_depth": 65,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 19174
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7402492919936776
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.5998222631846507e-14,
+          "full_cz_count": 90,
+          "two_body_dependency_depth": 86,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5459510000073351
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.182845611224301e-14,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 78,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 90,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 22237
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7117934999987483
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2782828767791348e-14,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 71,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5301052919821814
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.63506723974103e-15,
+          "full_cz_count": 66,
+          "two_body_dependency_depth": 65,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 19174
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6841715420014225
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.5303663964168044e-15,
+          "full_cz_count": 117,
+          "two_body_dependency_depth": 74,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5284344580140896
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.987626749397768e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 111,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 15883
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7091729589737952
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.9481438940179264e-15,
+          "full_cz_count": 93,
+          "two_body_dependency_depth": 60,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5415317500010133
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.5798750608595155e-15,
+          "full_cz_count": 79,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 93,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 16780
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6878573329886422
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.6172982426630268e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5298558330105152
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.3536401981886357e-15,
+          "full_cz_count": 65,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 87,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 14099
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7719496249919757
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.9481438940179264e-15,
+          "full_cz_count": 93,
+          "two_body_dependency_depth": 60,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.53345795799396
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.5798750608595155e-15,
+          "full_cz_count": 79,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 93,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 16780
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6903126249962952
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 9.805852781653154e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 66,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.524184542009607
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-6-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.141450319825085e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 58,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 78,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 17491
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6910949169832747
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1338721664964554e-14,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 59,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5330324580136221
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-6-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.761659273861517e-15,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 57,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 19996
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.695380083983764
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 9.659099827724101e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 59,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5473795419966336
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-6-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.901354889651292e-15,
+          "full_cz_count": 62,
+          "two_body_dependency_depth": 51,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 15350
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.730146291985875
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.956371820863329e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5575565409963019
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-6-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.490574227168739e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 10951
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6568505420000292
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 7.330379224220956e-15,
+          "full_cz_count": 122,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5569484169827774
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.072657351995283e-14,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 64,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 122,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 24640
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8083061670185998
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.720752169875625e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 28,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5734070840117056
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1983210615419905e-15,
+          "full_cz_count": 64,
+          "two_body_dependency_depth": 26,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 68,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 13630
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6886108749895357
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.387159227247482e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 31,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5549450420076028
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.3030438699344067e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 31,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 16532
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7162465829751454
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.609262125076605e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 40,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5783837909984868
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.4851826706862361e-15,
+          "full_cz_count": 74,
+          "two_body_dependency_depth": 37,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 15945
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.717730208998546
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.284609261402545e-15,
+          "full_cz_count": 126,
+          "two_body_dependency_depth": 82,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5826665420026984
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.1674243517016566e-15,
+          "full_cz_count": 122,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 126,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 24676
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7677007910097018
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.758199455071066e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 42,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5421604160219431
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.5449287945012552e-15,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 45,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 16596
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.686299416993279
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.987250494379272e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 68,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5375888330163434
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.4046076445151095e-15,
+          "full_cz_count": 82,
+          "two_body_dependency_depth": 68,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 16776
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7057715840055607
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.291698933244441e-15,
+          "full_cz_count": 66,
+          "two_body_dependency_depth": 41,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5716027910239063
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.466587386380936e-15,
+          "full_cz_count": 66,
+          "two_body_dependency_depth": 41,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 13550
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6674983749981038
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.008349376812265e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 85,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.54719500002102
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.5537486418856237e-15,
+          "full_cz_count": 88,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 96,
+          "accepted_block_rewrites": 8,
+          "serialized_artifact_bytes": 24820
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7562602499965578
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.008349376812265e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 85,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5471817909856327
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.5537486418856237e-15,
+          "full_cz_count": 88,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 96,
+          "accepted_block_rewrites": 8,
+          "serialized_artifact_bytes": 24820
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7603433749754913
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.0733278493730434e-14,
+          "full_cz_count": 132,
+          "two_body_dependency_depth": 103,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5551196669985075
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.413935800722356e-15,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 93,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 132,
+          "accepted_block_rewrites": 10,
+          "serialized_artifact_bytes": 31045
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8288293330115266
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.008349376812265e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 85,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5477832080214284
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.5537486418856237e-15,
+          "full_cz_count": 88,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 96,
+          "accepted_block_rewrites": 8,
+          "serialized_artifact_bytes": 24820
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.76527016601176
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.443228548184365e-14,
+          "full_cz_count": 224,
+          "two_body_dependency_depth": 120,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5944300410046708
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.313514714559936e-15,
+          "full_cz_count": 156,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 218,
+          "accepted_block_rewrites": 27,
+          "serialized_artifact_bytes": 30700
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.0109627089987043
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.2183401523130272e-14,
+          "full_cz_count": 188,
+          "two_body_dependency_depth": 95,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5799258750048466
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.806892464795862e-15,
+          "full_cz_count": 142,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 194,
+          "accepted_block_rewrites": 22,
+          "serialized_artifact_bytes": 28138
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.941698999988148
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.0828232312538132e-14,
+          "full_cz_count": 176,
+          "two_body_dependency_depth": 110,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.609254958020756
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.12653962484595e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 97,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 170,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 32097
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.9286164169898257
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.130575599193137e-14,
+          "full_cz_count": 182,
+          "two_body_dependency_depth": 105,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6293803750013467
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.246464596772037e-15,
+          "full_cz_count": 170,
+          "two_body_dependency_depth": 96,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 182,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 34040
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.9151174589933362
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 9.077049287342306e-15,
+          "full_cz_count": 90,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5420675000059418
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-8-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.237726045655905e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 64,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 90,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 20033
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7366576670028735
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.920902801285955e-15,
+          "full_cz_count": 90,
+          "two_body_dependency_depth": 72,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5594621670024935
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-8-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.2278911070751667e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 90,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 20298
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7238506669818889
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.4097033828993736e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 53,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.536168250022456
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-8-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.4330101267912156e-15,
+          "full_cz_count": 46,
+          "two_body_dependency_depth": 45,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 54,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 12580
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6612193750042934
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.843191427130974e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 54,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5399535420001484
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-8-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.2415205078620253e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 54,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 15721
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6673117500031367
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.469684170062021e-15,
+          "full_cz_count": 270,
+          "two_body_dependency_depth": 101,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5984717500105035
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.005952500137591e-15,
+          "full_cz_count": 270,
+          "two_body_dependency_depth": 101,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 270,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 53561
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.0382282920181751
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.19264533430656e-15,
+          "full_cz_count": 138,
+          "two_body_dependency_depth": 46,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5672748340002727
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1302146135477929e-15,
+          "full_cz_count": 136,
+          "two_body_dependency_depth": 46,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 138,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 27481
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8292237500136252
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.673035176619085e-15,
+          "full_cz_count": 156,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5822063340165187
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1387399314838863e-15,
+          "full_cz_count": 150,
+          "two_body_dependency_depth": 76,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 162,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 30299
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8884463330032304
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qaoa-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.7401713112043653e-15,
+          "full_cz_count": 126,
+          "two_body_dependency_depth": 53,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5634698749927338
+    },
+    {
+      "case": "flagquantum-target-artifact-qaoa-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.0166130809736812e-15,
+          "full_cz_count": 122,
+          "two_body_dependency_depth": 51,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 126,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 24835
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8445388340041973
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.695605232564228e-15,
+          "full_cz_count": 294,
+          "two_body_dependency_depth": 156,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6366779590025544
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.0731970492786265e-15,
+          "full_cz_count": 284,
+          "two_body_dependency_depth": 146,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 294,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 55831
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.184440834011184
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.911344987727693e-15,
+          "full_cz_count": 180,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5813774589914829
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.1938124470981842e-15,
+          "full_cz_count": 178,
+          "two_body_dependency_depth": 75,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 180,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 34635
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.9176600830105599
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.489622106384308e-15,
+          "full_cz_count": 138,
+          "two_body_dependency_depth": 54,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5683899169962388
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 9.708443902280867e-16,
+          "full_cz_count": 136,
+          "two_body_dependency_depth": 52,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 138,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 26314
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8403269580157939
+    },
+    {
+      "case": "flagquantum-ordinary-restored-ising-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.3508751347628615e-15,
+          "full_cz_count": 132,
+          "two_body_dependency_depth": 58,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.5754362080188002
+    },
+    {
+      "case": "flagquantum-target-artifact-ising-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 9.074842391027969e-16,
+          "full_cz_count": 126,
+          "two_body_dependency_depth": 54,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 144,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 24094
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8209613749932032
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.8795341327233068e-14,
+          "full_cz_count": 288,
+          "two_body_dependency_depth": 268,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6374830410059076
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.3121136700345437e-15,
+          "full_cz_count": 276,
+          "two_body_dependency_depth": 256,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 288,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 64554
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.312553708004998
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.8795341327233068e-14,
+          "full_cz_count": 288,
+          "two_body_dependency_depth": 268,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6528556669945829
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.3121136700345437e-15,
+          "full_cz_count": 276,
+          "two_body_dependency_depth": 256,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 288,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 64554
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.2913914159871638
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.4961816100751036e-14,
+          "full_cz_count": 378,
+          "two_body_dependency_depth": 311,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6947099170065485
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 5.4291956315693945e-15,
+          "full_cz_count": 362,
+          "two_body_dependency_depth": 296,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 378,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 81354
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.4908992919954471
+    },
+    {
+      "case": "flagquantum-ordinary-restored-hopping-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.8795341327233068e-14,
+          "full_cz_count": 288,
+          "two_body_dependency_depth": 268,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6708394580055028
+    },
+    {
+      "case": "flagquantum-target-artifact-hopping-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.3121136700345437e-15,
+          "full_cz_count": 276,
+          "two_body_dependency_depth": 256,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 288,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 64554
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.2701391250011511
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.0263317392721453e-14,
+          "full_cz_count": 534,
+          "two_body_dependency_depth": 206,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6839314579847269
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 2.508910598853109e-14,
+          "full_cz_count": 396,
+          "two_body_dependency_depth": 137,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 528,
+          "accepted_block_rewrites": 62,
+          "serialized_artifact_bytes": 75725
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.6245162079867441
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 8.227193604641727e-15,
+          "full_cz_count": 438,
+          "two_body_dependency_depth": 165,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6852619580167811
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.460944228876607e-14,
+          "full_cz_count": 322,
+          "two_body_dependency_depth": 131,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 444,
+          "accepted_block_rewrites": 59,
+          "serialized_artifact_bytes": 61535
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.4704212500073481
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 7.44667872519771e-15,
+          "full_cz_count": 408,
+          "two_body_dependency_depth": 191,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7354375410068315
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.3843020324286894e-14,
+          "full_cz_count": 352,
+          "two_body_dependency_depth": 150,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 432,
+          "accepted_block_rewrites": 38,
+          "serialized_artifact_bytes": 67040
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.5108066249813419
+    },
+    {
+      "case": "flagquantum-ordinary-restored-qft-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.703201367072782e-15,
+          "full_cz_count": 372,
+          "two_body_dependency_depth": 167,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.7335624579864088
+    },
+    {
+      "case": "flagquantum-target-artifact-qft-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.868227728968996e-14,
+          "full_cz_count": 338,
+          "two_body_dependency_depth": 158,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 372,
+          "accepted_block_rewrites": 13,
+          "serialized_artifact_bytes": 64868
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 1.4553927909873892
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.416537428561218e-15,
+          "full_cz_count": 114,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6026943750039209
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-12-line",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.215456781461763e-15,
+          "full_cz_count": 104,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 114,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 24399
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8719684579991736
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.702439939217744e-15,
+          "full_cz_count": 114,
+          "two_body_dependency_depth": 81,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6372653750004247
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-12-ring",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.8041124150158794e-15,
+          "full_cz_count": 108,
+          "two_body_dependency_depth": 75,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 114,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 24936
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8901465829985682
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 6.126772199215458e-15,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 70,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6285664159804583
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-12-grid",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 3.038696846572584e-15,
+          "full_cz_count": 104,
+          "two_body_dependency_depth": 68,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 120,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 24816
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8871228749922011
+    },
+    {
+      "case": "flagquantum-ordinary-restored-repetition-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 4.637756528637165e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.6088681250112131
+    },
+    {
+      "case": "flagquantum-target-artifact-repetition-12-sparse",
+      "status": "passed",
+      "returncode": 0,
+      "stderr": "",
+      "result": {
+        "metrics": {
+          "max_semantic_error": 1.9351429362883096e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 58,
+          "verification": "three-probes-only"
+        },
+        "audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 90,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 17853
+        },
+        "acceptance": {
+          "per_compile_wall_limit_seconds": 120,
+          "target": "full CZ and arbitrary one-qubit unitaries on listed undirected edges; no ancillas",
+          "initial_layout": "identity",
+          "final_layout": "allowed only with explicit logical reconstruction",
+          "semantic_atol": 1e-08,
+          "semantic_rtol": 0.0,
+          "normalization_error_limit": 1e-10,
+          "verification": "n=6: full operator up to one global phase; n=8,12: three complete output probe states up to one global phase per probe; probe checks are not a universal equivalence proof",
+          "target_violations_allowed": 0,
+          "primary_quality": "number of physical full CZ interactions; report compile-time/interaction-count Pareto points; no scalar winner"
+        }
+      },
+      "development_wall_seconds": 0.8334828339866363
+    }
+  ],
+  "elapsed_seconds": 88.05337483400945,
+  "complete": true,
+  "compiler_source_sha256": "ea92d229b4e1fa68fa053782e56792962f7d37da690be3c15964889f638c16ed",
+  "base_commit": "cf5fc36c29c3f9162b6b58054f8163c98944e33d",
+  "compiler_head_is_base_with_working_tree_change": true,
+  "identical_prior_application_result_records": 120,
+  "normalization": "Successful stdout JSON removed after equality check against retained parsed records; every parsed field and numerical value retained. Harness identity uses the existing source_commit vocabulary; prior application source is named by its main commit rather than by a Git tree object.",
+  "implementation_commit": "cf5fc36c29c3f9162b6b58054f8163c98944e33d",
+  "implementation_commit_role": "Prior application evidence has this main commit tree; candidate includes the working-tree source hash above.",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "source_commit_role": "External unchanged SDKBench acceptance harness"
+}

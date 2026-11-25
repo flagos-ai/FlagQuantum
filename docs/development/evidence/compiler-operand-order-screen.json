@@ -1,0 +1,176 @@
+{
+  "evidence_class": "development",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "completed": true,
+  "candidate_sources": {
+    "flagquantum/compiler/optimization/two_qubit_optimization.py": "f8f276ffc74ffc7e1076543b94f635849b93f131f97c97812a6d01524da189c9",
+    "flagquantum/compiler/optimization/_cz_blocks.py": "a78bcc8e700efc69f60567c4ed06e349d0c77c54284627e55e318f9157dfe3ae"
+  },
+  "manifest": {
+    "evidence_class": "development",
+    "implementation_commit": "db244bf28f86810ee3439054c6243df0202f86a4",
+    "base_commit": "2ea5b78b6449b837db151e0d29c90895f6b51a4e",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "runner_sha256": "d2a78561fcf29ea107f81a6d0627a8b07feb8ffd7a01fc9ce92a4c2ba5aeac01",
+    "protocol_sha256": "8db1130827251b6b2b012f5b018dd899e6b33b0eb715e24939634b305790a998",
+    "compiler_seeds": [
+      11,
+      23,
+      37,
+      51,
+      73
+    ],
+    "configurations": {
+      "flagquantum-ordinary-restored": {
+        "sdk": "flagquantum",
+        "entrypoint": "compiler.compile; compiler.lowering.native_gate_legalization.legalize_native_gates",
+        "options": {
+          "routing": "default",
+          "optimization_level": "default",
+          "basis": [
+            "h",
+            "x",
+            "y",
+            "z",
+            "s",
+            "sdg",
+            "rx",
+            "ry",
+            "rz",
+            "cz"
+          ],
+          "max_added_operations": 20000,
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": false,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      },
+      "flagquantum-target-artifact": {
+        "sdk": "flagquantum",
+        "entrypoint": "compile_circuit_artifact_for_target",
+        "options": {
+          "basis": [
+            "rx",
+            "rz",
+            "cz"
+          ],
+          "initial_layout": "identity",
+          "final_layout": "restored",
+          "routing": "default",
+          "compiler_seed_supported": false,
+          "profile": "openqasm-3.0",
+          "max_native_added_operations": 20000,
+          "max_routing_added_operations": 20000,
+          "maximum_program_operations": 20000,
+          "serialize_executable_artifact": true
+        }
+      },
+      "qiskit-transpile-restored": {
+        "sdk": "qiskit",
+        "entrypoint": "qiskit.transpile",
+        "options": {
+          "basis": [
+            "cz",
+            "u"
+          ],
+          "optimization_level": 2,
+          "approximation_degree": 1.0,
+          "qubits_initially_zero": false,
+          "num_processes": 1,
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": true,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      },
+      "cirq-route-cz-restored": {
+        "sdk": "cirq",
+        "entrypoint": "RouteCQC; optimize_for_target_gateset",
+        "options": {
+          "basis": [
+            "cz",
+            "arbitrary-one-qubit-unitary"
+          ],
+          "allow_partial_czs": false,
+          "synthesis_atol": 1e-12,
+          "initial_mapper": "identity",
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": false,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      }
+    },
+    "versions": {
+      "qiskit": "2.6.2",
+      "cirq-core": "1.7.0",
+      "torch": "2.14.0",
+      "numpy": "2.5.5"
+    },
+    "draws": 1,
+    "publication_eligible": false,
+    "expected_observations": 1200,
+    "input_nonce": "5a8e1eff6bad7ac6c3dd0f2cab4d63e392b504e26acb76b1be22ab61a4945573"
+  },
+  "rows": [],
+  "script_source": "import hashlib,itertools,json,sys\nfrom copy import deepcopy\nfrom pathlib import Path\nfrom types import SimpleNamespace\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import WIDTHS,FAMILIES,TOPOLOGIES,fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nbaseline=json.loads(Path('/private/tmp/fq-application-gap-observations-20261122.json').read_text())\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\ncanonical=lambda x:json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False)\nroot=Path.cwd();paths=('flagquantum/compiler/optimization/two_qubit_optimization.py','flagquantum/compiler/optimization/_cz_blocks.py')\nr={'evidence_class':'development','source_commit':baseline['source_commit'],'distribution_semantics':'single_device_fast_path','scalability_claim_allowed':False,'completed':False,'candidate_sources':{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in paths},'manifest':baseline['manifest'],'rows':[],'script_source':Path(__file__).read_text(),'limitations':'Inspected fixed inputs only. Shared-host quality screen; no resource or held-out qualification.'}\nadapters={}\nfor name in ('flagquantum-ordinary-restored','flagquantum-target-artifact'):\n c=workflow_configuration(name);adapters[name]=load_adapter(SimpleNamespace(configuration={'options':{'sdk':c['sdk'],'workflow':name,'compiler_options':c}}))\nfor n,family,topology in itertools.product(WIDTHS,FAMILIES,TOPOLOGIES):\n f=fixture(n,family,topology,r['manifest']['input_nonce']);case=f'{n:02d}/{family}/{topology}'\n for name,adapter in adapters.items():\n  row={'case':case,'workflow':name,'seed':11,'status':'failed'}\n  old=next(v for v in baseline['rows'] if v['case']==case and v['workflow']==name and v['seed']==11)\n  row['baseline_metrics']=old['metrics']\n  try:\n   copied=deepcopy(f);payload=adapter.execute('route',copied,11);assert copied==f\n   row['payload']=payload;row['audit']=dict(adapter.audit)\n   row['metrics']=routing(payload,f,None,bundle.cases['ROUTE-GRID-08' if n==8 else f'ROUTE-LINE-{n:02d}'],0)\n   assert payload['final_layout']==list(range(n));row['status']='accepted'\n  except Exception as e:row.update(error_type=type(e).__name__,error=str(e))\n  r['rows'].append(row)\n print(json.dumps({'case':case,'rows':len(r['rows'])}),flush=True)\n Path('/private/tmp/fq-operand-order-quality-screen-20261122.json').write_text(json.dumps(r,indent=2)+'\\n')\nr['completed']=True\nPath('/private/tmp/fq-operand-order-quality-screen-20261122.json').write_text(json.dumps(r,indent=2)+'\\n')\nprint(json.dumps({'completed':True,'accepted':sum(v['status']=='accepted' for v in r['rows'])}))\n",
+  "limitations": "Inspected fixed inputs only. Shared-host quality screen; no resource or held-out qualification.",
+  "row_files": [
+    {
+      "path": "compiler-operand-order-qaoa.json",
+      "sha256": "0d859e1bfb1f8ebd6c01386e8107bf89fa35c27058cd2f61e3b6e833c886e31d",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-operand-order-ising.json",
+      "sha256": "5caf4123a5c4dcf2cb17325a2e5f9cef724e99ca811dd912ff6094993b13e78d",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-operand-order-hopping.json",
+      "sha256": "149b5690c93731aa9468297840b10b75b400baf9aa115d4fe74cb9db7172cd98",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-operand-order-qft.json",
+      "sha256": "305f75e92054ad00e0c3607fd4ced2874c10e42d6f62fb9de515061573593755",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-operand-order-repetition.json",
+      "sha256": "b43eea341b9e276c21897024a9eadeeb8b9d645d1fbe753a3a315d68ef00fafc",
+      "row_count": 24
+    }
+  ],
+  "original_observation_sha256": "f2aa5f2af7f98fc5f794c77807296872ff69d4fc0bc4a1e807d41aa0e2753781"
+}

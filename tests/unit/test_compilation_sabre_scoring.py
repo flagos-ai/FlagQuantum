@@ -99,6 +99,41 @@ def test_equal_cost_candidates_choose_first_edge_and_empty_candidates_return_non
     )
 
 
+@pytest.mark.parametrize("seed", [None, 0, 7])
+@pytest.mark.parametrize("offset", [-1, 0, 1])
+def test_endpoint_incidence_preserves_cross_edges_and_rounding_ties(
+    seed: int | None, offset: int
+) -> None:
+    # A complete graph makes every candidate tie. One symmetric perturbation
+    # exercises absolute fallback at the rounding boundary, with repeated terms
+    # and both operand orientations sharing the proposed SWAP's endpoints.
+    perturbed = 1.0 + offset * math.ulp(1.0)
+    distances = tuple(
+        tuple(
+            0.0 if a == b else perturbed if {a, b} == {0, 3} else 1.0 for b in range(4)
+        )
+        for a in range(4)
+    )
+    pairs = ((0, 1), (1, 0), (0, 3), (3, 2), (2, 1))
+    candidates = set(itertools.combinations(range(4), 2))
+    for placement in itertools.permutations(range(4)):
+        arguments = (
+            candidates,
+            pairs,
+            [0, 1, 2] * 7,
+            [4, 3, 2, 1] * 5,
+            list(placement),
+            distances,
+        )
+        actual = sabre._relative_score_swap(
+            *arguments, tie_rng=None if seed is None else random.Random(seed)
+        )
+        expected = _absolute_choice(
+            *arguments, tie_rng=None if seed is None else random.Random(seed)
+        )
+        assert actual == expected
+
+
 @pytest.mark.parametrize("seed", range(12))
 def test_complete_route_matches_absolute_scoring_replacement(seed: int) -> None:
     rng = random.Random(seed)

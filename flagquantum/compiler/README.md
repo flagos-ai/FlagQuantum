@@ -58,7 +58,7 @@ owners.
 | [qcis.py](qcis.py) | [formats/qcis.py](formats/qcis.py) |
 | [qir.py](qir.py) | [formats/qir.py](formats/qir.py) |
 | [resource_estimation.py](resource_estimation.py) | [optimization/resource_estimation.py](optimization/resource_estimation.py) |
-| [routing.py](routing.py) | [topology/routing.py](topology/routing.py), [topology/sabre.py](topology/sabre.py) |
+| [routing.py](routing.py) | [topology/routing.py](topology/routing.py), [topology/routing_strategy.py](topology/routing_strategy.py), [topology/routing_emission.py](topology/routing_emission.py), [topology/link_error_rates.py](topology/link_error_rates.py), [topology/sabre.py](topology/sabre.py) |
 | [select_lowering.py](select_lowering.py) | [lowering/select_lowering.py](lowering/select_lowering.py) |
 | [training.py](training.py) | [_torch/training.py](_torch/training.py) |
 | [translate.py](translate.py) | [formats/translate.py](formats/translate.py) |
@@ -240,7 +240,7 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Commutation rules and the block partition | [commutation.py](optimization/commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](optimization/commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](optimization/diagonal_before_measure.py) |
-| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](topology/routing.py), [routing_cost.py](topology/routing_cost.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
+| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](topology/routing.py), [routing_strategy.py](topology/routing_strategy.py), [routing_emission.py](topology/routing_emission.py), [routing_cost.py](topology/routing_cost.py), [link_error_rates.py](topology/link_error_rates.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
 | Qubit layouts and the layout restore | [layout.py](topology/layout.py) |
 | Initial placement on a device | [layout_planning.py](topology/layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](lowering/native_gate_legalization.py), [target_legalization.py](lowering/target_legalization.py) |
@@ -1424,3 +1424,8 @@ implemented adaptations from unported mechanisms and pending pull requests.
 adds a candidate behind the native planner; it preserves the existing restored
 layout and directed-operation obligations. Run the focused routing tests listed
 there before changing this search.
+
+[Bounded structural pair reuse](../../docs/development/COMPILER_COMMUTATION_PAIR_REUSE.md)
+reduces repeated commutation queries inside one sweep while retaining the existing
+partition, logical counters and mutable-operand boundaries. Its development
+measurements include slower controls and do not certify production performance.

@@ -50,6 +50,10 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   route its own record selects, and refuses by name when no route applies. The three
   public methods are the only caller-facing statement of this behaviour.
 - `_artifacts.py`: internal artifact construction shared by stable public types.
+  The approved v2 circuit payload budget is 65,536 mapping/list entries, separate
+  from the 4,096-entry structured envelope budget. Upgrade receiving readers
+  before sending expanded artifacts. Executable v2 and structured v3 admission
+  limits are unchanged; downstream compilation evidence has separate limits.
 - `_compilation_evidence.py`: the explicit version dispatcher for stored Compiler
   evidence. `_compilation_evidence_v4.py` implements the approved unallocated,
   undirected many-to-many block profile. It checks structure, exclusive input

@@ -61,7 +61,7 @@ from unittest.mock import patch
 import torch
 
 import flagquantum as fq
-import flagquantum.compiler.topology.routing as routing_module
+import flagquantum.compiler.topology.routing_strategy as routing_strategy_module
 import flagquantum.compiler.topology.sabre as sabre_module
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
 from flagquantum.compiler.optimization.optimization_levels import (
@@ -621,13 +621,13 @@ def plan_lookahead_swaps(
 def _reference_planner(planner: Any) -> Iterator[None]:
     """Route with ``planner`` in place of the shipped SWAP search.
 
-    ``routing`` binds the shipped search at import, and ``sabre`` binds the one
-    its layout search calls, so both bindings are replaced: a measured plan must
-    be materialized by the shipped consumer, not by a copy of it.
+    ``routing_strategy`` binds the shipped search at import, and ``sabre`` binds
+    the one its layout search calls. Both bindings are replaced so the shipped
+    consumer materializes each measured plan.
     """
 
     with (
-        patch.object(routing_module, "plan_sabre_swaps", planner),
+        patch.object(routing_strategy_module, "plan_sabre_swaps", planner),
         patch.object(sabre_module, "plan_sabre_swaps", planner),
     ):
         yield
@@ -654,7 +654,7 @@ def _routed(
         ),
         (
             patch.object(
-                routing_module,
+                routing_strategy_module,
                 "_select_sabre_trials",
                 side_effect=lambda program, coupling, baseline, **kwargs: baseline,
             )

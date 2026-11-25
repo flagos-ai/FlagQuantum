@@ -422,6 +422,17 @@ def test_every_module_with_examples_is_covered() -> None:
         == Path(dem_owner.__file__).resolve()
     )
     covered.add(dem_owner.__name__)
+    link_owner = importlib.import_module(
+        "flagquantum.compiler.topology.link_error_rates"
+    )
+    assert LinkErrorRates in ENTRIES
+    assert link_owner.__file__ is not None
+    assert link_owner.LinkErrorRates is LinkErrorRates
+    assert (
+        Path(LinkErrorRates.__init__.__code__.co_filename).resolve()
+        == Path(link_owner.__file__).resolve()
+    )
+    covered.add(link_owner.__name__)
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (

@@ -1,0 +1,488 @@
+{
+  "scope": "Nonclassical inspected development inputs only; complete SABRE sequence, placements, SWAPs, anchors and layouts match; no timing, memory, SDK ranking or formal qualification claim.",
+  "base_commit": "cf5fc36c29c3f9162b6b58054f8163c98944e33d",
+  "source_sha256": "d26f1736a99cb635366f092af87c2fadd88ea41800516064f442d6def8e9966b",
+  "generator": "random.Random(seed).sample(range(width), 2), four times width CX gates; grid is 2 by width/2",
+  "rows": [
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 9,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 0,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 1,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 2,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 3,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 4,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 5,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 6,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 7,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 8,
+      "complete_plan_equal": true
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 9,
+      "complete_plan_equal": true
+    }
+  ]
+}

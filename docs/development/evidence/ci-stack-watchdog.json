@@ -1,0 +1,369 @@
+{
+  "date": "2026-11-22",
+  "base_commit": "6db1fbda8a168599e5c0f155b9fb14052cf01342",
+  "scope": "CI stack diagnostics; no compiler, SDKBench, resource budget, assertion or acceptance threshold changes",
+  "classification": "single_device_fast_path",
+  "sources": {
+    "tools/pytest_stack_watchdog.py": "272cfbbcdccd1ccc97741daec3b1c35ddf2104159f644ea52949e0cd481eec5c",
+    "tests/integration/test_ci_stack_watchdog.py": "654992e9ec29743839e2a327fcf5a10cf7cb705d59f9a08b1987348b1fd9dc8d"
+  },
+  "local_environment": {
+    "python": "3.12.14",
+    "platform": "macOS 27.0 arm64",
+    "pytest": "9.2.0",
+    "pytest_cov": "7.1.0",
+    "coverage": "7.16.2",
+    "xdist": "3.8.0"
+  },
+  "ci_observations": [
+    {
+      "pull_request": 1276,
+      "run_id": 44955970312,
+      "job_id": 137005195254,
+      "url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/44955970312/job/137005195254",
+      "passed": false,
+      "complete_log_sha256": "e9fb6ac6303987051938bb09f2f9f1c0fdb54ebe67180f1d173a45fbc8a57ead",
+      "excerpts": [
+        "2026-11-21T22:27:35.8170745Z Timeout (0:05:00)!",
+        "2026-11-21T22:27:35.8174943Z   File \"/data/flagquantum-bw1100-pilot/runners/cpu06/home/runner/_work/FlagQuantum/FlagQuantum/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 0 in _polar_angle",
+        "2026-11-21T22:27:35.9628354Z   File CI worker exit: {\"worker\": \"gw3\", \"error\": \"Not properly terminated\", \"process_exit_status\": -11, \"termination_signal\": 11}",
+        "2026-11-21T22:27:38.8916774Z [gw3] [100%] FAILED tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] ",
+        "2026-11-21T22:27:39.0392632Z worker 'gw3' crashed while running 'tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]'",
+        "2026-11-21T22:27:39.0395106Z FAILED tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]"
+      ]
+    },
+    {
+      "pull_request": 1279,
+      "run_id": 44956081744,
+      "job_id": 137005234132,
+      "url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/44956081744/job/137005234132",
+      "passed": true,
+      "complete_log_sha256": "462499c2343a713a1b4f6ce613a0d8665906a4aa0abbfa4abde50c0ba5e618ac",
+      "excerpts": [
+        "2026-11-21T22:29:32.8103706Z Timeout (0:05:00)!",
+        "2026-11-21T22:31:01.9646515Z [gw0] [100%] PASSED tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] CI quota usage: {\"wall_seconds\": 392.26439537853, \"process_cpu_seconds\": 402.367035, \"assigned_ci_cpus\": 4.0, \"cpu_accounting\": \"process_and_children\", \"ci_quota_utilization_percent\": 25.64386672232392, \"collected_tests\": 1, \"failed_tests\": 0, \"exit_status\": 0}",
+        "2026-11-21T22:31:02.1577917Z 387.98s call     tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]",
+        "2026-11-21T22:31:02.1580017Z ======================== 1 passed in 392.18s (0:06:32) ========================="
+      ]
+    },
+    {
+      "pull_request": 1280,
+      "run_id": 44957736732,
+      "job_id": 137010230235,
+      "url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/44957736732/job/137010230235",
+      "passed": true,
+      "complete_log_sha256": "fe62c098b2b784ac59fe1b64e0fe83baf977ec818958bebae752ea2be220a42c",
+      "excerpts": [
+        "2026-11-21T22:47:12.0613035Z Timeout (0:05:00)!",
+        "2026-11-21T22:48:31.8061793Z [gw3] [100%] PASSED tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] CI quota usage: {\"wall_seconds\": 383.7481015920639, \"process_cpu_seconds\": 395.65264, \"assigned_ci_cpus\": 4.0, \"cpu_accounting\": \"process_and_children\", \"ci_quota_utilization_percent\": 25.775543798037535, \"collected_tests\": 1, \"failed_tests\": 0, \"exit_status\": 0}",
+        "2026-11-21T22:48:31.9348613Z 378.60s call     tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]",
+        "2026-11-21T22:48:31.9350627Z ======================== 1 passed in 383.67s (0:06:23) ========================="
+      ]
+    },
+    {
+      "pull_request": 1280,
+      "run_id": 44957736732,
+      "job_id": 137010237032,
+      "url": "https://github.com/flagos-ai/FlagQuantum/actions/runs/44957736732/job/137010237032",
+      "passed": false,
+      "complete_log_sha256": "bb6dd33e6e69ab92d7394479c00ad07ab38e01949196ff33a730231ee949d30f",
+      "excerpts": [
+        "2026-11-21T22:46:49.0223303Z Timeout (0:05:00)!",
+        "2026-11-21T22:50:03.1493457Z Timeout (0:05:00)!",
+        "2026-11-21T22:51:43.7100941Z Timeout (0:05:00)!",
+        "2026-11-21T22:51:43.8638023Z   File CI worker exit: {\"worker\": \"gw0\", \"error\": \"Not properly terminated\", \"process_exit_status\": -11, \"termination_signal\": 11}",
+        "2026-11-21T22:53:57.1324052Z [gw0] [ 99%] FAILED tests/integration/test_synthesis_projection_embedding_notebook.py::test_actual_full_optimizer_budget_and_unrepaired_estimates ",
+        "2026-11-21T22:56:52.9086741Z worker 'gw0' crashed while running 'tests/integration/test_synthesis_projection_embedding_notebook.py::test_actual_full_optimizer_budget_and_unrepaired_estimates'",
+        "2026-11-21T22:56:52.9124949Z FAILED tests/integration/test_synthesis_projection_embedding_notebook.py::test_actual_full_optimizer_budget_and_unrepaired_estimates"
+      ]
+    }
+  ],
+  "rainbow_runs": [
+    {
+      "mode": "no-coverage",
+      "exit_status": 0,
+      "elapsed_seconds": 135.08053116701194,
+      "implementation_commit": "9456bc97e35599d884613145fe01657dae36a907",
+      "log_sha256": "5385e5d687fd5178825afa62ce8770199c22fa08f77d43a828e37f9430477f6e",
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python\nrootdir: /private/tmp/fq-matrix-product-ci-fix-20261122\nconfigfile: pytest.ini\ncollecting ... collected 1 item\n\ntests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] PASSED\n\n======================== 1 passed in 133.37s (0:02:13) =========================\n"
+    },
+    {
+      "mode": "sysmon",
+      "coverage": "7.16.2",
+      "pytest_cov_cache": "/Users/baai/.cache/uv/archive-v0/lsZGWaiNikyHmGK_",
+      "exit_status": 0,
+      "elapsed_seconds": 141.21204029102228,
+      "implementation_commit": "9456bc97e35599d884613145fe01657dae36a907",
+      "log_sha256": "a4b11f352dd04540ca047f14ff107c22ab2425e50032d5f21b47bbd47f3a07c3",
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python\nrootdir: /private/tmp/fq-matrix-product-ci-fix-20261122\nconfigfile: pytest.ini\nplugins: cov-7.1.0\ncollecting ... collected 1 item\n\ntests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] PASSED\n\n======================== 1 passed in 139.03s (0:02:19) =========================\n"
+    },
+    {
+      "mode": "sysmon-python-watchdog",
+      "exit_status": 0,
+      "elapsed_seconds": 145.5211445419991,
+      "implementation_commit": "9456bc97e35599d884613145fe01657dae36a907",
+      "log_sha256": "64501b686ea5b0937ac58b6b2bd9379b3bb479418d6576269c32ebcd2138ac0a",
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python\nrootdir: /private/tmp/fq-matrix-product-ci-fix-20261122\nconfigfile: pytest.ini\nplugins: cov-7.1.0\ncollecting ... collected 1 item\n\ntests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py] Python stack snapshot after 1s: tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]\nThread 6107951104 (most recent call last):\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1032, in _bootstrap\n    self._bootstrap_inner()\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1075, in _bootstrap_inner\n    self.run()\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1433, in run\n    self.function(*self.args, **self.kwargs)\n  File \"/private/tmp/fq-ci-stack-watchdog-20261122/tools/pytest_stack_watchdog.py\", line 67, in _dump_stacks\n    traceback.print_stack(frame, limit=100, file=output)\nThread 8499904384 (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pytest/__main__.py\", line 9, in <module>\n    raise SystemExit(_console_main())\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 286, in _console_main\n    code = _main(prog=_get_prog_name(sys.argv))\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 262, in _main\n    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 380, in pytest_cmdline_main\n    return wrap_session(config, _main)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 333, in wrap_session\n    session.exitstatus = doit(config, session) or 0\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 387, in _main\n    config.hook.pytest_runtestloop(session=session)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 411, in pytest_runtestloop\n    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n    runtestprotocol(item, nextitem=nextitem)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 139, in runtestprotocol\n    reports.append(call_and_report(item, \"call\", log))\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 249, in call_and_report\n    call = CallInfo.from_call(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 361, in from_call\n    result: TResult | None = func()\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 250, in <lambda>\n    lambda: runtest_hook(item=item, **kwds),\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 184, in pytest_runtest_call\n    item.runtest()\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/python.py\", line 1798, in runtest\n    self.ihook.pytest_pyfunc_call(pyfuncitem=self)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/python.py\", line 187, in pytest_pyfunc_call\n    result = testfunction(**testargs)\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/integration/test_synthesis_native_catalog.py\", line 70, in test_original_source_reference_remains_a_test_only_check\n    runpy.run_path(str(path), run_name=\"__main__\")\n  File \"<frozen runpy>\", line 287, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py\", line 14, in <module>\n    run_example()\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py\", line 10, in run_example\n    test_original_native_and_independent_complete_environment(k)\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/integration/test_synthesis_native_rainbow_integration.py\", line 108, in test_original_native_and_independent_complete_environment\n    expected = fq.run(reference_circuit(k)).statevector().flatten()\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/_api.py\", line 358, in run\n    return run_local(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/_run.py\", line 75, in run\n    plan(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/planner/__init__.py\", line 1138, in plan\n    return attach_execution_contract(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/execution_plan_contract.py\", line 194, in attach_execution_contract\n    \"program\": executable_program.to_dict(),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 594, in to_dict\n    \"instructions\": [_instruction_to_dict(item) for item in self.instructions],\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 743, in _instruction_to_dict\n    \"matrix\": _encode_value(item.matrix),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 698, in _encode_value\n    \"data\": _encode_value(tensor.tolist()),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 691, in _encode_value\n    return [_encode_value(item) for item in value]\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 691, in _encode_value\n    return [_encode_value(item) for item in value]\nPASSED\n\n======================== 1 passed in 143.12s (0:02:23) =========================\n",
+      "watchdog_sha256": "78847344c177b687f9e8feccfaa890d759639755481918b4e74e3be557bffa86"
+    },
+    {
+      "implementation_commit": "9456bc97e35599d884613145fe01657dae36a907",
+      "mode": "sysmon-compatible-python-watchdog",
+      "exit_status": 0,
+      "elapsed_seconds": 138.60306658301852,
+      "log_sha256": "be7113016c95cd0a77d8c713333f00f722e14177737e0d54646f590d6e1f94a7",
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-matrix-product-ci-fix-20261122\nconfigfile: pytest.ini\nplugins: cov-7.1.0\ncollected 1 item\n\ntests/integration/test_synthesis_native_catalog.py Python stack snapshot after 1s: tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]\nThread 6117257216 (most recent call last):\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1032, in _bootstrap\n    self._bootstrap_inner()\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1075, in _bootstrap_inner\n    self.run()\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/threading.py\", line 1433, in run\n    self.function(*self.args, **self.kwargs)\n  File \"/private/tmp/fq-ci-stack-watchdog-20261122/tools/pytest_stack_watchdog.py\", line 68, in _dump_stacks\n    traceback.print_stack(frame, limit=100, file=output)\nThread 8499904384 (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pytest/__main__.py\", line 9, in <module>\n    raise SystemExit(_console_main())\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 286, in _console_main\n    code = _main(prog=_get_prog_name(sys.argv))\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py\", line 262, in _main\n    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 380, in pytest_cmdline_main\n    return wrap_session(config, _main)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 333, in wrap_session\n    session.exitstatus = doit(config, session) or 0\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 387, in _main\n    config.hook.pytest_runtestloop(session=session)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/main.py\", line 411, in pytest_runtestloop\n    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n    runtestprotocol(item, nextitem=nextitem)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 139, in runtestprotocol\n    reports.append(call_and_report(item, \"call\", log))\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 249, in call_and_report\n    call = CallInfo.from_call(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 361, in from_call\n    result: TResult | None = func()\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 250, in <lambda>\n    lambda: runtest_hook(item=item, **kwds),\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/runner.py\", line 184, in pytest_runtest_call\n    item.runtest()\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/python.py\", line 1798, in runtest\n    self.ihook.pytest_pyfunc_call(pyfuncitem=self)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_caller.py\", line 197, in __call__\n    return self._hookexec(\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_manager.py\", line 183, in _hookexec\n    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n  File \"/Users/baai/Documents/liuwei/sdkbench/.venv/lib/python3.12/site-packages/_pytest/python.py\", line 187, in pytest_pyfunc_call\n    result = testfunction(**testargs)\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/integration/test_synthesis_native_catalog.py\", line 70, in test_original_source_reference_remains_a_test_only_check\n    runpy.run_path(str(path), run_name=\"__main__\")\n  File \"<frozen runpy>\", line 287, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py\", line 14, in <module>\n    run_example()\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py\", line 10, in run_example\n    test_original_native_and_independent_complete_environment(k)\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/tests/integration/test_synthesis_native_rainbow_integration.py\", line 108, in test_original_native_and_independent_complete_environment\n    expected = fq.run(reference_circuit(k)).statevector().flatten()\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/_api.py\", line 358, in run\n    return run_local(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/_run.py\", line 75, in run\n    plan(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/planner/__init__.py\", line 1138, in plan\n    return attach_execution_contract(\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/runtime/execution_plan_contract.py\", line 194, in attach_execution_contract\n    \"program\": executable_program.to_dict(),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 594, in to_dict\n    \"instructions\": [_instruction_to_dict(item) for item in self.instructions],\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 743, in _instruction_to_dict\n    \"matrix\": _encode_value(item.matrix),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 698, in _encode_value\n    \"data\": _encode_value(tensor.tolist()),\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 691, in _encode_value\n    return [_encode_value(item) for item in value]\n  File \"/private/tmp/fq-matrix-product-ci-fix-20261122/flagquantum/core/ir/__init__.py\", line 691, in _encode_value\n    return [_encode_value(item) for item in value]\n.\n\n======================== 1 passed in 136.60s (0:02:16) =========================\n",
+      "watchdog_sha256": "272cfbbcdccd1ccc97741daec3b1c35ddf2104159f644ea52949e0cd481eec5c"
+    }
+  ],
+  "pytest_only_control": {
+    "imports_flagquantum": false,
+    "imports_coverage": false,
+    "interval_seconds": 0.001,
+    "repeat": true,
+    "driver": "import faulthandler\nimport json\nimport os\nimport sys\nimport pytest\n\nprint(json.dumps({'dump': sys.argv[1], 'flagquantum_loaded': any(s.startswith('flagquantum') for s in sys.modules)}), flush=True)\nwith open(os.devnull, 'w') as output:\n    if sys.argv[1] == 'dump':\n        faulthandler.dump_traceback_later(0.001, repeat=True, file=output)\n    try:\n        status = pytest.main(['test_control.py', '-c', '/dev/null', '-p', 'no:faulthandler', '-q'])\n    finally:\n        faulthandler.cancel_dump_traceback_later()\nprint(json.dumps({'flagquantum_loaded': any(s.startswith('flagquantum') for s in sys.modules)}), flush=True)\nsys.exit(status)\n",
+    "test": "def test_integer_arithmetic():\n    assert sum(range(100)) == 4950\n",
+    "results": [
+      {
+        "mode": "no-dump",
+        "pid": 86029,
+        "exit_status": 0,
+        "seconds": 0.4317327079770621,
+        "output": "{\"dump\": \"no-dump\", \"flagquantum_loaded\": false}\n.                                                                        [100%]\n1 passed in 0.35s\n{\"flagquantum_loaded\": false}\n"
+      },
+      {
+        "mode": "dump",
+        "pid": 86031,
+        "exit_status": -11,
+        "seconds": 0.1382127499964554,
+        "output": "{\"dump\": \"dump\", \"flagquantum_loaded\": false}\n"
+      }
+    ]
+  },
+  "native_failure": {
+    "pid": 85776,
+    "capture_time": "2026-11-22 06:54:20.5890 +0800",
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000000000000bb",
+      "rawCodes": [
+        1,
+        187
+      ],
+      "type": "EXC_BAD_ACCESS",
+      "signal": "SIGSEGV",
+      "subtype": "KERN_INVALID_ADDRESS at 0x00000000000000bb"
+    },
+    "report_sha256": "98e0aa1e6fdd981ee324a05acf8cf953f1771a0c9486b6f9294d38443e0bb84b",
+    "symbols": [
+      "dump_frame",
+      "dump_traceback",
+      "_Py_DumpTracebackThreads",
+      "faulthandler_thread",
+      "pythread_wrapper.llvm.14003057189136826180",
+      "_pthread_start",
+      "thread_start"
+    ],
+    "qualification": "This report belongs to the earlier high-frequency diagnostic during the full pytest invocation, not the subsequent pytest-only control. It proves a local failure in the native diagnostic thread; no Linux core dump was obtained."
+  },
+  "scalar_probes": [
+    {
+      "mode": "no-coverage",
+      "core": "sysmon",
+      "exit_status": 0,
+      "tail": "eback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 150 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\n{\"mode\": \"no-coverage\", \"python\": \"3.12.14\", \"coverage\": null, \"coverage_core\": \"sysmon\", \"calls\": 21577000, \"seconds\": 3.000245165982051}\n"
+    },
+    {
+      "mode": "no-dump",
+      "core": "sysmon",
+      "exit_status": 0,
+      "tail": "{\"mode\": \"no-dump\", \"python\": \"3.12.14\", \"coverage\": \"7.16.2\", \"coverage_core\": \"sysmon\", \"calls\": 21149000, \"seconds\": 3.000218250002945}\n"
+    },
+    {
+      "mode": "dump",
+      "core": "sysmon",
+      "exit_status": 0,
+      "tail": "ivate/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 150 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 150 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\n{\"mode\": \"dump\", \"python\": \"3.12.14\", \"coverage\": \"7.16.2\", \"coverage_core\": \"sysmon\", \"calls\": 22477000, \"seconds\": 3.000292624987196}\n"
+    },
+    {
+      "mode": "dump",
+      "core": "ctrace",
+      "exit_status": 1,
+      "tail": "*** COVERAGE_CORE is 'ctrace' but can't import CTracer!\n"
+    },
+    {
+      "mode": "dump",
+      "core": "ctrace",
+      "coverage_path": "/Users/baai/.cache/uv/archive-v0/JUA5di7yjECZixFY",
+      "exit_status": 0,
+      "tail": "hread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 148 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 148 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 11 in <module>\nTimeout (0:00:00.025000)!\nThread 0x00000001faa23f80 (most recent call first):\n  File \"/private/tmp/fq-native-matrix-reader-20261122/flagquantum/compiler/optimization/one_qubit_synthesis.py\", line 132 in _polar_angle\n  File \"/private/tmp/fq-sysmon-traceback-probe-20261122.py\", line 12 in <module>\n{\"mode\": \"dump\", \"python\": \"3.12.14\", \"coverage\": \"7.16.2\", \"coverage_core\": \"ctrace\", \"calls\": 7379000, \"seconds\": 3.0002524169976823}\n"
+    }
+  ],
+  "python_only_code_churn_control": [
+    {
+      "mode": "no-dump",
+      "pid": 85848,
+      "exit_status": 0,
+      "seconds": 3.034795290994225,
+      "log": "/private/tmp/fq-faulthandler-control-no-dump-20261122.log",
+      "output": "{\"python\": \"3.12.14\", \"platform\": \"macOS-27.0-arm64-arm-64bit\", \"dump\": \"no-dump\", \"imports_flagquantum\": false}\n{\"calls\": 16723047, \"seconds\": 3.000013624987332}\n"
+    },
+    {
+      "mode": "dump",
+      "pid": 85857,
+      "exit_status": 0,
+      "seconds": 3.066525250003906,
+      "log": "/private/tmp/fq-faulthandler-control-dump-20261122.log",
+      "output": "{\"python\": \"3.12.14\", \"platform\": \"macOS-27.0-arm64-arm-64bit\", \"dump\": \"dump\", \"imports_flagquantum\": false}\n{\"calls\": 16263581, \"seconds\": 3.0000241250090767}\n"
+    }
+  ],
+  "instrumented_tests": {
+    "exit_status": 0,
+    "elapsed_seconds": 3.839682499994524,
+    "command": [
+      "/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/integration/test_ci_stack_watchdog.py",
+      "-q",
+      "-p",
+      "pytest_cov",
+      "--cov=tools.pytest_stack_watchdog",
+      "--cov-report=term-missing",
+      "-p",
+      "tools.pytest_stack_watchdog",
+      "--fq-stack-dump-after=0.1",
+      "-o",
+      "faulthandler_timeout=0",
+      "-p",
+      "xdist.plugin",
+      "-n",
+      "2"
+    ],
+    "log_sha256": "42e58085a32abb7167c66091883d76d3e42eb20449d9cf0f3f43ce8c7501f2ea",
+    "summary": "aai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/subprocess.py\", line 2115, in _communicate\n    ready = selector.select(timeout)\n  File \"/Users/baai/.local/share/uv/python/cpython-3.12.14-macos-aarch64-none/lib/python3.12/selectors.py\", line 415, in select\n    fd_event_list = self._selector.poll(timeout)\n...                                                              [100%]\n================================ tests coverage ================================\n______________ coverage: platform darwin, python 3.12.14-final-0 _______________\n\nName                             Stmts   Miss  Cover   Missing\n--------------------------------------------------------------\ntools/pytest_stack_watchdog.py      57     30    47%   3-27, 30, 32, 36, 44-45, 47-49, 53-59, 73-74, 77, 90\n--------------------------------------------------------------\nTOTAL                               57     30    47%\n============================== 11 passed in 2.76s ==============================\n",
+    "sources": {
+      "tools/pytest_stack_watchdog.py": "78847344c177b687f9e8feccfaa890d759639755481918b4e74e3be557bffa86",
+      "tests/integration/test_ci_stack_watchdog.py": "12cd5e7d886791bc5d3b9fcf897107a5b6d11c2c1a3c930e7a4027465ffa2096"
+    }
+  },
+  "default_tier": {
+    "sparse_checkout": true,
+    "first_attempt": "Collection failed because dependency-policy.toml was absent; unmodified file restored.",
+    "second_attempt": "78 passed, one failure because the lane-audit chemistry fixture was absent; unmodified fixture and its package dependencies restored.",
+    "final_log": "+ /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python -m pytest -m smoke or unit -q\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ntestpaths: tests\ncollected 93 items / 14 deselected / 79 selected\n\ntests/unit/test_ci_coverage_plan.py .............                        [ 16%]\ntests/unit/test_ci_cpu_budget.py .................................       [ 58%]\ntests/unit/test_ci_offline_environment.py .......................        [ 87%]\ntests/unit/test_lane_dependency_policy.py ..........                     [100%]\n\n====================== 79 passed, 14 deselected in 6.06s =======================\n",
+    "qualification": "79 selected unit tests passed; 14 integration cases deselected. This sparse selection does not certify the full repository default tier."
+  },
+  "checks": {
+    "black": "passed on two Python files",
+    "ruff": "passed on two Python files",
+    "mypy": "1.20.2 strict Python 3.12 checking passed on both files with typed imports followed and ignore-missing-imports; not whole-repository certification",
+    "setup_failures": "Initial cached coverage C tracer was for Python 3.10 and could not load; compatible 3.12 tracer subsequently passed. Initial cached mypy setups had missing/incompatible native dependencies; matching 3.12 dependencies were selected before the successful focused check. A strict check with follow-imports=skip reported four untyped pytest decorators; following pytest typed imports resolved those errors without suppression."
+  },
+  "limits": [
+    "No exact Linux reproduction or Linux native core stack; no definitive root-cause claim for the CI failures.",
+    "The high-frequency stress is a diagnostic perturbation, not the production 300-second schedule.",
+    "The Python snapshot thread needs the interpreter to schedule Python code; it cannot diagnose a process that indefinitely holds the GIL.",
+    "The unchanged CI job deadline still terminates non-completing jobs; this plugin is diagnostic only.",
+    "No qualified timing comparison, speedup, memory improvement, SDK ranking or benchmark promotion.",
+    "No machine was rebooted. Remote exact-image pull was unauthorized; no credentials were copied and no remote reproduction is claimed."
+  ],
+  "initial_sources": {
+    "tools/pytest_stack_watchdog.py": "78847344c177b687f9e8feccfaa890d759639755481918b4e74e3be557bffa86",
+    "tests/integration/test_ci_stack_watchdog.py": "12cd5e7d886791bc5d3b9fcf897107a5b6d11c2c1a3c930e7a4027465ffa2096"
+  },
+  "compatibility": {
+    "pytest7_download": {
+      "package": "pytest",
+      "version": "7.4.4",
+      "filename": "pytest-7.4.4-py3-none-any.whl",
+      "sha256": "b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8",
+      "url": "https://files.pythonhosted.org/packages/51/ff/f6e8b8f39e08547faece4bd80f89d5a8de68a38b2d179cc1c4490ffa3286/pytest-7.4.4-py3-none-any.whl"
+    },
+    "versions": {
+      "7.4.4": {
+        "exit_status": 0,
+        "passed": 11,
+        "log_sha256": "a0b9345523abca04bafe4c9552c0ffbb52a77d15187d81616929575ab0c57443",
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-7.4.4, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncollected 11 items\n\ntests/integration/test_ci_stack_watchdog.py ...........                  [100%]\n\n============================== 11 passed in 3.03s ==============================\n",
+        "sources": {
+          "tools/pytest_stack_watchdog.py": "272cfbbcdccd1ccc97741daec3b1c35ddf2104159f644ea52949e0cd481eec5c",
+          "tests/integration/test_ci_stack_watchdog.py": "44499835902c4f482ef61b21f81c7b3311b99149bea6fc76daee7a96b4dee018"
+        }
+      },
+      "9.2.0": {
+        "exit_status": 0,
+        "passed": 11,
+        "log_sha256": "24fe64f83df43ae579e6dad63ab6593eff813c180db92471ffd870883b837e00",
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncollected 11 items\n\ntests/integration/test_ci_stack_watchdog.py ...........                  [100%]\n\n============================== 11 passed in 2.91s ==============================\n",
+        "sources": {
+          "tools/pytest_stack_watchdog.py": "272cfbbcdccd1ccc97741daec3b1c35ddf2104159f644ea52949e0cd481eec5c",
+          "tests/integration/test_ci_stack_watchdog.py": "44499835902c4f482ef61b21f81c7b3311b99149bea6fc76daee7a96b4dee018"
+        }
+      }
+    },
+    "earlier_pytest7_fixture_failure": {
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-7.4.4, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncollected 11 items\n\ntests/integration/test_ci_stack_watchdog.py FF...F....F                  [100%]\n\n=================================== FAILURES ===================================\n________ test_slow_test_reports_its_stack_and_preserves_outcome[False] _________\ntests/integration/test_ci_stack_watchdog.py:67: in test_slow_test_reports_its_stack_and_preserves_outcome\n    assert (\nE   assert 'Python stack snapshot after 0.02s: test_example.py::test_slow' in 'Python stack snapshot after 0.02s: ::test_slow\\nThread 6139211776 (most recent call last):\\n  File \"/Users/baai/.loca...test-of-baai/pytest-616/test_slow_test_reports_its_sta0/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n'\nE    +  where 'Python stack snapshot after 0.02s: ::test_slow\\nThread 6139211776 (most recent call last):\\n  File \"/Users/baai/.loca...test-of-baai/pytest-616/test_slow_test_reports_its_sta0/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n' = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...est-of-baai/pytest-616/test_slow_test_reports_its_sta0/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n').stderr\n_________ test_slow_test_reports_its_stack_and_preserves_outcome[True] _________\ntests/integration/test_ci_stack_watchdog.py:67: in test_slow_test_reports_its_stack_and_preserves_outcome\n    assert (\nE   assert 'Python stack snapshot after 0.02s: test_example.py::test_slow' in 'Python stack snapshot after 0.02s: ::test_slow\\nThread 6181777408 (most recent call last):\\n  File \"/Users/baai/.loca...test-of-baai/pytest-616/test_slow_test_reports_its_sta1/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n'\nE    +  where 'Python stack snapshot after 0.02s: ::test_slow\\nThread 6181777408 (most recent call last):\\n  File \"/Users/baai/.loca...test-of-baai/pytest-616/test_slow_test_reports_its_sta1/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n' = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...est-of-baai/pytest-616/test_slow_test_reports_its_sta1/test_example.py\", line 3, in test_slow\\n    time.sleep(0.15)\\n').stderr\n_______________________ test_each_test_owns_its_watchdog _______________________\ntests/integration/test_ci_stack_watchdog.py:106: in test_each_test_owns_its_watchdog\n    assert (\nE   assert 'Python stack snapshot after 0.3s: test_example.py::test_second' in 'Python stack snapshot after 0.3s: ::test_second\\nThread 6180007936 (most recent call last):\\n  File \"/Users/baai/.loc...est-of-baai/pytest-616/test_each_test_owns_its_watchd0/test_example.py\", line 5, in test_second\\n    time.sleep(0.6)\\n'\nE    +  where 'Python stack snapshot after 0.3s: ::test_second\\nThread 6180007936 (most recent call last):\\n  File \"/Users/baai/.loc...est-of-baai/pytest-616/test_each_test_owns_its_watchd0/test_example.py\", line 5, in test_second\\n    time.sleep(0.6)\\n' = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...st-of-baai/pytest-616/test_each_test_owns_its_watchd0/test_example.py\", line 5, in test_second\\n    time.sleep(0.6)\\n').stderr\n_______________ test_xdist_workers_emit_diagnostics_and_complete _______________\ntests/integration/test_ci_stack_watchdog.py:154: in test_xdist_workers_emit_diagnostics_and_complete\n    assert (\nE   assert 'Python stack snapshot after 0.02s: test_example.py::test_left' in 'Python stack snapshot after 0.02s: ::test_right\\nThread 6184480768 (most recent call last):\\n  File \"/Users/baai/.cac...test-of-baai/pytest-616/test_xdist_workers_emit_diagno0/test_example.py\", line 3, in test_left\\n    time.sleep(0.15)\\n'\nE    +  where 'Python stack snapshot after 0.02s: ::test_right\\nThread 6184480768 (most recent call last):\\n  File \"/Users/baai/.cac...test-of-baai/pytest-616/test_xdist_workers_emit_diagno0/test_example.py\", line 3, in test_left\\n    time.sleep(0.15)\\n' = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...est-of-baai/pytest-616/test_xdist_workers_emit_diagno0/test_example.py\", line 3, in test_left\\n    time.sleep(0.15)\\n').stderr\n=========================== short test summary info ============================\nFAILED tests/integration/test_ci_stack_watchdog.py::test_slow_test_reports_its_stack_and_preserves_outcome[False]\nFAILED tests/integration/test_ci_stack_watchdog.py::test_slow_test_reports_its_stack_and_preserves_outcome[True]\nFAILED tests/integration/test_ci_stack_watchdog.py::test_each_test_owns_its_watchdog\nFAILED tests/integration/test_ci_stack_watchdog.py::test_xdist_workers_emit_diagnostics_and_complete\n========================= 4 failed, 7 passed in 2.82s ==========================\n",
+      "explanation": "Four diagnostic-label assertions failed because pytest 7 gave node IDs without the file prefix when -c /dev/null selected an unrelated root directory. The child fixture now passes --rootdir explicitly. Test outcomes, diagnostics, and timer cleanup already worked; no watchdog assertion was removed."
+    },
+    "change": "Use the supported hookwrapper protocol and parse the built-in timeout numerically, including the string 0 used by pytest 7."
+  },
+  "inherited_options_fix": {
+    "failure": "CPU-runtime child pytest inherited parent PYTEST_ADDOPTS, including -n and --dist, while plugin autoload was disabled. It failed argument parsing before executing the child test.",
+    "observed_jobs": [
+      137020187649,
+      137020187608,
+      137020187743,
+      137020187768,
+      137020187548
+    ],
+    "ci_log_hashes": {
+      "137020187649": "1ab82d34b73e355481bd3131adf87cd725f3b00ca0b13f209dde5f1abb0237a2",
+      "137020187608": "d90b6ae37f06e0e4a722c583721c3e667e636ff7370f707b637cd08bdd7dbe05",
+      "137020187743": "b611fda0e3b34ca67e47f8c4b800522fe5a12adacde86a4a2380eaf27e0a3a3e",
+      "137020187768": "e16e576b0f224b3254846f79c7f492b8c37a3041a539187f75e6b4e86a9926fa",
+      "137020187548": "b1402d01f4591390953210ac454df7530bd18dfa1a508c61dc6dcf859f47b301"
+    },
+    "reproduction": {
+      "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [1 item]\n\nF                                                                        [100%]\n=================================== FAILURES ===================================\n________ test_slow_test_reports_its_stack_and_preserves_outcome[False] _________\n[gw1] darwin -- Python 3.12.14 /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python\ntests/integration/test_ci_stack_watchdog.py:68: in test_slow_test_reports_its_stack_and_preserves_outcome\n    assert result.returncode == int(failure), result.stdout + result.stderr\nE   AssertionError: Watchdog threads released\nE     ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]\nE     pytest.main(): error: unrecognized arguments: -n --dist=worksteal\nE       inifile: /dev/null\nE       rootdir: /private/var/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/pytest-of-baai/pytest-625/popen-gw1/test_slow_test_reports_its_sta0\nE     \nE     \nE   assert 4 == 0\nE    +  where 4 = CompletedProcess(args=['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python', '-c', \"import sys, threading, pytest\\...r/folders/31/5hn_pjqs57j_4bqjh0qq3l780000gn/T/pytest-of-baai/pytest-625/popen-gw1/test_slow_test_reports_its_sta0\\n\\n').returncode\nE    +  and   0 = int(False)\n=========================== short test summary info ============================\nFAILED tests/integration/test_ci_stack_watchdog.py::test_slow_test_reports_its_stack_and_preserves_outcome[False]\n============================== 1 failed in 1.18s ===============================\n",
+      "sha256": "2759a75f2d944806ddf9ee0e026516d7ebeb0f2774406232daa4d846a5e524c0"
+    },
+    "correction": "Clear PYTEST_ADDOPTS only in the isolated fixture child; outer CI options and all assertions remain. Both slow pass/fail scenarios inject parent worker/report options and assert no parent report is created.",
+    "after": {
+      "7.4.4": {
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-7.4.4, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [11 items]\n\n...........                                                              [100%]\n============================== 11 passed in 2.82s ==============================\n",
+        "sha256": "ea4e1235442bff663561bae87189e14a2de19792f47e049635eb73d4e8bb56b9"
+      },
+      "9.2.0": {
+        "log": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ncreated: 2/2 workers\n2 workers [11 items]\n\n...........                                                              [100%]\n============================== 11 passed in 2.83s ==============================\n",
+        "sha256": "3d2f7c9ec570c8c275584a8fda4d21b7f1577a2cc97efd6048df5d241d4c57aa"
+      }
+    },
+    "setup_failure": "The first local outer invocation loaded xdist twice (autoload plus -p) and exited before collection. The isolated reproduction disables outer autoload and reproduces CI argument parsing failure."
+  },
+  "container_cleanup_observation": {
+    "run_id": 44961101644,
+    "job_id": 137020948855,
+    "log_sha256": "e41378d42532cf5db63b4480df4bbd77d6b64f3d90bb13b61605bb945bbda359",
+    "failure": "docker rm --force exceeded the existing 20-second cleanup timeout before pytest started.",
+    "runner": "fq-mc550-122-cpu15",
+    "container_id": "f9ee43988829ae8f52c63d7866ec969900b480615e48afbb6c88227c8353e880",
+    "subsequent_read_only_observation": {
+      "host": "jp-mc550-122",
+      "kernel": "5.15.0-119-generic",
+      "docker_server": "29.5.3",
+      "inspect": "No such object",
+      "matching_container_list": "empty"
+    },
+    "interpretation": "The container was absent and Docker responsive at the later inspection. This does not establish root cause, prove cleanup reliability, or waive the failure. No restart or service/container mutation was performed."
+  },
+  "main_sync_default_tier": {
+    "passed": 79,
+    "deselected": 14,
+    "log": "+ /Users/baai/Documents/liuwei/sdkbench/.venv/bin/python -m pytest -m smoke or unit -q\n============================= test session starts ==============================\nplatform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0\nrootdir: /private/tmp/fq-ci-stack-watchdog-20261122\nconfigfile: pytest.ini\ntestpaths: tests\ncollected 93 items / 14 deselected / 79 selected\n\ntests/unit/test_ci_coverage_plan.py .............                        [ 16%]\ntests/unit/test_ci_cpu_budget.py .................................       [ 58%]\ntests/unit/test_ci_offline_environment.py .......................        [ 87%]\ntests/unit/test_lane_dependency_policy.py ..........                     [100%]\n\n====================== 79 passed, 14 deselected in 6.09s =======================\n",
+    "qualification": "Sparse selection only; full exact-head Linux CI required."
+  },
+  "main_sync_checks": "Black, Ruff, strict mypy for both Python files, and git diff --check passed.",
+  "main_sync": {
+    "source_commit": "02bacc099cdcd1ac08510c8cf944df6e018c94c9"
+  }
+}

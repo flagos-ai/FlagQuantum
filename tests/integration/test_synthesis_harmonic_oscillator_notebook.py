@@ -15,6 +15,7 @@ from examples.synthesis.community.paper_implementation_project.quantum_algo_for_
     workflow,
 )
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
 
@@ -62,10 +63,23 @@ def test_reject_out_of_scope_time(time: float) -> None:
         model.taylor_encoding(time)
 
 
-def test_resource_budget_refuses_insufficient_total_width() -> None:
+def test_six_qubit_budget_preserves_full_state_and_clean_workspace() -> None:
     encoding = model.taylor_encoding(1.0)
-    with pytest.raises(synth.SynthesisError, match="max_qubits=6, actual=7"):
-        quantum.build_program(encoding, max_qubits=6)
+    program = quantum.build_program(encoding, max_qubits=6)
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_qubits == 6
+    assert resources.n_operations <= 2048
+    assert program.report["workspace_qubits"] == 1
+    actual = quantum.logical_state(program)
+    expected = fq.run(reference.reference_circuit(1.0)).statevector().flatten()
+    torch.testing.assert_close(actual, expected, rtol=0, atol=1e-12)
+
+
+def test_resource_budget_refuses_width_below_logical_registers() -> None:
+    encoding = model.taylor_encoding(1.0)
+    with pytest.raises(synth.SynthesisError, match="max_qubits=4"):
+        quantum.build_program(encoding, max_qubits=4)
 
 
 def test_notebook_preserves_all_clean_source_stages() -> None:

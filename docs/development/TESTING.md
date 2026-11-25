@@ -701,8 +701,9 @@ by estimated duration. Batches contain at most 16 tests, so a large untimed file
 can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
 coverage is written outside the source tree, then combined before the unchanged
 coverage policy runs. Unmeasured tests receive the same positive default weight.
-Coverage workers report long tests after 300 seconds with
-`tools.pytest_thread_dump`. It holds Python references to the thread frames
+Coverage workers report long tests through
+`tools.pytest_stack_watchdog` with `--fq-stack-dump-after=300` and
+`faulthandler_timeout=0`. It holds Python references to the thread frames
 while formatting their stacks, avoiding CPython's native asynchronous frame
 traversal, which stalled a local reproduction after its assertions passed and
 coincided with the worker exit in #1253. The original worker exit signal was
@@ -1051,7 +1052,13 @@ remain isolated and resource-budgeted.
 Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
 `/opt/flagquantum-runners/tools/public-wheels` directory when unset. Each private
 environment resolves compatible wheel bytes rather than reusing another job's
-installed packages. Missing Torch wheels retain the
+installed packages. The isolated-Python action creates a private build directory
+under `RUNNER_TEMP` and exports it as `TMPDIR` for its own subprocesses and later
+job steps. Pip and native compiler scratch files therefore use the runner job
+volume even when the host system temporary volume is full. Directory creation
+failure stops setup; it does not fall back to shared `/tmp`. The runner owns
+end-of-job cleanup. This does not remove other jobs' files or change persistent
+runner services. Missing Torch wheels retain the
 bounded mirror and official-index fallback. Self-hosted pip requests use a
 60-second socket timeout and at most two retries within the unchanged job limit.
 Supply-chain dependency installation selects the Aliyun mirror on self-hosted

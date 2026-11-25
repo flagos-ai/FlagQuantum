@@ -1253,7 +1253,7 @@ def test_the_consumer_refuses_an_opaque_matrix_with_no_contract_and_honours_its_
 
     instruction = _opaque(_FAMILY[0][1])
     added = len(_dispatch(instruction, "cx") or ()) - 1
-    assert added == 28
+    assert added == 25  # Native pulse optimization reduces this case by three leaves.
 
     with pytest.raises(NativeGateLegalizationError, match="max_added_operations"):
         legalize_native_gates(

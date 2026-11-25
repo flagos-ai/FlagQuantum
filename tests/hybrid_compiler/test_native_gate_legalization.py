@@ -1155,3 +1155,54 @@ def test_a_non_product_still_fails_closed_without_an_entangler() -> None:
         evaluated_at=_NOW,
     )
     assert [item.name for item in served.program.instructions] == ["cx"]
+
+
+@pytest.mark.parametrize("rewritten", [False, True])
+def test_native_identity_reuses_hashes_but_rechecks_mutated_input(
+    rewritten: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import hashlib
+    import json
+    from dataclasses import replace
+
+    angle = torch.tensor(0.31, dtype=torch.float64)
+    source = CircuitIR(1, (Instruction("rx", (0,), {"theta": angle}),))
+    snapshot = _basis_snapshot() if rewritten else _snapshot(("rx",))
+    original_hash = CircuitIR.content_hash.fget
+    assert original_hash is not None
+    calls: list[CircuitIR] = []
+
+    def observed_hash(program: CircuitIR) -> str:
+        calls.append(program)
+        return original_hash(program)
+
+    monkeypatch.setattr(CircuitIR, "content_hash", property(observed_hash))
+    first = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    # One source hash for construction, one independent constructor check, and
+    # one output hash only if legalization produced another program.
+    assert sum(program is source for program in calls) == 2
+    assert len(calls) == (3 if rewritten else 2)
+    payload = {
+        "source_content_hash": original_hash(source),
+        "result_content_hash": original_hash(first.program),
+        "target_snapshot_id": snapshot.snapshot_id,
+        "native_opcodes": first.native_opcodes,
+        "decompositions": [
+            {
+                "instruction_index": item.instruction_index,
+                "source_opcode": item.source_opcode,
+                "replacement_opcodes": item.replacement_opcodes,
+            }
+            for item in first.decompositions
+        ],
+    }
+    expected = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    assert first.legalization_identity == expected
+    angle.add_(0.5)
+    second = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    assert second.source_content_hash != first.source_content_hash
+    assert second.legalization_identity != first.legalization_identity
+    with pytest.raises(ValueError, match="does not match source_content_hash"):
+        replace(first)

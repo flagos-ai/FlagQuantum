@@ -64,7 +64,7 @@ from __future__ import annotations
 import math
 import random
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -269,7 +269,7 @@ def _relative_score_swap(
     if not ordered:
         return None
     terms: list[tuple[int, int, float]] = []
-    incidence: list[list[int]] = [[] for _ in layout]
+    incidence: list[list[tuple[int, float]]] = [[] for _ in layout]
     for indices, scale in (
         (front, 1.0 / len(front)),
         (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),
@@ -277,10 +277,11 @@ def _relative_score_swap(
         weight = 1.0
         for index in indices:
             first, second = (layout[wire] for wire in qubit_pairs[index])
-            term_id = len(terms)
-            terms.append((first, second, scale * weight))
-            incidence[first].append(term_id)
-            incidence[second].append(term_id)
+            coefficient = scale * weight
+            terms.append((first, second, coefficient))
+            if first != second:
+                incidence[first].append((second, coefficient))
+                incidence[second].append((first, coefficient))
             if indices is extended:
                 weight *= LOOKAHEAD_DECAY
     # All candidates share the omitted current-layout score. Near a rounding
@@ -291,16 +292,14 @@ def _relative_score_swap(
     best_score = 0.0
     for left, right in ordered:
         changes = []
-        for term_id in sorted(set(incidence[left]) | set(incidence[right])):
-            first, second, weight = terms[term_id]
-            moved_first = right if first == left else left if first == right else first
-            moved_second = (
-                right if second == left else left if second == right else second
-            )
-            changes.append(
-                weight
-                * (distances[moved_first][moved_second] - distances[first][second])
-            )
+        # Coupling distances are symmetric. An interaction touching both
+        # endpoints keeps its distance; every other incident term changes only
+        # its moved endpoint. Preserve one contribution per source term.
+        for moved, destination in ((left, right), (right, left)):
+            before, after = distances[moved], distances[destination]
+            for other, coefficient in incidence[moved]:
+                if other != destination:
+                    changes.append(coefficient * (after[other] - before[other]))
         score = math.fsum(changes)
         if best is None:
             best, best_score = (left, right), score
@@ -353,13 +352,35 @@ def _select_sabre_trials(
     cost: Callable[[SabrePlan], int] | None = None,
 ) -> SabrePlan:
     """Retain the single-trial route unless a bounded trial is strictly cheaper."""
-    best = baseline
-    if not best.swaps:
-        return best
+    if not baseline.swaps:
+        return baseline
+    return min(
+        _sabre_trial_costs(program, coupling, baseline, cost=cost),
+        key=lambda item: item[1],
+    )[0]
+
+
+def _sabre_trial_costs(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    baseline: SabrePlan,
+    *,
+    cost: Callable[[SabrePlan], int] | None = None,
+) -> Iterator[tuple[SabrePlan, int]]:
+    """Yield completed trials once, preserving incumbent-based pruning and ties.
+
+    Consumers may inspect alternative plans without repeating search. A pruned
+    trial is absent, so this is not an enumeration of all equal-cost routes.
+    Dependencies and plans remain owned by this invocation.
+    """
     score = (
         cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
     )
-    best_cost = score(best)
+    best_cost = score(baseline)
+    yield baseline, best_cost
+    if not baseline.swaps:
+        return
+    dependencies = _build_sabre_dependencies(program.instructions)
     for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):
         candidate = _plan_sabre_trial(
             program,
@@ -368,12 +389,65 @@ def _select_sabre_trials(
             tie_rng=random.Random(seed) if seed is not None else None,
             committed_swap_limit=best_cost,
             layer_lookahead=use_layers,
+            _dependencies=dependencies,
         )
         if candidate is not None:
             candidate_cost = score(candidate)
             if candidate_cost < best_cost:
-                best, best_cost = candidate, candidate_cost
-    return best
+                best_cost = candidate_cost
+            yield candidate, candidate_cost
+
+
+def _build_sabre_dependencies(
+    instructions: tuple[Instruction, ...],
+) -> tuple[list[list[int]], tuple[int, ...]]:
+    """Build read-only successors and initial indegrees for one source program."""
+    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
+    # share a predecessor still reaches zero pending predecessors.
+    successors: list[list[int]] = [[] for _ in range(len(instructions))]
+    pending = [0] * len(instructions)
+    last_on_wire: dict[int, int] = {}
+    for index, instruction in enumerate(instructions):
+        wire_pair = instruction.wires
+        for wire in wire_pair:
+            previous = last_on_wire.get(wire)
+            if previous is not None:
+                successors[previous].append(index)
+                pending[index] += 1
+            last_on_wire[wire] = index
+
+    # Classical order is order that no qubit records. Per bit, a read follows the
+    # write it observes, and a write follows every read it would invalidate and
+    # the earlier write whose value it replaces. A bit no measurement ever writes
+    # contributes no edge, so a program without classical state keeps the
+    # qubit-only graph it had. Processing in program order keeps every edge
+    # forward, so the graph stays acyclic and the front layer still empties on
+    # every program.
+    last_writer: dict[int, int] = {}
+    # Readers on independent qubits have no quantum edge ordering them; keeping
+    # only the most recent reader would let a write overtake an earlier reader.
+    readers_since_write: dict[int, list[int]] = {}
+    for index, instruction in enumerate(instructions):
+        written, read = _classical_accesses(instruction)
+        for bit in read:
+            producer = last_writer.get(bit)
+            if producer is not None:
+                successors[producer].append(index)
+                pending[index] += 1
+        if written is not None:
+            predecessors = (
+                last_writer.get(written),
+                *readers_since_write.pop(written, ()),
+            )
+            for predecessor in predecessors:
+                if predecessor is not None:
+                    successors[predecessor].append(index)
+                    pending[index] += 1
+            last_writer[written] = index
+        for bit in read:
+            readers_since_write.setdefault(bit, []).append(index)
+
+    return successors, tuple(pending)
 
 
 def _plan_sabre_trial(
@@ -384,6 +458,7 @@ def _plan_sabre_trial(
     tie_rng: random.Random | None = None,
     committed_swap_limit: int | None = None,
     layer_lookahead: bool = False,
+    _dependencies: tuple[list[list[int]], tuple[int, ...]] | None = None,
 ) -> SabrePlan | None:
     """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
 
@@ -447,44 +522,13 @@ def _plan_sabre_trial(
             f"{wire_pair[1]} of two-wire instruction {index}"
         )
 
-    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
-    # share a predecessor still reaches zero pending predecessors.
-    successors: list[list[int]] = [[] for _ in range(count)]
-    pending = [0] * count
-    last_on_wire: dict[int, int] = {}
-    for index, wire_pair in enumerate(wires):
-        for wire in wire_pair:
-            previous = last_on_wire.get(wire)
-            if previous is not None:
-                successors[previous].append(index)
-                pending[index] += 1
-            last_on_wire[wire] = index
-
-    # Classical order is order that no qubit records. Per bit, a read follows the
-    # write it observes, and a write follows both the read it would invalidate and
-    # the earlier write whose value it replaces. A bit no measurement ever writes
-    # contributes no edge, so a program without classical state keeps the
-    # qubit-only graph it had. Processing in program order keeps every edge
-    # forward, so the graph stays acyclic and the front layer still empties on
-    # every program.
-    last_writer: dict[int, int] = {}
-    last_reader: dict[int, int] = {}
-    for index, instruction in enumerate(instructions):
-        written, read = _classical_accesses(instruction)
-        for bit in read:
-            producer = last_writer.get(bit)
-            if producer is not None:
-                successors[producer].append(index)
-                pending[index] += 1
-        if written is not None:
-            predecessors = (last_writer.get(written), last_reader.pop(written, None))
-            for predecessor in predecessors:
-                if predecessor is not None:
-                    successors[predecessor].append(index)
-                    pending[index] += 1
-            last_writer[written] = index
-        for bit in read:
-            last_reader[bit] = index
+    successors, initial_pending = (
+        _build_sabre_dependencies(instructions)
+        if _dependencies is None
+        else _dependencies
+    )
+    # Successors are read-only; each trial consumes its own remaining indegrees.
+    pending = list(initial_pending)
 
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
@@ -795,6 +839,11 @@ def restore_swaps(
         if left < n_wires and right < n_wires:
             adjacency[left].append(right)
             adjacency[right].append(left)
+    # A layout already at home needs no spanning-forest traversal. Keep input
+    # validation and edge accounting above this fast path unchanged.
+    if placement == tuple(range(n_wires)):
+        return ()
+
     parent = [-1] * n_wires
     for root in range(n_wires):
         if parent[root] != -1:
@@ -834,15 +883,18 @@ def restore_swaps(
         )
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
-        while logical_to_physical[leaf] != leaf:
-            physical = logical_to_physical[leaf]
-            step = _restore_path(physical, leaf, tree, active)[1]
+        physical = logical_to_physical[leaf]
+        # The active tree stays fixed until this token reaches its leaf. Walk
+        # its unique path once; SWAPs move tokens, not the remaining tree edges.
+        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
+        for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
             logical_to_physical[other] = physical
             physical_to_logical[step] = leaf
             physical_to_logical[physical] = other
             swaps.append((physical, step) if physical < step else (step, physical))
+            physical = step
         active[leaf] = False
     return tuple(swaps)
 

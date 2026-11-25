@@ -23,6 +23,36 @@ pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_controlled_matrix_respects_two_work_bit_budget() -> None:
+    indices = torch.arange(16, dtype=torch.float64)
+    matrix = torch.exp(2j * math.pi * torch.outer(indices, indices) / 16) / 4
+    matrix *= cmath.exp(0.37j)
+    entry = program_definition(
+        "from flagquantum.synth import *\n"
+        f"MATRIX = {tuple(tuple(row) for row in matrix.tolist())!r}\n"
+        "@qfunc\ndef main(q: Output[QArray[QBit]], c: Output[QBit]):\n"
+        "    allocate(4, q)\n    allocate(c)\n"
+        "    hadamard_transform(q)\n    H(c)\n"
+        "    control(c, lambda: unitary(MATRIX, q))\n"
+    )
+    program = synth.synthesize(
+        entry, max_workspace=2, max_qubits=7, max_operations=10_000
+    )
+    assert program.report["workspace_qubits"] == 2
+    reference = fq.Circuit(5, dtype=torch.complex128)
+    for wire in range(5):
+        reference.h(wire)
+    reference.any(
+        4,
+        0,
+        1,
+        2,
+        3,
+        matrix=torch.block_diag(torch.eye(16, dtype=torch.complex128), matrix),
+    )
+    compare_states(program, reference, ("q", "c"))
+
+
 def definition(
     matrix: str, body: str, *, prefix: str = "", width: int = 2
 ) -> _QuantumFunction:

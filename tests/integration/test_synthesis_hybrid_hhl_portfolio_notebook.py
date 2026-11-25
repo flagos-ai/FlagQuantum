@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 from typing import Literal
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -93,13 +94,28 @@ def test_complete_finite_workflow_and_resource_basis() -> None:
     assert depth.overlap == pytest.approx(0.9569688990161648)
     assert basic.overlap == pytest.approx(0.9028433144351062)
     assert tuple(row.resources.n_qubits for row in profiles) == (9, 9, 10)
-    # The formal snapshot recorded (636, 636, 856). Canonical matrix-derived
-    # half-pi pulses remove redundant controlled pulses on both CPU platforms.
-    assert tuple(row.resources.operation_counts["cx"] for row in profiles) == (
+    # Rejecting the pulse proposal recovers the general factor sequence. Both
+    # paths must preserve the same finite outcomes and complete converted state.
+    with patch(
+        "flagquantum.compiler.optimization.two_qubit_synthesis._verified_cx_pulses",
+        return_value=False,
+    ):
+        _, _, control = workflow.run_experiment()
+    assert tuple(row.resources.operation_counts["cx"] for row in control) == (
         612,
         612,
         824,
     )
+    assert tuple(row.resources.operation_counts["cx"] for row in profiles) == (
+        498,
+        498,
+        672,
+    )
+    for actual, reference in zip(profiles, control, strict=True):
+        assert actual.counts == reference.counts
+        assert actual.overlap == reference.overlap
+        assert actual.resources.n_qubits == reference.resources.n_qubits
+        assert reference.projective_error < 1e-12
     for row in profiles:
         assert sum(row.counts) == model.SHOTS
         assert set(row.resources.operation_counts) == {"cx", "u3"}

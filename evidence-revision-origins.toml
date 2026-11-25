@@ -1,5 +1,30 @@
 schema = "flagquantum.evidence_revision_origins.v1"
 
+[[artifact]]
+path = "docs/development/evidence/compiler-linear-cnot.json"
+
+[[artifact.revision]]
+value = "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4"
+origin = "external_dependency"
+repository = "Qiskit/qiskit"
+
+[[artifact]]
+path = "docs/development/evidence/compiler-token-restoration.json"
+
+[[artifact.revision]]
+value = "69d412ad9b915d5f86608c15d6277c6d9195ee0a"
+origin = "external_dependency"
+repository = "Qiskit/rustworkx"
+
+# Exact upstream source for the unadopted compiler invariant experiment.
+[[artifact]]
+path = "docs/development/evidence/cirq-cz-invariant-pruning.json"
+
+[[artifact.revision]]
+value = "de651a7886d1a1383d595f95f36b93ed3ea91685"
+origin = "external_dependency"
+repository = "quantumlib/Cirq"
+
 # Every revision a checked-in evidence artifact records that a reader of this
 # repository cannot obtain, with the origin that accounts for it.
 #
@@ -1161,3 +1186,25 @@ path = "docs/development/evidence/runtime-shard-duration-balance.json"
 [[artifact.revision]]
 value = "abde94db5cef007495cc1bce41ce36f673747cff"
 origin = "unreferenced_object"
+
+
+# Independent compiler acceptance uses this unchanged SDKBench source. The
+# directory scope covers subsequent application evidence with the same harness.
+[[artifact]]
+path = "docs/development/evidence/"
+
+[[artifact.revision]]
+value = "9aa9260920984e2ca05bcb293abb885fccd9c144"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"
+
+# Installed-wheel conformance uses this SDKBench workflow revision. Keep the
+# external origin in this authoritative table; inline provenance readers accept
+# repository/producing-host history only.
+[[artifact]]
+path = "docs/development/evidence/compiler-installed-wheel-controls.json"
+
+[[artifact.revision]]
+value = "9cb8f184825e658f7378763a1f3a39c57720233d"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"

@@ -1,0 +1,134 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "db244bf28f86810ee3439054c6243df0202f86a4",
+  "base_commit": "2ea5b78b6449b837db151e0d29c90895f6b51a4e",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "runner_sha256": "d2a78561fcf29ea107f81a6d0627a8b07feb8ffd7a01fc9ce92a4c2ba5aeac01",
+  "protocol_sha256": "8db1130827251b6b2b012f5b018dd899e6b33b0eb715e24939634b305790a998",
+  "compiler_seeds": [
+    11,
+    23,
+    37,
+    51,
+    73
+  ],
+  "configurations": {
+    "flagquantum-ordinary-restored": {
+      "sdk": "flagquantum",
+      "entrypoint": "compiler.compile; compiler.lowering.native_gate_legalization.legalize_native_gates",
+      "options": {
+        "routing": "default",
+        "optimization_level": "default",
+        "basis": [
+          "h",
+          "x",
+          "y",
+          "z",
+          "s",
+          "sdg",
+          "rx",
+          "ry",
+          "rz",
+          "cz"
+        ],
+        "max_added_operations": 20000,
+        "initial_layout": "identity",
+        "final_layout": "sdk-reported",
+        "compiler_seed_supported": false,
+        "postprocessing": {
+          "final_layout": "identity",
+          "algorithm": "spanning-tree-leaf-token-restoration-v1",
+          "tree_root": 0,
+          "neighbor_order": "ascending",
+          "leaf_order": "ascending",
+          "swap_decomposition": "H-CZ-H CNOT triple",
+          "optimization_after_restoration": false,
+          "timed": true
+        }
+      }
+    },
+    "flagquantum-target-artifact": {
+      "sdk": "flagquantum",
+      "entrypoint": "compile_circuit_artifact_for_target",
+      "options": {
+        "basis": [
+          "rx",
+          "rz",
+          "cz"
+        ],
+        "initial_layout": "identity",
+        "final_layout": "restored",
+        "routing": "default",
+        "compiler_seed_supported": false,
+        "profile": "openqasm-3.0",
+        "max_native_added_operations": 20000,
+        "max_routing_added_operations": 20000,
+        "maximum_program_operations": 20000,
+        "serialize_executable_artifact": true
+      }
+    },
+    "qiskit-transpile-restored": {
+      "sdk": "qiskit",
+      "entrypoint": "qiskit.transpile",
+      "options": {
+        "basis": [
+          "cz",
+          "u"
+        ],
+        "optimization_level": 2,
+        "approximation_degree": 1.0,
+        "qubits_initially_zero": false,
+        "num_processes": 1,
+        "initial_layout": "identity",
+        "final_layout": "sdk-reported",
+        "compiler_seed_supported": true,
+        "postprocessing": {
+          "final_layout": "identity",
+          "algorithm": "spanning-tree-leaf-token-restoration-v1",
+          "tree_root": 0,
+          "neighbor_order": "ascending",
+          "leaf_order": "ascending",
+          "swap_decomposition": "H-CZ-H CNOT triple",
+          "optimization_after_restoration": false,
+          "timed": true
+        }
+      }
+    },
+    "cirq-route-cz-restored": {
+      "sdk": "cirq",
+      "entrypoint": "RouteCQC; optimize_for_target_gateset",
+      "options": {
+        "basis": [
+          "cz",
+          "arbitrary-one-qubit-unitary"
+        ],
+        "allow_partial_czs": false,
+        "synthesis_atol": 1e-12,
+        "initial_mapper": "identity",
+        "initial_layout": "identity",
+        "final_layout": "sdk-reported",
+        "compiler_seed_supported": false,
+        "postprocessing": {
+          "final_layout": "identity",
+          "algorithm": "spanning-tree-leaf-token-restoration-v1",
+          "tree_root": 0,
+          "neighbor_order": "ascending",
+          "leaf_order": "ascending",
+          "swap_decomposition": "H-CZ-H CNOT triple",
+          "optimization_after_restoration": false,
+          "timed": true
+        }
+      }
+    }
+  },
+  "versions": {
+    "qiskit": "2.6.2",
+    "cirq-core": "1.7.0",
+    "torch": "2.14.0",
+    "numpy": "2.5.5"
+  },
+  "draws": 1,
+  "publication_eligible": false,
+  "expected_observations": 1200,
+  "input_nonce": "5a8e1eff6bad7ac6c3dd0f2cab4d63e392b504e26acb76b1be22ab61a4945573"
+}

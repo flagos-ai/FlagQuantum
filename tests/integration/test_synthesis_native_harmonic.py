@@ -104,18 +104,29 @@ def test_two_nonzero_bindings_all_columns_relative_global_phases_and_work(
     complete_columns(native, reference)
 
 
-@pytest.mark.parametrize(
-    "constraint", ["workspace", "width", "depth", "operations", "memory"]
-)
+def test_one_work_bit_schedule_preserves_every_input_column() -> None:
+    program = synth.synthesize(
+        main,
+        classical_inputs={"amplitudes": list(AMPLITUDES), "scale": 1.0},
+        max_workspace=1,
+        max_qubits=6,
+    )
+    assert program.report["workspace_qubits"] == 1
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_qubits == 6
+    compare_states(program, reference_circuit(), ("x", "ancilla", "y"))
+    complete_columns(program, reference_circuit())
+
+
+@pytest.mark.parametrize("constraint", ["width", "depth", "operations", "memory"])
 def test_actual_resource_budget_refusal(constraint: str) -> None:
     bindings: dict[str, float | list[float]] = {
         "amplitudes": list(AMPLITUDES),
         "scale": 1.0,
     }
     with pytest.raises((synth.SynthesisError, HybridVerificationError, PlanningError)):
-        if constraint == "workspace":
-            synth.synthesize(main, classical_inputs=bindings, max_workspace=1)
-        elif constraint == "width":
+        if constraint == "width":
             synth.synthesize(main, classical_inputs=bindings, max_qubits=4)
         elif constraint == "depth":
             synth.synthesize(main, classical_inputs=bindings, max_depth=1)

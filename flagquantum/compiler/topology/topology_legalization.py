@@ -9,8 +9,10 @@ from dataclasses import dataclass, field
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
+from . import routing as topology_routing
 from .directed_topology import DirectedCouplingMap, route_to_directed_topology
-from .routing import CouplingMap, route_to_topology, select_routing_strategy
+from .routing import CouplingMap, route_to_topology
+from .routing_cost import _topology_cost_model
 
 
 class TopologyLegalizationError(CompilationError):
@@ -132,10 +134,25 @@ def legalize_circuit_topology(
             )
         deterministic_coupling = CouplingMap(coupling_map.n_qubits, coupling_map.edges)
         try:
+            selected_plan = None
             if strategy == "auto":
-                selected_strategy = select_routing_strategy(
-                    source, deterministic_coupling
-                ).selected_strategy
+                selection, selected_plan = topology_routing._select_routing_strategy(
+                    source,
+                    _topology_cost_model(
+                        deterministic_coupling,
+                        source.n_wires,
+                        "select_routing_strategy",
+                    ),
+                )
+                selected_strategy = selection.selected_strategy
+                # A release-valve search can record path-cache accesses that a
+                # cold emission must reproduce. Retain replanning in that case.
+                if any(
+                    selection.candidates[selected_strategy].path_cache_delta.values()
+                ):
+                    selected_plan = None
+                # Selection warms path caches. Emission retains its independent,
+                # cold topology so serialized evidence and identities stay stable.
                 deterministic_coupling = CouplingMap(
                     coupling_map.n_qubits, coupling_map.edges
                 )
@@ -151,11 +168,24 @@ def legalize_circuit_topology(
                     "strategy must be 'auto', 'restore_after_each_gate', "
                     "'persistent_layout', 'sabre', or 'sabre_layout'"
                 )
-            routed = route_to_topology(
-                source,
-                deterministic_coupling,
-                strategy=selected_strategy,
-            )
+            if (
+                selected_plan is not None
+                and route_to_topology is topology_routing.route_to_topology
+            ):
+                topology = _topology_cost_model(
+                    deterministic_coupling, source.n_wires, "route_to_topology"
+                )
+                routed = topology_routing._route_sabre(
+                    source,
+                    topology,
+                    strategy=selected_strategy,
+                    path_cache_before=topology.path_cache_info(),
+                    plan=selected_plan,
+                )
+            else:
+                routed = route_to_topology(
+                    source, deterministic_coupling, strategy=selected_strategy
+                )
         except (RuntimeError, ValueError) as error:
             raise TopologyLegalizationError(str(error)) from error
 

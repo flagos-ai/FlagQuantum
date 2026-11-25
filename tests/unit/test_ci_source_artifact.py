@@ -118,12 +118,32 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     environment.update(
         GITHUB_RUN_ID="123", GITHUB_RUN_ATTEMPT="1", GITHUB_OUTPUT=str(output)
     )
+    # A previous consumer or producer may have left these shared paths behind.
+    for name in ("ci-source", "ci-source-incremental"):
+        (temporary / name).mkdir()
+        (temporary / name / "retained.txt").write_text("previous job\n")
     shell(pack, source)
-    assert output.read_text().strip() == "artifact-key=123-1"
-    # Persistent services must refuse a stale producer directory, not overwrite it.
-    retained_pack = (temporary / "ci-source/source.pack").read_bytes()
-    assert shell(pack, source, check=False).returncode != 0
-    assert (temporary / "ci-source/source.pack").read_bytes() == retained_pack
+    outputs = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    assert outputs["artifact-key"] == "123-1"
+    producer = Path(outputs["staging-root"])
+    full = Path(outputs["full-path"])
+    incremental = Path(outputs["incremental-path"])
+    retained_pack = (full / "source.pack").read_bytes()
+    shell(pack, source)
+    repeated = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    assert repeated["staging-root"] != str(producer)
+    assert (full / "source.pack").read_bytes() == retained_pack
+    assert (Path(repeated["full-path"]) / "source.pack").read_bytes() == retained_pack
+    for step in jobs["prepare-source"]["steps"]:
+        artifact = step.get("with", {}).get("name", "")
+        if artifact.startswith("ci-source"):
+            key = "incremental-path" if "incremental" in artifact else "full-path"
+            assert step["with"]["path"] == f"${{{{ steps.pack-source.outputs.{key} }}}}"
+    # Downloaded artifact contents retain their consumer-facing paths.
+    shutil.copytree(full, temporary / "ci-source", dirs_exist_ok=True)
+    shutil.copytree(
+        incremental, temporary / "ci-source-incremental", dirs_exist_ok=True
+    )
     # A failed consumer can rerun without rerunning the successful producer.
     environment["GITHUB_RUN_ATTEMPT"] = "2"
     artifact_key = jobs["prepare-source"]["outputs"]["artifact-key"]
@@ -174,6 +194,24 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     (temporary / "ci-source/source.sha").write_text(parent + "\n")
     assert shell(restore, target, check=False).returncode != 0
     assert git("rev-parse", "HEAD", cwd=target) == sha
+
+    cleanup = next(
+        step
+        for step in jobs["prepare-source"]["steps"]
+        if step.get("name") == "Remove this producer's temporary source packs"
+    )
+    assert "always()" in cleanup["if"]
+    # A failed producer still publishes its private root for final cleanup.
+    environment["GITHUB_SHA"] = parent
+    assert shell(pack, source, check=False).returncode != 0
+    failed = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    for root in (str(producer), repeated["staging-root"], failed["staging-root"]):
+        environment["FQ_SOURCE_STAGING"] = root
+        assert Path(root).is_dir()
+        shell(cleanup["run"], source)
+        assert not Path(root).exists()
+    for name in ("ci-source", "ci-source-incremental"):
+        assert (temporary / name / "retained.txt").read_text() == "previous job\n"
 
 
 @pytest.mark.parametrize(
@@ -347,7 +385,7 @@ def test_dependency_source_repair_verifies_git_transport_before_api_fallback(
     assert (tmp_path / "api-called").exists() == (transport != "success")
 
 
-def test_source_cache_stops_previous_runner_writers_before_checkout():
+def test_source_cache_stops_previous_runner_writers_before_checkout() -> None:
     for workflow in ("ci.yml", "local-gpu.yml"):
         jobs = yaml.safe_load((ROOT / ".github/workflows" / workflow).read_text())[
             "jobs"

@@ -1,0 +1,448 @@
+{
+  "retained_run": {
+    "scope": "Shared-host development observations; no qualified latency, process RSS, ranking or scalability claim",
+    "warmups": 2,
+    "retained_samples": 7,
+    "order": "three-variant rotation",
+    "rows": [
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "seconds": {
+          "production": [
+            0.09234933299012482,
+            0.08913487498648465,
+            0.10368820797884837,
+            0.10452300001634285,
+            0.0886607090360485,
+            0.08880816702730954,
+            0.0900414579664357
+          ],
+          "previous": [
+            0.21042295795632526,
+            0.19446991698350757,
+            0.19337758305482566,
+            0.1940213330090046,
+            0.2092878749826923,
+            0.2084109170245938,
+            0.19571816601091996
+          ],
+          "reused": [
+            0.19243787496816367,
+            0.2074558329768479,
+            0.19223366701044142,
+            0.1920427499571815,
+            0.19092070899205282,
+            0.20922208297997713,
+            0.2076365000102669
+          ]
+        },
+        "median_seconds": {
+          "production": 0.0900414579664357,
+          "previous": 0.19571816601091996,
+          "reused": 0.19243787496816367
+        },
+        "traced_python_peak_bytes": {
+          "production": 2199494,
+          "previous": 2283444,
+          "reused": 2271158
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "previous": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "reused": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          }
+        }
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "ring"
+        ],
+        "seconds": {
+          "production": [
+            0.1157355000032112,
+            0.12721399997826666,
+            0.11805087502580136,
+            0.10059033404104412,
+            0.1167241670191288,
+            0.11607858398929238,
+            0.1012052500154823
+          ],
+          "previous": [
+            0.19116970902541652,
+            0.19892433402128518,
+            0.21031550003681332,
+            0.2059128750115633,
+            0.1919378750026226,
+            0.20533733296906576,
+            0.2059059159946628
+          ],
+          "reused": [
+            0.20841687498614192,
+            0.21012741699814796,
+            0.19086291699204594,
+            0.2036866660346277,
+            0.20371058298042044,
+            0.18905525002628565,
+            0.188775333983358
+          ]
+        },
+        "median_seconds": {
+          "production": 0.11607858398929238,
+          "previous": 0.20533733296906576,
+          "reused": 0.2036866660346277
+        },
+        "traced_python_peak_bytes": {
+          "production": 2567989,
+          "previous": 2615475,
+          "reused": 2602643
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 6.761659273861517e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "previous": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          },
+          "reused": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          }
+        }
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "seconds": {
+          "production": [
+            0.5683028750354424,
+            0.5611771250260063,
+            0.5490292920148931,
+            0.5631800420233048,
+            0.5475859579746611,
+            0.5703128750319593,
+            0.5752402080106549
+          ],
+          "previous": [
+            0.5842104579787701,
+            0.5801628330373205,
+            0.5783944579889067,
+            0.5692243330413476,
+            0.5845205839723349,
+            0.6116513750166632,
+            0.5677039590082131
+          ],
+          "reused": [
+            0.5454838749719784,
+            0.5615891669876873,
+            0.5567369579803199,
+            0.5634265830158256,
+            0.561474584043026,
+            0.5754530419944786,
+            0.562409124977421
+          ]
+        },
+        "median_seconds": {
+          "production": 0.5631800420233048,
+          "previous": 0.5801628330373205,
+          "reused": 0.5615891669876873
+        },
+        "traced_python_peak_bytes": {
+          "production": 10119735,
+          "previous": 10120550,
+          "reused": 10121285
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "previous": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "reused": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          }
+        }
+      }
+    ],
+    "driver_source": "import gc\nimport json\nimport statistics\nimport sys\nimport time\nimport tracemalloc\nfrom contextlib import nullcontext\nfrom functools import partial\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0, '/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter, workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom benchmarks.compiler_sabre_native_cost import _select as previous\nfrom benchmarks.compiler_sabre_trial_reuse import _select as reused\nfrom flagquantum.compiler.topology import sabre\n\nconfig = workflow_configuration('flagquantum-target-artifact')\nbudget = config['options']['max_native_added_operations']\nselectors = {'production': None, 'previous': previous, 'reused': reused}\nbundle = Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\nrows = []\nfor width, family, topology in ((6,'qft','grid'), (6,'repetition','ring'), (12,'qft','grid')):\n    f = fixture(width, family, topology, '01'*32)\n    case = bundle.cases[f'ROUTE-LINE-{width:02d}']\n    samples = {name: [] for name in selectors}\n    payloads = {}\n    counts = {}\n    def run(name):\n        adapter = load_adapter(SimpleNamespace(configuration={'options': {'sdk': config['sdk'], 'workflow': 'flagquantum-target-artifact', 'compiler_options': config}}))\n        with (nullcontext() if selectors[name] is None else patch.object(sabre,'_select_sabre_trials',partial(selectors[name],native_budget=budget))):\n            started = time.perf_counter()\n            payload = adapter.execute('route',f,11)\n            elapsed = time.perf_counter()-started\n        return payload,elapsed\n    for _ in range(2):\n        for name in selectors:\n            run(name)\n    names = list(selectors)\n    for iteration in range(7):\n        for name in names[iteration%3:]+names[:iteration%3]:\n            payload,elapsed = run(name)\n            samples[name].append(elapsed)\n            payloads[name] = payload\n    allocations = {}\n    for name in selectors:\n        gc.collect()\n        tracemalloc.start()\n        try:\n            run(name)\n            allocations[name] = tracemalloc.get_traced_memory()[1]\n        finally:\n            tracemalloc.stop()\n        with patch.object(sabre,'_plan_sabre_trial',wraps=sabre._plan_sabre_trial) as trials:\n            run(name)\n        counts[name] = trials.call_count\n    row = {'case': [width,family,topology], 'seconds': samples, 'median_seconds': {name: statistics.median(value) for name,value in samples.items()}, 'traced_python_peak_bytes': allocations, 'planner_calls_per_complete_workflow': counts, 'metrics': {name: routing(payload,f,None,case,0) for name,payload in payloads.items()}}\n    rows.append(row)\n    print(json.dumps(row),flush=True)\nPath('/private/tmp/fq-trial-stream-resources-20261122.json').write_text(json.dumps({'scope': 'Shared-host development observations; no qualified latency, process RSS, ranking or scalability claim', 'warmups': 2, 'retained_samples': 7, 'order': 'three-variant rotation', 'rows': rows, 'driver_source': Path(__file__).read_text()},indent=2)+'\\n')\n"
+  },
+  "initial_overlapping_diagnostic": {
+    "scope": "Shared-host development observations; no qualified latency, process RSS, ranking or scalability claim",
+    "warmups": 2,
+    "retained_samples": 7,
+    "order": "three-variant rotation",
+    "rows": [
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "seconds": {
+          "production": [
+            0.09019108297070488,
+            0.09103854198474437,
+            0.10676412499742582,
+            0.11573837499599904,
+            0.09202437498606741,
+            0.09117716696346179,
+            0.0910311249899678
+          ],
+          "previous": [
+            0.2146804160438478,
+            0.19791108299978077,
+            0.19908004195895046,
+            0.2020069170393981,
+            0.2155896250042133,
+            0.2144530409714207,
+            0.20163866702932864
+          ],
+          "reused": [
+            0.19665983301820233,
+            0.2146427920088172,
+            0.20921758300391957,
+            0.199653165997006,
+            0.1961752079660073,
+            0.21492395899258554,
+            0.21255449997261167
+          ]
+        },
+        "median_seconds": {
+          "production": 0.09117716696346179,
+          "previous": 0.2020069170393981,
+          "reused": 0.20921758300391957
+        },
+        "traced_python_peak_bytes": {
+          "production": 2199494,
+          "previous": 2283494,
+          "reused": 2271158
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "previous": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "reused": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          }
+        }
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "ring"
+        ],
+        "seconds": {
+          "production": [
+            0.11872241704259068,
+            0.1184615830425173,
+            0.11779133405070752,
+            0.10223579203011468,
+            0.11773341702064499,
+            0.12034958298318088,
+            0.10213079099776223
+          ],
+          "previous": [
+            0.2858818329987116,
+            0.19295516598504037,
+            0.20875312498537824,
+            0.21069920796435326,
+            0.19520416599698365,
+            0.21161649998975918,
+            0.21168979100184515
+          ],
+          "reused": [
+            0.21022354200249538,
+            0.20865541696548462,
+            0.19432900001993403,
+            0.20772904198383912,
+            0.20766062499023974,
+            0.19054049998521805,
+            0.19609549996675923
+          ]
+        },
+        "median_seconds": {
+          "production": 0.11779133405070752,
+          "previous": 0.21069920796435326,
+          "reused": 0.20766062499023974
+        },
+        "traced_python_peak_bytes": {
+          "production": 2567939,
+          "previous": 2615425,
+          "reused": 2602643
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 6.761659273861517e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "previous": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          },
+          "reused": {
+            "max_semantic_error": 6.179029502236603e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 55,
+            "verification": "full-operator"
+          }
+        }
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "seconds": {
+          "production": [
+            0.5781840410199948,
+            0.6114418749930337,
+            0.578218457987532,
+            0.5946432079654187,
+            0.577034417015966,
+            0.5902022080263123,
+            0.6008614999591373
+          ],
+          "previous": [
+            0.6133971669478342,
+            0.6109737920342013,
+            0.597019457956776,
+            0.6270197499543428,
+            0.6196439589839429,
+            0.6417461660457775,
+            0.6262795830261894
+          ],
+          "reused": [
+            0.5669797500013374,
+            0.5953723749844357,
+            0.5844946659635752,
+            0.6454755840240978,
+            0.5901698329835199,
+            0.5891473750234582,
+            0.6060748749878258
+          ]
+        },
+        "median_seconds": {
+          "production": 0.5902022080263123,
+          "previous": 0.6196439589839429,
+          "reused": 0.5901698329835199
+        },
+        "traced_python_peak_bytes": {
+          "production": 10119735,
+          "previous": 10120550,
+          "reused": 10121285
+        },
+        "planner_calls_per_complete_workflow": {
+          "production": 15,
+          "previous": 27,
+          "reused": 15
+        },
+        "metrics": {
+          "production": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "previous": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "reused": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          }
+        }
+      }
+    ],
+    "driver_source": "import gc\nimport json\nimport statistics\nimport sys\nimport time\nimport tracemalloc\nfrom contextlib import nullcontext\nfrom functools import partial\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0, '/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter, workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom benchmarks.compiler_sabre_native_cost import _select as previous\nfrom benchmarks.compiler_sabre_trial_reuse import _select as reused\nfrom flagquantum.compiler.topology import sabre\n\nconfig = workflow_configuration('flagquantum-target-artifact')\nbudget = config['options']['max_native_added_operations']\nselectors = {'production': None, 'previous': previous, 'reused': reused}\nbundle = Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\nrows = []\nfor width, family, topology in ((6,'qft','grid'), (6,'repetition','ring'), (12,'qft','grid')):\n    f = fixture(width, family, topology, '01'*32)\n    case = bundle.cases[f'ROUTE-LINE-{width:02d}']\n    samples = {name: [] for name in selectors}\n    payloads = {}\n    counts = {}\n    def run(name):\n        adapter = load_adapter(SimpleNamespace(configuration={'options': {'sdk': config['sdk'], 'workflow': 'flagquantum-target-artifact', 'compiler_options': config}}))\n        with (nullcontext() if selectors[name] is None else patch.object(sabre,'_select_sabre_trials',partial(selectors[name],native_budget=budget))):\n            started = time.perf_counter()\n            payload = adapter.execute('route',f,11)\n            elapsed = time.perf_counter()-started\n        return payload,elapsed\n    for _ in range(2):\n        for name in selectors:\n            run(name)\n    names = list(selectors)\n    for iteration in range(7):\n        for name in names[iteration%3:]+names[:iteration%3]:\n            payload,elapsed = run(name)\n            samples[name].append(elapsed)\n            payloads[name] = payload\n    allocations = {}\n    for name in selectors:\n        gc.collect()\n        tracemalloc.start()\n        try:\n            run(name)\n            allocations[name] = tracemalloc.get_traced_memory()[1]\n        finally:\n            tracemalloc.stop()\n        with patch.object(sabre,'_plan_sabre_trial',wraps=sabre._plan_sabre_trial) as trials:\n            run(name)\n        counts[name] = trials.call_count\n    row = {'case': [width,family,topology], 'seconds': samples, 'median_seconds': {name: statistics.median(value) for name,value in samples.items()}, 'traced_python_peak_bytes': allocations, 'planner_calls_per_complete_workflow': counts, 'metrics': {name: routing(payload,f,None,case,0) for name,payload in payloads.items()}}\n    rows.append(row)\n    print(json.dumps(row),flush=True)\nPath('/private/tmp/fq-trial-stream-resources-20261122.json').write_text(json.dumps({'scope': 'Shared-host development observations; no qualified latency, process RSS, ranking or scalability claim', 'warmups': 2, 'retained_samples': 7, 'order': 'three-variant rotation', 'rows': rows, 'driver_source': Path(__file__).read_text()},indent=2)+'\\n')\n"
+  },
+  "retained_run_context": "The default-tier supervisor completed before this run; no agent test or benchmark computation ran concurrently. The shared host remains unqualified.",
+  "initial_run_context": "Overlapped the required default-tier tests; kept for disclosure and excluded from latency interpretation before scheduling the separate run."
+}

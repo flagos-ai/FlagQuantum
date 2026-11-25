@@ -31,6 +31,7 @@ alone does not constitute an audit of its numerical implementation.
 | Capability | Upstream mechanism | FlagQuantum implementation | Status and limits |
 | --- | --- | --- | --- |
 | KAK and supercontrolled basis synthesis | Qiskit Weyl coordinates and zero-to-three-entangler closed forms | `optimization/two_qubit_synthesis.py` | Existing mathematical/implementation adaptation, with native instructions and deterministic Python algebra. The historical originating Qiskit revision has not been established by this audit. This change adds explicit attribution; it does not claim a new synthesis port. |
+| Native CX pulse synthesis | Qiskit `get_sx_vz_2cx_efficient_euler` and `get_sx_vz_3cx_efficient_euler` | `optimization/two_qubit_synthesis.py` | Adapted numerical templates with native Euler leaves, preserved CX direction, bounded cost selection and complete-operator verification. See [source, acceptance and limits](COMPILER_CX_PULSE_SYNTHESIS.md). No complete synthesis parity or SDK ranking follows. |
 | Bounded search recovery | Qiskit `swap_map_trial`, `State::force_enable_closest_node` | `topology/sabre.py`, recovery branch in `plan_sabre_swaps` | Newly adapted control flow: undo the speculative SWAP suffix, remove its output records, choose the closest blocked operation, and bring its operands together along a shortest path. |
 | Repeated-search detection | Cirq `RouteCQC._route`, its `seen` set and forced shortest-path strategy | `topology/sabre.py`, `seen_layouts` | Newly adapted algorithmic mechanism. FQ tracks repeated full layouts between executed instructions; Cirq tracks repeated SWAP choices within a timestep. This is not a port of all RouteCQC. |
 | Full-CZ interaction formulas | Cirq's `_xx_interaction_via_full_czs`, `_xx_yy_interaction_via_full_czs`, `_xx_yy_zz_interaction_via_full_czs` | Not enabled | Rejected after both fixed-pulse and arbitrary-RX development probes increased instruction counts. The existing Qiskit-derived two-qubit constructor remains authoritative; see [retained comparisons](COMPILER_CZ_CIRQ_REUSE.md). |
@@ -38,6 +39,7 @@ alone does not constitute an audit of its numerical implementation.
 | Frontier-relative scoring | Qiskit `State::choose_best_swap` and layer-local score updates | `topology/sabre.py` | Integrated in PR #1232; retained absolute-score tie behavior and the small-circuit path. See [relative scoring](COMPILER_SABRE_RELATIVE_SCORING.md). |
 | Multi-trial routing/layout | Qiskit's independent trials and best-result selection | `topology/sabre.py` | Integrated in PR #1233: original route plus three seeded trials, scored including restoration and directed operand repair. See [bounded trials](COMPILER_ROUTING_TRIALS.md). This is not the complete Qiskit layout pipeline. |
 | Layer-by-layer lookahead and paired SWAPs | Cirq `_choose_optimal_swap`, `_choose_pair_of_swaps`, `_cost` | `topology/_layer_lookahead.py` and `topology/sabre.py` | Adapted as one additional bounded candidate. See [layer lookahead](COMPILER_LAYER_LOOKAHEAD.md). Integrated in PR #1234 with source-conformance and native routing tests; it is an additional candidate, not all of RouteCQC. |
+| Characteristic-polynomial CZ count | Cirq `num_cnots_required` and `_gamma` | Not enabled | Conservative list-algebra proposal tested, then rejected for insufficient complete-workflow benefit, larger QFT allocation peak and extra work on reducing blocks. See [retained source and controls](COMPILER_CIRQ_INVARIANT_PRUNING.md). No production or dependency change. |
 | Two-qubit collection and re-synthesis | Upstream collect/consolidate/re-synthesize workflows | `optimization/_cz_blocks.py` | FQ-owned implementation of a shared pattern. It must not be described as copied Qiskit or Cirq code. |
 
 The integrated candidate is commit
@@ -88,6 +90,16 @@ qualification cannot retroactively establish it.
 
 The implementation still lacks several important upstream mechanisms. The
 presence of SABRE or KAK alone does not establish equivalent compilation quality.
+
+### Formula conformance and comparative performance
+
+An internal formula-conformance test may disable an upstream optimization to
+isolate the particular closed forms being checked. That setting applies only
+to the diagnostic. SDKBench comparisons must retain their declared participant
+settings, including upstream optimizations that FlagQuantum has not implemented.
+Missing pulse optimization is a FlagQuantum gap to measure and improve, not a
+reason to constrain a competitor. The published compiler studies do not set
+`pulse_optimize=False` in their Qiskit adapter.
 
 ## Recovery port and deliberate modifications
 

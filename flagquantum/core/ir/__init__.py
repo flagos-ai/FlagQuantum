@@ -663,6 +663,21 @@ class CircuitIR:
 
 
 def _encode_value(value: Any) -> Any:
+    # Exact built-ins have fixed encodings; subclasses retain protocol precedence.
+    if value is None:
+        return None
+    value_type = type(value)
+    if (
+        value_type is str
+        or value_type is int
+        or value_type is float
+        or value_type is bool
+    ):
+        return value
+    if value_type is dict:
+        return {str(key): _encode_value(item) for key, item in value.items()}
+    if value_type is tuple or value_type is list:
+        return [_encode_value(item) for item in value]
     if isinstance(value, Parameter):
         return {"$parameter": value.name}
     if isinstance(value, ParameterExpression):

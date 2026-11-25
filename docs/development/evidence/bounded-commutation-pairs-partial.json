@@ -1,0 +1,875 @@
+{
+  "scope": "Single-device development control; inspected inputs; no formal Linux qualification, held-out or SDK ranking claim",
+  "base_commit": "b6c7ef386955077f6ca91ae00565651d4aba6755",
+  "implementation_commit": "c9f2643985f80dec624b9e62f112dd6e9c45edc3",
+  "candidate_source_sha256": "be57e0cc5c4c6be82155441fa3ea5f5f5107e556da37575fc76c8a85802f9033",
+  "baseline_source_sha256": "db959a39468679e74b0bc4d15e81f8da33751add96b7b0bd4fcda821778be568",
+  "reference_sha256": "4edc8cea4670e2cd10c57272b0c9da89b719ffaedb7af73321b64fec4aae1150",
+  "driver_sha256": "a04f38964831dc854097870aa4ba446c552db419a2428635f50f6aa8d58544b3",
+  "driver_source": "\"\"\"First resource observation of a bounded per-analysis commutation table.\"\"\"\nimport gc\nimport hashlib\nimport itertools\nimport json\nimport statistics\nimport subprocess\nimport sys\nimport time\nimport tracemalloc\nimport types\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\n\nsys.path.insert(0, '/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter, workflow_configuration\nfrom sdkbench.candidates.applications import WIDTHS, FAMILIES, TOPOLOGIES, fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom flagquantum.compiler.optimization import commutation, commutation_cancellation, pass_registry\n\nBASE = 'b6c7ef386955077f6ca91ae00565651d4aba6755'\nROOT = Path.cwd()\nOUT = Path('/private/tmp/fq-bounded-pairs-control-20261122.json')\nassert not subprocess.check_output(['git', 'status', '--porcelain'], timeout=20)\nhead = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True, timeout=20).strip()\nsource = subprocess.check_output(['git', 'show', BASE + ':flagquantum/compiler/optimization/commutation.py'], text=True, timeout=20)\nold = types.ModuleType('flagquantum.compiler.optimization._pair_control_baseline')\nold.__package__ = 'flagquantum.compiler.optimization'\nsys.modules[old.__name__] = old\nexec(compile(source, '<frozen-main-commutation>', 'exec'), old.__dict__)\nimplementations = {'baseline': old.analyze_commutation, 'candidate': commutation.analyze_commutation}\nreference_raw = Path('/private/tmp/fq-commutation-dispatch-inspected.json').read_bytes()\nreference = {(r['case'], r['workflow']): r for r in json.loads(reference_raw)['rows'] if r['variant'] == 'baseline'}\nbundle = Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\nWORKFLOWS = ('flagquantum-ordinary-restored', 'flagquantum-target-artifact')\nreport = {\n    'scope': 'Single-device development control; inspected inputs; no formal Linux qualification, held-out or SDK ranking claim',\n    'base_commit': BASE, 'implementation_commit': head,\n    'candidate_source_sha256': hashlib.sha256((ROOT / 'flagquantum/compiler/optimization/commutation.py').read_bytes()).hexdigest(),\n    'baseline_source_sha256': hashlib.sha256(source.encode()).hexdigest(),\n    'reference_sha256': hashlib.sha256(reference_raw).hexdigest(),\n    'driver_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), 'driver_source': Path(__file__).read_text(),\n    'protocol_source': (ROOT / 'docs/development/COMPILER_BOUNDED_COMMUTATION_PAIRS.md').read_text(),\n    'configurations': {w: workflow_configuration(w) for w in WORKFLOWS},\n    'input_nonce': '01' * 32, 'compiler_seed': 11, 'warmups': 2, 'retained_rounds': 9,\n    'quality': [], 'resources': [], 'completed': False,\n}\nwith OUT.open('x') as stream:\n    stream.write(json.dumps(report, indent=2) + '\\n')\n\ndef save():\n    staged = OUT.with_suffix('.pending')\n    staged.write_text(json.dumps(report, indent=2) + '\\n')\n    staged.replace(OUT)\n\ndef run(variant, workflow, ir, trace=False):\n    config = workflow_configuration(workflow)\n    adapter = load_adapter(SimpleNamespace(configuration={'options': {'sdk': config['sdk'], 'workflow': workflow, 'compiler_options': config}}))\n    analysis = implementations[variant]\n    with patch.object(commutation, 'analyze_commutation', analysis), patch.object(commutation_cancellation, 'analyze_commutation', analysis), patch.object(pass_registry, 'analyze_commutation', analysis):\n        if trace:\n            tracemalloc.start()\n        try:\n            started = time.perf_counter()\n            payload = adapter.execute('route', ir, 11)\n            elapsed = time.perf_counter() - started\n            peak = tracemalloc.get_traced_memory()[1] if trace else None\n        finally:\n            if trace:\n                tracemalloc.stop()\n    return payload, dict(adapter.audit), elapsed, peak\n\ndef verify(identity, workflow, ir, payload, audit):\n    digest = hashlib.sha256(json.dumps({k: payload[k] for k in ('operations', 'final_layout')}, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()\n    prior = reference[identity, workflow]\n    assert digest == prior['payload_sha256'] and audit == prior['audit'], (identity, workflow)\n    assert payload['final_layout'] == list(range(ir['n_qubits']))\n    width = ir['n_qubits']\n    metrics = routing(payload, ir, None, bundle.cases[f'ROUTE-LINE-{width:02d}'], 0)\n    assert metrics == prior['metrics'], (identity, workflow, metrics)\n    return {'payload_sha256': digest, 'audit': audit, 'metrics': metrics}\n\nfor width, family, topology in itertools.product(WIDTHS, FAMILIES, TOPOLOGIES):\n    ir = fixture(width, family, topology, report['input_nonce'])\n    identity = f'{width:02d}/{family}/{topology}'\n    for workflow in WORKFLOWS:\n        payload, audit, _, _ = run('candidate', workflow, ir)\n        report['quality'].append({'case': identity, 'workflow': workflow, **verify(identity, workflow, ir, payload, audit)})\n    save()\n    print('quality', identity, flush=True)\n\nfor width, family, topology in ((6, 'qft', 'grid'), (6, 'repetition', 'ring'), (12, 'qft', 'grid')):\n    ir = fixture(width, family, topology, report['input_nonce'])\n    identity = f'{width:02d}/{family}/{topology}'\n    for workflow in WORKFLOWS:\n        samples = {v: [] for v in implementations}\n        checks = []\n        def observe(variant, phase, iteration, trace=False):\n            payload, audit, elapsed, peak = run(variant, workflow, ir, trace)\n            checked = verify(identity, workflow, ir, payload, audit)\n            checks.append({'variant': variant, 'phase': phase, 'iteration': iteration, **checked})\n            return elapsed, peak\n        for iteration in range(2):\n            for variant in implementations:\n                observe(variant, 'warmup', iteration)\n        for iteration in range(9):\n            for variant in (('baseline', 'candidate') if iteration % 2 == 0 else ('candidate', 'baseline')):\n                elapsed, _ = observe(variant, 'timed', iteration)\n                samples[variant].append(elapsed)\n        peaks = {}\n        for variant in implementations:\n            gc.collect()\n            _, peaks[variant] = observe(variant, 'traced', 0, True)\n        medians = {v: statistics.median(s) for v, s in samples.items()}\n        ratio = medians['candidate'] / medians['baseline']\n        assert len(checks) == 24\n        row = {'case': identity, 'workflow': workflow, 'samples_seconds': samples, 'median_seconds': medians, 'candidate_baseline_ratio': ratio, 'python_peak_bytes': peaks, 'sample_verification': checks}\n        row['admission_passed'] = ratio <= 1.05 and peaks['candidate'] <= peaks['baseline'] * 1.10 and peaks['candidate'] <= peaks['baseline'] + 128 * 1024\n        report['resources'].append(row)\n        save()\n        print('resource', identity, workflow, ratio, peaks, flush=True)\nreport['completed'] = True\nreport['ordinary_speed_gate_count'] = sum(r['workflow'] == WORKFLOWS[0] and r['candidate_baseline_ratio'] <= .95 for r in report['resources'])\nreport['admission_passed'] = all(r['admission_passed'] for r in report['resources']) and report['ordinary_speed_gate_count'] >= 2\nsave()\nassert not subprocess.check_output(['git', 'status', '--porcelain'], timeout=20)\nprint('completed', report['admission_passed'], flush=True)\n",
+  "protocol_source": "# Bounded commutation pair experiment\n\n## Requirement and ownership\n\nRepeated local optimization sweeps spend time deciding the same structural\ncommutation questions. The compiler owns this experiment on the\n`single_device_fast_path`. It changes no public signature, result schema,\ncommutation rule, pass composition, routing policy or SDKBench acceptance rule.\nThe existing Qiskit-inspired block sweep remains authoritative. This bounded\nmemoization is a native implementation experiment, not a newly ported upstream\nalgorithm. Existing upstream attribution remains in place.\n\nAn untimed census at `50633d8b469969bbfd95bad94d38583cce95a1cd`\nobserved 34,009 ordinary and 10,037 target predicate queries over 120 complete\napplication workflows. A simulated 16-entry LRU table covered 16,284 and 5,031\nqueries respectively. Every predicate still executed; this is evidence of\nrepetition, not evidence of a speed improvement. The census uses previously\ninspected inputs and is not held-out evidence.\n\n## Candidate and invariants\n\nThe table is local to one `analyze_commutation` call and contains at most 16\nordered pairs. Each operand key contains canonical opcode, ordered wires,\nmatrix-presence and parameter-presence. The predicate reads no parameter or\nmatrix value. Positive and negative answers are cached. Hits refresh recency;\nmisses at capacity evict the least recent entry. No instruction, tensor or IR\nis retained in the table, and no answer survives return or exception.\n\nRepresentative grouping, first failing member, blocks, indices and logical pair\ncounters must remain exactly equal to the independent ungrouped sweep. Tests\ninclude trainable batches, symbolic angles, overridden matrices, reversed wires,\nmore than 16 pairs, repeated barriers, mutable parameter dictionaries between\ncalls, and exception cleanup. No tensor value is read or detached.\n\n## Prospective complete-workflow control\n\nFreeze and publish the candidate and this protocol before the first resource\nobservation. Baseline is integrated main\n`b6c7ef386955077f6ca91ae00565651d4aba6755`. Load its exact analysis source\nalongside the candidate; replace all three existing analysis consumer bindings\nfor the baseline. Do not disable validation, independent replay or native target\nlegality checks. The candidate source remains immutable for the entire run.\n\nUse unchanged SDKBench commit `9aa9260920984e2ca05bcb293abb885fccd9c144`,\nits two FlagQuantum restored-layout workflows, seed 11, nonce `01` repeated\n32 times and all 60 application inputs. The initial 120 candidate executions\nmust match every previously independently accepted output and audit hash and\npass the unchanged routing evaluator with identical metrics. A mismatch fails\nthe experiment; retain the failure. These are inspected regression controls,\nnot a new SDK comparison.\n\nThen measure both complete workflows for 6-qubit grid QFT, 6-qubit ring\nrepetition and 12-qubit grid QFT. For each of the six cases perform two warmups,\nnine retained alternating baseline/candidate rounds and one separately traced\nround per variant. Verify all 24 outputs, audits and independent metrics per\ncase, including warmups and traced runs. Report all samples, medians and\n`tracemalloc` peaks. Python peaks are not process RSS or cgroup memory evidence.\n\nAdmission requires all six candidate/baseline median ratios at most 1.05,\nat least two of the three ordinary ratios at most 0.95, and every Python peak\nat most 1.10 times baseline and at most 128 KiB above baseline. A failure\nwithdraws the production change; preserve the candidate patch and first report.\nDo not rerun for a favorable result or change the thresholds after observation.\n\nThe first-run driver is `fq-bounded-pairs-control-20261122.py`, SHA-256\n`a04f38964831dc854097870aa4ba446c552db419a2428635f50f6aa8d58544b3`.\nThe report embeds the complete driver and protocol. Run on the existing local\nCPU environment with one numerical thread, bytecode disabled, an exclusive\noutput filename and a 600-second process-group timeout. This is development\nresource evidence, not formal Linux qualification, latency ranking or proof of\nan entangling-gate or depth improvement. No host is rebooted or upgraded.\n\n## Developer workflow\n\n```python\nimport flagquantum as fq\nfrom flagquantum.compiler import optimize\n\ncircuit = fq.Circuit(2)\ncircuit.cx(0, 1)\ncircuit.rz(0, theta=0.2)\ncircuit.cx(0, 1)\nresult = optimize(circuit.to_ir())\n```\n\nThe existing optimizer may cancel the CX pair across the commuting control\nrotation. The candidate must produce the same optimized IR and analysis record.\nRun `python -m pytest tests/unit/test_compiler_commutation_scaling.py\n tests/unit/test_compilation_commutation.py\n tests/unit/test_compilation_commutation_cancellation.py\n tests/unit/test_compiler_pass_manager.py -q` on one line for focused validation.\n",
+  "configurations": {
+    "flagquantum-ordinary-restored": {
+      "sdk": "flagquantum",
+      "entrypoint": "compiler.compile; compiler.lowering.native_gate_legalization.legalize_native_gates",
+      "options": {
+        "routing": "default",
+        "optimization_level": "default",
+        "basis": [
+          "h",
+          "x",
+          "y",
+          "z",
+          "s",
+          "sdg",
+          "rx",
+          "ry",
+          "rz",
+          "cz"
+        ],
+        "max_added_operations": 20000,
+        "initial_layout": "identity",
+        "final_layout": "sdk-reported",
+        "compiler_seed_supported": false,
+        "postprocessing": {
+          "final_layout": "identity",
+          "algorithm": "spanning-tree-leaf-token-restoration-v1",
+          "tree_root": 0,
+          "neighbor_order": "ascending",
+          "leaf_order": "ascending",
+          "swap_decomposition": "H-CZ-H CNOT triple",
+          "optimization_after_restoration": false,
+          "timed": true
+        }
+      }
+    },
+    "flagquantum-target-artifact": {
+      "sdk": "flagquantum",
+      "entrypoint": "compile_circuit_artifact_for_target",
+      "options": {
+        "basis": [
+          "rx",
+          "rz",
+          "cz"
+        ],
+        "initial_layout": "identity",
+        "final_layout": "restored",
+        "routing": "default",
+        "compiler_seed_supported": false,
+        "profile": "openqasm-3.0",
+        "max_native_added_operations": 20000,
+        "max_routing_added_operations": 20000,
+        "maximum_program_operations": 20000,
+        "serialize_executable_artifact": true
+      }
+    }
+  },
+  "input_nonce": "0101010101010101010101010101010101010101010101010101010101010101",
+  "compiler_seed": 11,
+  "warmups": 2,
+  "retained_rounds": 9,
+  "quality": [
+    {
+      "case": "06/qaoa/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "eb71a52afe7719ae72bcbf9924a2f788fe8a88b77a74fa746f0efaef81f405a4",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 2.839491700847658e-15,
+        "full_cz_count": 72,
+        "two_body_dependency_depth": 43,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/line",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 72,
+        "accepted_block_rewrites": 1,
+        "serialized_artifact_bytes": 15236
+      },
+      "metrics": {
+        "max_semantic_error": 1.2591559389004138e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 41,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "05f5e2fb6c5697946fefe3e83b41107ee2b4090f5f17533a25297338997a2c91",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.1285466194284042e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/ring",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 36,
+        "accepted_block_rewrites": 0,
+        "serialized_artifact_bytes": 8428
+      },
+      "metrics": {
+        "max_semantic_error": 7.221785298249065e-16,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "fd2af5a7a8b850f072ccc4f983747cbf17783314a4274bb03eeba5e3d4b9c737",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.2866924762521453e-15,
+        "full_cz_count": 42,
+        "two_body_dependency_depth": 24,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/grid",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 42,
+        "accepted_block_rewrites": 1,
+        "serialized_artifact_bytes": 9242
+      },
+      "metrics": {
+        "max_semantic_error": 8.005932084973443e-16,
+        "full_cz_count": 40,
+        "two_body_dependency_depth": 22,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "3408802e90d14045934bd52e07760406a682acfa2fa2341de4fc6bebc9e70dff",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.1443916996305594e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 26,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qaoa/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 36,
+        "accepted_block_rewrites": 1,
+        "serialized_artifact_bytes": 8155
+      },
+      "metrics": {
+        "max_semantic_error": 6.984540463862221e-16,
+        "full_cz_count": 34,
+        "two_body_dependency_depth": 24,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "6dcef92b4519fc70987ba23d083e2b5983fbb8c330011589325a764f6ac1c595",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 3.920475055707584e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/line",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 54,
+        "accepted_block_rewrites": 0,
+        "serialized_artifact_bytes": 11707
+      },
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "427d3d407e913b2ea5a7398bc9aca12acf08e7f963a1ace74405bf1e29383592",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 3.1643258253722617e-15,
+        "full_cz_count": 48,
+        "two_body_dependency_depth": 24,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/ring",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 48,
+        "accepted_block_rewrites": 2,
+        "serialized_artifact_bytes": 9740
+      },
+      "metrics": {
+        "max_semantic_error": 4.344434768182728e-15,
+        "full_cz_count": 44,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "31b1a8be3b28021fbce35bd82642be0b9a6868c18d5d21ca3e5a618b54acf863",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 2.6209553459836724e-15,
+        "full_cz_count": 42,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/grid",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 42,
+        "accepted_block_rewrites": 0,
+        "serialized_artifact_bytes": 9355
+      },
+      "metrics": {
+        "max_semantic_error": 4.574283909837767e-15,
+        "full_cz_count": 42,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "6dcef92b4519fc70987ba23d083e2b5983fbb8c330011589325a764f6ac1c595",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 3.920475055707584e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/ising/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 54,
+        "accepted_block_rewrites": 0,
+        "serialized_artifact_bytes": 11707
+      },
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "b7e562c0741a20960459fc131cadbbbde3ccfa06b771346a36d52158935dc5c6",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.2782828767791348e-14,
+        "full_cz_count": 72,
+        "two_body_dependency_depth": 71,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/line",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 72,
+        "accepted_block_rewrites": 6,
+        "serialized_artifact_bytes": 19174
+      },
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "b7e562c0741a20960459fc131cadbbbde3ccfa06b771346a36d52158935dc5c6",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.2782828767791348e-14,
+        "full_cz_count": 72,
+        "two_body_dependency_depth": 71,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/ring",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 72,
+        "accepted_block_rewrites": 6,
+        "serialized_artifact_bytes": 19174
+      },
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "d4239144440a3c1755b61ad01736be2ab47753a8036bf6e5a46646f31fc9a4ec",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.5998222631846507e-14,
+        "full_cz_count": 90,
+        "two_body_dependency_depth": 86,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/grid",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 90,
+        "accepted_block_rewrites": 7,
+        "serialized_artifact_bytes": 22237
+      },
+      "metrics": {
+        "max_semantic_error": 1.182845611224301e-14,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 78,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "b7e562c0741a20960459fc131cadbbbde3ccfa06b771346a36d52158935dc5c6",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.2782828767791348e-14,
+        "full_cz_count": 72,
+        "two_body_dependency_depth": 71,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/hopping/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 72,
+        "accepted_block_rewrites": 6,
+        "serialized_artifact_bytes": 19174
+      },
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "1de071b959762c7ebf8eee8c677f1f33d08a5b5cfc301aad908d8d43a3d6b06b",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 2.5303663964168044e-15,
+        "full_cz_count": 117,
+        "two_body_dependency_depth": 74,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/line",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 111,
+        "accepted_block_rewrites": 14,
+        "serialized_artifact_bytes": 15883
+      },
+      "metrics": {
+        "max_semantic_error": 1.987626749397768e-15,
+        "full_cz_count": 75,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "12ea640d6658c2ffecd7d8e8ec010ca16a0a8c52761247933f85b2320b1d3fdb",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.9481438940179264e-15,
+        "full_cz_count": 93,
+        "two_body_dependency_depth": 60,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/ring",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 93,
+        "accepted_block_rewrites": 5,
+        "serialized_artifact_bytes": 16780
+      },
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "b3dcc649f61f620ffcd2e873d14669f9a719f4fd28176713c017c3e060f83444",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.6172982426630268e-15,
+        "full_cz_count": 75,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 87,
+        "accepted_block_rewrites": 5,
+        "serialized_artifact_bytes": 14099
+      },
+      "metrics": {
+        "max_semantic_error": 1.3536401981886357e-15,
+        "full_cz_count": 65,
+        "two_body_dependency_depth": 48,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "12ea640d6658c2ffecd7d8e8ec010ca16a0a8c52761247933f85b2320b1d3fdb",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.9481438940179264e-15,
+        "full_cz_count": 93,
+        "two_body_dependency_depth": 60,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/qft/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 93,
+        "accepted_block_rewrites": 5,
+        "serialized_artifact_bytes": 16780
+      },
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "7042c9b411df330cd57c43bb25c0e3bd2ea2504e65fd15fca281834bbb24dacd",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 9.805852781653154e-15,
+        "full_cz_count": 78,
+        "two_body_dependency_depth": 66,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/line",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 78,
+        "accepted_block_rewrites": 4,
+        "serialized_artifact_bytes": 17491
+      },
+      "metrics": {
+        "max_semantic_error": 6.141450319825085e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 58,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 1.1338721664964554e-14,
+        "full_cz_count": 84,
+        "two_body_dependency_depth": 59,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/ring",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 84,
+        "accepted_block_rewrites": 1,
+        "serialized_artifact_bytes": 19996
+      },
+      "metrics": {
+        "max_semantic_error": 6.761659273861517e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 57,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "1086f5fffd784e8b3a81a1cc6eb9f4b44365157eeadab0ac47a6bb25bc053f50",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 9.659099827724101e-15,
+        "full_cz_count": 72,
+        "two_body_dependency_depth": 59,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/grid",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 72,
+        "accepted_block_rewrites": 5,
+        "serialized_artifact_bytes": 15350
+      },
+      "metrics": {
+        "max_semantic_error": 4.901354889651292e-15,
+        "full_cz_count": 62,
+        "two_body_dependency_depth": 51,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "payload_sha256": "a268ee2f0e5a5c458a9a77db04186df897dfee823d926a0fd58697b07ca7bee2",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      },
+      "metrics": {
+        "max_semantic_error": 4.956371820863329e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    },
+    {
+      "case": "06/repetition/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "payload_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 36,
+        "accepted_block_rewrites": 0,
+        "serialized_artifact_bytes": 10951
+      },
+      "metrics": {
+        "max_semantic_error": 4.490574227168739e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      }
+    }
+  ],
+  "resources": [],
+  "completed": false
+}

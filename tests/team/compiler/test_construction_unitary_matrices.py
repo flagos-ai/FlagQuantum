@@ -15,11 +15,19 @@ from flagquantum.core.ir import CircuitIR, Instruction
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("width", [3, 4])
-@pytest.mark.parametrize("controlled", [False, True])
+@pytest.mark.parametrize(
+    "width, controlled, limited_workspace",
+    [
+        (3, False, False),
+        (3, True, False),
+        (4, False, False),
+        (4, True, False),
+        (4, True, True),
+    ],
+)
 @pytest.mark.parametrize("family", ["fourier", "random"])
 def test_complete_matrix_preserves_control_phase_and_clean_workspace(
-    width: int, controlled: bool, family: str
+    width: int, controlled: bool, family: str, limited_workspace: bool
 ) -> None:
     size = 1 << width
     if family == "fourier":
@@ -34,6 +42,8 @@ def test_complete_matrix_preserves_control_phase_and_clean_workspace(
     original = matrix.clone()
     control = (width,) if controlled else ()
     scratch_size = width - 2 + len(control) if width >= 4 else 0
+    if limited_workspace:
+        scratch_size -= 1
     scratch = tuple(range(width + len(control), width + len(control) + scratch_size))
     total = width + len(control) + len(scratch)
     gates = unitary_instructions(

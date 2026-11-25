@@ -1,0 +1,434 @@
+{
+  "evidence_class": "development",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "baseline_source_sha256": "030757c8076c937df693f028cb9e756144b70c0e7a24e3387128ad10b0ec7a22",
+  "candidate_source_sha256": "2d6f208a3ced67ff4ffaacedd10149b09cdf44c088085be4db8e12ce70b2432d",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "cpu_count": 10,
+  "method": "Equal AST-cloned scorer patches; grid; one warmup and seven alternating samples; GC before both; separate full-routing tracemalloc; identical output hashes required.",
+  "rows": [
+    {
+      "family": "fourier",
+      "width": 16,
+      "source_operations": 136,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.010627792042214423,
+            0.010502791963517666,
+            0.010588750010356307,
+            0.01071200001752004,
+            0.010389916016720235,
+            0.010526625032071024,
+            0.010356416983995587
+          ],
+          "traced_peak_bytes": 296198,
+          "output_hash": "e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52"
+        },
+        "candidate": {
+          "seconds": [
+            0.008293375023640692,
+            0.008259334019385278,
+            0.008236750029027462,
+            0.008212084008846432,
+            0.008274999971035868,
+            0.008144666033331305,
+            0.008171292021870613
+          ],
+          "traced_peak_bytes": 298262,
+          "output_hash": "e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 16,
+      "source_operations": 123,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0028057090239599347,
+            0.0027282499941065907,
+            0.0028110829880461097,
+            0.0027566669741645455,
+            0.0027181250043213367,
+            0.0028284169966354966,
+            0.0027184170321561396
+          ],
+          "traced_peak_bytes": 174019,
+          "output_hash": "2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b"
+        },
+        "candidate": {
+          "seconds": [
+            0.002395041985437274,
+            0.002453334047459066,
+            0.0024262499646283686,
+            0.0023805000237189233,
+            0.0025370839866809547,
+            0.0024050410138443112,
+            0.0024406659649685025
+          ],
+          "traced_peak_bytes": 176595,
+          "output_hash": "2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 16,
+      "source_operations": 168,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.012653166020754725,
+            0.012672999990172684,
+            0.013008082984015346,
+            0.01312308304477483,
+            0.0127421670476906,
+            0.012730541988275945,
+            0.012581041024532169
+          ],
+          "traced_peak_bytes": 354686,
+          "output_hash": "3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77"
+        },
+        "candidate": {
+          "seconds": [
+            0.009911084023769945,
+            0.010010458005126566,
+            0.010059792024549097,
+            0.010066333052236587,
+            0.0099437499884516,
+            0.009905582992359996,
+            0.009946957987267524
+          ],
+          "traced_peak_bytes": 356534,
+          "output_hash": "3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 16,
+      "source_operations": 64,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.006669916969258338,
+            0.0065438750316388905,
+            0.0064552080002613366,
+            0.006659916019998491,
+            0.006550041027367115,
+            0.006578792002983391,
+            0.006669000023975968
+          ],
+          "traced_peak_bytes": 182184,
+          "output_hash": "54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc"
+        },
+        "candidate": {
+          "seconds": [
+            0.005214208969846368,
+            0.0051970420172438025,
+            0.005151208024471998,
+            0.00535204098559916,
+            0.005293124995660037,
+            0.005254000017885119,
+            0.005349416984245181
+          ],
+          "traced_peak_bytes": 184032,
+          "output_hash": "54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 24,
+      "source_operations": 300,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.03716983401682228,
+            0.037117249972652644,
+            0.03731904202140868,
+            0.03720912500284612,
+            0.03716416604584083,
+            0.03722608298994601,
+            0.03745062497910112
+          ],
+          "traced_peak_bytes": 721744,
+          "output_hash": "ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313"
+        },
+        "candidate": {
+          "seconds": [
+            0.028589833003934473,
+            0.02888645901111886,
+            0.02918137499364093,
+            0.02860029204748571,
+            0.028531250020023435,
+            0.028725416981615126,
+            0.029042083013337106
+          ],
+          "traced_peak_bytes": 721744,
+          "output_hash": "ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 24,
+      "source_operations": 195,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.008590208017267287,
+            0.008546957978978753,
+            0.008835792017634958,
+            0.0088435840443708,
+            0.00872787501430139,
+            0.008759666990954429,
+            0.008700124977622181
+          ],
+          "traced_peak_bytes": 286977,
+          "output_hash": "a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9"
+        },
+        "candidate": {
+          "seconds": [
+            0.007294624985661358,
+            0.007493417011573911,
+            0.0072511250036768615,
+            0.00707454199437052,
+            0.0073789170128293335,
+            0.007220792002044618,
+            0.007164041977375746
+          ],
+          "traced_peak_bytes": 288993,
+          "output_hash": "a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 24,
+      "source_operations": 252,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.03386808402137831,
+            0.03349929198157042,
+            0.033509665983729064,
+            0.03363629098748788,
+            0.03383412503171712,
+            0.03382400004193187,
+            0.03370041697053239
+          ],
+          "traced_peak_bytes": 615338,
+          "output_hash": "43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705"
+        },
+        "candidate": {
+          "seconds": [
+            0.02567008399637416,
+            0.025659583043307066,
+            0.025814792024903,
+            0.026315915980376303,
+            0.0262360839988105,
+            0.025772875000257045,
+            0.025778374983929098
+          ],
+          "traced_peak_bytes": 615338,
+          "output_hash": "43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 24,
+      "source_operations": 96,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.017911542032379657,
+            0.018740625004284084,
+            0.017504084040410817,
+            0.01726395799778402,
+            0.01725645799888298,
+            0.017481582995969802,
+            0.01727908302564174
+          ],
+          "traced_peak_bytes": 289634,
+          "output_hash": "6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1"
+        },
+        "candidate": {
+          "seconds": [
+            0.01400941697647795,
+            0.013307708024512976,
+            0.013488458993379027,
+            0.01331262500025332,
+            0.013260166975669563,
+            0.01359091600170359,
+            0.013359667034819722
+          ],
+          "traced_peak_bytes": 291090,
+          "output_hash": "6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1"
+        }
+      }
+    },
+    {
+      "family": "fourier",
+      "width": 32,
+      "source_operations": 528,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.08438487502280623,
+            0.08400158397853374,
+            0.08457787497900426,
+            0.0860870000324212,
+            0.08803895802702755,
+            0.08693654101807624,
+            0.08573708299081773
+          ],
+          "traced_peak_bytes": 1328332,
+          "output_hash": "2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860"
+        },
+        "candidate": {
+          "seconds": [
+            0.06570495897904038,
+            0.06551854102872312,
+            0.06555829104036093,
+            0.06578333303332329,
+            0.06554345798213035,
+            0.06666916696121916,
+            0.06689891603309661
+          ],
+          "traced_peak_bytes": 1328332,
+          "output_hash": "2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860"
+        }
+      }
+    },
+    {
+      "family": "parity_ladder",
+      "width": 32,
+      "source_operations": 267,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.018179416947532445,
+            0.01805754197994247,
+            0.01794579200213775,
+            0.01800387498224154,
+            0.018169790972024202,
+            0.018004250014200807,
+            0.01797591702779755
+          ],
+          "traced_peak_bytes": 465779,
+          "output_hash": "753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42"
+        },
+        "candidate": {
+          "seconds": [
+            0.0145397920277901,
+            0.014824833022430539,
+            0.014692042022943497,
+            0.014865458011627197,
+            0.014872708008624613,
+            0.014823790988884866,
+            0.014719458005856723
+          ],
+          "traced_peak_bytes": 465779,
+          "output_hash": "753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42"
+        }
+      }
+    },
+    {
+      "family": "graph_cost",
+      "width": 32,
+      "source_operations": 351,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.0699341669678688,
+            0.0707390409661457,
+            0.07102537504397333,
+            0.070235249993857,
+            0.06989695801166818,
+            0.06976308400044218,
+            0.07034566695801914
+          ],
+          "traced_peak_bytes": 995396,
+          "output_hash": "5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408"
+        },
+        "candidate": {
+          "seconds": [
+            0.05448883300414309,
+            0.05443299998296425,
+            0.05458991602063179,
+            0.054717332997825,
+            0.05494262499269098,
+            0.05448925000382587,
+            0.054234165989328176
+          ],
+          "traced_peak_bytes": 995396,
+          "output_hash": "5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408"
+        }
+      }
+    },
+    {
+      "family": "matching_layers",
+      "width": 32,
+      "source_operations": 128,
+      "measurements": {
+        "baseline": {
+          "seconds": [
+            0.04438849998405203,
+            0.04438162501901388,
+            0.044528459024149925,
+            0.04399912495864555,
+            0.04709270899184048,
+            0.04455574997700751,
+            0.04411737504415214
+          ],
+          "traced_peak_bytes": 537984,
+          "output_hash": "55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e"
+        },
+        "candidate": {
+          "seconds": [
+            0.03451675001997501,
+            0.034534042002633214,
+            0.03446249995613471,
+            0.0345523749710992,
+            0.034568958973977715,
+            0.03478712495416403,
+            0.034394417016301304
+          ],
+          "traced_peak_bytes": 539776,
+          "output_hash": "55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e"
+        }
+      }
+    }
+  ],
+  "base_commit": "7d2e13c4160c0c1546d61a41551189fa11615465",
+  "implementation_commit": "e4df4fa5c20730f8ef38ddf1ada3c18d5f48a71e",
+  "driver_source": "\"\"\"Balanced routing development controls; no cross-SDK performance claim.\"\"\"\n\nfrom __future__ import annotations\n\nimport ast\nimport gc\nimport hashlib\nimport json\nimport os\nimport platform\nimport random\nimport statistics\nimport subprocess\nimport sys\nimport time\nimport tracemalloc\nimport types\nfrom dataclasses import asdict, dataclass\nfrom pathlib import Path\nfrom unittest.mock import patch\n\nfrom flagquantum.compiler import CouplingMap, route_to_topology\nfrom flagquantum.compiler.topology import sabre\nfrom flagquantum.core.ir import CircuitIR, Instruction\n\nBASELINE = \"7d2e13c4160c0c1546d61a41551189fa11615465\"\nSOURCE_PATH = \"flagquantum/compiler/topology/sabre.py\"\n\n\n@dataclass\nclass Measurement:\n    seconds: list[float]\n    traced_peak_bytes: int\n    output_hash: str\n\n\n@dataclass\nclass Observation:\n    family: str\n    width: int\n    source_operations: int\n    measurements: dict[str, Measurement]\n\n\ndef _scorer(source: str) -> types.FunctionType:\n    tree = ast.parse(source)\n    function = next(\n        node\n        for node in tree.body\n        if isinstance(node, ast.FunctionDef) and node.name == \"_relative_score_swap\"\n    )\n    namespace = vars(sabre).copy()\n    exec(\n        compile(ast.Module(body=[function], type_ignores=[]), SOURCE_PATH, \"exec\"),\n        namespace,\n    )\n    scorer = namespace[\"_relative_score_swap\"]\n    assert isinstance(scorer, types.FunctionType)\n    return scorer\n\n\ndef _program(family: str, width: int) -> CircuitIR:\n    instructions: list[Instruction] = []\n    if family == \"fourier\":\n        for target in range(width):\n            instructions.append(Instruction(\"h\", (target,)))\n            for control in range(target + 1, width):\n                instructions.append(\n                    Instruction(\n                        \"cphase\", (control, target), {\"theta\": 2.0 ** (target - control)}\n                    )\n                )\n    elif family == \"parity_ladder\":\n        for step in (1, 2, 4):\n            for wire in range(width - step):\n                instructions.extend(\n                    (\n                        Instruction(\"cx\", (wire, wire + step)),\n                        Instruction(\"rz\", (wire + step,), {\"theta\": 0.31}),\n                        Instruction(\"cx\", (wire, wire + step)),\n                    )\n                )\n    elif family == \"graph_cost\":\n        rng = random.Random(1729 + width)\n        edges = sorted(\n            {tuple(sorted(rng.sample(range(width), 2))) for _ in range(width * 3)}\n        )\n        for _ in range(3):\n            instructions.extend(\n                Instruction(\"rzz\", pair, {\"theta\": 0.23}) for pair in edges\n            )\n            instructions.extend(\n                Instruction(\"rx\", (wire,), {\"theta\": 0.19}) for wire in range(width)\n            )\n    else:\n        assert family == \"matching_layers\"\n        rng = random.Random(500 + width)\n        for _ in range(8):\n            order = list(range(width))\n            rng.shuffle(order)\n            instructions.extend(\n                Instruction(\"cx\", tuple(order[i : i + 2])) for i in range(0, width, 2)\n            )\n    return CircuitIR(width, tuple(instructions))\n\n\ndef main() -> None:\n    baseline_source = subprocess.run(\n        [\"git\", \"show\", f\"{BASELINE}:{SOURCE_PATH}\"],\n        check=True,\n        capture_output=True,\n        text=True,\n        timeout=15,\n    ).stdout\n    candidate_source = Path(sabre.__file__).read_text()\n    scorers = {\n        \"baseline\": _scorer(baseline_source),\n        \"candidate\": _scorer(candidate_source),\n    }\n    observations: list[Observation] = []\n    for width in (16, 24, 32):\n        for family in (\"fourier\", \"parity_ladder\", \"graph_cost\", \"matching_layers\"):\n            program = _program(family, width)\n            topology = CouplingMap.grid(4, width // 4)\n            measurements = {label: Measurement([], 0, \"\") for label in scorers}\n            expected: str | None = None\n            for block in range(8):\n                labels = (\n                    (\"baseline\", \"candidate\")\n                    if block % 2 == 0\n                    else (\"candidate\", \"baseline\")\n                )\n                for label in labels:\n                    with patch.object(sabre, \"_relative_score_swap\", scorers[label]):\n                        gc.collect()\n                        start = time.perf_counter()\n                        result = route_to_topology(program, topology, strategy=\"sabre\")\n                        elapsed = time.perf_counter() - start\n                    digest = result.content_hash\n                    if expected is None:\n                        expected = digest\n                    assert digest == expected, (family, width, block, label)\n                    if block:\n                        measurements[label].seconds.append(elapsed)\n                    measurements[label].output_hash = digest\n            for label in scorers:\n                with patch.object(sabre, \"_relative_score_swap\", scorers[label]):\n                    gc.collect()\n                    tracemalloc.start()\n                    try:\n                        result = route_to_topology(program, topology, strategy=\"sabre\")\n                        measurements[label].traced_peak_bytes = (\n                            tracemalloc.get_traced_memory()[1]\n                        )\n                    finally:\n                        tracemalloc.stop()\n                assert result.content_hash == expected\n            observations.append(\n                Observation(family, width, len(program.instructions), measurements)\n            )\n            print(\n                json.dumps(\n                    {\n                        \"phase\": \"routing\",\n                        \"family\": family,\n                        \"width\": width,\n                        \"candidate_time_ratio\": statistics.median(\n                            measurements[\"candidate\"].seconds\n                        )\n                        / statistics.median(measurements[\"baseline\"].seconds),\n                    }\n                ),\n                file=sys.stderr,\n                flush=True,\n            )\n    print(\n        json.dumps(\n            {\n                \"evidence_class\": \"development\",\n                \"distribution_semantics\": \"single_device_fast_path\",\n                \"scalability_claim_allowed\": False,\n                \"baseline_revision\": BASELINE,\n                \"baseline_source_sha256\": hashlib.sha256(\n                    baseline_source.encode()\n                ).hexdigest(),\n                \"candidate_source_sha256\": hashlib.sha256(\n                    candidate_source.encode()\n                ).hexdigest(),\n                \"python\": sys.version,\n                \"platform\": platform.platform(),\n                \"cpu_count\": os.cpu_count(),\n                \"method\": \"Equal AST-cloned scorer patches; grid; one warmup and seven alternating samples; GC before both; separate full-routing tracemalloc; identical output hashes required.\",\n                \"rows\": [asdict(row) for row in observations],\n            },\n            indent=2,\n        )\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "supervisor_source": "import json,os,signal,subprocess,time\nfrom pathlib import Path\nroot=Path('/private/tmp/fq-sabre-dependency-reuse-20261122')\nenv=dict(os.environ,PYTHONDONTWRITEBYTECODE='1',PYTHONPATH='.:/private/tmp/fq-restore-test-dependencies-20261121',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')\nstarted=time.monotonic();timed_out=False\nwith Path('/private/tmp/fq-sabre-incidence-controls-20261122.log').open('w') as log:\n p=subprocess.Popen(['/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python','-u','-m','benchmarks.compiler_sabre_incidence'],cwd=root,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)\n try:\n  while p.poll() is None and time.monotonic()-started<600:\n   print(json.dumps({'phase':'balanced_incidence_control','elapsed_seconds':round(time.monotonic()-started,1),'last_operation':Path('/private/tmp/fq-sabre-incidence-controls-20261122.log').read_text()[-500:]}),flush=True)\n   time.sleep(20)\n  if p.poll() is None:\n   timed_out=True;os.killpg(p.pid,signal.SIGTERM)\n   try:p.wait(timeout=10)\n   except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait(timeout=10)\n finally:\n  if p.poll() is None:\n   os.killpg(p.pid,signal.SIGTERM)\n   try:p.wait(timeout=10)\n   except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);p.wait(timeout=10)\n result={'exit_code':p.returncode,'timed_out':timed_out,'wall_seconds':time.monotonic()-started,'child_pid':p.pid}\n Path('/private/tmp/fq-sabre-incidence-supervision-20261122.json').write_text(json.dumps(result,indent=2)+'\\n');print(json.dumps(result),flush=True)\n raise SystemExit(p.returncode or int(timed_out))\n",
+  "supervision": {
+    "exit_code": 0,
+    "timed_out": false,
+    "wall_seconds": 20.01120729203103,
+    "child_pid": 22859
+  },
+  "setup_failures": {
+    "generator": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 197, in <module>\n    main()\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 119, in main\n    program = _program(family, width)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 69, in _program\n    Instruction(\"cp\", (control, target), (2.0 ** (target - control),))\n  File \"<string>\", line 8, in __init__\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/flagquantum/core/ir/__init__.py\", line 382, in __post_init__\n    object.__setattr__(self, \"params\", dict(self.params))\n                                       ^^^^^^^^^^^^^^^^^\nTypeError: cannot convert dictionary update sequence element #0 to a sequence\n",
+    "opcode": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 201, in <module>\n    main()\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 123, in main\n    program = _program(family, width)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 69, in _program\n    Instruction(\n  File \"<string>\", line 8, in __init__\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/flagquantum/core/ir/__init__.py\", line 438, in __post_init__\n    raise IRValidationError(\nflagquantum.core.ir.IRValidationError: unknown opcode 'cp'; custom operations require an explicit matrix\n",
+    "hash": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 201, in <module>\n    main()\n  File \"/private/tmp/fq-sabre-dependency-reuse-20261122/benchmarks/compiler_sabre_incidence.py\", line 139, in main\n    digest = result.content_hash()\n             ^^^^^^^^^^^^^^^^^^^^^\nTypeError: 'str' object is not callable\n"
+  },
+  "raw_log": "{\"phase\": \"routing\", \"family\": \"fourier\", \"width\": 16, \"candidate_time_ratio\": 0.7824682653683306}\n{\"phase\": \"routing\", \"family\": \"parity_ladder\", \"width\": 16, \"candidate_time_ratio\": 0.8801389458237641}\n{\"phase\": \"routing\", \"family\": \"graph_cost\", \"width\": 16, \"candidate_time_ratio\": 0.7813459942575947}\n{\"phase\": \"routing\", \"family\": \"matching_layers\", \"width\": 16, \"candidate_time_ratio\": 0.7986268627283706}\n{\"phase\": \"routing\", \"family\": \"fourier\", \"width\": 24, \"candidate_time_ratio\": 0.7719992603808319}\n{\"phase\": \"routing\", \"family\": \"parity_ladder\", \"width\": 24, \"candidate_time_ratio\": 0.8308007380714385}\n{\"phase\": \"routing\", \"family\": \"graph_cost\", \"width\": 24, \"candidate_time_ratio\": 0.7649274786857885}\n{\"phase\": \"routing\", \"family\": \"matching_layers\", \"width\": 24, \"candidate_time_ratio\": 0.7642138036297774}\n{\"phase\": \"routing\", \"family\": \"fourier\", \"width\": 32, \"candidate_time_ratio\": 0.7663540289337492}\n{\"phase\": \"routing\", \"family\": \"parity_ladder\", \"width\": 32, \"candidate_time_ratio\": 0.8233495412023627}\n{\"phase\": \"routing\", \"family\": \"graph_cost\", \"width\": 32, \"candidate_time_ratio\": 0.7758105795678335}\n{\"phase\": \"routing\", \"family\": \"matching_layers\", \"width\": 32, \"candidate_time_ratio\": 0.777995246855394}\n{\n  \"evidence_class\": \"development\",\n  \"distribution_semantics\": \"single_device_fast_path\",\n  \"scalability_claim_allowed\": false,\n  \"baseline_revision\": \"7d2e13c4160c0c1546d61a41551189fa11615465\",\n  \"baseline_source_sha256\": \"030757c8076c937df693f028cb9e756144b70c0e7a24e3387128ad10b0ec7a22\",\n  \"candidate_source_sha256\": \"2d6f208a3ced67ff4ffaacedd10149b09cdf44c088085be4db8e12ce70b2432d\",\n  \"python\": \"3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]\",\n  \"platform\": \"macOS-27.0-arm64-arm-64bit\",\n  \"cpu_count\": 10,\n  \"method\": \"Equal AST-cloned scorer patches; grid; one warmup and seven alternating samples; GC before both; separate full-routing tracemalloc; identical output hashes required.\",\n  \"rows\": [\n    {\n      \"family\": \"fourier\",\n      \"width\": 16,\n      \"source_operations\": 136,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.010627792042214423,\n            0.010502791963517666,\n            0.010588750010356307,\n            0.01071200001752004,\n            0.010389916016720235,\n            0.010526625032071024,\n            0.010356416983995587\n          ],\n          \"traced_peak_bytes\": 296198,\n          \"output_hash\": \"e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.008293375023640692,\n            0.008259334019385278,\n            0.008236750029027462,\n            0.008212084008846432,\n            0.008274999971035868,\n            0.008144666033331305,\n            0.008171292021870613\n          ],\n          \"traced_peak_bytes\": 298262,\n          \"output_hash\": \"e04114280a3f416fbce2518c5aa1575269c3ad53f82efc3717f02f01bda66b52\"\n        }\n      }\n    },\n    {\n      \"family\": \"parity_ladder\",\n      \"width\": 16,\n      \"source_operations\": 123,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.0028057090239599347,\n            0.0027282499941065907,\n            0.0028110829880461097,\n            0.0027566669741645455,\n            0.0027181250043213367,\n            0.0028284169966354966,\n            0.0027184170321561396\n          ],\n          \"traced_peak_bytes\": 174019,\n          \"output_hash\": \"2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.002395041985437274,\n            0.002453334047459066,\n            0.0024262499646283686,\n            0.0023805000237189233,\n            0.0025370839866809547,\n            0.0024050410138443112,\n            0.0024406659649685025\n          ],\n          \"traced_peak_bytes\": 176595,\n          \"output_hash\": \"2b297113a6c82cceecb4d8072ba9515729dec6f1a42f3c0687aa58a13724a25b\"\n        }\n      }\n    },\n    {\n      \"family\": \"graph_cost\",\n      \"width\": 16,\n      \"source_operations\": 168,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.012653166020754725,\n            0.012672999990172684,\n            0.013008082984015346,\n            0.01312308304477483,\n            0.0127421670476906,\n            0.012730541988275945,\n            0.012581041024532169\n          ],\n          \"traced_peak_bytes\": 354686,\n          \"output_hash\": \"3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.009911084023769945,\n            0.010010458005126566,\n            0.010059792024549097,\n            0.010066333052236587,\n            0.0099437499884516,\n            0.009905582992359996,\n            0.009946957987267524\n          ],\n          \"traced_peak_bytes\": 356534,\n          \"output_hash\": \"3a744d7496f6a77ad28af5c93fdfd2439cacbd28b252d069c210ff3eec02db77\"\n        }\n      }\n    },\n    {\n      \"family\": \"matching_layers\",\n      \"width\": 16,\n      \"source_operations\": 64,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.006669916969258338,\n            0.0065438750316388905,\n            0.0064552080002613366,\n            0.006659916019998491,\n            0.006550041027367115,\n            0.006578792002983391,\n            0.006669000023975968\n          ],\n          \"traced_peak_bytes\": 182184,\n          \"output_hash\": \"54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.005214208969846368,\n            0.0051970420172438025,\n            0.005151208024471998,\n            0.00535204098559916,\n            0.005293124995660037,\n            0.005254000017885119,\n            0.005349416984245181\n          ],\n          \"traced_peak_bytes\": 184032,\n          \"output_hash\": \"54a9f9d1c63dbc5a987ceb65bb31757a0480e0d5eae87c56b1e179d3a95481fc\"\n        }\n      }\n    },\n    {\n      \"family\": \"fourier\",\n      \"width\": 24,\n      \"source_operations\": 300,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.03716983401682228,\n            0.037117249972652644,\n            0.03731904202140868,\n            0.03720912500284612,\n            0.03716416604584083,\n            0.03722608298994601,\n            0.03745062497910112\n          ],\n          \"traced_peak_bytes\": 721744,\n          \"output_hash\": \"ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.028589833003934473,\n            0.02888645901111886,\n            0.02918137499364093,\n            0.02860029204748571,\n            0.028531250020023435,\n            0.028725416981615126,\n            0.029042083013337106\n          ],\n          \"traced_peak_bytes\": 721744,\n          \"output_hash\": \"ae0373652baf13931be8d612792ea78771b52c3e958cb7f3d31ae1f5c2e7d313\"\n        }\n      }\n    },\n    {\n      \"family\": \"parity_ladder\",\n      \"width\": 24,\n      \"source_operations\": 195,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.008590208017267287,\n            0.008546957978978753,\n            0.008835792017634958,\n            0.0088435840443708,\n            0.00872787501430139,\n            0.008759666990954429,\n            0.008700124977622181\n          ],\n          \"traced_peak_bytes\": 286977,\n          \"output_hash\": \"a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.007294624985661358,\n            0.007493417011573911,\n            0.0072511250036768615,\n            0.00707454199437052,\n            0.0073789170128293335,\n            0.007220792002044618,\n            0.007164041977375746\n          ],\n          \"traced_peak_bytes\": 288993,\n          \"output_hash\": \"a73e3624f92c5d40adc292f92401e8f73fb425888887ff7626e29c676ae207f9\"\n        }\n      }\n    },\n    {\n      \"family\": \"graph_cost\",\n      \"width\": 24,\n      \"source_operations\": 252,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.03386808402137831,\n            0.03349929198157042,\n            0.033509665983729064,\n            0.03363629098748788,\n            0.03383412503171712,\n            0.03382400004193187,\n            0.03370041697053239\n          ],\n          \"traced_peak_bytes\": 615338,\n          \"output_hash\": \"43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.02567008399637416,\n            0.025659583043307066,\n            0.025814792024903,\n            0.026315915980376303,\n            0.0262360839988105,\n            0.025772875000257045,\n            0.025778374983929098\n          ],\n          \"traced_peak_bytes\": 615338,\n          \"output_hash\": \"43c1f5dab5bce9f7d2ee0ddb438931b2f7ebf073c8b64adf83b82f072bf48705\"\n        }\n      }\n    },\n    {\n      \"family\": \"matching_layers\",\n      \"width\": 24,\n      \"source_operations\": 96,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.017911542032379657,\n            0.018740625004284084,\n            0.017504084040410817,\n            0.01726395799778402,\n            0.01725645799888298,\n            0.017481582995969802,\n            0.01727908302564174\n          ],\n          \"traced_peak_bytes\": 289634,\n          \"output_hash\": \"6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.01400941697647795,\n            0.013307708024512976,\n            0.013488458993379027,\n            0.01331262500025332,\n            0.013260166975669563,\n            0.01359091600170359,\n            0.013359667034819722\n          ],\n          \"traced_peak_bytes\": 291090,\n          \"output_hash\": \"6098259e5cea72cffd34a6cf92b5cd9e0ca2143f22d226ae42ac8103287370f1\"\n        }\n      }\n    },\n    {\n      \"family\": \"fourier\",\n      \"width\": 32,\n      \"source_operations\": 528,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.08438487502280623,\n            0.08400158397853374,\n            0.08457787497900426,\n            0.0860870000324212,\n            0.08803895802702755,\n            0.08693654101807624,\n            0.08573708299081773\n          ],\n          \"traced_peak_bytes\": 1328332,\n          \"output_hash\": \"2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.06570495897904038,\n            0.06551854102872312,\n            0.06555829104036093,\n            0.06578333303332329,\n            0.06554345798213035,\n            0.06666916696121916,\n            0.06689891603309661\n          ],\n          \"traced_peak_bytes\": 1328332,\n          \"output_hash\": \"2691bdd1348e522323510c19678b0898606d9722328b11ef8394f66b60adb860\"\n        }\n      }\n    },\n    {\n      \"family\": \"parity_ladder\",\n      \"width\": 32,\n      \"source_operations\": 267,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.018179416947532445,\n            0.01805754197994247,\n            0.01794579200213775,\n            0.01800387498224154,\n            0.018169790972024202,\n            0.018004250014200807,\n            0.01797591702779755\n          ],\n          \"traced_peak_bytes\": 465779,\n          \"output_hash\": \"753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.0145397920277901,\n            0.014824833022430539,\n            0.014692042022943497,\n            0.014865458011627197,\n            0.014872708008624613,\n            0.014823790988884866,\n            0.014719458005856723\n          ],\n          \"traced_peak_bytes\": 465779,\n          \"output_hash\": \"753e7fd3b896ae11a6f47e695a623a94621a91314f3f40dd3374c3736703ab42\"\n        }\n      }\n    },\n    {\n      \"family\": \"graph_cost\",\n      \"width\": 32,\n      \"source_operations\": 351,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.0699341669678688,\n            0.0707390409661457,\n            0.07102537504397333,\n            0.070235249993857,\n            0.06989695801166818,\n            0.06976308400044218,\n            0.07034566695801914\n          ],\n          \"traced_peak_bytes\": 995396,\n          \"output_hash\": \"5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.05448883300414309,\n            0.05443299998296425,\n            0.05458991602063179,\n            0.054717332997825,\n            0.05494262499269098,\n            0.05448925000382587,\n            0.054234165989328176\n          ],\n          \"traced_peak_bytes\": 995396,\n          \"output_hash\": \"5ee15cf6c16469f4006b011330cb2d20c9fd872fd720cfab2b086f85e4a9a408\"\n        }\n      }\n    },\n    {\n      \"family\": \"matching_layers\",\n      \"width\": 32,\n      \"source_operations\": 128,\n      \"measurements\": {\n        \"baseline\": {\n          \"seconds\": [\n            0.04438849998405203,\n            0.04438162501901388,\n            0.044528459024149925,\n            0.04399912495864555,\n            0.04709270899184048,\n            0.04455574997700751,\n            0.04411737504415214\n          ],\n          \"traced_peak_bytes\": 537984,\n          \"output_hash\": \"55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e\"\n        },\n        \"candidate\": {\n          \"seconds\": [\n            0.03451675001997501,\n            0.034534042002633214,\n            0.03446249995613471,\n            0.0345523749710992,\n            0.034568958973977715,\n            0.03478712495416403,\n            0.034394417016301304\n          ],\n          \"traced_peak_bytes\": 539776,\n          \"output_hash\": \"55434868a7e11ea60e375bbec116671399f93919a5ded739e7ae7bbdead35a2e\"\n        }\n      }\n    }\n  ]\n}\n",
+  "admission": {
+    "median_case_time_ratio": 0.7796706205564943,
+    "worst_case_time_ratio": 0.8801389458237641,
+    "worst_case_traced_peak_ratio": 1.014802981283653,
+    "identical_routed_outputs": true,
+    "performance_gates_passed": true,
+    "production_ready": false,
+    "pending": "Required regression tiers and exact-head CI; no formal SDKBench or cross-SDK performance qualification."
+  }
+}

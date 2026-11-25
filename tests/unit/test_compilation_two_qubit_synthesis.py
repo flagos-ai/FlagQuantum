@@ -61,6 +61,8 @@ def _embed(instruction: Instruction, register: tuple[int, int]) -> torch.Tensor:
 
     matrix = _matrix(instruction)
     if len(instruction.wires) == 2:
+        if instruction.wires == register[::-1]:
+            return _SWAP_PERMUTATION @ matrix @ _SWAP_PERMUTATION
         return matrix
     identity = torch.eye(2, dtype=torch.complex128)
     if instruction.wires[0] == register[0]:

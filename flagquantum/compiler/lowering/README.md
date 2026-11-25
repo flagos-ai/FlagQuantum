@@ -28,6 +28,20 @@ equivalence. Artifact compilation enters through
 `artifacts/artifact_compilation.py` and uses `target_legalization.py` for its
 verified snapshot-driven path.
 
+## Target admission during decomposition
+
+The existing U3 candidate checks its first concrete target leaf before building
+its scalar correction. Accepted U3 words still validate every correction leaf;
+target-independent optimization retains the complete word. See the
+[workflow, phase contract and tests](../../../docs/development/COMPILER_U3_CANDIDATE_ADMISSION.md).
+
+## Direct CZ parity words
+
+`basis_translation.py` retains the CX definitions and offers direct CZ words
+for RZZ, CRZ and controlled phase. The existing shortest-word search expands and
+checks both; target predicates, angle objects, metadata and growth limits remain
+authoritative. See [identities, application observations and limits](../../../docs/development/COMPILER_DIRECT_CZ_PARITY.md).
+
 ## Native CZ block stage
 
 `native_block_optimization.py` retains the exact per-instruction native baseline
