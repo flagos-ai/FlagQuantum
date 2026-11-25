@@ -8,6 +8,17 @@ plans, evidence, and target artifacts. `registers/` owns register-level
 decompositions. Documented compiler entry modules remain importable at their
 existing paths.
 
+`optimization/local_unitary_synthesis.py` composes existing Euler/KAK, exact
+scalar and controlled-rotation owners for explicit one/two-qubit matrix leaves.
+It preserves absolute complex phase, including when the matrix is controlled,
+and emits named gates without matrix atoms or extra work. This is continuous
+rotation synthesis, not arbitrary Clifford+T approximation. Run
+`python -m examples.algorithms.local_rotation_array` for an SDK-free array
+consumer through `circuit.append(op)`, or
+`python -m pytest tests/unit/test_local_unitary_synthesis.py -q` for the local
+operator, wire-order, degeneracy and small-interaction checks. Larger local
+matrices still require a separately owned decomposition.
+
 The explicit fixed-unitary library constructors in
 `formats/legacy_fixed_gate_factories.py` feed the existing typed library resolver.
 Their source names are data identifiers and resolve to native gate functions.

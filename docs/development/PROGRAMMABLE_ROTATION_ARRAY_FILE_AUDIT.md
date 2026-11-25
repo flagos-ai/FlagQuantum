@@ -132,6 +132,59 @@ source-suite evidence. This batch does not alter reference gates or original
 assertions, rerun that unchanged failure without cause, or add child progress
 items in place of completing a source file.
 
+## Phase-exact named local gates, 2026-11-26
+
+The complete-file review identified a concrete gap in the matrix-leaf route:
+generic single/two-target payloads executed correctly but had no named native
+lowering retaining their absolute scalar phase. Existing target-basis Euler/KAK
+synthesis intentionally drops that phase. That behavior cannot be reused
+unchanged inside a controlled rotation, where the scalar becomes a relative
+phase between control sectors.
+
+The new Compiler-owned `optimization/local_unitary_synthesis.py` composes the
+existing exact one-qubit emitter, full three-entangler KAK factors, scalar phase
+carrier and controlled-Rz owner. It recovers the KAK scalar from only the supplied
+4x4 local factors; it does not form or simulate an array operator. The full KAK
+form avoids fidelity-based count selection discarding small nonzero interactions.
+Controls lift the exact local factors, placing a formerly global scalar on the
+control. Local result gates are Rz/Ry/phase/X/CX/CCX. There is no matrix atom,
+scratch qubit, classical slot or measurement in this synthesis owner. The old
+target-basis synthesis contracts and default behavior are unchanged.
+
+The original array callback interface uses this owner without changing the XOR
+traversal or QROM consumer. One/two-target external MatrixGate and pure-unitary
+fixtures, both load widths and the independent-target subclass run through both
+the matrix and named-gate callbacks. Complete dirty-load operators, exact source
+inverse composition, every-history erasure certificates, relative address phases
+and private-work zero agree. All prior literal call/operand/feedback evidence is
+reused for the unchanged array/QROM layers; independent local synthesis is not
+claimed to reproduce Cirq's primitive decomposition or its counts.
+
+The SDK-free runnable example is
+`python -m examples.algorithms.local_rotation_array`. It appends an array with
+two three-entry angle rows, a phased two-target SWAP base and a phased H-tensor-H
+interleaver. Both nonzero scalar phases are significant across selection and
+control sectors. The example checks load/work zero for every local trajectory.
+Pure local checks compare complete complex operators with/without controls,
+scalar/degenerate inputs, reversed targets, SDK imports blocked and interactions
+of magnitude 1e-7 and 1e-9. No phase-insensitive fidelity assertion substitutes
+for those comparisons.
+
+The example's actual potential inventory is 11 X, 6 H, 4 T, 4 Tdag, 240 CX,
+2 S, 2 measures, 2 feedback CZ, 2 resets, 170 phases, 58 Ry, 12 CCX and 18 Rz;
+there are zero matrix leaves. Its one classical slot is reused by QROM and
+the sole quantum workspace is restored. These named continuous-angle gates are
+not synthesized Clifford+T counts. The existing generic MatrixGate source model
+and its controlled-And failure remain recorded separately above; no successful
+new source estimate is inferred from the new primitive stream.
+
+Q-0679 remains open for the original full acceptance requirements: arbitrary
+Clifford+T synthesis/precision, larger local matrix decompositions and complete
+arbitrary-gate source cost queries. Shallow source constructor metadata loss and
+the documented source/SDK failure profiles are unchanged. This batch closes the
+phase-exact named-gate dependency for the complete admitted one/two-target local
+matrix family, not the entire parent file.
+
 ## Current batch validation
 
 Eight focused cases passed in 2.83 seconds. The expanded source-import,
@@ -144,3 +197,15 @@ uncovered, so this is not a 100% claim. Sixty CPU/representation integration
 cases passed in 45.13 seconds, and the SDK-free native rotation-array notebook
 passed in an independent kernel in 2.26 seconds. Existing unchanged-source
 failure evidence is reused.
+
+
+Batch regression: 296 concentrated cases pass in the Cirq 1.7 lane. The Cirq
+1.6 compatible scope passes 244 cases. The other 52 cases belong to the existing
+`test_controlled_unitary_synthesis.py` fixture, which pins the SHA256 of Cirq
+1.7's controlled decomposition. Running that fixture in 1.6 correctly produced
+52 setup errors on its source hash; the intake log is retained and its guard is
+unchanged. Those 52 cases pass in their pinned 1.7 lane. This is not a native
+operator failure or an optional-dependency skip. Local integration passes 145
+cases; strict four files, formatting/lint, Compiler scope, language/links,
+architecture, multi-level IR and protected API checks pass. The runnable example
+also executes through both local strategies in the resource receipt.
