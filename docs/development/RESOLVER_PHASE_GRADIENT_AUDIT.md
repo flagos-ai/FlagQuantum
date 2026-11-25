@@ -142,3 +142,50 @@ model has two Toffoli, no measurements and peak six. Neither model is rewritten
 to match the native adders' measured decomposition. Source scaled model formulas
 use the same literal signed-coefficient bit schedule but retain full-width
 atomic leaf estimates.
+
+
+## Negative coefficient fractional-width closure, 2026-11-25
+
+The complete scaled-coefficient scheduler now admits negative fractional widths
+as well as nonnegative ones for signed and unsigned formats. This supersedes
+that specific remaining gap in the preceding batch. Magnitude quantization uses
+an exact integer numerator/denominator ratio, shifting the denominator for a
+negative fractional width before truncation and saturation. There is no float
+rescaling, additional lookup table or separate execution path. The signed
+coefficient's source-specific extra shift is retained unchanged.
+
+Actual constructor grids cover negative widths minus one and minus two, seven
+coefficients including both signs, zero and saturation, and both input sign
+flags. Depths zero, one and two retain the original root calls and nominal
+operand views, including one-bit Cast views and empty source bodies. Every
+complete small logical operator and all applicable raw forward/inverse histories
+match the unchanged decomposed source with absolute complex phase, entangled
+spectator preservation and zero carry work. Zero-gate cases execute the identity
+checks; they are not silently skipped. The direct original generator also
+checks fractional widths minus three through each format's highest valid
+fractional width, preserving exact slices, signs and shifts.
+
+Original signed-input classical AssertionError and full-word nominal dtype
+failures remain unchanged. Symbolic physical extents/coefficients and permissive
+nonstandard AddIntoPhaseGrad metadata retain their existing disposition. This
+batch adds no Core instruction, numerical arithmetic contract or public entry.
+It does not close Q-0671 while those whole-file boundaries remain.
+
+Concentrated direct/source regression passes 173 cases; the independent Cirq
+1.6 lane passes 140. Local integration passes 145. Strict typing covers both
+changed Python files, with Black/Ruff, Compiler scope, language, links,
+architecture, IR and API checks passing. Original file blob and Kickmix checks
+are reused through the affected source suite. Receipts use
+`g2-negative-scaled-*20261125` in the reference workspace. Resource rows retain
+actual decomposed instructions, work and feedback separately from the original
+full-width atomic cost model.
+
+
+The 24 resource rows explicitly distinguish caller circuit width and reserved
+clean wires from touched clean wires. The gamma-four, fractional-minus-one
+unsigned example emits no instruction; its signed coefficient counterpart
+emits one CX, with zero touched scratch and zero feedback in both cases. The
+caller supplies two unused clean wires, yielding width eight; this is not a
+claim that either circuit requires eight wires. Both original model peaks are
+six, while their respective model gate counts are zero and one Toffoli. This
+source estimate is kept separate from the actual zero/one-CX streams.
