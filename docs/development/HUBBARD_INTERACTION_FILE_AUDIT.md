@@ -43,7 +43,7 @@ the work register restored to zero. A three-by-three sparse phase test
 checks that the odd site's phase is present in both modes.
 
 Q-0441 closes with the original checks and these native comparisons.
-Q-0440 retains the locked decomposition and synthesis boundaries.
+At that historical checkpoint Q-0440 retained the constructor, decomposition and synthesis boundaries.
 Both original variants raise `DecomposeNotImplementedError`, and
 the source model's angle parameter and width differ from the native
 primitive angle and bound width. The exact native rotations use no
@@ -69,7 +69,8 @@ and its peak query fails while splitting a symbolic dtype. The one-site
 HWP source also fails its gate query by division by zero and its peak query
 inside HammingWeightPhasing. These unchanged-source diagnostics are tested;
 the ordinary formula is not substituted for HWP. Source decomposition,
-precision, odd-site model and native phase differences keep Q-0440 open.
+precision, odd-site model and native phase differences were recorded against
+Q-0440; the follow-up below preserves these source dispositions.
 
 ```python
 from sympy import Symbol
@@ -100,3 +101,70 @@ op = HubbardInteraction.make_on(
 ir = DynamicCircuit(11).append(op).to_ir()
 assert sum(gate.name == "measure" for gate in ir.instructions) == 2
 ```
+
+## Complete constructor and dependency follow-up
+
+The shared Compiler layout signature is now also the source of truth for
+Algorithms' existing source signature helper: two opaque THRU words of width
+L and shape (2,), in spin order. These ports own no work or feedback slots.
+Physical interaction continues to bind two L**2-mode arrays, with its existing
+caller-owned clean work only for the measured option. Formats binds the source
+declarations; Algorithms owns modeling and the independently specified emitter.
+No numerical execution or backend selection enters Compiler.
+
+| Complete source definition | Native owner/disposition |
+|---|---|
+| Interaction and InteractionHWP fields and signatures | Both original constructors now resolve through shared port ownership, preserving length, angle, hubb_u and default/custom/symbolic eps metadata. |
+| Interaction.build_call_graph | ComponentLibrary retains the Rz child with the exact angle*hubb_u expression, original precision and L**2 repetition count. |
+| InteractionHWP.build_call_graph | ComponentLibrary retains two HWP children with floor(L**2/2) bits, the exact angle*hubb_u exponent and original eps; no order or missing primitive body is fabricated. |
+| Both original factories and DocSpecs | Actual eight-side source examples, including angle0.52728 in the HWP factory, retain all constants and class/example associations. |
+| Inherited wire symbols and both layouts | Existing complete Drawer geometry, indexed spin words, JSON and rendered labels reused unchanged. |
+
+Native construction works without either reference SDK. When the original
+protocol succeeds, its actual library resolves to the same typed bodyless
+declaration as the native input graph. Such roots reject physical binding and
+cannot silently select the independent shifted-ZZ numerical operator.
+All immediate child identities, arguments, precision, signatures and counts
+are compared with the unmodified original source in memory. The original
+symbolic HWP protocol discovery failure remains explicit; source metadata is
+still represented in the existing native input library.
+
+Scalar Term bytes and decoded values match the actual original argument codec,
+including its loss of symbol assumptions and Python-int decoding of SymPy
+integer atoms. First-round normalization can reorder expressions; normalized
+payloads are stable. These boundaries are not changed by the constructor work.
+The one-site HWP declaration retains its zero-width child and empty signature,
+while original resource/decomposition failures and independent physical
+one-site admission remain distinct. No ordinary formula is substituted for a
+failed HWP query. Original odd-site omission and source/native angle differences
+remain recorded above.
+
+The direct dependency uses the accepted HWP source constructor and its shared
+count, weighted phase and exact measurement-assisted erasure owners. Source
+negative profiles and unresolved HWP parent boundaries remain in that audit.
+Existing full complex matrices in both directions, all four HWP measurement
+histories with zero work, odd-site sparse phases and separate measured/model
+resources are included in concentrated regression. Numerical emission and
+resource arithmetic are unchanged by the signature ownership replacement.
+
+Q-0440 closes the complete source file and its admitted direct dependency paths.
+This is not a claim that the original model-only declaration supplies an ordered
+primitive execution. Receipts use g2-hubbard-constructors-*-20261126.
+
+Both source Suzuki factories also consume the new declarations without any
+consumer change. Their ordinary/HWP and complete/stripped stored graphs export
+the exact original operands, return wiring and four/five-call connections after
+typed reconstruction. Physical binding continues to reject bodyless children.
+
+| Two-by-two interaction | Measured native primitives/storage | Separate original estimate |
+|---|---|---|
+| Ordinary | 8 CX, 4 Rz; 8 system wires, zero work or measurements | 4 rotations, peak4 |
+| HWP | 4 T + 4 Tdg, 8 phase, 44 CX, 2 CZ, 2 measurements; 8 system +3 work wires | 2 And, 26 Clifford, 4 rotations, 2 measurements, peak5 |
+
+Feedback/reset and all other raw primitives remain in the resource receipt;
+model categories and source word width do not describe that emitted stream.
+Final concentrated regression passes 257 cases in each Cirq lane and local
+integration passes 145. Both unmodified original files return 12 passes and
+12 source decomposition-only skips. Strict five-file typing, formatting, lint,
+both owner scopes, language/links, architecture, IR and public API checks pass.
+Four source/test Git blobs, Qualtran0.7.0 and real Kickmix0.1 Simulator are verified.
