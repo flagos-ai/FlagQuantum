@@ -8,8 +8,10 @@ import numpy as np
 import pytest
 import torch
 
+from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.compiler.optimization.local_unitary_synthesis import local_unitary_ir
 from flagquantum.compiler.registers.lookup.source_qrom import source_qrom_workspace_size
 from flagquantum.compiler.registers.phase.programmable_rotation_array import (
     _rotation_batches,
@@ -25,6 +27,7 @@ from tests.unit.test_programmable_rotation_array_file import (
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
+@pytest.mark.parametrize("synthesize", [False, True])
 @pytest.mark.parametrize(
     "word,kappa,custom,opaque",
     [
@@ -38,7 +41,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
     ],
 )
 def test_external_local_gate_array_full_operators_and_owned_replacement(
-    source_module: Any, word: int, kappa: int, custom: bool, opaque: bool
+    source_module: Any,
+    word: int,
+    kappa: int,
+    custom: bool,
+    opaque: bool,
+    synthesize: bool,
 ) -> None:
     import cirq
     from qualtran.bloqs.rotations import programmable_rotation_gate_array_test as cases
@@ -143,13 +151,17 @@ def test_external_local_gate_array_full_operators_and_owned_replacement(
     def rotate(
         control: int, targets: tuple[int, ...], power: int
     ) -> tuple[Instruction, ...]:
+        if synthesize:
+            return local_unitary_ir(powers[power], targets, control=control)
         return (Instruction("any", (control, *targets), matrix=controlled[power]),)
 
-    interleaved = (
+    interleaved: tuple[tuple[Instruction, ...], ...] = (
         ((Instruction("cx", (*target, *extra)),),)
         if custom
         else ((Instruction("any", target, matrix=cirq.unitary(interleaver).tolist()),),)
     )
+    if synthesize and not custom:
+        interleaved = (local_unitary_ir(np.asarray(cirq.unitary(interleaver)), target),)
     work = max(
         source_qrom_workspace_size(0, (2,), (delta,))
         for delta, _ in _rotation_batches(angles, kappa)
@@ -166,6 +178,13 @@ def test_external_local_gate_array_full_operators_and_owned_replacement(
         interleaved_target=extra,
     )
     native_ir = CircuitIR.from_json(CircuitIR(logical + work, gates).to_json())
+    assert (
+        Circuit(logical + work)
+        .append(FieldOperation(logical + work, gates))
+        .to_ir()
+        .to_dict()["instructions"]
+        == native_ir.to_dict()["instructions"]
+    )
     native_op = logical_operator(native_ir, logical)
     torch.testing.assert_close(source_ops[0], native_op, atol=1e-11, rtol=0)
     torch.testing.assert_close(
@@ -174,12 +193,20 @@ def test_external_local_gate_array_full_operators_and_owned_replacement(
         atol=1e-11,
         rtol=0,
     )
-    assert Counter(g.name for g in original.snapshots[0].instructions) == Counter(
-        g.name for g in native_ir.instructions
-    )
-    assert (
-        max(len(g.wires) for g in native_ir.instructions if g.name == "any") == word + 1
-    )
+    if synthesize:
+        assert all(g.matrix is None and g.name != "any" for g in native_ir.instructions)
+        assert (
+            Counter(g.name for g in native_ir.instructions)["measure"]
+            == Counter(g.name for g in original.snapshots[0].instructions)["measure"]
+        )
+    else:
+        assert Counter(g.name for g in original.snapshots[0].instructions) == Counter(
+            g.name for g in native_ir.instructions
+        )
+        assert (
+            max(len(g.wires) for g in native_ir.instructions if g.name == "any")
+            == word + 1
+        )
     # Independently assemble each per-address target operator with zero angle
     # load. This also proves relative phases across selection sectors.
     target_dimension = 1 << (word + len(extra))
