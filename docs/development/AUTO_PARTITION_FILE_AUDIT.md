@@ -6,7 +6,7 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Actual concrete captures and symbolic-width typed call decomposition verified. Full executable storage admission remains open, including pending Proposal 116. |
+| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Actual concrete captures and symbolic-width typed calls verified. Approved 116/125 storage paths are now covered; signed-zero and unresolved physical boundaries remain separate. |
 | Q-0319 | `auto_partition_test.py` | `adb86ad3fbfabf4f2aab180d3eecc6ffb9daebf5` | Closed for the original runnable scenarios. |
 | Q-0328 / Q-0329 | `partition.py` / `partition_test.py` | `8cebbb58095d172f3db564cdfc231537e6214957` / `c6c3236332577115ff6f09e17f340fe79825e1f4` | Reused for packed binding. Whole-file Partition acceptance continues separately. |
 
@@ -222,3 +222,14 @@ protobuf warnings and 29 local integration passes. Strict typing covers five
 changed Python files. Black, Ruff, integration scope, architecture, multilevel
 IR and protected API checks pass. The full catalog regression passes 786 cases, with three existing deselections
 and fourteen existing notebook escape warnings recorded in the catalog receipt.
+
+## Approved storage dependency closure — 2026-11-25
+
+Whole-array packed roots now cover signed positive-width, unsigned empty and GF(3)/GF(5)/GF(9) targets in ordinary and left-only modes. Original ordered calls, operands, physical aliases, zero work and full complex states match. The signed-target two-control child also matches every source measurement history and an independent clean operator. Signed-zero, original outer-LEFT finalization and symbolic physical boundaries remain separate.
+
+Earlier pending-Proposal-116 refusals above are historical and superseded. See
+[the shared implementation audit](NONBINARY_QUANTUM_FIELD_STORAGE.md) for the
+approved scope, exact original failure dispositions, regression and resource
+evidence. Existing owners and circuit.append(op) are reused. This closes the
+approved storage dependency; it does not infer unrestricted dtype or symbolic
+physical support or close the remaining whole-file parent boundaries.

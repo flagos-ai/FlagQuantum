@@ -23,6 +23,7 @@ from flagquantum.core.ir.program import (
     ProgramRecord,
     verify_program_record,
 )
+from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
@@ -70,7 +71,8 @@ def shaped_positive(
             control = soqs["ctrl"]
             for index in np.ndindex(shape):
                 bits = bb.split(words[index])
-                control, bits[0] = bb.add(CHadamard(), ctrl=control, target=bits[0])
+                if len(bits):
+                    control, bits[0] = bb.add(CHadamard(), ctrl=control, target=bits[0])
                 result[index] = bb.join(bits, dtype=original_dtype)
             return {"ctrl": control, "word": result if shape else result[()]}
 
@@ -86,9 +88,12 @@ def shaped_positive(
     result = np.empty(shape, dtype=object)
     current = builder.inputs["ctrl"]
     for index in np.ndindex(shape):
-        bits = builder.split(words[index])
-        outputs = builder.call_dict("ch", {"ctrl": current, "target": bits[0]})
-        current, bits[0] = outputs["ctrl"], outputs["target"]
+        word = words[index]
+        assert isinstance(word, RegisterBinding)
+        bits = builder.split(word)
+        if len(bits):
+            outputs = builder.call_dict("ch", {"ctrl": current, "target": bits[0]})
+            current, bits[0] = outputs["ctrl"], outputs["target"]
         result[index] = builder.join(bits, dtype)
     return (
         builder.finalize({"ctrl": current, "word": result if shape else result[()]}),
@@ -321,7 +326,7 @@ def test_symbolic_target_declarations_retain_source_graph_and_explicit_binding_r
 
 
 @pytest.mark.parametrize("shape", ((), (2,), (1, 2)))
-def test_signed_fixed_target_keeps_logical_graph_and_pending_storage_refusal(
+def test_signed_fixed_target_executes_approved_storage_and_all_erasure_branches(
     shape: tuple[int, ...],
 ) -> None:
     from qualtran import QFxp
@@ -351,9 +356,35 @@ def test_signed_fixed_target_keeps_logical_graph_and_pending_storage_refusal(
     counts = Counter(g.name for g in gates)
     assert counts["ch"] == prod(shape)
     assert counts["measure"] == get_cost_value(source, QECGatesCost()).measurement == 1
-    with pytest.raises(ValueError, match="concrete|fixed|executable|supported"):
-        bind_register_program(
-            module, ((0,), (1,), *words), clean=work, entry="positive"
+    bound = bind_register_program(
+        module, ((0,), (1,), *words), clean=work, entry="positive"
+    )
+    assert bound.outputs == ((0,), (1,), *words)
+    assert_gate_parameters(bound.circuit.instructions, gates)
+    logical = 2 + 3 * prod(shape)
+    n = logical + 2
+    before = torch.zeros(1 << n, dtype=torch.complex128)
+    values = torch.arange(1 << (logical + 1), dtype=torch.int64)
+    before[((values >> 1) << 2) | (values & 1)] = torch.complex(
+        values.double() + 1, values.remainder(11).double() - 5
+    )
+    before /= before.norm()
+    compute = (
+        Instruction("x", (0,)),
+        Instruction("ccx", (0, 1, work[0])),
+        Instruction("x", (0,)),
+    )
+    ideal = (
+        *compute,
+        *(Instruction("ch", (work[0], word[0])) for word in words),
+        *compute,
+    )
+    expected = forced_branch(before, ideal, ()) / 2**0.5
+    for history in ((0,), (1,)):
+        actual = forced_branch(before, bound.circuit.instructions, history)
+        torch.testing.assert_close(actual, expected, atol=2e-12, rtol=0)
+        torch.testing.assert_close(
+            actual, forced_branch(before, gates, history), atol=2e-12, rtol=0
         )
 
 
@@ -402,7 +433,22 @@ def test_symbolic_target_shape_keeps_original_construction_failure() -> None:
 
 @pytest.mark.parametrize(
     "profile",
-    ("uint", "bounded", "montgomery", "fixed-2", "fixed3", "field", "polynomial"),
+    (
+        "uint",
+        "bounded",
+        "montgomery",
+        "fixed-2",
+        "fixed3",
+        "field",
+        "polynomial",
+        "signed_fixed1",
+        "signed_fixed-2",
+        "empty_fixed0",
+        "empty_fixed-2",
+        "nonbinary3",
+        "nonbinary5",
+        "nonbinary9",
+    ),
 )
 @pytest.mark.parametrize("shape", ((2,), (2, 2), (0, 2)))
 @pytest.mark.parametrize("left_only", (False, True))
@@ -422,10 +468,37 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
         source_partition,
     )
 
-    dtype, original_dtype = packed_dtype(profile)
+    if profile.startswith("nonbinary"):
+        from qualtran import QGF
+
+        from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+
+        characteristic, degree = {
+            "nonbinary3": (3, 1),
+            "nonbinary5": (5, 1),
+            "nonbinary9": (3, 2),
+        }[profile]
+        dtype = FiniteFieldEncoding(characteristic, degree).register_type()
+        original_dtype = QGF(characteristic, degree)
+    elif profile.startswith(("signed_fixed", "empty_fixed")):
+        from qualtran import QFxp
+
+        from flagquantum.core.ir.program.register_types import fixed_point_register_type
+
+        signed = profile.startswith("signed_")
+        fraction = int(
+            profile.removeprefix("signed_fixed" if signed else "empty_fixed")
+        )
+        word_width = 3 if signed else 0
+        dtype = fixed_point_register_type(word_width, fraction, signed)
+        original_dtype = QFxp(word_width, fraction, signed=signed)
+    else:
+        dtype, original_dtype = packed_dtype(profile)
+    assert isinstance(dtype.num_qubits, int)
+    word_width = dtype.num_qubits
     positive, original_positive = shaped_positive(dtype, original_dtype, shape)
     count = prod(shape)
-    width = 3 * count
+    width = word_width * count
     layout = AutoPartition(
         (("ctrl", (("ctrl", 1),)), ("packed", (("word", width),))), left_only=left_only
     )
@@ -437,7 +510,9 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
     assert normalize_trace(_native_trace(module, "packed")) == normalize_trace(
         _source_trace(SourceCalls, source.decompose_bloq())
     )
-    words = tuple(tuple(range(1 + 3 * i, 4 + 3 * i)) for i in range(count))
+    words = tuple(
+        tuple(range(1 + word_width * i, 1 + word_width * (i + 1))) for i in range(count)
+    )
     packed = tuple(range(1, width + 1))
     bound = bind_register_program(module, ((0,), packed), entry="packed")
     outputs = ((0,), *words) if left_only else ((0,), packed)
@@ -448,15 +523,16 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
     assert_gate_parameters(bound.circuit.instructions, reference)
     assert bound.events == ()
     counts = Counter(g.name for g in bound.circuit.instructions)
-    assert counts == ({"ch": count} if count else {})
+    active_count = count if word_width else 0
+    assert counts == ({"ch": active_count} if active_count else {})
     model = get_cost_value(source, QECGatesCost())
     assert model.measurement == 0
-    assert model.clifford == 4 * count and model.rotation == 2 * count
+    assert model.clifford == 4 * active_count and model.rotation == 2 * active_count
     assert get_cost_value(source, QubitCount()) == bound.circuit.n_wires == width + 1
     before = torch.arange(1 << (width + 2), dtype=torch.float64)
     before = torch.complex(before + 1, before.remainder(11) - 5)
     before /= before.norm()
-    expected_gates = tuple(Instruction("ch", (0, word[0])) for word in words)
+    expected_gates = tuple(Instruction("ch", (0, word[0])) for word in words if word)
     expected_state = forced_branch(before, expected_gates, ())
     circuit = DynamicCircuit(width + 2).append(
         FieldOperation(width + 2, bound.circuit.instructions)
