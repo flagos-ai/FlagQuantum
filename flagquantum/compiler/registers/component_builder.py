@@ -264,6 +264,22 @@ class ComponentProgramBuilder:
         )
         return map_register_bindings(returned, replacements)
 
+    def import_program(self, record: ProgramRecord, *, entry: str = "main") -> str:
+        """Import verified definitions without emitting calls or consuming inputs.
+
+        Equal definitions share the existing local names. Conflicting definitions
+        retain the ordinary deterministic namespace isolation. The returned name
+        can be used with call_dict repeatedly; each call creates fresh SSA values.
+        No input Program is cached or modified.
+        """
+        record, entry = prepare_component_import(
+            record, entry, self._functions, self._name, include_entry=True
+        )
+        for definition in record.functions:
+            if definition.name not in self._functions:
+                self.define(definition)
+        return entry
+
     def call_program(
         self,
         record: ProgramRecord,
@@ -272,13 +288,7 @@ class ComponentProgramBuilder:
         entry: str = "main",
     ) -> dict[str, BindingCollection]:
         """Insert one nested call, importing and sharing its typed definitions."""
-        record, entry = prepare_component_import(
-            record, entry, self._functions, self._name, include_entry=True
-        )
-        for definition in record.functions:
-            if definition.name not in self._functions:
-                self.define(definition)
-        return self.call_dict(entry, bindings)
+        return self.call_dict(self.import_program(record, entry=entry), bindings)
 
     def call_partitioned(
         self,

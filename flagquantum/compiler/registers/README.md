@@ -125,6 +125,16 @@ is supported below. Additional descriptors and numerical traversal remain
 separate.
 
 
+`import_program(record, entry="main")` imports verified definitions and returns
+an isolated local callee name without emitting a call or consuming input handles.
+Repeated `call_dict` invocations then create independent SSA outputs through the
+existing ownership checks. Ordinary `call_program` is exactly import followed by
+call; it preserves deterministic helper names and conflict behavior. This is not
+a persistent cache: callers retain a name only inside the current builder.
+Run `tests/unit/test_component_program_import.py` and
+`tests/unit/test_component_program_import_reuse.py` for nested/partitioned calls,
+conflicting roots, full records, feedback, every small branch and zero work.
+
 ## Builder word and bit rebindings
 
 `component_rebindings.py` supplies real typed helper functions consumed by the
