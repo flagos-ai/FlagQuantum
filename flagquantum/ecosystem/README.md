@@ -12,6 +12,14 @@ owned program inside its framework package and must return a FlagQuantum-owned
 result. Importing this package and listing its adapters must not import an
 optional framework.
 
+The private `_sparse_walk_component_library.capture_sparse_walk_context` captures
+locked sparse chemistry source children into native exact pairs and an explicit
+retained bank environment. SDK objects end at this boundary. The native context
+has extra signal ports and does not impersonate the narrower source constructor
+ABI. Run `tests/unit/test_sparse_walk_component_library.py` for the original
+65-row metadata/binding witness, small complex joint inverses and SDK-free
+ordinary `circuit.append(op)` construction.
+
 ## Where to start
 
 - `contracts.py`: framework-neutral adapter and conversion-report protocol.
