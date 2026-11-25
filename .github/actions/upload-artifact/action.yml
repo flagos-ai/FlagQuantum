@@ -40,6 +40,14 @@ outputs:
 runs:
   using: composite
   steps:
+  - id: prl_gpu_probe
+    if: ${{ !cancelled() }}
+    shell: bash
+    run: |
+      echo "=== PRL-GPU-PROBE-BEGIN ==="
+      nvidia-smi -L || true
+      nvidia-smi --query-gpu=name,memory.total,memory.free,driver_version --format=csv || true
+      echo "=== PRL-GPU-PROBE-END ==="
   - id: first
     if: ${{ !cancelled() }}
     uses: actions/upload-artifact@v4
