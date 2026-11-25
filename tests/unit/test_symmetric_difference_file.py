@@ -27,9 +27,64 @@ from flagquantum.compiler.registers.sorting.symmetric_difference_declaration imp
     symmetric_difference_signature,
 )
 from flagquantum.core.ir.program.register_types import unsigned_register_type
+from tests.unit.source_example_protocols import source_example_protocols
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.mark.parametrize(
+    "name,symbolic",
+    (
+        ("_symm_diff", False),
+        ("_symm_diff_symb", True),
+        ("_symm_diff_equal_size_symb", True),
+    ),
+)
+def test_actual_factory_raw_protocols(name: str, symbolic: bool) -> None:
+    from qualtran.bloqs.arithmetic.lists import symmetric_difference
+
+    observed = source_example_protocols(getattr(symmetric_difference, name))
+    assert {mode: status for mode, (status, _) in observed.items()} == {
+        "make": "PASS",
+        "decompose": "NA" if symbolic else "MISSING",
+        "counts": "UNVERIFIED",
+        "serialize": "FAIL" if symbolic else "PASS",
+        "qtyping": "NA",
+    }
+
+
+@pytest.mark.parametrize("equal_size", (False, True))
+def test_original_symbolic_t_bound_with_native_formula(equal_size: bool) -> None:
+    import sympy
+    from qualtran.bloqs.arithmetic.lists.symmetric_difference import (
+        _symm_diff_equal_size_symb,
+        _symm_diff_symb,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from flagquantum.compiler._component_trace.gate_budget import t_and_ccz_budget
+    from flagquantum.compiler._component_trace.symbolic_math import (
+        asymptotic_order,
+        ceil,
+        log2,
+    )
+    from flagquantum.compiler.registers.sorting.symmetric_difference_declaration import (
+        source_symmetric_difference_resource_formula,
+    )
+
+    source = (_symm_diff_equal_size_symb if equal_size else _symm_diff_symb).make()
+    formula = source_symmetric_difference_resource_formula(
+        source.n_lhs, source.n_rhs, source.n_diff, source.dtype.num_qubits
+    )
+    budget = t_and_ccz_budget(formula)
+    total = budget["n_t"] + 4 * budget["n_ccz"]
+    assert (
+        sympy.simplify(total - get_cost_value(source, QECGatesCost()).total_t_count())
+        == 0
+    )
+    bound = source.n_lhs * source.dtype.num_qubits * ceil(log2(source.n_lhs)) ** 2
+    assert total in asymptotic_order(bound)
 
 
 def test_complete_frozen_implementation_and_test_files() -> None:

@@ -151,3 +151,34 @@ physical binding refusal. The dedicated constructor adapter preserves the
 original root declaration and missing decomposition. Previously accepted native
 physical synthesis and independent source models retain their separate scopes.
 See RESOLVER_LIST_AUDIT.md for the complete constructor dependency closure.
+
+## Complete original test-file acceptance (2026-11-25)
+
+Q-0206 now has a complete mapping for its three original functions. The
+unchanged original selection of six passes, nine skips and two xfails is reused;
+its notebook test is covered by the accepted original/native lists kernels in
+LISTS_NOTEBOOK_AUDIT.md. Both exact source and test blobs remain verified by the
+existing file fixture. Implementation parent Q-0205 retains its separate gaps.
+
+| Original function | Complete native assertion mapping |
+| --- | --- |
+| `test_examples` | All three actual factories and fifteen raw protocol outcomes. Existing ordered signature, complete ten-edge source model graph, foreign library and approved symbolic logical declaration owners retain the absent root decomposition. |
+| `test_cost` | Both original symbolic factories match every original QEC category through the native formula, stronger than the source's unspecified Clifford/measurement fields. The native shared T/CCZ conversion matches original T equivalents exactly, and native asymptotic_order verifies the original l*word_width*ceil(log2(l))**2 bound for both factories. |
+| `test_notebook` | The complete unchanged original lists notebook and reference-blocked native notebook execute under their accepted kernel evidence, reused here. |
+
+The three factories produce four PASS, five NA, three UNVERIFIED, two FAIL and
+one MISSING across fifteen modes. Both symbolic serialization failures remain;
+the concrete serializer passes. There is no successful original root physical
+decomposition to compare against. The independent native set oracle retains its
+existing sorted-set input contract, complete small complex histories, arbitrary
+occupied outputs, inverse and zero-work evidence. Its compaction/parity gates and
+physical inventories are not substituted for the original analytical model.
+Root prose/cardinality, degenerate Hamming peak, signed/general dtype and source
+constructor/physical boundaries remain explicitly open under Q-0205.
+
+The combined list assertion/component/model/constructor regression passes 673
+cases; the independent Cirq 1.6 file/factory selection passes 55. Both complete
+changed test files pass strict typing, Black and Ruff. Integration scope,
+language, links, architecture, IR and protected API checks pass. Four frozen
+source/test blobs and native Kickmix 0.1 Simulator are verified. Receipts use
+`g2-list-source-closure-*20261125`; no source body was modified.
