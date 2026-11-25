@@ -87,17 +87,20 @@ primitive/model equality is asserted below incomparable leaves. The supplied
 zero live private leases; numerical zero follows from the reused branch tests,
 not lease release alone.
 
-The original uncontrolled Hubbard SELECT resolves as a typed bodyless child;
-physical binding refuses it until the scalar-node prerequisite is implemented.
-Its actual primitive inventory is therefore null, not zero. Proposal 119 is
-still pending explicit approval. Controlled Hubbard SELECT serializes at depth
+The former uncontrolled Hubbard SELECT bodyless gap is now closed through the
+existing private scalar carrier and the shared native SELECT body. Both packed
+directions have the same primitive stream and physical lease offsets as the
+direct source-shaped child. See the
+[PREPARE constructor closure](HUBBARD_PREPARATION_CONSTRUCTOR_AUDIT.md) for the
+active dependency replacement. Proposal 119's new opcode remains pending and
+is not used. Controlled Hubbard SELECT serializes at depth
 zero but its original packed decomposition fails because control is absent from
 the partitions; native construction retains the same failure. Source control
 value zero is independently refused by the original constructor.
 
 Other child factories still require their native owner; singleton Hubbard,
-nonconcrete weights, one-sided unsupported layouts, symbolic physical binding,
-pending Proposal 116, wider generic catalogue and repository/GPU/performance
+symbolic physical weights, one-sided unsupported layouts,
+pending protected proposals, wider generic catalogue and repository/GPU/performance
 acceptance remain separately scoped. No generic catalogue increment or complete
 walk/LP scalar closure is claimed from this constructor group.
 

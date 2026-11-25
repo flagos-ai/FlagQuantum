@@ -1,5 +1,14 @@
 # Ecosystem interoperability
 
+The packed-oracle component-library adapter converts Hubbard coefficients to
+owned angles with the shared Algorithms formula, then delegates call construction
+and scoped exact inverses to Compiler. It records explicit selection/junk/system
+roles and reuses the existing scalar carrier for uncontrolled SELECT. It neither
+executes numerical states nor infers missing child semantics from resource counts.
+See the [constructor audit](../../docs/development/HUBBARD_PREPARATION_CONSTRUCTOR_AUDIT.md)
+and `tests/unit/test_hubbard_prepare_source_constructors.py` for the smallest
+source round-trip, source-free append and complete complex-branch scenarios.
+
 `flagquantum.ecosystem` is the interoperability boundary. It translates objects
 from optional external frameworks into FlagQuantum-owned `CircuitIR` and
 translates owned programs back only when explicitly requested. Conversion

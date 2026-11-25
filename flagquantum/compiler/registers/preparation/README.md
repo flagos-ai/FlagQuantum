@@ -2,6 +2,14 @@
 
 This package owns uniform and rank-aware preparation and reflections.
 
+`hubbard_prepare_component.py` owns Hubbard's complete typed preparation and
+exact inverse call chains. It receives already converted angles, preserves the
+copy-circuit moment barrier and caller-owned temp, and delegates predicate work
+to the existing components. Algorithms and original constructor resolution use
+this same owner. Run `tests/unit/test_hubbard_prepare_source_constructors.py`
+for actual source wire depths, exact angle parameters, full complex histories,
+work cleanup and normal append with optional SDKs blocked.
+
 The `thc_uniform_source_component`, `thc_preparation_component` and
 `thc_preparation_metadata` owners retain literal THC calls and shared ports.
 Source model leaves and invalid cleanup remain explicit physical refusals;

@@ -4,14 +4,20 @@ This is the complete 303-key snapshot of Qualtran v0.7.0
 `serialization/resolver_dict.py`, commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`, blob
 `b10adb30b493afda81fcff2e330618415df655a2`.
+This table inventories Compiler format providers, including their explicit
+context callbacks. Ecosystem providers can already resolve keys absent here;
+a missing format registration is not evidence of missing functionality. Hubbard
+PREPARE, for example, already had an Ecosystem constructor before its shared
+Compiler ownership was added.
+
 It records exact identifiers and actual defining modules, rather than guessing
 source ownership from a package alias. Factory providers requiring context are
 queried with nonexecuting callbacks; no constructor or dependency callback is
 executed by this registration inventory.
 
-There are 177 exact factory registrations, four additional aliases whose
-canonical class has a factory, and 122 keys without an exact factory. Those
-122 include the CompositeBloq graph special case, the CtrlSpec argument
+There are 178 exact Compiler format registrations, four additional aliases whose
+canonical class has a factory, and 121 keys without an exact Compiler factory. Those
+121 include the CompositeBloq graph special case, the CtrlSpec argument
 descriptor, abstract interfaces and one original module-valued entry. They
 are not all missing executable constructors. Generic connected graph resolution
 is separate from shallow named-constructor reconstruction.
@@ -163,7 +169,7 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 | `qualtran.bloqs.chemistry.df.prepare.OuterPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.df.prepare.OutputIndexedData` | `qualtran/bloqs/chemistry/df/prepare.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.df.select_bloq.ProgRotGateArray` | `qualtran/bloqs/chemistry/df/select_bloq.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/prepare_hubbard.py` | Unregistered | Published module receipts pending reconciliation |
+| `qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/prepare_hubbard.py` | Registered: `legacy_hubbard_prepare_factories.py` | [PREPARE scoped closure](HUBBARD_PREPARATION_CONSTRUCTOR_AUDIT.md) |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |

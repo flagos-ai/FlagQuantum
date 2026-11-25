@@ -59,12 +59,11 @@ evidence. The full operators and raw-history tests supply the latter.
 
 ## Retained gaps
 
-- Ordinary original Hubbard SELECT still lacks its registerless scalar phase
-  body. Proposal 119 remains pending approval. The binder requires bodies even
-  for unused declarations, so controlled original roots also retain that
-  diagnostic. Actual primitive inventories are null, never zero, for these
-  unexecutable original examples. Existing Algorithms execution evidence is
-  distinct from constructor graph closure.
+- The former ordinary Hubbard SELECT scalar-body gap is closed through the
+  existing private carrier. All four original SELECT/LCU forward factories and
+  both Hubbard specialized control paths now bind named native primitive bodies.
+  See [the active dependency closure](HUBBARD_PREPARATION_CONSTRUCTOR_AUDIT.md).
+  Proposal 119's new Core opcode remains pending and is not used.
 - Original LCU inverse serialization and deeper plain SELECT inverse
   serialization fail on `SpecializeOnCtrlBit.ONE`. The source is not patched;
   native exact-pair tests do not imply that this original wire path succeeds.

@@ -9,6 +9,10 @@ operations and models stay in Algorithms. Run
 `tests/unit/test_hubbard_selection_source_constructors.py` for actual original
 factories, wire depths and unchanged output ownership.
 
+Its PREPARE signature separately preserves exact integer bit_length sizing and
+the caller-owned two-bit temp word. It does not use SELECT's ceil/log2 formula.
+Coefficient evaluation stays with Algorithms and its Ecosystem converter.
+
 `thc_signatures.py` owns literal THC rotation/selection ports. Formats uses the
 original constructor metadata, while Algorithms retains its stricter numerical
 validators before delegating to these layouts. Source THRU words remain
