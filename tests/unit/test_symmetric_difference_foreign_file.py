@@ -126,9 +126,11 @@ def test_finite_dtype_metadata_keeps_explicit_execution_factory(
         arguments: Mapping[str, ResolvedArgument],
     ) -> FunctionRecord | ProgramRecord:
         assert registers is not None and arguments["dtype"] == registers[0].dtype
-        if kind != "unsigned":
+        if kind == "opaque":
             return FunctionRecord(name, (), registers=registers)
-        graph = symmetric_difference_program(lhs, rhs, width, size)
+        graph = symmetric_difference_program(
+            lhs, rhs, width, size, signed=kind == "signed"
+        )
         assert graph.functions[0].registers == registers
         graph = replace(
             graph,
@@ -138,11 +140,15 @@ def test_finite_dtype_metadata_keeps_explicit_execution_factory(
 
     resolved = resolve_component_program(library, 0, {declaration.name: factory})
     assert resolved.functions[0].registers == declaration.registers
-    if kind == "unsigned":
+    if kind != "opaque":
         a, b, out, flag, clean, _ = layout(lhs, rhs, width, size)
         ports = (*a, *b, *out, (flag,))
         actual = bind_register_program(resolved, ports, clean=clean)
         expected = bind_register_program(
-            symmetric_difference_program(lhs, rhs, width, size), ports, clean=clean
+            symmetric_difference_program(
+                lhs, rhs, width, size, signed=kind == "signed"
+            ),
+            ports,
+            clean=clean,
         )
         assert actual.circuit == expected.circuit and actual.outputs == expected.outputs

@@ -31,15 +31,34 @@ def _copy_payloads(
 ) -> NDArray[np.object_]:
     dtype = RegisterType("uint", width)
     for i, value in enumerate(words):
+        assert isinstance(value, RegisterBinding)
+        original_dtype = value.register.dtype
+        if original_dtype != dtype:
+            value = builder.join(builder.split(value), dtype)
         copied = builder.call_program(
             bitwise_word_program(dtype, "xor"),
             {"x": value, "y": builder.join(keys[i][-width:], dtype)},
         )
-        words[i] = copied["x"]
+        source = copied["x"]
+        assert isinstance(source, RegisterBinding)
+        words[i] = (
+            builder.join(builder.split(source), original_dtype)
+            if original_dtype != dtype
+            else source
+        )
         payload = copied["y"]
         assert isinstance(payload, RegisterBinding)
         keys[i][-width:] = builder.split(payload)
     return words
+
+
+def _bias_payload_signs(
+    builder: ComponentProgramBuilder, keys: list[NDArray[np.object_]], width: int
+) -> None:
+    for key in keys:
+        key[-width] = builder.call_program(
+            multi_control_x_program(()), {"target": key[-width]}
+        )["target"]
 
 
 def _compare_adjacent(
@@ -101,7 +120,7 @@ def _compact(
 
 
 def symmetric_difference_program(
-    left: int, right: int, width: int, size: int
+    left: int, right: int, width: int, size: int, *, signed: bool = False
 ) -> ProgramRecord:
     """XOR ascending set difference and cardinality match into occupied targets.
 
@@ -110,9 +129,12 @@ def symmetric_difference_program(
     merge/sort/Hamming histories are consumed by exact adjoints. All work
     returns clean. This is the existing native paper construction, since the
     frozen source supplies no root gates. Invalid shapes raise ValueError.
+    Signed words retain two's-complement order without biasing occupied outputs.
     """
     layout = _layout(left, right, width, size)
-    dtype = RegisterType("uint", width)
+    if type(signed) is not bool:
+        raise ValueError("Set difference signed flag requires a boolean")
+    dtype = RegisterType("signed" if signed else "uint", width)
     builder = ComponentProgramBuilder(
         symmetric_difference_signature(left, right, size, dtype)
     )
@@ -139,6 +161,8 @@ def symmetric_difference_program(
     ]
     active = [*keys[:left], *keys[layout.half : layout.half + right]]
     words = _copy_payloads(builder, active, np.concatenate((s, t)), width)
+    if signed:
+        _bias_payload_signs(builder, active, width)
     for i in (*range(left, layout.half), *range(layout.half + right, len(keys))):
         toggled = builder.call_program(
             multi_control_x_program(()), {"target": keys[i][0]}
@@ -188,6 +212,13 @@ def symmetric_difference_program(
             )
             success, keys[i][-width + j] = np.asarray(copied["controls"])
             bits[j] = copied["target"]
+        if signed:
+            corrected = builder.call_program(
+                multi_control_x_program((1,)),
+                {"controls": np.array([success], dtype=object), "target": bits[0]},
+            )
+            success = np.asarray(corrected["controls"])[0]
+            bits[0] = corrected["target"]
         output[i] = builder.join(bits, dtype)
     toggled = builder.call_program(
         multi_control_x_program((1,)),
@@ -230,6 +261,8 @@ def symmetric_difference_program(
     ):
         key[positions] = builder.split(value)
     active = [*keys[:left], *keys[layout.half : layout.half + right]]
+    if signed:
+        _bias_payload_signs(builder, active, width)
     words = _copy_payloads(builder, active, words, width)
     for i in (*range(left, layout.half), *range(layout.half + right, len(keys))):
         toggled = builder.call_program(
