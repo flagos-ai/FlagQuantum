@@ -4,9 +4,10 @@ G2-FILE-FIELD-ADD audits Q-0509 through Q-0514 and the direct converter dependen
 Q-0524 against Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. All seven original assets match their
 frozen Git blobs. Q-0509, Q-0512 and Q-0524 close. Implementation parents Q-0510
-and Q-0513 and test parents Q-0511 and Q-0514 remain open under the original
-closure criteria for the source bookkeeping/count and generic admission/test
-boundaries listed below. Existing source failures remain reproducible.
+and Q-0513 remain open for the source bookkeeping/count and generic admission
+boundaries listed below. Test parents Q-0511 and Q-0514 close after the complete
+actual factory/protocol mapping at the end of this audit. Existing source
+failures remain reproducible.
 
 ## Ownership, interfaces and work
 
@@ -109,9 +110,9 @@ recursive graph peak estimates and runtime statistics.
 
 | Parents | Reproduced boundary | Owner and closure condition |
 |---|---|---|
-| Q-0510, Q-0513, Q-0511, Q-0514 | The two concrete source autotester count checks fail because annotations omit QGF Split/Join nodes. Physical X/CX counts match. Source diagnostic compares the entire declaration and decomposition without editing either. | Compiler resource and test owners. Preserve full source bookkeeping identities and failure evidence. Close only after an explicit disposition under the original criteria, without presenting filtered counts as the original count assertion. |
+| Q-0510, Q-0513 | The two concrete source autotester count checks fail because annotations omit QGF Split/Join nodes. Physical X/CX counts match. Source diagnostic compares the entire declaration and decomposition without editing either. | Compiler resource owner. Complete native stored graphs preserve the bookkeeping identities. Original annotation disagreement remains a source defect; test-parent closure does not close these implementation parents. |
 | Q-0510, Q-0513 | Source attrs/QGF construction, deprecated `bitsize=` warning and generic foreign object admission are not native production constructors. Explicit native field resolution and supported concrete words are accepted. | Existing Core metadata, Simulation conversion and Ecosystem boundary. Establish the remaining native admission/failure mapping without changing protected schemas or introducing a parallel Bloq API. |
-| Q-0511, Q-0514 | Six source fixture skips cover symbolic decomposition/count applicability and dtype checks. Four serialization xfails explicitly reject QGF. The two other xfails are the counts diagnostic above. | Native generic test/serialization owners. Complete exact native autotester and serialization assertion mappings for all four factories. Existing numerical metadata roundtrips are reused but do not substitute for these original assertion paths. |
+| Q-0511, Q-0514, closed | Six source fixture skips cover symbolic decomposition/count applicability and dtype checks. Four serialization xfails explicitly reject QGF. The two other xfails are the counts diagnostic above. | The new actual-factory conformance test independently invokes all twenty original protocols and checks native signatures, stored owner identity and verification, symbolic refusal, and logical-versus-physical codec rejection. Bound CircuitIR JSON and numerical execution remain separate evidence; no successful source QGF codec is claimed. |
 
 Q-0516/Q-0519 historical linear-adjoint and Karatsuba issues are unchanged. This
 batch reuses their accepted dependency evidence and does not reopen them.
@@ -200,8 +201,9 @@ Both streams have zero T, measurement and workspace events. Full primitive
 histograms and analytical model fields remain separately recorded in
 ftqc-reference-env/g2-field-addition-ui-source-intake-20261122.json. The original
 source bookkeeping/count, generic construction and serialization boundaries
-above remain open under Q-0510/Q-0511/Q-0513/Q-0514. Their parent completion is
-not inferred from catalog graph acceptance.
+above remain open under Q-0510/Q-0513. Test parents Q-0511/Q-0514 close only after
+the independent protocol mapping below, rather than catalog graph acceptance
+alone.
 
 Strict mypy covers four Python files. Black, Ruff, integration scope,
 architecture, multilevel IR, protected API and whitespace checks pass. Seven
@@ -212,6 +214,79 @@ The corrected harness reuses its static source identity observer directly,
 preserving the original QGF descriptor. The published child inventory includes
 all four independently named rebinding definitions in register addition and
 both rebinding definitions in constant addition, plus CNOT and X.
+
+## Complete original test closure and actual protocol mapping — 2026-11-25
+
+Both entire original test files are reread and their frozen blobs reverified.
+All nine top-level functions retain their existing AST inventory guard. The
+unchanged full suite, including every slow degree-three/four/five case, reports
+17 passes, six original skips and six original xfails. Existing exhaustive
+classical callbacks, all constant streams, exact source operands and stored
+Split/CNOT-or-X/Join graphs are reused, including source-defined adjoints.
+
+The actual four factory examples now run every original raw protocol
+independently in both the source receipt and the native conformance test:
+
+| Actual factory | Make | Decompose | Counts | Serialize | Strict types |
+|---|---|---|---|---|---|
+| gf16_addition | PASS | PASS | FAIL | FAIL | PASS |
+| gf2_addition_symbolic | PASS | NA | UNVERIFIED | FAIL | NA |
+| gf16_add_k | PASS | PASS | FAIL | FAIL | PASS |
+| gf2_add_k_symbolic | PASS | NA | UNVERIFIED | FAIL | NA |
+
+All twenty observations comprise eight PASS, six FAIL, four NA and two
+UNVERIFIED. Count failures must name both omitted Split and Join; serialization
+failures must name QGF. None is filtered or repaired. Symbolic type checks are
+inapplicable because decomposition is unavailable. Native construction checks
+the actual catalog signatures, shapes, sides and descriptors. Concrete roots
+equal the existing executable field_addition_program objects and pass the
+shared verifier; both symbolic roots deliberately have no body.
+
+The source field degree is not interchangeable with its unresolved signature
+width. Both native and source signatures retain ceil(log2(floor(2**m))) while
+their declared CX/X bound uses degree m. The native descriptor retains m as its
+degree parameter. The first conformance run incorrectly compared these two
+different source properties; the corrected assertion checks degree against
+degree and the complete signature against the original complete signature.
+No symbolic expression or original assumption was changed to simplify it.
+
+Native physical-context Program serialization refuses these logical graphs.
+That expected boundary is now asserted on both actual concrete catalog roots,
+while existing bound CircuitIR JSON tests cover the separate executable
+representation and full complex-state execution. Four source QGF codecs remain
+failed; no new generic logical Program codec or protected schema is introduced.
+The original polynomial identity is checked on each actual concrete root.
+
+The complete callback, stored graph, native catalog, bound append and independent
+foreign-capture consumers remain separate owners. Existing full complex vectors
+include spectators, arbitrary target words, forward/inverse restoration and
+noncontiguous bindings, with zero work and zero measurement events. The single
+coherent branch is the complete measurement scope. Concrete GF16 emits four CX
+or one X, versus independent model four or one Clifford. Symbolic gate bounds
+are models only, not emitted primitives.
+
+These observations close Q-0511/Q-0514's complete original test responsibilities.
+They do not close Q-0510/Q-0513's remaining generic construction and codec
+interfaces. Receipts use `g2-field-addition-*-20261125`, including the independent
+twenty-row source protocol matrix and untouched original full-test log. Final
+regression and strict-check results are recorded in the synchronized ledger.
+
+The accepted regression passes 122 concentrated cases; after replacing the
+old CSV-dependent lock fixture, the entire 47-case owner file passes again.
+Cirq 1.6 independently passes 66 owner, typed-binding and actual-factory cases.
+Strict mypy passes the complete touched Python file. Black, Ruff, Integration
+scope, language, local links, architecture, multi-level IR and protected API
+checks pass. All production modules are unchanged, so the accepted 145 local
+integration cases and 720 dependency-baseline findings from the preceding batch
+are reused explicitly. The final lock fixture checks exactly the same seven
+original blob values through English paths, without retaining Chinese CSV keys
+inside repository code. No reference data was translated or changed.
+
+An initial quality run could not write its architecture receipt because the
+volume was temporarily full. After confirming there were no live pytest jobs,
+only completed pytest temporary directories were removed. The full strict-check
+sequence then completed successfully. The source checkout, dependency packages,
+published evidence and working changes were retained.
 
 The complete catalog regression passes 749 cases with three existing
 deselections and 14 original notebook warnings. Every combined file equals its
