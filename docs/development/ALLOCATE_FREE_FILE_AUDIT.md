@@ -7,9 +7,9 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0310 | `allocate.ipynb` | `8d91513e62d1015fcbd97c0601442916e3ba6796` | Closed by the complete native Allocate and Free tutorial. |
-| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Open for full executable dtype coverage, including pending Proposal 116. Direct SDK lifetime hooks and symbolic component drawing are verified. |
+| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Approved 116/125 storage, direct SDK lifetime hooks and symbolic drawing verified. Open for signed-empty 124 and symbolic field declaration 126; original field codec and empty callback failures retained. |
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
-| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for full executable dtype coverage, including pending Proposal 116. Direct SDK lifetime hooks and symbolic component drawing are verified. |
+| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Approved 116/125 storage, direct SDK lifetime hooks and symbolic drawing verified. Open for signed-empty 124 and symbolic field declaration 126; original field codec failures retained. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
 | Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Complete base control protocol accepted in 6d6460528; see BOOKKEEPING_CONTROL_FILE_AUDIT.md. |
 
@@ -115,12 +115,11 @@ native binary-field lifetime behavior continues to use its earlier typed
 execution evidence; this batch makes no successful original-wire claim for those
 dtypes. It adds no new production owner or third-party adapter.
 
-Q-0311 and Q-0323 remain open for complete executable dtype admission, direct SDK
-lifetime hooks and symbolic component drawing. Signed and empty fixed-point
-storage still awaits Proposal 116. Generic classical and nonbinary physical
-lifetime semantics remain with their existing descriptor/execution owners.
-Source PennyLane `None` hooks and qubit-manager events retain their earlier
-observations, with direct foreign-object adapters still explicitly open.
+At this historical publication, Q-0311 and Q-0323 still awaited complete dtype
+admission, direct SDK hooks and symbolic drawing. The later sections verify the
+hooks and drawing; the approved 116/125 storage closure below supersedes the
+old fixed-point and nonbinary storage blockers. Original codec and callback
+failures remain separate from native physical storage.
 
 ## Regression disposition
 
@@ -217,11 +216,11 @@ owners restored temporarily to the pre-batch HEAD. Their assertions now check
 the approved exact Core port metadata and valid Program identity. No production
 Core behavior changes. The baseline failing run is retained separately.
 
-Q-0311 and Q-0323 remain open for complete executable dtype coverage, including
-signed and empty fixed-point storage awaiting Proposal 116. Their direct SDK
-lifetime hooks and symbolic presentation obligations are verified. The remaining
-physical admission boundary is owned by Core and Compiler, independently of
-Drawer metadata presentation. Proposal 117 remains independently pending.
+At this historical publication, Q-0311 and Q-0323 still awaited Proposal 116
+storage admission. Their direct SDK lifetime hooks and symbolic presentation
+were verified. The approved storage closure below supersedes that blocker.
+Static controlled-Hadamard admission was independent and subsequently approved
+and implemented under Proposal 122; it is not a remaining lifetime dependency.
 
 The final batch passes 172 concentrated cases and 17 local integration cases.
 All 89 direct-lifetime, symbolic and mixed-score cases also pass under Cirq
@@ -233,3 +232,49 @@ Core/Compiler/numerical/lane owners are verified. Dependency findings total 681
 repository-wide and zero on the batch surface after optional dependency guards
 are added to the touched mixed-score tests. Evidence is recorded under
 ftqc-reference-env/g2-symbolic-lifetime-*.
+
+## Approved storage dependency reconciliation
+
+The complete original Allocate and Free files and their direct bookkeeping base
+were reviewed again after Proposals 116 and 125 were implemented. Typed creation
+and consumption already use the shared lifetime owners; no new implementation
+or API is needed. Actual source-library consumers now exercise signed fixed
+point at positive and negative fractions and unsigned empty words under both
+clean and dirty flags. Original wire round trips, exact typed interfaces,
+ownership events, SDK hooks, ordinary append and complete complex restoration
+pass. Empty words retain both logical events and borrow a real spectator for
+the physical plan. The actual Cirq manager accepts empty qalloc/qborrow/qfree;
+an empty qfree contains no wire from which a tracking oracle can recover a flag.
+
+The original empty fixed-point Allocate classical callback fails while decoding
+an empty binary string. Its Free callback accepts zero. Both facts are asserted
+without changing the source callback or manufacturing a successful numeric
+decode. They do not invalidate the successful source SDK storage lifetime.
+
+All six nonbinary scalar/polynomial profiles now cover dirty as well as clean
+storage. Literal original qborrow/qfree events match native ownership and wire
+order. Complete complex states include entanglement between borrowed words and
+the spectator, including raw codes outside the numerical field range. Borrowed
+words are restored, rather than falsely required to be zero. Clean words return
+to zero. Original dirty tensor hooks still contract zero bras/kets: their
+spectator-only H/T matrix is distinct from the full borrowed-state SDK identity.
+
+| Scope | Actual emission and ownership | Independent original model |
+|---|---|---|
+| Fixed-point Allocate/Free, both flags | No gates or measurements; same word allocated and released; empty word has no physical wires | Zero QEC gates; peak word width, excluding the caller spectator |
+| Raw field lifetime plus spectator H/T | One H and one T on spectator; word has no gates or feedback; clean/borrowed pool unchanged after release | One Clifford and one T; DAG peak word width, physical caller capacity is width plus one |
+
+Q-0311 and Q-0323 remain open for the separately pending signed zero-width
+storage (124) and symbolic field declarations (126). Ordinary symbolic physical
+widths remain explicitly unexecutable. Classical descriptor interpretation is
+not expanded by this quantum storage evidence. Original QGF/QGFPoly wire codec
+failures remain unchanged. Neither approved 116 nor approved 125 remains a
+blocker. Receipts use `g2-lifetime-approved-storage-*-20261125`.
+
+The reconciled lifetime, storage, pool and controlled-workspace regression
+passes 278 cases; the direct source/SDK lane passes 87 cases with Cirq 1.6.
+All three frozen source blobs and the real Kickmix 0.1 Simulator are verified.
+Both changed Python modules pass strict typing, Black and Ruff; Compiler scope,
+language, links, architecture, multilevel IR and protected API checks pass.
+The preceding 145-case local integration result is reused from the identical
+production tree: this reconciliation changes only tests and documentation.
