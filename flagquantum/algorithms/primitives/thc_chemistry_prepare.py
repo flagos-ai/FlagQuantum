@@ -28,6 +28,12 @@ from ...compiler.registers.layout.partition import RegisterLayout, unpartition_r
 from ...compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
 )
+from ...compiler.registers.preparation.thc_preparation_metadata import (
+    thc_prepare_retained_registers,
+    thc_prepare_selection_registers,
+    thc_prepare_target_registers,
+    thc_prepare_through_junk,
+)
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...compiler.registers.sorting.contiguous_index import (
     contiguous_index_columns_ir,
@@ -35,12 +41,7 @@ from ...compiler.registers.sorting.contiguous_index import (
     source_contiguous_index_cost,
 )
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import (
-    bounded_unsigned_register_type,
-    opaque_register_type,
-    quantum_bit_type,
-)
-from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from .prepare_oracle import PrepareOracle
 from .thc_chemistry_data import THCChemistryData
@@ -62,52 +63,26 @@ class PrepareTHCChemistry(PrepareOracle):
     @cached_property
     def selection_registers(self) -> tuple[Register, ...]:
         """Return source through ports in the signed preparation order."""
-        width = self.data.num_mu.bit_length()
-        orbit = bounded_unsigned_register_type(width, self.data.num_mu + 1)
-        bit = bounded_unsigned_register_type(1)
-        return (
-            Register("mu", orbit),
-            Register("nu", orbit),
-            *(Register(name, bit) for name in ("plus_mn", "plus_a", "plus_b")),
-            Register(
-                "sigma", bounded_unsigned_register_type(self.data.probability_bits)
-            ),
-            *(Register(name, bit) for name in ("rot", "succ", "nu_eq_mp1")),
+        return thc_prepare_selection_registers(
+            self.data.num_mu, self.data.probability_bits
         )
 
     @cached_property
     def qroam_target_registers(self) -> tuple[Register, ...]:
         """Declare selected alias values and the two sign bits."""
-        return tuple(
-            Register(
-                name,
-                (
-                    quantum_bit_type()
-                    if name in ("theta", "alt_theta")
-                    else opaque_register_type(width)
-                ),
-                side=RegisterSide.RIGHT,
-            )
-            for name, width in self.data.target_layout
-        )
+        return thc_prepare_target_registers(self.data.target_layout)
 
     @cached_property
     def qroam_extra_target_registers(self) -> tuple[Register, ...]:
         """Retain the source's zero-length bank declarations at block size one."""
-        cells = (1 << self.data.log_block_size) - 1
-        return tuple(
-            Register(
-                f"junk_{reg.name}", reg.dtype, shape=(cells,), side=RegisterSide.RIGHT
-            )
-            for reg in self.qroam_target_registers
+        return thc_prepare_retained_registers(
+            self.qroam_target_registers, self.data.log_block_size
         )
 
     @cached_property
     def junk_registers(self) -> tuple[Register, ...]:
         return (
-            Register("s", opaque_register_type(self.data.address_width)),
-            Register("less_than", quantum_bit_type()),
-            Register("extra_ctrl", quantum_bit_type()),
+            *thc_prepare_through_junk(self.data.address_width),
             *self.qroam_target_registers,
             *self.qroam_extra_target_registers,
         )
