@@ -9,6 +9,14 @@ operators, raw histories and unchanged scalar precision during quantization.
 
 This package owns qROM, QROAM, selected swaps, unary traversal and measured unlookup.
 
+`qroam_bank_unitary_component.qroam_bank_unitary_pair` operates on caller-owned
+arbitrary bank words through shared batch XOR and relative-phase routing. Its
+inverse reverses routing before XOR; bank storage is never measurement-erased.
+This explicit extension differs from the original RIGHT clean-bank isometry
+and its matching-image measured erase. Run
+`tests/unit/test_qroam_bank_unitary_component.py` for dirty-bank full operators,
+multi-axis layouts, source boundaries and every small measurement history.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow
