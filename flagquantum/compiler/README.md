@@ -1491,6 +1491,10 @@ see `docs/development/GRID_KINETIC_FILE_AUDIT.md` for whole-source and channel e
 pair/total potential call chains and keeps data conversion at the Ecosystem
 boundary. Custom integer banks enter the existing QROM owner; source addition,
 Cast, bodyless polynomial/Newton/QVR and clean Free semantics are preserved.
-Symbolic target width is supported logically; symbolic coordinate/precision
-lookup bodies remain an explicit gap. See `docs/development/GRID_POTENTIAL_FILE_AUDIT.md`.
+`formats/grid_potential_graph.py` uses the same recipe to retain symbolic
+coordinate/precision lookup bodies and their static banks in the existing
+ComponentLibrary input graph. Partial dimension bindings retain that graph;
+concrete bindings rebuild a Program through the existing resolver. Symbolic
+input graphs are not executable Programs. Symbolic resource-query coverage
+remains separate. See `docs/development/GRID_POTENTIAL_FILE_AUDIT.md`.
 Run `python -m pytest tests/unit/test_grid_potential_source.py tests/unit/test_grid_potential_branches.py`.

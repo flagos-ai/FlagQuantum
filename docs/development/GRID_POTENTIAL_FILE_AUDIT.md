@@ -84,7 +84,7 @@ Ecosystem composes the canonical existing coefficient constants and optional
 real codec. Missing data ownership and invalid constructor metadata fail
 explicitly; a numerical phase is never invented for the source recipe.
 
-**Q0429 remains open.** Original width n or polynomial precision p can build a
+**Historical gap at 5b99eceb8.** Original width n or polynomial precision p can build a
 26-call in-memory source graph, although its deeper source serialization fails
 with the original object-array/pickle refusal. Native construction currently
 retains only the logical signature for these two symbolic cases. It does not
@@ -130,3 +130,50 @@ reused. Qualtran0.7.0, real Kickmix0.1 Simulator and frozen blobs are verified.
 Receipts use g2-grid-potential-source-*-20261126. These results complete concrete
 constructor/data/model and admitted numerical-channel work, while the exact
 symbolic width/precision logical-body gap above keeps the parent unaccepted.
+
+## Symbolic input graph and binding follow-up
+
+The same pair recipe now projects its complete call layer into the existing
+ComponentLibrary input representation. Each child retains its constructor
+arguments and exact register signature. All four static banks remain owned
+root and QROM metadata; they are not hidden in helper names or a separate
+registry. The symbolic QROM is a logical declaration in the temporary recipe,
+not a claim that its body can execute before binding.
+
+Comparison with the unmodified in-memory source covers coordinate width n,
+polynomial width p, combined n/p/t, and composite dimension expressions.
+All 26 instance identities and all 48 port-labelled connections agree exactly,
+including allocation/release metadata and QROM datasets. Five- and sixteen-row
+custom tables survive partial bindings followed by full bindings. Both binding
+orders produce identical concrete library bytes. After serialization roundtrip,
+the existing resolver produces the same complete Program fingerprint as the
+actual source expansion, retaining operands, constants and feedback. Caller
+data mutations do not alter the retained snapshot, and construction/binding
+works with reference SDK imports blocked. Empty binding preserves symbolic
+integer literals; unknown symbols and boolean dimension values fail explicitly.
+
+Original object-array serialization remains refused by the original protocol.
+The native protocol preserves its existing SerializationError wrapper; no
+pickle fallback or new serialized vocabulary is introduced. A bound concrete
+library uses the existing supported protocol and resolver.
+
+**Q0429 remains open for symbolic resource queries.** New direct reference
+intake establishes that symbolic coordinate width has a successful QubitCount
+expression, although QECGatesCost raises TypeError for an undecidable selection
+bound. Symbolic polynomial width has both a successful gate formula and a
+successful peak-width expression. The concrete native resource helper rejects
+these symbolic inputs. These missing successful query paths must be implemented
+and compared before full-file acceptance; retaining the upstream QEC failure
+does not discharge the peak-width obligation. The symbolic logical-body and
+static-data-binding gap recorded above is now resolved.
+
+Receipts: g2-grid-potential-symbolic-*-20261126. Existing admitted numerical
+channels and concrete/default model evidence remain separate and reusable;
+the numerical emitter is unchanged by this follow-up.
+
+Concentrated regression passes 367 cases in each supported Cirq lane. The
+default-lane initial run lacked optional QREF and passed 355 with 12 skips;
+the separate dependency-restored QREF run passes all 12. The other lane passes
+all 367 directly. Local integration passes 145 cases. Strict typing of the
+four changed Python files, formatting, lint, Compiler scope, repository
+language, documentation links, architecture, IR and public API checks pass.
