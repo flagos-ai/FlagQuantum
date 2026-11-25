@@ -15,8 +15,8 @@ source ownership from a package alias. Factory providers requiring context are
 queried with nonexecuting callbacks; no constructor or dependency callback is
 executed by this registration inventory.
 
-There are 178 exact Compiler format registrations, four additional aliases whose
-canonical class has a factory, and 121 keys without an exact Compiler factory. Those
+There are 182 exact Compiler format registrations, no canonical-only aliases,
+and 121 keys without an exact Compiler factory. Those
 121 include the CompositeBloq graph special case, the CtrlSpec argument
 descriptor, abstract interfaces and one original module-valued entry. They
 are not all missing executable constructors. Generic connected graph resolution
@@ -36,8 +36,9 @@ zero/symbolic dimensions and native validation boundary remain explicit.
 
 The original key `qualtran.bloqs.chemistry.trotter.trotterized_unitary`
 resolves to a module, not the TrotterizedUnitary class. Four modular arithmetic
-package aliases have canonical factories but no exact alias registrations;
-they are not counted as resolved aliases.
+package aliases now reuse their authoritative addition/subtraction factories;
+[their wire audit](MODULAR_PACKAGE_EXPORT_AUDIT.md) distinguishes successful
+legacy reads from the retained source canonical-name and ModAdd signature failures.
 
 ## One-to-one inventory
 
@@ -271,10 +272,10 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 | `qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT` | `qualtran/bloqs/mcmt/multi_target_cnot.py` | Registered: `legacy_fanout_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle` | `qualtran/bloqs/mean_estimation/complex_phase_oracle.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator` | `qualtran/bloqs/mean_estimation/mean_estimation_operator.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.mod_arithmetic.CModAddK` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Canonical class only | Published module receipts pending reconciliation |
-| `qualtran.bloqs.mod_arithmetic.CModSub` | `qualtran/bloqs/mod_arithmetic/mod_subtraction.py` | Canonical class only | Published module receipts pending reconciliation |
-| `qualtran.bloqs.mod_arithmetic.ModAdd` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Canonical class only | Published module receipts pending reconciliation |
-| `qualtran.bloqs.mod_arithmetic.ModSub` | `qualtran/bloqs/mod_arithmetic/mod_subtraction.py` | Canonical class only | Published module receipts pending reconciliation |
+| `qualtran.bloqs.mod_arithmetic.CModAddK` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Registered: `legacy_modular_addition_factories.py` | Exact alias wire scope: [audit](MODULAR_PACKAGE_EXPORT_AUDIT.md); full module boundaries retained |
+| `qualtran.bloqs.mod_arithmetic.CModSub` | `qualtran/bloqs/mod_arithmetic/mod_subtraction.py` | Registered: `legacy_modular_subtraction_factories.py` | Exact alias wire scope: [audit](MODULAR_PACKAGE_EXPORT_AUDIT.md); full module boundaries retained |
+| `qualtran.bloqs.mod_arithmetic.ModAdd` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Registered: `legacy_modular_addition_factories.py` | Exact alias wire scope: [audit](MODULAR_PACKAGE_EXPORT_AUDIT.md); full module boundaries retained |
+| `qualtran.bloqs.mod_arithmetic.ModSub` | `qualtran/bloqs/mod_arithmetic/mod_subtraction.py` | Registered: `legacy_modular_subtraction_factories.py` | Exact alias wire scope: [audit](MODULAR_PACKAGE_EXPORT_AUDIT.md); full module boundaries retained |
 | `qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Registered: `legacy_modular_addition_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.mod_arithmetic.mod_addition.CModAddK` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Registered: `legacy_modular_addition_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd` | `qualtran/bloqs/mod_arithmetic/mod_addition.py` | Registered: `legacy_modular_addition_factories.py` | Published module receipts pending reconciliation |

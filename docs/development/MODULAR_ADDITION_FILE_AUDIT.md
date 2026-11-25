@@ -65,8 +65,9 @@ cases, with 18 skips and four expected failures. The skips include symbolic
 decomposition and strict register-type boundaries. Native numerical callbacks
 match all input tuples of the three slow grids. The original controlled
 constant tensor blocks are matched via the certified native output map.
-Q-0571 is accepted. Q-0568 exports other modular modules and remains open
-until those dependencies are audited.
+Q-0571 is accepted. Q-0568 was subsequently accepted after the thirteen
+package exports and their owners were audited. The later exact alias wire
+evidence is recorded in the [package audit](MODULAR_PACKAGE_EXPORT_AUDIT.md).
 
 ## Stored graph interfaces and ownership
 
