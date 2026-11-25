@@ -47,3 +47,20 @@ entry and logical aliases. Read
 `docs/development/MODULAR_MULTIPLICATION_FILE_AUDIT.md` for all 45 source
 definitions, exact arithmetic dependencies, source failures and the model-only
 lookup adjoint's separate executable resource accounting.
+
+
+`modular_exponentiation_component` composes the original IntState, reverse
+exponent-bit traversal and shared controlled multipliers. Its RIGHT result
+belongs to the caller; private multiplication work must close. The source
+constructor uses executable bodies, while the existing component tutorial
+explicitly retains declaration-only leaves for large logical drawings. The
+numerical make_on path remains frozen under its original explicit workspace
+and slot contract until an exact binding replacement is verified. See
+`docs/development/RSA_MODEXP_FILE_AUDIT.md` for source inverse and large-width
+boundaries. Run `tests/unit/test_legacy_modular_exponentiation_factories.py`
+and `tests/unit/test_register_component_infrastructure.py` for this change.
+Exact inverse flags reverse shared logical calls in the comparator, controlled
+modular add, constant, scaled and multiply owners before physical lowering.
+Scoped ModExp constructor recipes reuse these inverse bodies and consume the
+logical result only on the prepared image. The original signed comparator
+inverse port-name failure remains an explicit negative boundary.

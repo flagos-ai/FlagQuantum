@@ -15,9 +15,9 @@ source ownership from a package alias. Factory providers requiring context are
 queried with nonexecuting callbacks; no constructor or dependency callback is
 executed by this registration inventory.
 
-There are 182 exact Compiler format registrations, no canonical-only aliases,
-and 121 keys without an exact Compiler factory. Those
-121 include the CompositeBloq graph special case, the CtrlSpec argument
+There are 183 exact Compiler format registrations, no canonical-only aliases,
+and 120 keys without an exact Compiler factory. Those
+120 include the CompositeBloq graph special case, the CtrlSpec argument
 descriptor, abstract interfaces and one original module-valued entry. They
 are not all missing executable constructors. Generic connected graph resolution
 is separate from shallow named-constructor reconstruction.
@@ -48,7 +48,7 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 
 | Frozen identifier | Defining source | Exact registration | Acceptance evidence |
 | --- | --- | --- | --- |
-| `qualtran._infra.adjoint.Adjoint` | `qualtran/_infra/adjoint.py` | Registered: `legacy_alias_preparation_factories.py, legacy_block_encoding_factories.py, legacy_chebyshev_factories.py, legacy_conjunction_factories.py, legacy_hamming_weight_factories.py, legacy_linear_combination_factories.py, legacy_majorana_factories.py, legacy_packed_oracle_factories.py, legacy_phased_block_factories.py, legacy_predicate_factories.py, legacy_qubitization_qpe_factories.py, legacy_qubitization_walk_factories.py, legacy_relative_swap_factories.py, legacy_rotation_preparation_factories.py, legacy_select_swap_factories.py, legacy_sparse_chemistry_factories.py, legacy_sparse_matrix_factories.py, legacy_sparse_preparation_factories.py, legacy_sparse_rotation_preparation_factories.py, legacy_swap_network_factories.py, legacy_thc_preparation_factories.py, legacy_uniform_preparation_factories.py, legacy_unitary_block_factories.py` | Published module receipts pending reconciliation |
+| `qualtran._infra.adjoint.Adjoint` | `qualtran/_infra/adjoint.py` | Registered: `legacy_alias_preparation_factories.py, legacy_block_encoding_factories.py, legacy_chebyshev_factories.py, legacy_conjunction_factories.py, legacy_hamming_weight_factories.py, legacy_hubbard_prepare_factories.py, legacy_hubbard_selection_factories.py, legacy_linear_combination_factories.py, legacy_majorana_factories.py, legacy_modular_exponentiation_factories.py, legacy_packed_oracle_factories.py, legacy_phased_block_factories.py, legacy_predicate_factories.py, legacy_qubitization_qpe_factories.py, legacy_qubitization_walk_factories.py, legacy_relative_swap_factories.py, legacy_rotation_preparation_factories.py, legacy_select_swap_factories.py, legacy_sparse_chemistry_factories.py, legacy_sparse_matrix_factories.py, legacy_sparse_preparation_factories.py, legacy_sparse_rotation_preparation_factories.py, legacy_swap_network_factories.py, legacy_thc_preparation_factories.py, legacy_uniform_preparation_factories.py, legacy_unitary_block_factories.py` | Published module receipts pending reconciliation |
 | `qualtran._infra.composite_bloq.CompositeBloq` | `qualtran/_infra/composite_bloq.py` | Connected graph special case | Published module receipts pending reconciliation |
 | `qualtran._infra.controlled.Controlled` | `qualtran/_infra/controlled.py` | Registered: `legacy_chebyshev_factories.py, legacy_phased_block_factories.py, legacy_qubitization_walk_factories.py, legacy_sparse_matrix_factories.py, legacy_word_factories.py` | Published module receipts pending reconciliation |
 | `qualtran._infra.controlled.CtrlSpec` | `qualtran/_infra/controlled.py` | Argument descriptor | Published module receipts pending reconciliation |
@@ -239,7 +239,7 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 | `qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepThree` | `qualtran/bloqs/cryptography/ecc/ec_add.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepTwo` | `qualtran/bloqs/cryptography/ecc/ec_add.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR` | `qualtran/bloqs/cryptography/ecc/ec_add_r.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.cryptography.rsa.rsa_mod_exp.ModExp` | `qualtran/bloqs/cryptography/rsa/rsa_mod_exp.py` | Unregistered | Published module receipts pending reconciliation |
+| `qualtran.bloqs.cryptography.rsa.rsa_mod_exp.ModExp` | `qualtran/bloqs/cryptography/rsa/rsa_mod_exp.py` | Registered: `legacy_modular_exponentiation_factories.py` | Forward/exact inverse constructor and dependency scope: [audit](RSA_MODEXP_FILE_AUDIT.md); full-width and numerical binding gaps retained |
 | `qualtran.bloqs.cryptography.rsa.rsa_phase_estimate.RSAPhaseEstimate` | `qualtran/bloqs/cryptography/rsa/rsa_phase_estimate.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.data_loading.qroam_clean.QROAMClean` | `qualtran/bloqs/data_loading/qroam_clean.py` | Registered: `legacy_qroam_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint` | `qualtran/bloqs/data_loading/qroam_clean.py` | Registered: `legacy_qroam_factories.py` | Published module receipts pending reconciliation |
