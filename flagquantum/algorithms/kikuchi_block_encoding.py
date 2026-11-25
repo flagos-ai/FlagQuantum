@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import TypeVar
@@ -128,6 +129,20 @@ class KikuchiRowColumnOracle:
         return builder.finalize({"l": outputs["k"], "i": outputs["S"]})
 
 
+@dataclass(frozen=True)
+class _SparseResourceCall:
+    """Keep sparse-query identity and direction until resource folding."""
+
+    component: (
+        KikuchiEntryOracle
+        | KikuchiRowColumnOracle
+        | tuple[SymbolicInt, SymbolicInt]
+        | SymbolicInt
+    )
+    adjoint: bool = False
+    controlled: bool = False
+
+
 @dataclass(frozen=True, init=False)
 class KikuchiHamiltonian:
     """Declare the source sparse Hamiltonian using domain-owned query modules."""
@@ -213,24 +228,53 @@ class KikuchiHamiltonian:
     ) -> SymbolicCallGraph[_Node]:
         return symbolic_call_graph(root, {root: {sparse_encoding: 1}})
 
-    def resource_gates(self, *, controlled: bool = False) -> QECGateCost:
-        """Expand source queries and diffusion, controlling only the two swaps."""
+    def source_sparse_calls(
+        self, *, controlled: bool = False
+    ) -> dict[_SparseResourceCall, int]:
+        """Retain the eight Hermitian sparse calls, including both swap widths."""
         if type(controlled) is not bool:
             raise ValueError("Hamiltonian control flag must be boolean")
-        diffusion = _source_sparse_diffusion_resource_formula(
-            self.system_bitsize, self.s, legacy_shims=False
+        diffusion = (self.system_bitsize, self.s)
+        return dict(
+            Counter(
+                (
+                    _SparseResourceCall(diffusion),
+                    _SparseResourceCall(self.column_oracle),
+                    _SparseResourceCall(self.entry_oracle),
+                    _SparseResourceCall(self.system_bitsize, controlled=controlled),
+                    _SparseResourceCall(1, controlled=controlled),
+                    _SparseResourceCall(self.entry_oracle, adjoint=True),
+                    _SparseResourceCall(self.column_oracle, adjoint=True),
+                    _SparseResourceCall(diffusion, adjoint=True),
+                )
+            )
         )
-        swaps = (
-            QECGateCost(cswap=self.system_bitsize + 1)
-            if controlled
-            else QECGateCost(clifford=self.system_bitsize + 1)
-        )
-        return (
-            swaps.plus(diffusion, 2)
-            .plus(self.column_oracle.resource_gates(), 2)
-            .plus(self.entry_oracle.resource_gates(), 1)
-            .plus(self.entry_oracle.resource_gates(adjoint=True), 1)
-        )
+
+    def resource_gates(self, *, controlled: bool = False) -> QECGateCost:
+        """Price the source inventory with existing query and diffusion models."""
+        cost = QECGateCost()
+        for call, count in self.source_sparse_calls(controlled=controlled).items():
+            component = call.component
+            if isinstance(component, KikuchiEntryOracle):
+                child = component.resource_gates(adjoint=call.adjoint)
+            elif isinstance(component, KikuchiRowColumnOracle):
+                child = component.resource_gates()
+            elif isinstance(component, tuple):
+                cost = cost.plus(
+                    _source_sparse_diffusion_resource_formula(
+                        *component, legacy_shims=False
+                    ),
+                    count,
+                )
+                continue
+            else:
+                child = (
+                    QECGateCost(cswap=component)
+                    if call.controlled
+                    else QECGateCost(clifford=component)
+                )
+            cost = cost.plus(child, count)
+        return cost
 
     def program(self, sparse_encoding: FunctionRecord) -> ProgramRecord:
         """Bind an admitted sparse-encoding body with the original named ports."""

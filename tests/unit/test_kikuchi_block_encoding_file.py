@@ -1,16 +1,26 @@
 """Compare the complete frozen Kikuchi Hamiltonian and both sparse wrappers."""
 
+from collections import Counter
 from dataclasses import replace
 from hashlib import sha1
 from pathlib import Path
 
 import pytest
 import sympy
+from qualtran import Bloq
+from qualtran.bloqs.basic_gates import Swap
+from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.optimization.k_xor_sat import kikuchi_block_encoding as source
-from qualtran.resource_counting import QECGatesCost, get_cost_value
+from qualtran.resource_counting import (
+    QECGatesCost,
+    SympySymbolAllocator,
+    get_cost_value,
+)
 
 from flagquantum.algorithms.kikuchi_block_encoding import (
+    KikuchiEntryOracle,
     KikuchiHamiltonian,
+    KikuchiRowColumnOracle,
     example_kikuchi_hamiltonian,
     symbolic_kikuchi_hamiltonian,
 )
@@ -19,6 +29,78 @@ from flagquantum.core.ir.program import verify_program_record
 from tests.unit.test_kikuchi_adjacency_file import identity
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.mark.parametrize("symbolic", (False, True))
+def test_literal_sparse_inventory_and_only_two_controlled_swaps(symbolic: bool) -> None:
+    native = (
+        symbolic_kikuchi_hamiltonian() if symbolic else example_kikuchi_hamiltonian()
+    )
+    original = source._kikuchi_matrix_symb() if symbolic else source._kikuchi_matrix()
+    sparse = original._sparse_matrix_encoding
+    for controlled in (False, True):
+        mapped: Counter[Bloq] = Counter()
+        for call, count in native.source_sparse_calls(controlled=controlled).items():
+            component = call.component
+            if isinstance(component, KikuchiEntryOracle):
+                assert component == native.entry_oracle
+                node = sparse.entry_oracle
+            elif isinstance(component, KikuchiRowColumnOracle):
+                assert component == native.column_oracle
+                node = sparse.col_oracle
+            elif isinstance(component, tuple):
+                assert component == (
+                    sparse.system_bitsize,
+                    sparse.col_oracle.num_nonzero,
+                )
+                node = sparse.diffusion
+            else:
+                node = Swap(component)
+                if controlled:
+                    node = node.controlled()
+                mapped[node] += count
+                continue
+            assert not call.controlled
+            mapped[Always(node.adjoint() if call.adjoint else node)] += count
+        expected = sparse.build_call_graph(SympySymbolAllocator())
+        if controlled:
+            expected = {
+                node.controlled() if isinstance(node, Swap) else node: count
+                for node, count in expected.items()
+            }
+        assert mapped == expected
+    plain = native.source_sparse_calls()
+    controlled_calls = native.source_sparse_calls(controlled=True)
+    removed = set(plain.items()) - set(controlled_calls.items())
+    added = set(controlled_calls.items()) - set(plain.items())
+    assert {(call.component, count) for call, count in removed} == {
+        (native.system_bitsize, 1),
+        (1, 1),
+    }
+    assert all(not call.controlled and not call.adjoint for call, _ in removed)
+    assert {
+        (replace(call, controlled=False), count) for call, count in added
+    } == removed
+
+
+def test_sparse_inventory_combines_identical_one_bit_swaps() -> None:
+    native = KikuchiHamiltonian(
+        KXorInstance(2, 1, (Constraint((0,), 1),)), 1, entry_bitsize=3
+    )
+    for controlled in (False, True):
+        swaps = {
+            call: count
+            for call, count in native.source_sparse_calls(controlled=controlled).items()
+            if call.component == 1
+        }
+        ((call, count),) = swaps.items()
+        assert count == 2 and call.controlled is controlled and not call.adjoint
+
+
+@pytest.mark.parametrize("controlled", (0, 1, None, "yes"))
+def test_sparse_inventory_rejects_non_boolean_control(controlled: bool) -> None:
+    with pytest.raises(ValueError, match="boolean"):
+        example_kikuchi_hamiltonian().source_sparse_calls(controlled=controlled)
 
 
 def test_complete_source_and_original_suite_are_frozen() -> None:
