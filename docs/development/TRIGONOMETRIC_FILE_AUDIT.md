@@ -121,3 +121,59 @@ Q-0226 remains open for the independent arithmetic path's four of 256 +1-ulp
 words. Their missing original gate bodies remain explicit source limitations.
 This batch completes generic interfaces and foreign consumers without claiming
 those independent scientific gaps are resolved.
+
+## Stored exact lookup and explicit constructor replacement — 2026-11-25
+
+The complete ArcTan source was reread at Git blob
+`746411d9f44fa95c5209f5575419a99749937e99`. Its fields, signature, digit
+dimensions, unsupported rebinding, mathematical XOR, self-adjoint declaration
+and fresh-symbol product model retain the owners above. There is still no
+upstream primitive decomposition to copy or count.
+
+`lookup/arctan_lookup_component.py` now stores the existing exact bounded lookup
+as a native Program. It reuses the table rounding and admission owner, the typed
+QROM and its measured predicate cleanup; it adds no numerical execution kernel.
+Selection, sign and target are THRU, MSB-first words. Occupied outputs are XORed,
+selection is preserved, and QROM privately owns and erases every work bit.
+The existing profile remains 1–12 input bits and 1–32 target bits. The earlier
+4096-row, 12/32-bit source quantization certificate is reused.
+
+The default `trigonometric_factories()` still returns a bodyless source ArcTan
+declaration. Consumers may explicitly replace its ArcTan entry with
+`arctan_lookup_factory`; the existing resolver and caller remain unchanged.
+Actual source libraries at depths 0/1/2 bind to the same complete Program as
+direct construction. Invalid signatures, extra arguments, symbolic execution
+and unsupported widths fail instead of falling back. This explicit native
+extension is not labeled as an upstream physical body.
+
+Four profiles compare the complete emitted stream against the unmodified
+source QROM, including per-wire order, operands and measurement feedback.
+Source measurement events map to native SSA results: a reused flat classical
+slot and distinct stored SSA slots are different names for successive results,
+not additional logical measurements. Full complex vectors with occupied sign
+and target plus a coherent spectator match the original ArcTan matrix in every
+small raw history. Two composed lookups restore the input in every applicable
+history, with all work zero. A cold process blocking Qualtran and Cirq builds,
+binds and appends the native Program through the existing operation protocol.
+
+| Input / target bits | Emitted CX | Emitted T + Tdg | Emitted measurements | Clean work | QROM model T / measurements | ArcTan model T |
+|---|---:|---:|---:|---:|---|---|
+| 1 / 1 | 2 | 0 | 0 | 0 | 0 / 0 | 8 c |
+| 2 / 3 | 22 | 8 | 2 | 1 | 8 / 2 | 72 c |
+| 3 / 8 | 79 | 24 | 6 | 2 | 24 / 6 | 512 c |
+| 4 / 6 | 149 | 48 | 12 | 3 | 48 / 12 | 288 c |
+
+The actual inventory and independent models are recorded in
+`g2-arctan-program-resources-20261125.json`. ArcTan primitive counts remain
+unavailable, not zero. This closes the stored lookup/constructor execution
+path. Q-0226 remains open for the separately implemented arithmetic
+approximation's four of 256 +1-ulp words; it does not mean the exact table has
+four wrong rows. No parent completion or constructor-count increase is claimed.
+
+Final acceptance: 175 concentrated lookup/QROM/trigonometric cases, 64 applicable
+Cirq 1.6 cases, 10 unchanged original passes with three original atomic-mode
+skips, and 145 local integration cases pass. Strict typing covers all four
+changed Python files. Format, lint, scope, language, architecture, IR and public
+API checks pass. The dependency scan retains the same 720 existing findings,
+ignoring line-number movement; it is not globally green. Receipts use the
+`g2-arctan-program-*-20261125` prefix in the reference evidence directory.
