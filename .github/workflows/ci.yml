@@ -2663,10 +2663,8 @@ jobs:
   supply-chain:
     needs: prepare-source
     timeout-minutes: 20
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
-      queue: max
+    # PyPI vulnerability queries require public HTTPS egress on every event.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:

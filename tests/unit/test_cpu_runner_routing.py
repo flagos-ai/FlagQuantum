@@ -170,7 +170,6 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
         "qiskit-optional",
         "dependency-bounds",
         "distributed-cpu",
-        "supply-chain",
         "cpu-core-3-12",
         "ci-complete",
     }
