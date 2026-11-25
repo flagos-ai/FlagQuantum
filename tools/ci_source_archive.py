@@ -476,16 +476,24 @@ class _GraphQLSource:
                 if kind != "blob":
                     continue
                 size = row.get("byteSize")
+                binary = row.get("isBinary")
+                truncated = row.get("isTruncated")
                 if (
                     type(size) is not int
                     or size < 0
-                    or type(row.get("isBinary")) is not bool
-                    or type(row.get("isTruncated")) is not bool
+                    or "isBinary" not in row
+                    or (
+                        type(binary) is not bool
+                        and not (binary is None and truncated is True)
+                    )
+                    or type(truncated) is not bool
                 ):
                     raise ValueError("GitHub returned incomplete source blob metadata")
                 # Eight small blobs contribute at most 256 KiB of UTF-8 text.
                 # Large evidence must not turn one batch into a multi-MB response.
-                if not row["isBinary"] and not row["isTruncated"] and size <= 32768:
+                # Large blobs can have null binary classification. They must
+                # use REST bytes, still checked against their Git object SHA.
+                if binary is False and truncated is False and size <= 32768:
                     small.append(index)
             if small:
                 contents = self._query(

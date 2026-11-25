@@ -11,12 +11,14 @@ import argparse
 import hashlib
 import itertools
 import json
+import math
 import random
 import struct
 import subprocess
 import sys
 import time
 import traceback
+from collections import OrderedDict
 from collections.abc import Callable, Iterator
 from dataclasses import replace
 from functools import partial
@@ -27,11 +29,13 @@ from unittest.mock import patch
 from benchmarks import compiler_sabre_depth as workflows
 from flagquantum.compiler.lowering.basis_translation import translate
 from flagquantum.compiler.optimization._cz_blocks import (
+    MatrixReader,
     _candidate,
     _collect_blocks,
     _numeric_matrix,
     _product,
 )
+from flagquantum.compiler.optimization.two_qubit_optimization import Matrix
 from flagquantum.compiler.optimization.two_qubit_synthesis import (
     _prepared_basis,
     _swap_register,
@@ -130,14 +134,57 @@ def _native_previews(
     return preview
 
 
+def _preview_matrix_reader() -> MatrixReader:
+    # Only native scalar leaves qualify. Values live for one route selection;
+    # bounded storage never retains an instruction, tensor or source program.
+    matrices: OrderedDict[tuple[str, int, bytes], Matrix] = OrderedDict()
+
+    def read(item: Instruction, pair: tuple[int, int]) -> Matrix | None:
+        key: tuple[str, int, bytes] | None = None
+        if item.matrix is None and not item.metadata and pair[0] != pair[1]:
+            if (
+                item.name == "cz"
+                and not item.params
+                and item.wires in (pair, pair[::-1])
+            ):
+                key = ("cz", 0, b"")
+            elif (
+                item.name in ("rx", "rz")
+                and len(item.wires) == 1
+                and item.wires[0] in pair
+                and set(item.params) == {"theta"}
+            ):
+                angle = item.params["theta"]
+                if type(angle) is float and math.isfinite(angle):
+                    key = (
+                        item.name,
+                        pair.index(item.wires[0]),
+                        struct.pack("!d", angle),
+                    )
+        if key is None:
+            return _numeric_matrix(item, pair)
+        if key in matrices:
+            matrices.move_to_end(key)
+            return matrices[key]
+        matrix = _numeric_matrix(item, pair)
+        if matrix is not None:
+            matrices[key] = matrix
+            if len(matrices) > 32:
+                matrices.popitem(last=False)
+        return matrix
+
+    return read
+
+
 def _blocks(
     native: CircuitIR,
+    *,
+    matrix_reader: MatrixReader = _numeric_matrix,
 ) -> Iterator[tuple[tuple[int, int], tuple[int, ...]]]:
     return _collect_blocks(
         native,
-        lambda index, pair: _numeric_matrix(native.instructions[index], pair)
-        is not None,
-        identity_reader=_numeric_matrix,
+        lambda index, pair: matrix_reader(native.instructions[index], pair) is not None,
+        identity_reader=matrix_reader,
     )
 
 
@@ -145,15 +192,16 @@ def _cz_lower_bound(
     native: CircuitIR,
     *,
     matrix_costs: dict[bytes, int] | None = None,
+    matrix_reader: MatrixReader = _numeric_matrix,
 ) -> int:
     estimate = sum(item.name == "cz" for item in native.instructions)
     basis = _prepared_basis("cz")
-    for pair, positions in _blocks(native):
+    for pair, positions in _blocks(native, matrix_reader=matrix_reader):
         block = [native.instructions[index] for index in positions]
         before = sum(item.name == "cz" for item in block)
         if before < 2:
             continue
-        matrix = _product(block, pair, matrix_reader=_numeric_matrix)
+        matrix = _product(block, pair, matrix_reader=matrix_reader)
         if matrix is None:
             raise ValueError("Unsupported numeric block")
         key = b"".join(
@@ -171,18 +219,20 @@ def _cz_lower_bound(
     return estimate
 
 
-def _realize(native: CircuitIR, limit: int) -> CircuitIR:
+def _realize(
+    native: CircuitIR, limit: int, *, matrix_reader: MatrixReader = _numeric_matrix
+) -> CircuitIR:
     if len(native.instructions) > limit:
         raise ValueError("Native preview exceeds the operation budget")
     replacements: dict[int, tuple[Instruction, ...]] = {}
     size = len(native.instructions)
-    for pair, positions in _blocks(native):
+    for pair, positions in _blocks(native, matrix_reader=matrix_reader):
         block = [native.instructions[index] for index in positions]
         proposal = _candidate(
             block,
             pair,
             max_output_operations=len(block) + limit - size,
-            matrix_reader=_numeric_matrix,
+            matrix_reader=matrix_reader,
         )
         if proposal is not None:
             replacements[positions[0]] = proposal
@@ -258,20 +308,27 @@ def _choose_native_route(
 ) -> sabre.SabrePlan:
     """Compare delivered costs with the same lowering, growth and depth guards."""
     preview_plan = _native_previews(program, coupling)
+    matrix_reader = _preview_matrix_reader()
     native, routed_count = preview_plan(incumbent)
-    incumbent_cost = _cost(_realize(native, routed_count + native_budget))
+    incumbent_cost = _cost(
+        _realize(native, routed_count + native_budget, matrix_reader=matrix_reader)
+    )
     shortlist: tuple[sabre.SabrePlan, CircuitIR, int] | None = None
     best_estimate = incumbent_cost[0]
     matrix_costs: dict[bytes, int] = {}
     for candidate in candidates:
         preview, count = preview_plan(candidate)
-        estimate = _cz_lower_bound(preview, matrix_costs=matrix_costs)
+        estimate = _cz_lower_bound(
+            preview, matrix_costs=matrix_costs, matrix_reader=matrix_reader
+        )
         if estimate < best_estimate:
             shortlist, best_estimate = (candidate, preview, count), estimate
     if shortlist is None:
         return incumbent
     candidate, preview, count = shortlist
-    delivered = _cost(_realize(preview, count + native_budget))
+    delivered = _cost(
+        _realize(preview, count + native_budget, matrix_reader=matrix_reader)
+    )
     # The estimate alone cannot override residual or instruction-growth rejection.
     # Keep both delivered objectives non-increasing rather than hide a tradeoff.
     return (

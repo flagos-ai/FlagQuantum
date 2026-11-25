@@ -10,12 +10,16 @@ from unittest.mock import patch
 import pytest
 import torch
 
+from benchmarks import compiler_sabre_native_cost as native_cost
 from benchmarks.compiler_sabre_native_cost import (
     _cost,
     _cz_lower_bound,
     _native_previews,
+    _preview_matrix_reader,
     _realize,
 )
+from flagquantum.compiler.optimization._cz_blocks import _numeric_matrix
+from flagquantum.compiler.optimization.two_qubit_optimization import Matrix
 from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.compiler.topology.sabre import plan_sabre_swaps
@@ -87,13 +91,22 @@ def test_preview_preserves_reversed_control_and_restores_the_final_permutation()
     _assert_equivalent(source, _realize(preview, routed_count + 256))
 
 
-@pytest.mark.parametrize("unsupported", ("annotation", "symbolic"))
+@pytest.mark.parametrize(
+    "unsupported", ("annotation", "symbolic", "batched", "trainable")
+)
 def test_preview_refuses_source_semantics_it_does_not_model(unsupported: str) -> None:
     item = Instruction("rx", (0,), {"theta": 0.4})
     if unsupported == "annotation":
         item = replace(item, metadata={"label": "retained boundary"})
-    else:
+    elif unsupported == "symbolic":
         item = replace(item, params={"theta": Parameter("theta")})
+    else:
+        angle = (
+            torch.tensor([0.2, 0.4])
+            if unsupported == "batched"
+            else torch.tensor(0.4, requires_grad=True)
+        )
+        item = replace(item, params={"theta": angle})
     source = CircuitIR(2, (item, Instruction("cz", (0, 1))))
     coupling = CouplingMap.line(2)
     with pytest.raises(ValueError, match="unannotated|symbolic"):
@@ -181,3 +194,185 @@ def test_reused_native_selector_keeps_custom_topology_objectives() -> None:
 
     expected = sabre._select_sabre_trials(source, coupling, baseline, cost=objective)
     assert _select(source, coupling, baseline, cost=objective) == expected
+
+
+@pytest.mark.parametrize("topology", ("line", "ring"))
+def test_preview_preserves_operators_across_trial_placements(
+    topology: str,
+) -> None:
+    source = CircuitIR(
+        4,
+        (
+            Instruction("h", (3,)),
+            Instruction("cx", (3, 0)),
+            Instruction("rzz", (2, 0), {"theta": 0.29}),
+            Instruction("cx", (0, 3)),
+            Instruction("crz", (1, 3), {"theta": -0.43}),
+        ),
+    )
+    coupling = CouplingMap.line(4) if topology == "line" else CouplingMap.ring(4)
+    plans = [
+        sabre._plan_sabre_trial(source, coupling, tie_rng=random.Random(seed))
+        for seed in range(5)
+    ]
+    assert all(plan is not None for plan in plans)
+    placements: set[tuple[tuple[int, ...], ...]] = set()
+    preview = _native_previews(source, coupling)
+    for plan in plans:
+        assert plan is not None
+        placements.add(plan.placements)
+        actual, count = preview(plan)
+        assert count >= len(source.instructions)
+        _assert_equivalent(source, actual)
+        assert preview(plan) == (actual, count)
+        assert all(
+            len(gate.wires) != 2 or coupling.has_edge(*gate.wires)
+            for gate in actual.instructions
+        )
+    assert len(placements) > 1
+
+
+def test_matrix_reuse_preserves_ordered_basis_and_native_opcode() -> None:
+    cases = (
+        (Instruction("rx", (0,), {"theta": 0.31}), (0, 1)),
+        (Instruction("rx", (3,), {"theta": 0.31}), (3, 7)),
+        (Instruction("rx", (7,), {"theta": 0.31}), (3, 7)),
+        (Instruction("rz", (7,), {"theta": 0.31}), (3, 7)),
+        (Instruction("cz", (3, 7)), (3, 7)),
+        (Instruction("cz", (7, 3)), (3, 7)),
+    )
+    expected = [_numeric_matrix(gate, pair) for gate, pair in cases]
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for _ in range(2):
+            assert [read(gate, pair) for gate, pair in cases] == expected
+        assert original.call_count == 4
+
+
+def test_matrix_reuse_reads_mutable_parameters_and_preserves_signed_zero() -> None:
+    gate = Instruction("rx", (0,), {"theta": 0.0})
+    assert isinstance(gate.params, dict)
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for value in (0.0, -0.0, 0.31, -0.84, 0.31):
+            gate.params["theta"] = value
+            assert read(gate, (0, 1)) == _numeric_matrix(gate, (0, 1))
+        assert original.call_count == 4
+
+
+@pytest.mark.parametrize(
+    "kind",
+    (
+        "tensor",
+        "trainable",
+        "batched",
+        "symbolic",
+        "extra",
+        "annotation",
+        "matrix",
+        "outside",
+    ),
+)
+def test_matrix_reuse_leaves_other_inputs_with_the_original_reader(kind: str) -> None:
+    gate = Instruction("rx", (0,), {"theta": 0.31})
+    if kind == "tensor":
+        gate = replace(gate, params={"theta": torch.tensor(0.31)})
+    elif kind == "trainable":
+        gate = replace(gate, params={"theta": torch.tensor(0.31, requires_grad=True)})
+    elif kind == "batched":
+        gate = replace(gate, params={"theta": torch.tensor([0.31, 0.84])})
+    elif kind == "symbolic":
+        gate = replace(gate, params={"theta": Parameter("theta")})
+    elif kind == "extra":
+        gate = replace(gate, params={"theta": 0.31, "unused": Parameter("unused")})
+    elif kind == "annotation":
+        gate = replace(gate, metadata={"label": "retained boundary"})
+    elif kind == "matrix":
+        gate = replace(gate, matrix=torch.eye(2))
+    else:
+        gate = replace(gate, wires=(2,))
+    expected = _numeric_matrix(gate, (0, 1))
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        assert read(gate, (0, 1)) == expected
+        assert read(gate, (0, 1)) == expected
+        assert original.call_count == 2
+
+
+def test_matrix_reuse_has_bounded_storage_and_isolated_lifetimes() -> None:
+    gates = [Instruction("rz", (0,), {"theta": float(i)}) for i in range(33)]
+    with patch.object(
+        native_cost, "_numeric_matrix", wraps=_numeric_matrix
+    ) as original:
+        read = _preview_matrix_reader()
+        for gate in gates:
+            assert read(gate, (0, 1)) == _numeric_matrix(gate, (0, 1))
+        assert original.call_count == 33
+        read(gates[0], (0, 1))
+        assert original.call_count == 34
+        read(gates[-1], (0, 1))
+        assert original.call_count == 34
+        _preview_matrix_reader()(gates[-1], (0, 1))
+        assert original.call_count == 35
+
+
+@pytest.mark.parametrize("budget", (0, 256))
+def test_matrix_reuse_keeps_lower_bounds_realization_and_actual_budget(
+    budget: int,
+) -> None:
+    source = _budget_case()
+    read = _preview_matrix_reader()
+    assert _cz_lower_bound(source, matrix_reader=read) == _cz_lower_bound(source)
+    limit = len(source.instructions) + budget
+    expected = _realize(source, limit)
+    actual = _realize(source, limit, matrix_reader=read)
+    assert actual == expected
+    assert _cost(actual)[0] == (4 if budget == 0 else 2)
+    _assert_equivalent(source, actual)
+
+
+@pytest.mark.parametrize("cz_count", (2, 3))
+@pytest.mark.parametrize(
+    "angle", (0.0, 1e-12, 0.31, 1.5707963267948966, 3.141592653589793)
+)
+def test_native_preview_preserves_gate_class_boundaries(
+    cz_count: int, angle: float
+) -> None:
+    source = CircuitIR(
+        2,
+        tuple(
+            item
+            for index in range(cz_count)
+            for item in (
+                Instruction("cz", (0, 1) if index % 2 == 0 else (1, 0)),
+                Instruction("rx", (index % 2,), {"theta": angle}),
+                Instruction("rz", ((index + 1) % 2,), {"theta": -angle}),
+            )
+        ),
+    )
+    for budget in (0, 256):
+        output = _realize(source, len(source.instructions) + budget)
+        assert len(output.instructions) <= len(source.instructions) + budget
+        assert _cost(output)[0] <= cz_count
+        if angle == 0.0:
+            assert _cost(output)[0] == cz_count % 2
+        _assert_equivalent(source, output)
+
+
+def test_native_preview_keeps_nonunitary_matrix_failure() -> None:
+    source = _budget_case()
+
+    def nonunitary(item: Instruction, pair: tuple[int, int]) -> Matrix | None:
+        result = _numeric_matrix(item, pair)
+        return (
+            None if result is None else [[2 * value for value in row] for row in result]
+        )
+
+    with pytest.raises(ValueError, match="matrix must be unitary"):
+        _realize(source, 256, matrix_reader=nonunitary)
