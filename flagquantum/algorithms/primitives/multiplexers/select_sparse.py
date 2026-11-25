@@ -32,17 +32,15 @@ from ....compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_workspace,
     source_bounded_majorana_cost,
 )
+from ....compiler.registers.lookup.sparse_chemistry_select_component import (
+    SPARSE_SELECT_STAGES,
+    sparse_select_signature,
+)
 from ....compiler.registers.primitives.global_phase import (
     global_phase_ir,
     scalar_phase_ir,
 )
 from ....core.ir import CircuitIR, Instruction
-from ....core.ir.program.register_types import (
-    bounded_unsigned_register_type,
-    opaque_register_type,
-    quantum_bit_type,
-)
-from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ....errors import ValidationError
 from .selected_majorana_fermion import SelectedMajoranaFermion
@@ -97,28 +95,7 @@ class SelectSparse:
         num_spin_orb: int, *, control_value: int | None = None
     ) -> Signature:
         """Declare through ports including the optional pass-through control."""
-        if type(num_spin_orb) is not int or num_spin_orb < 2 or num_spin_orb % 2:
-            raise ValueError(
-                "Sparse SELECT requires a positive even number of spin orbitals"
-            )
-        if control_value is not None and (
-            type(control_value) is not int or control_value not in (0, 1)
-        ):
-            raise ValueError("Sparse SELECT control value must be zero, one or None")
-        spatial = num_spin_orb // 2
-        orbital = bounded_unsigned_register_type((spatial - 1).bit_length(), spatial)
-        bit = bounded_unsigned_register_type(1)
-        control = (
-            () if control_value is None else (Register("control", quantum_bit_type()),)
-        )
-        return Signature(
-            (
-                *control,
-                *(Register(name, orbital) for name in ("p", "q", "r", "s")),
-                *(Register(name, bit) for name in ("alpha", "beta", "flag_1b")),
-                Register("sys", opaque_register_type(num_spin_orb)),
-            )
-        )
+        return sparse_select_signature(num_spin_orb, control_value=control_value)
 
     @classmethod
     def source_layout(
@@ -187,19 +164,16 @@ class SelectSparse:
         )
 
     def _majoranas(self) -> tuple[SelectedMajoranaFermion, ...]:
+        orbitals = {"p": self.p, "q": self.q, "r": self.r, "s": self.s}
+        spins = {"alpha": self.alpha, "beta": self.beta}
         return tuple(
             SelectedMajoranaFermion.make_on(
-                selection=(*orbital, spin),
+                selection=(*orbitals[orbital], spins[spin]),
                 target=self.sys,
-                control=control,
+                control=(self.flag_1b,) if flagged else (),
                 target_gate=pauli,
             )
-            for orbital, spin, control, pauli in (
-                (self.p, self.alpha, (self.flag_1b,), "Y"),
-                (self.q, self.alpha, (self.flag_1b,), "X"),
-                (self.r, self.beta, (), "Y"),
-                (self.s, self.beta, (), "X"),
-            )
+            for orbital, spin, pauli, flagged in SPARSE_SELECT_STAGES
         )
 
     @staticmethod
