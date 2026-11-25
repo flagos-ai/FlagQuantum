@@ -6,7 +6,9 @@ import pytest
 import sympy
 import torch
 
+from examples.algorithms.binary_field_arithmetic import FieldOperation
 from examples.algorithms.qvr_catalog import QvrExample
+from flagquantum import Circuit
 from flagquantum.compiler.formats.legacy_component_resolution import (
     ResolvedArgument,
     resolve_component_program,
@@ -158,23 +160,71 @@ def test_direct_symbolic_index_refusal_remains_a_declaration(
 
 
 @pytest.mark.parametrize("gamma", (0.375, 1e-5))
-def test_signed_source_index_and_physical_storage_boundaries(gamma: float) -> None:
+@pytest.mark.parametrize("width,fraction", ((2, 0), (2, 1), (3, 2), (4, -2)))
+def test_signed_source_index_and_physical_storage_boundaries(
+    gamma: float, width: int, fraction: int
+) -> None:
     from qualtran import QFxp
     from qualtran import Register as SourceRegister
     from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    source = QvrZPow(SourceRegister("cost", QFxp(3, 2, signed=True)), gamma, 0.2)
+    source = QvrZPow(
+        SourceRegister("cost", QFxp(width, fraction, signed=True)), gamma, 0.2
+    )
     record = resolve_component_program(_library(source, 0), 0, qvr_factories())
+    wires = tuple(reversed(range(width)))
     if gamma == 0.375:
         with pytest.raises(IndexError):
             source.decompose_bloq()
         assert not record.functions[0].blocks
-    else:
-        assert _native_trace(record) == _source_trace(
-            SourceCalls, source.decompose_bloq()
+        with pytest.raises(ValueError):
+            bind_register_program(record, (wires,))
+        return
+    assert verify_program_record(record) == ()
+    assert _native_trace(record) == _source_trace(SourceCalls, source.decompose_bloq())
+    for depth in (1, 2):
+        assert (
+            resolve_component_program(_library(source, depth), 0, qvr_factories())
+            == record
         )
-    with pytest.raises(ValueError):
-        bind_register_program(record, ((0, 1, 2),))
+    bound = bind_register_program(record, (wires,))
+    assert bound.outputs == (wires,)
+    assert bound.events == ()
+    assert bound.circuit.n_wires == width
+    assert len(bound.circuit.instructions) == 1
+    gate = bound.circuit.instructions[0]
+    assert gate.name == "phase" and gate.wires == (wires[0],)
+    assert gate.params["theta"] == torch.pi
+    assert source.num_rotations < 0
+    model = get_cost_value(source, QECGatesCost())
+    assert model.rotation == source.num_rotations
+    assert model.clifford == 0
+    assert get_cost_value(source, QubitCount()) == width
+    # Preserve the source's negative precision/count metadata; the actual body
+    # retains one sign Z, which is not a negative physical gate inventory.
+    source_matrix = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+    native = bind_register_program(record, (tuple(range(width)),))
+    torch.testing.assert_close(
+        logical_operator(native.circuit, width), source_matrix, rtol=0, atol=2e-15
+    )
+    cost = Register("cost", fixed_point_register_type(width, fraction, signed=True))
+    inverse = bind_register_program(
+        qvr_zpow_program(cost, gamma, 0.2, adjoint=True), (wires,)
+    )
+    labels = torch.arange(1 << (width + 1), dtype=torch.float64)
+    state = torch.complex(labels + 1, labels.remainder(7) - 3)
+    state /= state.norm()
+    signs = 1 - 2 * (
+        labels.to(torch.int64).bitwise_right_shift(width - wires[0]).bitwise_and(1)
+    )
+    circuit = Circuit(width + 1, inputs=state, dtype=torch.complex128)
+    circuit.append(FieldOperation(width + 1, bound.circuit.instructions))
+    torch.testing.assert_close(
+        circuit.state().flatten(), state * signs, rtol=0, atol=2e-15
+    )
+    circuit.append(FieldOperation(width + 1, inverse.circuit.instructions))
+    torch.testing.assert_close(circuit.state().flatten(), state, rtol=0, atol=2e-15)
 
 
 def test_metadata_validation_and_source_signature_refusals() -> None:
