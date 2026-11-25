@@ -1,6 +1,7 @@
 """Shaped target callbacks and symbolic declarations retain source control graphs."""
 
 from collections import Counter
+from dataclasses import replace
 from itertools import product
 from math import prod
 from typing import Any
@@ -37,11 +38,26 @@ from tests.unit.register_source_graph import (
 from tests.unit.test_component_control_selection import assert_gate_parameters
 from tests.unit.test_component_graph import _native_trace, _source_trace
 from tests.unit.test_component_structured_control import normalize_trace
+from tests.unit.test_multiplexed_source_binding import logical_operator
 from tests.unit.test_register_component_calls import SourceCalls
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
-from tests.unit.test_specialized_control_typed_handoff import packed_dtype
+from tests.unit.test_specialized_control_typed_handoff import (
+    PACKED_PROFILES,
+    packed_dtype,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+SHAPED_PROFILES = (
+    *PACKED_PROFILES,
+    "empty_fixed0",
+    "empty_fixed-2",
+    "field3",
+    "field9",
+    "polynomial3_linear",
+    "polynomial5_linear",
+    "polynomial9_linear",
+)
 
 
 def shaped_positive(
@@ -139,20 +155,46 @@ def shaped_source_gates(
     return gates
 
 
-@pytest.mark.parametrize(
-    "profile",
-    (
-        "opaque",
-        "uint",
-        "bounded",
-        "montgomery",
-        "fixed-2",
-        "fixed0",
-        "fixed3",
-        "field",
-        "polynomial",
-    ),
-)
+def assert_hadamard_channel_factorization(
+    gates: tuple[Instruction, ...],
+    words: tuple[tuple[int, ...], ...],
+    work: tuple[int, ...],
+    old: int,
+    new: int,
+) -> None:
+    """Prove every active column and tensor identity on all untouched data bits.
+
+    Actual native/source instruction equality and output aliases are checked by
+    the caller. No instruction can read a bystander. Full active-channel equality
+    therefore extends to arbitrary entanglement with all remaining data bits.
+    The existing certificate proves every raw erasure history and clean work.
+    """
+    targets = tuple(word[0] for word in words if word)
+    wires = (0, 1, *targets, *work)
+    positions = {wire: index for index, wire in enumerate(wires)}
+    assert all(set(gate.wires) <= positions.keys() for gate in gates)
+    remapped = tuple(
+        replace(gate, wires=tuple(positions[w] for w in gate.wires)) for gate in gates
+    )
+    logical = 2 + len(targets)
+    matrix = logical_operator(CircuitIR(len(wires), remapped), logical)
+    action = torch.ones((1, 1), dtype=torch.complex128)
+    hadamard = torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / 2**0.5
+    for _ in targets:
+        action = torch.kron(action, hadamard)
+    expected = torch.eye(1 << logical, dtype=torch.complex128)
+    start = (2 * new + old) * len(action)
+    expected[start : start + len(action), start : start + len(action)] = action
+    torch.testing.assert_close(matrix, expected, atol=4e-12, rtol=0)
+    torch.testing.assert_close(
+        matrix @ matrix,
+        torch.eye(1 << logical, dtype=torch.complex128),
+        atol=8e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.parametrize("profile", SHAPED_PROFILES)
 @pytest.mark.parametrize("shape", ((), (2,), (1, 2), (2, 2), (0, 2)))
 @pytest.mark.parametrize("old,new", tuple(product((0, 1), repeat=2)))
 def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
@@ -203,13 +245,20 @@ def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
         )
     )
     assert verify_program_record(caller) == ()
+    assert source_caller.signature.get_right("word").dtype == source_dtype
+    assert source_caller.signature.get_right("word").shape == shape
+    assert caller.functions[0].registers is not None
+    assert caller.functions[0].registers[-1] == Register("word", dtype, shape)
     assert tuple(values) == tuple(original_values) == ("word", "ctrl")
     assert normalize_trace(_native_trace(caller, "caller")) == normalize_trace(
         _source_trace(SourceCalls, source_caller)
     )
     count = prod(shape)
-    words = tuple(tuple(range(2 + 3 * i, 5 + 3 * i)) for i in range(count))
-    logical = 2 + 3 * count
+    width = int(dtype.quantum_bits)
+    words = tuple(
+        tuple(range(2 + width * i, 2 + width * (i + 1))) for i in range(count)
+    )
+    logical = 2 + width * count
     work = (logical,)
     bound = bind_register_program(
         caller, ((0,), (1,), *words), clean=work, entry="caller"
@@ -229,7 +278,7 @@ def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
     assert_gate_parameters(gates, reference)
     model = get_cost_value(source, QECGatesCost())
     emitted = Counter(g.name for g in gates)
-    assert emitted["ch"] == count
+    assert emitted["ch"] == (count if width else 0)
     assert emitted["measure"] == emitted["reset"] == model.measurement == 1
     assert get_cost_value(source, QubitCount()) == bound.circuit.n_wires == logical + 1
     appended = (
@@ -240,6 +289,11 @@ def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
     )
     assert appended == gates
     assert CircuitIR.from_json(bound.circuit.to_json()) == bound.circuit
+    if logical > 14:
+        # Wider admitted field/polynomial arrays need no exponential bystander
+        # allocation: verify the complete channel and exact identity factor.
+        assert_hadamard_channel_factorization(appended, words, work, old, new)
+        return
     amplitudes = torch.tensor(
         [complex(i + 1, 2 - i % 13) for i in range(1 << (logical + 1))],
         dtype=torch.complex128,
@@ -252,6 +306,8 @@ def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
     addresses = torch.arange(expected.numel())
     active = (addresses >> logical & 3) == (new << 1 | old)
     for word in words:
+        if not word:
+            continue
         bit = 1 << (logical + 1 - word[0])
         low = addresses[active & (addresses & bit == 0)]
         high = low | bit

@@ -51,6 +51,25 @@ from tests.unit.test_register_component_calls import SourceCalls
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
+# Data words are three-bit raw storage. Every control remains a separate QBit.
+PACKED_PROFILES = (
+    "opaque",
+    "uint",
+    "bounded",
+    "montgomery",
+    "fixed-2",
+    "fixed0",
+    "fixed3",
+    "field",
+    "polynomial",
+    "signed-2",
+    "signed1",
+    "signed2",
+    "field5",
+    "polynomial5",
+)
+
+
 def packed_dtype(profile: str) -> tuple[RegisterType, Any]:
     """Pair independently constructed native and frozen-source descriptors."""
     from qualtran import QGF, BQUInt, QAny, QFxp, QGFPoly, QMontgomeryUInt, QUInt
@@ -70,24 +89,41 @@ def packed_dtype(profile: str) -> tuple[RegisterType, Any]:
         return FiniteFieldPolynomialEncoding(2, field).register_type(), QGFPoly(
             2, QGF(2, 1)
         )
+    if profile in {"field3", "field9"}:
+        characteristic, degree = (3, 1) if profile == "field3" else (3, 2)
+        return FiniteFieldEncoding(characteristic, degree).register_type(), QGF(
+            characteristic, degree
+        )
+    if profile.endswith("_linear"):
+        characteristic, degree = {
+            "polynomial3_linear": (3, 1),
+            "polynomial5_linear": (5, 1),
+            "polynomial9_linear": (3, 2),
+        }[profile]
+        field = FiniteFieldEncoding(characteristic, degree)
+        return FiniteFieldPolynomialEncoding(1, field).register_type(), QGFPoly(
+            1, QGF(characteristic, degree)
+        )
+    if profile == "field5":
+        return FiniteFieldEncoding(5, 1).register_type(), QGF(5, 1)
+    if profile == "polynomial5":
+        field = FiniteFieldEncoding(5, 1)
+        return FiniteFieldPolynomialEncoding(0, field).register_type(), QGFPoly(
+            0, QGF(5, 1)
+        )
+    if profile.startswith("empty_fixed"):
+        fraction = int(profile.removeprefix("empty_fixed"))
+        return fixed_point_register_type(0, fraction), QFxp(0, fraction)
+    if profile.startswith("signed"):
+        fraction = int(profile.removeprefix("signed"))
+        return fixed_point_register_type(3, fraction, signed=True), QFxp(
+            3, fraction, signed=True
+        )
     fraction = int(profile.removeprefix("fixed"))
     return fixed_point_register_type(3, fraction), QFxp(3, fraction)
 
 
-@pytest.mark.parametrize(
-    "profile",
-    (
-        "opaque",
-        "uint",
-        "bounded",
-        "montgomery",
-        "fixed-2",
-        "fixed0",
-        "fixed3",
-        "field",
-        "polynomial",
-    ),
-)
+@pytest.mark.parametrize("profile", PACKED_PROFILES)
 @pytest.mark.parametrize(
     "layers,value,inverse", tuple(product((1, 2), (0, 1), (False, True)))
 )
