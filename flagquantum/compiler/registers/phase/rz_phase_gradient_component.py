@@ -35,14 +35,7 @@ def rz_via_phase_gradient_program(
         name: str, source: RegisterType, target: RegisterType
     ) -> FunctionRecord:
         signature = cast_signature(source, target)
-        if (
-            source.is_symbolic()
-            or target.is_symbolic()
-            or any(
-                dtype.encoding == "fixed_point" and dict(dtype.parameters)["signed"]
-                for dtype in (source, target)
-            )
-        ):
+        if source.is_symbolic() or target.is_symbolic():
             return FunctionRecord(name, (), registers=tuple(signature))
         return cast_word_function(name, source, target)
 

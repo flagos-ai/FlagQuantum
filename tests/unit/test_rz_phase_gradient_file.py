@@ -228,7 +228,9 @@ def test_original_tensor_fixture_all_branches(
 
 
 @pytest.mark.parametrize("signed", (False, True))
-def test_logical_root_retains_unbound_cast_calls(signed: bool) -> None:
+def test_logical_root_retains_symbolic_calls_and_binds_approved_signed_views(
+    signed: bool,
+) -> None:
     from flagquantum.compiler.registers.phase.rz_phase_gradient_component import (
         rz_via_phase_gradient_program,
     )
@@ -247,8 +249,21 @@ def test_logical_root_retains_unbound_cast_calls(signed: bool) -> None:
     record = rz_via_phase_gradient_program(dtype, dtype)
     assert verify_program_record(record) == ()
     assert len(record.functions[0].blocks[0].operations) == 5
-    assert len([function for function in record.functions if not function.blocks]) == (
-        4 if signed else 5
-    )
-    with pytest.raises(ValueError):
-        bind_register_program(record, ((0,), (1, 2, 3), (4, 5, 6)), clean=(7, 8))
+    leaves = [function for function in record.functions if not function.blocks]
+    if signed:
+        assert not leaves
+        ports = ((0,), (1, 2, 3), (4, 5, 6))
+        bound = bind_register_program(record, ports, clean=(7, 8))
+        raw = bind_register_program(
+            rz_via_phase_gradient_program(
+                unsigned_register_type(3), unsigned_register_type(3)
+            ),
+            ports,
+            clean=(7, 8),
+        )
+        assert bound.circuit == raw.circuit
+        assert bound.events == raw.events and bound.outputs == ports
+    else:
+        assert len(leaves) == 5
+        with pytest.raises(ValueError):
+            bind_register_program(record, ((0,), (1, 2, 3), (4, 5, 6)), clean=(7, 8))
