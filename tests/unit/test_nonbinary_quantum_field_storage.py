@@ -216,13 +216,17 @@ def test_numeric_decode_still_refuses_unused_raw_encodings(
 
 @pytest.mark.parametrize("characteristic,degree", PROFILES)
 @pytest.mark.parametrize("polynomial", (False, True))
+@pytest.mark.parametrize("dirty", (False, True))
 def test_raw_field_allocation_and_free_preserve_the_complete_spectator_state(
-    characteristic: int, degree: int, polynomial: bool
+    characteristic: int, degree: int, polynomial: bool, dirty: bool
 ) -> None:
     from qualtran import BloqBuilder
     from qualtran import Signature as SourceSignature
     from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.bookkeeping import Allocate, Free
     from qualtran.resource_counting import QubitCount
+
+    from tests.unit.register_source_workspace import SourceWorkspace
 
     field = FiniteFieldEncoding(characteristic, degree)
     dtype = (
@@ -245,32 +249,54 @@ def test_raw_field_allocation_and_free_preserve_the_complete_spectator_state(
         for gate in ("h", "t")
     )
     builder = ComponentProgramBuilder(Signature.build(s=1), leaves)
-    word = builder.allocate(dtype=dtype)
-    builder.free(word)
+    word = builder.allocate(dtype=dtype, dirty=dirty)
+    builder.free(word, dirty=dirty)
     s = builder.call_dict("h", {"q": builder.inputs["s"]})["q"]
     s = builder.call_dict("t", {"q": s})["q"]
     program = builder.finalize({"s": s})
     assert verify_program_record(program) == ()
-    bound = bind_register_program(program, ((width,),), clean=tuple(range(width)))
+    wires = tuple(range(width))
+    bound = bind_register_program(
+        program,
+        ((width,),),
+        clean=() if dirty else wires,
+        borrowed=wires if dirty else (),
+    )
     assert bound.outputs == ((width,),) and len(bound.events) == 2
     assert all(width not in event.wires for event in bound.events)
+    original_pool = SourceWorkspace(() if dirty else wires, wires if dirty else ())
+    allocation, release = Allocate(source_dtype, dirty), Free(source_dtype, dirty)
+    operation, outputs = allocation.as_cirq_op(original_pool)
+    assert operation is None and release.as_cirq_op(original_pool, **outputs) == (
+        None,
+        {},
+    )
+    assert not original_pool.live
+    assert original_pool.events == [
+        (event.kind, event.wires, event.dirty) for event in bound.events
+    ]
     assert [(g.name, g.wires) for g in bound.circuit.instructions] == [
         ("h", (width,)),
         ("t", (width,)),
     ]
     source_builder, inputs = BloqBuilder.from_signature(SourceSignature.build(s=1))
-    temporary = source_builder.allocate(dtype=source_dtype)
-    source_builder.free(temporary)
+    temporary = source_builder.allocate(dtype=source_dtype, dirty=dirty)
+    source_builder.free(temporary, dirty=dirty)
     source_s = source_builder.add(Hadamard(), q=inputs["s"])
     source_s = source_builder.add(TGate(), q=source_s)
     source = source_builder.finalize(s=source_s)
     spectator = torch.tensor([1 + 2j, 3 - 1j], dtype=torch.complex128) / 15**0.5
     before = torch.zeros(1 << (width + 1), dtype=torch.complex128)
     before[:2] = spectator
-    expected = torch.zeros_like(before)
-    expected[:2] = (
-        torch.as_tensor(source.tensor_contract(), dtype=torch.complex128) @ spectator
-    )
+    if dirty:
+        raw = torch.arange(1, before.numel() + 1, dtype=torch.float64)
+        before = torch.complex(raw, 3 - 2 * raw)
+        before /= before.norm()
+    # The source tensor lifetime contracts zero even for dirty storage. Its
+    # spectator matrix supplies H/T only; actual qborrow/qfree hooks above
+    # establish identity on every borrowed word, including unused raw codes.
+    spectator_matrix = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+    expected = (before.reshape(-1, 2) @ spectator_matrix.T).flatten()
     actual = (
         Circuit(width + 1, inputs=before, dtype=torch.complex128)
         .append(FieldOperation(width + 1, bound.circuit.instructions))
