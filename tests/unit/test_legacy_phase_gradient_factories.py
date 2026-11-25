@@ -353,9 +353,13 @@ def test_scaled_symbolic_coefficients_remain_explicit_boundaries() -> None:
 
 
 @pytest.mark.parametrize("signed_x", (False, True))
-@pytest.mark.parametrize("gamma", (-0.5, 0.0, 0.5, 0.75, 2.0))
-def test_signed_coefficient_exact_source_graph_and_all_small_histories(
-    signed_x: bool, gamma: float
+@pytest.mark.parametrize("gamma", (-4.0, -0.5, 0.0, 0.5, 0.75, 2.0, 4.0))
+@pytest.mark.parametrize(
+    "fraction,signed_gamma",
+    ((2, True), (-1, False), (-2, False), (-1, True), (-2, True)),
+)
+def test_coefficient_formats_exact_source_graph_and_all_small_histories(
+    signed_x: bool, gamma: float, fraction: int, signed_gamma: bool
 ) -> None:
     from collections import Counter
 
@@ -369,10 +373,12 @@ def test_signed_coefficient_exact_source_graph_and_all_small_histories(
     )
 
     source = AddScaledValIntoPhaseReg(
-        QFxp(3, 2, signed=signed_x), 3, gamma, QFxp(3, 2, signed=True)
+        QFxp(3, 2, signed=signed_x), 3, gamma, QFxp(3, fraction, signed=signed_gamma)
     )
     assert_source_model(
-        source_scaled_phase_add_cost(3, 2, 3, gamma, 3, 2, coefficient_signed=True),
+        source_scaled_phase_add_cost(
+            3, 2, 3, gamma, 3, fraction, coefficient_signed=signed_gamma
+        ),
         source,
     )
     record = resolve_component_program(
@@ -388,7 +394,9 @@ def test_signed_coefficient_exact_source_graph_and_all_small_histories(
             )
             == record
         )
-    terms = scaled_phase_add_terms(3, 2, 3, gamma, 3, 2, coefficient_signed=True)
+    terms = scaled_phase_add_terms(
+        3, 2, 3, gamma, 3, fraction, coefficient_signed=signed_gamma
+    )
     work = max(
         (
             phase_add_workspace_size(len(range(3)[part]), 3, right_shift=shift)
@@ -411,8 +419,8 @@ def test_signed_coefficient_exact_source_graph_and_all_small_histories(
         input_fraction_bits=2,
         coefficient=gamma,
         coefficient_width=3,
-        coefficient_fraction_bits=2,
-        coefficient_signed=True,
+        coefficient_fraction_bits=fraction,
+        coefficient_signed=signed_gamma,
         adjoint=True,
     )
     # The original root ArithmeticGate model and its decomposed graph are
@@ -484,7 +492,7 @@ def test_signed_coefficient_complete_small_format_slices_match_original_generato
     with pytest.raises(ValueError, match="at least two bits"):
         scaled_phase_add_terms(3, 2, 3, 0.5, 1, 0, coefficient_signed=True)
     for width in range(2, 5):
-        for fraction in range(width):
+        for fraction in range(-3, width):
             for gamma in (-2.0, -0.5, 0.0, 0.5, 2.0):
                 source = AddScaledValIntoPhaseReg(
                     QFxp(3, 2), 3, gamma, QFxp(width, fraction, signed=True)

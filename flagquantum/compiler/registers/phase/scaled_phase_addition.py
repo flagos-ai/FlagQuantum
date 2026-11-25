@@ -42,7 +42,7 @@ def _coefficient_word(
 
     numerator, denominator = abs(coefficient).as_integer_ratio()
     return min(
-        (numerator << fraction_bits) // denominator,
+        (numerator << max(0, fraction_bits)) // (denominator << max(0, -fraction_bits)),
         (1 << (width - int(signed))) - 1,
     )
 
@@ -72,8 +72,6 @@ def scaled_phase_add_terms(
     ):
         if type(width) is not int or type(frac) is not int or frac > width or not width:
             raise ValueError("Scaled phase addition requires valid fixed-point formats")
-    if coefficient_fraction_bits < 0:
-        raise ValueError("Scaled coefficient requires a nonnegative fraction width")
     if coefficient_signed and (
         coefficient_width == 1 or coefficient_fraction_bits >= coefficient_width
     ):
