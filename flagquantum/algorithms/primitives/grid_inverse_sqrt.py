@@ -181,6 +181,7 @@ def source_grid_inverse_sqrt_resource_formula(
     target_width: SymbolicInt,
     *,
     newton: bool,
+    legacy_shims: bool = False,
 ) -> SymbolicResourceFormula:
     """Retain concrete or symbolic source model categories, independently of gates."""
     if newton and not is_symbolic_value(polynomial_width) and polynomial_width < 3:
@@ -201,6 +202,7 @@ def source_grid_inverse_sqrt_resource_formula(
                 cast(int, distance_width),
                 cast(int, polynomial_width),
                 cast(int, target_width),
+                legacy_shims=legacy_shims,
             )
         )
         gates = report.gates
@@ -217,7 +219,7 @@ def source_grid_inverse_sqrt_resource_formula(
     # Symbolic roots lack a physical decomposition upstream. The same direct
     # child formulas and maximum-width fallback apply; no schedule is inferred.
     width = target_width if newton else polynomial_width
-    add = source_add_resource_formula(width, width)
+    add = source_add_resource_formula(width, width, legacy_shims=legacy_shims)
     repetitions = 1 if newton else 3
     root_width = grid_inverse_sqrt_signature(
         distance_width, polynomial_width, target_width, newton=newton
