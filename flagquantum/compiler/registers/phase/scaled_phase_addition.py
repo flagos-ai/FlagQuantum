@@ -31,8 +31,10 @@ def source_symbolic_scaled_phase_add_formula(
     return replace(leaf, toffoli=leaf.toffoli * ((coefficient_width + 2) // 2))
 
 
-def _coefficient_word(coefficient: float, width: int, fraction_bits: int) -> int:
-    """Encode the truncated and saturated magnitude in an unsigned format."""
+def _coefficient_word(
+    coefficient: float, width: int, fraction_bits: int, signed: bool = False
+) -> int:
+    """Encode the truncated, saturated nonnegative magnitude in its format."""
     if type(coefficient) not in (int, float) or (
         type(coefficient) is float and not isfinite(coefficient)
     ):
@@ -41,7 +43,7 @@ def _coefficient_word(coefficient: float, width: int, fraction_bits: int) -> int
     numerator, denominator = abs(coefficient).as_integer_ratio()
     return min(
         (numerator << fraction_bits) // denominator,
-        (1 << width) - 1,
+        (1 << (width - int(signed))) - 1,
     )
 
 
@@ -52,14 +54,18 @@ def scaled_phase_add_terms(
     coefficient: float,
     coefficient_width: int,
     coefficient_fraction_bits: int,
+    *,
+    coefficient_signed: bool = False,
 ) -> tuple[tuple[slice, int], ...]:
     """Return (input slice, right shift) for each retained coefficient bit.
 
-    Both formats describe unsigned fixed-point words. The coefficient's
+    The input slices are raw bits. The coefficient's
     magnitude is truncated and saturated to its format, and its sign
     applies uniformly to the emitted additions. Slices use big-endian
     positions in the original input register.
     """
+    if type(coefficient_signed) is not bool:
+        raise ValueError("Scaled coefficient signed flag must be boolean")
     for width, frac in (
         (input_width, input_fraction_bits),
         (coefficient_width, coefficient_fraction_bits),
@@ -68,17 +74,23 @@ def scaled_phase_add_terms(
             raise ValueError("Scaled phase addition requires valid fixed-point formats")
     if coefficient_fraction_bits < 0:
         raise ValueError("Scaled coefficient requires a nonnegative fraction width")
+    if coefficient_signed and (
+        coefficient_width == 1 or coefficient_fraction_bits >= coefficient_width
+    ):
+        raise ValueError("Signed coefficient requires at least two bits and a sign bit")
     if type(gradient_width) is not int or gradient_width < 1:
         raise ValueError("Scaled phase addition requires a positive gradient width")
     magnitude = _coefficient_word(
-        coefficient, coefficient_width, coefficient_fraction_bits
+        coefficient, coefficient_width, coefficient_fraction_bits, coefficient_signed
     )
     integer_bits = input_width - input_fraction_bits
     terms: list[tuple[slice, int]] = []
     for bit in reversed(range(magnitude.bit_length())):
         if not (magnitude >> bit) & 1:
             continue
-        shift = bit - coefficient_fraction_bits
+        # The source iterates Fxp.bin() using Fxp.n_int, which excludes the
+        # signed format's sign bit. Preserve that extra shift literally.
+        shift = bit - coefficient_fraction_bits - int(coefficient_signed)
         if 0 <= shift < input_fraction_bits:
             terms.append((slice(integer_bits + shift, input_width), 0))
         elif -gradient_width - integer_bits < shift < 0:
@@ -97,6 +109,8 @@ def source_scaled_phase_add_cost(
     coefficient: float,
     coefficient_width: int,
     coefficient_fraction_bits: int,
+    *,
+    coefficient_signed: bool = False,
 ) -> ComponentCost:
     """Model the bounded full-width AddIntoPhaseGrad calls declared by the source."""
     terms = scaled_phase_add_terms(
@@ -106,6 +120,7 @@ def source_scaled_phase_add_cost(
         coefficient,
         coefficient_width,
         coefficient_fraction_bits,
+        coefficient_signed=coefficient_signed,
     )
     return ComponentCost(
         "AddScaledValIntoPhaseReg",
@@ -130,6 +145,7 @@ def scaled_phase_add_ir(
     coefficient_width: int,
     coefficient_fraction_bits: int,
     adjoint: bool = False,
+    coefficient_signed: bool = False,
 ) -> tuple[Instruction, ...]:
     """Accumulate the source's per-term truncated product modulo the phase word.
 
@@ -145,6 +161,7 @@ def scaled_phase_add_ir(
         coefficient,
         coefficient_width,
         coefficient_fraction_bits,
+        coefficient_signed=coefficient_signed,
     )
     if type(adjoint) is not bool:
         raise ValueError("Scaled phase addition adjoint must be boolean")
