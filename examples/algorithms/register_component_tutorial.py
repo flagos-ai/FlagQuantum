@@ -13,9 +13,6 @@ from flagquantum.algorithms.primitives.modular_exponentiation import (
     ModularExponentiation,
 )
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.component_basis_vectors import (
-    integer_basis_function,
-)
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.component_gate_function import bit_gate_function
 from flagquantum.compiler.registers.register_binding import bind_register_program
@@ -24,7 +21,6 @@ from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.register_types import (
     quantum_bit_type,
-    unsigned_register_type,
 )
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
@@ -143,44 +139,20 @@ def reallocation_declaration() -> FunctionRecord:
 
 
 def modular_exponentiation_program(operation: ModularExponentiation) -> ProgramRecord:
-    """Store the source's connected one-level decomposition, keeping mul leaves.
+    """Store the source one-level diagram through the shared Compiler owner.
 
-    Both widths and constants must be finite built-in integers. The output word
-    belongs to the caller. Multiplication declarations require explicit bodies
-    for physical lowering or explicit actions for numerical evaluation. This
-    graph does not allocate the multiplication algorithm's physical workspace.
+    Multiplication leaves deliberately remain declarations in this teaching
+    path. Source constructor execution uses the same owner with full bodies.
     """
-    operation.workspace_requirements()
-    exponent_type = unsigned_register_type(operation.exponent_width)
-    output_type = unsigned_register_type(operation.output_width)
-    builder = ComponentProgramBuilder(
-        operation.source_signature,
-        (integer_basis_function("IntState", output_type, 1),),
-        name="ModExp",
+    from flagquantum.compiler.registers.modular.modular_exponentiation_component import (
+        modular_exponentiation_program as shared_program,
     )
-    x = builder.call_dict("IntState", {})["val"]
-    exponent = builder.inputs["exponent"]
-    assert isinstance(exponent, RegisterBinding)
-    bits = builder.split(exponent)
-    multiplier = int(operation.base) % int(operation.modulus)
-    defined: set[str] = set()
-    for index in reversed(range(len(bits))):
-        name = f"CModMulK({multiplier})"
-        if name not in defined:
-            builder.define(
-                FunctionRecord(
-                    name,
-                    (),
-                    registers=(
-                        Register("ctrl", quantum_bit_type()),
-                        Register("x", output_type),
-                    ),
-                )
-            )
-            defined.add(name)
-        outputs = builder.call_dict(name, {"ctrl": bits[index], "x": x})
-        bits[index], x = outputs["ctrl"], outputs["x"]
-        multiplier = multiplier * multiplier % int(operation.modulus)
-    return builder.finalize(
-        {"exponent": builder.join(bits, dtype=exponent_type), "x": x}
+
+    operation.workspace_requirements()
+    return shared_program(
+        int(operation.base),
+        int(operation.modulus),
+        int(operation.exponent_width),
+        int(operation.output_width),
+        executable=False,
     )
