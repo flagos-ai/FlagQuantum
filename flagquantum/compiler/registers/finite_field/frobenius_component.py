@@ -9,12 +9,12 @@ import numpy as np
 
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from .field_linear import _frobenius_matrix
 from .field_multiplication import _validate_field
+from .field_word import binary_field_word_width
 from .linear_component import binary_linear_program
 
 
@@ -30,7 +30,7 @@ def field_frobenius_program(
     """
     if dtype.encoding != "finite_field":
         raise ValueError("Frobenius requires a binary field descriptor")
-    width = executable_register_width(dtype)
+    width = binary_field_word_width(dtype)
     _validate_field(width, modulus)
     parameters = dict(dtype.parameters)
     if parameters.get("polynomial", modulus) != modulus:

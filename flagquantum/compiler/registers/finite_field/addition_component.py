@@ -8,12 +8,12 @@
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from .coefficients import gf2_add_constant_ir, gf2_add_ir
+from .field_word import binary_field_word_width
 
 
 def field_addition_program(
@@ -30,7 +30,7 @@ def field_addition_program(
         raise ValueError("Field addition direction requires a boolean")
     if dtype.encoding != "finite_field":
         raise ValueError("Field addition requires a binary field descriptor")
-    width = executable_register_width(dtype)
+    width = binary_field_word_width(dtype)
     if constant is None:
         signature = Signature.build_from_dtypes(x=dtype, y=dtype)
         bit_ports = tuple(Signature.build(ctrl=1, target=1))

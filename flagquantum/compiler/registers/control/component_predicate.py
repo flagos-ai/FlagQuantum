@@ -43,6 +43,13 @@ def validate_control_ports(
             "finite_field_polynomial": "unsigned",
         }.get(register.dtype.encoding)
         width = executable_register_width(register.dtype)
+        if (
+            register.dtype.encoding in {"finite_field", "finite_field_polynomial"}
+            and dict(register.dtype.parameters).get("characteristic") != 2
+        ):
+            raise ValueError(
+                f"unsupported executable register descriptor {register.dtype!r}"
+            )
         if register.dtype.encoding == "fixed_point" and width != 1:
             raise ValueError("Fixed-point controls require single-bit storage")
         count += width * prod(register.shape)
