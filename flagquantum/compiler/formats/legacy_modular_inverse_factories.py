@@ -41,6 +41,7 @@ from ..registers.modular.modular_inverse_component import modular_inverse_progra
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
 from .legacy_word_factories import _rename_program
+from .montgomery_port_views import restore_montgomery_ports, source_modulus_omission
 
 # Ordered original signatures are independent of finite decomposition.
 _STEP_PORTS = {
@@ -106,9 +107,15 @@ def _inverse_factory(
             for port in _STEP_PORTS[kind]
         )
     if registers is not None and registers != ports:
-        raise SerializationError(f"Invalid register signature for {kind}")
+        if len(registers) != len(ports) or not all(
+            outer == inner or source_modulus_omission(outer, inner)
+            for outer, inner in zip(registers, ports, strict=True)
+        ):
+            raise SerializationError(f"Invalid register signature for {kind}")
     if isinstance(width, sympy.Expr) or isinstance(modulus, sympy.Expr):
-        return FunctionRecord(name, (), registers=ports)
+        return FunctionRecord(
+            name, (), registers=ports if registers is None else registers
+        )
     assert isinstance(width, int)
     if kind in _SIMPLE_BUILDERS:
         program = _SIMPLE_BUILDERS[kind](width)
@@ -122,6 +129,8 @@ def _inverse_factory(
             program = inverse_algorithm_program(width, modulus)
         else:
             program = modular_inverse_program(width, modulus, adjoint=inverse)
+    if registers is not None and registers != ports:
+        program = restore_montgomery_ports(program, registers)
     return _rename_program(program, name)
 
 
