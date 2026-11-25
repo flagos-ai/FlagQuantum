@@ -9,7 +9,8 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import (
     fixed_point_register_type,
 )
-from ....core.ir.program.registers import RegisterType
+from ....core.ir.program.registers import Register, RegisterType
+from ....core.ir.program.signatures import Signature
 from ..arithmetic.addition_component import addition_component_program
 from ..arithmetic.controlled_addition_component import controlled_addition_program
 from ..component_builder import ComponentProgramBuilder
@@ -105,6 +106,9 @@ def scaled_phase_add_program(
     coefficient: float,
     coefficient_width: int,
     coefficient_fraction_bits: int,
+    *,
+    input_signed: bool = False,
+    coefficient_signed: bool = False,
 ) -> ProgramRecord:
     """Call each source slice in coefficient-bit order, preserving all other bits.
 
@@ -119,11 +123,20 @@ def scaled_phase_add_program(
         coefficient,
         coefficient_width,
         coefficient_fraction_bits,
+        coefficient_signed=coefficient_signed,
     )
-    dtype = fixed_point_register_type(input_width, input_fraction_bits)
+    dtype = fixed_point_register_type(
+        input_width, input_fraction_bits, signed=input_signed
+    )
     builder = ComponentProgramBuilder(
-        source_phase_add_signature(
-            input_width, gradient_width, input_fraction_bits=input_fraction_bits
+        Signature(
+            (
+                Register("x", dtype),
+                Register(
+                    "phase_grad",
+                    fixed_point_register_type(gradient_width, gradient_width),
+                ),
+            )
         )
     )
     x, phase = builder.inputs["x"], builder.inputs["phase_grad"]

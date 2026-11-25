@@ -29,6 +29,7 @@ from flagquantum.core.value_math import SymbolicInt
 from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_graph import _native_trace, _source_trace
+from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_legacy_arithmetic_factories import _library
 from tests.unit.test_multiplexed_source_binding import logical_operator
 from tests.unit.test_register_component_calls import SourceCalls
@@ -338,20 +339,170 @@ def test_original_examples_and_invalid_constructor_metadata() -> None:
             factory("bad", None, {})
 
 
-def test_scaled_signed_storage_and_symbolic_coefficients_remain_explicit_boundaries() -> (
-    None
-):
+def test_scaled_symbolic_coefficients_remain_explicit_boundaries() -> None:
     from qualtran import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
-    cases = (
-        AddScaledValIntoPhaseReg(QFxp(3, 2, signed=True), 3, 0.5, QFxp(3, 2)),
-        AddScaledValIntoPhaseReg(QFxp(2, 2), 3, sympy.Symbol("gamma"), QFxp(3, 2)),
+    source = AddScaledValIntoPhaseReg(QFxp(2, 2), 3, sympy.Symbol("gamma"), QFxp(3, 2))
+    library = _library(source, 0)
+    record = resolve_component_program(library, 0, phase_gradient_factories())
+    assert record.functions[0].registers == library.entries[0].declaration.registers
+    assert not record.functions[0].blocks
+    with pytest.raises(ValueError, match="bodies"):
+        bind_register_program(record, ())
+
+
+@pytest.mark.parametrize("signed_x", (False, True))
+@pytest.mark.parametrize("gamma", (-0.5, 0.0, 0.5, 0.75, 2.0))
+def test_signed_coefficient_exact_source_graph_and_all_small_histories(
+    signed_x: bool, gamma: float
+) -> None:
+    from collections import Counter
+
+    from qualtran import QFxp
+    from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+
+    from flagquantum.compiler.registers.phase.scaled_phase_addition import (
+        scaled_phase_add_ir,
+        scaled_phase_add_terms,
+        source_scaled_phase_add_cost,
     )
-    for source in cases:
-        library = _library(source, 0)
-        record = resolve_component_program(library, 0, phase_gradient_factories())
-        assert record.functions[0].registers == library.entries[0].declaration.registers
-        assert not record.functions[0].blocks
-        with pytest.raises(ValueError, match="bodies"):
-            bind_register_program(record, ())
+
+    source = AddScaledValIntoPhaseReg(
+        QFxp(3, 2, signed=signed_x), 3, gamma, QFxp(3, 2, signed=True)
+    )
+    assert_source_model(
+        source_scaled_phase_add_cost(3, 2, 3, gamma, 3, 2, coefficient_signed=True),
+        source,
+    )
+    record = resolve_component_program(
+        _library(source, 0), 0, phase_gradient_factories()
+    )
+    assert verify_program_record(record) == ()
+    graph = source.decompose_bloq()
+    assert _native_trace(record) == _source_trace(SourceCalls, graph)
+    for depth in (1, 2):
+        assert (
+            resolve_component_program(
+                _library(source, depth), 0, phase_gradient_factories()
+            )
+            == record
+        )
+    terms = scaled_phase_add_terms(3, 2, 3, gamma, 3, 2, coefficient_signed=True)
+    work = max(
+        (
+            phase_add_workspace_size(len(range(3)[part]), 3, right_shift=shift)
+            for part, shift in terms
+        ),
+        default=0,
+    )
+    ports = ((0, 1, 2), (3, 4, 5))
+    clean = tuple(range(7, 7 + work))
+    bound = bind_register_program(record, ports, clean=clean)
+    assert bound.outputs == ports
+    total = 7 + work
+    gates = bound.circuit.instructions
+    appended = Circuit(total).append(FieldOperation(total, gates)).to_ir()
+    assert appended.instructions == gates
+    inverse = scaled_phase_add_ir(
+        *ports,
+        clean,
+        tuple(range(work)),
+        input_fraction_bits=2,
+        coefficient=gamma,
+        coefficient_width=3,
+        coefficient_fraction_bits=2,
+        coefficient_signed=True,
+        adjoint=True,
+    )
+    # The original root ArithmeticGate model and its decomposed graph are
+    # separate oracles: signed formats can make those disagree upstream.
+    matrix = torch.as_tensor(graph.tensor_contract(), dtype=torch.complex128)
+    contiguous = bind_register_program(record, ports, clean=tuple(range(6, 6 + work)))
+    torch.testing.assert_close(
+        logical_operator(contiguous.circuit, 6), matrix, atol=1e-11, rtol=0
+    )
+    values = torch.arange(1, 129, dtype=torch.float64)
+    amplitudes = torch.complex(values, values.flip(0))
+    amplitudes /= amplitudes.norm()
+    initial = torch.zeros(1 << total, dtype=torch.complex128)
+    expected = torch.zeros_like(initial)
+    initial[:: 1 << work] = amplitudes
+    expected[:: 1 << work] = (matrix @ amplitudes.reshape(64, 2)).flatten()
+    events = Counter(g.name for g in gates)["measure"]
+    reverse_events = Counter(g.name for g in inverse)["measure"]
+    for history in product((0, 1), repeat=events):
+        branch = forced_branch(initial, gates, history)
+        torch.testing.assert_close(
+            branch, expected / sqrt(2**events), atol=1e-11, rtol=0
+        )
+        for reverse_history in product((0, 1), repeat=reverse_events):
+            recovered = forced_branch(branch, inverse, reverse_history)
+            torch.testing.assert_close(
+                recovered,
+                initial / sqrt(2 ** (events + reverse_events)),
+                atol=2e-11,
+                rtol=0,
+            )
+
+
+def test_signed_input_classical_failure_and_full_word_source_dtype_refusal() -> None:
+    from qualtran import BloqError, QFxp
+    from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+
+    from flagquantum.errors import SerializationError
+
+    valid_graph = AddScaledValIntoPhaseReg(
+        QFxp(3, 2, signed=True), 3, 0.5, QFxp(3, 2, signed=True)
+    )
+    valid_graph.decompose_bloq()
+    with pytest.raises(AssertionError):
+        valid_graph.scaled_val(0)
+    full_word = AddScaledValIntoPhaseReg(QFxp(3, 2, signed=True), 3, 0.5, QFxp(3, 2))
+    with pytest.raises(BloqError, match="dtypes are not consistent"):
+        full_word.decompose_bloq()
+    with pytest.raises(SerializationError, match="dtypes are not consistent"):
+        resolve_component_program(_library(full_word, 0), 0, phase_gradient_factories())
+
+
+def test_signed_coefficient_complete_small_format_slices_match_original_generator() -> (
+    None
+):
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
+    from qualtran import QFxp
+    from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+
+    from flagquantum.compiler.registers.phase.scaled_phase_addition import (
+        scaled_phase_add_terms,
+    )
+
+    wires = cirq.LineQubit.range(6)
+    context = cirq.DecompositionContext(cirq.SimpleQubitManager())
+    with pytest.raises(ValueError):
+        QFxp(1, 0, signed=True)
+    with pytest.raises(ValueError, match="at least two bits"):
+        scaled_phase_add_terms(3, 2, 3, 0.5, 1, 0, coefficient_signed=True)
+    for width in range(2, 5):
+        for fraction in range(width):
+            for gamma in (-2.0, -0.5, 0.0, 0.5, 2.0):
+                source = AddScaledValIntoPhaseReg(
+                    QFxp(3, 2), 3, gamma, QFxp(width, fraction, signed=True)
+                )
+                calls = tuple(
+                    cirq.flatten_op_tree(
+                        source.decompose_from_registers(
+                            context=context,
+                            x=np.array(wires[:3]),
+                            phase_grad=np.array(wires[3:]),
+                        )
+                    )
+                )
+                terms = scaled_phase_add_terms(
+                    3, 2, 3, gamma, width, fraction, coefficient_signed=True
+                )
+                assert len(calls) == len(terms)
+                for call, (part, shift) in zip(calls, terms, strict=True):
+                    assert call.qubits == (*wires[:3][part], *wires[3:])
+                    assert call.gate.right_shift == shift
+                    assert call.gate.sign == (-1 if gamma < 0 else 1)

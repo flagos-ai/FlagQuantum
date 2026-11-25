@@ -154,8 +154,6 @@ def _scaled_phase_factory(
         or gamma_dtype.is_symbolic()
         or type(gradient) is not int
         or isinstance(gamma, sympy.Expr)
-        or dict(x.parameters)["signed"]
-        or dict(gamma_dtype.parameters)["signed"]
     ):
         return FunctionRecord(name, (), registers=ports)
     assert isinstance(x.quantum_bits, int) and isinstance(gamma_dtype.quantum_bits, int)
@@ -168,6 +166,8 @@ def _scaled_phase_factory(
             gamma,
             gamma_dtype.quantum_bits,
             gamma_fraction,
+            input_signed=bool(dict(x.parameters)["signed"]),
+            coefficient_signed=bool(dict(gamma_dtype.parameters)["signed"]),
         ),
         name,
     )
