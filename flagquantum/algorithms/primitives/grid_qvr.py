@@ -13,9 +13,10 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.phase.grid_qvr_declaration import (
+    GridVariableRotationDeclaration,
+)
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
-from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 
 
@@ -23,7 +24,7 @@ def source_grid_qvr_signature(width: int) -> Signature:
     """Describe the opaque through word in the locked rotation declaration."""
     if type(width) is not int or width < 1:
         raise ValueError("Grid QVR requires a positive phase width")
-    return Signature((Register("phi", opaque_register_type(width)),))
+    return GridVariableRotationDeclaration(width).signature
 
 
 def source_grid_qvr_cost(width: int) -> ComponentCost:
