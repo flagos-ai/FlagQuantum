@@ -33,7 +33,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 @pytest.fixture(scope="module", autouse=True)
-def frozen_source():
+def frozen_source() -> None:
     from qualtran.bloqs.gf_poly_arithmetic import gf_poly_split_and_join
 
     raw = Path(gf_poly_split_and_join.__file__).read_bytes()
@@ -45,8 +45,8 @@ def frozen_source():
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize("degree,field_degree", [(0, 1), (2, 2)])
 def test_polynomial_control_keeps_typed_coefficient_order_and_state(
-    reverse, degree, field_degree
-):
+    reverse: bool, degree: int, field_degree: int
+) -> None:
     from cirq import LineQubit
     from qualtran import QGF, BloqBuilder, CtrlSpec, QBit, QGFPoly
     from qualtran import Register as ForeignRegister
@@ -119,7 +119,7 @@ def test_polynomial_control_keeps_typed_coefficient_order_and_state(
         controlled, ((0,), (1,), *(words if reverse else (packed,)))
     )
     assert bound.outputs == ((0,), (1,), *expected)
-    assert bound.events == bound.circuit.instructions == ()
+    assert bound.events == () and bound.circuit.instructions == ()
     assert get_cost_value(composite, QECGatesCost()).asdict() == {}
     assert get_cost_value(composite, QubitCount()) == layout.logical_width + 2
 
@@ -132,10 +132,12 @@ def test_polynomial_control_keeps_typed_coefficient_order_and_state(
     torch.testing.assert_close(circuit.state().flatten(), state, rtol=0, atol=2e-12)
 
 
-def test_polynomial_field_port_must_have_a_matching_executable_encoding():
+def test_polynomial_field_port_must_have_a_matching_executable_encoding() -> None:
     field = FiniteFieldEncoding(2, 2).register_type()
     with pytest.raises(ValueError, match="matching executable field"):
         field_polynomial_component_program(FieldPolynomialLayout(1, 3), field)
     odd_field = FiniteFieldEncoding(3, 2).register_type()
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
-        field_polynomial_component_program(FieldPolynomialLayout(1, 4), odd_field)
+    record = field_polynomial_component_program(FieldPolynomialLayout(1, 4), odd_field)
+    bound = bind_register_program(record, (tuple(range(8)),))
+    assert bound.outputs == ((0, 1, 2, 3), (4, 5, 6, 7))
+    assert bound.events == () and bound.circuit.instructions == ()

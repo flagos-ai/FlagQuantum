@@ -63,7 +63,9 @@ def test_nonbinary_identity_and_read_keep_nominal_linear_words(
     assert verify_program_record(ProgramRecord((read_function(dtype, delta=1),)))
     with pytest.raises(ValueError):
         executable_register_width(dtype)
-    with pytest.raises(ValueError):
+    # Proposal 125 admits the distinct raw quantum view. The classical
+    # descriptor itself above still cannot enter a quantum binding.
+    assert (
         executable_register_width(
             replace(
                 dtype,
@@ -72,6 +74,8 @@ def test_nonbinary_identity_and_read_keep_nominal_linear_words(
                 parameters=dtype.parameters[1:],
             )
         )
+        == dtype.classical_bits
+    )
 
 
 @pytest.mark.parametrize(

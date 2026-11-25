@@ -27,7 +27,7 @@ from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
 
-def _field_register_width(dtype: RegisterType, *, binary_only: bool) -> int:
+def _field_register_width(dtype: RegisterType) -> int:
     """Validate structural field metadata independently of numerical construction."""
     width = dtype.quantum_bits
     if (
@@ -60,7 +60,7 @@ def _field_register_width(dtype: RegisterType, *, binary_only: bool) -> int:
         coefficient = RegisterType(
             "finite_field", coefficient_width, parameters=dtype.parameters[1:]
         )
-        _field_register_width(coefficient, binary_only=binary_only)
+        _field_register_width(coefficient)
         return width
     base = ("characteristic", "degree", "order")
     polynomial = (
@@ -77,7 +77,6 @@ def _field_register_width(dtype: RegisterType, *, binary_only: bool) -> int:
             and degree > 0
             and order == characteristic**degree
             and width == (order - 1).bit_length()
-            and (not binary_only or characteristic == 2)
         ):
             return width
     raise ValueError(f"unsupported executable register descriptor {dtype!r}")
@@ -86,8 +85,9 @@ def _field_register_width(dtype: RegisterType, *, binary_only: bool) -> int:
 def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
-    Execution admits concrete bit, opaque, integer storage and binary fields,
-    including packed polynomials over those binary fields (Proposal 109).
+    Execution admits concrete bit, opaque, integer and raw field storage,
+    including packed polynomials (Proposals 109 and 125). Nonbinary storage
+    does not admit numerical field arithmetic or control interpretations.
     Proposals 113 through 116 admit concrete unsigned fixed-point storage,
     including empty words, and positive-width signed fixed-point words.
     Canonical parameters retain their metadata identity during binding.
@@ -96,7 +96,7 @@ def executable_register_width(dtype: RegisterType) -> int:
         raise ValueError("an executable word needs a neutral RegisterType")
     width = dtype.quantum_bits
     if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
-        return _field_register_width(dtype, binary_only=True)
+        return _field_register_width(dtype)
     if dtype.encoding == "fixed_point":
         logical_register_width(dtype)
         parameters = dict(dtype.parameters)
@@ -206,7 +206,8 @@ def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
     Proposal 108 preserves CBit identity and constructor parameter ordering.
     A quantum metadata view reuses existing constructor validation. Proposal 110
     admits concrete binary fields and polynomials. Proposal 111 reuses structural
-    field metadata for nonbinary classical words, keeping quantum admission binary.
+    field metadata for nonbinary classical words. Proposal 125 shares this
+    structural validation with raw quantum storage without changing classical words.
     """
     if (
         dtype == classical_bit_type()
@@ -238,7 +239,7 @@ def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
         parameters=dtype.parameters[1:],
     )
     if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
-        return _field_register_width(quantum_view, binary_only=False)
+        return _field_register_width(quantum_view)
     return logical_register_width(quantum_view)
 
 
