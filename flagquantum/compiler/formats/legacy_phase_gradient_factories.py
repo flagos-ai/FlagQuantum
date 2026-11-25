@@ -97,22 +97,25 @@ def _phase_add_factory(
     shift = _integer({"right_shift": 0, **arguments}, "right_shift")
     sign = _integer({"sign": 1, **arguments}, "sign")
     control = arguments.get("controlled_by")
-    if control is not None and (type(control) is not int or control not in (0, 1)):
-        raise SerializationError("Phase addition control requires zero, one or None")
+    if control is not None and type(control) is not int:
+        raise SerializationError("Phase addition control requires an integer or None")
     ports = tuple(
         source_phase_add_signature(width, gradient, controlled=control is not None)
     )
     if registers is not None and registers != ports:
         raise SerializationError("Invalid phase addition register signature")
-    if (
-        any(type(v) is not int for v in (width, gradient, shift, sign))
-        or gradient == 0
-        or shift < 0
-        or sign not in (-1, 1)
-    ):
+    if any(type(v) is not int for v in (width, gradient, shift, sign)) or gradient == 0:
         return FunctionRecord(name, (), registers=ports)
     assert isinstance(width, int) and isinstance(gradient, int)
     assert isinstance(shift, int) and isinstance(sign, int)
+    if control is not None and control not in (0, 1):
+        # No binary ctrl value equals this source integer. Keep the existing
+        # binary control contract and emit its exact always-off identity.
+        return _rename_program(
+            phase_add_component_program(width, gradient, sign=0, controlled=True), name
+        )
+    if shift < 0:
+        return FunctionRecord(name, (), registers=ports)
     return _rename_program(
         phase_add_component_program(
             width,

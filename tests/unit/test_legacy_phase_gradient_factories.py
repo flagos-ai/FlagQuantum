@@ -114,29 +114,40 @@ def test_gradient_state_output_ownership_and_full_complex_tensor(
 
 
 @pytest.mark.parametrize(
-    "control,sign,shift", tuple(product((None, 0, 1), (-1, 1), (0, 1)))
+    "control,sign",
+    tuple(product((None, 0, 1), (-3, -1, 0, 1, 2, 3, (1 << 30) + 1))),
+)
+@pytest.mark.parametrize(
+    "input_width,gradient_width,shift",
+    ((2, 3, 0), (2, 3, 1), (2, 3, 3), (3, 2, 0), (3, 2, 1), (3, 3, 1)),
 )
 def test_atomic_phase_addition_joint_operator_and_shared_components(
-    control: int | None, sign: int, shift: int
+    control: int | None, sign: int, input_width: int, gradient_width: int, shift: int
 ) -> None:
     cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
-    source = AddIntoPhaseGrad(2, 3, right_shift=shift, sign=sign, controlled_by=control)
+    source = AddIntoPhaseGrad(
+        input_width, gradient_width, right_shift=shift, sign=sign, controlled_by=control
+    )
     record = resolve_component_program(
         _library(source, 0), 0, phase_gradient_factories()
     )
-    inputs = ((0,), (1, 2), (3, 4, 5)) if control is not None else ((0, 1), (2, 3, 4))
-    logical = 5 + (control is not None)
+    offset = int(control is not None)
+    inputs = (((0,),) if offset else ()) + (
+        tuple(range(offset, offset + input_width)),
+        tuple(range(offset + input_width, offset + input_width + gradient_width)),
+    )
+    logical = input_width + gradient_width + offset
     work = phase_add_workspace_size(
-        2, 3, right_shift=shift, controlled=control is not None
+        input_width, gradient_width, right_shift=shift, controlled=control is not None
     )
     clean = tuple(range(logical, logical + work))
     bound = bind_register_program(record, inputs, clean=clean)
     assert bound == bind_register_program(
         phase_add_component_program(
-            2,
-            3,
+            input_width,
+            gradient_width,
             right_shift=shift,
             sign=sign,
             controlled=control is not None,
@@ -153,20 +164,22 @@ def test_atomic_phase_addition_joint_operator_and_shared_components(
     )
 
 
-@pytest.mark.parametrize("control,sign", tuple(product((None, 0, 1), (-1, 1))))
+@pytest.mark.parametrize(
+    "control,sign", tuple(product((None, 0, 1), (-3, -1, 0, 1, 2, 3)))
+)
 def test_phase_addition_every_small_raw_history_with_coherent_spectator(
     control: int | None, sign: int
 ) -> None:
     cirq = pytest.importorskip("cirq")
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
-    source = AddIntoPhaseGrad(1, 2, sign=sign, controlled_by=control)
+    source = AddIntoPhaseGrad(2, 2, sign=sign, controlled_by=control)
     record = resolve_component_program(
         _library(source, 0), 0, phase_gradient_factories()
     )
-    inputs = ((0,), (1,), (2, 3)) if control is not None else ((0,), (1, 2))
-    logical = 3 + (control is not None)
-    work = phase_add_workspace_size(1, 2, controlled=control is not None)
+    inputs = ((0,), (1, 2), (3, 4)) if control is not None else ((0, 1), (2, 3))
+    logical = 4 + (control is not None)
+    work = phase_add_workspace_size(2, 2, controlled=control is not None)
     bound = bind_register_program(
         record, inputs, clean=tuple(range(logical + 1, logical + 1 + work))
     )
@@ -187,6 +200,27 @@ def test_phase_addition_every_small_raw_history_with_coherent_spectator(
             forced_branch(initial, bound.circuit.instructions, history),
             target / sqrt(2**count),
             atol=8e-12,
+            rtol=0,
+        )
+
+    inverse_record = phase_add_component_program(
+        2,
+        2,
+        sign=-sign,
+        controlled=control is not None,
+        control_value=1 if control is None else control,
+    )
+    inverse = bind_register_program(
+        inverse_record, inputs, clean=tuple(range(logical + 1, logical + 1 + work))
+    ).circuit.instructions
+    reverse_count = sum(g.name == "measure" for g in inverse)
+    # Every forward branch has the same target/scale; checking every inverse
+    # branch on target proves their entire Cartesian product by linearity.
+    for history in product((0, 1), repeat=reverse_count):
+        torch.testing.assert_close(
+            forced_branch(target, inverse, history),
+            initial / sqrt(2**reverse_count),
+            atol=1e-11,
             rtol=0,
         )
 
@@ -514,3 +548,31 @@ def test_signed_coefficient_complete_small_format_slices_match_original_generato
                     assert call.qubits == (*wires[:3][part], *wires[3:])
                     assert call.gate.right_shift == shift
                     assert call.gate.sign == (-1 if gamma < 0 else 1)
+
+
+@pytest.mark.parametrize(
+    "control,sign,shift", tuple(product((-2, 2, 3), (-3, 0, 2), (-1, 0, 1)))
+)
+def test_original_unreachable_binary_control_is_exact_identity(
+    control: int, sign: int, shift: int
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+
+    source = AddIntoPhaseGrad(2, 2, right_shift=shift, sign=sign, controlled_by=control)
+    record = resolve_component_program(
+        _library(source, 0), 0, phase_gradient_factories()
+    )
+    assert verify_program_record(record) == ()
+    ports = ((0,), (1, 2), (3, 4))
+    bound = bind_register_program(record, ports)
+    assert bound.outputs == ports
+    assert not bound.circuit.instructions and not bound.events
+    with pytest.raises(ValueError, match="zero or one"):
+        phase_add_component_program(2, 2, controlled=True, control_value=control)
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, 5),
+        torch.as_tensor(cirq.unitary(source), dtype=torch.complex128),
+        atol=0,
+        rtol=0,
+    )

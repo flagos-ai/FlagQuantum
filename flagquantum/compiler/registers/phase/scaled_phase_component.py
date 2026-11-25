@@ -38,8 +38,8 @@ def phase_add_component_program(
     """
     if type(right_shift) is not int or right_shift < 0:
         raise ValueError("Phase addition right shift must be a nonnegative integer")
-    if type(sign) is not int or sign not in (-1, 1):
-        raise ValueError("Phase addition sign must be -1 or 1")
+    if type(sign) is not int:
+        raise ValueError("Phase addition multiplier must be an integer")
     if (
         type(input_width) is not int
         or type(gradient_width) is not int
@@ -64,28 +64,42 @@ def phase_add_component_program(
     if not active:
         return builder.finalize(builder.inputs)
     prefix = active + right_shift
+    magnitude = abs(sign) % (1 << prefix)
+    if not magnitude:
+        return builder.finalize(builder.inputs)
     bits, target = builder.split(x), builder.split(phase)
-    left = builder.join(bits[:active], RegisterType("uint", active))
-    right = builder.join(target[:prefix], RegisterType("uint", prefix))
-    addition = (
-        controlled_addition_program(
-            RegisterType("uint", active),
-            RegisterType("uint", prefix),
-            control_value=control_value,
-            adjoint=sign == -1,
+    control = builder.inputs.get("ctrl")
+    for weight in range(magnitude.bit_length()):
+        if not magnitude & (1 << weight):
+            continue
+        # Truncate the source once, before applying the integer multiplier.
+        # A left shift discards high overflow bits, never the low bits already
+        # discarded by the source fixed-point conversion.
+        target_width = prefix - weight
+        retained = min(active, target_width)
+        start = active - retained
+        left = builder.join(bits[start:active], RegisterType("uint", retained))
+        right = builder.join(target[:target_width], RegisterType("uint", target_width))
+        addition = (
+            controlled_addition_program(
+                RegisterType("uint", retained),
+                RegisterType("uint", target_width),
+                control_value=control_value,
+                adjoint=sign < 0,
+            )
+            if controlled
+            else addition_component_program(retained, target_width, adjoint=sign < 0)
         )
-        if controlled
-        else addition_component_program(active, prefix, adjoint=sign == -1)
-    )
-    operands = {"a": left, "b": right}
-    if controlled:
-        control = builder.inputs["ctrl"]
-        assert isinstance(control, RegisterBinding)
-        operands["ctrl"] = control
-    result = builder.call_program(addition, operands)
-    a, b = result["a"], result["b"]
-    assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
-    bits[:active], target[:prefix] = builder.split(a), builder.split(b)
+        operands = {"a": left, "b": right}
+        if controlled:
+            assert isinstance(control, RegisterBinding)
+            operands["ctrl"] = control
+        result = builder.call_program(addition, operands)
+        a, b = result["a"], result["b"]
+        assert isinstance(a, RegisterBinding) and isinstance(b, RegisterBinding)
+        bits[start:active], target[:target_width] = builder.split(a), builder.split(b)
+        if controlled:
+            control = result["ctrl"]
     outputs = {
         "x": builder.join(bits, fixed_point_register_type(input_width, input_width)),
         "phase_grad": builder.join(
@@ -93,9 +107,8 @@ def phase_add_component_program(
         ),
     }
     if controlled:
-        returned_control = result["ctrl"]
-        assert isinstance(returned_control, RegisterBinding)
-        outputs["ctrl"] = returned_control
+        assert isinstance(control, RegisterBinding)
+        outputs["ctrl"] = control
     return builder.finalize(outputs)
 
 
