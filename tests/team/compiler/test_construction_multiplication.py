@@ -2,9 +2,8 @@
 
 import pytest
 
-from flagquantum.compiler._arithmetic_kernels import multiply_accumulate
-from flagquantum.compiler._construction.lowering import lower_arithmetic
-from flagquantum.compiler._construction.profile import uint_type
+from flagquantum.compiler._construction.codegen.arithmetic import lower_arithmetic
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     INDEX,
     Block,
@@ -16,6 +15,7 @@ from flagquantum.compiler._hybrid.model import (
     ValueId,
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.registers._arithmetic_kernels import multiply_accumulate
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit
@@ -319,7 +319,7 @@ def test_polynomial_cannot_reuse_a_live_product_as_later_scratch() -> None:
             Operation("qint.return", (result,)),
         ),
     )
-    from flagquantum.compiler._construction.lowering import _emit_arithmetic
+    from flagquantum.compiler._construction.codegen.arithmetic import _emit_arithmetic
 
     # The conservative multiplication fits, but this schedule needs one more qubit to retain
     # its result and finish the addition. It must fail without aliasing a result.

@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_walk_hypercube.qmod",
+      "source_path": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube.qmod",
+      "git_blob_sha1": "0a4de594e642be35b553d6d79575dc7e1354eca3",
+      "sha256": "536a7ff9e0a3e1eb4ad6130451c84f0922328044ef1e6f2564bfbb21c2d7a488"
+    },
+    {
+      "file": "discrete_time_quantum_walk.qmod",
+      "source_path": "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.qmod",
+      "git_blob_sha1": "563f5eb9e436f602d0373b0178b316436a157ca3",
+      "sha256": "5b57d9d15e640714aa04d95aaa54c46d320dc7b31b0c8e8ea30c17b5f7dcc3ce"
+    }
+  ]
+}

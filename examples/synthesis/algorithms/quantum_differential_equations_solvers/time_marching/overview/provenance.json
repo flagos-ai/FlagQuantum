@@ -1,0 +1,97 @@
+{
+  "upstream_path": "algorithms/quantum_differential_equations_solvers/time_marching/time_marching.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "fbd587c114e3a2cb1458559481ab5b27a5f8e3d44226c498a0f53fdc9450ff4d",
+  "git_blob_sha1": "d558fb2bfac5878936a3b8de971ab1207f919ee8",
+  "scope": "All 14 source stages; original duration-two four-slice four-coordinate system; fresh degree-six/seven exponential and degree-seven amplifier; both complete 11-qubit integrators and a million draws apiece.",
+  "native_semantic_adaptations": "Solve the identical diagonal ODE analytically; recompute parity coefficients by cosine quadrature and the amplifier by a bounded fit. Compose native Magnus qfunc steps with exact packed simulator projectors and counter permutations. Preserve source postselection and use independent local seeds, not source cloud samples.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_differential_equations_solvers.time_marching.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_differential_equations_solvers/time_marching/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_time_marching_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "native_code_cell": 1,
+      "stage": "Set up the native FlagQuantum run and plots.",
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 2,
+      "stage": "Keep the original duration, four time slices and two data bits.",
+      "sha256": "5f9c4524c673ae9a2f1f2ba39a49a55afbded2d3d1535128b380bf496a082677"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 3,
+      "stage": "Solve the same diagonal differential equation analytically at 100 time points.",
+      "sha256": "f53c8803c325f620447274905458b47c522cfcee69b43f8852765accfafa75ef"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 4,
+      "stage": "Evaluate the block using the original Y rotation angle 2(t + index).",
+      "sha256": "0a4821b4bc31aa8e79e75a90db176ae6ee7320a88fd7da4a864b689b2f0c18ed"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 5,
+      "stage": "Average four left-endpoint samples per slice by the Hadamard-conjugated time register.",
+      "sha256": "ac30e3f47f39911216208d3b6d80ce5d3fd5d2f0dbfadcac5c936bab324fa15e"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 6,
+      "stage": "Compare both fresh exponential approximations to the original demonstration function.",
+      "sha256": "a13c621304be7fc30ce010253b9f544425ea9ad5654f6ef496bad8275a5e15e6"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 7,
+      "stage": "Recompute the degree-six and degree-seven short-time phase sequences.",
+      "sha256": "d90b2d23d805f067d8aa4b8e52157cc1e40166dbfbd6451a778be760bf257a8a"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 8,
+      "stage": "Fit the degree-seven amplification response to 1.8 times its argument on the source interval.",
+      "sha256": "2e6f081c1cc8d98d5260998355953893fbf49aee505586cb8aa64b1d46e8a2a9"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 9,
+      "stage": "Verify the amplified integrator before reading its counter.",
+      "sha256": "ff6c14a7b6d54f0ec9912e4f9ea1f817b2d791f39e362189146257a5f2bc2d23"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 10,
+      "stage": "Run one million finite draws for the amplified circuit and retain its counter-zero observations.",
+      "sha256": "fec3086151d5501843ddba87aaf37e93882f17f7dc1390feac92527917e9518f"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 11,
+      "stage": "Run the original unamplified comparator with a separate million draws.",
+      "sha256": "1d5ca46efe5a9398066af276268331ffd9d1ed14708bdf9684574b9e4c4bd845"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 12,
+      "stage": "Postselect on counter zero and recover magnitudes from the measured joint frequencies.",
+      "sha256": "4c064acfb869df992073f3ffa18c48d2df019c4c8a983c4402bfbb0ce6dec33a"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "stage": "Compare the two finite reconstructions with the analytic diagonal solution.",
+      "sha256": "f20aa3769ac1cdca2bdf0d547e565828f7192671b2944117764312b2c0bdd50c"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 14,
+      "stage": "Require the amplified finite reconstruction to meet the source normalized error bound.",
+      "sha256": "14607b809ae6b99322e2f791ce6b82cb431afd5135e703b08886f68e805c0053"
+    }
+  ]
+}

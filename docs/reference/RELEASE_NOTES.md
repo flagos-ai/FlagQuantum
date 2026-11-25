@@ -17,6 +17,69 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Native `flagquantum.compiler.compile` now defaults to `routing_strategy="auto"`
+  when a topology is supplied. It chooses among deployable routing strategies
+  and records the selection, while preserving calibration restrictions and final
+  layout restoration. Specify `routing_strategy="restore_after_each_gate"` to
+  retain the earlier implicit policy. Calls without a topology skip route
+  search. This can change compilation cost, instruction order, hashes, and
+  routing metadata; it does not change root native target admission or establish
+  a workload-level performance improvement. See the
+  [approved proposal](../api-changes/FQ-COMPILER-AUTO-ROUTING-20261118.md).
+
+- Qualifying target compilation now automatically collects static numeric
+  two-qubit blocks and accepts re-synthesis only when it strictly reduces full
+  CZ count and passes complete block-operator verification up to global phase.
+  The initial profile requires parameterized RX/RZ and full CZ as the sole
+  native two-qubit entangler, absent or undirected unallocated topology, and
+  identity input/output placement. Symbolic and trainable instructions remain
+  collection boundaries. The appended `native_block_optimization` result retains
+  the per-instruction native baseline, accepted rewrites and rejection counts.
+  Qualifying rewrites can change instructions, schedules, hashes, compilation
+  time and memory; fewer CZ gates do not establish improvement in other metrics.
+
+  Accepted collective rewrites emit physical-plan and compilation-evidence
+  version `4.0` with many-to-many ancestry. Consumers accepting these artifacts
+  must add the strict v4 reader while retaining v1-v3 readers and their existing
+  identity semantics; older readers reject v4. Programs without an accepted
+  rewrite retain the existing evidence format and identities. Artifact envelopes
+  retain their current versions. The equivalence phase is an evidence witness,
+  not a phase written to IR. Release qualification and assignment of the first
+  release emitting v4 remain pending release-owner review. See the
+  [approved profile and migration](../api-changes/FQ-COMPILER-CZ-BLOCK-LINEAGE-20261118.md).
+
+- Add an approved candidate `write_shot_data_file` entry for caller-owned CPU
+  bool and packed uint8 shot tables in six Stim 1.16.0 formats. It reuses the
+  existing SDK or embedded source closure, validates a bounded owned copy, and
+  publishes without replacing a destination. Native and installed acceptance
+  are pending; no complete Stim parity claim is made.
+
+- Qualified training checkpoints now write v3 with parameter freeze flags and
+  ordered optimizer parameter names. Restore preserves Parameter identities,
+  clears stale gradients and refuses reordered bindings before mutation.
+  Supported failures roll back model, optimizer, flags, gradients, precision and
+  RNG. V1/v2 retain their historical reader behavior; unqualified frozen sources
+  refuse save. See [Training parameters](../guides/TRAINING_PARAMETERS.md) for
+  eligibility, step-boundary use and migration. Local CPU coverage does not
+  expand accelerator/distributed support or promote capability maturity.
+
+- Add experimental `fq.run(circuit, inputs={"theta": value})` for named
+  symbolic scalar angles on exact unbatched CPU PyTorch statevectors. Compatible
+  input changes reuse the accepted symbolic plan, preserving first-order
+  gradients and optimizer updates. JSON/FQX records retain the input requirement
+  without storing supplied angles or graphs; every replay must bind all names.
+  `fq.plan` is unchanged. External initial states cannot be combined with this
+  bounded route, and other engines, dynamic programs and remote binding remain
+  unsupported.
+- Add `fq.run(circuit, initial_state=...)` for exact unbatched CPU PyTorch
+  statevectors and probability outputs, preserving first-order input and gate
+  gradients. Effective plans require compatible input again on replay without
+  recompilation. JSON and FQX result records preserve the requirement rather
+  than a separate initial tensor; a marked plan-only FQX save fails before
+  writing. Existing zero-input plans and Circuit(inputs=...).state remain
+  unchanged. Other engines, dynamic/QEC external inputs, remote loading, shots
+  and noise are outside this slice.
+
 - Add a private ordered predicate-phase action to the fresh-register Compiler
   profile. It borrows initialized basis values without consuming references,
   reuses existing exact prefix/adjoint cleanup and shares workspace with later
@@ -707,3 +770,16 @@ numbers and carry an ordered physical `target_qubits` mapping through
 
 No release build or distributed scalability release artifact is declared by
 these unreleased changes.
+
+## Captured shot-file reading candidate
+
+`flagquantum.qec.execution.shot_data` owns the two record-reading entry points.
+`read_shot_data_file` returns owned CPU Torch tensors in stored M/D/L order;
+`iter_shot_data_file` validates an immutable snapshot before yielding batches and
+requires the embedded profile. Use `contextlib.closing` on partial consumption.
+Six encodings are supported; independently pack separated logical columns.
+Inputs are bounded at 1 GiB and principal payload at 64 MiB, excluding runtime
+RSS and caller-retained batches. Zero stored columns are refused. See
+[the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
+exact budgets, API mapping and remaining parity gaps. Native and installed
+acceptance are pending for this candidate.

@@ -1,0 +1,85 @@
+{
+  "upstream_path": "algorithms/foundational/simon/simon.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "72f33551452b13a8e571ee9ee0fec0dca02d2ba48190034c207879ae073531fc",
+  "git_blob_sha1": "ac454e380d86e905184484eae8fe79f7684acee6",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "abaacd1499c9f3d61656a086d9fa4d5a5588833c3ab41da962894562c14e2f27"
+    },
+    {
+      "index": 8,
+      "sha256": "6b3793ba8d2db04fa5ea1ecbcb11f60535ed951ca694c4a4e4c877821c95f6e7"
+    },
+    {
+      "index": 9,
+      "sha256": "d0656c75e41e4ade86dcf5543a1ef8e3281c9c3aa080097f31d2e4186ce2d84d"
+    },
+    {
+      "index": 11,
+      "sha256": "a17c709eb719b9184b8cd6218465fcd7757b282d8358a14c28dae749884b592e"
+    },
+    {
+      "index": 13,
+      "sha256": "389c21ef0f170239ed52a71de21f7c39d50cdd7f0e4a5a8b82c1194e23890757"
+    },
+    {
+      "index": 19,
+      "sha256": "f7f283df96b6e4dec8922917c3db0d0c3e1611667cd7604adb6242ade543ce06"
+    },
+    {
+      "index": 21,
+      "sha256": "f4b543e8784adc128ef0b36b5e94c5785a6d00c6aa9801aa38970e2f7955d34a"
+    },
+    {
+      "index": 23,
+      "sha256": "5e1e94c6cb3348cb70ae6c654057c89217334c6a7bf9f91ba97bd1e9c90cef6a"
+    },
+    {
+      "index": 25,
+      "sha256": "4065925d46d4971723a2ef1a2d2eadd9c98fe712a01c1dc613aa26c359fbbe15"
+    },
+    {
+      "index": 27,
+      "sha256": "1829a9c078586d5be9621d1e4a42ace122623fec538ba973810f6c9abb18c625"
+    },
+    {
+      "index": 28,
+      "sha256": "fab03333e79acc456396b688527802edfbf7d6fca4d7390d729b067f91e08253"
+    },
+    {
+      "index": 29,
+      "sha256": "1c888c043a9545e4fe17352622afa551c995c2d5e3f0d439009ba05607a47a35"
+    },
+    {
+      "index": 33,
+      "sha256": "c2cd42d2ae7482d0f0166bbf08479768acd3d86ec357d9329d0d8e2ed05f1538"
+    },
+    {
+      "index": 35,
+      "sha256": "41ff7ceb0576d2f6fa44475a8edaed96ec6b653362f4766d1316ee5a20a0f662"
+    },
+    {
+      "index": 37,
+      "sha256": "1bf166eff652e1a1e61042161169fa03c14d670159359c60f4a60cf180fb94d2"
+    },
+    {
+      "index": 39,
+      "sha256": "5372945d0e37005dc559d2777b026e0cebfe3937fe26c8ccd9759185a38b8eda"
+    },
+    {
+      "index": 40,
+      "sha256": "fab03333e79acc456396b688527802edfbf7d6fca4d7390d729b067f91e08253"
+    },
+    {
+      "index": 41,
+      "sha256": "92b52919cdafe95dcdb7f2fc72141a8399a59d18d0bf12a4233184f66cd7b08d"
+    }
+  ],
+  "scope": "Retain both oracle-mapping stages and both Simon algorithms: five bits with secret 6, six bits with partition index 4 and secret 60. Retain width/depth objectives and 250/300 algorithm shots. Mapping stages bind 1000 local shots because the source leaves the cloud default unspecified; every local sampler uses seed 17. Exact GF(2) elimination replaces the galois dependency and consumes named decoded integers, with no physical wires or bitstring parsing. Both mapping scatter plots are retained. Resource summaries replace the cloud circuit viewer; no hardware or Classiq synthesis-resource equivalence is claimed.",
+  "native_semantic_adaptations": "Retain both oracle-mapping stages and both Simon algorithms: five bits with secret 6, six bits with partition index 4 and secret 60. Retain width/depth objectives and 250/300 algorithm shots. Mapping stages bind 1000 local shots because the source leaves the cloud default unspecified; every local sampler uses seed 17. Exact GF(2) elimination replaces the galois dependency and consumes named decoded integers, with no physical wires or bitstring parsing. Both mapping scatter plots are retained. Resource summaries replace the cloud circuit viewer; no hardware or Classiq synthesis-resource equivalence is claimed.",
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.simon.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/foundational/simon/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_simon_coloring_notebooks.py"
+}

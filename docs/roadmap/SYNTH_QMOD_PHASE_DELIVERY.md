@@ -8,7 +8,7 @@ Independent developer trials remain 0/2; release_authorized=false.
 
 ## User workflow
 
-Run `python -m examples.synthesis_qmod_phase`, or:
+Run `python -m examples.synthesis.tutorials.qmod.qmod_phase.main`, or:
 
 ```python
 import flagquantum as fq

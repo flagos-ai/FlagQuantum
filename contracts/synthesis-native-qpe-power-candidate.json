@@ -1,0 +1,17 @@
+{
+  "schema": "flagquantum.synthesis_native_qpe_power_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "signatures": {
+    "qpe": "(callback: 'Callable[[], None] | Callable[[int], None]', phase_result: 'QNum', /) -> 'None'"
+  },
+  "ordinary_callback": "U is captured once and repeated 2**bit times",
+  "power_callback": "U(power) is captured once per bit with power=2**bit; never powered again",
+  "phase_bits_max": 8,
+  "callback_ownership_changes": false,
+  "conditional_global_phase_preserved": true,
+  "native_effect_operations_max": 4096,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-QPE-POWER-20261113.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

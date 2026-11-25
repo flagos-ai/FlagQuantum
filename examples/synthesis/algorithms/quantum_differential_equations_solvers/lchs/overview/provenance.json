@@ -1,0 +1,93 @@
+{
+  "upstream_path": "algorithms/quantum_differential_equations_solvers/lchs/lchs.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e8e85d1c545e177d63b27f56d4b3dc9c15e36d2b9cbeed6bff0ddd735d455a92",
+  "git_blob_sha1": "13765f1adece693352b783bc2ea4af42eee0d9ff",
+  "scope": "All 16 source stages, fresh 128-dimensional classical comparison, 64-point signed grid, original 12 logical qubits and fresh GQSP phase fitting.",
+  "native_semantic_adaptations": "Use fresh seeded matrices for the unseeded classical comparison. Derive the phase degree by the source Bessel-tail criterion and fit complex phases locally. Preserve signed linear block, H and L terms, all 64 grid points and absolute postselection.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_differential_equations_solvers.lchs.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_differential_equations_solvers/lchs/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lchs_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "f968d422272b41e78396a29a19d5593d8c73d2d4ff607b14de80964c188e96d7"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "2913dd1f6471b04adbbe954bc69622464068e50eaab3f4920b315956c9711825"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "sha256": "ce4f1515d21524272df2c723279b7c3b86636046ae9dcdd092dcbd1d62458d24"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "2b7b0b37b82f14605f2c64d284d9fb630cd3f92652390fb14e2bd27a29dec751"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "7849461cd3506c78a67415586afb5a26eaf96e06ac4d512844ec6d00fca09602"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "95c798a23954f65489a170a95cd08375abf6eff49e886ca22e84e0b7d696df2a"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 7,
+      "sha256": "b57b7f970e625178f6a6caa630cfa92a9028221c05cde6ba3413d75b46dac087"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "sha256": "21e815148435a7ab3822f97f145f46afa8caf630c2c2960d7c5c4775682b6383"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 9,
+      "sha256": "d4b2d8334baf7afdb3b4221c4188d67371d06ada50b499b1d5ac33cb9a7d24cd"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 10,
+      "sha256": "c520a41e4a1b2a23dbca119bc8cf8e76a768aa6992afda8432aa4dde35369acc"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 11,
+      "sha256": "b999c1600107059af01d33c52ce4ac3f65b7e00bb22bdb3c37a93e53165a8ef2"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 12,
+      "sha256": "d22a8d157217b9c78f9d0852b7031370f8d6630c29502627b345c832877f54dd"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 13,
+      "sha256": "18b6a037155dada288eeeb192486fe647220d2ea516529df9db42a86ebebb7e9"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 14,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 15,
+      "sha256": "34ff3480e8b64bebfd723e032fa194553fd53e58d033d8c2eb1321209cbc01ff"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "sha256": "84695fe456db622913a9e9eca03bb774b6b80a924bc5232cd569c317f4da002b"
+    }
+  ]
+}

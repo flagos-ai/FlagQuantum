@@ -229,6 +229,14 @@ Initial limits are:
 - maximum total mapping/list entries: 4096;
 - maximum ordinary string length other than payload: 4096 UTF-8 bytes.
 
+The API owner approved a profile-specific capacity revision on 2026-11-23:
+[`FQ-PROGRAM-ARTIFACT-CIRCUIT-CAPACITY-20261123`](../api-changes/FQ-PROGRAM-ARTIFACT-CIRCUIT-CAPACITY-20261123.md).
+The initial approval above remains historical. The circuit-ir-1.0 payload now
+has an independent 65,536-entry budget; the envelope retains 4,096 entries,
+including the payload field but excluding its descendants. Executable v2 and
+structured v3 limits remain unchanged. Upgrade readers before sending expanded
+circuit artifacts; old accepted bytes and identities remain unchanged.
+
 The following content is prohibited in structured envelope fields outside the
 strictly profile-validated payload: credentials, tokens, secrets, private keys,
 account identifiers, tenant state, provider SDK objects, live handles, job IDs,

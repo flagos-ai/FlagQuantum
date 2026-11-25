@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from ...core._compilation_evidence import (
     CompilationEvidenceBundle,
     CouplingEvidence,
@@ -20,9 +22,14 @@ from ...core._compilation_evidence_v3 import (
     MappingTransitionEvidenceV3,
     PhysicalPlanEvidenceV3,
 )
+from ...core._compilation_evidence_v4 import CompilationEvidenceBundleV4
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
+from ..lowering.native_block_optimization import verify_native_block_optimization
+from ..lowering.schedule_legalization import schedule_circuit_dependencies
+from ..topology.coupling import CouplingMap
 from .artifact_compilation import ArtifactCompilationResult
+from .physical_plan import build_physical_circuit_plan
 
 
 class CompilationEvidenceError(CompilationError):
@@ -74,7 +81,7 @@ def _physical_evidence_v1(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
             )
-            for item in plan.instructions
+            for item in plan._single_source_instructions()
         ),
         topology_legalization_identity=plan.topology_legalization_identity,
         native_gate_legalization_identity=plan.native_gate_legalization_identity,
@@ -138,7 +145,7 @@ def _physical_evidence_v2(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
             )
-            for item in plan.instructions
+            for item in plan._single_source_instructions()
         ),
         topology_legalization_identity=plan.topology_legalization_identity,
         native_gate_legalization_identity=plan.native_gate_legalization_identity,
@@ -205,7 +212,7 @@ def _physical_evidence_v3(result: ArtifactCompilationResult) -> PhysicalPlanEvid
                 predecessors=item.predecessors,
                 dependency_kinds=item.dependency_kinds,
             )
-            for item in plan.instructions
+            for item in plan._single_source_instructions()
         ),
         topology_legalization_identity=plan.topology_legalization_identity,
         native_gate_legalization_identity=plan.native_gate_legalization_identity,
@@ -247,6 +254,7 @@ def build_compilation_evidence_bundle(
     CompilationEvidenceBundle
     | CompilationEvidenceBundleV2
     | CompilationEvidenceBundleV3
+    | CompilationEvidenceBundleV4
 ):
     """Build a bundle from the retained compilation objects and target snapshot."""
 
@@ -273,6 +281,15 @@ def build_compilation_evidence_bundle(
         "executable_artifact_identity": executable.artifact_identity,
         "artifact_compilation_identity": result.compilation_identity,
     }
+    if result.physical_plan.version == "4.0":
+        _verify_collective_compilation(result, snapshot)
+        return CompilationEvidenceBundleV4(
+            producer=producer,
+            source=source,
+            target=target,
+            physical_plan=result.physical_plan._v4_evidence(),
+            output=output,
+        )
     if result.physical_plan.version == "3.0":
         return CompilationEvidenceBundleV3(
             producer=producer,
@@ -303,6 +320,7 @@ def verify_compilation_evidence_bundle(
         CompilationEvidenceBundle
         | CompilationEvidenceBundleV2
         | CompilationEvidenceBundleV3
+        | CompilationEvidenceBundleV4
     ),
     result: ArtifactCompilationResult,
     *,
@@ -316,6 +334,7 @@ def verify_compilation_evidence_bundle(
             CompilationEvidenceBundle,
             CompilationEvidenceBundleV2,
             CompilationEvidenceBundleV3,
+            CompilationEvidenceBundleV4,
         ),
     ):
         raise TypeError("bundle must be a compilation evidence bundle")
@@ -330,6 +349,50 @@ def verify_compilation_evidence_bundle(
     if bundle != expected:
         raise CompilationEvidenceError(
             "compilation evidence does not match retained compilation objects"
+        )
+
+
+def _verify_collective_compilation(
+    result: ArtifactCompilationResult,
+    snapshot: TargetCapabilitySnapshot,
+) -> None:
+    plan = result.physical_plan
+    stage = result.legalization.native_block_optimization
+    if stage is None or not stage.rewrites:
+        raise CompilationEvidenceError(
+            "collective evidence requires retained block rewrites"
+        )
+    coupling = (
+        None
+        if plan.coupling_n_qubits is None
+        else CouplingMap(plan.coupling_n_qubits, plan.coupling_edges)
+    )
+    native = result.legalization.native_gate_legalization
+    # Creation enforces the caller's budget. Serialization rechecks the retained
+    # operator at the recorded snapshot time, without inventing a new budget or
+    # making an expired snapshot executable.
+    verify_native_block_optimization(
+        stage,
+        native,
+        snapshot=snapshot,
+        evaluated_at=datetime.fromisoformat(snapshot.captured_at),
+        max_added_operations=max(
+            0,
+            max(len(native.program.instructions), len(stage.program.instructions))
+            - len(native.source_program.instructions),
+        ),
+        topology=result.legalization.topology_legalization,
+        coupling_map=coupling,
+    )
+    schedule = schedule_circuit_dependencies(
+        stage.program, target_snapshot_id=snapshot.snapshot_id
+    )
+    if result.legalization.schedule != schedule:
+        raise CompilationEvidenceError("collective compilation schedule failed replay")
+    replay = build_physical_circuit_plan(result.legalization, coupling_map=coupling)
+    if plan.plan_identity != replay.plan_identity:
+        raise CompilationEvidenceError(
+            "collective compilation physical plan failed replay"
         )
 
 

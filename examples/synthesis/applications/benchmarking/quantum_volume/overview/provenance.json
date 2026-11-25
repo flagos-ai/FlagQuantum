@@ -1,0 +1,78 @@
+{
+  "upstream_path": "applications/benchmarking/quantum_volume/quantum_volume.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "4cfc0ee9dee4ffbd418a8f6fa12a18d1f7b92826b4819840b1b32d006b6fc3be",
+  "git_blob_sha1": "3249c876fbf22dcef58f7b131d39976106425669",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "1056b5ac72c2496631280147e1733c970987849c867f6eaece05b66833810da8",
+      "native_code_cell": 1,
+      "stage": "Fresh seeded random matrix construction without SciPy dependency or source RNG identity claim"
+    },
+    {
+      "index": 4,
+      "sha256": "cfe11c37f7bf3258b888c36e70c8d82f1ec62844878a3789b7b909f57263e9a4",
+      "native_code_cell": 2,
+      "stage": "Native immutable-matrix qfunc composition retaining all shuffled pair layers"
+    },
+    {
+      "index": 6,
+      "sha256": "41c6d1556b4bb5ead06371d2e52e9a336082899ccc7fb7adadb45b3a741dcb86",
+      "native_code_cell": 3,
+      "stage": "Actual native local execution, independently verified physical state and finite-shot readout"
+    },
+    {
+      "index": 7,
+      "sha256": "b05ea7e01269b4f745136779eca8157440748f045e32611c88c5afcc697bc36e",
+      "native_code_cell": 4,
+      "stage": "Preserve source positive observed-count median and greater-than-or-equal tie semantics"
+    },
+    {
+      "index": 8,
+      "sha256": "f036e94aa2494ea91e167b1a557156e58e528b9d8b690dc219cd5fcf3c1ad0b7",
+      "native_code_cell": 5,
+      "stage": "Preserve source rounded uncertainty display with a defined zero case"
+    },
+    {
+      "index": 10,
+      "sha256": "8cea88e9fcec97e295dae588f33d397d4618230ef3476920f7bac113356e1588",
+      "native_code_cell": 6,
+      "stage": "Complete forty-circuit workflow, original standard-deviation denominator and first-failure decision"
+    },
+    {
+      "index": 13,
+      "sha256": "9d8135182e4dc4f2f44bd0060dc9c84ec1152476c941909809d04dda657f206b",
+      "native_code_cell": 7,
+      "stage": "Execute all original sizes/trials/shots, retain forty programs, measure actual resources and display final diagnostics"
+    },
+    {
+      "index": 16,
+      "sha256": "931f582717abfd351f71fe64e986d6e7ee667c4a5e36f85be89a5beb62121f82",
+      "native_code_cell": 9,
+      "stage": "Preserve commented optional Azure stage as inert configuration metadata"
+    },
+    {
+      "index": 18,
+      "sha256": "d320c0539e607514c82c3276299105512d60bdde118896395b0f5bd87456716a",
+      "native_code_cell": 10,
+      "stage": "Preserve commented optional ibm/ibm_fez stage without credentials or execution"
+    },
+    {
+      "index": 19,
+      "sha256": "33cef59297329e3bbdf03e0e0b2d215783d96cc21e3a22cb3a6104eca2ad18cc",
+      "native_code_cell": 11,
+      "stage": "Preserve commented optional ibm/ibm_marrakesh stage without credentials or execution"
+    },
+    {
+      "index": 20,
+      "sha256": "484583dec09e3bba99659a4d19710c8bca1bb1c7ed6d61fa8776221c5348d8d6",
+      "native_code_cell": 12,
+      "stage": "Preserve commented optional ibm/ibm_sherbrooke stage without credentials or execution"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_quantum_volume_notebook.py",
+  "native_entrypoint": "examples.synthesis.applications.benchmarking.quantum_volume.overview.main",
+  "native_notebook": "examples/synthesis/applications/benchmarking/quantum_volume/overview/walkthrough.ipynb",
+  "scope": "All11sourcecode stages;original3..6qubits/layers,tenfreshcircuits/size,100actualdraws/circuit,40retainednativeprograms,freshcomplexGaussianQRHaarfactorsand sourceQRconstruction,seededindependentpermutationsandmatrices,immutableqfunccomposition,independentCircuitanddenseabsolute fullstates,namedbitorder,zero workspace,actualcosts,sourcepositivecountmedian/ties/std/firstfailuredecision,and separatelylabeledidealheavyprobability. Fourcommentedremote stages preserved as inertmetadata. No exactSciPyRNGidentity,standardQVcertification,compiler/API/dependencychange,frozen216change,hardware,noise,speeduporscalabilityclaim."
+}

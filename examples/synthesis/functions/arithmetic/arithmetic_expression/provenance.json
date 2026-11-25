@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a451bc15baa06de8659f5daa5f0759592a156b6e0b854bbea66858ec567c86cc",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.arithmetic_expression.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_modulo.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve source unsigned integer domains and power-of-two remainder. Native fresh assignment prepares the same input values as allocation followed by XOR on zero. No native in-place XOR admission."
+}

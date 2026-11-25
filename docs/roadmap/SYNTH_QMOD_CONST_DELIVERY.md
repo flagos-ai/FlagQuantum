@@ -8,7 +8,7 @@ remain 0/2 and release_authorized=false.
 
 ## Complete user flow
 
-Run `python -m examples.synthesis_qmod_const`, or:
+Run `python -m examples.synthesis.tutorials.qmod.qmod_const.main`, or:
 
 ```python
 import flagquantum as fq

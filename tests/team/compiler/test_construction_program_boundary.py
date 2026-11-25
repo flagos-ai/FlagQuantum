@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture, qfunc
+from flagquantum.compiler._construction.frontend.python import capture, qfunc
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python import _cell
 

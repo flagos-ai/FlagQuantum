@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_autocallable_option_pricing.qmod",
+      "source_path": "applications/finance/autocallable_options/quantum_autocallable_option_pricing.qmod",
+      "git_blob_sha1": "581018f8b58c3895417701aba3d6ec0e5b9be65b",
+      "sha256": "eeb66f5e3446a3498ece2269b97599cc6d0ef2d8895265276ecf605872bce386"
+    }
+  ],
+  "companion_options": {
+    "file": "quantum_autocallable_option_pricing.synthesis_options.json",
+    "source_path": "applications/finance/autocallable_options/quantum_autocallable_option_pricing.synthesis_options.json",
+    "git_blob_sha1": "449824fc929b17a69c02659157134d7165c35c6e",
+    "sha256": "39a74a1193d0372148b2e2b8b83caf7d5dab4f2ab1055a3ff42458b1a90c9e86"
+  }
+}

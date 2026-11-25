@@ -1,0 +1,88 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "625a5341115e1081ca69ba3b3672d56ee1f40b6c",
+  "original_sha256": "e7c009a6ee7c04625565c05d0d10e181997d5cef257b2d1e8d7a48d926401f1f",
+  "scope": "All 15 source stages, the original four Pauli terms on two data qubits, time 22, degree 33 and 10 qubits for evolution. Compare both complex projected vectors using the declared scales.",
+  "native_semantic_adaptations": "Recompute the Jacobi-Anger coefficients by cosine quadrature at the source degree. Native synth prepares the amplitudes at double precision. Public Circuit SELECT, reflection and inverse preparation implement the 63 controlled walk steps. Use a reproducible local input seed in place of the unseeded source draw. Circuit resources describe the emitted native IR.",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.hamiltonian_simulation_qubitization.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qubitized_hamiltonian_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "sha256": "423a375a6569eae58f71bb3891a3cffdfa1f91cfe73cb8e13373e5bf78517f05"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "ab07f4fa444c7a5b34cd824d9927a39fff8d20e0326a366cdc1dac5c88996653"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "72d2dd93f90292ac91be27b3a3423ecbdf05b09a105ec3b5709de68f111eb985"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "cf6f457fa65af0b63829339ce65a57a5bbf730eee562d82f0250309f0856f1ce"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "bd3a4ef1d1c278d82d9b8332129afbe33042e54f63e2b642e144cf15d9797de2"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "6052d8fcd0f53fe7f88cef9794a0f786e77eaacd2f9ebd4c4ddf03efdd3f799d"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "807ab9bafc4e339f9e50aef0c721a6dc07035f0c9a0b4414a36e60d6063f17d8"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "f2cf8ef00dfcf2265d362e4776534824ad780847a3534bf1bfbe2a3ed25fe141"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "sha256": "6543e4d5b2d08b5008fc7da4f284640769f6e7a0bd9e4074ac1049bbfa027f6a"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 10,
+      "sha256": "87f66ebad9cc20b993792a1939e7f00d4bc2c69f0d7a17e3b7e11777d05e74b3"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 11,
+      "sha256": "07b82287b741c6ba9b675a1522755facba071184e9e0e2d8e92e04dd7d23cde7"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 12,
+      "sha256": "669770b7d926589f6501de96f2daef9927e0cb1049afc332173bd3643c962154"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 13,
+      "sha256": "125819a1b1e58cfd8338059b8e5b1738025b92c7c5a4409f95e5bef32a0a8e07"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 14,
+      "sha256": "153baac14ea0e7bebc1dfc03b197190857cad033ae6431af3bb47276fcc557fa"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 15,
+      "sha256": "3c70818125dd176d7d7dd1cbff3695ffbcac6db0bbb2df3fc97b0b804d1f48ba"
+    }
+  ]
+}

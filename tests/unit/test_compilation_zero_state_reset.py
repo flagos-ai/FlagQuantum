@@ -341,7 +341,8 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
     assert composition.count("remove_zero_state_resets") == 1
 
-    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
+    implementation = Path(pipeline_module.__file__).parent / "optimization/pipeline.py"
+    tree = ast.parse(implementation.read_text(encoding="utf-8"))
     loop = next(
         node
         for node in ast.walk(tree)

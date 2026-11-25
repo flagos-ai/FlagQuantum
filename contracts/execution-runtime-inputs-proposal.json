@@ -1,0 +1,120 @@
+{
+  "schema": "flagquantum.api_change_proposal",
+  "version": "1.0",
+  "status": "implemented_candidate",
+  "implementation_authorized": true,
+  "production_implemented": true,
+  "api_owner_approval": {
+    "kind": "explicit_human_user_approval",
+    "date": "2026-11-12",
+    "request": "Approved",
+    "record": "docs/api-changes/FQ-EXECUTION-RUNTIME-INPUTS-20261112.md"
+  },
+  "owner": "integration",
+  "implementation_owner": "runtime",
+  "path_classification": "single_device_fast_path",
+  "proposal": "docs/development/EXECUTION_RUNTIME_INPUTS_PROPOSAL.md",
+  "review_fake": "tests/unit/test_execution_runtime_inputs_contract_fake.py",
+  "public_api": {
+    "entry": "fq.run",
+    "new_keyword": {
+      "name": "inputs",
+      "type": "Mapping[str, float | Tensor] | None",
+      "default": null,
+      "position": "keyword_only_after_initial_state"
+    },
+    "plan_signature_and_behavior_unchanged": true,
+    "other_root_signatures_unchanged": true,
+    "root_exports_unchanged": true,
+    "existing_parameters_unchanged": true,
+    "historical_snapshot_regeneration_authorized": false
+  },
+  "declarations": "existing_Parameter_and_ParameterExpression_in_CircuitIR",
+  "binding": {
+    "keys": "exact_string_names_matching_all_symbolic_parameters",
+    "values": "finite_Python_float_or_exact_dense_strided_CPU_scalar_Tensor_or_nn_Parameter",
+    "tensor_precision": "float32_for_complex64_or_float64_for_complex128",
+    "python_float_conversion": "at_resolved_real_precision_then_check_finiteness",
+    "tensor_object_identity_preserved": true,
+    "expression_validation": "existing_Core_rules_before_numerical_execution",
+    "implicit_defaults_or_remembered_values": false,
+    "program_tensor_literals_allowed": false,
+    "input_changes_program_structure": false,
+    "shared_mutable_binding_state": false,
+    "concurrent_caller_mutation": "unsupported"
+  },
+  "first_slice": {
+    "source": "ordinary_static_Circuit",
+    "replay": "ExecutionPlan_marked_runtime_inputs",
+    "backend": "pytorch",
+    "device": "cpu",
+    "mode": "statevector",
+    "batch_size": 1,
+    "outputs": [
+      "statevector",
+      "probabilities"
+    ],
+    "initial_state": "default_zero_only",
+    "optimization": "disabled_until_value_independence_is_proven",
+    "new_work_qubits_allowed": false,
+    "external_initial_state_combination": "CapabilityError_before_planning",
+    "excluded": [
+      "CircuitIR_execution_sources",
+      "synthesis_Program",
+      "Module_changes",
+      "dynamic_or_structured_operations",
+      "matrix_operations",
+      "noise",
+      "shots",
+      "observables",
+      "accelerators",
+      "distributed",
+      "other_engines",
+      "remote"
+    ]
+  },
+  "plan_extension": {
+    "outer_schema": "flagquantum.execution_plan",
+    "outer_version": "1.0",
+    "namespace": "flagquantum.execution",
+    "kind": "runtime_inputs",
+    "version": "1.0",
+    "payload": {
+      "parameters": "sorted_unique_symbolic_names"
+    },
+    "identity": "existing_canonical_hash_of_payload",
+    "maximum_extension_count": 1,
+    "runtime_values_in_plan": false,
+    "tensor_storage_or_graph_in_plan": false,
+    "compatible_input_changes_identity": false,
+    "live_layers_must_match_sealed_symbolic_template": true,
+    "unmarked_plan_accepts_inputs": false,
+    "replay_compilation_or_replanning": false,
+    "old_reader_behavior": "extension_incompatible"
+  },
+  "gradients": {
+    "scope": "first_order_native_PyTorch",
+    "direct_inference": "existing_resolver_policy_when_not_explicit",
+    "explicit_false_with_differentiable_inputs": "ValidationError",
+    "replay_into_non_gradient_plan": "CapabilityError",
+    "detach_or_requires_grad_mutation": false,
+    "multiple_live_forward_graphs": "independent",
+    "optimizer_updates_reuse_plan": true
+  },
+  "persistence": {
+    "JSON": "symbolic_requirements_only_caller_rebinds_all_inputs",
+    "FQX_with_result": "must_preserve_input_requirement_before_production_admission",
+    "FQX_plan_only_lossy_save": "must_refuse_before_writing",
+    "load_executes": false,
+    "production_persistence_verified_by_fake": false
+  },
+  "delivery": {
+    "contract_before_domain_implementation": true,
+    "new_production_types_or_dependencies": false,
+    "new_public_binding_object": false,
+    "review_replacement": "Core_substitution_and_existing_Runtime_slots_same_consumer",
+    "production_replacement_and_public_conformance_required": true,
+    "default_input_compatibility_checks_required": true,
+    "release_authorized": false
+  }
+}

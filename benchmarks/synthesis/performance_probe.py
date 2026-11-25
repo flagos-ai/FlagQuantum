@@ -17,20 +17,22 @@ Stage = Literal["C1", "C2", "C3", "C4", "C5", "C6"]
 def stage_of(module: str, function: str) -> Stage | None:
     if module.startswith("flagquantum.compiler._construction."):
         leaf = module.rsplit(".", 1)[-1]
-        if leaf in {"arithmetic_rewrites", "ranges", "dependencies", "lifetimes"}:
+        if module.startswith("flagquantum.compiler._construction.analysis."):
             return "C2"
-        if leaf in {"lowering", "register_lowering"}:
+        if leaf == "register_expansion":
+            return "C1"
+        if module.startswith("flagquantum.compiler._construction.codegen."):
             return "C3"
         if leaf == "target":
             return "C4"
         if leaf == "selection":
             return "C5"
-        if leaf.startswith("frontend") or leaf in {
-            "bindings",
-            "register_profile",
-            "profile",
-            "register_expansion",
-        }:
+        if module.startswith(
+            (
+                "flagquantum.compiler._construction.frontend.",
+                "flagquantum.compiler._construction.verification.",
+            )
+        ):
             return "C1"
     if module.startswith(
         ("flagquantum.ecosystem._qmod", "flagquantum.compiler._hybrid.verifier")

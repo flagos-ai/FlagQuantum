@@ -1,0 +1,49 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "878078c9780715a945ab375d164068e285123859805932d84a05e39367ba174a",
+  "git_blob_sha1": "584704d4a25d0c2fadf93aa88bde69454186d1a7",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "eed5dea7371d80be300ad96c47c32e2f26e3432e072de5d4c16881c5373ce487"
+    },
+    {
+      "index": 4,
+      "sha256": "a5f9cafcdcd7be8c6d2e7c913daabc784b6a1398eb03ee78506a23e87bde865b"
+    },
+    {
+      "index": 7,
+      "sha256": "da728fa6edfa840fd6058c478fdca0e9283b0bc3d3df23a09bfe476e20407ead"
+    },
+    {
+      "index": 9,
+      "sha256": "92d807fafc0835afbe9b8456e2e49f8e8261ceedbfa7f2780832b2e3ed41cdfa"
+    },
+    {
+      "index": 11,
+      "sha256": "4bbd7689e22843b9efbf3b86c03dc6fe582f383657f9915c1b3c961a08eb8385"
+    },
+    {
+      "index": 12,
+      "sha256": "36f77c3b683fd1ea4a5f68f15d725a17c97cd15982453450823d383c44ae37d5"
+    },
+    {
+      "index": 13,
+      "sha256": "2baa5bd062ffb07d87f60b64b4ac52aa7bc26a0c0e5c49287519e64529546545"
+    },
+    {
+      "index": 14,
+      "sha256": "8a0eb67b84babc58f360a6e5104d93bfbf138c4958db634857ada084e3c8bf98"
+    },
+    {
+      "index": 16,
+      "sha256": "c8c80ff79a6e7fc5897e14ef689e06fdcaa902d2220e1a029f6c8da055ef41d1"
+    }
+  ],
+  "scope": "Retain the nine-node graph, all original edges and fixed-node colors, five two-bit color variables, one Grover iteration and maximum width 24. Sample 1000 local shots with seed 17 because the source leaves the cloud default unspecified. Display the top 16 sampled rows and all 16 graphs in a 4 by 4 grid; label counts and constraint validity without filtering invalid assignments. A single Grover iteration does not guarantee all sampled rows are feasible. Reuse the existing native predicate and reflection. Matplotlib draws the graph directly, without a NetworkX dependency. Native resource summaries replace the cloud circuit viewer; no remote-sampling equivalence is claimed.",
+  "native_semantic_adaptations": "Retain the nine-node graph, all original edges and fixed-node colors, five two-bit color variables, one Grover iteration and maximum width 24. Sample 1000 local shots with seed 17 because the source leaves the cloud default unspecified. Display the top 16 sampled rows and all 16 graphs in a 4 by 4 grid; label counts and constraint validity without filtering invalid assignments. A single Grover iteration does not guarantee all sampled rows are feasible. Reuse the existing native predicate and reflection. Matplotlib draws the graph directly, without a NetworkX dependency. Native resource summaries replace the cloud circuit viewer; no remote-sampling equivalence is claimed.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.grover_graph_coloring.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/grover_graph_coloring/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_simon_coloring_notebooks.py"
+}

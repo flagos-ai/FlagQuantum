@@ -95,8 +95,8 @@ The oracle changes each input amplitude by (-1)**marked(x,y), returns its work
 to zero, and leaves the displayed input probabilities uniformly 1/16. Full
 complex-state and interference acceptance below verify the phase; the printed
 distribution does not. The existing value-mode predicate example remains usable
-as python -m examples.synthesis_predicate. The actual private contributor
-workflow is python -m examples.synthesis_phase_oracle, explicitly not a stable
+as python -m examples.synthesis.tutorials.arithmetic.predicate.main. The actual private contributor
+workflow is python -m examples.synthesis.tutorials.control.phase_oracle.main, explicitly not a stable
 user entry.
 
 ## Acceptance

@@ -6,15 +6,15 @@ import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import Literal
 
 import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_workspace import candidate, pressure
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.constraints import CircuitLimits
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.topology.coupling import CouplingMap
@@ -26,6 +26,7 @@ from flagquantum.services._synthesis_execution import (
     ExecutionContractError,
     inspect_execution,
 )
+from tools.synthesis_compiler_examples.workspace.main import candidate, pressure
 
 pytestmark = pytest.mark.integration
 
@@ -34,7 +35,11 @@ TOPOLOGY = CouplingMap(3, ((0, 1), (1, 2)))
 
 def test_execution_contract_example_runs_as_documented() -> None:
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_execution_contract"],
+        [
+            sys.executable,
+            "-m",
+            "tools.synthesis_compiler_examples.execution_contract.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
@@ -97,13 +102,14 @@ def test_real_nonidentity_layout_and_full_complex_phase(route: str) -> None:
     expected = torch.zeros_like(state)
     # Nonidentity output placement (1,0,2), with a relative phase of i.
     expected[0] = 1 / math.sqrt(2)
-    expected[3] = 1j / math.sqrt(2)
+    expected[3] = torch.tensor(1j / math.sqrt(2), dtype=expected.dtype)
     torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
     assert checked.registers == {"input": (1,), "result": (2,)}
     ports = (*checked.registers["input"], *checked.registers["result"])
     measured = execute_measurements(
         state.reshape(1, -1), (MeasurementNode("probabilities", ports),), n_qubits=3
     )[0].value
+    assert isinstance(measured, torch.Tensor)
     torch.testing.assert_close(
         measured.reshape(-1),
         torch.tensor([0.5, 0, 0, 0.5], dtype=torch.float64),
@@ -131,7 +137,28 @@ def test_invalid_basis_names_and_missing_conversion_rules_are_distinct() -> None
             fq.plan(source, options=_options()), basis=("imaginary_gate",)
         )
     with pytest.raises(BasisConversionError, match="h.*no verified decomposition"):
-        convert_basis(source, gates=("u3", "cx"))
+        convert_basis(source, gates=("cx",))
+
+
+@pytest.mark.parametrize("prepared_one", [False, True])
+def test_verified_hadamard_conversion_preserves_absolute_state(
+    prepared_one: bool,
+) -> None:
+    source = fq.Circuit(1, dtype=torch.complex128)
+    if prepared_one:
+        source.x(0)
+    source.h(0)
+    converted = convert_basis(source.to_ir(), gates=("u3", "cx"))
+    assert {gate.name for gate in converted.program.instructions} == {"u3"}
+    checked = inspect_execution(fq.plan(converted.program, options=_options()))
+    result = fq.run(checked.plan)
+    checked.verify_result(result)
+    expected = torch.tensor(
+        [1, -1 if prepared_one else 1], dtype=torch.complex128
+    ) / math.sqrt(2)
+    torch.testing.assert_close(
+        result.statevector().reshape(-1), expected, atol=1e-12, rtol=0
+    )
 
 
 def test_source_only_resource_check_would_wrongly_accept_routing_overhead() -> None:
@@ -158,7 +185,7 @@ def test_source_only_resource_check_would_wrongly_accept_routing_overhead() -> N
 
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
 def test_preparation_arithmetic_and_cleanup_are_one_executable_scope(
-    strategy: str,
+    strategy: Literal["retain", "recompute"],
 ) -> None:
     block = candidate(1, strategy)
     n = block.circuit.n_wires
@@ -187,7 +214,10 @@ def test_preparation_arithmetic_and_cleanup_are_one_executable_scope(
     for x in range(2):
         for y in range(2):
             index = (((x << 1) | y) << 2 | pressure(x, y)) << block.peak_workspace
-            expected[index] = cmath.exp(1j * (x * math.pi / 2 + y * math.pi / 4)) / 2
+            expected[index] = torch.tensor(
+                cmath.exp(1j * (x * math.pi / 2 + y * math.pi / 4)) / 2,
+                dtype=expected.dtype,
+            )
     torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
     assert float(state.reshape(16, -1)[:, 1:].abs().square().sum()) <= 1e-12
 
@@ -223,19 +253,49 @@ def test_materialized_state_shape_and_precision_must_match_the_plan(
         checked.verify_result(replace(result, state=values[damage]))
 
 
-def test_post_route_conversion_without_intact_swap_evidence_fails_closed() -> None:
-    routed = remove_layout_restore(
-        compile_program(
-            fq.Circuit(3).h(0).cx(0, 2),
-            coupling_map=TOPOLOGY,
-            routing_strategy="persistent_layout",
-            optimize=False,
-        )
+def test_post_route_conversion_preserves_swap_evidence_and_absolute_phase() -> None:
+    converted = convert_basis(
+        _source(), gates=("h", "s", "cx"), max_added_operations=100
     )
-    converted = convert_basis(routed, gates=("h", "cx"), max_added_operations=100)
+    assert "swap" not in {gate.name for gate in converted.program.instructions}
     plan = fq.plan(converted.program, options=_options())
+    checked = inspect_execution(
+        plan, coupling=TOPOLOGY, registers={"input": (0,), "result": (2,)}
+    )
+    result = fq.run(checked.plan)
+    checked.verify_result(result)
+    expected = torch.zeros(8, dtype=torch.complex128)
+    expected[0] = 1 / math.sqrt(2)
+    expected[3] = torch.tensor(1j / math.sqrt(2), dtype=expected.dtype)
+    torch.testing.assert_close(
+        result.statevector().reshape(-1), expected, atol=1e-12, rtol=0
+    )
+    assert checked.registers == {"input": (1,), "result": (2,)}
+
+
+@pytest.mark.parametrize("damage", ["missing_source", "incomplete_triple"])
+def test_post_route_conversion_without_intact_swap_evidence_fails_closed(
+    damage: str,
+) -> None:
+    converted = convert_basis(
+        _source(), gates=("h", "s", "cx"), max_added_operations=100
+    )
+    gates = list(converted.program.instructions)
+    index = next(i for i, gate in enumerate(gates) if "routing_phase" in gate.metadata)
+    if damage == "missing_source":
+        gates[index] = replace(
+            gates[index],
+            metadata={
+                key: value
+                for key, value in gates[index].metadata.items()
+                if key != "source_instruction_index"
+            },
+        )
+    else:
+        del gates[index]
+    damaged = replace(converted.program, instructions=tuple(gates))
     with pytest.raises(ExecutionContractError, match="SWAP evidence"):
-        inspect_execution(plan, coupling=TOPOLOGY)
+        inspect_execution(fq.plan(damaged, options=_options()), coupling=TOPOLOGY)
 
 
 def test_checked_plan_execution_and_verification_do_not_replan(
@@ -249,10 +309,14 @@ def test_checked_plan_execution_and_verification_do_not_replan(
         raise AssertionError("checked-plan path must not replan or recompile")
 
     import flagquantum.compiler as compiler
+    import flagquantum.runtime.execution as execution
     import flagquantum.runtime.planner as planner
 
+    # Import consumers before patching the compiler so their lazy initialization
+    # cannot retain the temporary refusal after this test restores its patches.
     monkeypatch.setattr(fq, "plan", forbidden)
     monkeypatch.setattr(compiler, "compile", forbidden)
+    monkeypatch.setattr(execution, "compile_program", forbidden)
     monkeypatch.setattr(planner, "compile_program", forbidden)
     result = fq.run(checked.plan)
     monkeypatch.setattr(fq, "run", forbidden)

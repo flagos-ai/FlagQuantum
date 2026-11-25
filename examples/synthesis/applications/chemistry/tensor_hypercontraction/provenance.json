@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/chemistry/tensor_hypercontraction/tensor_hypercontraction.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "e10515cc546fd5898db4c369a273604f318506cb193b2a0128d2f951805c4b19",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.tensor_hypercontraction.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_tensor_walk.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Exact specialization to original initialized ELL=0 subspace. All83logicalbits retained,71ELLbits flattened in declared field order,8spinbits and4clockbits. Independent guard/orthogonality proof and complete16clockcontroltrace establish walk identity only on initialized subspace; arbitrary ELL inputs not exposed. Reuse exact interval MPS admission with no truncation or dense allocation."
+}

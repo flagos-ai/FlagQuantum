@@ -9,6 +9,7 @@ import pytest
 
 from flagquantum.errors import CapabilityError
 from flagquantum.simulation.stabilizer import engine
+from flagquantum.simulation.stabilizer._validation import _bounded_stim_expansion
 
 pytestmark = pytest.mark.unit
 
@@ -32,7 +33,7 @@ def test_nested_instruction_count_is_symbolic(
 ) -> None:
     inner_block = _Repeat(inner, (object(),))
     outer_block = _Repeat(outer, (inner_block,))
-    assert engine._bounded_stim_expansion((outer_block,)) == expected
+    assert _bounded_stim_expansion((outer_block,)) == expected
     # A million logical instructions still require only two body inspections.
     assert (outer_block.copies, inner_block.copies) == (1, 1)
 
@@ -41,7 +42,7 @@ def test_nested_product_exceeding_limit_is_refused_without_expansion() -> None:
     inner = _Repeat(1001, (object(),))
     outer = _Repeat(1001, (inner,))
     with pytest.raises(CapabilityError, match="1,000,000 expanded instructions"):
-        engine._bounded_stim_expansion((outer,))
+        _bounded_stim_expansion((outer,))
     assert (outer.copies, inner.copies) == (1, 1)
 
 
@@ -49,7 +50,7 @@ def test_separate_repeat_blocks_share_the_total_instruction_budget() -> None:
     first = _Repeat(500_000, (object(),))
     second = _Repeat(500_001, (object(),))
     with pytest.raises(CapabilityError, match="1,000,000 expanded instructions"):
-        engine._bounded_stim_expansion((first, second))
+        _bounded_stim_expansion((first, second))
     assert (first.copies, second.copies) == (1, 1)
 
 

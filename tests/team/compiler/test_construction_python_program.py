@@ -6,14 +6,16 @@ from types import FunctionType
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 PREFIX = """from __future__ import annotations
-from flagquantum.compiler._construction.frontend_python import qfunc
+from flagquantum.compiler._construction.frontend.python import qfunc
 from flagquantum.compiler._construction.program_types import (
     Const, Output, QNum, QBit, allocate, hadamard_transform,
 )
@@ -93,7 +95,7 @@ def test_host_body_is_never_called_even_if_code_is_replaced() -> None:
         "allocate(True,x)",
         "allocate(0,x)",
         "allocate(257,x)",
-        "allocate(x); x ^= 1",
+        "x ^= 1",
         "allocate(x); if_unknown(x)",
         "allocate(x); phase(x,0.8)",
         "allocate(x); free(x)",
@@ -122,8 +124,8 @@ def test_invalid_ownership_preparation_effects_and_domains_are_refused(
         "Output[list[int]]",
         "Output[QNum[0]]",
         "Output[QNum[257]]",
-        "Output[QNum[2,True,0]]",
-        "Output[QNum[2,False,1]]",
+        "Output[QNum[2,1,0]]",
+        "Output[QNum[2,False,3]]",
         "Output[QNum[True]]",
         "Output[QBit[2]]",
     ],

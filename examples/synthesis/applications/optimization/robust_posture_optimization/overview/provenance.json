@@ -1,0 +1,83 @@
+{
+  "upstream_path": "applications/optimization/robust_posture_optimization/robust_posture_optimization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "5383bcab1425eda05cc6b6b493792a441cad9dd7",
+  "original_sha256": "3afdd76a950b37c8e7dd3a5b4e9f04361bf0f61dfccfae9f7752f94c8fb2d60e",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "74944020f8d5500a987dec672c31a5954347b8971d0e3de0e58925d1d1f8c3f3",
+      "native_code_cell": 1
+    },
+    {
+      "index": 4,
+      "sha256": "198d400516870397314fada1c795e7a090d9cd401e9572fc74ad9a224563083b",
+      "native_code_cell": 2
+    },
+    {
+      "index": 5,
+      "sha256": "e89e42d672acba77f087ce9c1097fa7a34efa1e84cfb96f8c58f0e198ac69425",
+      "native_code_cell": 3
+    },
+    {
+      "index": 6,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78",
+      "native_code_cell": 4
+    },
+    {
+      "index": 8,
+      "sha256": "60ff163725bfcbd5818941fe4ede1ced523353affa67c07aa76922eb3a0bf81d",
+      "native_code_cell": 5
+    },
+    {
+      "index": 9,
+      "sha256": "2a8e69cd50d47ad098a6075b8683cc32c8828a9622b685ffa04d4e049d640656",
+      "native_code_cell": 6
+    },
+    {
+      "index": 13,
+      "sha256": "ecb9189be3bef0fac75c41c9f1b1202a480edc75d5ac0fd20ce20f92aac71195",
+      "native_code_cell": 7
+    },
+    {
+      "index": 14,
+      "sha256": "f06917087b52c46c0f625624fcbc19eacc77b51a2a91ac8e025b3be3a1923a3a",
+      "native_code_cell": 8
+    },
+    {
+      "index": 15,
+      "sha256": "934e18aa18b7e4a9d734cb3eb513069425cf1b83f54310a4b3331c34d5c3d027",
+      "native_code_cell": 9
+    },
+    {
+      "index": 16,
+      "sha256": "6d444ebc95c7e212c21c15285cdb3e02050c08a789bd2b508c9311a8dbed40b0",
+      "native_code_cell": 10
+    },
+    {
+      "index": 17,
+      "sha256": "4d87cf38f56763a072c6be888ca902f2bbf3f599739f11692645633d5d1870c3",
+      "native_code_cell": 11
+    },
+    {
+      "index": 18,
+      "sha256": "73bc5a182ba15a4ba1bad17261b0f2445726fd7428dd34ddc02bbc15e869b640",
+      "native_code_cell": 12
+    },
+    {
+      "index": 20,
+      "sha256": "96cd8fc86dd036f25fbf453d3f19682b237a901da09b83da6663ae9a922495e6",
+      "native_code_cell": 13
+    },
+    {
+      "index": 21,
+      "sha256": "8fcad678cf5e8da9fa89aa08feac34ca51f8731c4b7aaa7811dfb934bb5f46d0",
+      "native_code_cell": 14
+    }
+  ],
+  "native_semantic_adaptations": "Reuse frozen native two-qubit ansatz and compose literal source X/Y/Z measurement bases. S then H is retained for Y, not corrected to inverse-S. Source MSB-first count formula is retained: first component is native q[1], second is q[0]; equal unit link lengths retain their source sum. Native public COBYLA replaces SciPy optimizer with actual30querycap, initial pi*linspace(0,1,6),rhobeg1,rhoend1e-8. Every query binds at synthesis and draws1000actualCPUshots per basis with explicit advancingseeds. Best actually evaluated query selected on budget stop; no invented solver return or convergence. Final1000Y draws and two separate three-basis position estimates remain actual noisy samples. No historical optimizer trajectory, runtimebinding, hardware or speedup claim. Notebook adds two initialthreebasis diagnosticreadouts(6000draws) outsideobjectivecap. Reports totalworkflowdraws=3000*queries+7000 and totalNotebookdraws=3000*queries+13000 explicitly.",
+  "scope": "All14source code stages, original2bits/6angles, q0 rotation repeated on q1, source X/Y/Z bases and counts formula, unit links,target(0.6,1.0,0.2), original30objectiveevaluationcap and1000shotsperbasis. Native finite sampling and capped nativeCOBYLA, actual trace, finalYsample and two independentpositionestimates. Six nonzero complete absolute Circuit state comparisons, bitorder,Ysign,finitecountgeometry,budgetandinputrejections required. Frozen216quantumcounterparts and production/API/dependency contracts unchanged.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.robust_posture_optimization.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/robust_posture_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_robust_posture_notebook.py"
+}

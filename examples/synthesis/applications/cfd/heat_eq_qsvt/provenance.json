@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/CFD/heat_eq_qsvt/heat_eq_qsvt.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "859f73381e5697352c20ed963cfde455c96381108b318d25813f4d6bcf820ef6",
+  "native_entrypoint": "examples.synthesis.applications.cfd.heat_eq_qsvt.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_packed_qsvt.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Three source data bits plus deletion bit form explicit four-bit data_and_deletion output;two-bit select and rotation remain separate. Source four-phase array is retained but actual loop executes only first three. Embed8amplitudes in deletion-zero half,then root compute/clean block-zero marker and exact projected-phase polynomial. Borrowed preparation,controlled modular increment and inverse reused. No public API,Compiler capability,ownership rule or construction cap changed. Explicit source/native axis permutation and all clean work are verified."
+}

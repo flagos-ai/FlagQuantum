@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "33f6ac40cf27c7a1014ca6ca973947d1deea48283f88e766dd01a4f5e054d380",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification.qsvt_fixed_point.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_fixed_point_qsvt.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Flatten OracleVars into a,b,c with original2/1/3-bit field order. Preserve all26 phases and12 original paired steps (13 alternating projector pairs including the source endpoints). The concrete block encoding is identity. Use fresh checked unsigned predicate locals, exact marker half-angle and conditional phase, then automatic uncompute/release. Rewrite a-c == -2 as a+2 == c over the admitted unsigned domain. Independent Circuit enumerates128-entry projected phase matrices; absolute phase and all hidden work are checked. No generic block-encoding callback, qstruct or optimal-resource claim."
+}

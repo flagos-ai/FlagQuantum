@@ -1,0 +1,172 @@
+name: Prewarm locked CPU environments
+
+on:
+  workflow_dispatch:
+    inputs:
+      export-bundle:
+        description: Export a verified offline bundle for runner provisioning
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - docker/ci/images.lock
+      - .github/workflows/prewarm-ci-cpu.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.event_name == 'workflow_dispatch' && inputs.export-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    concurrency:
+      group: flagquantum-gh-6
+      queue: max
+    timeout-minutes: 45
+    steps:
+      - name: Read the lock from the exact workflow revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ci-image-bundle"
+          gh api "repos/$GITHUB_REPOSITORY/contents/docker/ci/images.lock?ref=$GITHUB_SHA" --jq .content |
+            base64 -d > "$RUNNER_TEMP/ci-image-bundle/source.lock"
+      - name: Export the pinned images and their content identities
+        env:
+          FQ_REGISTRY_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG
+          DOCKER_CONFIG="$(mktemp -d "$RUNNER_TEMP/fq-export-registry.XXXXXXXX")"
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+          printf '%s' "$FQ_REGISTRY_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          unset FQ_REGISTRY_TOKEN
+          cd "$RUNNER_TEMP/ci-image-bundle"
+          images=()
+          while read -r profile image expected_archive; do
+            [[ "$profile" =~ ^(core-py3\.(10|11|12)|coverage-py3\.12)$ ]]
+            [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+            timeout --kill-after=15s 450s docker pull "$image"
+            cache="flagquantum-ci-cache:${image##*:}"
+            docker tag "$image" "$cache"
+            images+=("$cache")
+          done < source.lock
+          test "${#images[@]}" -eq 4
+          timeout --kill-after=15s 300s docker save "${images[@]}" | gzip -1 > images.tar.gz
+          python3 - <<'PYTHON'
+          import hashlib
+          import json
+          import re
+          import tarfile
+          from pathlib import Path
+
+          blobs = {}
+          with tarfile.open("images.tar.gz", "r|gz") as archive:
+              for entry in archive:
+                  if entry.isfile() and entry.size <= 1024 * 1024:
+                      stream = archive.extractfile(entry)
+                      if stream is not None:
+                          blobs[entry.name] = stream.read()
+          index = json.loads(blobs["index.json"])
+          if index["mediaType"] != "application/vnd.oci.image.index.v1+json":
+              raise SystemExit("The offline export must use an OCI image index")
+          manifests = {}
+          for descriptor in index["manifests"]:
+              digest = descriptor["digest"]
+              if not isinstance(digest, str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", digest):
+                  raise SystemExit("Invalid exported manifest digest")
+              payload = blobs["blobs/sha256/" + digest.split(":")[1]]
+              if hashlib.sha256(payload).hexdigest() != digest.split(":")[1]:
+                  raise SystemExit("Exported manifest does not match its digest")
+              reference = descriptor["annotations"]["org.opencontainers.image.ref.name"]
+              if reference in manifests:
+                  raise SystemExit("Duplicate exported profile reference")
+              manifests[reference] = digest
+          rows = []
+          for line in Path("source.lock").read_text().splitlines():
+              profile, image, *expected = line.split()
+              digest = manifests[image.rsplit(":", 1)[1]]
+              if expected and expected != [digest]:
+                  raise SystemExit(f"Export identity changed for {profile}; qualify a new lock")
+              rows.append(f"{profile} {image} {digest}\n")
+          if len(rows) != 4:
+              raise SystemExit("The offline bundle must contain every locked CPU profile")
+          Path("images.lock").write_text("".join(rows))
+          PYTHON
+          sha256sum images.tar.gz images.lock source.lock > SHA256SUMS
+          cat images.lock | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        timeout-minutes: 6
+        with:
+          name: locked-cpu-images
+          path: ${{ runner.temp }}/ci-image-bundle/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
+
+  prewarm:
+    needs: export
+    if: ${{ !cancelled() && (needs.export.result == 'success' || needs.export.result == 'skipped') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted, linux, x64, flagquantum-a800-cpu, "${{ matrix.host }}"]
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [a800-171, a800-172]
+    concurrency:
+      group: prewarm-ci-cpu-${{ matrix.host }}
+      queue: max
+    timeout-minutes: 30
+    steps:
+      - name: Read the lock from the exact workflow revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYTHON'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          url = (f"{os.environ['GITHUB_API_URL']}/repos/"
+                 f"{os.environ['GITHUB_REPOSITORY']}/contents/docker/ci/images.lock"
+                 f"?ref={os.environ['GITHUB_SHA']}")
+          request = Request(url, headers={"Authorization": f"Bearer {os.environ['GH_TOKEN']}"})
+          with urlopen(request, timeout=60) as response:
+              payload = json.load(response)
+          Path(os.environ["RUNNER_TEMP"], "ci-images.lock").write_bytes(
+              base64.b64decode("".join(payload["content"].split()), validate=True)
+          )
+          PYTHON
+      - name: Qualify every provisioned profile without networking
+        shell: bash
+        run: |
+          set -euo pipefail
+          qualified=0
+          while read -r profile image archive_digest; do
+            [[ "$image" =~ ^ghcr\.io/flagos-ai/flagquantum-ci@sha256:[a-f0-9]{64}$ ]]
+            [[ "$archive_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            if ! docker image inspect "$archive_digest" >/dev/null 2>&1; then
+              echo "::error::Missing $profile on $RUNNER_NAME. Provision the verified offline bundle before enabling this CPU pool."
+              exit 1
+            fi
+            cache="$archive_digest"
+            timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -m pip check
+            timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -c \
+              'import torch; assert torch.version.cuda is None'
+            if [[ "$profile" == core-* ]]; then
+              timeout --kill-after=5s 60s docker run --rm --pull never --network none "$cache" python -c \
+                "import importlib.util as u; assert all(u.find_spec(name) is None for name in ('numpy', 'jax', 'cirq', 'qiskit', 'pennylane', 'braket', 'cudaq'))"
+            fi
+            qualified=$((qualified + 1))
+            echo "Qualified $profile ($image, $archive_digest)" >> "$GITHUB_STEP_SUMMARY"
+          done < "$RUNNER_TEMP/ci-images.lock"
+          test "$qualified" -eq 4

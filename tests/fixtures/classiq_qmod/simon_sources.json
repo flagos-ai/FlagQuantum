@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "simon.qmod",
+      "source_path": "algorithms/foundational/simon/simon.qmod",
+      "git_blob_sha1": "8cc01f333b1f570fe76ac1a05f4be4bb9129670b",
+      "sha256": "0c6b69aefd6eb09ef120f4b625abe23d754a98014b338d22c53a5d7ce96dcd70"
+    }
+  ]
+}

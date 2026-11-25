@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "63f26e3c2bf50b9c0e5b0f3c5b7c83205118a0998e4f201969730f307023346a",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.grover_graph_coloring.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_sparse_grover.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve original logical widths and default Grover iteration count. Native helpers flatten record fields into named numeric registers. Exact predicate semantics and phase-exact uniform reflection use checked clean factors. Independent Circuit truth enumeration and explicit Toffoli ladders verify absolute complete state amplitudes, original physical field order through declared mappings, and all clean work. Acceptance and fresh216 replay required before coverage credit."
+}

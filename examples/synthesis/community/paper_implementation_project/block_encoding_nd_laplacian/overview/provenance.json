@@ -1,0 +1,48 @@
+{
+  "upstream_path": "community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "c34027a2553375f98ac6486f93e03e6a1ebd90e3",
+  "original_sha256": "b335085e47a1cf5406aa7bd1f80f2056a39361347e9959e5dec561ea41e1e61b",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "22549318afc36cec17bb276a2a57e5d5c5a6c03da56a0fa176e0534c85ce3ee4",
+      "native_code_cell": 1
+    },
+    {
+      "index": 6,
+      "sha256": "0ab36809086c1c0a434f6c9aec976562cc99594d42e14d6f852076a49a1b9322",
+      "native_code_cell": 2
+    },
+    {
+      "index": 7,
+      "sha256": "3f4bb202469937e4884239e5bce1976faddc5225d415f0ac00ebb502fdac8384",
+      "native_code_cell": 3
+    },
+    {
+      "index": 8,
+      "sha256": "9f51cad83b4347d3d815e1c291f5ea7028cb4c675306ac02449dd2c07bf46180",
+      "native_code_cell": 4
+    },
+    {
+      "index": 11,
+      "sha256": "5221e443129572927575272ecce4426bbe4e8c91ef0e9f87e83f49457f77824e",
+      "native_code_cell": 5
+    },
+    {
+      "index": 12,
+      "sha256": "3f9083d545fabb7161cb21552d4577362d4052eb3a5f1bf4d4fb8dc363b7e50b",
+      "native_code_cell": 6
+    },
+    {
+      "index": 13,
+      "sha256": "9f51cad83b4347d3d815e1c291f5ea7028cb4c675306ac02449dd2c07bf46180",
+      "native_code_cell": 7
+    }
+  ],
+  "native_semantic_adaptations": "Public native Fourier-shift qfuncs implement the same cyclic permutations; split numeric coordinates replace packed bind views. Preserve depth optimization and widths seven/six. Native circuit drawings replace the source viewer. Original global-phase-aligned real display remains a separate diagnostic; full complex states and unnormalized blocks are checked before any phase alignment.",
+  "scope": "All seven source stages, original grids 32 and (2,4), fresh finite-difference and reversed-axis Kronecker matrices, depth objective, widths seven/six with zero compiler work, actual native full states, independent permutation-matrix Circuit references, absolute projected blocks with phase and scale intact, source display and normalized fidelity, and actual projection probabilities. No frozen quantum counterpart, API or dependency changes, source importer, cloud execution, hardware, speedup or scalability claim.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding_nd_laplacian.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_nd_laplacian_notebook.py"
+}

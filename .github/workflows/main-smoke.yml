@@ -8,13 +8,16 @@ on:
     paths:
       - .github/workflows/main-smoke.yml
       - tests/smoke/test_smoke_baseline.py
+      - tools/check_main_smoke_qec_wheel.py
+      - examples/qec/ai_predecoder.py
 
 permissions:
   contents: read
 
 jobs:
   installed-wheel-smoke:
-    runs-on: ubuntu-latest
+    # Match the Linux package lane's Ubuntu and GCC baseline.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     # Share the repository-wide hosted capacity limit.
     concurrency:
@@ -45,21 +48,26 @@ jobs:
           torch-spec: "torch>=2.10,<2.11"
       - name: Install the CPU build floor and smoke tooling
         run: |
-          python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel build pytest
+          python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel build
           python -m pip install 'torch>=2.10,<2.11' --index-url https://download.pytorch.org/whl/cpu
       - name: Build and inspect the wheel
         run: |
           python -m build --wheel --no-isolation
           python tools/verify_distribution_artifacts.py dist
-      - name: Install the built wheel
-        run: python -m pip install --no-deps dist/*.whl
-      - name: Check the installed package outside the source checkout
+      - name: Install and smoke-test the wheel in a clean runtime
         shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/main-smoke-tests"
-          cp tests/smoke/test_smoke_baseline.py "$RUNNER_TEMP/main-smoke-tests/"
-          cd "$RUNNER_TEMP/main-smoke-tests"
-          python - <<'PYTHON'
+          smoke_dir="$(mktemp -d "$RUNNER_TEMP/main-smoke-tests.XXXXXX")"
+          python -m venv "$smoke_dir/venv"
+          smoke_python="$smoke_dir/venv/bin/python"
+          "$smoke_python" -m pip install 'torch>=2.10,<2.11' --index-url https://download.pytorch.org/whl/cpu
+          "$smoke_python" -m pip install pytest
+          "$smoke_python" -m pip install --no-deps dist/*.whl
+          "$smoke_python" -m pip check
+          cp tests/smoke/test_smoke_baseline.py tools/check_main_smoke_qec_wheel.py \
+            examples/qec/ai_predecoder.py "$smoke_dir/"
+          cd "$smoke_dir"
+          "$smoke_python" -I - <<'PYTHON'
           import sys
           from pathlib import Path
           import flagquantum as fq
@@ -68,7 +76,8 @@ jobs:
           assert Path(fq.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
           assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR)
           PYTHON
-          python -m pytest test_smoke_baseline.py -q
+          "$smoke_python" -I -m pytest test_smoke_baseline.py -q
+          "$smoke_python" -I check_main_smoke_qec_wheel.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

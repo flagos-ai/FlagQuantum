@@ -1,0 +1,10 @@
+{
+  "upstream_path": "applications/CFD/double_slit_experiment/quantum_double_slit_experiment.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "ec6de8a9d82cad74f9c98aa3255728a652d275194f77e6bdee2d9e3717d59736",
+  "native_entrypoint": "examples.synthesis.applications.cfd.double_slit_experiment.quantum_double_slit_experiment.main",
+  "status": "native_quantum_program_verified",
+  "acceptance_test": "tests/integration/test_synthesis_native_double_slit.py",
+  "scope": "Complete 192-phase, 95-cycle quantum program. The application Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve the complete 4+4-bit lattice, four-state selector, 192 phases,95 QSVT cycles, absorbing phase and coherent reference state. Named register helpers replace generated expanded source; exact bounded predicates and reversible within/apply clean nine work bits. Full native complex state matches both the independent mathematical gate-tape oracle and a public Circuit construction, including absolute phase, bit order and zero work. Native resource cost is separately measured within the unchanged24-qubit,9-workspace,100000-operation and256MiB limits. No native resource parity or complete Notebook claim."
+}

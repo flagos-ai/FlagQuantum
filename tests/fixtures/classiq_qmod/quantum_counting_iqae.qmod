@@ -1,0 +1,68 @@
+// Quantum Counting Using Iterative Quantum Amplitude Estimation
+
+// Prepares the IQAE input state over the problem variables (a,b) and an indicator qubit.
+// The quantum variables are transformed into uniform superposition, and the indicator is computed as:
+//   ind = 1  iff  (a + b) <= THRESHOLD.
+// In the IQAE workflow, the indicator qubit defines the “good” subspace; a phase flip (Z) on
+// this qubit implements the marking oracle used inside amplitude amplification iterations.
+
+
+// Defining the qstruct, containing the quantum variables a and b, each with two qubits
+qstruct OracleVars {
+  a: qnum<2>;
+  b: qnum<2>;
+}
+
+
+
+THRESHOLD: int = 2;        // predicate: (a + b) <= THRESHOLD
+
+
+
+// Phase oracle: flips the phase of a marked states.
+// Here we mark states by applying Z on the indicator qubit (assumed last qubit in est_var).
+qperm oracle(const est_var: qbit[]) {
+  Z(est_var[est_var.len - 1]);
+}
+
+
+// Computes the boolean predicate into `res` via XOR assignment.
+// `res` becomes 1 iff (a + b) <= THRESHOLD (assuming it starts at |0⟩).
+qperm arith_equation(const state: OracleVars, res: qbit) {
+  res ^= (state.a + state.b) <= THRESHOLD;
+}
+
+// State preparation for amplitude amplification:
+qfunc iqae_state_preparation(vars: OracleVars, ind: qbit) {
+  hadamard_transform(vars);  // Uniform superposition over all possible states
+  arith_equation(vars, ind);  // Compute predicate into indicator
+}
+
+// Constructs the state expected by `amplitude_amplification`:
+// interprets the first 4 qubits as OracleVars and the last qubit as an indicator.
+qfunc space_transform(est_var: qbit[]) {
+  // est_var = [problem_vars..., indicator]
+  iqae_state_preparation(
+    est_var[0:est_var.len - 1],      // OracleVars view of the problem qubits
+    est_var[est_var.len - 1]         // Indicator qubit
+  );
+}
+
+
+qfunc main(k: int, output indicator: qbit) {
+  est_var: qbit[];
+  problem_vars: OracleVars;
+
+  allocate(problem_vars);  // Initiating the indicator qubit
+  allocate(indicator);  // Solution space qubits
+
+  // Create a quantum variable for amplitude amplification.
+  within {
+    {problem_vars, indicator} -> est_var;
+  } apply {
+    // Apply k iterations of amplitude amplification using the oracle and space transform.
+    amplitude_amplification(k, oracle, space_transform, est_var);
+  }
+
+  drop(problem_vars);   // Indicates that the quantum state should not be measured
+}

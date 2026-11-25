@@ -8,24 +8,24 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_arithmetic,
 )
-from flagquantum.compiler._construction.target import (
+from flagquantum.compiler._construction.scheduling.target import (
     PHASE_BASIS,
     Target,
     compile_target,
 )
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import Instruction
 from flagquantum.errors import PlanningError
 from flagquantum.services.synthesis import SynthesisError, _complete
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 
@@ -324,7 +324,11 @@ def test_public_phase_example_reports_actual_resources():
     from pathlib import Path
 
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_phase_oracle"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.control.phase_oracle.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

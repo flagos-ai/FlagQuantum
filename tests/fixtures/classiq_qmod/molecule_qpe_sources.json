@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qpe_for_molecules.qmod",
+      "source_path": "applications/chemistry/qpe_for_molecules/qpe_for_molecules.qmod",
+      "git_blob_sha1": "06b228153e7bab2d562c253fad3fe6a5d150bb38",
+      "sha256": "9dbdf81f075934e8179772046a8dd072f71c4f0edaf431161a8c72f779a49902"
+    }
+  ]
+}

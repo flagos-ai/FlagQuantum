@@ -1,0 +1,108 @@
+{
+  "upstream_path": "applications/CFD/heat_eq_qsvt/heat_eq_qsvt.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "c9d22755c94dad4bdfedfdc9b9c6c28b9b6876c2328ddfc9b03e79c5e431b038",
+  "git_blob_sha1": "9d33d76f2057e2da6fd3075f0efdcb9f98ca3105",
+  "scope": "All 19 source stages, eight spatial points, 1,024 time samples, all eight block columns, a fresh four-phase cubic solution and four source heat iterations.",
+  "native_semantic_adaptations": "Use a bounded analytic Laurent fit in the same cubic convention, independently checked against pyqsp 0.2.0. Retain the source rule that the last fitted phase is unused. Recreate state-preparation inputs for each column and iteration. Remove the global phase with the first supported native basis index and report actual local projection norms; the hosted state table row order is unspecified.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.heat_eq_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/heat_eq_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_heat_equation_qsvt_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "cbaae26ce63d69f6997c99466925270b75e4e3966fe0869790f0294206be2727"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "sha256": "5a7f000ffecf3bd28d384b63954fc785d5fb16559b743c33921d399614bc21a9"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 3,
+      "sha256": "1d556625b388d261446e2a2944f8ecb780fdf2e27db2b7bc041e994dc557d8c9"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "sha256": "9d6e8a2d66e94deec31ee454d5694297426f3faca415931bc32c5f0f6d1d993a"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 5,
+      "sha256": "fe4cc6e7d75e67503f3178000ef788ec39269a50adb10b3af7846fcb8e996e27"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 7,
+      "sha256": "d070ac8358cd8ebbd1224d452507b5b46998fb2e2d56673cc6505ec8fe8732ca"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 8,
+      "sha256": "b7ade7be652187578d5888ce48b4e432e90877c30c5866999f7ed7b01f9d5aea"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 9,
+      "sha256": "507e7072cf1af85cf6b73fe645420d75cea8dd7223cc06986aa2c61437c98d67"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 10,
+      "sha256": "451f2a63253fe608e8f3a4e9ed57559916668958349f215692a565b6eb0504d3"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 11,
+      "sha256": "b008bccc347c9a86bbb255b960e0ddefa2923ef02435f312de389d35bd6676a3"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 12,
+      "sha256": "80d1999e5b16bfd3c39e50485074ffa4c0dc4bd3ea9b5af6f925fbb56dc097e2"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 13,
+      "sha256": "c80ee9fe4aabdca048791cd1519791ec4abd9b1863833e1b2d5a3a2903a57e2a"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 14,
+      "sha256": "2dab92ef5f1e2d6135899e284a642a80e1d5d3e5efe8d4fca13981cbace1edd6"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 15,
+      "sha256": "d947b80c374c5927de2e8f401cecd84fbf904a38cffe9ea5f5ab0ee9729df731"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 16,
+      "sha256": "03061501415182e53db4fcca78e452be344ed56c688284adbffef4a1d8836dbc"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 17,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 18,
+      "sha256": "e5d52e64836cc22820202014181b551b8519806c3cf9376eeb38af6ac1127f8f"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 19,
+      "sha256": "98ae7658c5ab0ba8b8a0887ecad36dc6c6e360d8cf4b6367289b18cec8e20175"
+    }
+  ]
+}

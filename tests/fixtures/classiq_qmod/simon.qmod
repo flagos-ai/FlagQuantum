@@ -1,0 +1,30 @@
+// Simon Algorithm with a Minimal Oracle Example
+
+// This example prepares an input superposition and applies a Simon function.
+// We focus only on the quantum wrapper and a very simple oracle,
+// without classical postprocessing or full secret recovery.
+
+// The oracle is a 2-to-1 function of the form f(x) = f(x xor s),
+
+
+num_qubits: int = 5;   // Width of the input register
+s_secret: int  = 6;    // Secret string s (equivalent to the binary `00110`)
+
+qfunc simon(f_qfunc: qfunc (qnum, output qnum), x: qnum, output res: qnum) {
+  within {
+    hadamard_transform(x);
+  } apply {
+    f_qfunc(x, res);
+  }
+}
+
+qperm simon_oracle(s: int, const x: qnum, output res: qnum) {
+  res = min(x, x ^ s);
+}
+
+qfunc main(output x: qnum<num_qubits>, output res: qnum) {
+  allocate(x);
+  simon(lambda(x, res) {
+    simon_oracle(s_secret, x, res);
+  }, x, res);
+}

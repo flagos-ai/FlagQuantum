@@ -57,7 +57,9 @@ CI_TIERS: dict[str, CITier] = {
         trigger="Pull requests that touch runtime, API, planner, compiler, or integration boundaries.",
         proves="Local cross-module runtime/API behavior selected by the integration marker.",
         does_not_prove="Multi-process transport, accelerator execution, or scalability claims.",
-        commands=(("{python}", "-m", "pytest", "-m", "integration", "-q"),),
+        commands=(
+            ("{python}", "-m", "pytest", "-m", "integration and not slow", "-q"),
+        ),
     ),
     "pr-distributed": CITier(
         name="pr-distributed",

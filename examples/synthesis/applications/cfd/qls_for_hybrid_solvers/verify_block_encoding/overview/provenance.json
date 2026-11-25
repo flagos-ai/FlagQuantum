@@ -1,0 +1,69 @@
+{
+  "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/verify_block_encoding.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "f7eca60b876f5d68e36cab5fcb741edaefb3cfb7",
+  "original_sha256": "5ed4e9c925086f6bcf56331fb6b3fd27c38f472623a1dbcef0b6fbe1135af02b",
+  "scope": "All ten original code stages, the original 8 by 8 nozzle matrix with 21 entries, both Pauli and banded block encodings, fresh signed right-hand sides, and both unnormalized projections checked against the scaled matrix product.",
+  "native_semantic_adaptations": "The pinned CSR matrix is stored as plain numeric JSON. Pauli and diagonal decompositions are recomputed locally. Native synthesis prepares the data and selector amplitudes; the public Circuit composition applies Pauli SELECT or a bounded signed banded dilation, then unprepares the selector. These encodings have their own reported LCU scale and resources; no historical Gray-code gate count is claimed. Fixed local seeds make the generated right-hand sides reproducible. Absolute amplitudes are compared directly, with no sign correction or postselection renormalization.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qls_for_hybrid_solvers.verify_block_encoding.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_cfd_block_encoding_notebook.py",
+  "source_data": {
+    "path": "applications/CFD/QLS_for_hybrid_solvers/matrices/nozzle_small_scr.npz",
+    "original_sha256": "2be90eda464501fa8e78928de8353313beac8462254a1cd78083b268338cc6dd",
+    "native_sha256": "1d1de46e2f1ed60b8002ce4082ad74141833b8bfd1ec9d366c3fd5342dc8bad1",
+    "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0"
+  },
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "4ee35c930d1fcdf48784d9da166749ca62feebd4dbe233456e5ec46b31684736"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "sha256": "c942bc484ca3acb11607e44adb9af14c532769e88b05248f6e5e9f7f56103ae4"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "sha256": "38a350682dd458927bacf8dad32cf371d71b8d6266affc48a6b5b799aac6ca8c"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "sha256": "76c2a3c286c5e6745fa1fab3c54da4fcef80903a3f227f18de58d4ab17e7eee5"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "sha256": "3db3f4b38612329ef718865572a0bf960ba4690ad1499c1122861a1c49f8f866"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "sha256": "5c50e77886f589d57f283ac2d73616cd9bc791fc359f7c56a2c00cc6024581c9"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 7,
+      "sha256": "1c39c6ee64ebd1027414cba6d1b6f2138ae09eb360be77242c5b6e84dd700f2e"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 8,
+      "sha256": "874653dcbbbd19a1327fe48cc30fea2291219aa22ffead2102d043c97957bef2"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 9,
+      "sha256": "4abd6f34071bcb36b07ba91321a6a470f7ca9012ed393ebc638ee8e63196e676"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "sha256": "8b2a36b1d8ca1272d284f8024e3c36bbe51c8983105959da3d3b50bc226928fd"
+    }
+  ]
+}

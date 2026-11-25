@@ -7,7 +7,7 @@ from typing import Any
 
 import torch
 
-from ...core.ir import CircuitIR
+from ...core.ir import CircuitIR, Instruction
 from ..gate_matrix import gate_matrix
 from .models import CompiledMPSProgram
 from .state import MPSState
@@ -26,6 +26,34 @@ def _compose_one_qubit_matrices(
     if current_matrix.ndim == 2:
         current_matrix = current_matrix.expand(int(bsz), -1, -1)
     return torch.bmm(new_matrix, current_matrix)
+
+
+def _apply_ccx_with_basis_controls(mps: MPSState, instruction: Instruction) -> bool:
+    """Apply an exact Toffoli without routing if its control values prove the branch."""
+    if (
+        mps.device.type != "cpu"
+        or instruction.name != "ccx"
+        or instruction.matrix is not None
+        or instruction.params
+        or getattr(instruction, "parameter_slots", None)
+        or instruction.metadata
+        or len(instruction.wires) != 3
+        or len(set(instruction.wires)) != 3
+    ):
+        return False
+    first, second, target = instruction.wires
+    for wire in (first, second, target):
+        mps._validate_qubit(wire)
+    controls = (mps.tensors[first], mps.tensors[second])
+    if torch.is_grad_enabled() and any(site.requires_grad for site in controls):
+        return False
+    # A zero physical slice proves the control value even at nontrivial bonds.
+    if any(not torch.count_nonzero(site[:, :, 1, :]).item() for site in controls):
+        return True
+    if any(torch.count_nonzero(site[:, :, 0, :]).item() for site in controls):
+        return False
+    mps.apply_one(mps._fixed_gate_matrix("x"), target)
+    return True
 
 
 def run_local_mps(
@@ -65,6 +93,8 @@ def run_local_mps(
         group = operation.instruction_indices
         instruction = instructions[group[0]]
         if operation.kind == "dense_fallback":
+            if _apply_ccx_with_basis_controls(mps, instruction):
+                continue
             # The program labelled this operation before execution, and the state
             # applies it by expanding to the full dense state vector and
             # re-factorising, so the cost is 2**n rather than chi**3. Rule 3

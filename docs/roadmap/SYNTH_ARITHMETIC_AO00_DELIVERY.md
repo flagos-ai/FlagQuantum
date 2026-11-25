@@ -7,7 +7,7 @@ The eighth planning revision's AO-01 through AO-05 remain future work.
 ## User workflow
 
 Save this in a source-retaining Python file, or run
-`python -m examples.synthesis_arithmetic_baseline`:
+`python -m examples.synthesis.tutorials.arithmetic.arithmetic_baseline.main`:
 
 ```python
 import flagquantum as fq
@@ -60,7 +60,7 @@ convenience form and was originally based on main commit
 the AO-00 branch now includes that mainline implementation. The original
 measurement and artifact remain unchanged. The new Python qfunc preparation and
 composition workflow is demonstrated in
-[the program example](../../examples/synthesis_python_program.py). UP and AO
+[the program example](../../examples/synthesis/tutorials/composition/python_program/main.py). UP and AO
 share existing Compiler semantics and execution; this baseline does not
 introduce an alternate engine. See the synchronization receipt below.
 
@@ -249,7 +249,7 @@ baseline and default-tier receipts above. Final-head PR CI independently
 checks the complete merged tree.
 
 Post-sync strict mypy passes 882 production/two-example sources. Both
-`examples.synthesis_arithmetic_baseline` and `examples.synthesis_python_program`
+`examples.synthesis.tutorials.arithmetic.arithmetic_baseline.main` and `examples.synthesis.tutorials.composition.python_program.main`
 run successfully: the former preserves its original named-outcome/cost workflow,
 and the latter compares Python in-program preparation with Qmod on all sixteen
 outcomes. The public API guard and all 810 local Markdown links pass after the

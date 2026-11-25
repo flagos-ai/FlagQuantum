@@ -385,3 +385,18 @@ def test_the_bounds_lane_installs_and_runs_the_declared_floor() -> None:
     )
     for gate in GATED_TOOLS:
         assert gate in install[1]["run"], f"the floor lane never runs {gate}"
+
+
+def test_dependency_lane_installs_the_declared_pytest_range() -> None:
+    _, project = _inputs()
+    requirement = next(
+        value
+        for value in project["project"]["optional-dependencies"]["dev"]
+        if Requirement(value).name == "pytest"
+    )
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    steps = workflow["jobs"]["dependency-bounds"]["steps"]
+    commands = [step.get("run", "") for step in steps]
+    assert f"python -m pip install '{requirement}'" in commands
+    assert "python -m pip install pytest" not in commands
+    assert not Requirement(requirement).specifier.contains("3.2.5")

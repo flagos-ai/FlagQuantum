@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "gqsp.qmod",
+      "source_path": "algorithms/quantum_primitives/gqsp/gqsp.qmod",
+      "git_blob_sha1": "849725045c514e5a07922cc715a9436dbdae0973",
+      "sha256": "6f051bfbd054d9511f4166d8678202841ecaa457cf2cb0d32be0c994d449f3d3"
+    }
+  ]
+}

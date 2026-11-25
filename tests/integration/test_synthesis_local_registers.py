@@ -7,21 +7,19 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_local_registers import local_composition
-from examples.synthesis_register_cleanup import copy_reference, flag_value, less
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,
@@ -36,8 +34,16 @@ from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import SynthesisError
 from tests.integration.test_construction_register_execution import _check
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_compiler_examples.local_registers.main import (
+    local_composition,
+)
+from tools.synthesis_compiler_examples.register_cleanup.main import (
+    copy_reference,
+    flag_value,
+    less,
+)
 
 pytestmark = pytest.mark.integration
 MEMORY = 64 * 1024**2
@@ -150,7 +156,7 @@ def test_fragmented_zero_slots_keep_the_numeric_significance_of_a_wide_local(
             for y in range(4)
         },
     )
-    assert row.arithmetic.peak_workspace == 8
+    assert row.arithmetic.peak_workspace == 5
 
 
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
@@ -210,7 +216,7 @@ def test_repeated_nested_helpers_keep_local_state_private_and_phase_exact(
             for y in range(4)
         },
     )
-    assert row.resources.n_qubits == 12 and row.arithmetic.peak_workspace == 6
+    assert row.resources.n_qubits == 8 and row.arithmetic.peak_workspace == 2
 
 
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
@@ -233,7 +239,7 @@ def test_local_release_preserves_observable_phase_interference(
 
 
 def test_hidden_locals_count_toward_whole_qubit_and_workspace_constraints() -> None:
-    constraints = Constraints(CircuitLimits(max_qubits=12), max_workspace=6)
+    constraints = Constraints(CircuitLimits(max_qubits=8), max_workspace=2)
     for overlapping in (False, True):
         model, functions = local_composition(overlapping=overlapping)
         if overlapping:
@@ -243,14 +249,14 @@ def test_hidden_locals_count_toward_whole_qubit_and_workspace_constraints() -> N
                 )
             assert error.value.selection.complete
             assert all(
-                row.arithmetic.peak_workspace == 7 for row in error.value.selection.rows
+                row.arithmetic.peak_workspace == 3 for row in error.value.selection.rows
             )
         else:
             program = synthesize_registers(
                 model, functions, constraints=constraints, memory_limit_bytes=MEMORY
             )
-            assert program.report["workspace_qubits"] == 6
-            assert program.report["resources"].n_qubits == 12
+            assert program.report["workspace_qubits"] == 2
+            assert program.report["resources"].n_qubits == 8
     with pytest.raises(SynthesisError):
         synthesize_registers(
             model,

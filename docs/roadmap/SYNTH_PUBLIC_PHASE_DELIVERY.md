@@ -15,7 +15,7 @@ result flag or mark a predicate phase. They do not write gates, physical indices
 bitstring decoding or cleanup. Ordinary Python functions remain the primary
 entry; qfunc is optional and no additional DSL or executor is introduced.
 
-Save and run a Python file, or run python -m examples.synthesis_phase_oracle:
+Save and run a Python file, or run python -m examples.synthesis.tutorials.control.phase_oracle.main:
 
 ```python
 import flagquantum as fq

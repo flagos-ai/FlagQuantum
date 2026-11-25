@@ -9,7 +9,7 @@ Independent trials remain 0/2 and release_authorized=false.
 
 ## User workflow
 
-Run `python -m examples.synthesis_qmod_helpers`, or:
+Run `python -m examples.synthesis.tutorials.qmod.qmod_helpers.main`, or:
 
 ```python
 import flagquantum as fq

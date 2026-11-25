@@ -1,0 +1,55 @@
+{
+  "upstream_path": "applications/finance/autocallable_options/partial_exponential_state_preparation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "53571dcb83ee80001736dd3e2be5b8dfbddd8d6b7f5e20d29eaaef29ad26688c",
+  "git_blob_sha1": "0497d46e82d2db71217e559a49449f4aab6893f0",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "e5de205d33856932378ec09252248600d5f48209e9357400c2fdd8a9c4565d2a",
+      "native_code_cell": 1,
+      "stage": "Fresh original five-bit exponential state using existing native amplitude preparation."
+    },
+    {
+      "index": 5,
+      "sha256": "fd614cbb048562baf1128b19eed238e6cf07e22cc302f1fb24cbb0823f91e50c",
+      "native_code_cell": 2,
+      "stage": "Read x by its named register and plot all32words without bitstring decoding."
+    },
+    {
+      "index": 7,
+      "sha256": "a4856e19869cf4fdbb442f4d5f4c822eb5a7a8efc374614c0e39f91afbacda9e",
+      "native_code_cell": 3,
+      "stage": "Retain the original approximate overlap formula and independently prove the discrete overlap."
+    },
+    {
+      "index": 8,
+      "sha256": "d97c36f3006f9c006207033f59538ea48a4fccc1eb6370bc6fc0c9bdf37759f5",
+      "native_code_cell": 4,
+      "stage": "Run source-sized first-interval amplification with exact overlap and independent full physical-state validation."
+    },
+    {
+      "index": 10,
+      "sha256": "719db395f67610eefc09330f4fa8d22081c4450dd3c4fb55bf2a9f555cd9bdc6",
+      "native_code_cell": 5,
+      "stage": "Compute the small target interval hint without running an unrequested long quantum circuit."
+    },
+    {
+      "index": 12,
+      "sha256": "595b0dec06909d7da6d8c63a0bb7eaa0e03155b2985433259063a2a9f9806e66",
+      "native_code_cell": 6,
+      "stage": "Prepare the original upper interval, shift by minus18modulo32 and retain all output words."
+    },
+    {
+      "index": 14,
+      "sha256": "a4fcdb6dc2a7961e5a36339f2f81a6425d93d6d9c57960d6c22846309ae6e0fd",
+      "native_code_cell": 7,
+      "stage": "Retain the source0.01amplitude tolerance and separately prove clean retained attenuation and compiler work."
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_partial_exponential_notebook.py",
+  "native_entrypoint": "examples.synthesis.applications.finance.autocallable_options.partial_exponential_state_preparation.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/autocallable_options/partial_exponential_state_preparation/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Original supplied overlap hints are approximate continuous ratios and remain refused. Native preparation derives true discrete overlap from fresh32element amplitudes using the existing approved correction policy. This does not add unchanged original coverage or claim that the unmodified source passed.",
+  "scope": "All seven source stages at the original five-bit width and rate 0.5: interval 15..29, the classical 3..13 diagnostic, interval 21..31 and a minus-18 shift modulo 32. Fresh amplitudes and exact discrete overlaps, explicit refusal of the original approximate hints, public native qfunc composition, independent absolute physical states, clean private attenuation and compiler workspace, the original 0.01 amplitude tolerance, and all 32 words in three inspected figures. Uses the existing approved overlap correction; does not add unchanged-original coverage. No frozen quantum counterpart, API or dependency changes; no hardware, speedup or scalability claim."
+}

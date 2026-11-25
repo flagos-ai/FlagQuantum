@@ -1,0 +1,786 @@
+"""Compose fresh-register effects with the existing arithmetic scheduler.
+
+All declared output storage stays live. Arithmetic and phase segments clean their
+own workspace immediately; only that proven-zero tail is reused by later calls.
+The returned circuit requires an all-zero entry state; this is an allocation
+precondition, not a claim inferred from an arbitrary external state.
+"""
+
+import math
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
+from types import MappingProxyType
+from typing import Literal
+
+import torch
+
+from ....core._composition import controlled_instruction, inverted_instruction
+from ....core.ir import CircuitIR, Instruction
+from ....noise import amplitude_damping_channel
+from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from ..._hybrid.verifier import Diagnostic
+from ...lowering.noise import _encode_channel_instruction
+from ...optimization.canonicalization import merge_self_inverse
+from ...optimization.commutation_cancellation import cancel_commuting_self_inverse
+from ...optimization.state_preparation_synthesis import _synthesize_real_state
+from ...registers._fourier_kernels import qft_instructions
+from ..semantics.borrowed_unitary import owned_unitary_layout
+from ..semantics.pauli_rotation import pauli_rotation_instructions
+from ..semantics.spectral_powers import lower_spectral_powers
+from ..semantics.unitary import unitary_instructions
+from ..verification.profile import _fail, _positive_integer, _width, uint_type
+from ..verification.register_profile import (
+    _ANGLE_GATES,
+    register_ports,
+    register_width,
+    semantic_hidden_width,
+    unitary_matrix,
+    verify_register_program,
+)
+from .arithmetic import (
+    ArithmeticCandidate,
+    BoundArithmetic,
+    Schedule,
+    ScheduleEvent,
+    _copy,
+    adjoint_value_candidate,
+)
+from .boolean import BooleanCandidateError, lower_boolean_value
+from .controls import _array_controlled_x as _array_controlled_x
+from .controls import _bounded_control_group as _bounded_control_group
+from .controls import _modular_exp_instructions as _modular_exp_instructions
+from .gate_tape import expand_gate_tape
+from .preparation import _uniform_interval as _uniform_interval
+from .register_expansion import expand_register_calls, is_register_function
+from .transforms import _type1_instructions as _type1_instructions
+from .transforms import _type2_instructions as _type2_instructions
+
+
+@dataclass(frozen=True)
+class RegisterCandidate:
+    """One composed circuit with actual per-segment cleanup/allocation evidence."""
+
+    circuit: CircuitIR
+    strategy: Schedule
+    registers: Mapping[str, tuple[int, ...]]
+    segments: tuple[ArithmeticCandidate, ...]
+    peak_workspace: int
+    recomputations: int
+
+
+def schedule_register_program(
+    program: HybridProgram,
+    functions: Sequence[HybridProgram] = (),
+    *,
+    n_qubits: int = 256,
+    max_operations: int = 100_000,
+    scheduling: Schedule = "retain",
+    boolean_values: bool = False,
+    _allow_empty_boolean: bool = False,
+    _clean_qubits: int | None = None,
+) -> RegisterCandidate:
+    """Lower verified fresh outputs without executing or inspecting any state."""
+    _positive_integer(max_operations, "max_operations")
+    if max_operations > 100_000 or scheduling not in {"retain", "recompute"}:
+        _fail("register.budget", "use a known schedule and at most 100000 operations")
+    verify_register_program(program, functions, max_qubits=n_qubits)
+    if _clean_qubits is not None and (
+        type(_clean_qubits) is not int or _clean_qubits < 0
+    ):
+        raise ValueError("clean decomposition capacity requires a nonnegative integer")
+    clean_qubits = n_qubits if _clean_qubits is None else min(n_qubits, _clean_qubits)
+    program = expand_register_calls(program, functions)
+    register_templates = {f.name: f for f in functions if is_register_function(f)}
+    functions = tuple(f for f in functions if not is_register_function(f))
+    labels, bindings, output_width = register_ports(program)
+    position = max(
+        (max(ports) + 1 for ports in bindings.values()), default=output_width
+    )
+    hidden_width = semantic_hidden_width(program)
+    local_width = position - output_width - hidden_width
+    instructions: list[Instruction] = []
+    segments: list[ArithmeticCandidate] = []
+    computed: dict[ValueId, ArithmeticCandidate] = {}
+    used_boolean = False
+    boolean_refusal: BooleanCandidateError | None = None
+    control_workspace = 0
+    arithmetic_workspace = 0
+    unitary_candidates: dict[tuple[str, int], RegisterCandidate] = {}
+    symbols = {f.name: f for f in functions}
+    operations = program.body.blocks[0].operations
+    local_ids = {op.results[0].id for op in operations if op.name == "qreg.local"}
+    permanent_position = max(
+        (max(wires) + 1 for value, wires in bindings.items() if value not in local_ids),
+        default=output_width,
+    )
+    live_locals: set[ValueId] = set()
+    normalization_cursor = 0
+
+    def normalize_closed_tail() -> None:
+        nonlocal normalization_cursor
+        # Normalize only a bounded suffix at closed helper/scratch boundaries.
+        # These existing passes remove proven inverse pairs, preserve absolute
+        # phase, and never infer a fresh-zero precondition for borrowed data.
+        start = max(normalization_cursor - 128, len(instructions) - 4096, 0)
+        tail = CircuitIR(n_qubits, tuple(instructions[start:]), dtype="complex128")
+        for _ in range(2):
+            reduced = merge_self_inverse(cancel_commuting_self_inverse(tail))
+            if len(reduced.instructions) == len(tail.instructions):
+                break
+            tail = reduced
+        instructions[start:] = tail.instructions
+        normalization_cursor = len(instructions)
+
+    skip_until = 0
+    for ordinal, op in enumerate(operations):
+        if ordinal < skip_until:
+            continue
+        if op.name == "qreg.local":
+            live_locals.add(op.results[0].id)
+        gates: tuple[Instruction, ...] = ()
+        if op.name == "qreg.gate_tape":
+            work = op.attributes["workspace"]
+            logical = tuple(
+                wire for value in op.operands[1:] for wire in bindings[value.id]
+            )
+            if position + work > n_qubits:
+                _fail("lowering.workspace", "unitary tape exceeds clean workspace", op)
+            tape_wires = (*logical, *range(position, position + work))
+            gates = expand_gate_tape(op, tape_wires)
+            control_workspace = max(control_workspace, work)
+        elif op.name == "qreg.unitary_call":
+            name = op.attributes["callee"]
+            call_position = max(
+                permanent_position,
+                max((max(bindings[value]) + 1 for value in live_locals), default=0),
+            )
+            cache_key = (name, call_position)
+            if cache_key not in unitary_candidates:
+                layout = owned_unitary_layout(register_templates[name])
+                _, _, width = register_ports(layout)
+                unitary_candidates[cache_key] = schedule_register_program(
+                    layout,
+                    (*functions, *register_templates.values()),
+                    n_qubits=width + n_qubits - call_position,
+                    max_operations=max_operations,
+                    scheduling=scheduling,
+                    boolean_values=boolean_values,
+                    _allow_empty_boolean=True,
+                    _clean_qubits=(
+                        None
+                        if _clean_qubits is None
+                        else max(width, width + clean_qubits - call_position)
+                    ),
+                )
+            nested = unitary_candidates[cache_key]
+            if len(nested.circuit.instructions) > max_operations - len(instructions):
+                _fail(
+                    "lowering.operations", "unitary call exceeds operation budget", op
+                )
+            width = sum(len(ports) for ports in nested.registers.values())
+            physical = {
+                wire: target
+                for relative, actual in zip(
+                    nested.registers.values(), op.operands[1:], strict=True
+                )
+                for wire, target in zip(relative, bindings[actual.id], strict=True)
+            }
+            physical.update(
+                (wire, call_position + wire - width)
+                for wire in range(width, nested.circuit.n_wires)
+            )
+            gates = tuple(
+                replace(gate, wires=tuple(physical[wire] for wire in gate.wires))
+                for gate in nested.circuit.instructions
+            )
+            if op.attributes.get("inverse"):
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
+            control_workspace = max(
+                control_workspace, call_position + nested.peak_workspace - position
+            )
+            for segment in nested.segments:
+                used_boolean |= segment.implementation == "boolean"
+                segments.append(
+                    replace(
+                        segment,
+                        circuit=replace(
+                            segment.circuit,
+                            n_wires=n_qubits,
+                            instructions=tuple(
+                                replace(
+                                    gate,
+                                    wires=tuple(physical[wire] for wire in gate.wires),
+                                )
+                                for gate in segment.circuit.instructions
+                            ),
+                        ),
+                        events=tuple(
+                            replace(
+                                event,
+                                allocation=tuple(
+                                    physical[wire] for wire in event.allocation
+                                ),
+                                scratch=tuple(physical[wire] for wire in event.scratch),
+                            )
+                            for event in segment.events
+                        ),
+                    )
+                )
+        elif op.name == "qreg.replay":
+            template = register_templates[op.attributes["callee"]]
+            names, _, width = register_ports(template)
+            nested = schedule_register_program(
+                template,
+                n_qubits=width + n_qubits - position,
+                max_operations=max_operations,
+                scheduling=scheduling,
+                _clean_qubits=(
+                    None
+                    if _clean_qubits is None
+                    else max(width, width + clean_qubits - position)
+                ),
+            )
+            repeat = op.attributes["count"]
+            if len(nested.circuit.instructions) * repeat > max_operations - len(
+                instructions
+            ):
+                _fail(
+                    "lowering.operations", "repeated cycle exceeds operation budget", op
+                )
+            physical = {
+                wire: target
+                for relative, actual in zip(
+                    names.values(), op.operands[1:], strict=True
+                )
+                for wire, target in zip(relative, bindings[actual.id], strict=True)
+            }
+            physical.update(
+                (width + bit, position + bit) for bit in range(nested.peak_workspace)
+            )
+            remapped = tuple(
+                replace(gate, wires=tuple(physical[wire] for wire in gate.wires))
+                for gate in nested.circuit.instructions
+            )
+            control_workspace = max(control_workspace, nested.peak_workspace)
+            gates = remapped * repeat
+        elif op.name == "qreg.reset":
+            wire = bindings[op.operands[1].id][-1 - op.attributes["index"]]
+            gates = (
+                _encode_channel_instruction(
+                    amplitude_damping_channel(
+                        1.0, dtype=torch.complex128, device="cpu"
+                    ),
+                    (wire,),
+                ),
+            )
+        elif op.name == "qreg.initialize":
+            gates = _copy(op.attributes["value"], bindings[op.operands[1].id])
+        elif op.name in {"qreg.prepare_amplitudes", "qreg.inplace_prepare_amplitudes"}:
+            wires = (
+                tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        op.operands[1:], op.attributes["indices"], strict=True
+                    )
+                )
+                if "indices" in op.attributes
+                else bindings[op.operands[1].id]
+            )
+            control_count = op.attributes.get("control_count", 0)
+            controls = wires[:control_count]
+            gates = _synthesize_real_state(
+                op.attributes["amplitudes"], wires[control_count:]
+            )
+            if op.attributes.get("inverse"):
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
+            if controls:
+                gates = tuple(
+                    controlled
+                    for gate in gates
+                    for controlled in controlled_instruction(gate, controls)
+                )
+        elif op.name == "qreg.unitary":
+            unitary_data = op.operands[1:]
+            control = None
+            if "control_index" in op.attributes:
+                control = bindings[unitary_data[-1].id][
+                    -1 - op.attributes["control_index"]
+                ]
+                unitary_data = unitary_data[:-1]
+            if "indices" in op.attributes:
+                wires = tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        unitary_data, op.attributes["indices"], strict=True
+                    )
+                )
+            else:
+                wires = bindings[unitary_data[0].id]
+            matrix = unitary_matrix(op.attributes["matrix"], len(wires), op)
+            needed = len(wires) - 2 + (control is not None) if len(wires) >= 4 else 0
+            scratch = tuple(range(position, min(position + needed, clean_qubits)))
+            shared = (
+                lower_spectral_powers(
+                    operations, ordinal, bindings, matrix, wires, scratch
+                )
+                if len(wires) == 5 and control is not None and scratch
+                else None
+            )
+            if shared is None:
+                if "power" in op.attributes:
+                    matrix = torch.linalg.matrix_power(matrix, op.attributes["power"])
+                gates = unitary_instructions(
+                    matrix, wires, op, () if control is None else (control,), scratch
+                )
+            else:
+                gates, skip_until = shared
+            if scratch:
+                used = {
+                    wire for gate in gates for wire in gate.wires if wire in scratch
+                }
+                if used:
+                    control_workspace = max(control_workspace, max(used) - position + 1)
+        elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
+            gates = qft_instructions(bindings[op.operands[1].id])
+            if op.name == "qreg.inverse_qft":
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
+        elif op.name == "qreg.type1_transform":
+            gates = _type1_instructions(bindings[op.operands[1].id])
+        elif op.name == "qreg.type2_transform":
+            data, *selectors = (bindings[value.id] for value in op.operands[1:])
+            gates = _type2_instructions(
+                op.attributes["kind"], data, selectors[0] if selectors else ()
+            )
+        elif op.name == "qreg.prepare_ghz":
+            first, *rest = bindings[op.operands[1].id]
+            gates = (
+                Instruction("h", (first,)),
+                *(Instruction("cx", (first, target)) for target in rest),
+            )
+        elif op.name == "qreg.modular_exp":
+            residue_ports, exponent = (bindings[v.id] for v in op.operands[1:])
+            gates, used_workspace = _modular_exp_instructions(
+                residue_ports, exponent, position, n_qubits, op
+            )
+            control_workspace = max(control_workspace, used_workspace)
+        elif op.name == "qreg.control_qft":
+            control_ports, data = (bindings[v.id] for v in op.operands[1:])
+            transform = qft_instructions(data)
+            if op.attributes.get("inverse"):
+                transform = tuple(
+                    inverted_instruction(gate) for gate in reversed(transform)
+                )
+            control_value = op.attributes.get("control_value", 1)
+            flips = tuple(
+                Instruction("x", (qubit,))
+                for bit, qubit in enumerate(reversed(control_ports))
+                if not (control_value >> bit) & 1
+            )
+            gates = (
+                *flips,
+                *(
+                    leaf
+                    for gate in transform
+                    for leaf in controlled_instruction(gate, control_ports)
+                ),
+                *reversed(flips),
+            )
+        elif op.name == "qreg.control_h":
+            control, target = (bindings[value.id][0] for value in op.operands[1:])
+            gates = controlled_instruction(Instruction("h", (target,)), (control,))
+        elif op.name == "qreg.pauli_rotation":
+            pauli_target = op.operands[1]
+            pauli_control = (
+                bindings[op.operands[2].id][-1 - op.attributes["control_index"]]
+                if "control_index" in op.attributes
+                else None
+            )
+            gates = pauli_rotation_instructions(
+                bindings[pauli_target.id],
+                op.attributes["support"],
+                op.attributes["angle"],
+                control=pauli_control,
+            )
+        elif op.name == "qreg.control_x":
+            if "indices" in op.attributes:
+                ports = tuple(
+                    bindings[value.id][-1 - index]
+                    for value, index in zip(
+                        op.operands[1:], op.attributes["indices"], strict=True
+                    )
+                )
+                controls, target_wire = ports[:-1], ports[-1]
+            else:
+                controls, target_ports = (
+                    bindings[value.id] for value in op.operands[1:]
+                )
+                target_wire = target_ports[0]
+            if (
+                _clean_qubits is None
+                and "control_state" in op.attributes
+                and len(controls) >= 5
+            ):
+                # Unhinted direct lowering retains its existing grouped masks.
+                gates, used_workspace = _bounded_control_group(
+                    Instruction("x", (target_wire,)), controls, position, clean_qubits
+                )
+            else:
+                gates, used_workspace = _array_controlled_x(
+                    controls, target_wire, position, clean_qubits, op
+                )
+            control_workspace = max(control_workspace, used_workspace)
+        elif op.name == "qreg.array_phase_flip":
+            ports = bindings[op.operands[1].id]
+            controls, target = ports[:-1], ports[-1]
+            if controls:
+                middle, used_workspace = _array_controlled_x(
+                    controls, target, position, clean_qubits, op
+                )
+                flip = Instruction("h", (target,))
+                gates = (flip, *middle, flip)
+                control_workspace = max(control_workspace, used_workspace)
+            else:
+                gates = (Instruction("z", (target,)),)
+        elif op.name == "qreg.control_phase" and "indices" in op.attributes:
+            ports = tuple(
+                bindings[value.id][-1 - index]
+                for value, index in zip(
+                    op.operands[1:], op.attributes["indices"], strict=True
+                )
+            )
+            rotation = Instruction(
+                "phase", (ports[-1],), {"theta": op.attributes["angle"]}
+            )
+            if "control_state" in op.attributes and len(ports) >= 6:
+                gates, used_workspace = _bounded_control_group(
+                    rotation, ports[:-1], position, n_qubits
+                )
+                control_workspace = max(control_workspace, used_workspace)
+            else:
+                gates = (
+                    controlled_instruction(rotation, ports[:-1])
+                    if len(ports) > 1
+                    else (rotation,)
+                )
+        elif op.name == "qreg.control_phase":
+            condition = bindings[op.operands[1].id][0]
+            angle = op.attributes["angle"]
+            if len(op.operands) == 2:
+                gates = (Instruction("phase", (condition,), {"theta": angle}),)
+            else:
+                target_bits = bindings[op.operands[2].id]
+                gates = tuple(
+                    Instruction(
+                        "cphase", (condition, bit), {"theta": math.ldexp(angle, index)}
+                    )
+                    for index, bit in enumerate(reversed(target_bits))
+                )
+        elif op.name == "qreg.uniform_interval":
+            gates = _uniform_interval(
+                bindings[op.operands[1].id],
+                op.attributes["start"],
+                op.attributes["stop"],
+            )
+        elif op.name == "qreg.rzz":
+            gates = (
+                Instruction(
+                    "rzz",
+                    bindings[op.operands[1].id],
+                    {"theta": op.attributes["angle"]},
+                ),
+            )
+        elif op.name == "qreg.pair_gate":
+            operands = op.operands[1:]
+            indices = op.attributes.get("indices", (0, 0))
+            ports = tuple(
+                bindings[value.id][-1 - index]
+                for value, index in zip(operands, indices, strict=True)
+            )
+            gates = (
+                Instruction(
+                    op.attributes["gate"],
+                    ports,
+                    params=(
+                        {"theta": op.attributes["angle"]}
+                        if "angle" in op.attributes
+                        else {}
+                    ),
+                ),
+            )
+        elif op.name == "qreg.gate":
+            ports = bindings[op.operands[1].id]
+            gates = (
+                Instruction(
+                    op.attributes["gate"],
+                    (ports[-1 - op.attributes["index"]],),
+                    params=(
+                        {"theta": op.attributes["angle"]}
+                        if op.attributes["gate"] in _ANGLE_GATES
+                        else {}
+                    ),
+                ),
+            )
+            if op.attributes.get("inverse"):
+                gates = (inverted_instruction(gates[0]),)
+        elif op.name == "qreg.uncompute":
+            segment = adjoint_value_candidate(computed.pop(op.operands[1].id))
+            segments.append(segment)
+            arithmetic_workspace = max(arithmetic_workspace, segment.peak_workspace)
+            gates = segment.circuit.instructions
+        elif op.name == "qreg.phase" and "callee" not in op.attributes:
+            angle = op.attributes["angle"]
+            if angle:
+                # P(theta) X P(theta) X = exp(i theta) I on any existing qubit.
+                rotation = Instruction("phase", (0,), params={"theta": angle})
+                flip = Instruction("x", (0,))
+                gates = (flip, rotation, flip, rotation)
+        elif op.name in {"qreg.compute", "qreg.xor", "qreg.phase"}:
+            phase = op.name == "qreg.phase"
+            actual = op.operands[1:] if phase else op.operands[2:]
+            # A wrapper preserves repeated actual aliases while the original
+            # binding verifier still requires disjoint entry argument ports.
+            unique = tuple(dict.fromkeys(actual))
+            name = f"{program.name}.{op.name.removeprefix('qreg.')}{ordinal}"
+            while name in symbols:
+                name += ".call"
+            borrowed = tuple(
+                Value(ValueId(name, index), uint_type(register_width(value)))
+                for index, value in enumerate(unique)
+            )
+            replacements = dict(zip(unique, borrowed, strict=True))
+            callee = symbols[op.attributes["callee"]]
+            returned = callee.body.blocks[0].operations[-1].operands[0]
+            result = Value(ValueId(name, len(unique)), returned.type)
+            wrapper = HybridProgram(
+                name,
+                Region(
+                    (
+                        Block(
+                            borrowed,
+                            (
+                                Operation(
+                                    "qint.call",
+                                    tuple(replacements[value] for value in actual),
+                                    (result,),
+                                    {"callee": callee.name},
+                                    location=op.location,
+                                ),
+                                Operation(
+                                    "qint.return", (result,), location=op.location
+                                ),
+                            ),
+                        ),
+                    )
+                ),
+            )
+            remaining = max_operations - len(instructions)
+            if remaining < 1:
+                _fail(
+                    "lowering.operations", "whole program exceeds operation budget", op
+                )
+            segment_functions = (*functions, wrapper)
+            inputs = {new.id: bindings[old.id] for old, new in replacements.items()}
+            output = (
+                ()
+                if phase
+                else bindings[op.operands[1].id][-_width(returned.type, n_qubits) :]
+            )
+            workspace = tuple(range(position, n_qubits))
+            if phase and "angle" in op.attributes:
+                angle = op.attributes["angle"]
+                if not angle:
+                    continue
+                width = _width(returned.type, n_qubits)
+                if width > len(workspace):
+                    _fail(
+                        "lowering.workspace", "phase result exceeds clean workspace", op
+                    )
+                try:
+                    angles = tuple(math.ldexp(angle, bit) for bit in range(width))
+                except OverflowError:
+                    _fail(
+                        "register.phase",
+                        "weighted phase angle exceeds finite range",
+                        op,
+                    )
+                value_output = workspace[:width]
+                segment = BoundArithmetic(
+                    segment_functions, name, inputs, value_output, workspace[width:]
+                ).lower(
+                    n_qubits=n_qubits, max_operations=remaining, scheduling=scheduling
+                )
+                adjoint = adjoint_value_candidate(segment)
+                rotations = tuple(
+                    Instruction("phase", (wire,), params={"theta": radians})
+                    for wire, radians in zip(
+                        reversed(value_output), angles, strict=True
+                    )
+                )
+                segment = replace(
+                    segment,
+                    circuit=replace(
+                        segment.circuit,
+                        instructions=(
+                            *segment.circuit.instructions,
+                            *rotations,
+                            *adjoint.circuit.instructions,
+                        ),
+                    ),
+                    events=(*segment.events, *adjoint.events),
+                    peak_workspace=width + segment.peak_workspace,
+                    recomputations=segment.recomputations + adjoint.recomputations,
+                )
+            else:
+                boolean = None
+                segment_refusal = None
+                canonical_predicate = len(output) == 1
+                if (boolean_values or canonical_predicate) and not phase:
+                    try:
+                        boolean = lower_boolean_value(
+                            segment_functions,
+                            inputs,
+                            output,
+                            entry=name,
+                            n_qubits=n_qubits,
+                            workspace=workspace,
+                            workspace_state="fresh_zero",
+                            max_operations=remaining,
+                            predicate_only=not boolean_values,
+                        )
+                    except BooleanCandidateError as error:
+                        if error.exhausted:
+                            raise
+                        segment_refusal = error
+                        if boolean_refusal is None:
+                            boolean_refusal = error
+                if boolean is not None:
+                    # Track individual ladder qubits, including cubes with multiple controls.
+                    trace: list[ScheduleEvent] = []
+                    live_scratch: set[int] = set()
+                    for gate in boolean.circuit.instructions:
+                        if gate.wires[-1] in boolean.workspace:
+                            wire = gate.wires[-1]
+                            action: Literal["compute", "uncompute"] = (
+                                "uncompute" if wire in live_scratch else "compute"
+                            )
+                            live_scratch.symmetric_difference_update((wire,))
+                            trace.append(
+                                ScheduleEvent(
+                                    action,
+                                    boolean.source_result,
+                                    (),
+                                    (wire,),
+                                    len(live_scratch),
+                                    1,
+                                )
+                            )
+                    segment = ArithmeticCandidate(
+                        boolean.circuit,
+                        scheduling,
+                        boolean.lifetimes,
+                        tuple(trace),
+                        len(boolean.workspace),
+                        0,
+                        implementation="boolean",
+                        implementation_rules=(
+                            (boolean.source_result, "bounded_anf_xor"),
+                        ),
+                    )
+                    used_boolean = True
+                else:
+                    segment = BoundArithmetic(
+                        segment_functions,
+                        name,
+                        inputs,
+                        output,
+                        workspace,
+                        "phase" if phase else "value",
+                    ).lower(
+                        n_qubits=n_qubits,
+                        max_operations=remaining,
+                        scheduling=scheduling,
+                    )
+                    if segment_refusal is not None:
+                        segment = replace(
+                            segment,
+                            implementation_errors=(
+                                Diagnostic(
+                                    "lowering.boolean.refused", str(segment_refusal)
+                                ),
+                            ),
+                        )
+            segment = replace(
+                segment,
+                circuit=replace(
+                    segment.circuit, n_wires=position + segment.peak_workspace, shape=()
+                ),
+            )
+            segments.append(segment)
+            arithmetic_workspace = max(arithmetic_workspace, segment.peak_workspace)
+            if op.name == "qreg.compute":
+                computed[op.operands[1].id] = segment
+            gates = segment.circuit.instructions
+        if "control_state" in op.attributes:
+            operands = op.operands[1:]
+            count = (
+                len(operands) - 1
+                if op.name == "qreg.control_x"
+                else (
+                    len(operands)
+                    if op.name == "qreg.control_phase"
+                    else op.attributes["control_count"]
+                )
+            )
+            pattern = op.attributes["control_state"]
+            flips = tuple(
+                Instruction("x", (bindings[value.id][-1 - wire],))
+                for bit, (value, wire) in enumerate(
+                    zip(operands, op.attributes["indices"], strict=True)
+                )
+                if bit < count and not pattern & (1 << bit)
+            )
+            gates = (*flips, *gates, *reversed(flips))
+        if len(instructions) + len(gates) > max_operations:
+            _fail("lowering.operations", "whole program exceeds operation budget", op)
+        instructions.extend(gates)
+        if op.name == "qreg.release":
+            live_locals.remove(op.operands[1].id)
+        if op.name in {"qreg.release", "qreg.unitary_call"}:
+            normalize_closed_tail()
+    if boolean_values and not used_boolean and not _allow_empty_boolean:
+        if boolean_refusal is not None:
+            raise boolean_refusal
+        raise BooleanCandidateError("unsupported: no unsigned value segment")
+    epochs = tuple(
+        op
+        for op in operations
+        if op.name
+        not in {
+            "qreg.declare",
+            "qreg.hidden",
+            "qreg.allocate",
+            "qreg.drop",
+            "qreg.return",
+        }
+    )
+    metadata: dict[str, int] = {}
+    if len(epochs) == 1 and epochs[0].name == "qreg.replay":
+        metadata["construction_reset_repetitions"] = epochs[0].attributes["count"]
+    elif (
+        len(epochs) == 1
+        and epochs[0].name == "qreg.gate_tape"
+        and epochs[0].attributes["workspace"]
+    ):
+        metadata["construction_basis_workspace_prefix"] = output_width
+    elif any(op.name == "qreg.unitary_call" for op in epochs):
+        # This is a layout hint, not a zero-workspace attestation. Simulation
+        # independently proves its supported gate-by-gate workspace map.
+        metadata["construction_basis_workspace_prefix"] = output_width + hidden_width
+    return RegisterCandidate(
+        CircuitIR(n_qubits, tuple(instructions), dtype="complex128", metadata=metadata),
+        scheduling,
+        MappingProxyType(labels),
+        tuple(segments),
+        local_width + max(control_workspace, arithmetic_workspace),
+        sum(s.recomputations for s in segments),
+    )

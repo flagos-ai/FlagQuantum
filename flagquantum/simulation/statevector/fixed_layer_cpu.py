@@ -152,14 +152,9 @@ def native_fused_rotation_layer_compile_enabled() -> bool:
 def native_rotation_clifford_fusion_enabled() -> bool:
     """Whether disjoint CX matchings may join native rotation tiles."""
 
-    return os.getenv(
+    return native_cpu_one_qubit_layer_available() and os.getenv(
         "FQ_CPU_NATIVE_ROTATION_CLIFFORD_FUSION", "1"
-    ).strip().lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
-    }
+    ).strip().lower() not in {"0", "false", "off", "no"}
 
 
 def fuse_native_rotation_clifford_layers(

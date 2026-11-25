@@ -1,0 +1,73 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "acf122628b4da4d6bce8eecde1a2a39ac7fd9d4df28d7c20dadf68ccb5cad295",
+  "git_blob_sha1": "e6da6155183a6fd749409ff4e8f6d5b0185e2058",
+  "scope": "All twelve source stages, four Pauli terms at original time 22 and degree 33, two data and four block/response bits, regenerated even and odd QSVT phases and the source 1e-7 absolute tolerance.",
+  "native_semantic_adaptations": "Generate a seeded input on the source's original four-dimensional space. Recompute Bessel coefficients by midpoint quadrature and fit symmetric phases with the correct parity. Use bounded exact matrix instructions for the full projector streams, then compare the zero-block projection with the complex matrix exponential and check every amplitude independently.",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.hamiltonian_simulation_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qsvt_hamiltonian_simulation_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "sha256": "423a375a6569eae58f71bb3891a3cffdfa1f91cfe73cb8e13373e5bf78517f05"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "ab07f4fa444c7a5b34cd824d9927a39fff8d20e0326a366cdc1dac5c88996653"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "72d2dd93f90292ac91be27b3a3423ecbdf05b09a105ec3b5709de68f111eb985"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "cf6f457fa65af0b63829339ce65a57a5bbf730eee562d82f0250309f0856f1ce"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "bd3a4ef1d1c278d82d9b8332129afbe33042e54f63e2b642e144cf15d9797de2"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "38820ce00cf0a55c9e19be7105cbf1f28cf6d452306fc0a6be9f3e47247f1127"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "6543e4d5b2d08b5008fc7da4f284640769f6e7a0bd9e4074ac1049bbfa027f6a"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "87f66ebad9cc20b993792a1939e7f00d4bc2c69f0d7a17e3b7e11777d05e74b3"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 9,
+      "sha256": "aca81974bb455c272f8bf8ce96d85d90b45e101a4694827c4d921d0546743ec5"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 10,
+      "sha256": "a017c1c4baa7ad0c21c081e9f0c3d2d7a16b8049ee202d92882445c80da52dbb"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 11,
+      "sha256": "3efd7e3c54015e0f986241be4df011dc4f5e517f285dafff157f049cc6c1e11d"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 12,
+      "sha256": "ab5b2979f3039e7f9a38b0fbc14ee5d0a1a11418eeddd3699ec4e474a4aa4d3b"
+    }
+  ]
+}

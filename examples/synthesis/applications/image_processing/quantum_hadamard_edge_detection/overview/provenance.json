@@ -1,0 +1,123 @@
+{
+  "upstream_path": "applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "1fe877731bfe52f8884190fd3631161c9d867199a4f0b0aa72e89bf7da40a986",
+  "git_blob_sha1": "995c1576646ff3dec98d9a780e19e75d9570faae",
+  "original_assets": [
+    {
+      "path": "applications/image_processing/quantum_hadamard_edge_detection/Marina Bay Sands 128.png",
+      "native_path": "data/marina-bay-sands-128.png",
+      "sha256": "b9e00ef9e8ce0930403514baab09e19f8005cb032f3e3a309e7e68c243018f1f",
+      "git_blob_sha1": "f86210067707ea7098d564afa4b72e8e4df1139b"
+    }
+  ],
+  "scope": "All 17 original stages, unmodified 128-by-128 RGB input, all 16,384 amplitudes with explicit gates, two coherent cyclic differences and 200,000 finite samples.",
+  "native_semantic_adaptations": "Use fast Walsh coefficients for the positive real preparation and compose a native qfunc for the detector. Keep direction bits to verify the complete state, then take their marginal for the source readout. Report exact diagnostics separately from finite draws. Float64 normalization; reproducible local seed. Local instruction metrics replace hosted resources and viewer.",
+  "native_entrypoint": "examples.synthesis.applications.image_processing.quantum_hadamard_edge_detection.overview.main",
+  "native_notebook": "examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_image_edge_detection_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Set up local FlagQuantum execution and image plotting.",
+      "sha256": "48782ba480ad73b697a40b08d2823d129f170ec39d22ee49d13116e652349475"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "stage": "Load the original RGB asset.",
+      "sha256": "dd2378183a8b97fdc6bd5682133341f1b3c778a20fdf47d20c46bbabd0ef563c"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 3,
+      "stage": "Reproduce the original posterization preview. Keep the source photo for amplitude encoding.",
+      "sha256": "09bc05e42197312b38ff3a2e786c97303c81c80bcae8931613fd3c4e9af80519"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "stage": "Convert unmodified pixel magnitudes to unit amplitudes.",
+      "sha256": "3b07a5547e36175dce6b8587e66fc4d5f7f6c3cf82c2b026db4ec8acf8a47dff"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "stage": "Compute the original seven bits along each axis.",
+      "sha256": "aca411820c9172be73af006e4d499c643b42502f8a66308d99b8fd5041a8f68a"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "stage": "Preserve all 16,384 pixel amplitudes.",
+      "sha256": "3078007685fc617a41595e248e2a863839a6295d07ea8491435f6c2d1cf2abe9"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 7,
+      "stage": "Prepare the real amplitude vector and compose both cyclic shifts and their edge flag.",
+      "sha256": "01e0453f4cac17446a195733311cce8438df71dde18e758a5285e9471dbe5015"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Check the three restored compiler work bits before taking the direction-bit marginal.",
+      "sha256": "35c1ba17f33953dd3431e1c384d47adb2ed65d3b2e6aa6beaf418846065c1b1a"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 9,
+      "stage": "Apply the source width bound to the complete circuit.",
+      "sha256": "a5c4aac9553fb2d19e1b920d20ab4043ecd06845c1ab1ec267689845d181c20a"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "stage": "Report the actual prepared and composed resources.",
+      "sha256": "851e2ac3a0ca94b281c388fde9f28e18d1d62127f832d2eb72e748099695641c"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 11,
+      "stage": "Inspect the emitted rotation and controlled shift resources.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 12,
+      "stage": "Retain all 200,000 finite local draws and report actual edge-flag events.",
+      "sha256": "335b443b0338c0ec903a0d5b4e7f3636380ff901f999737d8090d6769983956d"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "stage": "Reconstruct the sampled image from square roots of measured joint frequencies.",
+      "sha256": "6b74f3269e09e2eab9f2e4249bd0ccc6f594b70db169db5b150bdc8fc370a093"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "stage": "Plot the sampled pixel magnitude histogram.",
+      "sha256": "d95166be187ad6f5e993a9b97091fba5f59899e9a7a92b86004667e0c28d1df0"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 15,
+      "stage": "Threshold the joint magnitudes at 0.003 and inspect the thresholded histogram.",
+      "sha256": "6af9cfb09cb5f8d0ec340ea291ad112933c3156e29a10984da34fb65c996e0b9"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 16,
+      "stage": "Display the transposed finite-shot result with the exact edge comparison.",
+      "sha256": "977b5228fb45b1a3910dc9985c32f0e550a4dc81135f4f7753d7fe953913b5e4"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 17,
+      "stage": "Check that the original photo stayed unmodified through the full workflow.",
+      "sha256": "eb5c7194b94fc6cf5885eb6349292bfe73909ef834876362ea3379431432667d"
+    }
+  ]
+}

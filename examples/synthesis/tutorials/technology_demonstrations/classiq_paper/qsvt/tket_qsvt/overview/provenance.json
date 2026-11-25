@@ -1,0 +1,29 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example.ipynb",
+  "original_sha256": "0d5ad9fc6cba3af64ff5f02a4e57f863a0bb80f620fe2986015c544149519369",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "4770e4ec5d042a0a5f96b2ca2e1287ba03931ddb80912dd0ae866d6c5ae31427"
+    },
+    {
+      "index": 4,
+      "sha256": "4f15e07a38407aab61ba5a43552077f7b7e952546cda27c2f94d35f9c44318b1"
+    },
+    {
+      "index": 5,
+      "sha256": "2d62d1f2027a5395706ae14aacfb2d8e8755b0969892cad98a01e248ffd3a62b"
+    },
+    {
+      "index": 7,
+      "sha256": "9ddb3ad6260b762cc9273731e96fa59c0acc8903c0bc74b9e72cf4c594a615dd"
+    }
+  ],
+  "scope": "Native reconstruction of the commented Tket QSVT reference: degree three, six data bits, four exact phases, literal half-turn rotations, non-diagonal reflection and lexicographic CircBox positional mapping. Actual CX/U3 costs and local durations. No foreign SDK execution, optimizer or timing equivalence.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.qsvt.tket_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_tket_paper_qsvt_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "28c8aca0cf3f8d01a0af5892ca734fcf7b2bac6c",
+  "native_semantic_adaptations": "The entire source is commented. Interpret scalar control_state=0 as one false control without certifying foreign constructor syntax. Preserve half-turn RZ, including the pi-squared adder angle in radians; this adder is not modular arithmetic. Preserve X/H on data[0] while the zero-controlled X targets data[5]. CircBox orders internal block before data, while the source passes data before block; retain the resulting permutation at every U/U-dagger call. Add explicit local budgets of ten physical bits, zero work, 20,000 native operations and 64 MiB; the source has no width ceiling. Expand source RX/RZ into exact U3 before generic quarter-turn conversion, then use exact S/SDG rules to preserve absolute phase. No shared conversion table is changed."
+}

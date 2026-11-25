@@ -1,0 +1,50 @@
+name: Download artifact with a bounded retry
+description: Retry artifact transport once using a separate temporary directory.
+inputs:
+  name:
+    description: Exact artifact name from this workflow run.
+    default: ""
+  pattern:
+    description: Artifact name pattern from this workflow run.
+    default: ""
+  merge-multiple:
+    description: Merge files from matched artifacts into the output directory.
+    default: "false"
+outputs:
+  path:
+    description: Directory of the successful download.
+    value: ${{ steps.first.outcome == 'success' && format('{0}/first', steps.stage.outputs.root) || format('{0}/retry', steps.stage.outputs.root) }}
+runs:
+  using: composite
+  steps:
+    - id: stage
+      shell: bash
+      env:
+        FQ_ARTIFACT_NAME: ${{ inputs.name }}
+        FQ_ARTIFACT_PATTERN: ${{ inputs.pattern }}
+      run: |
+        if [[ ( -n "$FQ_ARTIFACT_NAME" && -n "$FQ_ARTIFACT_PATTERN" ) || ( -z "$FQ_ARTIFACT_NAME" && -z "$FQ_ARTIFACT_PATTERN" ) ]]; then
+          echo "::error::Specify exactly one artifact name or pattern."
+          exit 1
+        fi
+        root="$(mktemp -d "$RUNNER_TEMP/fq-download.XXXXXXXX")"
+        mkdir "$root/first" "$root/retry"
+        echo "root=$root" >> "$GITHUB_OUTPUT"
+    - id: first
+      uses: actions/download-artifact@v8.0.2
+      continue-on-error: true
+      with:
+        name: ${{ inputs.name }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+        digest-mismatch: error
+        path: ${{ steps.stage.outputs.root }}/first
+    - id: retry
+      if: ${{ !cancelled() && steps.first.outcome == 'failure' }}
+      uses: actions/download-artifact@v8.0.2
+      with:
+        name: ${{ inputs.name }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+        digest-mismatch: error
+        path: ${{ steps.stage.outputs.root }}/retry

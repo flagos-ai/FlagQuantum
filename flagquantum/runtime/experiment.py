@@ -34,7 +34,12 @@ from ._experiment_codec import (
     read_json,
 )
 from .execution_plan import ExecutionPlan
-from .execution_plan_contract import _compiler_identity, _validate_plan_payload
+from .execution_plan_contract import (
+    _compiler_identity,
+    _validate_plan_payload,
+    has_initial_state_extension,
+    has_runtime_inputs_extension,
+)
 from .result import ExecutionResult, MeasurementResult
 
 _SCHEMA = "flagquantum.experiment"
@@ -153,6 +158,19 @@ def _prepare(
         else ensure_circuit_ir(program)
     )
     if result is None:
+        if supplied_plan is not None and (
+            has_initial_state_extension(supplied_plan)
+            or has_runtime_inputs_extension(supplied_plan)
+        ):
+            requirement = (
+                "initial_state"
+                if has_initial_state_extension(supplied_plan)
+                else "runtime inputs"
+            )
+            raise SerializationError(
+                "saving an external-input plan requires its result; a program-only FQX "
+                f"would discard the {requirement} requirement"
+            )
         return ir, None, None, None
     if not isinstance(result.plan, ExecutionPlan):
         raise SerializationError(

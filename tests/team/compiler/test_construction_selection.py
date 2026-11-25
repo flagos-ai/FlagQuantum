@@ -1,22 +1,34 @@
 """Finite candidates, real target costs, deterministic policy and recovery."""
 
+from collections.abc import Callable
 from dataclasses import replace
+from typing import Any, NoReturn
 
 import pytest
 
-from examples.synthesis_selection import addition, polynomial, pressure, product
-from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler import ResourceEstimate, estimate_resources
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
+    Selection,
     select_arithmetic,
 )
-from flagquantum.compiler._construction.target import Target, compile_target
+from flagquantum.compiler._construction.scheduling.target import (
+    Target,
+    TargetProduct,
+    compile_target,
+)
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import BasisConversionError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from tools.synthesis_compiler_examples.selection.main import (
+    addition,
+    polynomial,
+    pressure,
+    product,
+)
 
 pytestmark = pytest.mark.unit
 BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
@@ -30,7 +42,8 @@ def branch_pressure(x: int, y: int) -> int:
     return a * b
 
 
-def _select(**kwargs):
+def _select(**kwargs: Any) -> Selection:
+    """Exercise valid selection controls and intentionally invalid test inputs."""
     graph = capture(branch_pressure, {"x": 1, "y": 1})
     return select_arithmetic((graph,), entry=graph.name, **kwargs)
 
@@ -38,7 +51,9 @@ def _select(**kwargs):
 @pytest.mark.parametrize("function", [addition, product, polynomial, pressure])
 @pytest.mark.parametrize("width", [1, 2])
 @pytest.mark.parametrize("target", [Target(), Target(basis=BASIS)])
-def test_complete_cost_matrix_and_nondominated_default(function, width, target) -> None:
+def test_complete_cost_matrix_and_nondominated_default(
+    function: Callable[[int, int], int], width: int, target: Target
+) -> None:
     graph = capture(function, {"x": width, "y": width + (function is addition)})
     result = select_arithmetic((graph,), entry=graph.name, target=target)
     assert result.complete and result.selected is not None
@@ -64,9 +79,11 @@ def test_complete_cost_matrix_and_nondominated_default(function, width, target) 
             assert set(row.resources.operation_counts) <= set(target.basis)
     chosen = result.selected
     c = chosen.resources
+    assert c is not None and chosen.arithmetic is not None
     costs = (c.n_qubits, c.depth, c.n_operations, chosen.arithmetic.peak_workspace)
     for row in result.rows:
         r = row.resources
+        assert r is not None and row.arithmetic is not None
         other = (r.n_qubits, r.depth, r.n_operations, row.arithmetic.peak_workspace)
         assert not (
             all(a <= b for a, b in zip(other, costs, strict=True)) and other != costs
@@ -76,27 +93,32 @@ def test_complete_cost_matrix_and_nondominated_default(function, width, target) 
 def test_constraints_and_objectives_select_real_different_schedules() -> None:
     narrow = _select(constraints=Constraints(CircuitLimits(max_qubits=17)))
     shallow = _select(constraints=Constraints(CircuitLimits(max_operations=103)))
+    assert narrow.selected is not None and shallow.selected is not None
     assert narrow.selected.strategy == "recompute"
     assert shallow.selected.strategy == "retain"
-    assert _select(objective="depth").selected.strategy == "retain"
-    assert (
-        _select(constraints=Constraints(max_workspace=12)).selected.strategy
-        == "recompute"
-    )
+    depth = _select(objective="depth")
+    assert depth.selected is not None and depth.selected.strategy == "retain"
+    bounded = _select(constraints=Constraints(max_workspace=12))
+    assert bounded.selected is not None and bounded.selected.strategy == "recompute"
     assert _select().ranking_version == 1
     with pytest.raises(TypeError):
-        narrow.registers["x"] = (7,)
+        invalid_mutation: Any = narrow.registers
+        invalid_mutation["x"] = (7,)
 
 
-def test_determinism_ignores_elapsed_observations(monkeypatch) -> None:
-    import flagquantum.compiler._construction.selection as selection
+def test_determinism_ignores_elapsed_observations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
     first = _select()
     monkeypatch.setattr(selection, "perf_counter", lambda: 1e9)
     second = _select()
+    assert first.selected is not None and second.selected is not None
     assert first.selected.strategy == second.selected.strategy
-    assert [r.target.executable.content_hash for r in first.rows] == [
-        r.target.executable.content_hash for r in second.rows
+    assert all(row.target is not None for row in (*first.rows, *second.rows))
+    assert [r.target.executable.content_hash for r in first.rows if r.target] == [
+        r.target.executable.content_hash for r in second.rows if r.target
     ]
 
 
@@ -137,7 +159,9 @@ def test_all_violations_and_every_combined_recovery_is_retried() -> None:
         ConstructionBudget(qubits=3),
     ],
 )
-def test_incomplete_budget_never_selects_best_so_far(budget) -> None:
+def test_incomplete_budget_never_selects_best_so_far(
+    budget: ConstructionBudget,
+) -> None:
     failed = _select(budget=budget)
     assert not failed.complete and failed.selected is None
     assert not failed.recoveries and len(failed.rows) == 2
@@ -147,7 +171,7 @@ def test_incomplete_budget_never_selects_best_so_far(budget) -> None:
 
 
 @pytest.mark.parametrize("value", [True, -1, 1.5])
-def test_discrete_workspace_rejects_nonintegers(value) -> None:
+def test_discrete_workspace_rejects_nonintegers(value: Any) -> None:
     with pytest.raises(ValueError):
         Constraints(max_workspace=value)
 
@@ -156,7 +180,9 @@ def test_discrete_workspace_rejects_nonintegers(value) -> None:
     "kwargs",
     [{"qubits": True}, {"qubits": 257}, {"operations": 0}, {"candidate_checks": 3}],
 )
-def test_construction_budgets_are_distinct_bounded_discrete_values(kwargs) -> None:
+def test_construction_budgets_are_distinct_bounded_discrete_values(
+    kwargs: dict[str, Any],
+) -> None:
     with pytest.raises(ValueError):
         ConstructionBudget(**kwargs)
 
@@ -187,7 +213,7 @@ def test_unknown_basis_and_valid_conversion_gap_have_distinct_failures() -> None
     with pytest.raises(BasisConversionError, match="unknown opcode"):
         Target(basis=("made_up",))
     gap = _select(
-        target=Target(basis=("u3", "cx")),
+        target=Target(basis=("cx",)),
         preparation=CircuitIR(2, (Instruction("h", (0,)),)),
     )
     assert gap.complete and gap.selected is None
@@ -214,12 +240,14 @@ def test_explicit_topologies_are_not_resized_or_substituted() -> None:
         Target(couplings=(CouplingMap(2, ((0, 1),)), CouplingMap(2, ((0, 1),))))
 
 
-def test_target_transform_replacement_uses_same_consumer(monkeypatch) -> None:
-    import flagquantum.compiler._construction.selection as selection
+def test_target_transform_replacement_uses_same_consumer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
-    recorded = {}
+    recorded: dict[str, TargetProduct] = {}
 
-    def live(source, target, max_operations):
+    def live(source: CircuitIR, target: Target, max_operations: int) -> TargetProduct:
         result = compile_target(source, target, max_operations)
         recorded[source.content_hash] = result
         return result
@@ -227,13 +255,14 @@ def test_target_transform_replacement_uses_same_consumer(monkeypatch) -> None:
     monkeypatch.setattr(selection, "compile_target", live)
     first = _select()
 
-    def replay(source, target, max_operations):
+    def replay(source: CircuitIR, target: Target, max_operations: int) -> TargetProduct:
         assert max_operations == 100_000 and target == Target()
         return recorded[source.content_hash]
 
     monkeypatch.setattr(selection, "compile_target", replay)
     second = _select()
     assert [r.resources for r in first.rows] == [r.resources for r in second.rows]
+    assert first.selected is not None and second.selected is not None
     assert first.selected.strategy == second.selected.strategy
 
 
@@ -251,26 +280,69 @@ def test_routed_request_is_deterministic_even_after_topology_cache_use() -> None
         coupling.shortest_path(0, coupling.n_qubits - 1)
     second = _select(target=topology)
     assert first.selected is not None and second.selected is not None
-    assert [r.target.content_identities for r in first.rows] == [
-        r.target.content_identities for r in second.rows
+    assert all(row.target is not None for row in (*first.rows, *second.rows))
+    assert [r.target.content_identities for r in first.rows if r.target] == [
+        r.target.content_identities for r in second.rows if r.target
     ]
 
 
-def test_stale_candidate_stage_is_refused_without_recompiling(monkeypatch) -> None:
-    import flagquantum.compiler._construction.target as target_module
-    from flagquantum.compiler._construction.target import TargetError
+def test_stale_candidate_stage_is_refused_without_recompiling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import flagquantum.compiler._construction.scheduling.target as target_module
+    from flagquantum.compiler._construction.scheduling.target import TargetError
 
     report = _select()
+    assert report.selected is not None and report.selected.target is not None
     product = report.selected.target
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: object, **kwargs: object) -> NoReturn:
         raise AssertionError("validation must not compile")
 
     monkeypatch.setattr(target_module, "compile", forbidden)
     product.validate()
-    product.submitted.metadata["changed_after_selection"] = True
+    metadata = product.submitted.metadata
+    assert isinstance(metadata, dict)
+    metadata["changed_after_selection"] = True
     with pytest.raises(TargetError, match="changed"):
         product.validate()
+
+
+def test_target_validation_reads_each_shared_object_once_and_detects_later_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.compiler._construction.scheduling.target import TargetError
+    from flagquantum.compiler.layout import Layout
+
+    program = CircuitIR(1, (Instruction("h", (0,)),))
+    original = CircuitIR.content_hash.fget
+    assert original is not None
+    calls: list[int] = []
+
+    def digest(value: CircuitIR) -> str:
+        calls.append(id(value))
+        return original(value)
+
+    monkeypatch.setattr(CircuitIR, "content_hash", property(digest))
+    target = TargetProduct(
+        program,
+        program,
+        tuple(
+            (name, program)
+            for name in ("source", "submitted", "normalized", "executable")
+        ),
+        (),
+        Layout(range(1)),
+        None,
+        0.0,
+    )
+    assert calls == [id(program)]
+    target.validate()
+    assert calls == [id(program)] * 2
+    program.metadata["changed"] = True
+    with pytest.raises(TargetError, match="changed"):
+        target.validate()
+    assert calls == [id(program)] * 3
 
 
 def test_intermediate_conversion_budget_is_not_reported_as_infeasibility() -> None:
@@ -285,7 +357,7 @@ def test_intermediate_conversion_budget_is_not_reported_as_infeasibility() -> No
 def test_conditioned_and_symbolic_preparations_fail_before_candidate_construction() -> (
     None
 ):
-    from flagquantum.compiler._construction.target import TargetError
+    from flagquantum.compiler._construction.scheduling.target import TargetError
     from flagquantum.core.parameters import Parameter
 
     for instruction in (
@@ -302,10 +374,12 @@ def test_conditioned_and_symbolic_preparations_fail_before_candidate_constructio
         )
 
 
-def test_selection_performs_no_quantum_execution(monkeypatch) -> None:
+def test_selection_performs_no_quantum_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum as fq
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: object, **kwargs: object) -> NoReturn:
         raise AssertionError("Compiler candidate search cannot plan or execute")
 
     monkeypatch.setattr(fq, "plan", forbidden)
@@ -322,7 +396,9 @@ def test_selection_performs_no_quantum_execution(monkeypatch) -> None:
         {"couplings": (None,)},
     ],
 )
-def test_target_controls_reject_ambiguous_or_invalid_types(kwargs) -> None:
+def test_target_controls_reject_ambiguous_or_invalid_types(
+    kwargs: dict[str, Any],
+) -> None:
     with pytest.raises(TypeError):
         Target(**kwargs)
 
@@ -336,13 +412,15 @@ def test_discrete_controls_and_unadmitted_preparation_shapes_fail_early() -> Non
     with pytest.raises(ValueError, match="local CPU"):
         Target(config=RuntimeConfig(device="cuda"))
     with pytest.raises(TypeError, match="shared"):
-        Constraints(limits={"max_qubits": 9})
+        invalid_limits: Any = {"max_qubits": 9}
+        Constraints(limits=invalid_limits)
     with pytest.raises(TypeError, match="Constraints"):
         _select(constraints={"max_qubits": 9})
     with pytest.raises(ValueError, match="objective"):
         _select(objective="fastest")
     with pytest.raises(ValueError):
-        Constraints(max_workspace=torch.tensor(5))
+        invalid_workspace: Any = torch.tensor(5)
+        Constraints(max_workspace=invalid_workspace)
     with pytest.raises(TypeError, match="explicit CircuitIR"):
         _select(preparation=fq.Circuit(2))
     with pytest.raises(ValueError, match="input/output"):
@@ -350,15 +428,15 @@ def test_discrete_controls_and_unadmitted_preparation_shapes_fail_early() -> Non
 
 
 def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import flagquantum.compiler._construction.selection as selection
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
     # Synthetic estimator fixture exercises policy only, not numerical evidence
     # or a claim that these inflated costs are a real Runtime execution.
-    original = selection.estimate_resources
+    original = estimate_resources
 
-    def expensive_recomputation(program):
+    def expensive_recomputation(program: CircuitIR) -> ResourceEstimate:
         costs = original(program)
         return (
             replace(costs, n_operations=250, depth=200)
@@ -368,7 +446,7 @@ def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
 
     monkeypatch.setattr(selection, "estimate_resources", expensive_recomputation)
     report = _select(constraints=Constraints(CircuitLimits(max_qubits=17)))
-    assert report.selected.strategy == "recompute"
+    assert report.selected is not None and report.selected.strategy == "recompute"
     assert not report.rows[0].feasible
     assert any(
         d.code == "selection.tradeoff" and "retain" in d.message
@@ -377,7 +455,7 @@ def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
 
 
 def test_internal_ssa_scopes_are_not_parameter_names() -> None:
-    from flagquantum.compiler._construction.profile import uint_type
+    from flagquantum.compiler._construction.verification.profile import uint_type
     from flagquantum.compiler._hybrid.model import (
         Block,
         HybridProgram,
@@ -409,7 +487,13 @@ def test_internal_ssa_scopes_are_not_parameter_names() -> None:
     assert anonymous.selected is not None and named.selected is not None
     assert anonymous.registers == {"arg0": (0,), "arg1": (1,), "result": (2, 3)}
     assert named.registers == {"x": (0,), "y": (1,), "result": (2, 3)}
-    for names in (("x",), ("x", "x"), ("x", "result"), ("x", 1)):
+    invalid_names: tuple[tuple[Any, ...], ...] = (
+        ("x",),
+        ("x", "x"),
+        ("x", "result"),
+        ("x", 1),
+    )
+    for names in invalid_names:
         with pytest.raises(ValueError, match="input_names"):
             select_arithmetic((graph,), entry="sum", input_names=names)
     with pytest.raises(TypeError, match="input_names"):

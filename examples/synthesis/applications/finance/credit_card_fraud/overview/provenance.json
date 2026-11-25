@@ -1,0 +1,175 @@
+{
+  "upstream_path": "applications/finance/credit_card_fraud/credit_card_fraud.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "81c781c37917b3a6e8979e8a28ee002f9ccbe4f87014b71af7979ce632db1e6f",
+  "git_blob_sha1": "4e05d84b1daab1d507d4a4f60902a70d62247a89",
+  "scope": "All 26 source code stages, all 948 original CSV rows, original 125/60/60 splits, both t-SNE plots, three PCA features, exact native overlap states and all five classifier results.",
+  "native_semantic_adaptations": "Read the pinned external CSV separately. Use the frozen native feature-map helper for freshly transformed points and local finite binomial counts instead of hosted overlap sampling. Keep all preprocessing steps and four classical comparisons.",
+  "native_entrypoint": "examples.synthesis.applications.finance.credit_card_fraud.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/credit_card_fraud/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_credit_card_fraud_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "stage": "Use the installed optional scientific example environment.",
+      "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Use local Matplotlib and scikit-learn for the visualizations.",
+      "sha256": "2ac7f9a7b636054ffdc21bb6c873b9f2c40bab3973f9bb72f8856228a1a411d3"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Import the native circuit, data preprocessing and classifier stages.",
+      "sha256": "538891462a2324af35276ac997ebbb5f9f4cd01dcd0a5e47718f9960bf2e5413"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Keep the original t-SNE seed for both raw split projections.",
+      "sha256": "1843963052383877129e39e96d460665a9bed01ab9fb03a5a5dcbefa7175a27c"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "stage": "Locate the pinned teaching CSV.",
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Read every row from the original source asset and apply the preprocessing workflow.",
+      "sha256": "c6b66adf4731ed33daea2df0447a3c250757c8a93b214db248d52df3808cce3f"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "stage": "Keep the original class counts in all three partitions.",
+      "sha256": "10433a952ef57bbaeca3eb0295e3536d893a0d6798c312acc65c5bf0bb0a81b4"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "stage": "Check both labels in every partition.",
+      "sha256": "234bf92d3b0680a74b2e78b98361a9a43a73e77a0a1919260db5e8eb0a806135"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 9,
+      "stage": "Retain the source's unshuffled within-class order.",
+      "sha256": "d27ac8eab016b2baf1db5f38a148a717ae3b0e27740e3791884c5906f038c76f"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 10,
+      "stage": "Keep 125 training, 60 testing and 60 prediction rows.",
+      "sha256": "7e9c12c3ee88dff44b26032cca5aa9ecf158c95b66d1430a4f2677ac24862bdd"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 11,
+      "stage": "Exclude the time column and retain all original feature columns.",
+      "sha256": "99ba88ed397a4d613fa9a18e56ef513d8558001a7fe468062b60bd3927be8035"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 12,
+      "stage": "Use the raw data and the original label colors for both t-SNE displays.",
+      "sha256": "f5a3d73c8b1e40ef495b8b8a3cd0683f826d2d48328985b4848f8cd9bf8fc75c"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 13,
+      "stage": "Fit and display the original-size training t-SNE projection.",
+      "sha256": "2bc108a1792aae61a542b1704026e530848c35ee9d45485bb53e7019601e7485"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 14,
+      "stage": "Fit and display the original-size test t-SNE projection.",
+      "sha256": "820b339a331eb86fc45ae1f7f1a42216cb15c471b458fdf0d13b01c761551727"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 15,
+      "stage": "Encode three transformed features on three qubits.",
+      "sha256": "9b08159cb07ef5bd9855c1b5dd8c8a8aae511034d283b88e6b36f6002ab3145b"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 16,
+      "stage": "Fit PCA on all original training rows and transform the three partitions.",
+      "sha256": "49c3586e932189c83c3fc90efb1c627f9133ddba43a1ff8cb90d5b197975c609"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 17,
+      "stage": "Check the finite training-standardized and angularly scaled outputs.",
+      "sha256": "db0a5805fb6c86638fe22ead0050996887b0268a3c4c0b1e4ca4f1d7356c144e"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 18,
+      "stage": "Keep the source's joint min-max map to the interval from minus pi to pi.",
+      "sha256": "651c2068cb16b335c4c733a5f115abc6ebddfebb570c2ec03ca3a7b3aab9053d"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 19,
+      "stage": "Pair each transformed feature row with its original label.",
+      "sha256": "0045bca26058cfa1964b59fe7c8c223c012904172420e022ad3734cc18d6eff5"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 20,
+      "stage": "Use two layers and all three pairs of the Z/ZZ feature map.",
+      "sha256": "9e7076726ef7c3f78ef8fef3e550fd114934798a163e533213af39f28b168868"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 21,
+      "stage": "Build the native inverse-composition overlap on three wires.",
+      "sha256": "4541d66f3c087cc961b2ae1277472af547121c0617db23c439f28917c3a28fd0"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 22,
+      "stage": "Verify two distinct complete overlap states against independent Circuits.",
+      "sha256": "b854d713aac16d5f3377606fa2602e61f66e4eaf51f039480bd7b9270b9db1e2"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 23,
+      "stage": "Train from sampled kernel entries and evaluate both actual holdout sets.",
+      "sha256": "c4be95bf0bbf221938ad0fc36b22ac402fd928a7f2c712a6454c2d268c53e62f"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 24,
+      "stage": "Inspect the held-out test accuracy and all predicted labels.",
+      "sha256": "133bf6291abcab50b954c592c0bec6b3c3a1b9339abce4b5ff14d61364a86853"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 25,
+      "stage": "Run the linear, polynomial, RBF and sigmoid test comparisons.",
+      "sha256": "73fc062e1ab524daa01e77b408e3968f94046235a3692e735cd2742aebd90bcf"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 26,
+      "stage": "Report all measured classifications and the prediction accuracy.",
+      "sha256": "ba6e751848b2bead72999e0b052d98434589e9b1715b555bf882f0897e1b8c52"
+    }
+  ],
+  "original_external_asset": {
+    "path": "applications/finance/resources/creditcard.csv",
+    "sha256": "cb6baeefbfd24b7b8f865b55efa366e2023b35bb125bc88a9f08a4c03724e5cd",
+    "bytes": 339816,
+    "rows": 948
+  }
+}

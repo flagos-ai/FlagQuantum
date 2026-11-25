@@ -50,6 +50,18 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
   route its own record selects, and refuses by name when no route applies. The three
   public methods are the only caller-facing statement of this behaviour.
 - `_artifacts.py`: internal artifact construction shared by stable public types.
+  The approved v2 circuit payload budget is 65,536 mapping/list entries, separate
+  from the 4,096-entry structured envelope budget. Upgrade receiving readers
+  before sending expanded artifacts. Executable v2 and structured v3 admission
+  limits are unchanged; downstream compilation evidence has separate limits.
+- `_compilation_evidence.py`: the explicit version dispatcher for stored Compiler
+  evidence. `_compilation_evidence_v4.py` implements the approved unallocated,
+  undirected many-to-many block profile. It checks structure, exclusive input
+  and output membership, schedule dependencies, topology-space mapping replay,
+  resource bounds, and canonical identities. It does not verify a claimed
+  quantum operator residual. Compiler must recompute that witness from actual
+  retained programs; Runtime and Deployment admission are separate changes.
+  The v1-v3 readers and frozen identity fixtures remain unchanged.
 
 `runtime_config.py` is configuration data owned by Core; configuration
 resolution and execution policy remain Runtime responsibilities.
@@ -109,3 +121,29 @@ horizon. Core owns scalar, roster and source validation; output-grid placement,
 private sampling and conditional numerical execution belong to later domains.
 The existing unconditional Lindblad assembler refuses this source before grid
 assembly. Ordinary pulse/transport sources retain source 1.0 bytes.
+
+## Compilation evidence reader change path
+
+Execution classification: `single_device_fast_path`. This codec establishes no
+simulation, hardware, distributed, performance, or SDK parity claim. The v4
+contract landed in Integration before this Core implementation; see
+`docs/api-changes/FQ-COMPILER-CZ-BLOCK-LINEAGE-20261118.md`.
+
+For the shortest example, run the cancellation and SWAP/reversed-CX round-trip
+scenarios in the codec tests. They keep collective input ancestry, including an
+empty output, and demonstrate rejecting a resealed stale source or target:
+
+```bash
+python -m pytest tests/unit/test_compilation_evidence_v4.py \
+  tests/unit/test_compilation_evidence_legacy_identity.py \
+  tests/team/core/test_compilation_evidence_bundle*.py -q
+```
+
+The shared `read_compilation_evidence_bundle_json` entry dispatches exactly by
+version. Never regenerate the v1-v3 fixtures, downgrade collective records into
+single-source records, add numerical imports to Core, or treat successful codec
+reading as permission to execute the artifact. The experimental read-only
+`load_compilation_evidence` view preserves the v4 identity and canonical JSON;
+it does not add execution admission. No production writer or automatic
+block stage is enabled by the reader alone. The current support boundary remains
+codec-only until those separately owned consumers pass their handoff tests.

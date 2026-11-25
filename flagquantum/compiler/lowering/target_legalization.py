@@ -21,14 +21,7 @@ from ...core.target_capabilities import (
     match_target_capabilities,
 )
 from ...errors import CompilationError
-from ..operator_lowering import (
-    DEFAULT_LOWERING_REGISTRY,
-    LoweringCapability,
-    OperatorLoweringRegistry,
-    UnsupportedLoweringError,
-)
-from ..routing import CouplingMap
-from ..select_lowering import SELECT_REPORT, lower_select_program
+from ..topology.coupling import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
 from ..topology.direction_legalization import (
     DirectionLegalizationError,
@@ -40,16 +33,29 @@ from ..topology.topology_legalization import (
     TopologyLegalizationResult,
     legalize_circuit_topology,
 )
+from .native_block_optimization import (
+    NativeBlockOptimizationError,
+    NativeBlockOptimizationResult,
+    optimize_native_blocks,
+    verify_native_block_optimization,
+)
 from .native_gate_legalization import (
     NativeGateLegalizationError,
     NativeGateLegalizationResult,
     legalize_native_gates,
+)
+from .operator_lowering import (
+    DEFAULT_LOWERING_REGISTRY,
+    LoweringCapability,
+    OperatorLoweringRegistry,
+    UnsupportedLoweringError,
 )
 from .schedule_legalization import (
     CircuitSchedule,
     ScheduleLegalizationError,
     schedule_circuit_dependencies,
 )
+from .select_lowering import SELECT_REPORT, lower_select_program
 
 
 class TargetLegalizationError(CompilationError):
@@ -71,6 +77,7 @@ class TargetLegalizationResult:
     capability_match: CapabilityMatchResult
     schedule: CircuitSchedule
     legalization_identity: str
+    native_block_optimization: NativeBlockOptimizationResult | None = None
 
 
 def _requirement(
@@ -175,6 +182,7 @@ def _legalization_identity(
     topology_legalization: TopologyLegalizationResult | None,
     direction_legalization: DirectionLegalizationResult | None,
     schedule: CircuitSchedule,
+    native_block_optimization: NativeBlockOptimizationResult | None = None,
 ) -> str:
     payload = {
         "backend": backend,
@@ -204,6 +212,10 @@ def _legalization_identity(
             for item in lowerings
         ],
     }
+    if native_block_optimization is not None and native_block_optimization.rewrites:
+        payload["native_block_optimization_identity"] = (
+            native_block_optimization.optimization_identity
+        )
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
@@ -256,6 +268,36 @@ def legalize_circuit_for_target(
     except NativeGateLegalizationError as error:
         raise TargetLegalizationError(str(error)) from error
     ir = native_gate_legalization.program
+    native_block_optimization = None
+    if coupling_map is None or (
+        isinstance(coupling_map, CouplingMap)
+        and topology_legalization is not None
+        and topology_legalization.allocation_identity is None
+        and topology_legalization.initial_logical_to_physical
+        == tuple(range(ir.n_wires))
+    ):
+        try:
+            native_block_optimization = optimize_native_blocks(
+                native_gate_legalization,
+                snapshot=snapshot,
+                evaluated_at=evaluated_at,
+                max_added_operations=max_added_operations,
+                topology=topology_legalization,
+                coupling_map=coupling_map,
+            )
+            if native_block_optimization is not None:
+                verify_native_block_optimization(
+                    native_block_optimization,
+                    native_gate_legalization,
+                    snapshot=snapshot,
+                    evaluated_at=evaluated_at,
+                    max_added_operations=max_added_operations,
+                    topology=topology_legalization,
+                    coupling_map=coupling_map,
+                )
+                ir = native_block_optimization.program
+        except NativeBlockOptimizationError as error:
+            raise TargetLegalizationError(str(error)) from error
     direction_legalization = None
     if isinstance(coupling_map, DirectedCouplingMap):
         try:
@@ -321,7 +363,9 @@ def legalize_circuit_for_target(
             topology_legalization,
             direction_legalization,
             schedule,
+            native_block_optimization,
         ),
+        native_block_optimization=native_block_optimization,
     )
 
 

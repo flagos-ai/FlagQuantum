@@ -1,0 +1,32 @@
+{
+  "schema": "flagquantum_qec_detector_file_output_v1",
+  "status": "approved_implementation_candidate",
+  "proposal_sha256": "88a3f48afcd6bb919672172cd89285bf56c8aa57cdab6a9934a2fadb88cf38cb",
+  "public_entry_point": "CompiledDetectorSampler.sample_write(self, shots, *, filepath, format=\"01\", prepend_observables=False, append_observables=False, obs_out_filepath=None, obs_out_format=\"01\")",
+  "formats": [
+    "01",
+    "b8",
+    "r8",
+    "hits",
+    "dets",
+    "ptb64"
+  ],
+  "layout": "at most one of prepend, append, separate file; same draws",
+  "limits": {
+    "total_final_file_bytes": 1073741824,
+    "principal_table_estimate_bytes": 67108864,
+    "parser_working_bytes": 1048576
+  },
+  "semantics": [
+    "positive integer shots",
+    "no replacement",
+    "D/L typed sparse indices",
+    "both files validate before sequential publication",
+    "no cross-file atomic visibility guarantee",
+    "preflight does not draw",
+    "backend or publication failure invalidates handle",
+    "owned staging cleanup",
+    "no RSS or aggregate scratch guarantee"
+  ],
+  "unchanged_upstream_files": 96
+}

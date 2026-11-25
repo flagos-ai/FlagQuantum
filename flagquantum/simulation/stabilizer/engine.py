@@ -1,82 +1,6 @@
-"""Clifford stabilizer sampling backed by the optional Stim engine.
+"""Clifford sampling, Pauli readout and external record conversion.
 
-A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude
-vector, so its tableau grows quadratically with the qubit count rather than
-exponentially. Clifford circuits therefore reach qubit counts no amplitude store
-can hold while answering what a fault-tolerance workflow measures.
-What this module owns
----------------------
-One conversion and four entry points:
-
-- translating validated FlagQuantum IR while refusing unsupported instructions,
-- sampling outcomes for a requested qubit list,
-- expanding a Pauli string through the circuit and reading it against the zero
-  state for stabilizer-basis expectation requests,
-- sampling measurements recorded by a Clifford program with positioned noise, and
-- surveying that route without running it, so a caller can choose between the
-  stabilizer and dense regimes before allocating a dense state.
-
-The positioned-noise entry point exists because a detector error model is defined
-between syndrome rounds rather than at a named gate: the program locates data
-errors at round boundaries and measurement errors before check readout. It is
-deliberately not reachable from the planned stabilizer
-mode, which refuses a channel outright. The readout is reachable from it, and is
-the one entry point here that needs no external engine at all: expanding a Pauli
-through a Clifford circuit is Pauli algebra, not tableau simulation.
-
-It owns no device selection, no shot policy, no seed stream, no dispatch, and no
-public result assembly. A caller that needs those goes through Runtime, which
-owns them. The survey is not a claim about a program: it reports which
-instructions the noise route would execute and which it would refuse, and it
-decides nothing on the caller's behalf.
-
-Why the engine is an external distribution
-------------------------------------------
-The dependency policy requires a new production dependency to record a
-documented need, an ownership boundary, a licence and supply-chain review, a
-replacement interface, and an exit plan. For this module those are:
-
-- Need. Stim is the reference implementation of stabilizer simulation and of the
-  detector error model that a fault-tolerance workflow needs. Re-deriving it
-  would be research spent on an algorithm that is already solved and already
-  published, and it would put this repository's own Clifford phase bookkeeping
-  in the path of every sampling result.
-- Ownership boundary. `flagquantum.simulation.stabilizer` owns the conversion
-  and the sampling call. The dependency is never imported by Core, by the
-  import-time path, or by any other domain.
-- Licence and supply chain. Stim is Apache-2.0, published by Google Quantum AI,
-  and imports no NVIDIA component, so it sits in the open-neutral dependency
-  class rather than in the accelerated-compute class this project has to
-  replace.
-- Replacement interface and exit plan. The entry points are the seam. A native
-  tableau implementation can replace the bodies of `sample_stabilizer` and
-  `sample_noisy_measurements` without changing a caller, and the Clifford gate
-  set below is the contract a replacement has to satisfy. That work is scheduled
-  separately rather than scaffolded here, so this module holds exactly one
-  implementation of each. The readout entry point is already native for the same
-  reason it can be: the Clifford phase bookkeeping this module would otherwise
-  owe the engine is what it performs there, and it performs it without importing
-  one.
-
-Fail-closed contract
---------------------
-An instruction outside the Clifford gate set is refused with a named error
-naming the accepted set. The positioned-noise entry accepts one class of channel
-and one measurement shape: a channel whose Kraus operators are a mixture of Pauli
-operators up to a global phase, on as many qubits as the channel acts on, and one
-qubit per measurement.
-That class is not a list of names - it is decided by the operators the channel
-carries, through `KrausChannel.unitary_mixture` - and it is exactly the class a
-tableau absorbs, because sampling one branch of it moves the Pauli frame and
-leaves the tableau alone. An amplitude damping, phase damping, reset, or thermal
-relaxation channel is refused because no Pauli frame represents it; so is a
-unitary that is not a Pauli up to a global phase, such as a coherent
-over-rotation by an angle that is not a multiple of pi, even though it is a
-one-branch unitary mixture. A multi-qubit measurement is refused because the
-caller reads the record back one recorded bit at a time. Nothing is approximated,
-decomposed, or silently dropped, because a stabilizer result that quietly
-answers a different circuit is worse than a refusal: the caller cannot tell the
-two apart from the samples.
+See the stabilizer README for ownership, dependency rationale and refusals.
 """
 
 from __future__ import annotations
@@ -86,6 +10,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
 from itertools import product
+from pathlib import Path
 from types import ModuleType
 from typing import Any
 
@@ -95,8 +20,23 @@ from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
+from ._circuit_text import (
+    _annotated_stim_source as _annotated_stim_source,
+)
+from ._circuit_text import (
+    _annotated_stim_text as _annotated_stim_text,
+)
 from ._gate_expansions import GATE_EXPANSIONS, expand_gate
-from ._validation import _pauli_letters, _validate_seed, _validate_shots
+from ._validation import (
+    _bounded_stim_expansion,
+    _pauli_letters,
+    _validate_seed,
+    _validate_shots,
+    _validate_stim_experiment_source,
+)
+from ._validation import (
+    _validate_stim_reference as _validate_stim_reference,
+)
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
 # the mapping is total over the Clifford subset of the operator schema: an
@@ -412,6 +352,25 @@ def sample_stabilizer(
     ir, request = _sampling_request(program, qubits=qubits, shots=shots)
     validated_seed = _validate_seed(seed)
     instructions = _clifford_instructions(ir)
+    assert request.shots is not None
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        try:
+            from ._embedded_sampler import _EmbeddedSampler
+
+            operations: tuple[_EngineOperation, ...] = tuple(
+                (gate, wires, None) for gate, wires in instructions
+            ) + (
+                ("M", request.wires, None),
+            )
+            embedded = _EmbeddedSampler(operations, validated_seed, len(request.wires))
+            return embedded.sample(request.shots, bit_packed=False).to(
+                dtype=torch.int64
+            )
+        except (ImportError, OSError) as error:
+            raise StabilizerDependencyError(
+                "the embedded stabilizer engine could not be loaded; "
+                "use a compatible FlagQuantum embedded build"
+            ) from error
     circuit = _engine_circuit(instructions, request.wires)
     sampler = circuit.compile_sampler(seed=validated_seed)
     samples = sampler.sample(shots=request.shots)
@@ -1089,7 +1048,7 @@ def _prepare_noisy_measurements(
     terminal_qubits: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> _PreparedMeasurements:
-    """Compile the existing positioned-noise grammar once; keep SDK state here."""
+    """Compile the positioned-noise grammar once behind the measurement boundary."""
 
     ir = _measurement_record_ir(program)
     validated_seed = _validate_seed(seed)
@@ -1107,38 +1066,27 @@ def _prepare_noisy_measurements(
             "sampling requires at least one recorded measurement; the program "
             "records none and no terminal qubit was requested"
         )
+    columns = recorded + len(selected)
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        try:
+            from ._embedded_sampler import _EmbeddedSampler
+
+            if selected:
+                operations += ((_MEASURE_ENGINE_NAME, selected, None),)
+            return _PreparedMeasurements(
+                _EmbeddedSampler(operations, validated_seed, columns), columns
+            )
+        except (ImportError, OSError) as error:
+            raise StabilizerDependencyError(
+                "the embedded stabilizer engine could not be loaded; "
+                "use a compatible FlagQuantum embedded build"
+            ) from error
     circuit = _noisy_engine_circuit(operations, selected)
-    sampler = circuit.compile_sampler(seed=validated_seed)
-    return _PreparedMeasurements(sampler, recorded + len(selected))
-
-
-def _bounded_stim_expansion(program: Any) -> int:
-    """Count repeated instructions before asking the SDK to expand them."""
-    count = 0
-    pending = [(program, 1)]
-    while pending:
-        body, multiplier = pending.pop()
-        for instruction in body:
-            if hasattr(instruction, "repeat_count"):
-                pending.append(
-                    (instruction.body_copy(), multiplier * instruction.repeat_count)
-                )
-            else:
-                count += multiplier
-            if count > 1_000_000:
-                raise CapabilityError(
-                    "Stim experiment exceeds 1,000,000 expanded instructions"
-                )
-    return count
+    return _PreparedMeasurements(circuit.compile_sampler(seed=validated_seed), columns)
 
 
 def _parse_stim_experiment(circuit_text: str) -> Any:
-    if not isinstance(circuit_text, str):
-        raise TypeError("circuit_text must be a string")
-    if not circuit_text.strip():
-        raise ValueError("circuit_text must not be empty")
-    if len(circuit_text.encode("utf-8")) > 1_048_576:
-        raise CapabilityError("Stim experiment exceeds 1 MiB of UTF-8 source")
+    _validate_stim_experiment_source(circuit_text)
     try:
         circuit = _stim().Circuit(circuit_text)
     except ValueError as error:
@@ -1156,55 +1104,21 @@ def _parse_stim_experiment(circuit_text: str) -> Any:
     return circuit
 
 
-def _annotated_stim_text(
-    program: CircuitIR,
-    *,
-    terminal_qubits: tuple[int, ...],
-    detector_columns: tuple[tuple[int, ...], ...],
-    observable_columns: tuple[tuple[int, ...], ...],
-) -> str:
-    """Serialize the actual positioned program with QEC-owned parity columns."""
-    ir = _measurement_record_ir(program)
-    circuit = _noisy_engine_circuit(_noisy_operations(ir), terminal_qubits)
-    recorded = circuit.num_measurements
-    stim = _stim()
-    for kind, columns in (
-        ("DETECTOR", detector_columns),
-        ("OBSERVABLE_INCLUDE", observable_columns),
-    ):
-        for index, parity in enumerate(columns):
-            if any(column < 0 or column >= recorded for column in parity):
-                raise ValueError("parity column outside recorded measurements")
-            targets = [stim.target_rec(column - recorded) for column in parity]
-            if kind == "DETECTOR":
-                circuit.append(kind, targets)
-            else:
-                circuit.append(kind, targets, index)
-    lines = []
-    for instruction in circuit:
-        line = str(instruction)
-        if arguments := instruction.gate_args_copy():
-            # The SDK circuit printer rounds arguments; preserve their binary64 values.
-            prefix, suffix = line.split("(", 1)
-            values = ", ".join(map(repr, arguments))
-            line = f"{prefix}({values}){suffix.split(')', 1)[1]}"
-        lines.append(line)
-    text = "\n".join(lines)
-    _parse_stim_experiment(text)
-    return text
-
-
 def _prepare_stim_experiment(
     circuit_text: str, *, seed: int | None
 ) -> tuple[_PreparedMeasurements, int, int]:
     """Prepare normalized flips from the original noisy circuit, not its DEM."""
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        from ._embedded_sampler import _prepare_text_experiment
+
+        sampler, detectors, observables = _prepare_text_experiment(circuit_text, seed)
+        return (
+            _PreparedMeasurements(sampler, detectors + observables),
+            detectors,
+            observables,
+        )
     circuit = _parse_stim_experiment(circuit_text)
-    try:
-        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
-    except ValueError as error:
-        raise CapabilityError(
-            "Stim experiment has nondeterministic declared parities"
-        ) from error
+    _validate_stim_reference(circuit)
     sampler = circuit.compile_detector_sampler(seed=_validate_seed(seed))
     detectors, observables = circuit.num_detectors, circuit.num_observables
     return (
@@ -1214,9 +1128,42 @@ def _prepare_stim_experiment(
     )
 
 
-def _stim_experiment_dem_text(circuit_text: str, *, decompose_errors: bool) -> str:
+def _stim_experiment_dem_text(
+    circuit_text: str,
+    *,
+    decompose_errors: bool,
+    normalize_uniform_pauli: bool = False,
+) -> str:
     """Keep exact SDK conversion refusals and normalize only missing shape."""
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        from ._embedded_sampler import _text_experiment_dem
+
+        return _text_experiment_dem(
+            circuit_text, decompose_errors, normalize_uniform_pauli
+        )
     circuit = _parse_stim_experiment(circuit_text)
+    if normalize_uniform_pauli:
+        # Stim's exact DEM conversion understands uniform depolarization. The
+        # native gate-noise exporter can spell the same law as a Pauli channel.
+        normalized = _stim().Circuit()
+        depolarizing = {
+            "PAULI_CHANNEL_1": "DEPOLARIZE1",
+            "PAULI_CHANNEL_2": "DEPOLARIZE2",
+        }
+        for instruction in circuit.flattened():
+            gate = depolarizing.get(instruction.name)
+            if gate is not None:
+                probabilities = instruction.gate_args_copy()
+                if all(p == probabilities[0] for p in probabilities):
+                    normalized.append(
+                        gate,
+                        instruction.targets_copy(),
+                        math.fsum(probabilities),
+                        tag=instruction.tag,
+                    )
+                    continue
+            normalized.append(instruction)
+        circuit = normalized
     try:
         model = circuit.detector_error_model(
             decompose_errors=decompose_errors,

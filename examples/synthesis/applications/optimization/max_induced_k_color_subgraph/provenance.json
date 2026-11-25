@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "6719e725fd8b261d54ac1d556d51fc2679bbf684c2bc612b5f1f08d24a1cb1d2",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_induced_k_color_subgraph.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_induced_subgraph.py",
+  "scope": "Complete twelve-bit, eight-layer quantum program. Two nonzero parameter vectors, both width/depth objectives and independent complete complex128 Circuit states. All4096 classical graph-cost inputs checked. Complete Notebook optimizer workflow remains pending.",
+  "native_semantic_adaptations": "Native explicit six-bit rows a and b replace qstruct x[6][2]. The source directed-edge sum counts each undirected edge twice; retain its full square, same-color penalties, constant6, gamma-first/beta-last parameters and every RX layer. Split the commuting square into within-row squares and cross-row product to stay within existing bounded phase expansion. No Compiler/IR/API/budget changes or source importer in user examples. Independent reference uses graph edges and at-most-four-bit truth tables with Walsh spin-parity Circuit construction; no compiler polynomial implementation reused."
+}

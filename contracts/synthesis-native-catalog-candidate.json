@@ -1,0 +1,18 @@
+{
+  "schema": "flagquantum.synthesis_native_catalog_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "signatures": {
+    "X": "(target: 'QBit', /) -> 'None'",
+    "RZ": "(angle: 'float', target: 'QBit', /) -> 'None'",
+    "PHASE": "(angle: 'float', target: 'QBit', /) -> 'None'",
+    "RZZ": "(angle: 'float', target: 'QNum', /) -> 'None'",
+    "prepare_bell_state": "(state: 'int', target: 'QNum', /) -> 'None'",
+    "prepare_ghz_state": "(size: 'int', target: 'QNum', /) -> 'None'",
+    "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'",
+    "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

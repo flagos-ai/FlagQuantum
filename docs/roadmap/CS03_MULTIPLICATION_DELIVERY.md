@@ -74,8 +74,8 @@ public Python synthesis frontend:
 
 ```python
 import flagquantum as fq
-from flagquantum.compiler._construction.lowering import lower_arithmetic
-from flagquantum.compiler._construction.profile import uint_type
+from flagquantum.compiler._construction.codegen.arithmetic import lower_arithmetic
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     Block, HybridProgram, Operation, Region, Value, ValueId,
 )

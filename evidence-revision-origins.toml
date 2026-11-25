@@ -1,5 +1,30 @@
 schema = "flagquantum.evidence_revision_origins.v1"
 
+[[artifact]]
+path = "docs/development/evidence/compiler-linear-cnot.json"
+
+[[artifact.revision]]
+value = "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4"
+origin = "external_dependency"
+repository = "Qiskit/qiskit"
+
+[[artifact]]
+path = "docs/development/evidence/compiler-token-restoration.json"
+
+[[artifact.revision]]
+value = "69d412ad9b915d5f86608c15d6277c6d9195ee0a"
+origin = "external_dependency"
+repository = "Qiskit/rustworkx"
+
+# Exact upstream source for the unadopted compiler invariant experiment.
+[[artifact]]
+path = "docs/development/evidence/cirq-cz-invariant-pruning.json"
+
+[[artifact.revision]]
+value = "de651a7886d1a1383d595f95f36b93ed3ea91685"
+origin = "external_dependency"
+repository = "quantumlib/Cirq"
+
 # Every revision a checked-in evidence artifact records that a reader of this
 # repository cannot obtain, with the origin that accounts for it.
 #
@@ -1123,3 +1148,63 @@ path = "artifacts/development/ascend_910c_20261030"
 value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
 origin = "external_dependency"
 repository = "FlagQuantum/Torch-FL"
+
+# Measured on 2026-11-18: both repository commit endpoints return this producer,
+# but none of the 55 current branch/tag tips reaches it. The QEC acceptance
+# artifact entered main through squash-merged #1212. Numerical evidence is
+# unchanged; see docs/development/QEC_EVIDENCE_REVISION_ORIGIN_20261118.md.
+[[artifact]]
+path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
+
+[[artifact.revision]]
+value = "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa"
+origin = "unreferenced_object"
+
+# Verified on 2026-11-19: the repository commit API and exact-SHA Git fetch
+# both serve the producer and full-regression revisions. No fetched remote
+# branch or tag reaches either revision after the toric acceptance was merged.
+[[artifact]]
+path = "artifacts/development/qec_toric_distance_acceptance_20261118.json"
+
+[[artifact.revision]]
+value = "7f89948efd1d6dc63b29d00934cc6738cd440829"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "29aa778ab5604059c5a4337f9b250c6c4b606d9c"
+origin = "unreferenced_object"
+
+
+# Verified on 2026-11-20: GitHub serves this complete object by commit ID,
+# while its original feat/compiler-cirq-native-cz-cleanup branch was removed
+# after squash merge and main does not contain that branch commit. The
+# observation remains the original failed CI run; its numerical values and
+# source pin are unchanged.
+[[artifact]]
+path = "docs/development/evidence/runtime-shard-duration-balance.json"
+
+[[artifact.revision]]
+value = "abde94db5cef007495cc1bce41ce36f673747cff"
+origin = "unreferenced_object"
+
+
+# Independent compiler acceptance uses this unchanged SDKBench source. The
+# directory scope covers subsequent application evidence with the same harness.
+[[artifact]]
+path = "docs/development/evidence/"
+
+[[artifact.revision]]
+value = "9aa9260920984e2ca05bcb293abb885fccd9c144"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"
+
+# Installed-wheel conformance uses this SDKBench workflow revision. Keep the
+# external origin in this authoritative table; inline provenance readers accept
+# repository/producing-host history only.
+[[artifact]]
+path = "docs/development/evidence/compiler-installed-wheel-controls.json"
+
+[[artifact.revision]]
+value = "9cb8f184825e658f7378763a1f3a39c57720233d"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"

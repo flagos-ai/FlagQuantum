@@ -1,4 +1,4 @@
-"""Scalar and Pauli-support validation without SDK state."""
+"""Stabilizer request and symbolic record validation without SDK state."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import operator
 from collections.abc import Sequence
 from typing import Any
 
-from ...errors import ValidationError
+from ...errors import CapabilityError, ValidationError
 
 # Stim documents a seed as an integer in range(2**64).
 _SEED_LIMIT = 2**64
@@ -87,3 +87,41 @@ def _validate_shots(shots: Any) -> int:
     if shots <= 0:
         raise ValidationError(f"shot count must be positive, got {shots}")
     return shots
+
+
+def _bounded_stim_expansion(program: Any) -> int:
+    """Count repeated instructions before asking the SDK to expand them."""
+    count = 0
+    pending = [(program, 1)]
+    while pending:
+        body, multiplier = pending.pop()
+        for instruction in body:
+            if hasattr(instruction, "repeat_count"):
+                pending.append(
+                    (instruction.body_copy(), multiplier * instruction.repeat_count)
+                )
+            else:
+                count += multiplier
+            if count > 1_000_000:
+                raise CapabilityError(
+                    "Stim experiment exceeds 1,000,000 expanded instructions"
+                )
+    return count
+
+
+def _validate_stim_experiment_source(circuit_text: str) -> None:
+    if not isinstance(circuit_text, str):
+        raise TypeError("circuit_text must be a string")
+    if not circuit_text.strip():
+        raise ValueError("circuit_text must not be empty")
+    if len(circuit_text.encode("utf-8")) > 1_048_576:
+        raise CapabilityError("Stim experiment exceeds 1 MiB of UTF-8 source")
+
+
+def _validate_stim_reference(circuit: Any) -> None:
+    try:
+        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
+    except ValueError as error:
+        raise CapabilityError(
+            "Stim experiment has nondeterministic declared parities"
+        ) from error

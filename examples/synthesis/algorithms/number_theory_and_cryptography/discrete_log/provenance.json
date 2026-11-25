@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/discrete_log/discrete_log.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "371c39565de4678660aed93c3228211d4ae09196f579e1e8ea16065289c46737",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.discrete_log.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_discrete_log.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Reuse existing modular_exp twice with originalmodulus13,element3,generator7 and two5bit registers. Standard Annotated[QNum,(5,False,5)] preserves fixed-fraction declarations. Modular primitives act on register words; probabilities retains rawwords and numeric_probabilities decodes exact Fraction(a,32),Fraction(b,32). Complete14logicalbit state matches controlled-modular-permutation Circuit and independent2axisanalyticFFT. Two further nonzero coprime parameter pairs retainwidths.2actualworkbitsreturnzero; native and original costs exactly16physical,1068operations,depth872. No new modular kernel,format syntax,drop or callback capability."
+}

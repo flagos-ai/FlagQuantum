@@ -1,5 +1,30 @@
 # Original Qmod corpus progress
 
+## Current integration candidate
+
+The [classified catalog](../../examples/synthesis/CATALOG.md) now retains every
+one of the 216 original paths and their exact source hashes. The strict original
+snapshot has 210 execution smoke passes and six source-semantic refusals. The
+separately approved six-source numerical overlay has 216 execution smoke passes;
+it does not replace the original files. Recorded physical resources remain tied
+to their implementation revision.
+
+Runnable corresponding native qfunc/Circuit examples cover 27/216 original
+paths. The first completion batch adds 17 cases, with nine standard gates,
+four preparations, unsigned multiplication and three quadratic tutorials. The
+array batch adds Hadamard transformation, Bell-state classical shadows,
+entanglement and classical-shadow tomography.
+`tests/integration/test_synthesis_native_catalog.py` compares all 27 native
+counterparts against Qmod and independent Circuit references, and checks
+preparation, phase, initialization, Const and resource boundaries. These native
+counts are independent of the complete Qmod execution smoke inventory.
+Native bit arrays, bounded views/static loops and gate-only writable helpers
+now have a separate checked admission. Nested arrays, unrestricted writable
+helpers and runtime classical parameters remain gaps. The integration candidate is not a merge,
+release authorization or independent-user-trial result.
+
+## Retained 2026-11-02 measurement
+
 As of 2026-11-02, following #1002 merged at
 6df1f2ae6296334d087fdf39918f8b1e46559a19 after 57 successful checks and
 three configured skips. The denominator is the retained Classiq library snapshot
@@ -130,7 +155,7 @@ phase/control concepts as the future native program design. RZ/decimal import
 remains; the unmerged float-return native phase prototype is withdrawn. General
 explicit native phase is a named gap, not a Circuit alias or a mandatory rewrite.
 
-Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
+Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for current Python
 high-level arithmetic, its equivalent Qmod, and an independent RZ Circuit
 reference. These distinct tasks are labeled; the arithmetic example is not
 claimed to be a native implementation of arbitrary-angle phase. Corpus counts

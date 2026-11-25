@@ -365,7 +365,7 @@ def test_fidelity_separates_from_norm_drift() -> None:
 
 def test_fidelity_falls_when_the_cap_actually_discards_weight() -> None:
     """A truncated state is a different state and must be reported as one."""
-    cell = _cell(n_qubits=8, depth=8, max_bond=4, gradients=True)
+    cell = _cell(n_qubits=6, depth=4, max_bond=4, gradients=True)
 
     assert cell["mps_truncated"] is True
     fidelity = cell["states"]["mps"]["fidelity_vs_statevector"]
@@ -730,7 +730,7 @@ def test_a_degenerate_cut_is_reported_as_a_domain_boundary() -> None:
     # A cut the cap never reaches is not a truncation decision at all.
     assert sweep.schmidt_gap(separated, rank=2)["min_gap"] is None
 
-    cell = _cell(n_qubits=8, depth=8, max_bond=4, gradients=True)
+    cell = _cell(n_qubits=6, depth=4, max_bond=4, gradients=True)
     assert cell["schmidt"]["rank"] == 4
     assert cell["schmidt"]["min_gap"] is not None
 

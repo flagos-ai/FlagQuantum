@@ -32,12 +32,12 @@ from .dynamic._conditions import instruction_is_dynamic
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
+    _canonical_program,
+    _noise_model_from_payload,
     _require_mapping,
-    plan_execution_program,
-    plan_noise_model,
-    plan_program,
-    plan_resolved_options,
-    validate_plan_environment,
+    _validate_plan_environment_payload,
+    has_initial_state_extension,
+    has_runtime_inputs_extension,
 )
 from .measurements import validate_measurements
 from .result import ExecutionResult
@@ -271,13 +271,42 @@ def _execute_through_backend(
     )
 
 
-def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
+def execute_plan(
+    execution_plan: ExecutionPlan,
+    *,
+    initial_state: torch.Tensor | None = None,
+    inputs: Mapping[str, float | torch.Tensor] | None = None,
+) -> ExecutionResult:
     """Execute one verified plan without invoking planner or compiler again."""
 
     from .execution import _normalize_execution_output, run_native
 
-    validate_plan_environment(execution_plan)
+    # Standalone plan readers authenticate independently and would duplicate
+    # embedded dense matrices. Reuse one validated snapshot within this attempt.
     payload = execution_plan.to_dict()
+    _validate_plan_environment_payload(payload)
+    bound_program = None
+    named_inputs_required = has_runtime_inputs_extension(payload)
+    if inputs is not None and not named_inputs_required:
+        raise CapabilityError(
+            "this ExecutionPlan does not accept runtime inputs; run the symbolic Circuit to create a compatible plan"
+        )
+    if named_inputs_required:
+        if initial_state is not None:
+            raise CapabilityError("inputs and initial_state cannot be combined yet")
+        from ._runtime_inputs import bind_runtime_inputs
+
+        bound_program = bind_runtime_inputs(execution_plan, inputs)
+    input_required = has_initial_state_extension(payload)
+    if initial_state is not None and not input_required:
+        raise CapabilityError(
+            "this ExecutionPlan does not accept external initial_state; run the source Circuit to create a compatible plan"
+        )
+    owned_input = None
+    if input_required:
+        from ._initial_state import bind_initial_state
+
+        owned_input = bind_initial_state(execution_plan, initial_state)
     native_profile = payload["version"] in ("1.1", "1.2", "1.3")
     if native_profile != (execution_plan.analysis is None):
         raise ExecutionPlanContractError(
@@ -309,7 +338,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision batch_size must be a positive integer"
         )
-    source_ir = plan_program(execution_plan)
+    source_ir = CircuitIR.from_dict(
+        _require_mapping("ExecutionPlan.program", payload["program"])
+    )
     if any(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     ):
@@ -319,9 +350,15 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 str(decision["precision"]),
             )
         from ..dynamic import DynamicCircuit
+        from .dynamic._final_outputs import (
+            project_dynamic_final_outputs,
+            validate_dynamic_final_outputs,
+        )
         from .dynamic.execution import run_dynamic
 
-        resolved = plan_resolved_options(execution_plan)
+        resolved = _require_mapping(
+            "ExecutionPlan.resolved_options", payload["resolved_options"]
+        )
         shots = resolved["shots"]
         seed = resolved["seed"]
         if type(shots) is not int or shots < 1:  # pragma: no cover - plan invariant
@@ -334,6 +371,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 "options_fingerprint_mismatch",
                 "dynamic ExecutionPlan seed must be null or a non-negative integer",
             )
+        requests = validate_dynamic_final_outputs(
+            source_ir, shots=shots, batch_size=batch_size
+        )
         program = cast(
             DynamicCircuit,
             DynamicCircuit.from_ir(
@@ -373,7 +413,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                 provenance={},
             )
         return replace(
-            cast(ExecutionResult, native.to_execution_result()),
+            project_dynamic_final_outputs(
+                cast(ExecutionResult, native.to_execution_result()), requests
+            ),
             plan=execution_plan,
             provenance={},
         )
@@ -382,11 +424,22 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
             str(decision["backend"]),
             str(decision["precision"]),
         )
-    execution_ir = plan_execution_program(execution_plan)
-    noise_model = plan_noise_model(execution_plan)
+    execution_ir = (
+        bound_program
+        if bound_program is not None
+        else _canonical_program(source_ir, execution_plan)
+    )
+    noise_model = _noise_model_from_payload(payload)
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_qubits=source_ir.n_wires)
     mode = str(decision["mode"])
+    if (
+        mode == "density_matrix"
+        and noise_model is None
+        and "construction_reset_repetitions" in source_ir.metadata
+    ):
+        # The sealed source order retains the repeated epoch boundaries.
+        execution_ir = source_ir
     noisy_plan = execution_plan.noisy_execution_plan
     # The plan, not the argument, says what the program needs: an inline channel
     # has no model and still needs the trajectory route, and an MPS
@@ -458,8 +511,18 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                     isqrt(execution_plan.state_bytes // denominator),
                 ),
             }
+        execution_source: Circuit | CircuitIR = execution_ir
+        if owned_input is not None:
+            from ..circuit import Circuit
+
+            execution_source = Circuit.from_ir(
+                execution_ir,
+                inputs=owned_input,
+                dtype=getattr(torch, precision),
+                device="cpu",
+            )
         output, returned_plan = run_native(
-            execution_ir,
+            execution_source,
             noise_model=noise_model,
             mode=mode,
             return_plan=True,

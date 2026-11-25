@@ -1,0 +1,103 @@
+{
+  "upstream_path": "algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "1719f065c6bce1a70bd3868525475049a16150b3598c82761a78e0f5e1bcaa9b",
+  "git_blob_sha1": "4a1d7cf59f3edd78af2ee81f20b3b1cfbeae32ca",
+  "scope": "All 18 source stages, the original four-qubit Hamiltonian and full 56-entry pool, standard and modified ADAPT-VQE with both fixed schedule reads.",
+  "native_semantic_adaptations": "Use exact native qfunc statevector expectations and the local public 100-iteration Nelder-Mead optimizer. Preserve standard delayed growth and the modified initial pool index. Run both the declared modular schedule and the live shared selection captured by the source helper. Report actual native circuit depth.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_state_preparation.adapt_vqe.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_state_preparation/adapt_vqe/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_adapt_vqe_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "native_code_cell": 1,
+      "sha256": "7d26059e2d51148b99f4eb7ab6a904d528093d6f951c316e2d66a4c682a1fee2"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 2,
+      "sha256": "1c4d707f3b90a3a79f1bbe912f1d92987624afb5a6b66181f28b1cdb8902785b"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 3,
+      "sha256": "0e6a93fa76008f1449d690127681a76b4c2b47df032fa7841d45eedf11e25397"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 4,
+      "sha256": "6b2935d167a02e39cd47fb8cc446be384030d57fb26fb4337ac02e71de41c83d"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 5,
+      "sha256": "960d6df6d050139889b228dd253cfe14a72d1d197467dc2951b522a836b2f38f"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 6,
+      "sha256": "4d6a6e1802806d310a60980ad613318b19d9874e673e5401714289d8205d6d5a"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "sha256": "f6794d74c91e41c462332dff020442c2246344cba5baefa98a23e912dee072dc"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 8,
+      "sha256": "1b6ec119a8c2f9d3bde43c22c611726d7c58f6779bfc55bef2595310b371ad6e"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 9,
+      "sha256": "54f6302fcc54b03d8cf9a4ffc5bd21fdb11061c035f74df3514ac309bd7afa1a"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 10,
+      "sha256": "2b16ab90a0bcfb938ca942fc9344577cffc473ed37952dc321402cb75935640b"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 11,
+      "sha256": "25f1def5c5ebfe6041d293b4f6ef67a44124e481b487579537ca8b357a08acdd"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 12,
+      "sha256": "99bbf2a1f832752564eb825a5dee9b3fe16ae2618b5529bdb755ebf0f904500a"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "sha256": "a8a3accb6e8a942d728fdd89131e6ff30902d7c45d0b55693a386ac503e785f9"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 14,
+      "sha256": "54f6302fcc54b03d8cf9a4ffc5bd21fdb11061c035f74df3514ac309bd7afa1a"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 15,
+      "sha256": "2b16ab90a0bcfb938ca942fc9344577cffc473ed37952dc321402cb75935640b"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 16,
+      "sha256": "ab1bfbf1247cf9a6ddd550bcaa596f634ff3e35d82bca27f3adf42b47ad1f024"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 17,
+      "sha256": "c3c415378669ed8d100f72f84ecbd6d1bf9873bca9fe43b6ec3c5b40c20c189d"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 18,
+      "sha256": "3211b912985ef74da3c245e5a49d6ccef0997e25083b9120a726bc5e026fa7eb"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ._compilation_evidence_v2 import CompilationEvidenceBundleV2
     from ._compilation_evidence_v3 import CompilationEvidenceBundleV3
+    from ._compilation_evidence_v4 import CompilationEvidenceBundleV4
 
 COMPILATION_EVIDENCE_VERSION = "1.0"
 _SCHEMA = "flagquantum.compilation_evidence_bundle"
@@ -689,6 +690,7 @@ def read_compilation_evidence_bundle_json(
     CompilationEvidenceBundle
     | CompilationEvidenceBundleV2
     | CompilationEvidenceBundleV3
+    | CompilationEvidenceBundleV4
 ):
     """Decode a bundle while rejecting duplicate JSON keys at every depth."""
 
@@ -722,6 +724,10 @@ def read_compilation_evidence_bundle_json(
         from ._compilation_evidence_v3 import CompilationEvidenceBundleV3
 
         return CompilationEvidenceBundleV3.from_dict(decoded)
+    if version == "4.0":
+        from ._compilation_evidence_v4 import CompilationEvidenceBundleV4
+
+        return CompilationEvidenceBundleV4.from_dict(decoded)
     raise ValueError(f"unsupported compilation evidence version {version!r}")
 
 

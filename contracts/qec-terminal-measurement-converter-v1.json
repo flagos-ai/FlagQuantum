@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_implementation_candidate",
+  "proposal": "docs/development/QEC_TERMINAL_READOUT_CONVERSION_PROPOSAL.md",
+  "approval_sha256": "0da3a8cde753d6a82c6b181d525a2945af5cf4e3848c4d9c381bfd9cd5493228",
+  "namespace": "flagquantum.qec.execution.measurement_conversion",
+  "exports_added": [
+    "CompiledMeasurementsToDetectionEventsConverter",
+    "compile_m2d_converter"
+  ],
+  "root_exports_added": [],
+  "input": "two-dimensional strided CPU bool records in caller-specified logical terminal Z readout order",
+  "output": "separate owned CPU bool detector and observable tensors in map row order",
+  "reference": "deterministic declared parities relative to the ideal circuit; prepare once per handle",
+  "serialization": "unsupported",
+  "conformance_tests": [
+    "tests/qec/test_terminal_measurement_conversion.py",
+    "tests/team/simulation/test_terminal_readout_conversion_conformance.py"
+  ]
+}

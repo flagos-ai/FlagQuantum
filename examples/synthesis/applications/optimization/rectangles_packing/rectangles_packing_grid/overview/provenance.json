@@ -1,0 +1,108 @@
+{
+  "upstream_path": "applications/optimization/rectangles_packing/rectangles_packing_grid.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "6b5960e8fe73e06731bad8ae48330f69f8e5b768",
+  "original_sha256": "ee24f2f7de268d825f273c33f059576e5116cb9049023a205b52ae3b2917bc73",
+  "scope": "All 19 source stages, the 4 by 2 container and three rectangles, 17 active variables, 102 regenerated Ising terms, ten QAOA layers, 60 objective queries and 10,000 actual shots per query and final readout.",
+  "native_semantic_adaptations": "Native local COBYLA and the nonconstant-coefficient norm schedule reproduce the optimization setup at the original sizes. Finite sampling uses fixed local seeds. The final reported packing is a word observed in the final sample, and its cost is checked against the separate exact geometry table. Query traces describe the native run.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.rectangles_packing.rectangles_packing_grid.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/rectangles_packing/rectangles_packing_grid/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_rectangle_packing_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "4f3bd962dd92940417c7d4784f849cdccd4249173b76acd84f0a6ed8212679f0"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "3a482f81b8ecbcd98c81aa8046a5a982c863d941f94a938b4400c009b1f6f73e"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "sha256": "e10d73602504a7986376758c23c1dbec8447bbefd408e818a01d3497a35ef713"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "sha256": "0f687ae55faa959743b559dd0963b4b1f565708b1e996d2001d64cca7959bc4b"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 5,
+      "sha256": "d5a7a92d8527241fa97864be203e513a7e5a85dd2755b87c4e069f9468768dab"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 6,
+      "sha256": "a57229333c858a5f50f8876edf14cb3c04081b2a42ef06775370b5b2fc7b6260"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "sha256": "d35715d1a6e309a6a9dc4a32bf031cf28be311ca65303d97a465deb655b9a122"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "sha256": "1e132f148a075810582ac8320fe29b5396cc987cfddf0e9d92bd19059dffe9bf"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "sha256": "9e846829fa0cb03fdfa4f14ec3fd8dae849d1f2b108527d375be747cb66349b0"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 10,
+      "sha256": "b4c8b632d19b3a60d501220bc858d73c5527f23a97ea0770974dfd592e556dd0"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 11,
+      "sha256": "9035e7273b8d1350ee44574ba5e4c5430489d4f1f5503ee3f9cbe0e41b58561a"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 12,
+      "sha256": "2b798c27e5bc438a62cc68084c5ae080cb53407b21d357ea545d329fba195ea5"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 13,
+      "sha256": "0250895fb3726d75efc6ef917752a938407aff158092350c12176708b6f1c45c"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 14,
+      "sha256": "29d0bc59eedb083ea4f8de402ad2b2d470d4ac54e58970cbc2bb76719483f68e"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 15,
+      "sha256": "ae19715e59a94c84d4af0f419c8d62eb96a2e5b8d9533ecae5b2bf9828d4e5a5"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 16,
+      "sha256": "cf023b3f6494f2b893f0b5c49e5e54ce5f7d22e6b2f3ddf0eae3e9cf0155113f"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 17,
+      "sha256": "ded1bdd781a73b89e8c52fe4966ff3036719a0e6fa2b0a9b3bfd593655390a26"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 18,
+      "sha256": "ffec9823a77267fc35a1cde2a40616b18ea7a65a94b7e5dbc274924e27364fbc"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 19,
+      "sha256": "31b60a68f5826b5a08a5d77efa326c2187717ce764b0de7a8abbd03595fce8e6"
+    }
+  ]
+}

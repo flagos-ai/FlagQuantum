@@ -1,0 +1,25 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt.ipynb",
+  "original_sha256": "f07829e583f1cb89afb0fd382f9527c5c0f87cd3d2f809277a03deed48e30248",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "f681426dd8b86a6c43d1b3b295fdcffeaf5d39b3e775820482f3bbc15bff75dd"
+    },
+    {
+      "index": 4,
+      "sha256": "62a897f349ce55c86201e53de801d9a3885e60d27d14abb047bad831235ea518"
+    },
+    {
+      "index": 6,
+      "sha256": "54f50578fb4b19a17b1fd6222e6b7a4c92fbb1b53afaea77ff01f55e9cf33700"
+    }
+  ],
+  "scope": "Complete native reconstruction of the commented Qiskit-reference QSVT compilation workflow:degree3,six data bits,three block bits,one auxiliary,four original phases;literal negative-zero reflection and LSB-first controlled modular shifts;actual CX/U3 costs and local durations. No execution of the foreign SDK,optimizer-level equivalence or timing comparison.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.qsvt.qiskit_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qiskit_paper_qsvt_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "01956f906b15db88bd3746970a68e51d3e276315",
+  "native_semantic_adaptations": "The entire source is commented; this is a native reconstruction, not a run of Qiskit transpile(opt_level=3). Preserve literal negative-zero reflection, phase-gate Fourier shifts and radians. Existing modular arithmetic replaces the proven Fourier-addition operator, not a claim of identical gate decomposition. Local budget11/work1/100000operations/64MiB is added explicitly; source has no width ceiling. Exact caller-owned RZ-to-U3 conversion preserves absolute phase."
+}

@@ -1,0 +1,69 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/optimization/learning_optimization.ipynb",
+  "original_sha256": "15e2d3f9b073ac5905db222834e954345e163d4ad76ef0e8557b59d71e461031",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "d91938d34baae8282eb24ea2b6817c7c87145926d4969e03ad9f394526ef7e10"
+    },
+    {
+      "index": 4,
+      "sha256": "16593bb6fb83d59e3829ed65fd6cf64d05aee34588837843182a0a1e4f811bd6"
+    },
+    {
+      "index": 6,
+      "sha256": "0a4a6330504a95be41f3d061624e9bd58d59478ee6d5403814369f39878b1a10"
+    },
+    {
+      "index": 8,
+      "sha256": "69c9ea99c54b47de4f5c224a6c4b04e8511f10b840821c204c7686b555bfa419"
+    },
+    {
+      "index": 10,
+      "sha256": "acab0dc113a1274377e23c2a438072c612e23b2627a9efe478217acf56b6deb5"
+    },
+    {
+      "index": 12,
+      "sha256": "98bb97dcd6ea6504057127eb29b69199355a394bcbbbbe7a53a7f6cf3be45456"
+    },
+    {
+      "index": 14,
+      "sha256": "2b880eef7a367126b420cb38ba063f9647e6bd1da0d98435e4d1a0e84f2014c9"
+    },
+    {
+      "index": 16,
+      "sha256": "7d750c7b721568cab0a0431204c2dd399ad4e32f103562c817c34264fb9532e6"
+    },
+    {
+      "index": 18,
+      "sha256": "435da85df27be7f55980c575d3f8c58a7938f89e0fc0afcc7cb75e1096d313a8"
+    },
+    {
+      "index": 21,
+      "sha256": "9128ee5004339c77ce37df36df829e016b7e83f103b21077c2316656c1991494"
+    },
+    {
+      "index": 23,
+      "sha256": "9cf366c7472da0ceee19e059abbf827eaffa9ac51436f1eec4d81553755c0b7f"
+    },
+    {
+      "index": 25,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 26,
+      "sha256": "12f52a14130be5d8c513c18699937ad9000fcab1aeba7ca3944b7578e3afa0c9"
+    },
+    {
+      "index": 28,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    }
+  ],
+  "scope": "Complete local bounded integer optimization workflow: same two integer domains, objective, inequality, one layer and penalty20. Explicit native positive-part-squared encoding and bounded Nelder-Mead replace the foreign Pyomo converter and optimizer; no vendor slack circuit or optimizer trajectory equivalence.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.optimization.learning_optimization.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/optimization/learning_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_integer_optimization_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "04ab7443aba5488df2ecdd64bb6ff62dce6ef040",
+  "native_semantic_adaptations": "Two unsigned two-bit ports x,y. Cost C=3*x+2*y+20*max(0,2-3*x-y)^2, phase exp(-i*gamma*C), RX(2*beta) mixer. Four physical bits and zero workspace. Nelder-Mead32 iterations from (0.19,0.37), step0.07. 1000 local CPU samples seed2718 from executed named probabilities; keep convergence flag and report observed feasible answers. The separate frozen eight-bit Qmod counterpart preserves its original slack weights and remains unchanged."
+}

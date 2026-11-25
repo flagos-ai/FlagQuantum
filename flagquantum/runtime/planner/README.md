@@ -35,3 +35,41 @@ product from resolved Runtime policy. Plan types and serialization live in
 Run the backend-selection, selection-context/result, execution-policy,
 execution-plan, and CPU vertical-slice tests. An ordinary policy change should
 remain in this directory.
+
+## Initial-state admission
+
+Circuit plans currently serialize operations and execution policy, not a live
+`Circuit(inputs=...)` tensor. The shared planning entry therefore refuses every
+explicit tensor input before compilation or representation selection. This
+applies to `fq.plan(circuit)`, local `fq.run(circuit)` and `circuit.run()`; an
+explicit zero tensor is also refused rather than treated as a default input.
+Dynamic planning uses the same check. Default-zero execution and state
+preparation expressed as gates, including in-program resets and QEC rounds,
+retain their existing semantics and serializable plans.
+
+For custom-state execution, use `fq.run(circuit, initial_state=initial)` with a
+Circuit constructed without inputs. This bounded CPU PyTorch statevector route
+uses `_initial_state.py`, the existing option resolver and plan_advanced with
+optimize=False. Its effective plan carries a versioned input requirement, not
+amplitudes. Existing `fq.Circuit(..., inputs=initial).state()` remains supported
+with its autograd path. The guard does not make Circuit.to_ir carry a live
+state tensor or admit external inputs to dynamic, remote or other engines.
+
+`_validated_plan_program` owns this check for both static and dynamic requests.
+Later representation and lowering decisions consume the admitted program; they
+must not introduce their own interpretation of construction-time inputs.
+
+`fq.plan` produces an executable `ExecutionPlan`; `fq.run(plan)` validates and
+executes its accepted decision without replanning. `Circuit.runtime_plan()`
+explains runtime selection through a separate result type. Neither entry makes
+an existing zero-input plan reusable with arbitrary external states. Compiler
+passes currently use the zero-input assumption, including removal of leading
+resets in `compiler/optimization/zero_state_reset.py`.
+
+Run the following for admission, gradient preservation and gate-preparation
+JSON replay checks:
+
+```bash
+python -m pytest tests/integration/test_custom_initial_state_admission.py \
+  tests/api_contract/test_dynamic_execution_planning.py -q
+```

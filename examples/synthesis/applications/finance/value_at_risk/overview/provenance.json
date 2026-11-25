@@ -1,0 +1,78 @@
+{
+  "upstream_path": "applications/finance/value_at_risk/value_at_risk.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "ff40af9821acabe338726a5d2f25bab670a2ac78c4fd829abeb088b5391140e1",
+  "git_blob_sha1": "62f16dccb7cc0d858dff9b7906980ff05dba9556",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "38e814cfcbfbe564eaaaf412bb35eaa8c74931572eba9f69dcce7c0c63a9f292",
+      "native_code_cell": 1,
+      "stage": "Import public FlagQuantum and example-local fresh-model, search and plotting tools."
+    },
+    {
+      "index": 4,
+      "sha256": "6c68e25d9f78f9dabf5efeaec0b44ee3db259f23ad3e89e94663c2cb1b8c10e4",
+      "native_code_cell": 2,
+      "stage": "Compute the original seven-bit128point log-normal grid from fresh closed-form density."
+    },
+    {
+      "index": 6,
+      "sha256": "5df5a80c9272a49c4839e90a4990558515dd95134e50b227a16669114bcc60c6",
+      "native_code_cell": 3,
+      "stage": "Normalize fresh probabilities, compute the original discrete quantile and render all128points."
+    },
+    {
+      "index": 8,
+      "sha256": "fee3c445ee54bdab59fa57e19a50886f18617e5a522f1f3486bd239cccf83c92",
+      "native_code_cell": 4,
+      "stage": "Retain the source exclusive CDF sum(probs[:index]) as an independent classical comparison."
+    },
+    {
+      "index": 9,
+      "sha256": "48f79e85053abe252ec485937d27a69b6a4c6cf5c7ce8488f2b949c7145256ad",
+      "native_code_cell": 5,
+      "stage": "Retain the integer index update and halving schedule in the source search."
+    },
+    {
+      "index": 10,
+      "sha256": "3aa8927bb88f8fa84601d07bc01bab9eea87f5b26a988ff6b80e6f081a1df50c",
+      "native_code_cell": 6,
+      "stage": "Expose the unchanged bisection termination and the source implicit None return as diagnostics."
+    },
+    {
+      "index": 11,
+      "sha256": "08fe75f047266a726727a2d095776f232226e5947a5aad4d6dfbf904e2df222e",
+      "native_code_cell": 7,
+      "stage": "Run the original exclusive-CDF classical bisection and record every source observation."
+    },
+    {
+      "index": 14,
+      "sha256": "7e0497b3268565bd0285c17659f24f3f5983d0bd5fa3d141b62b73bc8980b966",
+      "native_code_cell": 8,
+      "stage": "Create native distribution preparation, threshold XOR and reversible Grover family with independent full-state validation."
+    },
+    {
+      "index": 15,
+      "sha256": "85e4f091b8a04fd3cbea58f5bdc586e8d375452f93b7631fea20daae42fadfb8",
+      "native_code_cell": 9,
+      "stage": "Bind each structural threshold and run the documented count-only local adaptive profile."
+    },
+    {
+      "index": 16,
+      "sha256": "495a38b896ad9f8fd0e762ffb3d309d0f42c36d1c86e1a7c5db9c4995d6ecb8a",
+      "native_code_cell": 10,
+      "stage": "Reset the original threshold before starting quantum-assisted bisection."
+    },
+    {
+      "index": 17,
+      "sha256": "51eb9c8979108a1cc2d5e64535b10910e1c5ade1431072f7def30d1b7895e607",
+      "native_code_cell": 11,
+      "stage": "Run the entire sampled search, retain intervals/counts and report actual stopping behavior."
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_value_at_risk_notebook.py",
+  "native_entrypoint": "examples.synthesis.applications.finance.value_at_risk.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/value_at_risk/overview/walkthrough.ipynb",
+  "scope": "All11sourcecode stages; original seven-bit128pointfreshlognormalgrid,mu0.7,sigma0.13,exclusiveCDF,target0.07,tolerance0.007,initialindex32,width28,native thresholdXORandGroverfamily,independent absolutephysicalstatesas eight-logical-qubitCircuit/directstates tensoredwithcleanzerowork,namedindicator,retainedprivateasset,actualcount-onlylocaladaptiveprofileepsilon0.05/alpha0.01/k<=16/batch256/steps<=64/seed6200,sourcehalvingandtermination,implicitNonereturnandinitialvdiagnostic,andfullprobabilityplot. The search can exhaust before tolerance;no exactCDFrepair,tighterestimator,proprietaryIQAE,runtimebinding,hardware,speedup orscalabilityclaim. Algorithmicpowercap0..16 remains subject to explicitdefault100000operationbudget,sourcewidth28andmax20cleanwork;oversized threshold/powerpairs refuse without sampling."
+}

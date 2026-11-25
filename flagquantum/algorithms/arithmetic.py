@@ -61,7 +61,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..circuit import Circuit
-from ..compiler._arithmetic_kernels import ripple_add
+from ..compiler.registers._arithmetic_kernels import ripple_add
 
 __all__ = ["AdderQubits", "adder_circuit", "adder_qubits"]
 

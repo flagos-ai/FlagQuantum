@@ -1,0 +1,158 @@
+{
+  "upstream_path": "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "78db4855eb0e53205ca9ffeabd03eb054ba69f7b",
+  "original_sha256": "adf2bdf83cf3298991d74ffcf47856fa8e8117568318f3d16df5cc2c588d0717",
+  "scope": "All 29 source stages, two assets, a four-dimensional system, 2,048 shots per histogram, four spectroscopy bits, two selected reduced rotations and three HHL profiles.",
+  "native_semantic_adaptations": "Use fixed random seeds for finite sampling from the native program and deterministic ordering by decreasing counts then raw word. Preserve the source positional eigenvalue selection and the same measured fidelity for both hybrid profiles. Use the public logical depth and width objectives within a twelve-qubit ceiling. Count the local compiler's separate CX/U3 conversion after a projective state check. Compare the native circuits in absolute complex phase.",
+  "native_entrypoint": "examples.synthesis.applications.finance.hybrid_hhl_for_portfolio_optimization.portfolio_optimization_with_hhl.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hybrid_hhl_portfolio_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 11,
+      "native_code_cell": 1,
+      "sha256": "c10e5ebf0282b10a6c7176c47ce3b07f8049f08b8b60b8b9b657bd0433405cc9"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 2,
+      "sha256": "29f9c12a97f14104e6ca1672cacc5ac92b4ad6bec1f0fa34abac39d07385a7ff"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 3,
+      "sha256": "54abb07ade75f5bd85dea98be17768863c6b553ebddc7cad943a07501309eda0"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 4,
+      "sha256": "ab46d1c3a0183cc499b6a5096741323ec5e180ee5fe96a5a483c5b2909f46885"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 5,
+      "sha256": "8f74bbf96054b89c056a6678d407fb82f624a383d2e6173a9b942d15c15999c2"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 6,
+      "sha256": "2943096b2281cb61e9ef1f57cb56dab772762e171451ea9c935e6be31186be8d"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 7,
+      "sha256": "4120cce4b8520ecfa1291de57b15af3141990792bcc4b75b5b350c8be07b1a52"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 8,
+      "sha256": "9d6cb82901fef74ce38b3985a976b7d777f87b5f5e7e6387bec818eccff8dffd"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 9,
+      "sha256": "4eead305c8356cd52547ecbec6c9e6f33f3aca88478450a83a48284bb05ac895"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 10,
+      "sha256": "89195ee08a65d8012bddcf5e3c0e01722b09168c9a97e63433fc073c66c53d8d"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 11,
+      "sha256": "2d16d3c51daa4ad0ca108b813449d5f47e34eee7835604407a3e41c7b054ac15"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 12,
+      "sha256": "afff7b4996d979c50a8ee8a0f0a874d209dc9ede6a91c3d4a526d2cc0392c57c"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 13,
+      "sha256": "dc2a391bc1c1f8b2bde7632d7c82753dbaf88f52d0e2f729667b9a4c4bf02632"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 14,
+      "sha256": "7c407a389ef8beafd77c8640ef57808a20719f36a6b7a7e017b371ef1834c4b3"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 15,
+      "sha256": "ed6e51f8c98bbaec411b189255ee27b673d243e0b10961e2ed76bbbda7457bc2"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 16,
+      "sha256": "57379a5f22dc8539090ced08444e7c1bacc5cfc8b460acedadf503212a93de51"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 17,
+      "sha256": "c6162ca142af8bb05d14f2c5f4d97c0e374e44cd0a955c46800545648158a599"
+    },
+    {
+      "index": 52,
+      "native_code_cell": 18,
+      "sha256": "66a68b49fd91ce5d4aa61318dd217664177eb7f6c360382055260f1709148944"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 19,
+      "sha256": "13684de2fce5b0937f79ca1679731650a0fc0726b7216c2f24afe7566da1b086"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 20,
+      "sha256": "4d3c9a274d635805a3d2b3a12099ad90dd8c2d21daa20a4711dbcd338e9e9078"
+    },
+    {
+      "index": 57,
+      "native_code_cell": 21,
+      "sha256": "dccbd1c0d3658fb208a70b6af601c8fa4efe1821d579e556a5da5d679d85e5ac"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 22,
+      "sha256": "0d5a9568b7e6a73e66d4d57684ee61986a83ae1076f7c4cae6f23709300a7894"
+    },
+    {
+      "index": 61,
+      "native_code_cell": 23,
+      "sha256": "3ce367aab017944fb6771e36ce552dd70f70e0a883ca9d2fa07b34a21a276003"
+    },
+    {
+      "index": 63,
+      "native_code_cell": 24,
+      "sha256": "7eaa4059a6da6c60fc11ff9d1fdcb7fdaf7d36232b8c76913aa34600a470491e"
+    },
+    {
+      "index": 67,
+      "native_code_cell": 25,
+      "sha256": "28f2aab65d20ff6c288324428a15e8ed05ada78a3bd4aa7b064e1c871820b274"
+    },
+    {
+      "index": 69,
+      "native_code_cell": 26,
+      "sha256": "90b8a57b0d2dea6a1f255b4c5b53d0f9614ee0855eec039868e6990f16b8b748"
+    },
+    {
+      "index": 72,
+      "native_code_cell": 27,
+      "sha256": "5242d0657abe371b8c1a24f60b98d565ae78f126c497eeb93dcda52760ee5cc7"
+    },
+    {
+      "index": 74,
+      "native_code_cell": 28,
+      "sha256": "1dd29b6030e172f964910986e55947e9f8a5f06de04734d0c216c59711f0e1b0"
+    },
+    {
+      "index": 75,
+      "native_code_cell": 29,
+      "sha256": "4e0962eeff19212b156d04c6ca9674125ba36440a119716518231c95b2e74e04"
+    }
+  ]
+}

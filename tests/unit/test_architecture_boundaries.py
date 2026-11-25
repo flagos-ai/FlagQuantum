@@ -224,6 +224,7 @@ def test_top_level_package_layout_is_explicitly_frozen():
         "core",
         "compiler",
         "runtime",
+        "realtime",
         "simulation",
         "kernels",
         "compute",

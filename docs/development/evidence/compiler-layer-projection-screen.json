@@ -1,0 +1,175 @@
+{
+  "evidence_class": "development",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "distribution_semantics": "single_device_fast_path",
+  "scalability_claim_allowed": false,
+  "completed": true,
+  "candidate_sources": {
+    "flagquantum/compiler/topology/_layer_lookahead.py": "d0546db17a390c08dd70764524a5299e30bb8acca1ac9fc89b6f7f3c4f0f62fe"
+  },
+  "manifest": {
+    "evidence_class": "development",
+    "implementation_commit": "db244bf28f86810ee3439054c6243df0202f86a4",
+    "base_commit": "2ea5b78b6449b837db151e0d29c90895f6b51a4e",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "runner_sha256": "d2a78561fcf29ea107f81a6d0627a8b07feb8ffd7a01fc9ce92a4c2ba5aeac01",
+    "protocol_sha256": "8db1130827251b6b2b012f5b018dd899e6b33b0eb715e24939634b305790a998",
+    "compiler_seeds": [
+      11,
+      23,
+      37,
+      51,
+      73
+    ],
+    "configurations": {
+      "flagquantum-ordinary-restored": {
+        "sdk": "flagquantum",
+        "entrypoint": "compiler.compile; compiler.lowering.native_gate_legalization.legalize_native_gates",
+        "options": {
+          "routing": "default",
+          "optimization_level": "default",
+          "basis": [
+            "h",
+            "x",
+            "y",
+            "z",
+            "s",
+            "sdg",
+            "rx",
+            "ry",
+            "rz",
+            "cz"
+          ],
+          "max_added_operations": 20000,
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": false,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      },
+      "flagquantum-target-artifact": {
+        "sdk": "flagquantum",
+        "entrypoint": "compile_circuit_artifact_for_target",
+        "options": {
+          "basis": [
+            "rx",
+            "rz",
+            "cz"
+          ],
+          "initial_layout": "identity",
+          "final_layout": "restored",
+          "routing": "default",
+          "compiler_seed_supported": false,
+          "profile": "openqasm-3.0",
+          "max_native_added_operations": 20000,
+          "max_routing_added_operations": 20000,
+          "maximum_program_operations": 20000,
+          "serialize_executable_artifact": true
+        }
+      },
+      "qiskit-transpile-restored": {
+        "sdk": "qiskit",
+        "entrypoint": "qiskit.transpile",
+        "options": {
+          "basis": [
+            "cz",
+            "u"
+          ],
+          "optimization_level": 2,
+          "approximation_degree": 1.0,
+          "qubits_initially_zero": false,
+          "num_processes": 1,
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": true,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      },
+      "cirq-route-cz-restored": {
+        "sdk": "cirq",
+        "entrypoint": "RouteCQC; optimize_for_target_gateset",
+        "options": {
+          "basis": [
+            "cz",
+            "arbitrary-one-qubit-unitary"
+          ],
+          "allow_partial_czs": false,
+          "synthesis_atol": 1e-12,
+          "initial_mapper": "identity",
+          "initial_layout": "identity",
+          "final_layout": "sdk-reported",
+          "compiler_seed_supported": false,
+          "postprocessing": {
+            "final_layout": "identity",
+            "algorithm": "spanning-tree-leaf-token-restoration-v1",
+            "tree_root": 0,
+            "neighbor_order": "ascending",
+            "leaf_order": "ascending",
+            "swap_decomposition": "H-CZ-H CNOT triple",
+            "optimization_after_restoration": false,
+            "timed": true
+          }
+        }
+      }
+    },
+    "versions": {
+      "qiskit": "2.6.2",
+      "cirq-core": "1.7.0",
+      "torch": "2.14.0",
+      "numpy": "2.5.5"
+    },
+    "draws": 1,
+    "publication_eligible": false,
+    "expected_observations": 1200,
+    "input_nonce": "5a8e1eff6bad7ac6c3dd0f2cab4d63e392b504e26acb76b1be22ab61a4945573"
+  },
+  "rows": [],
+  "script_source": "import hashlib,itertools,json,sys\nfrom copy import deepcopy\nfrom pathlib import Path\nfrom types import SimpleNamespace\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import WIDTHS,FAMILIES,TOPOLOGIES,fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nbaseline=json.loads(Path('/private/tmp/fq-application-gap-observations-20261122.json').read_text())\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\ncanonical=lambda x:json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False)\nroot=Path.cwd();paths=('flagquantum/compiler/topology/_layer_lookahead.py',)\nr={'evidence_class':'development','source_commit':baseline['source_commit'],'distribution_semantics':'single_device_fast_path','scalability_claim_allowed':False,'completed':False,'candidate_sources':{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in paths},'manifest':baseline['manifest'],'rows':[],'script_source':Path(__file__).read_text(),'limitations':'Inspected fixed inputs only. Shared-host quality screen; no resource or held-out qualification.'}\nadapters={}\nfor name in ('flagquantum-ordinary-restored','flagquantum-target-artifact'):\n c=workflow_configuration(name);adapters[name]=load_adapter(SimpleNamespace(configuration={'options':{'sdk':c['sdk'],'workflow':name,'compiler_options':c}}))\nfor n,family,topology in itertools.product(WIDTHS,FAMILIES,TOPOLOGIES):\n f=fixture(n,family,topology,r['manifest']['input_nonce']);case=f'{n:02d}/{family}/{topology}'\n for name,adapter in adapters.items():\n  row={'case':case,'workflow':name,'seed':11,'status':'failed'}\n  old=next(v for v in baseline['rows'] if v['case']==case and v['workflow']==name and v['seed']==11)\n  row['baseline_metrics']=old['metrics']\n  try:\n   copied=deepcopy(f);payload=adapter.execute('route',copied,11);assert copied==f\n   row['payload']=payload;row['audit']=dict(adapter.audit)\n   row['metrics']=routing(payload,f,None,bundle.cases['ROUTE-GRID-08' if n==8 else f'ROUTE-LINE-{n:02d}'],0)\n   assert payload['final_layout']==list(range(n));row['status']='accepted'\n  except Exception as e:row.update(error_type=type(e).__name__,error=str(e))\n  r['rows'].append(row)\n print(json.dumps({'case':case,'rows':len(r['rows'])}),flush=True)\n Path('/private/tmp/fq-layer-projection-quality-screen-20261122.json').write_text(json.dumps(r,indent=2)+'\\n')\nr['completed']=True\nPath('/private/tmp/fq-layer-projection-quality-screen-20261122.json').write_text(json.dumps(r,indent=2)+'\\n')\nprint(json.dumps({'completed':True,'accepted':sum(v['status']=='accepted' for v in r['rows'])}))\n",
+  "limitations": "Inspected fixed inputs only. Shared-host quality screen; no resource or held-out qualification.",
+  "row_files": [
+    {
+      "path": "compiler-layer-projection-qaoa.json",
+      "sha256": "6d659ed26cfbebbfa925b4bf806feb5c148dbec42b61bbeb8b46df4a2a043e3d",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-layer-projection-ising.json",
+      "sha256": "e0668dc48e3c8f78e388d25dcdf952582f5e38c6538fa02e36afedc4a0a27b93",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-layer-projection-hopping.json",
+      "sha256": "8397719459cab85f0d56204d7e4a5614fd1e524e0c6a767114ada256339d8a03",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-layer-projection-qft.json",
+      "sha256": "a329e025a09afc19e14145b99e08587f595d8fb43dc5e323909d9a652f3390c4",
+      "row_count": 24
+    },
+    {
+      "path": "compiler-layer-projection-repetition.json",
+      "sha256": "45572ca5fd265002475da5bad9b0d93b81903dedc12c62f6609bfd3c67a8b227",
+      "row_count": 24
+    }
+  ],
+  "original_observation_sha256": "3235017210254d7e995b6e4b4072ffdaf0302a08ee00fc93ca15169f5c50ec5a"
+}

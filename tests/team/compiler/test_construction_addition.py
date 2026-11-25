@@ -4,14 +4,13 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._arithmetic_kernels import ripple_add
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.analysis.ranges import unsigned_width
+from flagquantum.compiler._construction.codegen.arithmetic import (
     _emit_arithmetic,
     lower_arithmetic,
     schedule_arithmetic,
 )
-from flagquantum.compiler._construction.profile import uint_type
-from flagquantum.compiler._construction.ranges import unsigned_width
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     INDEX,
     Block,
@@ -23,6 +22,7 @@ from flagquantum.compiler._hybrid.model import (
     ValueId,
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.registers._arithmetic_kernels import ripple_add
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit

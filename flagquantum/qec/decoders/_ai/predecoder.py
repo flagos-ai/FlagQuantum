@@ -13,7 +13,19 @@ import torch
 from torch import nn
 
 from flagquantum.qec.decoders.registry import DetectorErrorModelDecoder
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 from flagquantum.qec.dem.model import DemSample, DetectorErrorModel
+
+_LogicalBackend = DetectorErrorModelDecoder | SparseBlossomDecoder
+
+
+def _bundled_predictions(
+    backend: SparseBlossomDecoder, detectors: torch.Tensor, observables: int
+) -> torch.Tensor:
+    predicted = backend.decode_batch(detectors.cpu())
+    if predicted.shape != (detectors.shape[0], observables):
+        raise ValueError("decoder predictions have incompatible logical shape")
+    return predicted
 
 
 def _positive(value: int, name: str) -> None:
@@ -134,7 +146,7 @@ class Predecoder(nn.Module):
     def decode(
         self,
         detectors: torch.Tensor,
-        backend: DetectorErrorModelDecoder,
+        backend: _LogicalBackend,
         *,
         threshold: float = 0.9,
         enabled: bool = True,
@@ -144,6 +156,11 @@ class Predecoder(nn.Module):
         residual, prediction = self.correct(
             detectors, threshold=threshold, enabled=enabled, temperature=temperature
         )
+        if isinstance(backend, SparseBlossomDecoder):
+            global_prediction = _bundled_predictions(
+                backend, residual, prediction.shape[1]
+            )
+            return prediction ^ global_prediction.to(prediction)
         # The global DEM decoder consumes host detector indices explicitly.
         for i, row in enumerate(residual.cpu()):
             result = backend.decode(row.nonzero().flatten().tolist())

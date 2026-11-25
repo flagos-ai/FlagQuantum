@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a8cee833da0647321b4afadd60f9baa086d20697db52aa4c25fe681503f5b311",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.combinatorial_workshop.combinatorial_qmod_workshop_for_maxcut.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_polynomial_phase.py",
+  "scope": "Complete retained five-bit four-layer quantum program, with every edge and all eight parameters. Full classical graph optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Bounded Python loops express source repeat/apply_to_all; the fixed four layers preserve source params length8. Real Boolean-polynomial phase reads native logical array elements and shares Compiler expansion/lowering with the Qmod adapter. No Qmod loader or source text in user examples."
+}

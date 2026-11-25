@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "b29fb53678bca0aa7bcf2c0baf392cac8b9c427ccf2a73be00bce36e86b200a1",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.adiabatic_linear_solvers.solving_qlsp_with_aqc.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_compact_evolution.py",
+  "scope": "Complete retained three-bit AQC quantum program: both full Pauli tables, original probability preparation, all200 ordered calls and repetitions. The larger multi-scenario linear-solver Notebook remains pending.",
+  "native_semantic_adaptations": "Specialize the complete source time array in native qfunc. Share bounded compiler products with the Qmod adapter; compact only otherwise over-budget consecutive same-target sequences, with64-call chunks and phase-equivariant roundoff correction. No term truncation, larger capture cap, source imports or approximation-order change."
+}

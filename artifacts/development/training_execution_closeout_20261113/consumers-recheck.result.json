@@ -1,0 +1,20 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/api_contract/test_synthesis_phase_admission_proposal.py",
+    "tests/api_contract/test_synthesis_qmod_admission_proposal.py",
+    "tests/api_contract/test_synthesis_run_admission_proposal.py",
+    "tests/unit/test_training_compilation.py",
+    "tests/unit/test_training_parameter_state_contract_fake.py",
+    "tests/unit/test_training_state.py",
+    "-q",
+    "--junitxml=../training-review-consumers-recheck.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 0,
+  "reason": "process_exit",
+  "elapsed_seconds": 10.04,
+  "child_reaped": true
+}

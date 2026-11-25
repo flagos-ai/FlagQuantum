@@ -1,0 +1,165 @@
+{
+  "schema": "flagquantum.api_change_proposal",
+  "version": "1.0",
+  "status": "implemented_candidate",
+  "implementation_authorized": true,
+  "production_implemented": true,
+  "api_owner_approval": {
+    "kind": "explicit_human_user_approval",
+    "date": "2026-11-12",
+    "request": "Approved",
+    "record": "docs/api-changes/FQ-EXECUTION-INITIAL-STATE-20261112.md",
+    "review_commit": "c420795e2e6d668a2039cbc986945449f7da345f"
+  },
+  "proposal": "docs/development/EXECUTION_INITIAL_STATE_PROPOSAL.md",
+  "review_fake": "tests/unit/test_execution_initial_state_contract_fake.py",
+  "owner": "integration",
+  "public_api": {
+    "current_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None) -> 'ExecutionResult'",
+    "proposed_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None, initial_state: 'Tensor | None' = None) -> 'ExecutionResult'",
+    "new_keyword": {
+      "name": "initial_state",
+      "type": "Tensor | None",
+      "default": null,
+      "position": "keyword_only_after_name"
+    },
+    "plan_signature_unchanged": true,
+    "other_root_signatures_unchanged": true,
+    "root_exports_unchanged": true,
+    "constructor_deprecation": false
+  },
+  "first_slice": {
+    "new_execution_source": "Circuit",
+    "replay_source": "ExecutionPlan_carrying_initial_state_extension",
+    "path": "single_device_fast_path",
+    "backend": "pytorch",
+    "device": "cpu",
+    "representation": "statevector",
+    "batch_size": 1,
+    "outputs": [
+      "statevector",
+      "probabilities"
+    ],
+    "shots": null,
+    "noise_model": null,
+    "allow_approximate": false,
+    "allow_backend_fallback": false,
+    "excluded": [
+      "CircuitIR_with_external_input",
+      "precompiled_programs",
+      "synthesis_Program",
+      "LindbladPlan",
+      "IsingBraidProgram",
+      "dynamic_instructions",
+      "channels",
+      "structured_operations",
+      "matrix_operations",
+      "distributed",
+      "accelerator",
+      "density_matrix",
+      "mps",
+      "tensor_network",
+      "stabilizer"
+    ]
+  },
+  "input_data": {
+    "accepted_tensor_types": [
+      "torch.Tensor",
+      "torch.nn.Parameter"
+    ],
+    "layout": "strided",
+    "shape": "[2**program.n_qubits]",
+    "basis_order": "qubit_0_msb",
+    "dtypes": [
+      "complex64",
+      "complex128"
+    ],
+    "precision": "exactly_matches_resolved_precision",
+    "contiguous_required": false,
+    "finite_required": true,
+    "squared_norm_target": 1.0,
+    "squared_norm_absolute_tolerance": {
+      "complex64": 1e-05,
+      "complex128": 1e-12
+    },
+    "relative_tolerance": 0.0,
+    "renormalization": false,
+    "ownership": "one_contiguous_differentiable_clone_per_execution",
+    "concurrent_mutation_during_admission": "unsupported",
+    "mutation_after_admission": "does_not_change_owned_input",
+    "caller_mutation": false,
+    "plan_retains_tensor_or_graph": false
+  },
+  "plan_extension": {
+    "outer_schema": "flagquantum.execution_plan",
+    "outer_version": "1.0",
+    "namespace": "flagquantum.execution",
+    "kind": "initial_state",
+    "version": "1.0",
+    "payload": {
+      "representation": "statevector"
+    },
+    "identity": "sha256_canonical_json_of_payload",
+    "maximum_extension_count": 1,
+    "missing_state": "ValidationError_before_execution",
+    "compatible_different_amplitudes": "accepted_without_replanning",
+    "zero_input_plan_with_supplied_state": "CapabilityError_before_execution",
+    "unknown_extension": "existing_extension_incompatible_error",
+    "amplitudes_in_plan": false,
+    "amplitude_digest_in_plan": false,
+    "duplicate_shape_dtype_or_device_in_extension": false
+  },
+  "compiler": {
+    "source_of_truth": "existing_CircuitIR",
+    "existing_boundary": "planner.plan_advanced",
+    "optimize_external_input_route": false,
+    "new_work_qubits_allowed": false,
+    "input_assumption": "arbitrary_full_register_state",
+    "default_zero_route_unchanged": true,
+    "replay_compilation_or_planning": false
+  },
+  "gradients": {
+    "scope": "first_order_native_PyTorch",
+    "input_and_gate_parameter_gradients": true,
+    "unrequested_requires_grad_changes": false,
+    "implicit_detach": false,
+    "direct_request_inference": "when_call_require_gradients_is_None_infer_true_from_input_or_gate_parameters_using_existing_resolver_policy_options",
+    "explicit_false_with_grad_inputs_or_parameters": "ValidationError",
+    "gradient_input_to_non_gradient_plan": "CapabilityError_without_replanning",
+    "restored_parameter_graph": false
+  },
+  "memory": {
+    "preflight_minimum_bytes": "plan.state_bytes + input.numel()*input.element_size()",
+    "preflight_before_input_clone": true,
+    "validation_chunk_elements": 4096,
+    "caller_owned_input_counted_in_runtime_budget": false,
+    "kernel_workspace_autograd_and_process_RSS_bounded": false,
+    "input_clone_not_cached_across_calls": true
+  },
+  "persistence": {
+    "plan_json": "contract_only_caller_resupplies_initial_state",
+    "fqx_with_result": "preserve_existing_plan_extension_and_outputs_without_initial_amplitudes",
+    "fqx_plan_without_result": "SerializationError_before_writing_no_lossy_program_only_save",
+    "load_executes": false,
+    "loaded_result_plan": null,
+    "loaded_execution_plan": "existing_Experiment.execution_plan_record",
+    "exact_reproduction": "caller_resupplies_same_input_data_and_required_environment",
+    "different_input": "new_execution_using_same_compatible_plan",
+    "original_autograd_graph_restored": false,
+    "old_unknown_extension_readers": "reject_explicitly",
+    "existing_zero_plan_and_FQX_behavior": "unchanged"
+  },
+  "failures": {
+    "non_tensor_or_both_input_spellings": "TypeError",
+    "shape_dtype_finiteness_normalization_or_explicit_gradient_conflict": "ValidationError",
+    "unsupported_program_engine_device_layout_or_tensor_subclass": "CapabilityError",
+    "insufficient_preflight_budget": "CapabilityError_before_clone"
+  },
+  "delivery": {
+    "stage": "implemented_locally_not_released",
+    "contract_fake_conformance_before_domain_implementation": true,
+    "public_api_snapshot_regeneration_authorized": false,
+    "replacement_test_with_real_binding": "passed_same_consumer_with_review_fake_and_runtime_binders",
+    "no_input_fast_path_regression_measurement": "bounded_CPU_timing_and_exact_output_plan_compatibility_checks_not_a_release_performance_claim"
+  }
+}

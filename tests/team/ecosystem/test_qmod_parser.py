@@ -4,14 +4,20 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,
     QmodImport,
     parse_qmod,
 )
-from flagquantum.ecosystem._qmod.syntax import MAX_BYTES, MAX_TOKENS
+from flagquantum.ecosystem._qmod.syntax import (
+    MAX_BYTES,
+    MAX_EXPRESSION_DEPTH,
+    MAX_TOKENS,
+)
 
 pytestmark = pytest.mark.unit
 CORPUS = Path(__file__).resolve().parents[2] / "fixtures/classiq_qmod"
@@ -147,17 +153,21 @@ def test_relabelled_source_is_compiled_generically_without_filename_dispatch() -
         ("qfunc main(output a:qbit,output a:qbit) {}", "qmod.name"),
         ("qfunc main(output q:qarray) {}", "qmod.type"),
         ("qfunc main(output q:qbit[]) {}", "qmod.width"),
-        ("qfunc main(output q:qbit[2]) {}", "qmod.type"),
+        ("qfunc main(output q:qbit[0]) {}", "qmod.width"),
         ("qfunc main(output q:qbit[]) { allocate(2,q); H(q); }", "qmod.type"),
         ("qfunc main(output q:qbit[]) { allocate(2,q); q=1; }", "qmod.type"),
-        ("qfunc main(output q:qnum<3,SIGNED,0>) {}", "qmod.type"),
+        ("qfunc main(output q:qnum<3,SIGNED,0>) {}", "construction.register.return"),
+        ("qfunc main(output q:qnum<3,SIGNED,1>) {}", "qmod.type"),
         ("qfunc main(output q:qbit<1>) {}", "qmod.type"),
         ("qfunc main(output q:qnum<0>) {}", "qmod.width"),
         ("qfunc main(output q:qnum<257>) {}", "qmod.width"),
         ("qfunc main(output q:qbit,) {}", "qmod.syntax"),
-        ("qfunc main(output q:qbit) { local:qbit; allocate(local); }", "qmod.scope"),
+        (
+            "qfunc main(output q:qbit) { local:qbit; allocate(local); }",
+            "construction.register.drop",
+        ),
         ("qfunc main(output q:qbit) { q^=1; }", "qmod.statement"),
-        ("qfunc main(output q:qbit) { q+=1; }", "qmod.statement"),
+        ("qfunc main(output q:qbit) { q+=1; }", "qmod.type"),
         ("qfunc main(output q:qbit) { q=-1; }", "qmod.expression"),
         ("qfunc main(output q:qbit) { q=true; }", "qmod.name"),
         ("qfunc main(output q:qbit) { q=missing; }", "qmod.name"),
@@ -173,8 +183,8 @@ def test_relabelled_source_is_compiled_generically_without_filename_dispatch() -
         ("qfunc main(output q:qnum<3>) { allocate(q); X(q); }", "qmod.type"),
         ("qfunc main(output q:qbit) { allocate(q); X(); }", "qmod.signature"),
         ("qfunc main(output q:qbit) { allocate(q); X(q+1); }", "qmod.signature"),
-        ("qfunc main(output q:qbit) { allocate(q); drop(q); }", "qmod.call"),
-        ("qfunc main(output q:qbit) { allocate(q); free(q); }", "qmod.call"),
+        ("qfunc main(output q:qbit) { allocate(q); drop(q); }", "qmod.drop"),
+        ("qfunc main(output q:qbit) { allocate(q); free(q); }", "qmod.free"),
         ("qfunc main(output q:qbit) { allocate(q); bind(q,q); }", "qmod.call"),
         ("qfunc main(output q:qbit) { unknown(q); }", "qmod.call"),
         ("qfunc main(output q:qnum<2>) { allocate(q); q=q**9; }", "qmod.operator"),
@@ -231,11 +241,17 @@ def test_diagnostic_retains_exact_native_line_and_column() -> None:
         ("qfunc main(output q:qnum) { q=" + "9" * 79 + "; }", "qmod.budget.number"),
         ("qfunc main(output q:qnum) { q=" + str(1 << 256) + "; }", "qmod.width"),
         (
-            "qfunc main(output q:qnum) { q=" + "(" * 34 + "1" + ")" * 34 + "; }",
+            "qfunc main(output q:qnum) { q="
+            + "(" * (MAX_EXPRESSION_DEPTH + 2)
+            + "1"
+            + ")" * (MAX_EXPRESSION_DEPTH + 2)
+            + "; }",
             "qmod.budget.depth",
         ),
         (
-            "qfunc main(output q:qnum) { q=" + "+".join(["1"] * 34) + "; }",
+            "qfunc main(output q:qnum) { q="
+            + "+".join(["1"] * (MAX_EXPRESSION_DEPTH + 2))
+            + "; }",
             "qmod.budget.depth",
         ),
         (
@@ -270,10 +286,10 @@ def test_capture_never_executes_source_reads_files_or_invokes_synthesis(
         raise AssertionError("source adaptation must not execute, read, or synthesize")
 
     monkeypatch.setattr(
-        "flagquantum.compiler._construction.frontend_python.capture", forbidden
+        "flagquantum.compiler._construction.frontend.python.capture", forbidden
     )
     monkeypatch.setattr(
-        "flagquantum.compiler._construction.selection.select_register_program",
+        "flagquantum.compiler._construction.scheduling.selection.select_register_program",
         forbidden,
     )
     monkeypatch.setattr(Path, "read_text", forbidden)

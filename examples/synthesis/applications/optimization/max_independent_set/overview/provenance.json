@@ -1,0 +1,81 @@
+{
+  "upstream_path": "applications/optimization/max_independent_set/max_independent_set.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "005cb3fcef27357f305e0000f0dc6cac00b1360c",
+  "original_sha256": "b27ccc2ecbb83944d0b306f44c56cb84d882dbb56df2c7a4e2f74bbdddab693a",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "5735eaf0fe690ccd1510a0b96a513d9e8c828de1e4d2307873716500a394614a"
+    },
+    {
+      "index": 4,
+      "sha256": "745ee1888569ccc0da6a6606a10c795591719a2ea626ddbf69c3e2e7560e4d94"
+    },
+    {
+      "index": 6,
+      "sha256": "366b7460885ba0c4e350ac5b664009be788bdcb78b23a6d5c6c66e4d4ccb22df"
+    },
+    {
+      "index": 7,
+      "sha256": "d8dab33ca6eff66ec6b98263f5ac80e87871d8252e65744e97707a28bb2d94ef"
+    },
+    {
+      "index": 9,
+      "sha256": "ed093e133d6e5855c302f6ab294c05faa4b7daa42cf5071d091760998b358baa"
+    },
+    {
+      "index": 11,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 13,
+      "sha256": "b203d85c82784ca814ba2905bf03286197c547266a49ea950012d148e183f333"
+    },
+    {
+      "index": 15,
+      "sha256": "0ff1051ce8394ca463dcdd9723609c8473dc7497e6e19338cc8fdddd7a1803c5"
+    },
+    {
+      "index": 19,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 21,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 23,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b"
+    },
+    {
+      "index": 25,
+      "sha256": "c46f30aabf5a513323e959bf5b3db1e36c5c454518afabaa6ea97f8b8fad1368"
+    },
+    {
+      "index": 26,
+      "sha256": "7b7cfabf6553b364d4de6050a0732989080366bd3d17cd7c540c2c454102beaa"
+    },
+    {
+      "index": 27,
+      "sha256": "63030696e0fc1896c32e6d8f7c8b9bbca6a1fa62ba55e7e0587eb4a8a3e19259"
+    },
+    {
+      "index": 29,
+      "sha256": "71b8cb7201bede7cae1696b77d591e7cca6a7a7391fd754cb73b4f515981506a"
+    },
+    {
+      "index": 30,
+      "sha256": "554a19e5b60d98fa650640793024c1573170f4b9659a664c25d84d73cdc139e0"
+    },
+    {
+      "index": 31,
+      "sha256": "8c26c0d12a688c06ad795f857a32fb90c703df0599ea1c0b18df8b5d90043606"
+    }
+  ],
+  "scope": "Complete local max independent set workflow: original seeded8-node graph,3layers,maxiter60,quantile0.7,retained native quantum cost. Actual native evaluations,seeded optimized/uniform sampling,feasible solution filtering,bounded exact classical reference and all workflow plots. No foreign optimizer/solver trajectory or cloud equivalence.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_independent_set.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/max_independent_set/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_graph_optimization_notebooks.py",
+  "native_semantic_adaptations": "Reuse unchanged frozen native qfunc: 8 physical bits,zero workspace,gamma-then-beta order,RX(beta). Explicit lower-tail penalized CVaR0.7 and public Nelder-Mead step0.07 with original60-iteration bound replace private optimizer. Initial(.13,-.27,.19,.22,.31,-.17).1000 optimized local samples seed2718 and1000 uniform seed31415. Feasibility is checked separately from penalized minima. Exact256-assignment feasible enumeration replaces Couenne as labeled reference only after optimization/sampling. Seeded force graph layout replaces Kamada-Kawai to avoid SciPy. No unchanged private encoding,optimization trajectory,plot-value or hardware parity claim. Named packed-array integers use v[i] at bit i (node0 is LSB); model tables and selected node lists follow that indexing, independent of statevector axis order."
+}

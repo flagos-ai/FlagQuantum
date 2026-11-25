@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "fermi_hubbard_1D.qmod",
+      "upstream_path": "applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D.qmod",
+      "git_blob_sha1": "b1fbf1664f2732776fc058f6ba9063155888757d",
+      "sha256": "7cf818c5d745cfb719f195242aa04f0eadaa55ef82b55bb7ae889c4d92e351e8"
+    },
+    {
+      "file": "bb84_implementation.qmod",
+      "upstream_path": "community/paper_implementation_project/bb84/bb84_implementation.qmod",
+      "git_blob_sha1": "5e60e9ebf3efb8c4e85b9ac0a6f17d5593e251ce",
+      "sha256": "0fe7bec249141df2b8ae9b2f5caa60130c6ce08242920d73b5673905fac9c80e"
+    },
+    {
+      "file": "credit_card_fraud.qmod",
+      "upstream_path": "applications/finance/credit_card_fraud/credit_card_fraud.qmod",
+      "git_blob_sha1": "9d6e6a52f2d301849370a2bcba708c24f249813e",
+      "sha256": "e51f68346a2580027b751bda6aacd9cf8c1e610ef828c8a6260203c8bd88e140"
+    }
+  ]
+}

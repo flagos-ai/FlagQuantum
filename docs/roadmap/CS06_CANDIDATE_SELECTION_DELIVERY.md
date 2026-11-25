@@ -9,8 +9,8 @@ implementation, stable API/schema, dependency or CI configuration changes.
 ## Reproduce the actual workflow
 
 ```bash
-python -m examples.synthesis_selection
-python -m examples.synthesis_selection_costs
+python -m tools.synthesis_compiler_examples.selection.main
+python -m tools.synthesis_compiler_examples.selection_costs.main
 ```
 
 The first command prepares coherent inputs, selects recompute under a nine-qubit

@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "99eb78694d22517250b56657d103bc669c1965fe",
+  "original_sha256": "e6ae946911a9256d693a04a5e18d64d73c8fcd66a7b40c1962763b88dd74144b",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "e51ab473a98fe0681e58108e5eeaaf9a9d6ef88c6464d2db08bacd68c2b8be12"
+    },
+    {
+      "index": 3,
+      "sha256": "50a976632f63282450edf0ac5a16877d3072bbe0a52e2942775369d4b83f0ef6"
+    },
+    {
+      "index": 5,
+      "sha256": "b1ccc156940965de567cae99a23b044bdfe4e91e64864c80243513ab74f2ca03"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_xor.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_bitwise_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/bitwise_xor/overview/walkthrough.ipynb",
+  "scope": "Complete local computational bitwise-XOR Notebook: both original examples, widths/signs/values, synthesis, execution, named exact readout and1000seeded samples per example. All native code cells execute in order; independent full-state Circuit acceptance remains separate.",
+  "native_semantic_adaptations": "Typed Annotated widths/sign replace allocate metadata arguments. Local CPU execution and seeded samples from executed numeric probabilities replace cloud sample/table output; no hardware result is claimed."
+}

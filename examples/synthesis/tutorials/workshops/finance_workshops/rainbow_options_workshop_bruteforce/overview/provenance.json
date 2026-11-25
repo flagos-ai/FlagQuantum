@@ -1,0 +1,118 @@
+{
+  "upstream_path": "tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "25a4d50d6405410acd18b19cab675c69ec2b967c",
+  "original_sha256": "414a321e1ef85b28134e5d7dc0cf603e542afbb4b0026623093d86aed5014335",
+  "scope": "All 21 workshop stages, two original two-bit assets, one-fraction-bit affine maximum, three-bit payoff selector, width budgets 14 and 25, and all 20000 actual indicator draws.",
+  "native_semantic_adaptations": "Reuse freshly generated source constants and the workshop native payoff qfunc. At the original first power, collect the entire 20000-shot batch and stop when the fixed-batch Hoeffding confidence interval meets the source epsilon and alpha. Preserve the source confidence rescaling and separate the historical check from the exact finite expectation.",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.finance_workshops.rainbow_options_workshop_bruteforce.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_rainbow_workshop_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "sha256": "fee9b0cba5c5e30880c2a036127bf95ab3fb32f3437c2f16859194b3c51ae798"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "50d81b0dcb2ba949f83bff0baa65c9317fd27fd5bfd1e3b6361e6483d8f04483"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "d911baf6d6466ddc223f056593a46a1f9964ba2a5da14c193e17e258d9c2608b"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "d8745c3743181331c59ab1d7ca4208b54fb1810ee4b334d3672e0a9f0ce3b7c0"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 5,
+      "sha256": "eb5da23ebd04eb4e91fac0da56ea94e0e98aefa18a577095b4c7f791296b0cd9"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 6,
+      "sha256": "d9eb08fcd56ff27794e3211fefb99c9759751dfed6351fb23b4152dc3a67ddd1"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 7,
+      "sha256": "483913654b8e91c24d98d335cd0ad8d495f774e1374502bc0927ff8d2c60d2d1"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 8,
+      "sha256": "a43a2e6eca9986862689d1fc917c3cdd3c5ac76572a54621962a46e2708fadc7"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 9,
+      "sha256": "37b8a5e37f44c9e1042bee46dc4e7509016d039d17056416bf3514bd50194abd"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 10,
+      "sha256": "142cb8593f7c6d49c3adc9777eda13fe79c577a3428f258fef502c34ff5e067a"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 11,
+      "sha256": "af861ee439e25980fcd8046a2ebf041884ae9c4da620d1e7f7877a0a4f974d1a"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 12,
+      "sha256": "a5cc26c02638c2dcac22c120199103fa905c12ca73b894977ecf126df6f09bf3"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 13,
+      "sha256": "34d5012a7a3d83900659280569722cc053db1f0bf69cd2176fada2ea8f371b0d"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 14,
+      "sha256": "fdfe6ee84f470ffc089df582ecfc84b5aa4540e24757287f09a09444c5b72836"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 15,
+      "sha256": "fd683bcb9d7104bd5b482eec074df65333c4f185ef5f25f024e93d6a9fef8eb4"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 16,
+      "sha256": "9416a72a7de8b7662287c24b039577b2985012c0889c86bf78d934b09d40c261"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 17,
+      "sha256": "3c82434be9cb67880d6fab61034312269194038d9cc6abb946c3c05a7aab7062"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 18,
+      "sha256": "f4dbd48345252a18333fe605442aed5e9811460ae5f9fb54726a16f7eadba151"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 19,
+      "sha256": "d9793a0453573f30c98319983a749623095dd2fef526adbc80000a124ba97698"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 20,
+      "sha256": "0a38f9c34445e4ea8b072437e8ef7864c531c354d11d31156c6b2e450dc049a6"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 21,
+      "sha256": "dc1138c6fcc22c0d56c84c61defb8c164999d61e2418ecea9962c5b9fb2ef56f"
+    }
+  ]
+}

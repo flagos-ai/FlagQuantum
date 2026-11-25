@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_counting_qpe.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe.qmod",
+      "git_blob_sha1": "8ef70fc31c9aec338fd0909b6cc00102033706df",
+      "sha256": "5b6999f9c73fdcca7bdcffbc9226f94c5536a540520d2420aa09a674646c5818"
+    },
+    {
+      "file": "qpe_for_unitary_matrix.qmod",
+      "source_path": "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix.qmod",
+      "git_blob_sha1": "a24394145143c4e030297e94677f137402d16460",
+      "sha256": "8debef37e497de69553e7d222bffd1bd9844ef3dda0b77a5e57daa61787bdf14"
+    },
+    {
+      "file": "qpe_for_matrix.qmod",
+      "source_path": "algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix.qmod",
+      "git_blob_sha1": "7f9e59ba7dca3260d8749cf15b43adc5b2bd2afd",
+      "sha256": "a782a5e6fc3cf6b7f9d7bd2ed32645da1e3b80185172081e3bfcb578f1df1433"
+    }
+  ]
+}

@@ -38,7 +38,8 @@ def memory_to_stim_text(
     """Export the positioned memory experiment and its declared parities.
 
     Noise is read from the actual executed Kraus law. No geometric coordinates
-    are invented for native layouts. Requires the optional Stim extra.
+    are invented for native layouts. Uses the embedded engine when present;
+    other builds require the optional Stim extra.
 
     Examples:
         >>> from importlib.util import find_spec
@@ -117,3 +118,10 @@ def stim_circuit_to_dem_text(
     if not isinstance(decompose_errors, bool):
         raise TypeError("decompose_errors must be a boolean")
     return _stim_experiment_dem_text(circuit_text, decompose_errors=decompose_errors)
+
+
+def _stim_circuit_to_matching_dem_text(circuit_text: str) -> str:
+    """Request graphlike decomposition for the opt-in matching experiment."""
+    return _stim_experiment_dem_text(
+        circuit_text, decompose_errors=True, normalize_uniform_pauli=True
+    )

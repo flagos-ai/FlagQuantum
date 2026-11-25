@@ -1,0 +1,193 @@
+{
+  "freeze": {
+    "base_commit": "5a84f706ab9aeaab0ad3a5472bac292616fe39fe",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "status": "Inspected resource pilot; no production changes; retain first complete run",
+    "admission": "All three fixed controls at least 5% lower median time and no larger traced peak, two warmups, nine alternating samples. No rerun to rescue a failure.",
+    "source_sha256": {
+      "fq_sparse_product_support_20261122.py": "ec6b1c76753239e1ace412cd96c3a7e5a4a3b6f06e66cce2f20b68cdaf928af3",
+      "fq-sparse-product-resources-20261122.py": "31177b4f0c3c82c5074ca709400d55394d3f5c9d2b08826515eab2baae17e650"
+    }
+  },
+  "resources": {
+    "scope": "Shared-host inspected development control, not qualified latency, RSS, significance or SDK ranking",
+    "warmups": 2,
+    "retained_rounds": 9,
+    "order": "alternating baseline/candidate by round",
+    "rows": [
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.08864925004309043,
+            0.10364533396204934,
+            0.08891029201913625,
+            0.08822045900160447,
+            0.08880379103356972,
+            0.10277008399134502,
+            0.08809404098428786,
+            0.0880866670049727,
+            0.10213704197667539
+          ],
+          "candidate": [
+            0.10261162498500198,
+            0.08814695797627792,
+            0.08827854198170826,
+            0.10334116598824039,
+            0.10408341704169288,
+            0.08777820796240121,
+            0.08803062501829118,
+            0.1030982089578174,
+            0.08806812495458871
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.08880379103356972,
+          "candidate": 0.08827854198170826
+        },
+        "compiler_stage_traced_python_peak_bytes": {
+          "baseline": 2198504,
+          "candidate": 2198446
+        },
+        "metrics": {
+          "baseline": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          }
+        },
+        "time_ratio": 0.994085285709673,
+        "passes_time_gate": false,
+        "passes_peak_gate": true
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "ring"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.10038058401551098,
+            0.1155833340017125,
+            0.11442720802733675,
+            0.1157992499647662,
+            0.10065616702195257,
+            0.09995091601740569,
+            0.11424508399795741,
+            0.11489899997832254,
+            0.11557641701074317
+          ],
+          "candidate": [
+            0.11525895894737914,
+            0.10036929202033207,
+            0.10005800001090392,
+            0.11445079097757116,
+            0.1151288750115782,
+            0.11529425001936033,
+            0.11526812502415851,
+            0.10003783402498811,
+            0.10082145902561024
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.11442720802733675,
+          "candidate": 0.11445079097757116
+        },
+        "compiler_stage_traced_python_peak_bytes": {
+          "baseline": 2567021,
+          "candidate": 2567021
+        },
+        "metrics": {
+          "baseline": {
+            "max_semantic_error": 6.761659273861517e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 6.761659273861517e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          }
+        },
+        "time_ratio": 1.0002060956536558,
+        "passes_time_gate": false,
+        "passes_peak_gate": true
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "samples_seconds": {
+          "baseline": [
+            0.5547122500138357,
+            0.5560961669543758,
+            0.5830823330325074,
+            0.5514017909881659,
+            0.5537511250004172,
+            0.5549116249894723,
+            0.5538642919855192,
+            0.643982625042554,
+            0.5706430830177851
+          ],
+          "candidate": [
+            0.5738974590203725,
+            0.5522595410002396,
+            0.5816977500217035,
+            0.5539134169812314,
+            0.5673185000196099,
+            0.5548205000231974,
+            0.5579790420015343,
+            0.5603480410063639,
+            0.5616903329500929
+          ]
+        },
+        "median_seconds": {
+          "baseline": 0.5549116249894723,
+          "candidate": 0.5603480410063639
+        },
+        "compiler_stage_traced_python_peak_bytes": {
+          "baseline": 10118935,
+          "candidate": 10118885
+        },
+        "metrics": {
+          "baseline": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          }
+        },
+        "time_ratio": 1.0097969041772998,
+        "passes_time_gate": false,
+        "passes_peak_gate": true
+      }
+    ],
+    "passes_declared_resource_admission": false,
+    "driver_source": "from __future__ import annotations\n\nimport gc\nimport json\nimport statistics\nimport time\nimport tracemalloc\nfrom pathlib import Path\nimport fq_sparse_product_support_20261122 as support\n\nout=Path('/private/tmp/fq-sparse-product-resources-20261122.json')\nassert not out.exists()\nrows=[]\nfor width,family,topology in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n    source=support.fixture(width,family,topology,support.NONCES[0])\n    def run(variant,trace=False):\n        adapter=support.adapter_for('flagquantum-target-artifact')\n        peak=None\n        with support.selected(variant):\n            if trace:tracemalloc.start()\n            try:\n                started=time.perf_counter()\n                payload=adapter.execute('route',source,11)\n                elapsed=time.perf_counter()-started\n                if trace:peak=tracemalloc.get_traced_memory()[1]\n            finally:\n                if trace:tracemalloc.stop()\n        return payload,elapsed,peak\n    for _ in range(2):\n        for variant in ('baseline','candidate'):run(variant)\n    samples={v:[] for v in ('baseline','candidate')}\n    payloads={}\n    for iteration in range(9):\n        for variant in (('baseline','candidate') if iteration%2==0 else ('candidate','baseline')):\n            payload,elapsed,_=run(variant)\n            samples[variant].append(elapsed)\n            payloads[variant]=payload\n    peaks={}\n    for variant in ('baseline','candidate'):\n        gc.collect()\n        _,_,peaks[variant]=run(variant,trace=True)\n    medians={v:statistics.median(values) for v,values in samples.items()}\n    metrics={v:support.accept(p,source) for v,p in payloads.items()}\n    assert metrics['baseline']==metrics['candidate']\n    assert payloads['baseline']['operations']==payloads['candidate']['operations']\n    row={'case':[width,family,topology],'samples_seconds':samples,'median_seconds':medians,'compiler_stage_traced_python_peak_bytes':peaks,'metrics':metrics,'time_ratio':medians['candidate']/medians['baseline'],'passes_time_gate':medians['candidate']<=.95*medians['baseline'],'passes_peak_gate':peaks['candidate']<=peaks['baseline']}\n    rows.append(row)\n    print(json.dumps(row),flush=True)\nreport={'scope':'Shared-host inspected development control, not qualified latency, RSS, significance or SDK ranking','warmups':2,'retained_rounds':9,'order':'alternating baseline/candidate by round','rows':rows,'passes_declared_resource_admission':all(r['passes_time_gate'] and r['passes_peak_gate'] for r in rows),'driver_source':Path(__file__).read_text(),'support_source':Path('/private/tmp/fq_sparse_product_support_20261122.py').read_text()}\nout.write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps({'passes_declared_resource_admission':report['passes_declared_resource_admission']}))\n",
+    "support_source": "from __future__ import annotations\nimport ast,contextlib,json,math,subprocess,sys,time\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom flagquantum.compiler.optimization import _cz_blocks as blocks\nfrom flagquantum.compiler.optimization.two_qubit_optimization import Matrix,_IDENTITY,_matmul\nfrom flagquantum.core.ir import Instruction\nfrom collections.abc import Sequence\nBASE='5a84f706ab9aeaab0ad3a5472bac292616fe39fe'\nHARNESS=Path('/private/tmp/sdkbench-product-conformance-20261121')\nNONCES=['01'*32]\nWORKFLOWS=('flagquantum-ordinary-restored','flagquantum-target-artifact')\nBUNDLE=Bundle(HARNESS/'docs/implementation')\nassert subprocess.check_output(['git','rev-parse','HEAD'],cwd=HARNESS,text=True,timeout=15).strip()=='9aa9260920984e2ca05bcb293abb885fccd9c144'\nassert not subprocess.check_output(['git','status','--porcelain'],cwd=HARNESS,text=True,timeout=15).strip()\nBASE_SOURCE=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/_cz_blocks.py'],text=True,timeout=20)\n\ndef sparse_product(instructions:Sequence[Instruction],pair:tuple[int,int],*,matrix_reader:blocks.MatrixReader=blocks._matrix)->Matrix|None:\n    result=_IDENTITY\n    for instruction in instructions:\n        matrix=matrix_reader(instruction,pair)\n        if matrix is None:return None\n        if not all(math.isfinite(value.real) and math.isfinite(value.imag) for row in matrix for value in row):return None\n        rows=[]\n        for row in matrix:\n            terms=[(index,value) for index,value in enumerate(row) if value!=0]\n            if len(terms)==1:\n                index,value=terms[0];rows.append([sum((value*entry,)) for entry in result[index]])\n            elif len(terms)==2:\n                (a,x),(b,y)=terms;rows.append([sum((x*result[a][j],y*result[b][j])) for j in range(4)])\n            else:rows=[];break\n        result=rows if rows else _matmul(matrix,result)\n    return result\n\ndef clone(source,name,namespace):\n node=next(node for node in ast.parse(source).body if isinstance(node,ast.FunctionDef) and node.name==name)\n namespace=dict(namespace);exec(compile(ast.Module(body=[node],type_ignores=[]),'<balanced-'+name+'>','exec'),namespace);return namespace[name]\nBASELINE=clone(BASE_SOURCE,'_product',vars(blocks))\nCANDIDATE=clone(Path(__file__).read_text(),'sparse_product',globals())\nFUNCTIONS={'baseline':BASELINE,'candidate':CANDIDATE}\ndef adapter_for(workflow):\n config=workflow_configuration(workflow);return load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':workflow,'compiler_options':config}}))\nfor workflow in WORKFLOWS:adapter_for(workflow).execute('route',fixture(6,'qft','grid',NONCES[0]),11)\nBINDS=[]\nfor module_name,module in tuple(sys.modules.items()):\n if module is None or not module_name.startswith(('flagquantum.','benchmarks.')):continue\n for name,value in tuple(vars(module).items()):\n  if value is blocks._product:BINDS.append((module,name,value))\n@contextlib.contextmanager\ndef selected(variant):\n with contextlib.ExitStack() as stack:\n  for module,name,original in BINDS:\n   assert vars(module)[name] is original;stack.enter_context(patch.object(module,name,FUNCTIONS[variant]))\n  yield\n for module,name,original in BINDS:assert vars(module)[name] is original\n\ndef accept(payload,source):\n width=source['n_qubits'];assert payload['final_layout']==list(range(width))\n case=BUNDLE.cases['ROUTE-GRID-08' if width==8 else f'ROUTE-LINE-{width:02d}'];return routing(payload,source,None,case,0)\n"
+  },
+  "decision": "Rejected after the first complete inspected resource pilot. No production change and no complete quality screen; three saved control outputs agree with baseline and pass unchanged SDKBench acceptance.",
+  "support_source": "from __future__ import annotations\nimport ast,contextlib,json,math,subprocess,sys,time\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom flagquantum.compiler.optimization import _cz_blocks as blocks\nfrom flagquantum.compiler.optimization.two_qubit_optimization import Matrix,_IDENTITY,_matmul\nfrom flagquantum.core.ir import Instruction\nfrom collections.abc import Sequence\nBASE='5a84f706ab9aeaab0ad3a5472bac292616fe39fe'\nHARNESS=Path('/private/tmp/sdkbench-product-conformance-20261121')\nNONCES=['01'*32]\nWORKFLOWS=('flagquantum-ordinary-restored','flagquantum-target-artifact')\nBUNDLE=Bundle(HARNESS/'docs/implementation')\nassert subprocess.check_output(['git','rev-parse','HEAD'],cwd=HARNESS,text=True,timeout=15).strip()=='9aa9260920984e2ca05bcb293abb885fccd9c144'\nassert not subprocess.check_output(['git','status','--porcelain'],cwd=HARNESS,text=True,timeout=15).strip()\nBASE_SOURCE=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/_cz_blocks.py'],text=True,timeout=20)\n\ndef sparse_product(instructions:Sequence[Instruction],pair:tuple[int,int],*,matrix_reader:blocks.MatrixReader=blocks._matrix)->Matrix|None:\n    result=_IDENTITY\n    for instruction in instructions:\n        matrix=matrix_reader(instruction,pair)\n        if matrix is None:return None\n        if not all(math.isfinite(value.real) and math.isfinite(value.imag) for row in matrix for value in row):return None\n        rows=[]\n        for row in matrix:\n            terms=[(index,value) for index,value in enumerate(row) if value!=0]\n            if len(terms)==1:\n                index,value=terms[0];rows.append([sum((value*entry,)) for entry in result[index]])\n            elif len(terms)==2:\n                (a,x),(b,y)=terms;rows.append([sum((x*result[a][j],y*result[b][j])) for j in range(4)])\n            else:rows=[];break\n        result=rows if rows else _matmul(matrix,result)\n    return result\n\ndef clone(source,name,namespace):\n node=next(node for node in ast.parse(source).body if isinstance(node,ast.FunctionDef) and node.name==name)\n namespace=dict(namespace);exec(compile(ast.Module(body=[node],type_ignores=[]),'<balanced-'+name+'>','exec'),namespace);return namespace[name]\nBASELINE=clone(BASE_SOURCE,'_product',vars(blocks))\nCANDIDATE=clone(Path(__file__).read_text(),'sparse_product',globals())\nFUNCTIONS={'baseline':BASELINE,'candidate':CANDIDATE}\ndef adapter_for(workflow):\n config=workflow_configuration(workflow);return load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':workflow,'compiler_options':config}}))\nfor workflow in WORKFLOWS:adapter_for(workflow).execute('route',fixture(6,'qft','grid',NONCES[0]),11)\nBINDS=[]\nfor module_name,module in tuple(sys.modules.items()):\n if module is None or not module_name.startswith(('flagquantum.','benchmarks.')):continue\n for name,value in tuple(vars(module).items()):\n  if value is blocks._product:BINDS.append((module,name,value))\n@contextlib.contextmanager\ndef selected(variant):\n with contextlib.ExitStack() as stack:\n  for module,name,original in BINDS:\n   assert vars(module)[name] is original;stack.enter_context(patch.object(module,name,FUNCTIONS[variant]))\n  yield\n for module,name,original in BINDS:assert vars(module)[name] is original\n\ndef accept(payload,source):\n width=source['n_qubits'];assert payload['final_layout']==list(range(width))\n case=BUNDLE.cases['ROUTE-GRID-08' if width==8 else f'ROUTE-LINE-{width:02d}'];return routing(payload,source,None,case,0)\n"
+}

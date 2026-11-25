@@ -9,7 +9,7 @@ Independent developer trials remain 0/2 and release_authorized=false.
 
 Native source users can compute temporary conditions, apply their signs and
 reuse the storage without exporting fake result flags or writing inverse gates.
-Run `python -m examples.synthesis_qmod_within`, whose complete public workflow is:
+Run `python -m examples.synthesis.tutorials.qmod.qmod_within.main`, whose complete public workflow is:
 
 ```python
 import flagquantum as fq
@@ -138,6 +138,6 @@ independent developer acceptance remain outside this slice.
 
 ```bash
 python -m pytest tests/team/ecosystem/test_qmod_within.py tests/integration/test_synthesis_qmod_within.py -q
-python -m examples.synthesis_qmod_within
+python -m examples.synthesis.tutorials.qmod.qmod_within.main
 python tests/fixtures/classiq_qmod/verify_sources.py
 ```

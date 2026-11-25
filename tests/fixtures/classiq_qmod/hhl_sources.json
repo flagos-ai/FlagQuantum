@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "hhl_workshop.qmod",
+      "source_path": "tutorials/workshops/hhl_workshop/hhl_workshop.qmod",
+      "git_blob_sha1": "2ab462b0a7eaa806bb84281f9ce3d13f4661a6cc",
+      "sha256": "1969cd5e613a8da44f843b4e04b6c0cca4aa3796bb987d34ab6251170fd44edd"
+    },
+    {
+      "file": "portfolio_optimization_with_hhl.qmod",
+      "source_path": "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl.qmod",
+      "git_blob_sha1": "89df9698331444d650e0f7325d2fcec5ec716913",
+      "sha256": "f18bb82be58a87a92471ceaa84a006d4bd93d7cc83d33c1e3474079853259d20"
+    },
+    {
+      "file": "hhl_example.qmod",
+      "source_path": "tutorials/technology_demonstrations/hhl/hhl_example.qmod",
+      "git_blob_sha1": "81df2de9c3ed5d6f663238f737df01a8b396ad3a",
+      "sha256": "bb44c3d80ddb2a4c7e921c3628c9ad4f198a588c694362f42451951a9c96a5e6"
+    },
+    {
+      "file": "HHL_portfolio.qmod",
+      "source_path": "applications/finance/portfolio_optimization_hhl/HHL_portfolio.qmod",
+      "git_blob_sha1": "9e851bb1afa10df4246cacdcc39dbff331d0fa1b",
+      "sha256": "8d099f5de2543cf54ef5af29c9bfc3d1857b854b3c490e0172a63afbfe8793d1"
+    }
+  ]
+}

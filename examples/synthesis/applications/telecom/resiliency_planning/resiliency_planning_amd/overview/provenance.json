@@ -1,0 +1,187 @@
+{
+  "upstream_path": "applications/telecom/resiliency_planning/resiliency_planning_AMD.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e756f752f490e2b48ae3d5ab1d775bbaee9f60806da99d3c190b2016ee55f535",
+  "git_blob_sha1": "66abd4c7877e6c8044e9844e16ccc446f9426f03",
+  "scope": "All 29 original CPU-variant stages, full 24-bit twenty-layer cost/RX circuit, original forty-angle schedule, one actual 1000-draw objective query and independent 40000-draw final sample.",
+  "native_semantic_adaptations": "The source actively uses CPU while its ROCm setup remains commented. Use native CPU execution and structured samples directly. Preserve the source explicit maxiter=1 and archived single objective invocation using an exact one-query native COBYLA cap. Source qaoa_samples defaults to 1000 objective draws and explicitly requests 40000 final draws, but its display divides by NUM_SHOTS=2000; report both that denominator-scaled number and correctly normalized actual probabilities. Original hosted synthesis and optimizer trajectories are not claimed identical. Reuse the independently verified full model and reference from the companion native Notebook.",
+  "native_entrypoint": "examples.synthesis.applications.telecom.resiliency_planning.resiliency_planning_amd.overview.main",
+  "native_notebook": "examples/synthesis/applications/telecom/resiliency_planning/resiliency_planning_amd/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_resiliency_amd_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Use the installed native runtime. The vendor installation cell becomes an environment note.",
+      "sha256": "18f5548dd2b5091d8a7563a113a6d9fb48d9b5e065368e9bee96d289d0d60bde"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "stage": "Keep the commented ROCm installation and GPU toggle disabled.",
+      "sha256": "f236451c89d838a06a12bd5e56e6b53187f4ac1e7f5f64968c738ea20d3578a3"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 3,
+      "stage": "Load native model, optimizer and output helpers.",
+      "sha256": "5809246d7a9c7b1634bf2488c27bf6677527c454b402f63ccaf2a683ccb2f8ca"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "stage": "Retain all five nodes, seven edges and two demands.",
+      "sha256": "6df21cc034f765295153f3bb979355bd31840b669cc5e5ad7b54271786e5cd05"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 5,
+      "stage": "Keep both correlated cross-demand edge products.",
+      "sha256": "efc9fc998ff3f4e9d3bbdca0cd9ea10ecb89d7b0f5074e10768624e54d074e4a"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "stage": "Keep the source illustrative assignment independent of sampled results.",
+      "sha256": "8b7d59671d9c0ebc21507cb3623053bad5d34269dc90a63a88f9378d1d30252a"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 7,
+      "stage": "Preserve all original normalizations and the source graph coordinates.",
+      "sha256": "8a275d9234a5e304272b931231c67f64257def862c3b46c88cc684dd634f3c18"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 8,
+      "stage": "Use two complete twelve-bit edge/node rows.",
+      "sha256": "7c39390854bc64a88185745d5f39d05e1bf6ed4ce410c66fa58c8a5035d690c4"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 9,
+      "stage": "Read the original latency objective and remaining cost components.",
+      "sha256": "dd9569d89d0779884ced5fa1eb2dfbb8202f1c90936a23af9e881333770abdee"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "stage": "Enforce every original node-flow and endpoint constraint.",
+      "sha256": "68d6b87ec69ea85536fb963024c1f8e184b15f57e7328c07a88b5410172761cb"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 11,
+      "stage": "Preserve node disjointness except at the common source.",
+      "sha256": "96dd2f19bb314bb460851638330bedc72e2439a749e9290e96eaa65c818d8e1d"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 12,
+      "stage": "Check the independent bounded factor representation.",
+      "sha256": "bf22539410f53b0a963a376bdbca032dee207ce416303e4e7e1203cecfe25691"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 13,
+      "stage": "Retain twenty layers and forty parameters.",
+      "sha256": "9494ac2f6e53b4c10c8c2ec4bbac88971f2f1257681d43d95a19db007991f93e"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 14,
+      "stage": "Synthesize the public native qfunc with the original nonzero schedule.",
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 15,
+      "stage": "Use local CPU execution, matching the active source CPU setting.",
+      "sha256": "ff459243b94031cd504116a089050dd6ceb8158034337233c3b415ef6351c3e4"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 16,
+      "stage": "Keep the native Circuit representation available directly.",
+      "sha256": "3f6105c0e67aaad90ac4bca6ba85aa58fc222dcd9d0a91007faa07235fbec0b7"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 17,
+      "stage": "Inspect the actual native resource report.",
+      "sha256": "4945836eb0d08182f2363ff0457a7268984cd31e6fa1689c13ec9105f232ad79"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 18,
+      "stage": "Validate the full forty-value binding through the public builder.",
+      "sha256": "0f6c2fd662c84805fc0f4d3f0bdac8c2724c9627fa680953752f37c0989b44dd"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 19,
+      "stage": "Use complete-state finite sampling and explicit logical bit order.",
+      "sha256": "7eb529ec1d9060a01374f7194c73257ae69c97aa2e8c0625b4bc2a3baae8859d"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 20,
+      "stage": "Use the native structured result directly.",
+      "sha256": "2cc8199fa1d68f9c9faf2b21fabda359c0fe960a65f4c917cd171990281e2ac9"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 21,
+      "stage": "Retain the original helper default of 1,000 objective draws and 40,000 final draws.",
+      "sha256": "084ec4f5e3d1f5334dd01660a80e5de2c7022d05ff451b25bbf9e175fd10346e"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 22,
+      "stage": "Estimate the actual sampled mean cost.",
+      "sha256": "1def96ea28cbc9ce89f8a9ba32a4db2721ed79b46fdc8f491314df15e463a986"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 23,
+      "stage": "Keep the native objective feedback loop visible.",
+      "sha256": "780df43e040f8871845718ac09c6dc549cc1b9fd92bf6314d9addb7d0635f904"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 24,
+      "stage": "Preserve the source explicit one-query budget and archived one-query execution.",
+      "sha256": "3d1155ac0d9a79ebcdf767bbabffc9ffe190e5a382d911e9d900e65519ba7e52"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 25,
+      "stage": "Read the independent 40,000-draw final sample.",
+      "sha256": "d118f921cf2de5f4bfbfb838da33aefc97457d33ce583f48e6a7eec9fefdc5e3"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 26,
+      "stage": "Use the original flow and node-overlap feasibility checks.",
+      "sha256": "25f3ddb482272d4bb6f87a8a0ded4b14efe5e16de0e27389b869cb023e96fafd"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 27,
+      "stage": "Report actual probabilities and disclose the source 2,000-denominator display bug.",
+      "sha256": "572c37ecdefa5ae5330cb62de87f02c66f8b9f2805a80ed5bccd0c384d712edb"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 28,
+      "stage": "Keep all twenty-four assignment bits in the persisted report.",
+      "sha256": "ea8d3b4f0882e9f9cbcb317fe4fc050d673cad00b442d878e6ccafdb725eb889"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 29,
+      "stage": "Plot the original network and only actual top-100 valid assignments.",
+      "sha256": "3696870c475e4ead9c3763b7b3da2ac096d97d6f31ea0f462a339fe5f93c2c06"
+    }
+  ]
+}

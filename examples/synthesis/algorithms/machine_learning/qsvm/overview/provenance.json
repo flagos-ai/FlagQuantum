@@ -1,0 +1,163 @@
+{
+  "upstream_path": "algorithms/QML/qsvm/qsvm.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8bd45dded0c627abeb6f9ee33e6a74292a2058e8dbb7415f133324995c24de49",
+  "git_blob_sha1": "ce669ab95a9fbcaeb89b333be55e08313fb2830e",
+  "scope": "All 25 original code stages, three synthetic sets of 40 points, the complete 100-row binary Iris data, native Bloch and two-layer Pauli kernels, and the classical RBF SVC.",
+  "native_semantic_adaptations": "Use exact executed feature states and independent seeded binomial counts at 2048 trials per entry in place of hosted overlap sampling. Keep both data workflows, the feature maps, support-vector restriction, and the original classical SVC. Scientific packages are installed locally for this example.",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.qsvm.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/machine_learning/qsvm/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qsvm_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 9,
+      "native_code_cell": 1,
+      "stage": "Use the scientific packages installed in the example's local environment.",
+      "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 2,
+      "stage": "Import native feature maps, local datasets, classifiers and plots.",
+      "sha256": "02c8cb97c05b4a1d58a7dc04e741d13ce5d122b9a198ca71855b6c81ec763de3"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 3,
+      "stage": "Keep the original synthetic seed and record the local finite kernel budget.",
+      "sha256": "0390cc5ae8e99b4b09931ca61ac8239c5dcc7e7c7b8d2f6e9d34c96d73f75114"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 4,
+      "stage": "Regenerate 40 fresh training, test and prediction rows each.",
+      "sha256": "4958c37e32644033f3e029cf6cc3c59ff0cfd642f2fe01860b586acb37a9d678"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 5,
+      "stage": "Check the original normalization on all three synthetic sets.",
+      "sha256": "702d0bbbd2a7e554e4c13814c13980b9f0804d69670d17d0b85d659e81ffde95"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 6,
+      "stage": "Plot training and test labels and the unlabeled prediction inputs.",
+      "sha256": "0b98caf4d01d1c02f0358b5e30959322e04726ea3c104f9ab59768ebae11fdcc"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 7,
+      "stage": "Select the one-qubit Bloch feature map.",
+      "sha256": "cb2ce2e3c1a2906d4c7b52d1f7cf8d4179706211bdc2cf6653eaf3edfd774b42"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 8,
+      "stage": "Inspect the exact local overlap circuit for two different inputs.",
+      "sha256": "429bc007440e30862bde79c75d37db7a16a1952cd0be6a8396c093aaef9aa5ae"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 9,
+      "stage": "Train the precomputed-kernel SVC on the full synthetic training set.",
+      "sha256": "dfb1ff566b49e830a7aae4e4a8232fb002e597762d7729727981c019a9590295"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 10,
+      "stage": "Keep actual test labels and the held-out predictions.",
+      "sha256": "0ea7cb830651079618a4319f2af7bae4a97f839dbc3ad8f102fe4ac2b2a1c170"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 11,
+      "stage": "Report the synthetic classifications and observed accuracies.",
+      "sha256": "1578d08f792990186e9ecdd7e4fcfc689855954f89f5a546720d3eef4a3821f5"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 12,
+      "stage": "Plot the classification of every synthetic prediction row.",
+      "sha256": "6bf245ce009bc73f55de6cad7ac7956f1aa455cb60fe3adf5f9cdc18a4d06957"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 13,
+      "stage": "Load the original Iris measurements and perform the source preprocessing.",
+      "sha256": "d64e98a1d732b72d86f9273752f199fc57c9f1dbd504acfb4ebfefa28969a130"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 14,
+      "stage": "Keep both petal features, both classes and the original angular scale.",
+      "sha256": "ee4f2d9fcbecb735f243e5f94f34deccd69590ae52221cc62a41a6812a8b10d5"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 15,
+      "stage": "Confirm the original stratified 80/10/10 split.",
+      "sha256": "79f57d52d58f5bbf4fd1dcab695fee7ea11c62376461010af151ed5b772e85ba"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 16,
+      "stage": "Plot the complete training and test data after preprocessing.",
+      "sha256": "750833eeb75c489e4b2fc175f43a4753ad0beb12bfef31cd73826b32f13867e2"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 17,
+      "stage": "Build the full-connectivity two-layer Z/ZZ map with the original pi offsets.",
+      "sha256": "4d87ec1bad7a660242705885823ce5326a790df6f899ab1dc96abbe2659d1bf8"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 18,
+      "stage": "Synthesize the two-qubit Pauli overlap.",
+      "sha256": "292cb9c9de5a871012cb98db22f84016749d162b12c496ea4c25ea62224314fc"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 19,
+      "stage": "Inspect the Pauli resources and verify the complete overlap state.",
+      "sha256": "26bf544c86042290c1520dfe2db4b89af6567fe3ea84fc9d99debf0443a15410"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 20,
+      "stage": "Fit the sampled Pauli kernel and predict the two Iris holdouts.",
+      "sha256": "d5018d18f886949d38a9593f4311821d1e6164118c35620e6cb9e14eef241c72"
+    },
+    {
+      "index": 56,
+      "native_code_cell": 21,
+      "stage": "Build the one-qubit Iris Bloch kernel.",
+      "sha256": "4ed4246ae7920254af88c0845d9a722ade52c4977087cf6f9f67897eb2cb9970"
+    },
+    {
+      "index": 57,
+      "native_code_cell": 22,
+      "stage": "Fit the sampled Bloch kernel on the same 80 Iris training rows.",
+      "sha256": "96f480f6ab69893c5c424e30cb2a0922fff33ae1c512cbd691f844f3f7d192a7"
+    },
+    {
+      "index": 60,
+      "native_code_cell": 23,
+      "stage": "Report the actual Pauli classifications.",
+      "sha256": "27893afa9dd7c450e7a95ffdf3772389c324fe4eb283df95fc5fe5734bd643d3"
+    },
+    {
+      "index": 62,
+      "native_code_cell": 24,
+      "stage": "Report the actual Bloch classifications.",
+      "sha256": "ffe814ae364c848fe6ac9e08e833a9ce241976de1ac595782338c7d7c6c40598"
+    },
+    {
+      "index": 64,
+      "native_code_cell": 25,
+      "stage": "Fit the classical RBF comparison and report all observed results.",
+      "sha256": "a07727268ba3d00c252d79d9405d4128fad97e8b8d8607270ba9bc30303e34e9"
+    }
+  ]
+}

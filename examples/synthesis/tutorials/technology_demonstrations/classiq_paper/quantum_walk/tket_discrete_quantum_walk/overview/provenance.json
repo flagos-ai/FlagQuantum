@@ -1,0 +1,21 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk.ipynb",
+  "original_sha256": "3d00a2d93fd4ead9a288159780b9264e25294fede81b3de447297996233dea25",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "4770e4ec5d042a0a5f96b2ca2e1287ba03931ddb80912dd0ae866d6c5ae31427"
+    },
+    {
+      "index": 3,
+      "sha256": "e23fe60750d70ec8c6bd44fb7231f2a44263ac3d9569cbdba81a85fdc5c8c2e9"
+    }
+  ],
+  "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source calls Tket box decomposition, synthesis and an Aer backend. We report actual FlagQuantum CX/U3 costs instead of claiming the unspecified Aer/Tket basis or private pass equivalence.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.tket_discrete_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "f3441ebedf849cd1dd538b6d8e736f6da2f6aabc",
+  "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source calls Tket box decomposition, synthesis and an Aer backend. We report actual FlagQuantum CX/U3 costs instead of claiming the unspecified Aer/Tket basis or private pass equivalence. The source shift is modular increment. Coin=1 applies increment; coin=0 applies its inverse. The logical value is six-bit unsigned, with source array index zero as the low bit. CX/U3. U3 is the three-angle U gate. All explicit conversion rules preserve absolute phase."
+}

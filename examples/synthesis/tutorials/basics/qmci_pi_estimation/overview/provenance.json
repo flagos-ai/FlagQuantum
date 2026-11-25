@@ -1,0 +1,65 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "c823487d10cddd4ac6914a53bc2fe861d79829ad593aa66e996844989f2f67fb",
+  "git_blob_sha1": "33146c7fbc0ca826a8696a01461993715132f623",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "a415c5b118460a75020541012652b6d2bd19d352e4e2fec08135ff507e8a2cf7"
+    },
+    {
+      "index": 8,
+      "sha256": "4640cd67d17de5678248b948cd6eeb091d50d0c4d51ce036e8426c24c2d7632f"
+    },
+    {
+      "index": 10,
+      "sha256": "75179bd1160b9e3e0a79c9afddda008053dbed2b425dde3aed17929641ebb899"
+    },
+    {
+      "index": 11,
+      "sha256": "2ee2c0c2be79b4080ef733b35c7817d2fcecf196b66d920704e00466ba4e9da1"
+    },
+    {
+      "index": 12,
+      "sha256": "4befe4c02456cee2a97beca6c6d5c43290d64ed8737e91420d8c3c3e05a6fc83"
+    },
+    {
+      "index": 15,
+      "sha256": "89112414bb7661004a344b4652edaff13a87107369f848b780baf12b8bb29ee6"
+    },
+    {
+      "index": 16,
+      "sha256": "b2cbbb8ba5c9c05eca1ce74496c58b28b30b7755ac64647a8a662e350f7d5569"
+    },
+    {
+      "index": 18,
+      "sha256": "6f55dc630e7d8e580c3101d22b731d7ff30b8f6e2c27e975c4f92d9adb8de343"
+    },
+    {
+      "index": 19,
+      "sha256": "d197c1466d9d6a30b15825e28b6826fa54e8cd1e158ae8172fdccd193bf672c1"
+    },
+    {
+      "index": 20,
+      "sha256": "4104e34728e293d9aed5ebb77ff47bfdf76ca0fe25c18cf9a883559596fbe4bd"
+    },
+    {
+      "index": 23,
+      "sha256": "1a3eabe8e909be90ab60db0ce30583b4367688861c8ef0e0c1a8ed27a3462d63"
+    },
+    {
+      "index": 25,
+      "sha256": "e7518a91f75b026346f52c73fea0ec27db9be05c94d73a4ed2c92c4dd457482c"
+    },
+    {
+      "index": 26,
+      "sha256": "a931e3194176482bcdb3b3ff5362ea27f16becc688ed361c577c60a10a85c219"
+    }
+  ],
+  "scope": "Complete QMCI Pi Notebook: four-bit lattice plot, classical grids3/5/6, original3+6bit QPE and2048local shots, source reporting formula, count-only iterative epsilon0.03/alpha0.01, independent1..4bit lattices, confidence intervals, all16classical grid sizes and errorbar comparison.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.qmci_pi_estimation.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/qmci_pi_estimation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qmci_pi_notebook.py",
+  "native_semantic_adaptations": "Native separate x/y fields preserve physical register semantics; checked allocate(bits,q) specializes1..4bits without bound annotation aliases. Existing example-local bounded count-only estimator replaces hosted IQAE, with explicit algorithm/resource limitations; no Classiq implementation or speedup equivalence. Source4*sin(pi*phase) retained and contrasted with squared probability; finite lattice bias is separate from sampling confidence. Local seeds replace unspecified hosted samples. Every visited Grover state and three-bit QPE is checked against independent Circuit including retained entangled coordinates and clean work. No copied Qmod source or provider dependency."
+}

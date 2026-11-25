@@ -1,0 +1,57 @@
+{
+  "upstream_path": "applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bae4d193d2d723669397e14cb3420ea5365d73b517bc5296d811a0190452c39e",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "1264d77edf55fc7a88b141a1b0b039a3b1ef1627e72c86bd014cc8337bd00e40"
+    },
+    {
+      "index": 5,
+      "sha256": "ebe6f954e52fe903644e50c4399f515cb2c90a3d2fbadcf5bc004c499dc7e1c4"
+    },
+    {
+      "index": 7,
+      "sha256": "73c5ffae1ba82360b5fa11b01b9a1d918a0fcbae27751b24f72eefbbffa22c9c"
+    },
+    {
+      "index": 9,
+      "sha256": "388610a768f545c2caafb9411903e77f6a77cf73f125d6f35bba4ff10c2e408b"
+    },
+    {
+      "index": 11,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 13,
+      "sha256": "8977d147f79a907fbcb5f0c81c6db50cbb7e108da23770d84e9c0224ca738916"
+    },
+    {
+      "index": 15,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 19,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 21,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 23,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b"
+    },
+    {
+      "index": 25,
+      "sha256": "799b4e4a09335e7e11e6e7d47b1645a82609d8d2399d53de606342159aca026b"
+    }
+  ],
+  "scope": "Original six-node, two-color, eight-layer native optimization Notebook; 50 iterations, CVaR0.7, 1000 optimized and1000 uniform observations; source graph, trace, common50-bin histogram and actually observed coloring.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_induced_k_color_subgraph.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/max_induced_k_color_subgraph/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_induced_color_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen native quantum encoding and independent factored Circuit. Preserve directed adjacency quadratic and original feasibility separately from retained penalty cost. Public native Nelder-Mead step0.07 with explicit sixteen-angle seed and exact local CVaR replaces private optimizer/shot estimation. Final CPU samples use seeds2718/31415. Exhaustive4096-assignment reference only after sampling; never supplies parameters, readout or observations. Missing feasible observation stays None. Numeric bit i is node i in each named six-bit word; physical axes handled separately. No trajectory, convergence, optimality, hardware or quantum advantage claim. Deterministic circular layout replaces source Kamada-Kawai layout to avoid an implicit SciPy dependency; only drawing positions change.",
+  "git_blob_sha1": "3b7ee10b97f2deeb079eaac53b31d4fc88bd7241"
+}

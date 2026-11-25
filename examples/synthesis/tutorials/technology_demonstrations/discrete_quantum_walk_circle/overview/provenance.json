@@ -1,0 +1,112 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "4ce81f3ee2a5189c5994a27ee298e11daf9deb166bb80f33d74b6ab350a68b2a",
+  "git_blob_sha1": "ffd69593acf501c8ade6af79b5dbe0a5af04ff3e",
+  "scope": "All 15 code stages, 5-to-11-bit one-step walks, actual width and CX-first candidate counts, both complete endpoint state checks, and the original CSV comparisons.",
+  "native_semantic_adaptations": "Use zero-work Gray-code parity expansion for the minimum-width construction and explicit checked qfunc candidates for the bounded CX objective. Preserve the historical numeric inputs with normalized LF line endings and label separately from actual local generation timings.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.discrete_quantum_walk_circle.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_circle_cx_benchmark_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Import the native benchmark and plotting stages.",
+      "sha256": "3317fcfa24e23e3c0d951f8f784828f0b216f7aae51f926c387d19641c399c92"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Use all original position widths and the exact CX/U3 gate basis.",
+      "sha256": "9c8ade47dda0932f6dbcd905f908ffd8ab845ff2c6962824119229fe83985703"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "stage": "Keep the forward and inverse MCX cascades as the conditional one-step walk.",
+      "sha256": "cbf2ad08a811e32042edb2c7b5ca084598fbe79b8d149b010f167072cf55748a"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "stage": "Choose a physical width floor for each case and retain the original CX width ceiling.",
+      "sha256": "12ce110078a40243281d54d3b9b401bd8e40be00437ed5e46c1f2d12b16ed7a7"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "stage": "Run the width-first construction and the complete bounded CX search.",
+      "sha256": "c8127b2d52a319f9a367c3ee2b6e6f5ffdaafe7ab8234c46b079d20aec328e55"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "stage": "Report measured CX, depth and physical width, and verify both endpoint states.",
+      "sha256": "41e09b62f2eb688fc8acde83bccaa2350b55af4da4d1085767293ea731a995af"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 7,
+      "stage": "Keep the six source-reported Qiskit rows separate from current execution.",
+      "sha256": "6ce89d4ed1895f81921fdc5409f707fcb9b5aeadd1b777bc448acb110bf87efa"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 8,
+      "stage": "Keep the original commented comparative rerun disabled.",
+      "sha256": "ad061710b452a32cc357cd87d542be8fc233e88d6ceaa28552a8a00729e1690b"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 9,
+      "stage": "Pair every local count with its actual source size.",
+      "sha256": "4f02b70f38de1238f74000ebd8c070c6c24de17f60f39873e373bdc8629e49e3"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 10,
+      "stage": "Plot current local CX and physical widths.",
+      "sha256": "ad43f54a6349d106c140462009d34c837c170984f27a68d353b5f9798eedd6bb"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 11,
+      "stage": "Plot measured local generation and search times.",
+      "sha256": "d211b03d5b29d929e6881c8246184fdcd66b9486d4de478731266cee44af6385"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 12,
+      "stage": "Keep all thirteen selected large-instance archive rows per method.",
+      "sha256": "de40d7721b1e879e97f976aa17aacbba80633a574f81b6f63481778aaf4be093"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 13,
+      "stage": "Read the preserved scientific data from the published CSV.",
+      "sha256": "0f98486bf74a56ea8ef7c56e1d27927ae38c66fdaf27ced8071d33efe34bad40"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 14,
+      "stage": "Render the published large-instance CX count and width observations.",
+      "sha256": "10f46c8a4b5c447bff5159b70c8e580fd31b3e97aa7035e7bd222210fd021c06"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 15,
+      "stage": "Render the published large-instance generation times without rerunning them.",
+      "sha256": "eeee4abd4ee2a272e6a8ad1caf73beea5fbe39f9945d952f9df1695fe0dd287b"
+    }
+  ],
+  "original_assets": [
+    {
+      "path": "tutorials/technology_demonstrations/discrete_quantum_walk_circle/results.csv",
+      "path_local": "data/results.csv",
+      "sha256": "483be531aca908714de3d5493050b61dac7ff550455f902ab6590c4eb65487fc",
+      "sha256_local": "beb36681382aa980bdfec06da634e41f110d61d86080c5d842c2793f312c6133",
+      "transform": "CRLF to LF"
+    }
+  ]
+}

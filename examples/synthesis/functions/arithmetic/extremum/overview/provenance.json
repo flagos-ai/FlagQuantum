@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/extremum/extremum_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "24147021398452c6ced0476ae4d5883e84b4f230",
+  "original_sha256": "f7f3814989f0acee6db0b8109d9308579ce302b3f58faf4cf766e14bf50dbb31",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "be3693dbffe70fc9e1e160fd2f87a22dcffcc0c9867513330f07d782fe652e40"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    },
+    {
+      "index": 5,
+      "sha256": "5c51c1df8d349035bbe51f81e6a13d3f23e8a161a8c930757decd11255f3537e"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.extremum.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_arithmetic_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/extremum/overview/walkthrough.ipynb",
+  "scope": "Complete local computational Notebook workflow: both original quantum definitions, exact integer/fixed-point domains, synthesis, CPU execution and named readout. Seeded 1000-shot host samples replace cloud sampling; independent full-state and clean-workspace checks are separate.",
+  "native_semantic_adaptations": "Native qfunc definitions preserve both examples and input domains. Typed widths use Annotated. Signed and binary-scaled results use exact numeric readout. Seeded sampling from local exact probabilities replaces cloud calls; no hardware claim."
+}

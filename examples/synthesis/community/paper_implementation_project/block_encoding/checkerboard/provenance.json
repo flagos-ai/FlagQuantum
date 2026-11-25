@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/block_encoding/checkerboard_BE_N8.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "91874079574963311cf224000906697430d4dd53bd9cfbfbe8346aac0a5f26dd",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding.checkerboard.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_checkerboard.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep all7 original bits and field packing as data,s1(high2),s0(low1),j1(high1),j0(low2). Explicit SWAP/CX and high-level Hadamard/within preserve source semantics. Two selector-dependent RX angles use one base rotation plus a coherent angle difference, avoiding borrowed-helper arithmetic predicate capture. Independent Circuit directly enumerates the two RX matrices rather than using the native decomposition. All128 packed inputs,phase-weighted coherence,two nonzero bindings,global phase,zero work and budgets pass. No generic qstruct or borrowed predicate extension."
+}

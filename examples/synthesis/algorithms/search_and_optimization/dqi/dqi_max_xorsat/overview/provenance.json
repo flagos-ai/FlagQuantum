@@ -1,0 +1,88 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/dqi/dqi_max_xorsat.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "d4da7ce0d5fb6d790d8c4779ba6c50e52f1dc706",
+  "original_sha256": "e05f2f1e67fdeecfb71ed7f6ecbf20731533067f320f437faea7eff911a4ae51",
+  "scope": "All 15 source stages, the 15-bit unary example, both six-bit Dicke states, the six-cycle Max-XORSAT graph and all 22 lookup entries. Use 2,048 shots for each preparation and 10,000 DQI samples.",
+  "native_semantic_adaptations": "Prepare the unary example from its known classical count and use a reversible preparation specialized to the specified unary basis input for the second Dicke example. Regenerate the incidence and decoder tables and solve the original three-by-three eigenproblem. The native circuit keeps both output words and tests the zero-error word directly from measured results.",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.dqi.dqi_max_xorsat.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/search_and_optimization/dqi/dqi_max_xorsat/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_dqi_workflow_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "native_code_cell": 1,
+      "sha256": "d7884c7bf6dc99cbd0751c530686f5000a3a6192e0a11fa54b9f999e84ea4e70"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 2,
+      "sha256": "8360c430eea43ff274988b9ce2f568391a8764f616725e71e6dbb63b07d08662"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 3,
+      "sha256": "daf8d6ab34d20ce0a0b82479a48bb4c9404e33baf3d481aeba87fa835177c131"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 4,
+      "sha256": "6c702f1c785d3f5e02791db70597abe26eb6a644e6ea762a34cebb3014e10c96"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 5,
+      "sha256": "2632c11b94a063376a24bf299e4328de2232a5a6410a119ed44263bb090eaa3d"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 6,
+      "sha256": "c5434120d44ac8f33e7626f7454db93d3b5d84ca8f853de102f02fdc871b7582"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 7,
+      "sha256": "495ce86d6e10ff42db32e59e264b7347f8e5f895f16d85680c3d1b92e5aae78d"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 8,
+      "sha256": "0a5f34b8a4b91832791fe457c4659c4b5efe350ced9c7c11decfb0b60aa30104"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 9,
+      "sha256": "955987004ceb949aaf24f2bdbd13cfcb0c285d260af3d9e658fd739a0a557d5c"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 10,
+      "sha256": "e60ce828757b2900421e1f95a9f692123e77ef04046fd2171c660d0bcc83e06f"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 11,
+      "sha256": "117a56a0bf0edddc637804d025d61d0716d2d19f3159008dce665b892b789594"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 12,
+      "sha256": "73ffc8afb9201e96bfc027d711abb1d69ca4860d825cf4e59385c2f8e8905056"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 13,
+      "sha256": "169362d6af71f9654111c80c1566a4fab4be16b921ee0255cd44a47a6a8b0134"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 14,
+      "sha256": "3d2f9f6b01e509832522160f05e8f4ac9f040d8db5466a463016086c56870fd6"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 15,
+      "sha256": "8df73bc5385a9fe7747a9a6a2ec1ecee956c86e0a3d969ff6228da63727ff311"
+    }
+  ]
+}

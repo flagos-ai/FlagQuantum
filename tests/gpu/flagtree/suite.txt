@@ -43,3 +43,5 @@ tests/unit/test_triton_complex_bmm.py
 tests/unit/test_two_qubit_matrix_catalog_dispatch.py
 tests/unit/test_two_qubit_pauli_tangent_triton.py
 tests/unit/test_mps_environment_channels_catalog_dispatch.py
+tests/unit/test_statevector_ry_fp64.py
+tests/unit/test_statevector_cx_fp64.py

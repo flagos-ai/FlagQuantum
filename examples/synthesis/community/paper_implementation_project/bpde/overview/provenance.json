@@ -1,0 +1,97 @@
+{
+  "upstream_path": "community/paper_implementation_project/bpde/bpde.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "cd4d29e7b64a3945897f78abe246f2f4346c49cfa7b04c205caf51e2fb7e7c32",
+  "git_blob_sha1": "0a0577000bb5f16e311afc5654f23bb6ae83e63c",
+  "scope": "All 14 source stages, 30 fresh STO-3G geometries, both displaced Hamiltonians, every source time and detuning grid, one million trials per binding, and the adaptive posterior.",
+  "native_semantic_adaptations": "Use the native invariant paired sector, exact powers of the source Strang step and public phase binding. Fit the actual source observable Z using seeded local Bernoulli counts and an explicit SciPy least-squares evaluation budget.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.bpde.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/bpde/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_bpde_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Use the optional scientific packages installed in the Notebook's local environment.",
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "stage": "Use the native molecular driver, state reference, and seeded local counts.",
+      "sha256": "bbf9ad9da3fa7b8a3f2d6eac32613a0ff9bf5d321d103a03eae387f9f251dd5c"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "stage": "Generate the one-qubit Hamiltonian at the source's 0.74 \u00c5 separation.",
+      "sha256": "97d13c7da2f39e91767c414d3a38df682094e2395c6bdfc7db45e351582617c8"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "stage": "Display the fresh ground-state energy at all 30 distances.",
+      "sha256": "1f5de9866139278a822ee90c17479c302d832c7e081ea1b99b78f842084741d3"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 5,
+      "stage": "Use the original adjacent-distance finite differences.",
+      "sha256": "0f55c8620a65e0df00fa173014e27bf4f35a8e591f202025c07e325e17574ea7"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Keep the two displaced hydrogen branches, all Strang steps, and symbolic detuning.",
+      "sha256": "34d509b54296f13d6e15a30baf67adcf159aab0f6d66ea2f800cec64dd35d5d8"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 7,
+      "stage": "Check the two-step short evolution and its actual packed resources.",
+      "sha256": "e1d46c07d8b7b9c776acc211282740b558f82c2be2bc7b501e892b42982f2713"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "stage": "Read the three source offsets with one million trials each.",
+      "sha256": "3bf3df584a26e62b84772e620373413e1f18d8c403f648649cf2288c85188221"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "stage": "Use the same observable at every time and preserve the state reference.",
+      "sha256": "ce9aa5c381213836b743bb084e1fd8768740200ad4df8920121d9dfa86f997b6"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 10,
+      "stage": "Evaluate the five-point detuning grid at time 200 and display the observed signal.",
+      "sha256": "f7995f6f18940510ae1749f5caf0a8f9a631084dcfcad73fb219bd16dd7363cf"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 11,
+      "stage": "Compare the best observed grid point with the finite-difference curve.",
+      "sha256": "3bb499c777c4a30db8e10ad08bcdedab24763acb49393dbb8a4b40110df23dd3"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 12,
+      "stage": "Display all 20, 100 and 200 time cases on the same Z scale.",
+      "sha256": "79afc374465ef9cf704edddc1045a5542a9c03cdd1c65f2ae7195b52973da279"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 13,
+      "stage": "Estimate the Gaussian signal and update the Bayesian posterior from fresh finite draws.",
+      "sha256": "8a38a6cfb21d51e5bb80de0bceaf859a3a0dbb65244e9d5be14b88725c52590d"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 14,
+      "stage": "Compare the final gradient and uncertainty against the fresh FCI reference.",
+      "sha256": "00a67f429f0e885b0fbdb9615d6c7f89e7c7fc15fe0a764e65f429d420677840"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "4c11a8c6f2c2f8d0382ef26b4925c7e2633e7a27f620b5cd54e6b53cef00a73f",
+  "git_blob_sha1": "e98979270c8bf3aa353a064086e3980fd9a17a18",
+  "scope": "All fifteen source stages, freshly generated seeded 4 by 4 matrix, complete 16-term Pauli LCU with four selectors, explicit degree-151 inverse and precision-driven inverse with 0.01 tolerance.",
+  "native_semantic_adaptations": "Use the analytic shifted Chebyshev residual and freshly fit a symmetric phase sequence. The precision-driven solver chooses the first odd degree meeting the unscaled inverse-operator error on the normalized singular interval. Execute each full phase stream as exact packed Circuit matrix operations, and recover the signed zero-block solution.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.qsvt_matrix_inversion.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qsvt_matrix_inversion_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 2,
+      "sha256": "b9986393b3eecc6a5b2ce9110c6e541421514bc16ddde716f39580b6ae4c2c78"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "sha256": "41bc3d8038ef6b020bfeb059c276b009f654cf7a40e0a790a4fdf5cf15cc45a9"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 4,
+      "sha256": "25097a40ee38be915e9044899cadab2bdf775c9b2d49b9183457f33d298f40e0"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 5,
+      "sha256": "7ddb6c73d38c7d5dbe75465191ad1dd717cf8421f720cda02d9605c05bbda135"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 6,
+      "sha256": "a4bab8679a59d7ee97fd05d0187e8b79442412c4ae794ffe0fa7d9189b39f7cb"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 7,
+      "sha256": "e99b0e85154dbcedfa89adcc015a299e9211ae19d4c349ae173abf1b39a7adb4"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "sha256": "336844eb774655f0109971dc9e28a850d51e34ba059be8b28c5b0555c1ffd46d"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 9,
+      "sha256": "ccb9d298d07d853233470056ac2ce5759e036baaccdc8f0ad1f7a45711422ce5"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 10,
+      "sha256": "0e3530f0c32cbdde20b67d5a023f207e846841026597a962b02a4b59bdd48009"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 11,
+      "sha256": "6958dc399326ac085ccb7e39f85c91d15b10540c7e54e60ed51f9396c8ac2db3"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 12,
+      "sha256": "34190638a1b932df0e452800d8f275fec44afd285dcc013d3893a05353663243"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 13,
+      "sha256": "42df3911d25d90f07d8146ee1aee8196942eab7df1b6d379a457f8c0843715f0"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 14,
+      "sha256": "00d41f573e39b20ba9ea8b2994b24b984fd8ec7055c24452df3de361db0a4cdc"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 15,
+      "sha256": "486fa0872cc7e2c78b1b3c6804faa656770f037d8026d24cce43c7001e166e96"
+    }
+  ]
+}

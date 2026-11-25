@@ -16,6 +16,7 @@ from ..core._artifacts import (
 from ..core._compilation_evidence import CompilationEvidenceBundle
 from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from ..core._compilation_evidence_v3 import CompilationEvidenceBundleV3
+from ..core._compilation_evidence_v4 import CompilationEvidenceBundleV4
 from ..core.target_capabilities import TargetCapabilitySnapshot
 from ..errors import ExecutionError
 
@@ -23,6 +24,7 @@ _CompilationEvidenceBundle: TypeAlias = (
     CompilationEvidenceBundle
     | CompilationEvidenceBundleV2
     | CompilationEvidenceBundleV3
+    | CompilationEvidenceBundleV4
 )
 
 
@@ -136,6 +138,7 @@ def verify_compilation_evidence_handoff(
             CompilationEvidenceBundle,
             CompilationEvidenceBundleV2,
             CompilationEvidenceBundleV3,
+            CompilationEvidenceBundleV4,
         ),
     ):
         raise TypeError("bundle must be a compilation evidence bundle")

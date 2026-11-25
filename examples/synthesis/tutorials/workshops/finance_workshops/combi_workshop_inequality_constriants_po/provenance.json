@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "7984f4d987dd7d09d4e06e7b487c54d354b31ea35480fe0509ad579aae9e52d7",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.finance_workshops.combi_workshop_inequality_constriants_po.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_portfolio.py",
+  "scope": "Complete 9-bit three-layer quantum program with all covariance and return terms; two nonzero parameter vectors, both width/depth objectives, full source/native/independent Circuit amplitudes and resource rejection checks. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Preserve positive cost phase, alternating gamma/beta parameters, three 2-bit asset words, binary 3-bit slack and penalty 30.5. Existing QNum phase arithmetic, static loops and Pauli-X word evolution are reused. Explicit native fields replace qstruct storage without adding general numeric-array storage. Independent covariance and affine-square Circuit factors use at most six bits; all classical cost inputs are exhaustively checked. User examples never load Qmod."
+}

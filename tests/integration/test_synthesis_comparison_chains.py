@@ -13,15 +13,15 @@ import torch
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import Definition, capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.frontend.python import Definition, capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python import _cell
 
 pytestmark = pytest.mark.integration
@@ -340,7 +340,7 @@ def test_budgets_and_memory_remain_checked_before_execution(
 
 def test_public_interval_cli_has_no_gate_or_decoding_requirement() -> None:
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_interval"],
+        [sys.executable, "-m", "examples.synthesis.tutorials.arithmetic.interval.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

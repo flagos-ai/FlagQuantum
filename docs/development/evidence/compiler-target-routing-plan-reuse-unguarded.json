@@ -1,0 +1,3278 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "cae2aaa17cdf798b7773bdafe143cba803481b18",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "source_sha256": "c4ac6ed0b39663c41b35a6250b4e95dd067c2798e38f938fbaa6ca58bcea9166",
+  "runner_sha256": "936f339f8ec4e72b76bf605e3ee58e86e0762c43575711ad5f71132683680b49",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "limits": "Inspected inputs on shared macOS CPU, one numerical thread. In-process diagnostic replanning discards only the selected plan. Alternating order; two warmup pairs, 21 measured pairs per latency case. No significance, memory, held-out, qualified speedup or SDK ranking claim. Six-qubit complete operators; three probes at eight/twelve qubits. Timed adapter execution excludes independent evaluation, setup and startup.",
+  "applications": [
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.2591559389004138e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 41,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+      "seconds": 0.14062783401459455
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.2591559389004138e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 41,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+      "seconds": 0.10792645797482692
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 7.221785298249065e-16,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+      "seconds": 0.06217279101838358
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 7.221785298249065e-16,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+      "seconds": 0.049006792018190026
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 8.005932084973443e-16,
+        "full_cz_count": 40,
+        "two_body_dependency_depth": 22,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+      "seconds": 0.06392633300856687
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 8.005932084973443e-16,
+        "full_cz_count": 40,
+        "two_body_dependency_depth": 22,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+      "seconds": 0.06300912500591949
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 6.984540463862221e-16,
+        "full_cz_count": 34,
+        "two_body_dependency_depth": 24,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+      "seconds": 0.0680299169907812
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 6.984540463862221e-16,
+        "full_cz_count": 34,
+        "two_body_dependency_depth": 24,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+      "seconds": 0.054387541982578114
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "seconds": 0.0729437499830965
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "seconds": 0.08689983398653567
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 4.344434768182728e-15,
+        "full_cz_count": 44,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+      "seconds": 0.07151145898387767
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 4.344434768182728e-15,
+        "full_cz_count": 44,
+        "two_body_dependency_depth": 20,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+      "seconds": 0.07189495902275667
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 4.574283909837767e-15,
+        "full_cz_count": 42,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+      "seconds": 0.058083250012714416
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 4.574283909837767e-15,
+        "full_cz_count": 42,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+      "seconds": 0.05746562499552965
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "seconds": 0.07289262500125915
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 5.828406534472335e-15,
+        "full_cz_count": 54,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+      "seconds": 0.07361495800432749
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.14610929100308567
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.14543937501730397
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.14598512498196214
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.14635150000685826
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.182845611224301e-14,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 78,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+      "seconds": 0.1583730409911368
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.182845611224301e-14,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 78,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+      "seconds": 0.15878662499017082
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.1457725410000421
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 8.63506723974103e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 65,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+      "seconds": 0.14571133302524686
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.987626749397768e-15,
+        "full_cz_count": 75,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+      "seconds": 0.16818712500389665
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.987626749397768e-15,
+        "full_cz_count": 75,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+      "seconds": 0.1663892499927897
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "seconds": 0.13729345900355838
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "seconds": 0.13779491701279767
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.3536401981886357e-15,
+        "full_cz_count": 65,
+        "two_body_dependency_depth": 48,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+      "seconds": 0.13886799997999333
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.3536401981886357e-15,
+        "full_cz_count": 65,
+        "two_body_dependency_depth": 48,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+      "seconds": 0.1227938340161927
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "seconds": 0.15568179098772816
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.5798750608595155e-15,
+        "full_cz_count": 79,
+        "two_body_dependency_depth": 52,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+      "seconds": 0.1575993330043275
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 6.141450319825085e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 58,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+      "seconds": 0.13460795898572542
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 6.141450319825085e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 58,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+      "seconds": 0.14901862500119023
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 6.761659273861517e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 57,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+      "seconds": 0.1668355830188375
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 6.761659273861517e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 57,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+      "seconds": 0.15671375000965782
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 4.901354889651292e-15,
+        "full_cz_count": 62,
+        "two_body_dependency_depth": 51,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+      "seconds": 0.11944249999942258
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 4.901354889651292e-15,
+        "full_cz_count": 62,
+        "two_body_dependency_depth": 51,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+      "seconds": 0.13500079201185144
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 4.490574227168739e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+      "seconds": 0.06127762500545941
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 4.490574227168739e-15,
+        "full_cz_count": 36,
+        "two_body_dependency_depth": 32,
+        "verification": "full-operator"
+      },
+      "normalized_output_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+      "seconds": 0.07544204199803062
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 6.072657351995283e-14,
+        "full_cz_count": 120,
+        "two_body_dependency_depth": 64,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7d2a59ed23a7253b1e8c8a6bdce94dd37166f8cca72c6b9eb64436b4721c2692",
+      "seconds": 0.19898170899250545
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 6.072657351995283e-14,
+        "full_cz_count": 120,
+        "two_body_dependency_depth": 64,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7d2a59ed23a7253b1e8c8a6bdce94dd37166f8cca72c6b9eb64436b4721c2692",
+      "seconds": 0.19849870799225755
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.1983210615419905e-15,
+        "full_cz_count": 64,
+        "two_body_dependency_depth": 26,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "0342e4937e7c2c59f4d47d3b7df07df708685959a764ce73d63d1b229a25d04c",
+      "seconds": 0.10072395802126266
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.1983210615419905e-15,
+        "full_cz_count": 64,
+        "two_body_dependency_depth": 26,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "0342e4937e7c2c59f4d47d3b7df07df708685959a764ce73d63d1b229a25d04c",
+      "seconds": 0.10169945799862035
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.3030438699344067e-15,
+        "full_cz_count": 78,
+        "two_body_dependency_depth": 31,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "569b39a764fc4ff6bcd1abf6e70a7cb6b0e32c581fec7b38d6b50459e0ef491c",
+      "seconds": 0.1224355410085991
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.3030438699344067e-15,
+        "full_cz_count": 78,
+        "two_body_dependency_depth": 31,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "569b39a764fc4ff6bcd1abf6e70a7cb6b0e32c581fec7b38d6b50459e0ef491c",
+      "seconds": 0.1358856669976376
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.4851826706862361e-15,
+        "full_cz_count": 74,
+        "two_body_dependency_depth": 37,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "3311ceaebff24897476bfc19fedb79303b8464fe408eeb6626d8b37abe1508df",
+      "seconds": 0.13386670901672915
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.4851826706862361e-15,
+        "full_cz_count": 74,
+        "two_body_dependency_depth": 37,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "3311ceaebff24897476bfc19fedb79303b8464fe408eeb6626d8b37abe1508df",
+      "seconds": 0.12021324998931959
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20369008302805014
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2027468750020489
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.5449287945012552e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 45,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "099641f79fb58db4b1bf9292147e46cd490990a562aac07c556b171d3536b53c",
+      "seconds": 0.14181979198474437
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.5449287945012552e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 45,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "099641f79fb58db4b1bf9292147e46cd490990a562aac07c556b171d3536b53c",
+      "seconds": 0.14325945900054649
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.4046076445151095e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 68,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7ebecabbbbea75027e2d1f83eb740b6dbce89c2e35e822f592b91c7b531b1f0d",
+      "seconds": 0.12849383399588987
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.4046076445151095e-15,
+        "full_cz_count": 82,
+        "two_body_dependency_depth": 68,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7ebecabbbbea75027e2d1f83eb740b6dbce89c2e35e822f592b91c7b531b1f0d",
+      "seconds": 0.14411570801166818
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.466587386380936e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 41,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "333e4ed741649111229666866314ca98c7464b9db85994ce5775c7aaf62cc881",
+      "seconds": 0.10778175000450574
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.466587386380936e-15,
+        "full_cz_count": 66,
+        "two_body_dependency_depth": 41,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "333e4ed741649111229666866314ca98c7464b9db85994ce5775c7aaf62cc881",
+      "seconds": 0.12123816699022427
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.1911590840027202
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.19152512500295416
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.19195754200336523
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.190091415977804
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.413935800722356e-15,
+        "full_cz_count": 120,
+        "two_body_dependency_depth": 93,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "9ea40253c35b984ec4c2a1770b9855b06aafb13e2a45bab145a70d939a4a22b7",
+      "seconds": 0.2569347499811556
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.413935800722356e-15,
+        "full_cz_count": 120,
+        "two_body_dependency_depth": 93,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "9ea40253c35b984ec4c2a1770b9855b06aafb13e2a45bab145a70d939a4a22b7",
+      "seconds": 0.25817262500640936
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.19135454099159688
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.5537486418856237e-15,
+        "full_cz_count": 88,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+      "seconds": 0.19022429201868363
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 4.313514714559936e-15,
+        "full_cz_count": 156,
+        "two_body_dependency_depth": 77,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "550354af2b5f0f0e18554ce918dad38ee683633b81022b1dcd6906130db3d342",
+      "seconds": 0.33074520801892504
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 4.313514714559936e-15,
+        "full_cz_count": 156,
+        "two_body_dependency_depth": 77,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "550354af2b5f0f0e18554ce918dad38ee683633b81022b1dcd6906130db3d342",
+      "seconds": 0.3294521670031827
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.806892464795862e-15,
+        "full_cz_count": 142,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d8ce9cb303f15f41a4e19e9108c7b93170816b68acc6c33c18b3a3bdc6b083c3",
+      "seconds": 0.29728666599839926
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.806892464795862e-15,
+        "full_cz_count": 142,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d8ce9cb303f15f41a4e19e9108c7b93170816b68acc6c33c18b3a3bdc6b083c3",
+      "seconds": 0.30553429198334925
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.12653962484595e-15,
+        "full_cz_count": 162,
+        "two_body_dependency_depth": 97,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "a4e96efdc91b12924bbf887af7417e3860ff5e42709bcb07824408d86249533e",
+      "seconds": 0.2786353749979753
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.12653962484595e-15,
+        "full_cz_count": 162,
+        "two_body_dependency_depth": 97,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "a4e96efdc91b12924bbf887af7417e3860ff5e42709bcb07824408d86249533e",
+      "seconds": 0.2909505419956986
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 5.246464596772037e-15,
+        "full_cz_count": 170,
+        "two_body_dependency_depth": 96,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "de469ad82e7273f2f27ae4f1191a6060912661dc021ee1d8a2dd6cd123fa9374",
+      "seconds": 0.30575816601049155
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 5.246464596772037e-15,
+        "full_cz_count": 170,
+        "two_body_dependency_depth": 96,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "de469ad82e7273f2f27ae4f1191a6060912661dc021ee1d8a2dd6cd123fa9374",
+      "seconds": 0.305969915993046
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.237726045655905e-15,
+        "full_cz_count": 84,
+        "two_body_dependency_depth": 64,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7695b00b6a82edb238d19842454f213203679194ca87dd1af035b65d13e2d605",
+      "seconds": 0.15161991701461375
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.237726045655905e-15,
+        "full_cz_count": 84,
+        "two_body_dependency_depth": 64,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7695b00b6a82edb238d19842454f213203679194ca87dd1af035b65d13e2d605",
+      "seconds": 0.16719979100162163
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.2278911070751667e-15,
+        "full_cz_count": 84,
+        "two_body_dependency_depth": 66,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "5b10d5cfbcc66b3ec3cb41a4ebcf98dac2dc03fbc7a6a3547282d634471098c3",
+      "seconds": 0.16632841699174605
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.2278911070751667e-15,
+        "full_cz_count": 84,
+        "two_body_dependency_depth": 66,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "5b10d5cfbcc66b3ec3cb41a4ebcf98dac2dc03fbc7a6a3547282d634471098c3",
+      "seconds": 0.16752658400218934
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.4330101267912156e-15,
+        "full_cz_count": 46,
+        "two_body_dependency_depth": 45,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "25d250fad2586d3a9603ccc2c38fb20b79bdbd73b3d96ce26489ac1b81bb51db",
+      "seconds": 0.09522570899571292
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.4330101267912156e-15,
+        "full_cz_count": 46,
+        "two_body_dependency_depth": 45,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "25d250fad2586d3a9603ccc2c38fb20b79bdbd73b3d96ce26489ac1b81bb51db",
+      "seconds": 0.10868641702109016
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.2415205078620253e-15,
+        "full_cz_count": 60,
+        "two_body_dependency_depth": 54,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "50c820ea8abd3ed48d6784082d8c7fa29bb7017ee96602f0b0de2c7c38984c04",
+      "seconds": 0.09363695900538005
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.2415205078620253e-15,
+        "full_cz_count": 60,
+        "two_body_dependency_depth": 54,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "50c820ea8abd3ed48d6784082d8c7fa29bb7017ee96602f0b0de2c7c38984c04",
+      "seconds": 0.11267404200043529
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.005952500137591e-15,
+        "full_cz_count": 270,
+        "two_body_dependency_depth": 101,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "a94db80e652282fe1cb6b4317452699474fb30b7fe2c07938e5e360ef607ac85",
+      "seconds": 0.4030378329916857
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.005952500137591e-15,
+        "full_cz_count": 270,
+        "two_body_dependency_depth": 101,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "a94db80e652282fe1cb6b4317452699474fb30b7fe2c07938e5e360ef607ac85",
+      "seconds": 0.38535495902760886
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.1302146135477929e-15,
+        "full_cz_count": 136,
+        "two_body_dependency_depth": 46,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "290faa38e669fa411bc5f34d51b4268baf8fc466a843a147b382950c88efd743",
+      "seconds": 0.2449246670003049
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.1302146135477929e-15,
+        "full_cz_count": 136,
+        "two_body_dependency_depth": 46,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "290faa38e669fa411bc5f34d51b4268baf8fc466a843a147b382950c88efd743",
+      "seconds": 0.23492875002557412
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.1387399314838863e-15,
+        "full_cz_count": 150,
+        "two_body_dependency_depth": 76,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "0321cbd788fd7ccae52f97a12cd880f7410688b5341f4603559b93939a5be8a2",
+      "seconds": 0.2724247500009369
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.1387399314838863e-15,
+        "full_cz_count": 150,
+        "two_body_dependency_depth": 76,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "0321cbd788fd7ccae52f97a12cd880f7410688b5341f4603559b93939a5be8a2",
+      "seconds": 0.2564724160183687
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.0166130809736812e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 51,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+      "seconds": 0.2052797499927692
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.0166130809736812e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 51,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+      "seconds": 0.20604662501136772
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.0731970492786265e-15,
+        "full_cz_count": 284,
+        "two_body_dependency_depth": 146,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "13bf8bf4a204f7812da4a09773bef4d5cbcbd676fe7e856d2e7757e01a4ecefa",
+      "seconds": 0.5183223749918398
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.0731970492786265e-15,
+        "full_cz_count": 284,
+        "two_body_dependency_depth": 146,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "13bf8bf4a204f7812da4a09773bef4d5cbcbd676fe7e856d2e7757e01a4ecefa",
+      "seconds": 0.5186762090015691
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.1938124470981842e-15,
+        "full_cz_count": 178,
+        "two_body_dependency_depth": 75,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "3ef18ec30d50bc5b42b77b35e737e49de5ddc20593092f5373a409fb94128df3",
+      "seconds": 0.2850204999849666
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.1938124470981842e-15,
+        "full_cz_count": 178,
+        "two_body_dependency_depth": 75,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "3ef18ec30d50bc5b42b77b35e737e49de5ddc20593092f5373a409fb94128df3",
+      "seconds": 0.30166229099268094
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 9.708443902280867e-16,
+        "full_cz_count": 136,
+        "two_body_dependency_depth": 52,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "435efc028512e1b578a811d3f262c2612cab2763064eb2a6c75dd6958c5bd3a6",
+      "seconds": 0.2225090830179397
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 9.708443902280867e-16,
+        "full_cz_count": 136,
+        "two_body_dependency_depth": 52,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "435efc028512e1b578a811d3f262c2612cab2763064eb2a6c75dd6958c5bd3a6",
+      "seconds": 0.22039416700135916
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 9.074842391027969e-16,
+        "full_cz_count": 126,
+        "two_body_dependency_depth": 54,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d32290ffa446525672f7692445a85375ab0032f6c5462461b1d2735a14b5dc2b",
+      "seconds": 0.2247642080183141
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 9.074842391027969e-16,
+        "full_cz_count": 126,
+        "two_body_dependency_depth": 54,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d32290ffa446525672f7692445a85375ab0032f6c5462461b1d2735a14b5dc2b",
+      "seconds": 0.2248725840181578
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5565556249930523
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5376590000232682
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5418372499989346
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5522705419862177
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 5.4291956315693945e-15,
+        "full_cz_count": 362,
+        "two_body_dependency_depth": 296,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "db4cf02508d1803929579af31bae263e2c6315abe12a313ff3f4d6ab3b7e6a85",
+      "seconds": 0.7148250410100445
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 5.4291956315693945e-15,
+        "full_cz_count": 362,
+        "two_body_dependency_depth": 296,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "db4cf02508d1803929579af31bae263e2c6315abe12a313ff3f4d6ab3b7e6a85",
+      "seconds": 0.737513999978546
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5384676250105258
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.3121136700345437e-15,
+        "full_cz_count": 276,
+        "two_body_dependency_depth": 256,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+      "seconds": 0.5425114169775043
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8803480829810724
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.9594654579996131
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.460944228876607e-14,
+        "full_cz_count": 322,
+        "two_body_dependency_depth": 131,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "9171739a9ebcb6315aa01294c73e0a55131a3cfe103fb324f54f6714ab32562a",
+      "seconds": 0.7082592080114409
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.460944228876607e-14,
+        "full_cz_count": 322,
+        "two_body_dependency_depth": 131,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "9171739a9ebcb6315aa01294c73e0a55131a3cfe103fb324f54f6714ab32562a",
+      "seconds": 0.7180075830256101
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.3843020324286894e-14,
+        "full_cz_count": 352,
+        "two_body_dependency_depth": 150,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+      "seconds": 0.7453854579944164
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.3843020324286894e-14,
+        "full_cz_count": 352,
+        "two_body_dependency_depth": 150,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+      "seconds": 0.7240343750163447
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.868227728968996e-14,
+        "full_cz_count": 338,
+        "two_body_dependency_depth": 158,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "959d44977e90f745125e797e7793ddc1b7b13e700f420e2d6ea5493fea61103e",
+      "seconds": 0.658932584017748
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.868227728968996e-14,
+        "full_cz_count": 338,
+        "two_body_dependency_depth": 158,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "959d44977e90f745125e797e7793ddc1b7b13e700f420e2d6ea5493fea61103e",
+      "seconds": 0.6487052080046851
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.215456781461763e-15,
+        "full_cz_count": 104,
+        "two_body_dependency_depth": 67,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "df4904f69e8b7a676f304e1a6b81ebc8c4b48dab60d5c8d3217603efa882e0b2",
+      "seconds": 0.20295891701243818
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.215456781461763e-15,
+        "full_cz_count": 104,
+        "two_body_dependency_depth": 67,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "df4904f69e8b7a676f304e1a6b81ebc8c4b48dab60d5c8d3217603efa882e0b2",
+      "seconds": 0.20193525002105162
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.8041124150158794e-15,
+        "full_cz_count": 108,
+        "two_body_dependency_depth": 75,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "20a66592b75613e2dbc4d2ddcf97b419fbcd129f4b8758127d6a125a5825d1b0",
+      "seconds": 0.20191616599913687
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.8041124150158794e-15,
+        "full_cz_count": 108,
+        "two_body_dependency_depth": 75,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "20a66592b75613e2dbc4d2ddcf97b419fbcd129f4b8758127d6a125a5825d1b0",
+      "seconds": 0.20406762501806952
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 3.038696846572584e-15,
+        "full_cz_count": 104,
+        "two_body_dependency_depth": 68,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "ea0f80da4365e5ec99699f20f979993d06f542c82b471f3642e33fbe0573e8dd",
+      "seconds": 0.2067682920023799
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 3.038696846572584e-15,
+        "full_cz_count": 104,
+        "two_body_dependency_depth": 68,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "ea0f80da4365e5ec99699f20f979993d06f542c82b471f3642e33fbe0573e8dd",
+      "seconds": 0.220167791005224
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 1.9351429362883096e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 58,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "790b8c505a78e080466374458c98181a4c0e0305024f737788d151ba6fea178f",
+      "seconds": 0.14421304099960253
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 1.9351429362883096e-15,
+        "full_cz_count": 70,
+        "two_body_dependency_depth": 58,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "790b8c505a78e080466374458c98181a4c0e0305024f737788d151ba6fea178f",
+      "seconds": 0.1454544170119334
+    }
+  ],
+  "latency": [
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20768758398480713
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20615837501827627
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2056320839910768
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20482666700263508
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20451220899121836
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20347099998616613
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2028163330105599
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21210400000563823
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21001279199845158
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21492112500709482
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21078154200222343
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2067722079809755
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2084321670117788
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20743675000267103
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21975570899667218
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2047000409802422
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20613362497533672
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2028192910074722
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2542977080156561
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.213121290988056
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2058001669938676
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21959800002514385
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2061458750104066
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20746158398105763
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20465320799848996
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20509266699082218
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20500829198863357
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20879170898115262
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20386454201070592
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20558075001463294
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2035596249916125
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21966791598242708
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20449833298334852
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20480337500339374
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.2041590839799028
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20416337499045767
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20450345799326897
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.22355379100190476
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21301770801073872
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21353279097820632
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.21334283298347145
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.1674243517016566e-15,
+        "full_cz_count": 122,
+        "two_body_dependency_depth": 78,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+      "seconds": 0.20922375001828186
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8566242080123629
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8493264999997336
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8633416249940637
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8830683339911047
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8742476250045002
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.858558665990131
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8648611670068931
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8754718340060208
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8571045419957954
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8708144579723012
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8724812500004191
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8775669580209069
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8582857500005048
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8548543329816312
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.874208124994766
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8872946670162492
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8550796670024283
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8487756660033483
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8686634999758098
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8835325829859357
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8807931250194088
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8544316659972537
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8638304169871844
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8868082909903023
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8555776670109481
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8507809580187313
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8713967920048162
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8970370409952011
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8580071249743924
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8572032079973724
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8648934589873534
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.9249458749836776
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8591751669882797
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8614275410072878
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8819000420044176
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8824271670018788
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8722632080025505
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8472047499963082
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8724956669902895
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8776565410080366
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "replan",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8710705839912407
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "mode": "reuse",
+      "metrics": {
+        "max_semantic_error": 2.508910598853109e-14,
+        "full_cz_count": 396,
+        "two_body_dependency_depth": 137,
+        "verification": "three-probes-only"
+      },
+      "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+      "seconds": 0.8519319999904837
+    }
+  ]
+}

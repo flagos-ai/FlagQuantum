@@ -8,13 +8,13 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     ConstructionBudget,
     Selection,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler.topology.coupling import CouplingMap
 from tests.register_program_cases import (
     Registers,

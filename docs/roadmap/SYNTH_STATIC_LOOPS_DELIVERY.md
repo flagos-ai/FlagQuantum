@@ -11,7 +11,7 @@ Independent trials remain 0/2 and release authorization remains false.
 ## User computation
 
 Save the following in a source-retaining Python file, or run
-python -m examples.synthesis_static_loop for both numeric and predicate loops:
+python -m examples.synthesis.tutorials.composition.static_loop.main for both numeric and predicate loops:
 
 ```python
 import flagquantum as fq

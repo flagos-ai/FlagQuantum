@@ -1,0 +1,17 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk.ipynb",
+  "original_sha256": "b252ee7111a534da5a8fb7c91784a918926336c6ee29565850d2442b96bfeb38",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "0278d6396d036b2720183920dd6abc2c78118bb727c2f9e581bbffe6038b2fe2"
+    }
+  ],
+  "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests U/CX with Qiskit optimization level 3. We replace that private optimization pipeline with a bounded FlagQuantum decomposition; no optimization-level or timing equivalence is claimed.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.qiskit_discrete_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "a2ebc550a44a91209e2c30d333bf0907463043cd",
+  "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests U/CX with Qiskit optimization level 3. We replace that private optimization pipeline with a bounded FlagQuantum decomposition; no optimization-level or timing equivalence is claimed. The source shift is modular increment. Coin=1 applies increment; coin=0 applies its inverse. The logical value is six-bit unsigned, with source array index zero as the low bit. CX/U3. U3 is the three-angle U gate. All explicit conversion rules preserve absolute phase."
+}

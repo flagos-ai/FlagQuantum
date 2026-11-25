@@ -1,0 +1,7 @@
+{
+  "upstream_path": "applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "e31c8d7da468390684d626e34f8ee2b744dcd904cd6bb77becedd936cc51a1a7",
+  "scope": "Complete retained23-bit quantum program;no companion Notebook credit.",
+  "native_semantic_adaptations": "Use explicit8/20 quantize markers on precision-bearing fresh arithmetic. Read-only helpers use Const;fresh caller-owned locals receive helper Outputs without escaping. All helper-owned intermediates are explicitly dropped. Preserve all32 joint branches,15-bit signed8-fractional price output and the proved retained branch environment. The sine polynomial remains -1/4 at both prepared endpoints, matching the original. Source G is named price in native Python."
+}

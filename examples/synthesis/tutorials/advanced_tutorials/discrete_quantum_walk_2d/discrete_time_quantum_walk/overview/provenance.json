@@ -1,0 +1,72 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "08f57941e72de00da7ad76712d7d16c223434fd005af6c94c3ef0db6876adba8",
+  "git_blob_sha1": "66bfef33068890110d2302846bda7e897725d9f7",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "dfa6453d7ccba89db629914e3f17d1294d097e5c29f3c505e8c1ae542962677b",
+      "native_code_cell": 2,
+      "stage": "Local native setup"
+    },
+    {
+      "index": 3,
+      "sha256": "cc099a9c8fafa17893aa1740226f8ec063ee98b3068de2d64bd376800f694817",
+      "native_code_cell": 4,
+      "stage": "Original one-dimensional size"
+    },
+    {
+      "index": 4,
+      "sha256": "21d6df49a39785c70313946461276e222a91438eb2f2ca4197dea1a28076f667",
+      "native_code_cell": 6,
+      "stage": "Native ring preparation and helpers"
+    },
+    {
+      "index": 5,
+      "sha256": "aae4fec92c58bfe4ff39c5fa685eebcd82cc16dd32defd390e42fc4943e3e080",
+      "native_code_cell": 8,
+      "stage": "One-step ring synthesis and full-state check"
+    },
+    {
+      "index": 6,
+      "sha256": "f4cf385d3b4bf5162d4d9c29ab85c30c5eefdea2cdf7882fc0dee3c120d95823",
+      "native_code_cell": 10,
+      "stage": "One-step actual observations"
+    },
+    {
+      "index": 7,
+      "sha256": "4bb30ab5ce367d6099e12c6b370f62fd7121ecfa707f13218cf4366b3d0a6cca",
+      "native_code_cell": 12,
+      "stage": "Twenty-step actual observations and ring plot"
+    },
+    {
+      "index": 9,
+      "sha256": "fb1393692db4b11a33b4f6462be97955d0ddfd4c36577127381f948ed405a521",
+      "native_code_cell": 14,
+      "stage": "Original two-dimensional size"
+    },
+    {
+      "index": 10,
+      "sha256": "2489467bfbaf6de3d6d250cf86ee5a866ccf2f193b7faff6ce76a4a3b6274d4d",
+      "native_code_cell": 16,
+      "stage": "Reused native torus preparation and helpers"
+    },
+    {
+      "index": 11,
+      "sha256": "445bffe389172b2046bb5d5cebbbd47a3161b14b10ebce8f3adf9d7c08175b94",
+      "native_code_cell": 18,
+      "stage": "Twenty-step torus synthesis and full-state check"
+    },
+    {
+      "index": 12,
+      "sha256": "ea8d4d53fb1cde0cc345e87f86140d2ba9c0a0f7a40f199b86a3669d85a28aac",
+      "native_code_cell": 20,
+      "stage": "Actual observations and probability heatmap"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_ring_torus_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk_2d.discrete_time_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/walkthrough.ipynb",
+  "scope": "All10 original stages: six-bit ring at position32 with complex H/S coin,1 and20 steps; five-bit-by-five-bit torus at(16,16) with signed four-direction coin and20 steps. Three actual1000-draw batches, ring bars and torus heatmap. Complete native/independent Circuit amplitudes include the retained entangled coin; additional compiler workspace must be zero. Reuse retained qfunc directly at t20; do not alter its convenience wrapper or downsize to16. Classical step binding is synthesis-time with separate builds. No remote execution or source importer."
+}

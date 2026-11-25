@@ -461,6 +461,37 @@ def _control_flips(
     return table
 
 
+def _synthesize_real_state(
+    amplitudes: Sequence[float], qubits: Sequence[int]
+) -> tuple[Instruction, ...]:
+    """Prepare a checked real vector with a native RY/CX ladder.
+
+    Upper levels distribute nonnegative block norms. The final level uses
+    signed pairs directly so it preserves the requested global sign as well
+    as the relative signs. The caller validates the vector and register.
+    """
+    gates = []
+    for level, target in enumerate(qubits):
+        if level + 1 == len(qubits):
+            angles = [
+                2 * math.atan2(hi, lo)
+                for lo, hi in zip(amplitudes[::2], amplitudes[1::2], strict=True)
+            ]
+        else:
+            angles = _magnitude_angles(amplitudes, len(qubits), level)
+        controls = qubits[:level]
+        alpha = _walsh(angles, level)
+        if not any(alpha):
+            continue
+        order, walk = _control_walk(controls) if controls else ([0], [])
+        for step, branch in enumerate(order):
+            if alpha[branch]:
+                gates.append(Instruction("ry", (target,), {"theta": alpha[branch]}))
+            if walk:
+                gates.append(Instruction("cx", (walk[step], target)))
+    return tuple(gates)
+
+
 def synthesize_state_preparation(
     amplitudes: Any,
     *,

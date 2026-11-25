@@ -9,7 +9,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.algorithms.synthesis_trial import pressure
+from examples.synthesis.tutorials.getting_started.trial.main import pressure
 from flagquantum import synth
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.result import ExecutionResult

@@ -196,7 +196,7 @@ identifier = [
     "flagquantum/algorithms/kmedians.py::_nearest_centroid::n_wires",
     "flagquantum/algorithms/qubo.py::_constant_wire::n_wires",
     "flagquantum/circuit.py::Circuit._require_width_covers_recorded_qubits::wire",
-    "flagquantum/compiler/pipeline.py::_WireLocalProgram.last_touching::wires",
+    "flagquantum/compiler/optimization/canonicalization.py::_WireLocalProgram.last_touching::wires",
     "flagquantum/ecosystem/simulators/advisor.py::_recommend_profile::n_wires",
     "flagquantum/runtime/executors/statevector/planning.py::_validate_distributed_statevector_plan::n_wires",
     "flagquantum/runtime/measurements.py::_ideal_probabilities::n_wires",
@@ -384,14 +384,14 @@ canonical = [
     "flagquantum/circuit.py::Circuit.expectation_z::wires",
     "flagquantum/circuit.py::Circuit.gate::wires",
     "flagquantum/compiler/topology/directed_topology.py::DirectedCouplingMap.__init__::n_wires",
-    "flagquantum/compiler/layout.py::Layout.map_wires::wires",
-    "flagquantum/compiler/layout.py::remove_layout_restore.rename::wires",
+    "flagquantum/compiler/topology/layout.py::Layout.map_wires::wires",
+    "flagquantum/compiler/topology/layout.py::remove_layout_restore.rename::wires",
     "flagquantum/compiler/optimization/one_qubit_synthesis.py::synthesize_one_qubit_matrix::wire",
-    "flagquantum/compiler/openqasm.py::emit_openqasm::result_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.__init__::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.line::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
-    "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
+    "flagquantum/compiler/formats/openqasm.py::emit_openqasm::result_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.__init__::n_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.line::n_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.neighbors::wire",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/optimization/two_qubit_synthesis.py::synthesize_two_qubit::wires",
     "flagquantum/core/ir/__init__.py::from_engine_qir::n_wires",
     "flagquantum/core/qubit_mapping.py::remap_qubits::wires",
@@ -982,14 +982,14 @@ sites = [
     "flagquantum/benchmarking/statevector_local.py::build_workload::n_wires",
     "flagquantum/benchmarking/statevector_local.py::run_benchmark::n_wires",
     "flagquantum/compiler/topology/directed_topology.py::DirectedCouplingMap.__init__::n_wires",
-    "flagquantum/compiler/layout.py::Layout.map_wires::wires",
-    "flagquantum/compiler/layout.py::remove_layout_restore.rename::wires",
+    "flagquantum/compiler/topology/layout.py::Layout.map_wires::wires",
+    "flagquantum/compiler/topology/layout.py::remove_layout_restore.rename::wires",
     "flagquantum/compiler/optimization/one_qubit_synthesis.py::synthesize_one_qubit_matrix::wire",
-    "flagquantum/compiler/openqasm.py::emit_openqasm::result_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.__init__::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.line::n_wires",
-    "flagquantum/compiler/routing.py::CouplingMap.neighbors::wire",
-    "flagquantum/compiler/routing.py::CouplingMap.ring::n_wires",
+    "flagquantum/compiler/formats/openqasm.py::emit_openqasm::result_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.__init__::n_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.line::n_wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.neighbors::wire",
+    "flagquantum/compiler/topology/routing.py::CouplingMap.ring::n_wires",
     "flagquantum/compiler/optimization/two_qubit_synthesis.py::synthesize_two_qubit::wires",
     "flagquantum/deployment/cloud.py::expectation_z_from_counts::wires",
     "flagquantum/deployment/routing_evidence.py::build_deployment_routing_evidence::n_wires",
@@ -1225,13 +1225,13 @@ files = [
     "flagquantum/benchmarking/statevector_cpu_paths.py",
     "flagquantum/benchmarking/statevector_local.py",
     "flagquantum/compiler/topology/directed_topology.py",
-    "flagquantum/compiler/layout.py",
+    "flagquantum/compiler/topology/layout.py",
     "flagquantum/compiler/optimization/one_qubit_synthesis.py",
-    "flagquantum/compiler/openqasm.py",
-    "flagquantum/compiler/openqasm_import.py",
+    "flagquantum/compiler/formats/openqasm.py",
+    "flagquantum/compiler/formats/openqasm_import.py",
     "flagquantum/compiler/artifacts/physical_plan.py",
-    "flagquantum/compiler/qcis.py",
-    "flagquantum/compiler/routing.py",
+    "flagquantum/compiler/formats/qcis.py",
+    "flagquantum/compiler/topology/routing.py",
     "flagquantum/compiler/topology/topology_legalization.py",
     "flagquantum/compiler/optimization/two_qubit_synthesis.py",
     "flagquantum/deployment/cloud.py",
@@ -1282,16 +1282,16 @@ canonical = [
     "flagquantum/algorithms/svd.py::SingularValueResult::n_counting_wires",
     "flagquantum/circuit.py::Circuit::n_wires",
     "flagquantum/compiler/topology/directed_topology.py::DirectedCouplingMap::n_wires",
-    "flagquantum/compiler/layout.py::Layout::map_wires",
-    "flagquantum/compiler/layout.py::Layout::n_wires",
-    "flagquantum/compiler/openqasm_import.py::OpenQASMImport::n_wires",
+    "flagquantum/compiler/topology/layout.py::Layout::map_wires",
+    "flagquantum/compiler/topology/layout.py::Layout::n_wires",
+    "flagquantum/compiler/formats/openqasm_import.py::OpenQASMImport::n_wires",
     "flagquantum/compiler/artifacts/physical_plan.py::MappingTransition::physical_wires",
     "flagquantum/compiler/artifacts/physical_plan.py::PhysicalCircuitPlan::coupling_n_wires",
     "flagquantum/compiler/artifacts/physical_plan.py::PhysicalCircuitPlan::logical_wire_count",
     "flagquantum/compiler/artifacts/physical_plan.py::PhysicalInstructionRecord::logical_wires",
     "flagquantum/compiler/artifacts/physical_plan.py::PhysicalInstructionRecord::physical_wires",
-    "flagquantum/compiler/qcis.py::QCISInstruction::wires",
-    "flagquantum/compiler/routing.py::CouplingMap::n_wires",
+    "flagquantum/compiler/formats/qcis.py::QCISInstruction::wires",
+    "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires",
     "flagquantum/compiler/topology/topology_legalization.py::TopologyLegalizationResult::logical_wire_count",
     "flagquantum/core/operator_schema.py::GateInfo::n_wires",
     "flagquantum/core/operator_schema.py::OperatorSchema::wire_convention",
@@ -1731,7 +1731,7 @@ replacement = "qubits"
 site = "flagquantum/runtime/result.py::MeasurementResult::wires"
 replacement = "qubits"
 [[attribute_aliases.sites]]
-site = "flagquantum/compiler/openqasm_import.py::OpenQASMImport::n_wires"
+site = "flagquantum/compiler/formats/openqasm_import.py::OpenQASMImport::n_wires"
 replacement = "n_qubits"
 [[attribute_aliases.sites]]
 site = "flagquantum/deployment/cloud.py::CloudBackendProfile::n_wires"
@@ -2052,11 +2052,11 @@ site = "flagquantum/compiler/topology/directed_topology.py::DirectedCouplingMap:
 replacement = "n_qubits"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/compiler/layout.py::Layout::map_wires"
+site = "flagquantum/compiler/topology/layout.py::Layout::map_wires"
 replacement = "map_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
-site = "flagquantum/compiler/layout.py::Layout::n_wires"
+site = "flagquantum/compiler/topology/layout.py::Layout::n_wires"
 replacement = "n_qubits"
 declaration = "member"
 [[attribute_retirement.sites]]
@@ -2080,11 +2080,11 @@ site = "flagquantum/compiler/artifacts/physical_plan.py::PhysicalInstructionReco
 replacement = "physical_qubits"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/compiler/qcis.py::QCISInstruction::wires"
+site = "flagquantum/compiler/formats/qcis.py::QCISInstruction::wires"
 replacement = "qubits"
 declaration = "field"
 [[attribute_retirement.sites]]
-site = "flagquantum/compiler/routing.py::CouplingMap::n_wires"
+site = "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires"
 replacement = "n_qubits"
 declaration = "field"
 [[attribute_retirement.sites]]

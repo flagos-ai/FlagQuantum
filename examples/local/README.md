@@ -8,6 +8,7 @@ requests.
 python -m examples.local.simulate
 python -m examples.local.measure
 python -m examples.local.train
+python -m examples.local.train_parameters
 python -m examples.local.dynamic_feedback
 python -m examples.local.dynamic_many_shots
 python -m examples.local.dynamic_validation
@@ -16,6 +17,8 @@ python -m examples.local.dynamic_validation
 - `simulate.py` builds a Bell circuit and checks its statevector.
 - `measure.py` requests probabilities, a Pauli expectation, and sampled counts.
 - `train.py` optimizes an `fq.Module` with a standard PyTorch optimizer.
+- `train_parameters.py` uses explicit initialization, freezes one named weight,
+  resumes with current checkpoint semantics, and unfreezes it with AdamW.
 - `dynamic_feedback.py` plans and executes the stable `DynamicCircuit` builder
   through `fq.plan` and `fq.run`, covering mid-circuit measurement, conditional
   feedback, reset, and the canonical execution result.

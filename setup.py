@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import platform
+import re
 import struct
 import subprocess
 import sys
@@ -11,8 +14,87 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from setuptools import setup
+from setuptools import Extension, setup
+from setuptools.command.build_py import build_py
 from torch.utils.cpp_extension import BuildExtension, CppExtension
+
+_EMBEDDED_STIM_NAME = "flagquantum.simulation.stabilizer._embedded_stim"
+_NATIVE_CPU_NAME = "flagquantum.simulation.native_cpu._C"
+_SPARSE_BLOSSOM_NAME = "flagquantum.qec.decoders._sparse_blossom"
+_EMBEDDED_STIM_CSRCDIR = Path("flagquantum/simulation/stabilizer/csrc")
+_SPARSE_BLOSSOM_CSRCDIR = Path("flagquantum/qec/decoders/csrc")
+_BUILD_EMBEDDED_STIM = os.environ.get("FQ_BUILD_EMBEDDED_STIM") == "1"
+
+
+class _BuildPython(build_py):
+    def run(self) -> None:
+        super().run()
+        if _BUILD_EMBEDDED_STIM:
+            marker = (
+                Path(self.build_lib)
+                / "flagquantum/simulation/stabilizer/_embedded_stim_profile.txt"
+            )
+            marker.write_text("stim-1.16.0\n", encoding="ascii")
+
+
+def _embedded_stim_extensions() -> list[Extension]:
+    if not _BUILD_EMBEDDED_STIM:
+        return []
+    if (sys.platform, platform.machine()) not in (
+        ("darwin", "arm64"),
+        ("linux", "x86_64"),
+    ):
+        raise RuntimeError(
+            "The embedded Stim build is admitted on macOS arm64 and Linux x86_64 only"
+        )
+    lock = json.loads(
+        (_EMBEDDED_STIM_CSRCDIR / "stim-sampler-source-lock.json").read_text()
+    )
+    vendor = Path(lock["vendor_root"])
+    for path, digest in lock["file_sha256"].items():
+        if hashlib.sha256((vendor / path).read_bytes()).hexdigest() != digest:
+            raise RuntimeError(f"Embedded Stim source digest mismatch: {path}")
+    return [
+        Extension(
+            _EMBEDDED_STIM_NAME,
+            [
+                str(_EMBEDDED_STIM_CSRCDIR / "embedded_sampler.cpp"),
+                *(str(vendor / path) for path in lock["translation_units"]),
+            ],
+            include_dirs=[str(vendor / "src")],
+            depends=[str(vendor / path) for path in lock["headers_and_templates"]],
+            extra_compile_args=["-std=c++20", "-O3", "-g0", "-fno-strict-aliasing"],
+            define_macros=[("Py_LIMITED_API", "0x030A0000")],
+            language="c++",
+            py_limited_api=True,
+        )
+    ]
+
+
+def _sparse_blossom_extension() -> Extension:
+    lock = json.loads(
+        (_SPARSE_BLOSSOM_CSRCDIR / "sparse-blossom-source-lock.json").read_text()
+    )
+    vendor = Path(lock["vendor_root"])
+    for path, digest in lock["file_sha256"].items():
+        if hashlib.sha256((vendor / path).read_bytes()).hexdigest() != digest:
+            raise RuntimeError(f"Sparse Blossom source digest mismatch: {path}")
+    return Extension(
+        _SPARSE_BLOSSOM_NAME,
+        [
+            str(_SPARSE_BLOSSOM_CSRCDIR / "sparse_blossom.cpp"),
+            *(str(vendor / path) for path in lock["translation_units"]),
+        ],
+        include_dirs=[str(vendor / "src")],
+        depends=[str(vendor / path) for path in lock["file_sha256"]],
+        extra_compile_args=(
+            ["/std:c++20", "/O2"] if os.name == "nt" else ["-std=c++20", "-O3", "-g0"]
+        ),
+        define_macros=[("Py_LIMITED_API", "0x030A0000")],
+        language="c++",
+        py_limited_api=True,
+    )
+
 
 TORCH_USES_OPENMP = "ATen parallel backend: OpenMP" in torch.__config__.parallel_info()
 
@@ -146,7 +228,8 @@ class ReproducibleBuildExtension(BuildExtension):
         self._require_durable_rpath(directory)
         flag = _absolute_rpath_flag(directory)
         for extension in self.extensions:
-            extension.extra_link_args = [*(extension.extra_link_args or ()), flag]
+            if extension.name == _NATIVE_CPU_NAME:
+                extension.extra_link_args = [*(extension.extra_link_args or ()), flag]
 
     def _require_durable_rpath(self, directory: Path) -> None:
         """Fail when the artifact would depend on a directory pip deletes.
@@ -194,6 +277,12 @@ class ReproducibleBuildExtension(BuildExtension):
         for extension in self.extensions:
             self._require_loadable_artifact(extension)
 
+    def build_extensions(self) -> None:
+        if os.name == "nt":
+            # Each extension must finish before another changes the process-wide CL.
+            self.parallel = None
+        super().build_extensions()
+
     def build_extension(self, ext: Any) -> None:
         if self.inplace_build:
             # A staged artifact is reused whenever it is newer than its sources,
@@ -202,10 +291,24 @@ class ReproducibleBuildExtension(BuildExtension):
             # build chose. Removing only the linked output forces the link this
             # build configured and leaves the object files to be reused.
             Path(self.get_ext_fullpath(ext.name)).unlink(missing_ok=True)
-        super().build_extension(ext)
+        if os.name == "nt" and ext.name == _SPARSE_BLOSSOM_NAME:
+            # This MSVC build path reads CL even when setuptools drops the
+            # extension's compiler post-arguments.
+            original = os.environ.get("CL")
+            flags = re.sub(r"(?i)(?<!\S)[/-]std:\S+", "", original or "").strip()
+            os.environ["CL"] = " ".join(filter(None, (flags, "/std:c++20")))
+            try:
+                super().build_extension(ext)
+            finally:
+                if original is None:
+                    os.environ.pop("CL", None)
+                else:
+                    os.environ["CL"] = original
+        else:
+            super().build_extension(ext)
         if sys.platform == "darwin":
             extension_path = Path(self.get_ext_fullpath(ext.name))
-            if TORCH_USES_OPENMP:
+            if TORCH_USES_OPENMP and ext.name == _NATIVE_CPU_NAME:
                 torch_openmp = Path(torch.__file__).parent / "lib" / "libomp.dylib"
                 openmp_install_name = subprocess.run(
                     ("otool", "-D", str(torch_openmp)),
@@ -246,12 +349,12 @@ class ReproducibleBuildExtension(BuildExtension):
         probe = (
             "import importlib.util, sys\n"
             "import torch\n"
-            "spec = importlib.util.spec_from_file_location('_C', sys.argv[1])\n"
+            "spec = importlib.util.spec_from_file_location(sys.argv[2], sys.argv[1])\n"
             "module = importlib.util.module_from_spec(spec)\n"
             "spec.loader.exec_module(module)\n"
         )
         completed = subprocess.run(
-            (sys.executable, "-c", probe, str(artifact)),
+            (sys.executable, "-c", probe, str(artifact), ext.name.rsplit(".", 1)[-1]),
             capture_output=True,
             text=True,
             timeout=600,
@@ -266,7 +369,7 @@ class ReproducibleBuildExtension(BuildExtension):
 setup(
     ext_modules=[
         CppExtension(
-            "flagquantum.simulation.native_cpu._C",
+            _NATIVE_CPU_NAME,
             [
                 "flagquantum/simulation/native_cpu/csrc/permutation.cpp",
                 "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp",
@@ -278,8 +381,13 @@ setup(
             extra_compile_args={"cxx": CPP_FLAGS},
             extra_link_args=LINK_FLAGS,
             py_limited_api=True,
-        )
+        ),
+        _sparse_blossom_extension(),
+        *_embedded_stim_extensions(),
     ],
-    cmdclass={"build_ext": ReproducibleBuildExtension.with_options(use_ninja=False)},
+    cmdclass={
+        "build_ext": ReproducibleBuildExtension.with_options(use_ninja=False),
+        "build_py": _BuildPython,
+    },
     options={"bdist_wheel": {"py_limited_api": "cp310"}},
 )

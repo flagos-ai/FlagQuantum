@@ -1,0 +1,66 @@
+{
+  "upstream_path": "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a2ab0607007bd2af50d3e1ca3ab7bd731b3401d21b6ed2a7bbaf06c6605b0946",
+  "git_blob_sha1": "91828dbd4f7f43265c1aec53ac3605112a831f93",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "5fd856cf8bf345d9b218638e8787cacc6c7a661712321f1cc42da82bef2a9a2e",
+      "native_code_cell": 2,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 5,
+      "sha256": "986ea7016008847246002f849a3a667bf08ad4b39b576d6a42fbd95221944bc7",
+      "native_code_cell": 4,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 10,
+      "sha256": "db42b635f627fbc4cfab63570e9caad03eb2f715b40553da105f516d1065984f",
+      "native_code_cell": 6,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 14,
+      "sha256": "adc95bd137b3c0c79f286fe413598dcfebaa44532ac4515af1472d1ac8b71362",
+      "native_code_cell": 8,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 17,
+      "sha256": "e558b664abaa61a52e0b1361d93b36657bb48a16a7f90992fa3fb8287f0fbeec",
+      "native_code_cell": 10,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 21,
+      "sha256": "665f2d3075593e0e999ed0c43113d5e66488bc048fca201ae3cbd39c167c1e46",
+      "native_code_cell": 12,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 25,
+      "sha256": "4cc06d3385b21cea0185da8af50620445a7c2e46e1c11ba2e1dab5b5b8d9101e",
+      "native_code_cell": 14,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 27,
+      "sha256": "b80b282fa2fc5b8c8207344861971ae8141ef90922e371dc95bf76a41d95a7de",
+      "native_code_cell": 16,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    },
+    {
+      "index": 29,
+      "sha256": "47777a82a6eab558f89da258a7d7a3a58abba818fd8577dd0dfe52574cc7425c",
+      "native_code_cell": 18,
+      "stage": "Full native source-stage workflow; exercise placeholders become labeled reference solutions"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_qce_part2_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.algo_design_qce_tutorial.algo_design_qce_tutorial_part_ii.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/walkthrough.ipynb",
+  "scope": "All9 original code stages and source solution replays. Source3-layer3-node2-edge MaxCut,3/2/4-bit slack-penalty and3/2-bit feasible phase models. Preserve RX(beta), six-angle initial schedule,quantum coefficient2 square and distinct classical coefficient4 linear violation score. Native COBYLA executes capped40/50 actual quantum objective queries and selects the last actual query. Five actual1000-draw statistics batches,one1000-draw MaxCut table and four10-draw Knapsack tables; four convergence figures. Named native ports replace source structs without changing widths. Classical bindings specialize at synthesis. Six independent full-state Circuit comparisons at two nonzero bindings preserve bit order,absolute global phase and clean compiler workspace. No source importer,provider optimizer trajectory equivalence,hardware submission,optimality or speedup claim."
+}

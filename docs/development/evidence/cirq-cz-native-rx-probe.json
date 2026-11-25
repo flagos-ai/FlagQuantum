@@ -1,0 +1,302 @@
+[
+  {
+    "seed": 0,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.1934897514720433e-15
+  },
+  {
+    "seed": 1,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.0423133317908006e-15
+  },
+  {
+    "seed": 2,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.43870286592438e-15
+  },
+  {
+    "seed": 3,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.2815744444133687e-15
+  },
+  {
+    "seed": 4,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.485749680535094e-16
+  },
+  {
+    "seed": 5,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 5.003707553108401e-16
+  },
+  {
+    "seed": 6,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.892244460905494e-16
+  },
+  {
+    "seed": 7,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.453818937520096e-15
+  },
+  {
+    "seed": 8,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.055533264671472e-15
+  },
+  {
+    "seed": 9,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 6.547977961700913e-16
+  },
+  {
+    "seed": 10,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.1433814963738287e-15
+  },
+  {
+    "seed": 11,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 8.886119947416683e-16
+  },
+  {
+    "seed": 12,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 6.204182187022423e-15
+  },
+  {
+    "seed": 13,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.820925191391734e-16
+  },
+  {
+    "seed": 14,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.2037297810228127e-15
+  },
+  {
+    "seed": 15,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.0605390551611693e-15
+  },
+  {
+    "seed": 16,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 5.978733960281817e-16
+  },
+  {
+    "seed": 17,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.4346614125391368e-15
+  },
+  {
+    "seed": 18,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.2858174823128573e-15
+  },
+  {
+    "seed": 19,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.485749680535094e-16
+  },
+  {
+    "seed": 20,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 4.996485455209446e-16
+  },
+  {
+    "seed": 21,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.0624667941418068e-15
+  },
+  {
+    "seed": 22,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.3045905553070086e-15
+  },
+  {
+    "seed": 23,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.872970233514503e-15
+  },
+  {
+    "seed": 24,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 8.08254562088053e-16
+  },
+  {
+    "seed": 25,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.5720538491532983e-15
+  },
+  {
+    "seed": 26,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 7.088547964785382e-16
+  },
+  {
+    "seed": 27,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 8.671119018262734e-16
+  },
+  {
+    "seed": 28,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 8.005932084973442e-16
+  },
+  {
+    "seed": 29,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 7.850462293418876e-16
+  },
+  {
+    "seed": 30,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.8703304230719594e-14
+  },
+  {
+    "seed": 31,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 8.688869536365456e-16
+  },
+  {
+    "seed": 32,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.42055475210265e-16
+  },
+  {
+    "seed": 33,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.7120938570526363e-15
+  },
+  {
+    "seed": 34,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.226380847435024e-16
+  },
+  {
+    "seed": 35,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.3876248941963683e-15
+  },
+  {
+    "seed": 36,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 5.551115123125783e-16
+  },
+  {
+    "seed": 37,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 9.550499576785472e-16
+  },
+  {
+    "seed": 38,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.926964694222131e-15
+  },
+  {
+    "seed": 39,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.1906501263298635e-15
+  },
+  {
+    "seed": 40,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 2.6876012085918418e-15
+  },
+  {
+    "seed": 41,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.5647474998540476e-15
+  },
+  {
+    "seed": 42,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.2490009027033011e-15
+  },
+  {
+    "seed": 43,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 6.955527313080394e-16
+  },
+  {
+    "seed": 44,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 7.850462293418876e-16
+  },
+  {
+    "seed": 45,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.278339375053655e-15
+  },
+  {
+    "seed": 46,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 4.92057119538561e-15
+  },
+  {
+    "seed": 47,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 6.364747477334911e-15
+  },
+  {
+    "seed": 48,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.0708907612112133e-15
+  },
+  {
+    "seed": 49,
+    "baseline_operations": 26,
+    "cirq_operations": 27,
+    "residual": 1.0370338861126152e-15
+  }
+]

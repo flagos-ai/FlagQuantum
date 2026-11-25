@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/hadamard_test/hadamard_test.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f7e5b409fe56c5dd4de9f23d6127d3457b103b4029ebd67836947e5e28eb4709",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.hadamard_test.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_controlled_fourier.py",
+  "scope": "Complete four-bit-target Hadamard-test quantum program. Raw five-qubit joint states and ancilla readout checked against original and independent Fourier Circuit. Complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Native psi is an explicit Output. Read only expectation_value using Program.probabilities to reproduce source drop readout. The entangled target remains in the charged five-qubit state: it is not reset, clean workspace, freed or traced into a pure statevector. The byte-identical tutorial reuses the algorithm program. Qmod within-H/apply-control-QFT is expressed as H/control(qft)/H in the root native qfunc; no source importer or source file is used in user examples."
+}

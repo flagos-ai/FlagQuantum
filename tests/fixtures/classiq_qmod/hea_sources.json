@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "second_quantized_hamiltonian.qmod",
+      "source_path": "applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian.qmod",
+      "git_blob_sha1": "f83362f3334afbcb48ffe3abef668e85fc0c3282",
+      "sha256": "cfdb0ce4d23027d6a2907227942fefacac7d75683ab2e6174b155b06cc6759e9"
+    }
+  ]
+}

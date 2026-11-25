@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "exact_amplitude_amplification.qmod",
+      "source_path": "functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification.qmod",
+      "git_blob_sha1": "4e37c930f338b7a4d24a54f0eb9a208d062138ad",
+      "sha256": "d9240f1f7eb8ec93a9cd3a2aa26c561961ac8063b6d118c2a220a5f71f373475"
+    },
+    {
+      "file": "partial_exponential_state_preparation.qmod",
+      "source_path": "applications/finance/autocallable_options/partial_exponential_state_preparation.qmod",
+      "git_blob_sha1": "fc5fd712a1853369318db7d14f3caac029de5209",
+      "sha256": "da0b25a150ed9bf74852d131b21f7324a28eac354b9e581b846a7a749d361cc2"
+    }
+  ]
+}

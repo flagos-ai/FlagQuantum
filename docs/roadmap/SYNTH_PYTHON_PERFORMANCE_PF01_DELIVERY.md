@@ -71,7 +71,7 @@ qubits, eight workspace qubits, 81 operations and depth 59; the independent
 Circuit remains nine qubits, one workspace, 15 operations and depth 11.
 PF-01 reduces Python delivery overhead; it does not close that circuit-resource
 gap. The runnable native/Qmod example is
-[`examples.synthesis_arithmetic_implementations.py`](../../examples/synthesis_arithmetic_implementations.py);
+[`examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main.py`](../../examples/synthesis/tutorials/arithmetic/arithmetic_implementations/main.py);
 the independent reference is `manual_reference` in
 [`arithmetic_baseline.py`](../../benchmarks/synthesis/arithmetic_baseline.py).
 

@@ -1,0 +1,115 @@
+{
+  "upstream_path": "community/Hackathons/iQuHack_2025/Challenge/classiq_iQuHack_2025_final.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "61267f9c0e8f04d8b911ab68279dbc893f66156f799407435711d89992e60c29",
+  "git_blob_sha1": "64ebe892284aad6104d66a0d558286f03319cb40",
+  "scope": "All 17 source stages, the original eight- and four-bit uniform starter, one actual stage-one draw, signed Gaussian error and resource reporting, and the disabled team export.",
+  "native_semantic_adaptations": "Use native qfunc and CX/U conversion. Keep the original starter behavior and scopes and add a separately labeled bounded exact reference. Verify all 256 amplitudes for both stage-one states and use native portable IR for explicit local export.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.iquhack_2025.challenge_template.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/iquhack_2025/challenge_template/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_iquhack_gaussian_challenge_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 11,
+      "native_code_cell": 1,
+      "stage": "Use the native local execution environment.",
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 2,
+      "stage": "Run both stages locally with explicit source width caps.",
+      "sha256": "0424cc3ff6e6b6b8f872abb5516a3fd88623a8a429a14ec7249383d8c7929e71"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 3,
+      "stage": "Use native qfunc and local plotting.",
+      "sha256": "6bb1189b681de28188ae462a8f9199fddd6b56d233686f9d2b6a539a14555c7f"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 4,
+      "stage": "Retain the source starter and offer a bounded reference solution.",
+      "sha256": "604c15641c4a8abb3f4b8fea3b7c1bbd78285df327c9903aca4be470981b444c"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 5,
+      "stage": "Use the original limits of 18 and 127 qubits.",
+      "sha256": "8fe03a3f32cf0dda6237d237a0e418f83ccbeddf29b53e6feb42d31cbe91fa9c"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 6,
+      "stage": "Use the original eight-bit stage-one resolution.",
+      "sha256": "d8eb09d14ab9322c75d957dc33cf0f6ee852e43d57c5812a67804c6b32a4cda2"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 7,
+      "stage": "Check the original stage-one width.",
+      "sha256": "d124fc3a890a7a226d620a60d23f3689db88f1e29d09c490ce5ccd2c8da98031"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 8,
+      "stage": "Execute the starter and reference and take the original single draw.",
+      "sha256": "9e914bb1c1fed72b251b9e499bf0ab479326316ea3274af065af0ea64126dcdc"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 9,
+      "stage": "Retain all 256 signed probability values.",
+      "sha256": "9bb146f979ec100a142db9950f8fe8e047068a20cb2bd3ab2733d35d5499f398"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 10,
+      "stage": "Compile the original four-bit stage-two starter.",
+      "sha256": "e4551b2c3fd3d6a01dec966df7de72a4cbc286c69fe7e2780279c258673cf163"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 11,
+      "stage": "Preserve the original four-bit resolution.",
+      "sha256": "c4a8c78d479010229f5033c7a9924a3ed5c04711710d7af6243c3db31b355bd3"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 12,
+      "stage": "Read the actual Gaussian error and complete-state checks.",
+      "sha256": "1ac9a911991f1eddd8fce628cdf0aa51937414bed6bb4745744770c5a3b431b3"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 13,
+      "stage": "Use native static CX and depth metrics.",
+      "sha256": "75fdbf91df9d79e11ee985d5f98f56f11faa2f1994e0abbe496491767c8c2b99"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 14,
+      "stage": "Plot the stage-one distribution and report both circuit costs.",
+      "sha256": "671f7ac31fff1f69df1629a518f8f11e54ba3992a7d3868131f329c8717c2560"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 15,
+      "stage": "Report the exact original stage-two compilation width and cost.",
+      "sha256": "5457fcc8bd6f59ca76da4294cf9aa6ff149de22db9aa3a3b96902a6d0e5d9686"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 16,
+      "stage": "Provide the optional native IR export.",
+      "sha256": "ceaae97c96c9a403a8430676723fd08fb6eb62feb7bbdd9cff33a74a70c13109"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 17,
+      "stage": "Keep the original team export disabled.",
+      "sha256": "0936ebb83ced4e53216307db9346cbf3e5c760cf502289002300eab550ae12b3"
+    }
+  ]
+}

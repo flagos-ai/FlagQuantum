@@ -15,14 +15,47 @@ renaming one of them is a contract change rather than a private detail.
 
 from __future__ import annotations
 
+import importlib
+import pickle
 import struct
 
 import pytest
 
-from flagquantum.remote import realtime as rt
-from flagquantum.remote.realtime import channels, payload, protocol, service, session
+from flagquantum import realtime as rt
+from flagquantum.realtime import channels, payload, protocol, service, session
 
 pytestmark = pytest.mark.unit
+
+
+def test_old_imports_share_canonical_types_and_modules() -> None:
+    old = importlib.import_module("flagquantum.remote.realtime")
+    assert old.__all__ == rt.__all__
+    for name in rt.__all__:
+        assert getattr(old, name) is getattr(rt, name)
+    for name in ("protocol", "payload", "service", "channels", "session"):
+        module = importlib.import_module(f"flagquantum.realtime.{name}")
+        assert importlib.import_module(f"flagquantum.remote.realtime.{name}") is module
+        assert getattr(old, name) is module
+    assert old.RPCHeader(7, 1, 17).encode() == rt.RPCHeader(7, 1, 17).encode()
+    with pytest.raises(rt.RealtimeProtocolError):
+        old.RPCHeader.decode(b"")
+
+
+def test_pre_migration_pickle_reads_as_the_canonical_class() -> None:
+    # Captured before migration, rather than manufactured using the new class.
+    previous = (
+        b"\x80\x04\x95F\x00\x00\x00\x00\x00\x00\x00"
+        b"\x8c$flagquantum.remote.realtime.protocol\x94\x8c\tRPCHeader"
+        b"\x94\x93\x94)\x81\x94]\x94(K\x07K\x01K\x11K\x00eb."
+    )
+    header = pickle.loads(previous)
+    assert type(header) is rt.RPCHeader
+    assert header == rt.RPCHeader(7, 1, 17)
+    current = pickle.dumps(header, protocol=4)
+    assert b"flagquantum.realtime.protocol" in current
+    assert b"flagquantum.remote.realtime" not in current
+    assert pickle.loads(current) == header
+
 
 _DECODE = "majority_decode"
 
@@ -795,7 +828,7 @@ def test_no_module_in_the_package_reads_a_clock_or_opens_a_socket() -> None:
 
 
 def test_the_package_makes_no_hardware_or_timing_claim() -> None:
-    import flagquantum.remote.realtime as package
+    import flagquantum.realtime as package
 
     docstring = package.__doc__ or ""
     for term in ("FPGA", "RDMA", "GPUDirect", "NIC"):

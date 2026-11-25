@@ -1,0 +1,57 @@
+{
+  "schema": "flagquantum.synthesis.native_performance_bundle.v1",
+  "classification": "single_device_fast_path",
+  "world_size": 1,
+  "local_world_size": 1,
+  "node_count": 1,
+  "rank_ownership": "one local CPU worker per sample; samples serial",
+  "distribution_semantics": "single_device",
+  "scalability_claim_allowed": false,
+  "blockers": [
+    "Nonexclusive macOS host; thermal and frequency policy not measured",
+    "Sequential before/after cohorts are not randomized paired trials",
+    "Original baseline has one cleanup failure; complete corrective qDRIFT cohort separately retained",
+    "No memory reduction, Rust, hardware, release or whole-Notebook speed claim"
+  ],
+  "measurement_implementation_commit": "5d5cbbcaf73628f32af15734b9d15a764f4bd0c6",
+  "before_production_revision": "9ddd93fc080237175d08564fd854776127591f01",
+  "after_production_commit": "5d5cbbcaf73628f32af15734b9d15a764f4bd0c6",
+  "files": {
+    "baseline.json.gz": {
+      "sha256": "4666c7359ce245d052d56d0b6e12dd1649290d05b804f1d25117e6f240fb5406",
+      "uncompressed_sha256": "2f9568664d4fce5a7645e8810d11d60ef64c6a5d71adf0257835b3f3d284acd5",
+      "bytes": 6685285
+    },
+    "qdrift-corrective.json.gz": {
+      "sha256": "b2e84b6bb8ae8e1cc3034bff9db618ba77da17c6899f729715b4a688b3d78350",
+      "uncompressed_sha256": "d8c9b2322ef6a5e9964cc0484473fde2055bdc9a76c8ff0ef415e6d47b2703e9",
+      "bytes": 1283672
+    },
+    "candidate.json.gz": {
+      "sha256": "b567c3b14c7cc84c5a8d89ff37069f6643283951ad80de3d4215516c3c7eba40",
+      "uncompressed_sha256": "61069f31a21366ee88ab1d7d445a4c30541bf5d8a32f136766796f797f36349b",
+      "bytes": 6017370
+    },
+    "pilot.json.gz": {
+      "sha256": "81783795bddef099c935f92702514e62ba7fe8ebf2bb323e4bf92d08524df37d",
+      "uncompressed_sha256": "936ebe74633ecda61c5b0d75b22c37c1f76d205f78b691433888377b62af93f9",
+      "bytes": 395439
+    },
+    "pilot-2.json.gz": {
+      "sha256": "30a4d2b3701646eb9e89dd21173ac18bcc6b5740f2652b9a4cd96d33d0e7319d",
+      "uncompressed_sha256": "f0dd5de9877a37fecd595ec52ec1a8ce6a15b660d441454e56e785e8e00df832",
+      "bytes": 1719802
+    },
+    "pilot-rest.json.gz": {
+      "sha256": "44a54563d69209e5ed45187e875d4d245d3c4da6e9d7015e247b7c2002a3f114",
+      "uncompressed_sha256": "3abd9b55d01a7ec476934f2e1dea8c057fdf2666ebc4ef741877e5e5943d60fd",
+      "bytes": 1920634
+    },
+    "comparison.json": {
+      "sha256": "526535566dc905e8959206a8681289b2662750f75730d8a2b39f4959da6370b4"
+    },
+    "compare.py": {
+      "sha256": "91edc3e4683ca21e331550b1e51352594aee07b985cda4bdb4139b3c7787fd32"
+    }
+  }
+}

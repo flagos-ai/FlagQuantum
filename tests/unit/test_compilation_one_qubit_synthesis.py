@@ -64,6 +64,26 @@ def _angles_for(name: str, **overrides: object) -> dict[str, object]:
     return angles
 
 
+@pytest.mark.parametrize("offset", [1e-8, 1e-10, 1e-11])
+@pytest.mark.parametrize("pulse_opcode", ["rx", "sx"])
+def test_near_antidiagonal_matrix_does_not_amplify_roundoff(
+    offset: float, pulse_opcode: str
+) -> None:
+    source = _unitary(
+        Instruction("u3", (0,), {"theta": math.pi - offset, "phi": 0.37, "lbd": -0.83})
+    )
+    # Product decompositions can round the two small diagonal entries
+    # independently while keeping absolute unitarity error near machine epsilon.
+    source[1, 1] += 1e-16 + 2e-16j
+    emitted = synthesize_one_qubit_matrix(
+        source, qubit=0, z_rotation="rz", pulse_opcode=pulse_opcode
+    )
+    assert emitted is not None
+    actual = _product(emitted)
+    phase = torch.trace(actual.conj().T @ source) / 2
+    torch.testing.assert_close(source, phase * actual, atol=1e-12, rtol=0)
+
+
 @pytest.mark.parametrize("z_rotation", _Z_ROTATIONS)
 def test_every_declared_single_qubit_unitary_synthesizes(z_rotation: str) -> None:
     """Every declared arity-1 unitary reaches the basis, with a pinned count."""
@@ -294,3 +314,32 @@ def test_the_matrix_entry_point_refuses_what_it_cannot_express() -> None:
     for wire in (-1, 1.5, True):
         with pytest.raises(ValueError):
             synthesize_one_qubit_matrix(identity, qubit=wire, z_rotation="rz")
+
+
+@pytest.mark.parametrize("offset", [-2, -1, 0, 1, 2])
+def test_matrix_half_pi_roundoff_uses_one_pulse(offset: int) -> None:
+    angle = math.pi / 2 + offset * math.ulp(math.pi / 2)
+    source = Instruction("u3", (0,), {"theta": angle, "phi": 0.31, "lbd": -0.72})
+    matrix = _unitary(source)
+    leaves = synthesize_one_qubit_matrix(matrix, qubit=0, z_rotation="rz")
+    assert leaves is not None
+    assert sum(leaf.name == "sx" for leaf in leaves) == 1
+    product = _product(leaves) @ matrix.conj().mT
+    torch.testing.assert_close(
+        product,
+        product[0, 0] * torch.eye(2, dtype=torch.complex128),
+        rtol=0.0,
+        atol=1e-14,
+    )
+
+
+def test_declared_near_half_pi_and_resolved_matrix_offsets_keep_two_pulses() -> None:
+    for offset in (2, 32):
+        angle = math.pi / 2 + offset * math.ulp(math.pi / 2)
+        source = Instruction("u3", (0,), {"theta": angle, "phi": 0.31, "lbd": -0.72})
+        declared = synthesize_one_qubit(source, z_rotation="rz")
+        assert declared is not None
+        assert sum(leaf.name == "sx" for leaf in declared) == 2
+    resolved = synthesize_one_qubit_matrix(_unitary(source), qubit=0, z_rotation="rz")
+    assert resolved is not None
+    assert sum(leaf.name == "sx" for leaf in resolved) == 2

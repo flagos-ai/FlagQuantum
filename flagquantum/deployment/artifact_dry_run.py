@@ -15,6 +15,7 @@ from ..core._artifacts import (
 from ..core._compilation_evidence import CompilationEvidenceBundle
 from ..core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from ..core._compilation_evidence_v3 import CompilationEvidenceBundleV3
+from ..core._compilation_evidence_v4 import CompilationEvidenceBundleV4
 from ..core.target_capabilities import CapabilityMatchResult, TargetCapabilitySnapshot
 from ..errors import ExecutionError
 from ..runtime.artifact_preflight import preflight_executable_artifact
@@ -34,6 +35,7 @@ class ArtifactDeploymentDryRun:
         CompilationEvidenceBundle
         | CompilationEvidenceBundleV2
         | CompilationEvidenceBundleV3
+        | CompilationEvidenceBundleV4
         | None
     ) = field(
         default=None,
@@ -103,6 +105,7 @@ def prepare_artifact_deployment(
         CompilationEvidenceBundle
         | CompilationEvidenceBundleV2
         | CompilationEvidenceBundleV3
+        | CompilationEvidenceBundleV4
         | None
     ) = None,
     provider: str,

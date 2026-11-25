@@ -11,24 +11,27 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_register_phase import phase_composition
 from flagquantum import _api
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import Definition, capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import (
     RegisterCandidate,
     schedule_register_program,
 )
-from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
-from flagquantum.compiler._construction.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.frontend.python import Definition, capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    Constraints,
+    ConstructionBudget,
+)
+from flagquantum.compiler._construction.scheduling.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import SynthesisError
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_compiler_examples.register_phase.main import phase_composition
 
 pytestmark = pytest.mark.integration
 MEMORY = 256 * 1024**2
@@ -303,7 +306,11 @@ def test_private_contributor_example_runs_through_existing_program_and_named_rea
     None
 ):
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_register_phase"],
+        [
+            sys.executable,
+            "-m",
+            "tools.synthesis_compiler_examples.register_phase.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

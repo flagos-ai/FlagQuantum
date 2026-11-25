@@ -1,0 +1,133 @@
+{
+  "upstream_path": "applications/physical_systems/maxwell_equation/maxwell_2d_simulation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "219456b6cc45ea7d069abebf53014d4d30034f2f5e0227eeb66fac09bc5de3a6",
+  "git_blob_sha1": "5f01568535083ec8d844411a93c6715dd3005551",
+  "scope": "All 20 source stages, original 32x32 grid, all four electromagnetic components, seventeen physical bits, time five, effective time640, 686-degree fresh GQSP factorization and all1372 native walk selections.",
+  "native_semantic_adaptations": "Use the public native Circuit CPU path with reusable controlled-walk blocks and complete state transfer between every original phase row. This keeps every original operation without materializing a multi-million-instruction execution cache. The classical reference reuses the public native matrix-free exponential action in 64 bounded Krylov windows, checked against every original generator entry. Preserve original per-field and global-phase display normalization while separately checking the absolute complex projection, fidelity and actual 0.5 scale. Extend the existing shared example Laurent-factorization admissible degree to1024 while retaining its default33 and numerical guards. Native executed static instruction counts have their own basis. No original grid, time, degree or source amplitude is reduced.",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.maxwell_equation.maxwell_2d_simulation.overview.main",
+  "native_notebook": "examples/synthesis/applications/physical_systems/maxwell_equation/maxwell_2d_simulation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_maxwell_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Load the native full-grid program and plotting helpers.",
+      "sha256": "ad207f7bcd6d48a88a7af7770b23887039d02dae29688a3f198d21de2a54bdeb"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Use the source global-phase normalization for field display and a separate complex projection check.",
+      "sha256": "847edb77a2692da18ea7a059e55596473e9887957f73d89ddfead35e64de9c23"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 3,
+      "stage": "Retain the original five bits per axis, time five and rectangular conductor.",
+      "sha256": "e08cc7b51200e2dfb57e8f858dd5ada9b3ec5439bbfa3c7fba23900a6c3f707b"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 4,
+      "stage": "Keep all four electromagnetic components and both complete spatial axes.",
+      "sha256": "2cd0951ade45707e99ac04b88b6d5f65ecddcd6c1201c0278c0ca7229e08b175"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 5,
+      "stage": "Compose both exact periodic finite-difference branches.",
+      "sha256": "d9ccd4b35bab7e138094f0d49d9d908b6646606deed9f4f2a9f494fbd8b75ab6"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 6,
+      "stage": "Select forward and backward gradients through the field bit.",
+      "sha256": "95fb8af6ff2d79e7336861dccedf48c6dcbf86c40ac178a11fcef27b3f858664"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 7,
+      "stage": "Retain both Ez/Hx and Ez/Hy couplings and their relative signs.",
+      "sha256": "404e85ccbe7092d902e917ed9b47aa532d66eec0035fef79c38f872ec3bc64db"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 8,
+      "stage": "Keep the full conductor predicates and restore arbitrary borrowed storage.",
+      "sha256": "d257ce8ed5a2128bf7c3e360642ed70e5039172eaedee979b74d0991d9f6891e"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 9,
+      "stage": "Fit the original effective-time-640 Laurent polynomial freshly.",
+      "sha256": "4f942d25a8fc501f401b4c68499d66ee6c7d633647b4b96d27aebfa97b37e6a6"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 10,
+      "stage": "Use the original three physical field panels and per-field display normalization.",
+      "sha256": "cdc9668aeadd6bb4eefa4f1baaf63b2659edb96731c421d78845d21dba1120b9"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 11,
+      "stage": "Generate every original initial amplitude and display the initial fields.",
+      "sha256": "a4ec0608e1568fd55e92eaf469580f6195d1009951671e24b580bb199f8f07ee"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 12,
+      "stage": "Retain all seventeen physical bits including the GQSP auxiliary.",
+      "sha256": "6806dcd6bca9daae2980eebd2ce10b1d3ccb96bcae7a15c39ee54fa3db0df0e9"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "stage": "Use the bounded native CPU execution loop for the complete source sequence.",
+      "sha256": "0ae2a64412c131b5517e5188fe72e1e92d2de592795ce9a818dbb5396772372c"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 14,
+      "stage": "Execute all 1372 original walk selections on the full grid.",
+      "sha256": "de2bf83434f5f616d4a1ef0d6255f95d56cbb818da72ade07f266e28251bd94f"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 15,
+      "stage": "Read the actual block-zero amplitudes directly.",
+      "sha256": "5ebf239c326df1c6652df41765f1dcf7f5d9959b04c6acb91107b2c35c61fbad"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 16,
+      "stage": "Expose the source y*32+x indexing through a labeled field tensor.",
+      "sha256": "04d65dd994b81f57e30946dad3b208c52add21ea9274a75d7bd30357ff8b7892"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 17,
+      "stage": "Display actual native fields at the original time five.",
+      "sha256": "b9028093fc4e262d3bce801bc3e64cc17be4e83b691833dcf0c98d3917c791b3"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 18,
+      "stage": "Use the independently checked full-grid classical generator and exponential action.",
+      "sha256": "2d8876dbc0bbb70f81945c79357031e9849d71c6179e5ce579183d266481db1e"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 19,
+      "stage": "Check the original fidelity and amplitude scale, plus the absolute complex error.",
+      "sha256": "914a2d9983c85ee20e2bd816a04be7d8869c808d0b8cf5b3347e7818b1cbd094"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 20,
+      "stage": "Display the original classical and quantum field comparisons.",
+      "sha256": "5545ccf7c239e839d7e6f3e0e133db2910182d384c9628c8c267e400d7894d44"
+    }
+  ]
+}

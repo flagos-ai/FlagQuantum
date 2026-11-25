@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/max_clique/max_clique.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "2584c20e11f868d1bab0431c736f5a6fe98e7b045f1e4709e70b77622e5c90d2",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_clique.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qaoa_models.py",
+  "scope": "Complete retained 7-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "The sole fixed-width bit-array field is represented explicitly as Output[QArray[QBit]] named v, in the same physical and logical bit order; no general qstruct support is claimed. Native loops express repeat/apply_to_all and parameters retain source gamma-then-beta ordering. Retain the squared sum of forbidden pairs, not a conventional pairwise-only clique penalty."
+}

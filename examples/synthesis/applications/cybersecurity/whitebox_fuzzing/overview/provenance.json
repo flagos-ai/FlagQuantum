@@ -1,0 +1,104 @@
+{
+  "upstream_path": "applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "b05b877740578100fa332da78445fef805af0809b39576b6a06d31a274a1e8b2",
+  "git_blob_sha1": "1594e012fc9f1e4daf43ea6ee582f0b6ba8a519a",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "bc3e7ad9e25b52e61d447ce2da23d403eab9566541d6915b144d7f6694b6a5df"
+    },
+    {
+      "index": 6,
+      "sha256": "c51f50a6ea336a6ec7f72affa60013997554d67074fafe58e20244586f43826d"
+    },
+    {
+      "index": 10,
+      "sha256": "7a95e5edebadeca3ded72493a4576eb9123de4c2a27b3ed615577b1f9d059322"
+    },
+    {
+      "index": 12,
+      "sha256": "37366fb8922159ad293f0fc7d27857c3c12f82631861b6031ddffd83978cb197"
+    },
+    {
+      "index": 18,
+      "sha256": "fafc24eca2c8ef563872d708d65edd6a271340b2891a03685f02c4f7aeb750e6"
+    },
+    {
+      "index": 21,
+      "sha256": "71dca81950082ccb65fc86c1cf6e5701b4e6ded9fe42ecbad58c0ee3ac902691"
+    },
+    {
+      "index": 23,
+      "sha256": "7b666a52ae0df73f7def8ff1273119be742bd2498f21d078edff93868fa01397"
+    },
+    {
+      "index": 25,
+      "sha256": "d2aff4be51cd4147164fdc596128e9fead226e4f3a5ea7e0dbc9ebd5203dbe1c"
+    },
+    {
+      "index": 27,
+      "sha256": "7b0a9a972d205df62ce66b4f380cc25c17ad398bf9eb912c079be73d5d71956b"
+    },
+    {
+      "index": 29,
+      "sha256": "1017fd09e0bf34e7ef9793d9b074365ccb3415a557508d85faa80e569469e942"
+    },
+    {
+      "index": 30,
+      "sha256": "b2c04d2cb8b60bf8c8479a374e49d5e2949241637c9861be43be66d4ce6ce7fc"
+    }
+  ],
+  "scope": "Complete eleven-cell whitebox workflow: original six-bit coordinates, width ceiling 25, seed 3 and 500 classical draws, predicate phase oracle, source recommendation 36 and actual ten Grover iterations, 500 local quantum observations, branch annotations and two frequency figures; independent Circuit absolute states and clean workspace.",
+  "native_entrypoint": "examples.synthesis.applications.cybersecurity.whitebox_fuzzing.overview.main",
+  "native_notebook": "examples/synthesis/applications/cybersecurity/whitebox_fuzzing/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_whitebox_notebook.py",
+  "frozen_quantum_entry_sha256": "06160ad480ebeb97827558f1146fe7a72ceb336c45f0b90c3e0f3954074a4b17",
+  "native_semantic_adaptations": "Existing native six-bit x/y registers replace QStruct fields without data changes. Hosted visualization becomes actual resources and named local readout. RandomState(3) with randint(0, 63, 500) is preserved. Explicit seed 1913 makes the previously unspecified quantum draws reproducible. The source heuristic assumes two marked inputs and prints 36; the actual predicate marks six pairs and the source runs ten iterations. Retain and qualify these choices. Five-label plots include zero counts and weight observations by count. No provider, calibration, speedup or optimal-iteration claim.",
+  "cell_mapping": [
+    {
+      "source_index": 4,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 6,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 10,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 18,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 21,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 23,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 25,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 27,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 29,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 30,
+      "native_code_cell": 11
+    }
+  ]
+}

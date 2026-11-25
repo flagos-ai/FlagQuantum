@@ -39,6 +39,8 @@ NUMBER_WORDS = {
     "twenty-three": 23,
     "twenty-four": 24,
     "twenty-five": 25,
+    "twenty-six": 26,
+    "twenty-seven": 27,
 }
 
 
@@ -82,7 +84,7 @@ def test_testing_manual_lists_current_commands():
         "python tools/ci_tier.py multinode-scheduled",
         "python tools/ci_tier.py release",
         'python -m pytest -m "smoke or unit" -q',
-        'python -m pytest -m "integration" -q',
+        'python -m pytest -m "integration and not slow" -q',
         'python -m pytest -m "distributed_cpu or release_gate or benchmark_contract" -q',
         'python -m pytest -m "distributed_accel and gpu" -q',
         'python -m pytest -m "distributed_multinode" -q',

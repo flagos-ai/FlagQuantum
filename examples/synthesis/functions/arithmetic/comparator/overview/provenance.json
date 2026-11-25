@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/comparator/comparator_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "19c4a6087f857e6c69b16acd99e22d092f85d480",
+  "original_sha256": "642f860b0ef933068c5d4faa88075e79db03250dc4f2669d93678f25d27e2ed8",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "fb59db71ebdfd5e170d80dca03297f756d5ed563ee06f1ede28d2e93a4949d2e"
+    },
+    {
+      "index": 3,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 5,
+      "sha256": "8e5ae7beb6515beac9eab19ba7da7d48871b391289b304d3cd1d553fcbcba30b"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.comparator.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_comparison_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/comparator/overview/walkthrough.ipynb",
+  "scope": "Complete local computational Notebook workflow: original quantum definitions, exact signed/unsigned domains, synthesis, local CPU execution and named readout. Seeded1000shot host samples replace cloud sampling; independent full states and clean workspace are checked separately.",
+  "native_semantic_adaptations": "Use Annotated width/sign metadata with allocate instead of allocation metadata arguments. Preserve both comparator examples and the full signed negation input domain including -4. Local execution and seeded exact-probability sampling replace cloud calls; no hardware claim."
+}

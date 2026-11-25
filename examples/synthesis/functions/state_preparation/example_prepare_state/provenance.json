@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "17632db01273a1f7cb1134346249e2b21f94d81375188a05fbfa6258f28a50e2",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

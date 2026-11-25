@@ -32,22 +32,79 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-a100-cpu-entry' || 'ubuntu-latest' }}
-    timeout-minutes: 5
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
+    env:
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: http.version
+      GIT_CONFIG_VALUE_0: HTTP/1.1
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
+      - name: Restore verified source through the GitHub API
+        id: archive-source
+        if: runner.environment == 'self-hosted'
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import hashlib
+          import json
+          import os
+          import runpy
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          owner, name = repo.split("/", 1)
+          query = """query($owner:String!,$name:String!,$expression:String!){
+            repository(owner:$owner,name:$name){object(expression:$expression){
+              ... on Blob{oid byteSize isBinary isTruncated text}
+            }}
+          }"""
+          request = Request(
+              os.environ["GITHUB_GRAPHQL_URL"],
+              data=json.dumps({"query": query, "variables": {
+                  "owner": owner, "name": name,
+                  "expression": f"{sha}:tools/ci_source_archive.py",
+              }}).encode(),
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Content-Type": "application/json",
+              },
+          )
+          with urlopen(request, timeout=30) as response:
+              result = json.load(response)
+          if result.get("errors"):
+              raise ValueError("GitHub rejected the source helper query")
+          metadata = result["data"]["repository"]["object"]
+          if metadata["isBinary"] or metadata["isTruncated"]:
+              raise ValueError("The source helper text is incomplete")
+          code = metadata["text"].encode()
+          digest = hashlib.sha1(b"blob " + str(len(code)).encode() + b"\0" + code)
+          if len(code) != metadata["byteSize"] or digest.hexdigest() != metadata["oid"]:
+              raise ValueError("The source helper does not match its Git blob SHA")
+          helper = Path(os.environ["RUNNER_TEMP"]) / "ci_source_archive.py"
+          helper.write_bytes(code)
+          runpy.run_path(str(helper), run_name="__main__")
+          PYTHON
       - name: Clear sparse checkout state from a previous job
+        if: steps.archive-source.outcome != 'success'
         run: |
           if [ -d .git ]; then
             git sparse-checkout disable
             rm -f .git/info/sparse-checkout
             git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
           fi
       - uses: actions/checkout@v4
+        if: steps.archive-source.outcome != 'success'
         with:
           persist-credentials: false
           fetch-depth: 16
@@ -56,29 +113,41 @@ jobs:
         run: |
           set -o pipefail
           echo "artifact-key=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-          mkdir "$RUNNER_TEMP/ci-source"
+          staging="$(mktemp -d "$RUNNER_TEMP/ci-source-producer.XXXXXXXX")"
+          echo "staging-root=$staging" >> "$GITHUB_OUTPUT"
+          echo "full-path=$staging/full" >> "$GITHUB_OUTPUT"
+          echo "incremental-path=$staging/incremental" >> "$GITHUB_OUTPUT"
+          mkdir "$staging/full" "$staging/incremental"
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          git rev-parse HEAD > "$RUNNER_TEMP/ci-source/source.sha"
-          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir "$RUNNER_TEMP/ci-source-incremental"
-          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source-incremental/source.sha"
-          base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          git rev-parse HEAD > "$staging/full/source.sha"
+          git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$staging/full/source.pack"
+          cp "$staging/full/source.sha" "$staging/incremental/source.sha"
+          base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
-          } | git pack-objects --stdout > "$RUNNER_TEMP/ci-source-incremental/source.pack"
-      - uses: actions/upload-artifact@v4
+            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
+          } | git pack-objects --stdout > "$staging/incremental/source.pack"
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-incremental-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source-incremental/
+          path: ${{ steps.pack-source.outputs.incremental-path }}
           retention-days: 1
           compression-level: 0
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: ci-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-source/
+          path: ${{ steps.pack-source.outputs.full-path }}
           retention-days: 1
           compression-level: 0
+
+      - name: Remove this producer's temporary source packs
+        if: ${{ always() && steps.pack-source.outputs.staging-root != '' }}
+        env:
+          FQ_SOURCE_STAGING: ${{ steps.pack-source.outputs.staging-root }}
+        run: rm -rf -- "$FQ_SOURCE_STAGING"
 
   one-gpu-local:
     if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
@@ -105,6 +174,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -112,8 +185,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -190,7 +277,7 @@ jobs:
           CUDA_VISIBLE_DEVICES=0 python -c "import torch; assert torch.cuda.device_count() == 1"
           CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
           CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python tools/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs 2>&1 | tee hardware-run/one-gpu.log
-          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
+          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark --hardware-samples hardware-run/one-gpu-telemetry.jsonl -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
       - if: ${{ always() && !inputs.qng_ablation && !inputs.precision_frontier }}
         run: >-
@@ -201,7 +288,8 @@ jobs:
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: one-gpu-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -214,6 +302,8 @@ jobs:
       group: flagquantum-accelerator
       queue: max
     timeout-minutes: 30
+    env:
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
@@ -229,6 +319,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -236,8 +330,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
@@ -263,25 +371,45 @@ jobs:
         run: |
           python -c "import pytest, torch"
           python -m pip install --no-deps --no-build-isolation -e .
+      - name: Select two idle physical GPUs
+        run: |
+          python - <<'PYTHON'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["nvidia-smi", "--query-gpu=index,memory.used,utilization.gpu", "--format=csv,noheader,nounits"],
+              check=True, capture_output=True, text=True, timeout=30,
+          )
+          devices = [tuple(map(int, row.split(","))) for row in result.stdout.splitlines()]
+          idle = [index for index, memory, utilization in devices if memory < 1024 and utilization == 0]
+          if len(set(idle)) < 2:
+              raise SystemExit("Two idle GPUs are required; other workloads must finish first")
+          selected = ",".join(map(str, idle[:2]))
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"CUDA_VISIBLE_DEVICES={selected}\n")
+          print(f"Selected physical GPUs {selected}; occupancy remains checked by the performance gate")
+          PYTHON
       - name: Required two-GPU correctness and lifecycle gate
         run: |
           mkdir -p hardware-run
           set -o pipefail
-          CUDA_VISIBLE_DEVICES=0,1 python -c "import torch; assert torch.cuda.device_count() == 2"
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-forward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-forward.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase backward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-backward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-reverse.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase train --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-train -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint --mode train 2>&1 | tee hardware-run/two-gpu-statevector-training.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-correctness -- torchrun --standalone --nproc-per-node=2 tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/two-gpu-correctness.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
+          python -c "import torch; assert torch.cuda.device_count() == 2"
+          python tools/run_with_watchdog.py --phase forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-forward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-forward.log
+          python tools/run_with_watchdog.py --phase backward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-backward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-reverse.log
+          python tools/run_with_watchdog.py --phase train --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-train -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint --mode train 2>&1 | tee hardware-run/two-gpu-statevector-training.log
+          python tools/run_with_watchdog.py --phase correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-correctness -- torchrun --standalone --nproc-per-node=2 tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/two-gpu-correctness.log
+          python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
+          python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
+          python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
           # Batch enough unchanged iterations to average host scheduling jitter;
           # the former 50-iteration samples lasted only about 6-19 ms.
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
+          python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark --hardware-samples hardware-run/two-gpu-telemetry.jsonl -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/two-gpu-performance.json
       - if: always()
         run: >-
-          CUDA_VISIBLE_DEVICES=0,1 python tools/hardware_run_manifest.py
+          python tools/hardware_run_manifest.py
           --output hardware-run/two-gpu.json
           --command 'two local GPUs torchrun native correctness/autograd plus JAX MPS backward/optimizer'
           --world-size 2
@@ -289,7 +417,8 @@ jobs:
           --log hardware-run/two-gpu-torch.log
           --log hardware-run/two-gpu-jax.log
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         with:
           name: two-gpu-required-${{ github.sha }}-${{ github.run_attempt }}
           path: hardware-run/
@@ -397,7 +526,8 @@ jobs:
           --diagnostics hardware-run/watchdog-eight-gpu-reverse --
           torchrun --standalone --nproc-per-node=8
           tests/distributed/statevector_reverse_executor.py --backend nccl
-      - uses: actions/upload-artifact@v4
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
         if: always()
         with:
           name: a100-pool-validation-${{ github.run_id }}
@@ -430,6 +560,10 @@ jobs:
             git init .
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
+          fi
           complete=false
           if objects="$(git rev-list --objects --missing=print --no-walk "$sha")"; then
             if ! printf '%s\n' "$objects" | grep -q '^?'; then
@@ -437,8 +571,22 @@ jobs:
             fi
           fi
           echo "complete=$complete" >> "$GITHUB_OUTPUT"
+      - name: Repair missing cached source objects through the GitHub API
+        id: source-repair
+        if: runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
+          test "$sha" = "$GITHUB_SHA"
+          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true'
+        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}

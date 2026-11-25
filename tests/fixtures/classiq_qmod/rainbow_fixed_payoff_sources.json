@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "rainbow_options_direct_method.qmod",
+      "source_path": "applications/finance/rainbow_options/rainbow_options_direct_method.qmod",
+      "git_blob_sha1": "56d904762e34733451e780bbd458b90f17625ec6",
+      "sha256": "6a911a20ead2fd62de750ffc3d4c4638dd0ef07d961d008a45edbc6ce00ee913"
+    },
+    {
+      "file": "rainbow_options_integration_method.qmod",
+      "source_path": "applications/finance/rainbow_options/rainbow_options_integration_method.qmod",
+      "git_blob_sha1": "becd8d0ed564d9fcfa07f7b1e1eac41c8271cf36",
+      "sha256": "698afa2388b97aac99b64b83f0d7ba74af07473754b24242d44f08cda3ea8a9c"
+    }
+  ]
+}

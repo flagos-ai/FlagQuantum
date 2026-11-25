@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "option_pricing.qmod",
+      "source_path": "applications/finance/option_pricing/option_pricing.qmod",
+      "git_blob_sha1": "737eaa2b14b54bc8163959ebd5cfa17e592b8fc8",
+      "sha256": "613e41b10a31835383e46d673108dd4dcfba79b707ae9ce4b6f1063bc1b52ffc"
+    },
+    {
+      "file": "Option_Pricing_Workshop.qmod",
+      "source_path": "tutorials/workshops/finance_workshops/Option_Pricing_Workshop.qmod",
+      "git_blob_sha1": "737eaa2b14b54bc8163959ebd5cfa17e592b8fc8",
+      "sha256": "613e41b10a31835383e46d673108dd4dcfba79b707ae9ce4b6f1063bc1b52ffc"
+    }
+  ]
+}

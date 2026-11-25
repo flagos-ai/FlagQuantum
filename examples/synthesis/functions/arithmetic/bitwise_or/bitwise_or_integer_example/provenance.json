@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "1e93f9d5b95ad260c5f773c09ab3dc049520eac824bc974e1307bf050564ce12",
+  "scope": "Quantum program only; Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Fresh unsigned expression assignment; finite-width bitwise complement and zero extension follow the original quantum word semantics.",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_or.bitwise_or_integer_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py"
+}

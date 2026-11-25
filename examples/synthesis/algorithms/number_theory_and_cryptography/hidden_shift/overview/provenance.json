@@ -1,0 +1,65 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a9e53d9d19896f83be9490f3aafd65ec5cfcf5fa847bf56bd4e234a24eb7c77e",
+  "git_blob_sha1": "796ee41c0f859d05f7f12f7d4622ac3577a00d59",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "60eca1a67705be409a3c1ea70c68bb0abbf00feae9ca606dd570dcf069f7f43e"
+    },
+    {
+      "index": 6,
+      "sha256": "dbace8096d611ce1ac6f75468cb5cd45c49147acc44ccb64af34db2b562870a6"
+    },
+    {
+      "index": 7,
+      "sha256": "a1a9123f4ef18c83b2a32d04da846095d11a1d8d58f6f4946e40d90e785be70f"
+    },
+    {
+      "index": 10,
+      "sha256": "2d6221397027884b81ece8c3d9cfa8122540fff8e979ce413cdefc1445f9a6d4"
+    },
+    {
+      "index": 11,
+      "sha256": "ea3cf19d35f62debb00e1ed50a1628adab1349329c52c71130330028d252f88f"
+    },
+    {
+      "index": 13,
+      "sha256": "01197b4fbeb841ba51bf37eb3c4b25ac094b7dd026166229321f6fc65f6e54a4"
+    },
+    {
+      "index": 14,
+      "sha256": "076ed3cde55d4304093f328ad9329d3029cc89bc1a282c1d6fa804c53f206fcd"
+    },
+    {
+      "index": 15,
+      "sha256": "54ed2da12c259bc83cfd493ea8e7880705a8ef7cf434d9d00f6ffaf6c25e008b"
+    },
+    {
+      "index": 19,
+      "sha256": "1546fe4bb75da7a4fb2018f51f565e02fd5a9d014e9c99d6d508518d7818b4a5"
+    },
+    {
+      "index": 20,
+      "sha256": "2da1ab4fc803b85f62023384d3d3080bcf3750d3db4d75fe0d5a171c232a120d"
+    },
+    {
+      "index": 22,
+      "sha256": "5f4cd3896a8367e7eea6a5ec3d62ef63ecb6240ad8240e61e3612a6f05ab556a"
+    },
+    {
+      "index": 24,
+      "sha256": "e2480e87e2c811cc3f47c04ea160c203ea4bda1981c6324ed70ad8ef42a73118"
+    },
+    {
+      "index": 26,
+      "sha256": "080990b7ae67b76b6ab98cabc54d14677edc6bdd42da8e3164ca0d231d2287fc"
+    }
+  ],
+  "scope": "Complete Hidden Shift Notebook: original simple4,complex16 and no-dual16+indicator scenarios;seed1 permutation,shift1/3/9,2048 shots each,independent full-state Circuits,clean workspace,GF(2) rank selection and exact recovery.",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.hidden_shift.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/number_theory_and_cryptography/hidden_shift/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hidden_shift_notebook.py",
+  "native_semantic_adaptations": "Native high-level phase expressions implement Boolean phase oracles;direct Boolean XOR implements the no-dual marker.Existing optional SymPy replaces galois for exact finite-field rank/inverse.Local seeds1500/1501/1502 replace unseeded remote sampling,without identical-hosted-outcome claims.Local resource reports replace hosted show.The source threshold quirk is preserved for its supplied shift1/3/9;no arbitrary-shift claim."
+}

@@ -1,12 +1,29 @@
 # Compiler
 
-The compiler groups implementation modules by responsibility. `optimization/`
-owns circuit rewrites and synthesis. `topology/` owns connectivity and routing
-heuristics. `lowering/` owns gate and target legalization. `formats/` owns
-internal format tables and emission profiles. `artifacts/` owns physical
-plans, evidence, and target artifacts. `registers/` owns register-level
-decompositions. Documented compiler entry modules remain importable at their
-existing paths.
+The compiler groups implementation modules by responsibility. The stages below
+share `CircuitIR` where their entry points require it.
+
+| Stage | Implementation | Output |
+| --- | --- | --- |
+| Source capture and adaptation | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | Internal `HybridProgram` |
+| Circuit construction and lowering | [`_construction/codegen/`](_construction/codegen/README.md) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
+| Circuit optimization | [`optimization/`](optimization/) | Optimized `CircuitIR` |
+| Target adaptation | [`lowering/`](lowering/) and [`topology/`](topology/) | Target-legal circuit and scheduling evidence, as required by the selected path |
+| Code generation and interchange | [`formats/`](formats/) | OpenQASM, QCIS, or QIR text |
+| Output verification and artifact construction | [`artifacts/`](artifacts/) | Verified executable artifact |
+
+[`pipeline.py`](pipeline.py) exposes the native circuit entries and forwards
+orchestration to [lowering/pipeline.py](lowering/pipeline.py). `registers/`
+provides shared register decompositions. `_torch/` owns the PyTorch frontend
+capture and training compilation. Python source capture, verification, analysis,
+semantics, scheduling and gate emission are organized under
+[`_construction/`](_construction/README.md#responsibility-directories). Retired
+private imports and their authoritative replacements are listed in the
+[construction migration](_construction/README.md#retired-private-imports).
+Documented compiler entry modules remain
+importable at their existing paths. Deployment packaging is owned by
+[`flagquantum.deployment`](../deployment/). Bounded Pauli products and
+product-formula schedules are implemented in [`lowering/`](lowering/).
 
 Transform quantum programs while preserving their numerical meaning,
 measurement behavior, and required gradients. The design direction is one
@@ -16,9 +33,78 @@ Compiler owns program transformations over Core semantics. Runtime chooses
 execution; Simulation supplies numerical kernels; Compute and Remote adapt
 resources. Compiler does not run the program.
 
+## Root modules and implementation ownership
+
+Compiler owns the documented expert import paths in this table. Use the stage
+implementation for algorithm changes. The root `pipeline.py` keeps the `compile`
+and `optimize` signatures and forwards registry and router replacements to their
+owners.
+
+| Root module | Implementation owner |
+| --- | --- |
+| [__init__.py](__init__.py) | Expert exports from the entry and stage modules |
+| [angle_synthesis.py](angle_synthesis.py) | [lowering/angle_synthesis.py](lowering/angle_synthesis.py) |
+| [basis_conversion.py](basis_conversion.py) | [lowering/basis_conversion.py](lowering/basis_conversion.py) |
+| [basis_translation.py](basis_translation.py) | [lowering/basis_translation.py](lowering/basis_translation.py) |
+| [layout.py](layout.py) | [topology/layout.py](topology/layout.py) |
+| [layout_planning.py](layout_planning.py) | [topology/layout_planning.py](topology/layout_planning.py) |
+| [module_builder.py](module_builder.py) | [_torch/module_builder.py](_torch/module_builder.py) |
+| [noise.py](noise.py) | [lowering/noise.py](lowering/noise.py) |
+| [openqasm.py](openqasm.py) | [formats/openqasm.py](formats/openqasm.py) |
+| [openqasm_import.py](openqasm_import.py) | [formats/openqasm_import.py](formats/openqasm_import.py) |
+| [operator_lowering.py](operator_lowering.py) | [lowering/operator_lowering.py](lowering/operator_lowering.py) |
+| [pass_manager.py](pass_manager.py) | [optimization/pass_manager.py](optimization/pass_manager.py) |
+| [pipeline.py](pipeline.py) | [optimization/pass_registry.py](optimization/pass_registry.py), [optimization/pipeline.py](optimization/pipeline.py), [lowering/pipeline.py](lowering/pipeline.py) |
+| [qcis.py](qcis.py) | [formats/qcis.py](formats/qcis.py) |
+| [qir.py](qir.py) | [formats/qir.py](formats/qir.py) |
+| [resource_estimation.py](resource_estimation.py) | [optimization/resource_estimation.py](optimization/resource_estimation.py) |
+| [routing.py](routing.py) | [topology/routing.py](topology/routing.py), [topology/routing_strategy.py](topology/routing_strategy.py), [topology/routing_emission.py](topology/routing_emission.py), [topology/link_error_rates.py](topology/link_error_rates.py), [topology/sabre.py](topology/sabre.py) |
+| [select_lowering.py](select_lowering.py) | [lowering/select_lowering.py](lowering/select_lowering.py) |
+| [training.py](training.py) | [_torch/training.py](_torch/training.py) |
+| [translate.py](translate.py) | [formats/translate.py](formats/translate.py) |
+
+The 18 forwarding modules in this table preserve documented expert imports.
+`pipeline.py` also preserves the existing entry signatures and replacement hooks.
+Compiler owns their compatibility scope. Retirement requires an approved public
+import migration and its declared target version.
+
+Private root imports have been retired after repository consumers migrated.
+
+| Retired root modules | Authoritative implementation |
+| --- | --- |
+| `_arithmetic_kernels.py`, `_fourier_kernels.py` | Same filenames under `registers/` |
+| `_pauli_products.py`, `_pauli_schedule.py` | Same filenames under `lowering/` |
+| `_fixed_word.py`, `_phase_factors.py`, `_phase_polynomial.py`, `_sparse_predicate.py` | Same filenames under `_construction/semantics/` |
+
+For local contributor workflows and dependency boundaries, see
+[optimization/README.md](optimization/README.md) and
+[lowering/README.md](lowering/README.md).
+
+Compiler implementations import their owning stage modules directly. Root
+forwarding files provide the documented expert import paths. The construction
+target scheduler deliberately calls `pipeline.compile` to share orchestration
+and preserve its registry and router replacement hooks. The import boundary is
+checked by `tests/team/compiler/test_implementation_import_boundaries.py`.
+
+Additional contributor workflows are documented in
+[formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
+[registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
+
+The private hybrid stages also have explicit implementation owners.
+
+| Existing hybrid entry or helper | Implementation owner |
+| --- | --- |
+| `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](_hybrid/specialize.py) |
+| `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](_hybrid/runtime_inputs.py), with direct aliases at the old path |
+| `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
+| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
+
+The [hybrid contributor guide](_hybrid/README.md#input-validation-and-specialization-ownership)
+describes the shared input boundary and its local accepted/rejected workflow.
+
 ## Reusable Module frontend
 
-[Module capture](module_builder.py) owns the private entry approved in
+[Module capture](_torch/module_builder.py) owns the private entry approved in
 [the lowering contract](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md).
 It replaces Runtime's capture with canonical CircuitIR placeholders plus the
 existing Torch FX binding graph. The graph is an ephemeral classical artifact,
@@ -77,25 +163,90 @@ admits a transformation this repository does not ship; see
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
 
+With a topology, `compile` defaults to `routing_strategy="auto"` and records its
+choice among deployable strategies. It preserves final layout restoration and
+calibration restrictions. To retain the earlier implicit policy, pass
+`routing_strategy="restore_after_each_gate"`. Without a topology no routing
+search runs. Automatic selection may cost additional compilation time; minimum
+estimated routing cost is not a runtime or target-CZ optimality claim.
+
+SABRE search recovers from repeated layouts or an exhausted speculation budget
+by undoing its unused SWAP suffix and forcing one front-layer operation onto an
+edge. This adapts Qiskit's release valve and Cirq's repeated-search guard to FQ
+IR. See the [upstream reuse audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md)
+for pinned sources, license notices, implementation differences and remaining
+gaps. It is a progress guarantee for connected operands, not an optimality claim.
+
+### Export a synthesized circuit and prepare an offline deployment
+
+Run [the Bell-state `@qfunc` example](../../examples/synthesis_offline_deployment.py)
+from the repository root.
+
+```bash
+python -m examples.synthesis_offline_deployment
+```
+
+The example prints standalone OpenQASM 3, then a `DeploymentPackage` for the
+fixed two-qubit target `local/offline-line` with 256 shots and its OpenQASM 2
+payload. Both branches start from `synth.synthesize(bell).circuit`. The example
+builds the package locally without credentials or a provider submission.
+
+### Save and reload a routed executable and its evidence
+
+Run [the routed artifact example](../../examples/routed_artifact_preflight.py)
+from the repository root, choosing a directory for the JSON handoff.
+
+```bash
+python -m examples.routed_artifact_preflight --output-dir /tmp/fq-routed-artifact
+```
+
+The example starts with `fq.Circuit(2).rx(...).ry(...).cx(0, 1)`, using
+`complex128`, and places its logical qubits in physical slots `(2, 0)` of a
+synthetic directed target `0 -> 1 -> 2`. Two SWAPs route the nonlocal CX through
+workspace slot 1 and restore the output placement.
+
+The selected directory receives `source.json`, `snapshot.json`, `program.json`,
+and `evidence.json`. The example reloads all four files and passes the
+`ProgramArtifactV3` and compilation evidence to offline deployment preflight.
+It then re-imports the resulting OpenQASM 3 and compares the CPU complex state
+with the source circuit in logical order, checking that workspace slot 1 is
+back in `|0>`.
+
+Expected output includes `Inserted SWAPs 2`, `Logical result slots (2, 0)`,
+and `Offline preflight and CPU state verification passed`. The snapshot
+describes this local exercise and expires one hour after capture. Each run
+creates a fresh snapshot and replaces the four JSON files in the selected
+directory. This contributor example exercises internal compiler, artifact, and
+preflight interfaces alongside the public circuit and execution APIs.
+
+Change the circuit in `run_example` or the declared gate set in
+`_target_snapshot` to explore this path. Run the example and its focused tests
+after editing either.
+
+```bash
+python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py tests/hybrid_compiler/test_physical_resource_allocation.py
+```
+
 ## Change the owning stage
 
 | Change | Entry point |
 | --- | --- |
-| Canonical optimization | [pipeline.py](pipeline.py) |
+| Canonical gate rewrites | [canonicalization.py](optimization/canonicalization.py) |
+| Pass composition and compile orchestration | [pipeline.py](pipeline.py) |
 | Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization/optimization_levels.py) |
-| The pass registry, the pass binding, and the fixed point | [pass_manager.py](pass_manager.py) |
+| The pass registry, the pass binding, and the fixed point | [pass_manager.py](optimization/pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](optimization/inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](optimization/zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](optimization/commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](optimization/commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](optimization/diagonal_before_measure.py) |
-| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](routing.py), [routing_cost.py](topology/routing_cost.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
-| Qubit layouts and the layout restore | [layout.py](layout.py) |
-| Initial placement on a device | [layout_planning.py](layout_planning.py) |
+| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](topology/routing.py), [routing_strategy.py](topology/routing_strategy.py), [routing_emission.py](topology/routing_emission.py), [routing_cost.py](topology/routing_cost.py), [link_error_rates.py](topology/link_error_rates.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
+| Qubit layouts and the layout restore | [layout.py](topology/layout.py) |
+| Initial placement on a device | [layout_planning.py](topology/layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](lowering/native_gate_legalization.py), [target_legalization.py](lowering/target_legalization.py) |
-| Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
-| Conversion into a named basis | [basis_conversion.py](basis_conversion.py) |
-| Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
+| Named-gate identities and the basis search | [basis_translation.py](lowering/basis_translation.py) |
+| Conversion into a named basis | [basis_conversion.py](lowering/basis_conversion.py) |
+| Exact quarter-turn rotations | [angle_synthesis.py](lowering/angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](optimization/one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](optimization/one_qubit_optimization.py) |
 | Two-qubit block folding | [two_qubit_optimization.py](optimization/two_qubit_optimization.py) |
@@ -105,10 +256,12 @@ admits a transformation this repository does not ship; see
 | The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](lowering/schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
-| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
+| OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
-| Static resource estimation | [resource_estimation.py](resource_estimation.py) |
-| QIR base-profile emission | [qir.py](qir.py) |
+| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py) |
+| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](_hybrid/dynamic/expressions.py) |
+| Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
+| QIR base-profile emission | [qir.py](formats/qir.py) |
 
 ## Replace a fact the passes read
 
@@ -754,7 +907,7 @@ claiming agreement everywhere.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.
-[basis_translation.py](basis_translation.py) is that table, plus the
+[basis_translation.py](lowering/basis_translation.py) is that table, plus the
 deterministic search that composes it, and it is the Compiler-layer counterpart
 of the equivalence library and basis search Qiskit ships. Each rule is an exact
 closed form that forwards the source instruction's own parameter objects and
@@ -1110,7 +1263,7 @@ holds that boundary, including the case where a chosen layout would move a
 legal multi-qubit operation onto non-adjacent physical qubits.
 
 A placement is a tuple of physical qubits, one per logical qubit: the argument
-`route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
+`route_to_directed_topology` takes as `initial_layout`. [layout.py](topology/layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a
 device wider than the program leaves slots idle, `Layout` takes a
 `physical_slot_count` and reports `None` for an idle slot. Routing on a plain
@@ -1121,3 +1274,158 @@ where the idle slots are a workspace that the inverse routing SWAPs clean.
 [Implementation details](IMPLEMENTATION.md) document stage ownership and
 migration constraints. [Testing policy](../../docs/development/TESTING.md)
 defines the additional checks for each change.
+
+## Bounded construction matrices
+
+Private construction `qreg.unitary` verification owns finite unitary matrices on
+one to three data qubits, an optional integer power in 1..128, and an optional
+initialized disjoint control bit. Data indices are numeric least-significant-bit
+indices; matrix operands retain their declared most-significant-first order.
+The control may be borrowed, but data must be writable. Source adapters must
+still implement their own admission and cannot infer support from this profile.
+
+`_construction/unitary.py` preserves the established one/two-qubit decomposition.
+The three-qubit path uses complex Givens elimination, diagonal phases and Gray-path
+two-level rotations. Both paths verify matrix reconstruction at absolute error
+1e-12 and emit registered gates, including phase corrections under a control;
+Compiler never executes them. Matrix powers use the original validated matrix,
+without normalization or polar correction. Classical storage is bounded at 8x8,
+and emitted gates remain subject to the caller's normal planning budgets.
+
+Run the independent complete-column and coherent-state comparison before changing
+this numerical path:
+
+```sh
+python -m pytest tests/integration/test_synthesis_unitary_decomposition.py tests/integration/test_synthesis_qmod_unitary.py -q
+```
+
+The first test exercises the owned representation directly; native qfunc array
+unitaries and ordinary Qmod QPE are not introduced by this compiler change.
+
+The three-qubit controlled path combines external controls directly with each
+two-level rotation. Gray-path permutations remain unconditional and cancel on
+the inactive branch. ZYZ rotations reuse the existing Euler-angle extraction,
+and each two-level global phase is conditioned once on the other bits. This
+avoids controlling pulse decompositions and their phase repairs repeatedly.
+For four/five-qubit blocks with clean helper storage, a rotation and its global
+phase reuse the same computed control flag; the phase is applied to that flag
+before it is uncomputed. Without enough helper storage, the existing
+separate phase decomposition is retained. No phase tolerance or resource limit is
+relaxed. `tests/integration/test_synthesis_native_unitary.py` checks coherent
+positive/negative controls and helper cleanup; the Lanchester integration test
+also retains its original operation and depth ceilings.
+
+Commutation analysis retains one representative per structural predicate class
+inside each open block. Its parameter-blind rules depend on opcode, ordered
+qubits, presence of a matrix override and whether parameters are empty. Logical
+pair counters, the first failing member and every block match the ungrouped
+sweep; representatives are discarded when the block closes. This improves long
+repeated blocks without changing rule reach or storing a process-wide cache.
+Run tests/unit/test_compiler_commutation_scaling.py and the existing commutation
+matrix/conformance tests when modifying that grouping.
+
+## Shared Pauli product-formula schedule
+
+`lowering/_pauli_schedule.py` owns the private ordered Lie/Strang term schedule used by
+algorithm Circuit construction, Qmod adaptation and native qfunc capture. It
+streams term indices and per-term times; it does not own Hamiltonian objects,
+coefficient tensors, external syntax, commutation optimization or gate kernels.
+Callers retain validation, supported orders, repetition/resource bounds, storage
+mapping and live gradient values. Division and declared term order are preserved.
+
+The existing `algorithms.trotter_circuit` and Qmod calls stay unchanged for users.
+Run `tests/integration/test_synthesis_shared_pauli_schedule.py` to replace this
+schedule behind all three consumers, compare complete complex states and
+instruction hashes, and verify live tensor coefficient gradients. Existing
+Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
+consumers. Native capture uses the same schedule and existing Pauli effects;
+it adds no alternate Hamiltonian representation or execution kernel.
+
+`lowering/_pauli_products.py` owns bounded compile-time composition in owner registers
+of at most three logical qubits. Native Pauli calls also accept nonempty static
+slices or lists/tuples of distinct mutable bits within one owner. Observable
+indices address the view order; capture embeds each factor in the owner space,
+retaining spectator identity and identity-term phase. Existing initialization,
+Const, finite-angle and resource checks remain authoritative. Cross-owner,
+repeated and out-of-range views refuse. Run
+`tests/integration/test_synthesis_native_pauli_views.py` for full-state
+Fermi-Hubbard, reordered views, fixed-seed sampling and compact-owner acceptance. It replaces the former Qmod-private matrix
+implementation and is shared by the native frontend. It composes static
+operators, never user statevectors. The adapters own finite-value, width,
+term-count and repetition checks. Native capture buffers at most 256 consecutive
+same-target calls and compacts otherwise over-budget sequences in 64-call chunks;
+small programs retain their previous streamed rotation effects. Intervening
+operations, target changes and mutable-helper ownership boundaries flush the
+buffer. Existing unitary verification, lowering and physical planning budgets
+remain authoritative. A phase-equivariant polar correction only repairs products
+inside the documented 1e-11 Gram-residual envelope.
+
+Run `tests/integration/test_synthesis_native_compact_evolution.py` for replacement
+behind both consumers, independent full complex states, global phase, logical
+bit order, helper/effect barriers, buffer bounds, storage refusals and physical
+resource limits. The complete retained AQC schedule exercises all 200 calls;
+no terms, repetitions or time literals are removed.
+
+## Shared Boolean phase factors
+
+`_construction/semantics/_phase_factors.py` owns the former Qmod cube-selection algorithm. It accepts
+syntax access/rewrite callbacks and resolved logical locations; the Qmod adapter
+and native phase capture both reuse it. Three-to-six distinct signed bit literals
+form a cube, and at most eight unique cubes are shared. It does not own syntax,
+allocate physical storage, execute states or select Runtime backends.
+
+Native `_construction/frontend/phase_factors.py` adapts AST nodes and emits predicate graphs
+through the existing exact WordExpression compiler. Existing checked locals,
+compute, phase, uncompute and release effects own lifetime verification. Only a
+phase-expansion budget refusal admits this alternative. Small expressions retain
+their previous resources. Original polynomial and physical-input bounds remain;
+conditional refusals and signed/scaled numeric reads do not gain new semantics.
+The Boolean candidate's twelve-bit intermediate bound also remains; higher masks
+may use conservative lowering and must respect actual memory limits.
+
+Run `tests/integration/test_synthesis_native_phase_factors.py` for replacement
+behind both consumers, Facility's full source/native/Circuit comparison, exact
+classical costs, ordered helper views, positive/negative literals, coherent
+spectators, multi-owner cubes, constant phase and workspace cleanup. Existing
+Qmod phase-factor tests and all frozen-source replays protect the source path.
+
+Root arithmetic locals in `within` may use standard Python
+`Annotated[QNum, literal_width]`, as already supported for ports, or the existing
+`QNum[literal_width]` spelling. Both produce the same checked unsigned local
+storage and automatic uncompute/release. The standard annotation allows strict
+Python type checking; signed/scaled metadata, symbolic widths and extra metadata
+remain excluded. See
+`tests/integration/test_synthesis_native_annotated_locals.py` for the shortest
+phase-and-cleanup example and the admission in
+`docs/api-changes/FQ-SYNTH-NATIVE-ANNOTATED-LOCALS-20261110.md`.
+
+Native `inplace_prepare_amplitudes` and `inplace_prepare_state` reuse the existing
+`qreg.inplace_prepare_amplitudes` verifier, inverse-effect rule and real RY/CX
+lowering. They apply that unitary to a complete initialized writable register;
+there is no allocation or reset. The first native admission accepts static real
+vectors of length 2..256 and whole-register mutable helper calls. Views, quantum
+controls and Const targets remain excluded. Full-column and entangled-input
+conformance is in `tests/integration/test_synthesis_native_inplace_preparation.py`.
+
+Native coherent control of static matrices reuses `qreg.unitary`: one writable
+scalar or indexed selector plus its target occupy at most five matrix qubits.
+`control(~bit, lambda: unitary(matrix, target))` selects zero; positive control
+selects one. Full block matrices preserve conditional global phase, indexed
+alias checks and the existing unitary/initialization/budget verifier. Const
+selectors, computed predicates and multi-bit truth tests remain refused. See
+`tests/integration/test_synthesis_native_controlled_matrix.py` and
+`docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md`.
+
+## Upstream routing adaptations
+
+[The source audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md) separates
+implemented adaptations from unported mechanisms and pending pull requests.
+[Bounded Cirq layer lookahead](../../docs/development/COMPILER_LAYER_LOOKAHEAD.md)
+adds a candidate behind the native planner; it preserves the existing restored
+layout and directed-operation obligations. Run the focused routing tests listed
+there before changing this search.
+
+[Bounded structural pair reuse](../../docs/development/COMPILER_COMMUTATION_PAIR_REUSE.md)
+reduces repeated commutation queries inside one sweep while retaining the existing
+partition, logical counters and mutable-operand boundaries. Its development
+measurements include slower controls and do not certify production performance.

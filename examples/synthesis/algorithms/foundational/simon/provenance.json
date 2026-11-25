@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/foundational/simon/simon.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0c6b69aefd6eb09ef120f4b625abe23d754a98014b338d22c53a5d7ce96dcd70",
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.simon.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_static_algorithms.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Specialize the original concrete oracle callback(secret6) as a typed Const/Output representative helper. Native min(x,x^6) retains all five input/output bits. Explicit preparation/Hadamard reversal replaces the original within/apply syntax with identical H/oracle/H semantics and retained result output. Independent Circuit uses a complete reversible XOR truth table, not synthesis. No general quantum callable ports or classical secret-recovery workflow added."
+}

@@ -8,7 +8,8 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import synth
-from tests.integration.test_synthesis_register_workflow import check_state
+from flagquantum.compiler import ResourceEstimate
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 RELATIONS = {
@@ -58,7 +59,7 @@ def test_nested_comparison_control_keeps_complex_reference_entanglement(
     )
 
 
-def test_direct_predicate_replaces_explicit_local_and_fits_smaller_budget() -> None:
+def test_direct_and_explicit_local_preserve_phase_under_measured_budgets() -> None:
     prefix = "qfunc main(output x:qnum<2>,output y:qnum<2>) {allocate(x);allocate(y);hadamard_transform(x);hadamard_transform(y);"
     direct = prefix + "phase(x<y,pi);}"
     scoped = prefix + "f:qbit;within {f=x<y;} apply {phase(f,pi);}}"
@@ -69,11 +70,18 @@ def test_direct_predicate_replaces_explicit_local_and_fits_smaller_budget() -> N
             fq.run(p),
             {(x, y): (-1) ** int(x < y) / 4 for x in range(4) for y in range(4)},
         )
-    assert programs[0].report["resources"].n_qubits == 9
-    assert programs[1].report["resources"].n_qubits == 10
-    synth.synthesize(direct, source_format="qmod", max_qubits=9)
+    direct_resources = programs[0].report["resources"]
+    scoped_resources = programs[1].report["resources"]
+    assert isinstance(direct_resources, ResourceEstimate)
+    assert isinstance(scoped_resources, ResourceEstimate)
+    assert direct_resources.n_qubits == 6
+    assert scoped_resources.n_qubits == 6
+    synth.synthesize(direct, source_format="qmod", max_qubits=6)
+    synth.synthesize(scoped, source_format="qmod", max_qubits=6)
     with pytest.raises(synth.SynthesisError):
-        synth.synthesize(scoped, source_format="qmod", max_qubits=9)
+        synth.synthesize(scoped, source_format="qmod", max_qubits=5)
+    with pytest.raises(synth.SynthesisError):
+        synth.synthesize(direct, source_format="qmod", max_qubits=5)
 
 
 def test_predicate_phase_is_visible_in_interference() -> None:

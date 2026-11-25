@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/bb84/bb84_implementation.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0fe7bec249141df2b8ae9b2f5caa60130c6ce08242920d73b5673905fac9c80e",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.bb84.bb84_implementation.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_integer_control.py",
+  "scope": "Complete original eight-signal quantum preparation/rotation program, plus explicit native integer-array data bindings. The full BB84 Notebook protocol, sampling, sifting and security discussion remain pending.",
+  "native_semantic_adaptations": "Classical integer lists and static Python if specialize at synthesis time. Reuse the existing initialized register, X/H gates, mutable helper views, verifier, lowering and execution. Preserve all source bits and bases, logical LSB indexing, absolute phase and eight allocated bits. No Qmod importer or source bytes in user examples."
+}

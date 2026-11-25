@@ -33,7 +33,7 @@ program = synth.synthesize(
 assert dict(program.probabilities(fq.run(program))) == {(11,): 1.0}
 ```
 
-`python -m examples.algorithms.synthesis_trial` runs the complete existing
+`python -m examples.synthesis.tutorials.getting_started.trial.main` runs the complete existing
 basis/uniform/line workflow. CS07-C supplies the private source frontend needed
 for future imported examples to share that construction authority. It does not
 make ordinary users construct Compiler records or manually decode results.

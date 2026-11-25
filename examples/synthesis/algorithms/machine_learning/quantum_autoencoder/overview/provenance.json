@@ -1,0 +1,125 @@
+{
+  "upstream_path": "algorithms/QML/quantum_autoencoder/quantum_autoencoder.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "d788d3380b4b275739c0c0e6a90da97de3fa9aec3ce91a21f0f0c52b649b51c8",
+  "git_blob_sha1": "88711638d33ede4c5fd7b3c96a36cddd5854c25e",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+    },
+    {
+      "index": 7,
+      "sha256": "8cd6a557056cb12760d7f7ff84049be7e32ba7b94c67bfcfcfd9018fc703f1a1"
+    },
+    {
+      "index": 8,
+      "sha256": "d0733dbeb4cf7b9cac5bf541cfeffc77e0d9baee8a84961eacd6b972dfafbc29"
+    },
+    {
+      "index": 9,
+      "sha256": "0c131162ef093bf683a47b346fb8abe1c7d7f3da03ce9b8cebe56fe99c9c601f"
+    },
+    {
+      "index": 13,
+      "sha256": "438eb9b29d74aea04e972ff7e338b92405641d3c0b022946c2d43351f4867f6c"
+    },
+    {
+      "index": 16,
+      "sha256": "0aba7864f263ec18a9e4b16bf16f0134412e991c5f6a20ccb5330a0c3be5dcf6"
+    },
+    {
+      "index": 18,
+      "sha256": "107145872d4d44a198785a25ab9becd1bd73a5f90cd1de04f2ae6987cbccdf57"
+    },
+    {
+      "index": 20,
+      "sha256": "d0f86e157b299b35b0300d22f26ffc1dde095c1f446bb3a317d4676c9eb06a08"
+    },
+    {
+      "index": 22,
+      "sha256": "b331eb60b1ffc6ddbaa3cda8dc70271ae9406b04af75425973722ac8e77a8c70"
+    },
+    {
+      "index": 23,
+      "sha256": "895272c319f11be4d4187a78e8a82ef17e7f6fa183fef93c67d62a5e45a25f49"
+    },
+    {
+      "index": 24,
+      "sha256": "17e9413b3d6c447817f46c73abf9e6ac08a7d0758489376a8a7aa1054456d375"
+    },
+    {
+      "index": 26,
+      "sha256": "9659b39618799d45b045fbec04e6160480b800b9e9bf60bb75ebdea5d4741921"
+    },
+    {
+      "index": 27,
+      "sha256": "d2bbe09270ed6d5572851d4e91a1493017619933356486e2b9f7269cc71b26c2"
+    },
+    {
+      "index": 29,
+      "sha256": "13dbbd2b101020e6d8ba78fc1889c5057427d6216624975730b5b32a07ff41ec"
+    },
+    {
+      "index": 31,
+      "sha256": "a7178cbb026002d32f122a0a05a10af81771acb4c4f1a28f60e4f7ee007eece1"
+    },
+    {
+      "index": 33,
+      "sha256": "7724d36e84ab2e290c0451d54e28ea402e2dd48ded5afb8041a011505ff4e9ce"
+    },
+    {
+      "index": 34,
+      "sha256": "542c2f7dfb2efcecf7b675647518b3fec824921cd13b78b16f73d66fa89003b7"
+    },
+    {
+      "index": 37,
+      "sha256": "9e0d2d24d168b7b24a08037eb98a2ab7343bd71b305cf86929c537fe5a8cfbe5"
+    },
+    {
+      "index": 38,
+      "sha256": "b727efe1db86d77c4e171e125eceb657f54fac50527585d2f9b8a7165a449f20"
+    },
+    {
+      "index": 40,
+      "sha256": "052098596a9df513e9e9add580139c3b800e8c0b2c2d7bc156a2c9376a80b9f0"
+    },
+    {
+      "index": 42,
+      "sha256": "828279e42c6a6c6f898dc5f2899f7f2b51b84c1a013175b29ea756de06abf704"
+    },
+    {
+      "index": 45,
+      "sha256": "3a591c9464fdb1fd8ab8e787ac7ec1b71339b006c6787797f3deb95905ef1fb6"
+    },
+    {
+      "index": 47,
+      "sha256": "df25b8cdc307edae160d3bb98b2f50d2a216668d3f26ab877adbed2038c8f154"
+    },
+    {
+      "index": 51,
+      "sha256": "6fdcf7161d45ed1fde0b37a6650d4a993b8728fd08684c281aadce7c5f5a2e83"
+    },
+    {
+      "index": 53,
+      "sha256": "3ebf1f4506ecaad605cfbaed0adc62b5f3eaf6d0571f17b271e7c4f825da277a"
+    },
+    {
+      "index": 54,
+      "sha256": "f1c3af4a40be7e14cc4f6c17c9cdb7d47375bc9243c894eb9068a9956c45fa45"
+    },
+    {
+      "index": 55,
+      "sha256": "e94e44f9e04700902c99f07586cc10534f911bf282176f1a558eb8ab1219d4b6"
+    },
+    {
+      "index": 56,
+      "sha256": "542c2f7dfb2efcecf7b675647518b3fec824921cd13b78b16f73d66fa89003b7"
+    }
+  ],
+  "scope": "Complete four-qubit autoencoder:two independent one-epoch training routes,ten checkpoint weights,three domain-wall inputs,batch2,L1,SGDlr0.3,4096shots,RESETdensitydecode,andfiveanomalyinputs.",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.quantum_autoencoder.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/machine_learning/quantum_autoencoder/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_autoencoder_notebook.py",
+  "native_semantic_adaptations": "Source float32 checkpoint rounding retained before float64 local training. Explicit loader/shot/anomalyshuffle seeds replace unspecified source seeds. Exact complex128 local execution supplies actual4096shot samples. Explicit parameter-shift gradientbridge;no generic differentiableqfunc or identical source sampledtrajectory claim. Alternative observable uses the same4096shot budget explicitly. RESET is compared as a channel;dropped swapreference is environment,not cleanworkspace."
+}

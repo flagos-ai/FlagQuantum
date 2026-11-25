@@ -1,0 +1,96 @@
+"""Prepare the retained vector and run the full native eight-qubit bound sweep."""
+
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QArray, QBit, prepare_amplitudes, qfunc
+
+# Preserve every source amplitude; the existing exact lowering also satisfies 0.3.
+AMPLITUDES = (
+    0.142717299866974,
+    -0.099061780279192,
+    0.097673258085579,
+    -0.013923301809206,
+    0.200321304739504,
+    -0.172805151229582,
+    -0.16536378678821,
+    0.19254389691133,
+    -0.18857018111624,
+    0.149713542724088,
+    0.089207978650774,
+    -0.043777556284463,
+    -0.183319260390553,
+    -0.145564069345897,
+    0.205403660829129,
+    -0.008759386390484,
+    -0.021474472442721,
+    0.006034331456717,
+    -0.110651448599404,
+    0.140012684632279,
+    -0.109176681255884,
+    0.197748362927707,
+    0.150538532991502,
+    0.158353368444737,
+    0.07844993761358,
+    -0.070753700233017,
+    0.011872663981468,
+    -0.130473793247523,
+    0.086831635783371,
+    -0.096204555585248,
+    -0.083616565766662,
+    0.07115724328659,
+    0.068236329302196,
+    -0.197281167490199,
+    -0.051411545020026,
+    -0.18583176770511,
+    -0.110379702688357,
+    -0.134122207601292,
+    0.03852693022991,
+    0.020093653602753,
+    0.041006541728192,
+    -0.204329638234531,
+    0.133060225532638,
+    -0.1909007735931,
+    0.033323149753215,
+    0.031341426220151,
+    0.015207428391293,
+    0.052110916477459,
+    0.014233840124448,
+    0.191823027553876,
+    0.171559014841063,
+    -0.095954773715884,
+    -0.056205919269858,
+    0.194819221062067,
+    0.082464214345091,
+    0.115196339127072,
+    0.183630774328172,
+    -0.009593001737646,
+    0.034511897969524,
+    0.186437456862879,
+    -0.029879313795155,
+    -0.125252813050522,
+    0.159455738186063,
+    0.091977477385432,
+)
+
+
+@qfunc
+def main(amplitudes: list[float], out: Output[QArray[QBit]]) -> None:
+    prepare_amplitudes(amplitudes, 0.3, out)
+
+
+def build_program() -> synth.Program:
+    """Preserve the original vector and error budget without source importers."""
+    return synth.synthesize(main, classical_inputs={"amplitudes": list(AMPLITUDES)})
+
+
+if __name__ == "__main__":
+    program = build_program()
+    result = fq.run(program)
+    print(dict(program.probabilities(result, registers=("out",))))
+    print(program.report["resources"])
+
+    from examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep import (
+        run_example,
+    )
+
+    run_example()

@@ -1,0 +1,109 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "1af2dc888e7e86b2095f23760dd5af0b46ef4c8fdfcf17fca5ede7cfa77e236a",
+  "git_blob_sha1": "41b339380407866686eaa6eaa7b6bd76b1a64bd2",
+  "scope": "All 16 original stages, 50 angle bindings, finite computational and Bell-basis observations, both actual local job kinds and the 200-query Bell variational workflow.",
+  "native_semantic_adaptations": "Bind public native symbolic Circuit parameters and keep the template unchanged. Measure the commuting projector in its Bell eigenbasis, with independent exact amplitude and expectation checks. Store actual local result records by immutable digest. Use exact local expectations inside the native COBYLA objective and report its actual stop condition.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.execution_tutorial_part2.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/execution_tutorial_part2/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_execution_part2_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Construct the original symbolic two-qubit circuit once.",
+      "sha256": "23f55d4f5098901da51f5bd2be684a3d7060fad9c88be2a4be576fa233e0edd4"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Choose the original pi-over-two value.",
+      "sha256": "3161099c92dd0bd2efb1c5f52f4971c186d56060fce3fc448ccf5c2cb2834a64"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Draw the original single-binding counts from the bound circuit.",
+      "sha256": "d4b0ac30ecc15078821c8aa18ca8fe0e4e64d43e2d0930a7b87a749845b237a1"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Reuse the symbolic template for all 50 angles.",
+      "sha256": "9ea326e726c2230affe74ddaf0c599fdfa671a56cb7e953f3ee9d670cd4edbb9"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Read the two outcome populations from every finite record.",
+      "sha256": "ce59fde3e706b7517abe019443cc78b5729e95234c8862b2a61086b91f9a7879"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 6,
+      "stage": "Plot actual counts for the complete input sweep.",
+      "sha256": "e0103459c158ed15bf9804957e37c874be1a09df22ba06ff62d81f15e6252118"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 7,
+      "stage": "Use the four-term Bell projector in the local observable.",
+      "sha256": "c47d9c47a072c0f8a5902c7112326b6524560ceebd9ef4c46ae3c0f742e8bcec"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "stage": "Measure the projector at the original pi-over-five input.",
+      "sha256": "bd383d84687367c5b87257843c73872c2a993938bbba0432510e366c3758ccfb"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 9,
+      "stage": "Use both exact and finite measured expectations for every angle.",
+      "sha256": "481e08eb9e1f4381b4dddfb9e62c8c3fe769206b8469aabfb9d7fbd92c0fc32f"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 10,
+      "stage": "Plot the expectation and finite sampling outcomes.",
+      "sha256": "9ca6758209bdb81c91e100770e952ab4f48847e4dec79218d82eaba6e4f19ff6"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 11,
+      "stage": "Execute both request kinds with the local result store.",
+      "sha256": "0c76547298eb67584869b53783bfaa1e66d72505733350da228ae6b3b87304ef"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 12,
+      "stage": "Read the actual returned sample and projector by local content ID.",
+      "sha256": "665e3b5648e641e5be00bb4c06b63aaada951146068bc97a99bb170217cc5441"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 13,
+      "stage": "Construct the original two-angle Bell preparation circuit.",
+      "sha256": "772afcd70f15951be1f48ae5ba927a3e7af2e312430ee12fbf28393945073e62"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 14,
+      "stage": "Minimize the negative Bell projector.",
+      "sha256": "4920f3d5a000421984d2fd6ea872efab3ea7c3a2a3627febaf9fcdb6008e7a34"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 15,
+      "stage": "Run the original 200-query variational budget from zero angles.",
+      "sha256": "8aef9df4a0dbd01c4cbca6ce5e0a78ee86b6b4e2f0f45c4e1c876ad7606fa42c"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 16,
+      "stage": "Read the last actual and best evaluated fidelities and coefficients.",
+      "sha256": "be615d63678524d0c512d91aa36092826f81a188117b01c55872b59722f69feb"
+    }
+  ]
+}

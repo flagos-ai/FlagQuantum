@@ -4,15 +4,15 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     Selection,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.scheduling.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.synth import Const, Output, QNum, allocate, hadamard_transform, qfunc
 

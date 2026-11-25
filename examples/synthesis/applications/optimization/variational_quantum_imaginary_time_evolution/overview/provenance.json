@@ -1,0 +1,123 @@
+{
+  "upstream_path": "applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "7b1ebecdc93d135bfab948152ebe8b1e84a71232",
+  "original_sha256": "661e5d547a2a1e50e9640e0a640e6bdfd7086cd80698bba013842073a5ba266d",
+  "scope": "All 22 source stages, a fresh four-node weighted graph, six ordered generators, fourteen imaginary-time steps and 128 shots per histogram. Report update energy, independently measured energy, rounded cut and the exact four-node comparison.",
+  "native_semantic_adaptations": "The source graph generator has n=k=4, so the native workflow constructs the complete four-node graph and draws the weights from seed zero. It recomputes the sorted generators from that fresh graph and specializes the six angles before each local execution. A separate local shot seed replaces hosted randomness. The rounded partition keeps its actual measured cost.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.variational_quantum_imaginary_time_evolution.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/variational_quantum_imaginary_time_evolution/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_imaginary_time_maxcut_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "45848b77b1ab4bacb4c46d5a37e4b7a75883c9543e5329e48301a11869c89a25"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "0cce3422856f5f332d0fd40d0a6eecac7fb8f640cbc89622e6cb77236684d804"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "bb1355885b8d4ee3073082dc90c6622e66b7cc426768d3c6c64066e31a475220"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "a5dfd5e5fc324b7da8c0490091cf435980c9cd5d53d366fdfea369e3eb0617d9"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "sha256": "5eb61d11aeaae59e40f387c82f2d6a721028b12e688d94bdfb931f1c5e1d5366"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "sha256": "bb399efdd6b34dd00178db48ff1387c8435110c1334ddcb2a9b7be247d8c01e9"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 7,
+      "sha256": "c1c1aee282c192da803d057404d04c9c94e4aade2e8581808175fed966c0ff11"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 8,
+      "sha256": "e5228ad7d6291f0e8d4139e9dac288d68aebdec8e0e8034cc6e976f49fc22036"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 9,
+      "sha256": "54b1142733966c9e0bd1e51b7fc3b8ae4072287893929f8ca84b3b19d784a97c"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 10,
+      "sha256": "7dc07b341231645120fee8c9765bf1e0928502c652cea594bf255fe200b0c4ba"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 11,
+      "sha256": "056d5d1b5e60cbb037236575c7be2b1d9c9d856a163d4f547bd6861b04f41221"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 12,
+      "sha256": "07cdc82dec79dd4dbd27d1660210c3b981329465b4e27ce70ba63b34f5d4273a"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 13,
+      "sha256": "216e93ff756bfbf641f96708b5fdc246a5bb39605c6db0e1b82be9a3bb9f0839"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 14,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 15,
+      "sha256": "2abb0c97a8e2272d7559f2bc0415599c771d98369fd156d60e08ae2414873e3f"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 16,
+      "sha256": "0bc4fc3449915a15e9989f9d020ab670003c07ecb67e46cbb2682768850fe6fc"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 17,
+      "sha256": "567e12080b73b2052ba82835461e3846a5bd9f66d4c29091597fd62acc6dd5b4"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 18,
+      "sha256": "e6a59d5876f5168a1c6611ac1e596e30d65b1322d027f94a98d8643a77a2608e"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 19,
+      "sha256": "4b573f392c4e8669d41d13941b20d8805eda6a895d64d3ace00a62345cfdf5d4"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 20,
+      "sha256": "30c263f0f61d46945d0e30bcf46bb32154fd40320e3e3229b6bd0961e8f70f4d"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 21,
+      "sha256": "facd4e1df1daff41d7b8392c8912c0f8c87442226d87e255eb1f721c033406ed"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 22,
+      "sha256": "4e7197fc4b5cf68142eee981fcc0f4bfe521b669c70c7f8bd4a649b960df19db"
+    }
+  ]
+}

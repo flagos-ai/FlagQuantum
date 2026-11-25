@@ -1,0 +1,28 @@
+{
+  "upstream_path": "applications/CFD/double_slit_experiment/quantum_double_slit_experiment.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "9fadbbed39b3c999090f50d3504c42af300e388bc393aaac428e181cf106b8ae",
+  "git_blob_sha1": "a275a9ef9258edfd260755811273ed947a7fcb68",
+  "scope": "All eight sections of the original single code cell, full 16-by-16 physical model, fresh degree-191 inverse and 192 phases, original 18-qubit width bound, complete tensor reference and 60-frame animation.",
+  "native_semantic_adaptations": "Split the original long source cell into eight notebook sections. Use exact local packed operations where their bounded simulator dimensions preserve the full wave semantics. Recompute the physical model, spectral reference and phase fit. Preserve the source field and animation normalization and nominal FPS.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.double_slit_experiment.quantum_double_slit_experiment.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/double_slit_experiment/quantum_double_slit_experiment/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_double_slit_workflow_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "native_code_cells": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "sha256": "2c234c06686efa37ef6af5b6f62353e20b70d332a5ea03070b600a840e31bb44"
+    }
+  ]
+}

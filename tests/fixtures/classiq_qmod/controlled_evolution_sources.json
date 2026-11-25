@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "bpde.qmod",
+      "source_path": "community/paper_implementation_project/bpde/bpde.qmod",
+      "git_blob_sha1": "5bd44ca6b2f4f78f1cc195dae83df00da370db49",
+      "sha256": "4413d7ceb261befcd2989100f01e37742d588a82e78d34234bd2f6b0907b7dae"
+    }
+  ]
+}

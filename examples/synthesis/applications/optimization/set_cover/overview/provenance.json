@@ -1,0 +1,83 @@
+{
+  "upstream_path": "applications/optimization/set_cover/set_cover.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "70ab05029bb71f83e65d52ad20d4c7a2db0846aa313f292e7c0fd353f785d0ad",
+  "git_blob_sha1": "5c885ae0a655c95df3580365369c1f6b39415d9c",
+  "scope": "All fourteen source stages, eight original subsets covering ten elements, eight decision bits and fifteen encoded slack bits, three QAOA layers, penalty 10, sixty optimizer iterations, exact lower-tail CVaR at 70%, finite optimized and uniform samples, and independent exhaustive constrained comparison.",
+  "native_semantic_adaptations": "Reuse the native qfunc for the original subset table. Sum costs over the complete 23-bit distribution using a bounded integer energy histogram. Local Nelder\u2013Mead with an explicit linear pi schedule replaces the unpinned hosted optimizer. Use 1000 actual CPU draws per comparison. Select the least penalized observed joint word without repairing it. An independent exhaustive search over 256 decision words replaces Couenne after sampling. No historical trajectory equivalence or optimality guarantee.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.set_cover.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/set_cover/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_set_cover_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "8ecc4648e59c6452a6cf4cc6d4ee30cff41ffab69e92f8a69d6e0db757e666ad",
+      "native_code_cell": 1
+    },
+    {
+      "index": 5,
+      "sha256": "8664e3344bc14a8636b45511a81936b2ec3c9c1bd8d5919dcfbc1303baaff98e",
+      "native_code_cell": 2
+    },
+    {
+      "index": 6,
+      "sha256": "bd5bd3a702a1bbd9cdb2effd4774e0ea2c858a9014e227620e1b23656e7d4e25",
+      "native_code_cell": 3
+    },
+    {
+      "index": 8,
+      "sha256": "a6e13e851e3e8f4e052d971cec3d4333521dbf1ebbb9e09dea3c5fad929c4bdb",
+      "native_code_cell": 4
+    },
+    {
+      "index": 10,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 5
+    },
+    {
+      "index": 12,
+      "sha256": "b203d85c82784ca814ba2905bf03286197c547266a49ea950012d148e183f333",
+      "native_code_cell": 6
+    },
+    {
+      "index": 14,
+      "sha256": "31e4ef9bfb2baabe0d8b759518ad5ce2c9b57e494e7d895682856764d78da0bd",
+      "native_code_cell": 7
+    },
+    {
+      "index": 17,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373",
+      "native_code_cell": 8
+    },
+    {
+      "index": 19,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042",
+      "native_code_cell": 9
+    },
+    {
+      "index": 21,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b",
+      "native_code_cell": 10
+    },
+    {
+      "index": 23,
+      "sha256": "558fa8a60cdd2b817984d0cb3885ab135775d51d27fc8f459cc615987f1c523c",
+      "native_code_cell": 11
+    },
+    {
+      "index": 24,
+      "sha256": "460c911e6a5f7d6df7bd610b64802b4e436736488da556b713250532fc55855d",
+      "native_code_cell": 12
+    },
+    {
+      "index": 27,
+      "sha256": "df0a93d3e1bf033fe2af52bbe5ac485343186026093065f7132b742da0bbb9f7",
+      "native_code_cell": 13
+    },
+    {
+      "index": 28,
+      "sha256": "4af1972f880a3468abcde51618b398bf92015ca95078905a9f3c95a9d37caf9a",
+      "native_code_cell": 14
+    }
+  ]
+}

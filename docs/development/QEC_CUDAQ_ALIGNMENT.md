@@ -60,12 +60,12 @@ from the matrix's `priority`, the row states why.
 | `qec_dem_chunking` | partial | now | `qec_decoder_family` | The layer algebra, the window identity, the named seams, the two round trips and the three chunk-scoped projections all landed; what is left is the baseline's sparse spec shorthand, its per-seam tags and its straddle flags, which are reshape decisions rather than gaps. |
 | `qec_dem_text_interchange` | aligned | now | `qec_stim_integration` | Closed: both directions present and independently checked, the reader takes the whole grammar stim's writer uses, `repeat` blocks and comments included, both separator readings are offered under upstream's flag, and the detector count is read from the declarations. The narrowness is at the input end and the precision width is a stated tolerance; both are declined rather than left open. |
 | `qec_stim_sampling_join` | aligned | now | `qec_stim_integration` | Closed: the join landed, every family the noise record states is placed, and a second grammar places a channel bound to a named gate after the gate it matched. An arbitrary annotated circuit at the input end is declined by the type the sampler states rather than left as a gap. |
-| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, a name-keyed registry and a sliding-window decoder over the chunk decomposition all landed; no batch result record and no plugin boundary. |
-| `qec_decoder_configuration` | absent | later | — | Nothing to configure until more than one decoder can be selected. |
+| `qec_decoder_family` | partial | now | `qec_decoder_family` | A DEM-consuming matching decoder, a belief-propagation decoder that reads the hyperedges that matcher refuses, a composite-fault decomposition that widens it past the one hyperedge a memory circuit states, its PyMatching cross-check, a name-keyed registry and a sliding-window decoder over the chunk decomposition all landed; complete-result independent batches now exist for certified concrete types; generic asynchronous/plugin parity remains separate. |
+| `qec_decoder_configuration` | absent | later | — | Named decoder factory options exist. The upstream declarative configuration/schema/dispatch surface remains absent. |
 | `qec_dialect` | absent | later | `qec_dialect` | Needs an internal IR level to carry the structure. |
 | `qec_logical_operations` | absent | later | `qec_logical_operations` | Depends on the decoder family; align to the semantic core via Qualtran. |
 | `qec_transport_and_objectives` | absent | later | `qec_transport_and_objectives` | Hardware-shaped; out of scope until a neutral-atom target exists. |
-| `qec_stim_user_migration` | absent | next | `qec_stim_user_migration` | A document, and its upstream counterpart is CUDA-Q QEC's own Stim surface rather than a page to translate. |
+| `qec_stim_user_migration` | partial | next | `qec_stim_user_migration` | The migration guide and runnable workflows exist. Complete upstream semantics remain bounded by the stated bridge/model domain; the contract already records this row as partial. |
 
 Everything a `supported` row would need is deliberately *not* claimed here. Eight
 rows are `aligned` and the rest are not, and an `aligned` row is one whose
@@ -1540,3 +1540,16 @@ CUDA-Q side; the last column is the difference in one line.
 | `decoder_result_record` | reshaped | Single-shot record against `converged` + optional results, with separate batch and async records. The DEM-level matcher adds `MatchingDecodeResult` and the belief-propagation decoder adds `BeliefPropagationDecodeResult`, which is the one carrying the convergence flag; the sliding window adds `SlidingWindowDecodeResult`, whose `converged` is the inner flags anded or `None` when none reports one, and which is the one local record that states a stream rather than a shot. None of the three is this record and none has a batch or async form. |
 | `decoder_base_methods` | reshaped | `decode` + streaming against `decode`/`decode_batch`/`decode_async`/`get_block_size`/`get_syndrome_size`/`get_version` and an errors-vs-observables request. The DEM-level decoder does not implement the repetition-only protocol, because no correction record here can express a surface-code correction; the sliding window instead states two entry points — a whole block in the model's numbering and one round in that round's own — and its record reports the committed faults and the observables that same vector flips, which is upstream's errors-vs-observables request answered rather than asked. |
 | `decoder_plugin_precedent` | absent | Upstream integrates open chromobius and pymatching plugins behind a boundary while its closed decoder ships as a binary — the same split the matrix plans. The integrating half of that split is now realized for one library, as the PyMatching cross-check behind an extra; what is still absent is the boundary itself, since the adapter is a concrete class rather than a registered plugin. |
+
+
+## November SDK integration entry points
+
+The [integrated quickstart](../guides/QEC_INTEGRATION_QUICKSTART.md) and
+[compatibility table](../reference/QEC_STIM_PYMATCHING_COMPATIBILITY.md) describe
+the current supported user workflows and installed-profile acceptance.
+`run_memory_experiment` is delivered; `run_stim_experiment` is its separately
+approved external-text composition. Full-record batching exists and is distinct
+from the adapter's logical-only Tensor batch path. These product updates do not
+promote this pinned CUDA-Q contract's remaining partial/absent capability rows or
+certify GPU decoder, plugin, threshold or hardware parity. Final candidate/main
+acceptance is recorded in the central delivery ledger.

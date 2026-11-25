@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qsvt_matrix_inversion.qmod",
+      "source_path": "algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion.qmod",
+      "git_blob_sha1": "a500b67faef23903562cab490002b0f40c35e398",
+      "sha256": "f72e8f606f21ea3d88f7918fc913f1afdd8474105485bb48ef8c20b1a971afff"
+    }
+  ]
+}

@@ -38,3 +38,15 @@ its existing test file plus `tests/qec/test_restructure_decoders.py`. The exampl
 needs no SDK: three decoders predict observable index `(0,)`, the restored matcher
 class is `flagquantum.qec.decoders.matching`, and five default names remain registered.
 Never refresh the frozen 001–006 fixtures to accommodate a relocation.
+
+
+## Weighted optimization graphs
+
+`matching_graph.py` owns immutable MatchingEdge, MatchingGraph and
+MatchingSolution records. Costs and optional rates are independent; this is
+not the probability-owned DEM graph. Matrix imports expose column mapping,
+merge and boundary choices; exports retain edge order. Numerical SDK objects
+do not belong here. The canonical classes are opt-in, with no root re-export.
+Run `python -m pytest -q tests/qec/test_matching_graph.py` for the core path.
+The [matrix example](../../../examples/qec/check_matrix_matching.py) is the
+ten-minute SDK workflow; edit one input column and inspect its chosen edge.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 import pytest
 import torch
@@ -10,6 +11,7 @@ import flagquantum.training as fqt
 from flagquantum.models import HybridQuantumClassifier, VariationalEnergyModel
 from flagquantum.runtime.observability.acceptance import HybridAcceptanceReport
 from flagquantum.runtime.training_state import (
+    TrainingStateError,
     load_training_checkpoint,
     save_training_checkpoint,
 )
@@ -65,7 +67,7 @@ def train_classifier(
 
 @pytest.mark.parametrize("backend", ["pytorch", "jax"])
 def test_classifier_local_training_evaluation_checkpoint_and_deployment(
-    tmp_path,
+    tmp_path: Path,
     backend: str,
 ) -> None:
     if backend == "jax":
@@ -134,6 +136,55 @@ def test_classifier_local_training_evaluation_checkpoint_and_deployment(
         deployment=model.deployment_parameters()["binding"],
     )
     assert report.summary()["accuracy_is_performance_claim"] is False
+
+
+@pytest.mark.parametrize(
+    "model_type", (HybridQuantumClassifier, VariationalEnergyModel)
+)
+def test_model_deployment_metadata_retains_v2_checkpoint_workflow(
+    tmp_path: Path,
+    model_type: type[HybridQuantumClassifier] | type[VariationalEnergyModel],
+) -> None:
+    source = model_type(deployment_binding={"provider": "local"})
+    expected = (
+        source(INPUTS) if isinstance(source, HybridQuantumClassifier) else source()
+    )
+    optimizer = torch.optim.Adam(source.parameters())
+    path = save_training_checkpoint(
+        tmp_path / "metadata.pt",
+        module=source,
+        optimizer=optimizer,
+        seed=fqt.seed_everything(23),
+        precision=source.quantum.precision,
+    )
+    payload = torch.load(path, weights_only=True)
+    assert payload["version"] == "flagquantum.training_state.v2"
+    assert "parameter_training" not in payload
+    target = model_type(deployment_binding={"provider": "different"})
+    target_optimizer = torch.optim.Adam(target.parameters())
+    load_training_checkpoint(
+        path,
+        module=target,
+        optimizer=target_optimizer,
+        precision=target.quantum.precision,
+    )
+    actual = target(INPUTS) if isinstance(target, HybridQuantumClassifier) else target()
+    torch.testing.assert_close(actual, expected)
+    assert target.deployment_binding == source.deployment_binding
+
+    next(source.parameters()).requires_grad_(False)
+    frozen_path = tmp_path / "frozen.pt"
+    with pytest.raises(
+        TrainingStateError, match="frozen parameters require a qualified v3"
+    ):
+        save_training_checkpoint(
+            frozen_path,
+            module=source,
+            optimizer=optimizer,
+            seed=fqt.seed_everything(23),
+            precision=source.quantum.precision,
+        )
+    assert not frozen_path.exists()
 
 
 def test_classifier_deployment_binds_encoded_inputs_to_final_quantum_ir() -> None:

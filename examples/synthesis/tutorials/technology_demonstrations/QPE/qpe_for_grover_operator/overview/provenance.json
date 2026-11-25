@@ -1,0 +1,78 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "01b6972d5a2467030bf8e4dbb40ee152b1c38180b391c1095d96147bfe828aab",
+  "git_blob_sha1": "48ad741f7aacb41d97c59fd847287baf26b954cb",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b",
+      "native_code_cell": 1,
+      "stage": "Public native imports, independent verification and measured plotting workflow"
+    },
+    {
+      "index": 4,
+      "sha256": "b0e4eb5f72c4e5673a2617b614e0da76163fe53d389627a1f40da61d115dd51e",
+      "native_code_cell": 2,
+      "stage": "Retain original five-qubit Grover data and all five precision points"
+    },
+    {
+      "index": 5,
+      "sha256": "c6f705a44582d5335a94eeeba3b27ae82ef0c2c1374f85a338e22acfabb37fc8",
+      "native_code_cell": 3,
+      "stage": "Distinguish native target conversion from historical source settings"
+    },
+    {
+      "index": 7,
+      "sha256": "7d73ef378c97d1c7dd97f793a0a2c7962117c23875b86d4a1ba09cc712ae91eb",
+      "native_code_cell": 4,
+      "stage": "Visible native uniform preparation and coherent prime-indicator XOR"
+    },
+    {
+      "index": 8,
+      "sha256": "b40b9a770497bcafb161d94e8bdd3d0d162ca7593e71553f54e4b0af7ad56cb5",
+      "native_code_cell": 5,
+      "stage": "Visible complete source Grover operator including controlled global minus sign"
+    },
+    {
+      "index": 9,
+      "sha256": "bab9648084359969e777d95c4c95c01db86be5289ead05fab8b628edbb39d0ba",
+      "native_code_cell": 6,
+      "stage": "Declare exact native resource measurement boundary"
+    },
+    {
+      "index": 11,
+      "sha256": "f71778b4fa5613ca1902355a9bbec31a8b2762019ed0005ddd869bfcc504c90a",
+      "native_code_cell": 7,
+      "stage": "Complete original-size roots, actual width/depth policies, bounds and all ten physical/target checks"
+    },
+    {
+      "index": 14,
+      "sha256": "223f075434bce41442c4de5bdcd5e0f8d1d16832a7b55375fe8e77e74e1f9193",
+      "native_code_cell": 8,
+      "stage": "Preserve all original historical depth/count/width observations"
+    },
+    {
+      "index": 15,
+      "sha256": "5088a74db7bfbdfabc9ece7f07bf5b081a873765b60d4ac99ba12a19cae75964",
+      "native_code_cell": 9,
+      "stage": "Preserve optional source installation stage as historical nonexecution metadata"
+    },
+    {
+      "index": 16,
+      "sha256": "3c4af7e965c740b46931d0b0abc79c57dd3fdfa4321be2297b59de058e3661ba",
+      "native_code_cell": 10,
+      "stage": "Distinguish actual independent physical oracle from commented source SDK instructions"
+    },
+    {
+      "index": 18,
+      "sha256": "4918263501629dbcf0581bf0d6402a6b5d61208b5d646bfa0c28e4c616885b1d",
+      "native_code_cell": 11,
+      "stage": "Actual final measured/historical precision-depth figure with width annotations"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_grover_qpe_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.QPE.qpe_for_grover_operator.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/overview/walkthrough.ipynb",
+  "scope": "All11sourcecode stages,originalfour data bits/indicator/sixmarkedintegers,zero data input,allfivephaseprecision1..5,both actual width/depth policies,source depthbounds15+3(p-1),complete Groverglobalminus,independent absolute native/converted fullstates,named numericmarginals,retainedprivatedata,actual exact CX/U3costs and final measured/historicalfigure. Equalpolicyresources explicitly reported;source default represented by native width policy. Fullycommented optional SDKstages remain historical nonexecution metadata. No sourceimporter,frozen216change,compiler/API/dependencychange,hardware,speedup,scalability or optimality claim."
+}

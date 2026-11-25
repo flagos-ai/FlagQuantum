@@ -154,3 +154,26 @@ build metadata only. Examples, tests, benchmarks, generated caches, datasets
 and model snapshots are forbidden. Versioned example assets live outside Git
 and are described by `examples/assets/manifest.json` with byte sizes and
 SHA-256 checksums.
+
+## Optional OpenFermion object migration
+
+The `openfermion` extra is a separate scientific interoperability installation,
+owned by Ecosystem maintainers. It pins OpenFermion 1.7.1, the release verified
+with real ordered operator products, sparse actions, and native measurement
+consumers. It is excluded from core, `all`, and `interop-all`. The dedicated
+Python 3.10/3.12 workflow installs the extra and checks the resolved environment
+with `pip check`; native lanes continue without it.
+
+OpenFermion uses Apache-2.0, whose source license and provenance are retained in
+`third_party/openfermion/`. This adapter copies no upstream source. The explicit
+conversion environment inherits upstream's scientific dependency graph, including
+Cirq, NumPy, SciPy, SymPy, h5py and networkx. This is not a security certification
+of every transitive version. The exact upstream pin bounds the tested object
+contract; monthly dependency review and expedited security updates apply to this
+extra as to the other optional boundaries. Install it only when migrating foreign
+objects; importing native science or the adapter does not load that graph.
+
+The replacement interface is the existing native FermionOperator/PauliOperator
+consumer. The exit condition is the end of foreign-object migration demand;
+Ecosystem maintainers may remove this experimental adapter and its extra before
+the next Stable Core freeze. No native consumer changes are needed.

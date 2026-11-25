@@ -1,0 +1,41 @@
+{
+  "upstream_path": "applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian.ipynb",
+  "original_sha256": "38e4ce46276183cf28f69cb572f4c409778c1d96d443b7628c5acd7649a97934",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 2,
+      "sha256": "9c9469be3fbdd0fc083e42a9d934c40bcb69d02621ba591ff55a64273fa67d45"
+    },
+    {
+      "index": 3,
+      "sha256": "bbde2aedf9b7cbb40e6d8b524f7b48cd14b4a096ce7f6fb6f15c52f0a782fdc4"
+    },
+    {
+      "index": 4,
+      "sha256": "ab1c6068c4ad844089309b7f0155c732d32a362a3d34660ad705fbefea2b9d71"
+    },
+    {
+      "index": 5,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 6,
+      "sha256": "f1e7bc9abcfdc7e2d35700e53550c4ed8b31daa2d8f8566e61659cbae96f0d5b"
+    },
+    {
+      "index": 7,
+      "sha256": "8d2672149c74def992de83fc2c23bdaf589cbf5c497de9f5f421f51bf41dea71"
+    }
+  ],
+  "scope": "Complete four-mode source fermionic Notebook: all three ordered monomials, public Jordan-Wigner mapping, native three-layer X/RY/CX ansatz, twelve zero initial angles, 200 actual expectation evaluations with explicit coordinate search, actual best parameters and full-space particle-sector diagnostics. Independent occupation-sign matrix and full-state Circuit. No fixed-sector, private optimizer equivalence, convergence, hardware or speedup claim.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.second_quantized_hamiltonian.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/second_quantized_hamiltonian/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_second_quantized_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "72c9f3541fa36492291a5e5a9d7305bda167d266",
+  "native_semantic_adaptations": "Complete four-mode source fermionic Notebook: all three ordered monomials, public Jordan-Wigner mapping, native three-layer X/RY/CX ansatz, twelve zero initial angles, 200 actual expectation evaluations with explicit coordinate search, actual best parameters and full-space particle-sector diagnostics. Independent occupation-sign matrix and full-state Circuit. No fixed-sector, private optimizer equivalence, convergence, hardware or speedup claim."
+}

@@ -1,0 +1,109 @@
+{
+  "upstream_path": "applications/telecom/network_traffic_optimization/network_traffic_optimization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f9c504cb87e5dad388e152c381ee11277200883915871af14a19535480fd287f",
+  "git_blob_sha1": "a1eea0d637dd9c13d025a322d2acffa6fecb669b",
+  "scope": "All sixteen traffic-network stages, original six-node graph, all 24 assignment bits, five layers, independent integral-flow solution, twelve finite-shot native optimizer queries, and the actual final sample.",
+  "native_semantic_adaptations": "Use source observed twelve-query expansion with native COBYLA and best actually evaluated parameters. Preserve original objective normalizations, graph order, layers, and 10,000 samples per query. Enumerate the integral-flow reference and disclose the source's MILP coefficient-order distinction. Plot only actually sampled feasible assignments.",
+  "native_entrypoint": "examples.synthesis.applications.telecom.network_traffic_optimization.overview.main",
+  "native_notebook": "examples/synthesis/applications/telecom/network_traffic_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_network_traffic_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Load the native graph, circuit, optimizer, and plotting helpers.",
+      "sha256": "8b1e99af5dad49590ad3d15446aa84e2503deb774a04e018e868a1a60e2111f8"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Use the source topology plot and demand colors.",
+      "sha256": "b1abf22c9b912b49724e368dd3ef267a319cc9d6dafeb47b5394faec882d075c"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Keep all six nodes, eight directed edges and three demands.",
+      "sha256": "4507826c2d1ae4527b1bda5d3c78121314b5f76675470318e000ef2ed6b7140c"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "stage": "Retain source normalization and all twenty-four assignment bits.",
+      "sha256": "a1c006a34958db35a508b905f482c5b561e5ffdfb81e2e7240b67c795eebbc2d"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "stage": "Retain the original graph coordinates for plotting.",
+      "sha256": "5c575a67cfb32dcc63ea5e1e97b48cd0eaf51ad58f2e895a289ef624184a179c"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Solve the original integral-flow constraints independently.",
+      "sha256": "49cc532d397de905f100f81998dfc2efcc80db0d51bff4a6aea1808c3230c0f7"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 7,
+      "stage": "Check that the independent reference obeys all constraints.",
+      "sha256": "9cf0c4bca5de7299febc68bb774f3124176a70bbf3d2f81a4a0291775f763ce0"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "stage": "Inspect each selected reference path.",
+      "sha256": "e079bb443bccfcb5ce54dfe40bf37e045ad94b60b0aef984cc05416f0a092563"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "stage": "Use all original latency, flow and congestion costs.",
+      "sha256": "ff4c46439d05a1b7e7eac27ad8725f459dd13df03f2bbbac63e13e652d164f30"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 10,
+      "stage": "Retain five complete QAOA layers.",
+      "sha256": "b4f9689c3352232c660d57327ea76691e6694c27d05a20a8217ea45602d95de7"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 11,
+      "stage": "Keep 10,000 shots and the original nonzero schedule.",
+      "sha256": "9e12bf39c866e875e65dba21939099a51e66bb0bf77fafde06890efa8ea313f3"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 12,
+      "stage": "Read every objective from actual local finite samples.",
+      "sha256": "c6313a5782f3f08c48248ac27a31e910bea892691883175996dffa838bc9e70e"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "stage": "Run the original observed twelve-query minimum expansion.",
+      "sha256": "0db0609bce91a72b839005663f748f8c719f00870448e745f72a0b0476b764fc"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "stage": "Apply the original feasibility checks to the actual sample.",
+      "sha256": "3c8ee4d92461275bd689227ca6ea31066e0dacef558de1061a789f28b698ac70"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 15,
+      "stage": "Read the actual ranked sample and feasible probability.",
+      "sha256": "4b7dcb0d15d60a27268c251aedb4b02824ecd96213838d4494284f5dc803a379"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 16,
+      "stage": "Plot original topology, the integral-flow reference, and up to three actually sampled feasible assignments.",
+      "sha256": "c39d2356748a07ca1aba2077a3cade5b2c82380b55711fbe042ee08d2f34f6be"
+    }
+  ]
+}

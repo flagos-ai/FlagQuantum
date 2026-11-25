@@ -1,0 +1,24 @@
+qfunc hidden_shift(oracle: qfunc (qbit[]), oracle_shifted: qfunc (qbit[]), target: qbit[]) {
+  hadamard_transform(target);
+  oracle_shifted(target);
+  hadamard_transform(target);
+  oracle(target);
+  hadamard_transform(target);
+}
+
+qperm arith_func(const vars: qbit[4], res: qbit) {
+  res ^= (vars[0] & vars[1]) ^ (vars[2] & vars[3]);
+}
+
+qperm arith_func_shifted(const vars: qbit[4], res: qbit) {
+  res ^= ((vars[0] ^ 1) & vars[1]) ^ (vars[2] & vars[3]);
+}
+
+qfunc main(output s: qbit[]) {
+  allocate(4, s);
+  hidden_shift(lambda(y) {
+    phase_oracle(arith_func, y);
+  }, lambda(y) {
+    phase_oracle(arith_func_shifted, y);
+  }, s);
+}

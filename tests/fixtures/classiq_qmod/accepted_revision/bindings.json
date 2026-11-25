@@ -1,0 +1,731 @@
+{
+  "algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority.qmod": {
+    "input_vec": [
+      0.2,
+      -0.3,
+      0.4,
+      -0.5
+    ],
+    "weight": [
+      0.1,
+      0.2,
+      0.30000000000000004
+    ]
+  },
+  "algorithms/QML/qgan/qgan_bars_and_strips.qmod": {
+    "input_vec": [
+      0.2,
+      -0.3,
+      0.4,
+      -0.5
+    ],
+    "weight": [
+      0.1,
+      0.2,
+      0.30000000000000004,
+      0.4,
+      0.5,
+      0.6000000000000001,
+      0.7000000000000001,
+      0.8
+    ]
+  },
+  "algorithms/QML/qsvm/qsvm.qmod": {
+    "data1": [
+      0.27,
+      -0.43
+    ],
+    "data2": [
+      -0.61,
+      0.18
+    ]
+  },
+  "algorithms/QML/quantum_autoencoder/quantum_autoencoder.qmod": {
+    "input_data": [
+      0.19,
+      -0.31,
+      0.43,
+      -0.59
+    ],
+    "w": [
+      0.11,
+      -0.23,
+      0.37,
+      -0.41,
+      0.53,
+      -0.67,
+      0.71,
+      -0.83,
+      0.97,
+      -1.09
+    ]
+  },
+  "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting.qmod": {
+    "k": 1
+  },
+  "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae.qmod": {
+    "k": 1
+  },
+  "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide.qmod": {
+    "t": 0.37
+  },
+  "algorithms/quantum_linear_solvers/vqls/vqls_with_lcu.qmod": {
+    "params": [
+      0.02,
+      0.04,
+      0.06,
+      0.08,
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18
+    ]
+  },
+  "algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe.qmod": {
+    "params": [
+      0.23
+    ]
+  },
+  "algorithms/search_and_optimization/QAOA/qaoa.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "algorithms/search_and_optimization/QAOA/qaoa_knapsack.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "algorithms/search_and_optimization/QAOA/qaoa_max_cut.qmod": {
+    "params": [
+      0.1,
+      0.2,
+      0.30000000000000004,
+      0.4,
+      0.5,
+      0.6000000000000001,
+      0.7000000000000001,
+      0.8
+    ]
+  },
+  "algorithms/search_and_optimization/grover/3_sat_grover.qmod": {
+    "r": 2
+  },
+  "algorithms/search_and_optimization/grover/grover.qmod": {
+    "r": 2
+  },
+  "algorithms/search_and_optimization/grover/grover_max_cut.qmod": {
+    "r": 2
+  },
+  "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa.qmod": {
+    "params": [
+      0.13,
+      0.47,
+      -0.39,
+      0.11,
+      0.9,
+      -0.29
+    ]
+  },
+  "applications/chemistry/molecular_energy_curve/molecular_energy_curve.qmod": {
+    "params": [
+      0.37
+    ]
+  },
+  "applications/chemistry/molecule_eigensolver/molecule_eigensolver.qmod": {
+    "params": [
+      0.37
+    ]
+  },
+  "applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+    ]
+  },
+  "applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator.qmod": {
+    "params": [
+      0.02,
+      0.04,
+      0.06,
+      0.08,
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18,
+      0.2,
+      0.22,
+      0.24,
+      0.26,
+      0.28,
+      0.3,
+      0.32,
+      0.34,
+      0.36,
+      0.38,
+      0.4,
+      0.42,
+      0.44,
+      0.46,
+      0.48,
+      0.5,
+      0.52,
+      0.54,
+      0.56,
+      0.58,
+      0.6,
+      0.62,
+      0.64,
+      0.66,
+      0.68,
+      0.7,
+      0.72,
+      0.74,
+      0.76,
+      0.78,
+      0.8
+    ]
+  },
+  "applications/chemistry/quantum_walk_fmo/quantum_walk_fmo.qmod": {
+    "time_point": 0.037
+  },
+  "applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian.qmod": {
+    "params": [
+      0.17,
+      -0.22,
+      0.31,
+      0.48,
+      -0.51,
+      0.63,
+      0.72,
+      -0.83,
+      0.96,
+      0.12,
+      -0.26,
+      0.37
+    ]
+  },
+  "applications/cybersecurity/patching_management/patch_min_vertex_cover.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/finance/credit_card_fraud/credit_card_fraud.qmod": {
+    "data1": [
+      0.17,
+      -0.43,
+      0.29
+    ],
+    "data2": [
+      -0.31,
+      0.57,
+      0.11
+    ]
+  },
+  "applications/finance/option_pricing/option_pricing.qmod": {
+    "k": 1
+  },
+  "applications/finance/portfolio_optimization/portfolio_optimization.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "applications/finance/rainbow_options/rainbow_options_bruteforce_method.qmod": {
+    "k": 1
+  },
+  "applications/finance/rainbow_options/rainbow_options_direct_method.qmod": {
+    "k": 1
+  },
+  "applications/finance/rainbow_options/rainbow_options_integration_method.qmod": {
+    "k": 1
+  },
+  "applications/finance/value_at_risk/value_at_risk.qmod": {
+    "k": 1
+  },
+  "applications/logistics/facility_location/facility_location.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002,
+      0.021,
+      -0.024,
+      0.027,
+      -0.03
+    ]
+  },
+  "applications/logistics/traveling_salesman_problem/traveling_salesman_problem.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002,
+      0.021,
+      -0.024,
+      0.027,
+      -0.03,
+      0.033,
+      -0.036000000000000004,
+      0.039,
+      -0.042,
+      0.045,
+      -0.048
+    ]
+  },
+  "applications/logistics/vehicle_routing_problem/vehicle_routing_problem.qmod": {
+    "params": [
+      0.013,
+      0.026,
+      0.039,
+      0.052,
+      0.065,
+      0.078,
+      0.091,
+      0.104,
+      0.11699999999999999,
+      0.13,
+      0.143,
+      0.156,
+      0.16899999999999998,
+      0.182,
+      0.19499999999999998,
+      0.208,
+      0.221,
+      0.23399999999999999,
+      0.247,
+      0.26,
+      0.27299999999999996,
+      0.286,
+      0.299,
+      0.312
+    ]
+  },
+  "applications/optimization/adapt_qaoa/adapt_qaoa.qmod": {
+    "params": [
+      0.1,
+      0.2
+    ]
+  },
+  "applications/optimization/electric_grid_optimization/electric_grid_optimization.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002,
+      0.021,
+      -0.024
+    ]
+  },
+  "applications/optimization/integer_linear_programming/integer_linear_programming.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "applications/optimization/kidney_exchange/kidney_exchange_problem.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+    ]
+  },
+  "applications/optimization/max_clique/max_clique.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/optimization/max_independent_set/max_independent_set.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002,
+      0.021,
+      -0.024,
+      0.027,
+      -0.03,
+      0.033,
+      -0.036000000000000004,
+      0.039,
+      -0.042,
+      0.045,
+      -0.048
+    ]
+  },
+  "applications/optimization/max_k_vertex_cover/max_k_vertex_cover.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/optimization/min_graph_coloring/min_graph_coloring.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002,
+      0.021,
+      -0.024,
+      0.027,
+      -0.03,
+      0.033,
+      -0.036000000000000004
+    ]
+  },
+  "applications/optimization/minimum_dominating_set/minimum_dominating_set.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.11,
+      0.12
+    ]
+  },
+  "applications/optimization/robust_posture_optimization/robust_posture_optimization.qmod": {
+    "theta": [
+      0.02,
+      0.04,
+      0.06,
+      0.08,
+      0.1,
+      0.12
+    ]
+  },
+  "applications/optimization/set_cover/set_cover.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/optimization/set_partition/set_partition.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06
+    ]
+  },
+  "applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution.qmod": {
+    "angles": [
+      0.13,
+      -0.29,
+      0.41,
+      -0.57,
+      0.68,
+      -0.83
+    ]
+  },
+  "applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D.qmod": {
+    "num_iter": 2
+  },
+  "applications/physical_systems/ising_model/ising_model.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+    ]
+  },
+  "applications/physical_systems/quantum_chaos/quantum_sawtooth_map.qmod": {
+    "kick_mag": 0.43,
+    "num_kicks": 2
+  },
+  "applications/telecom/network_traffic_optimization/network_traffic_optimization.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1
+    ]
+  },
+  "applications/telecom/resiliency_planning/resiliency_planning.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.11,
+      0.12,
+      0.13,
+      0.14,
+      0.15,
+      0.16,
+      0.17,
+      0.18,
+      0.19,
+      0.2,
+      0.21,
+      0.22,
+      0.23,
+      0.24,
+      0.25,
+      0.26,
+      0.27,
+      0.28,
+      0.29,
+      0.3,
+      0.31,
+      0.32,
+      0.33,
+      0.34,
+      0.35000000000000003,
+      0.36,
+      0.37,
+      0.38,
+      0.39,
+      0.4
+    ]
+  },
+  "applications/telecom/resiliency_planning/resiliency_planning_AMD.qmod": {
+    "params": [
+      0.01,
+      0.02,
+      0.03,
+      0.04,
+      0.05,
+      0.06,
+      0.07,
+      0.08,
+      0.09,
+      0.1,
+      0.11,
+      0.12,
+      0.13,
+      0.14,
+      0.15,
+      0.16,
+      0.17,
+      0.18,
+      0.19,
+      0.2,
+      0.21,
+      0.22,
+      0.23,
+      0.24,
+      0.25,
+      0.26,
+      0.27,
+      0.28,
+      0.29,
+      0.3,
+      0.31,
+      0.32,
+      0.33,
+      0.34,
+      0.35000000000000003,
+      0.36,
+      0.37,
+      0.38,
+      0.39,
+      0.4
+    ]
+  },
+  "community/paper_implementation_project/bpde/bpde.qmod": {
+    "delta_e": 0.37
+  },
+  "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle.qmod": {
+    "data": [
+      0.2,
+      -0.3,
+      0.4,
+      0.5
+    ]
+  },
+  "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch.qmod": {
+    "data": [
+      0.2,
+      -0.3,
+      0.4,
+      0.5,
+      0.6,
+      -0.7,
+      0.8
+    ]
+  },
+  "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter.qmod": {
+    "x": 0.37
+  },
+  "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle.qmod": {
+    "t": 2
+  },
+  "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin.qmod": {
+    "t": 2
+  },
+  "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube.qmod": {
+    "t": 2
+  },
+  "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.qmod": {
+    "t": 2
+  },
+  "tutorials/basic_tutorials/optimization/learning_optimization.qmod": {
+    "params": [
+      0.003,
+      -0.006
+    ]
+  },
+  "tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation.qmod": {
+    "k": 1
+  },
+  "tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.qmod": {
+    "input_0": 0.37,
+    "weight_0": -0.81
+  },
+  "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2.qmod": {
+    "angles": [
+      0.2,
+      -0.3
+    ]
+  },
+  "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut.qmod": {
+    "params": [
+      0.1,
+      0.2,
+      0.30000000000000004,
+      0.4,
+      0.5,
+      0.6000000000000001,
+      0.7000000000000001,
+      0.8
+    ]
+  },
+  "tutorials/workshops/finance_workshops/Option_Pricing_Workshop.qmod": {
+    "k": 1
+  },
+  "tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO.qmod": {
+    "params": [
+      0.003,
+      -0.006,
+      0.009000000000000001,
+      -0.012,
+      0.015,
+      -0.018000000000000002
+    ]
+  },
+  "tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce.qmod": {
+    "k": 1
+  },
+  "applications/finance/autocallable_options/quantum_autocallable_option_pricing.qmod": {
+    "k": 1
+  }
+}

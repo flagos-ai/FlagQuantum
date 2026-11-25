@@ -401,6 +401,7 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
 
     import ast
     import importlib
+    from pathlib import Path
 
     composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
     assert composition.count("cancel_commuting_self_inverse") == 1
@@ -410,7 +411,8 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
 
     module = importlib.import_module("flagquantum.compiler.pipeline")
     assert module.__file__ is not None
-    with open(module.__file__, encoding="utf-8") as handle:
+    implementation = Path(module.__file__).parent / "optimization/pipeline.py"
+    with open(implementation, encoding="utf-8") as handle:
         tree = ast.parse(handle.read())
 
     loop = next(
@@ -453,14 +455,16 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     # This pass alone frees the two rotations rather than merging them; the merge
     # is `merge_adjacent_rotations`, which the sequence places after it.
     assert _names(routed(probe)) == ["rz", "rz"]
-    # The composition point names the analysis once, to register it, and never
+    # The registry names the analysis once, to register it, and never
     # computes it: `analyze_commutation` may appear as an import and as the body of
     # the one function that is registered as the `commutation_blocks` analysis, and
     # nowhere else. A pass that reached for it directly would be a second route to
     # the same fact, which is what the registry replaced.
+    registry_source = Path(module.__file__).parent / "optimization/pass_registry.py"
+    registry_tree = ast.parse(registry_source.read_text(encoding="utf-8"))
     calls = [
         node
-        for node in ast.walk(tree)
+        for node in ast.walk(registry_tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
         and node.func.id == "analyze_commutation"

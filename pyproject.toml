@@ -14,7 +14,7 @@ authors = [
     {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
 ]
 license = "Apache-2.0 AND MIT AND LPPL-1.3c"
-license-files = ["LICENSE", "flagquantum/drawer/tex/licenses/*.txt"]
+license-files = ["LICENSE", "flagquantum/drawer/tex/licenses/*.txt", "third_party/openfermion/LICENSE", "third_party/openfermion/NOTICE", "flagquantum/qec/decoders/csrc/vendor/pymatching-2.4.0/LICENSE"]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
@@ -23,6 +23,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+chemistry-hdf5 = ["h5py>=3.11,<4"]
+chemistry-pyscf = ["pyscf>=2.8,<3"]
+openfermion = ["openfermion==1.7.1"]
 dev = [
     "pytest>=7.0.0,<10",
     "pytest-cov>=4.0.0,<8",
@@ -204,7 +207,12 @@ before-build = [
     "python -m pip install 'torch>=2.10,<2.11'",
 ]
 before-test = "python -m pip install 'torch>=2.14,<2.15'"
-test-command = "python -c \"import flagquantum as fq; from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); assert fq.Circuit(2).h(0).cx(0, 1).state().shape[-1] == 4\""
+test-requires = ["stim>=1.16,<2"]
+test-sources = ["tools/verify_installed_sparse_blossom.py"]
+test-command = [
+    "python -c \"import flagquantum as fq; from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); assert fq.Circuit(2).h(0).cx(0, 1).state().shape[-1] == 4\"",
+    "python tools/verify_installed_sparse_blossom.py",
+]
 
 [tool.cibuildwheel.linux]
 archs = ["x86_64"]
@@ -224,6 +232,8 @@ repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} --no-san
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
+# Exercise serial extension scheduling even when the caller requests parallelism.
+config-settings = {"--build-option" = "build_ext --parallel 2"}
 before-build = [
     "python -m pip install --upgrade setuptools wheel",
     "python -m pip install \"torch>=2.10,<2.11\" --index-url https://download.pytorch.org/whl/cpu",

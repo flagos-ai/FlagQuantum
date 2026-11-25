@@ -1,0 +1,10 @@
+{
+  "upstream_path": "applications/finance/autocallable_options/partial_exponential_state_preparation.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "da0b25a150ed9bf74852d131b21f7324a28eac354b9e581b846a7a749d361cc2",
+  "approved_sha256": "28850eafc1fb5267ddfd87e5ba7e93bb10e9977da73141c6829fa6269a709e6e",
+  "native_entrypoint": "examples.synthesis.applications.finance.autocallable_options.partial_exponential_state_preparation.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exponential.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain fivebit exponential input, x>=21 mark, oneexact amplification round and modulo32 subtractionby18. Use existingapproved overlap0.99795457844373736;originalincorrect overlap remainsrefused. Explicit attenuation port isprovedclean separately fromcompilerworkspace. Public amplitude preparation,predicates,phase,adjoint andmodularincrement reused;no productionchanges."
+}

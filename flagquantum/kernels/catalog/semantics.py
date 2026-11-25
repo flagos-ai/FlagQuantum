@@ -295,6 +295,20 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
         "tensor_network_simulation",
         "distributed_simulation",
     ),
+    _semantic(
+        "FQK-SV-090",
+        "statevector.apply.ry.local",
+        "statevector",
+        "Apply a real RY rotation to complex amplitudes.",
+        "variational_algorithms",
+    ),
+    _semantic(
+        "FQK-GR-090",
+        "gradient.vjp.ry.local",
+        "gradient",
+        "Apply the RY adjoint and reduce its angle derivative.",
+        "variational_algorithms",
+    ),
 )
 
 

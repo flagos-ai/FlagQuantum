@@ -1,0 +1,90 @@
+{
+  "upstream_path": "applications/finance/option_pricing/option_pricing.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e080d5ca13196edc92f0758b9556e4ce2f507ffc36e3456874768de14d76161a",
+  "git_blob_sha1": "66b968262a6e060166da345f91e33f329bc65719",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "91ae319e8bb58d707efd23770b0957a2cde0fedb6b90c474f0c1515750cdc7d8",
+      "native_code_cell": 1,
+      "stage": "Original five-bit financial model parameters and public native workflow imports"
+    },
+    {
+      "index": 6,
+      "sha256": "3e417e068be44f564cc1f5bc0244ed7f0bcb606a198a3a212dc81d804534a4ca",
+      "native_code_cell": 2,
+      "stage": "Fresh closed-form log-normal PDF, mean/variance, three-sigma bounds and original 32-point grid"
+    },
+    {
+      "index": 7,
+      "sha256": "2c5e12d12186f493bdae501d0ad5e7cf3491cd6f81d72cf9492323c7e75c4099",
+      "native_code_cell": 3,
+      "stage": "Normalize fresh source-sized PDF and render probability/payoff axes from actual model data"
+    },
+    {
+      "index": 9,
+      "sha256": "7dab0f328f6d3d771a3774b368262df6778ce103928d740be80f04f516a18683",
+      "native_code_cell": 4,
+      "stage": "Reuse actual native inplace probability loader composed inside the source-sized quantum root"
+    },
+    {
+      "index": 12,
+      "sha256": "3f25075faf23d2d2c773c8f48dd6d570e53cbf3be3df003ab0f397fd4cb57995",
+      "native_code_cell": 5,
+      "stage": "Source price/word conversion and checked in-the-money threshold represented by its exact rotation-table mask"
+    },
+    {
+      "index": 14,
+      "sha256": "3b9b0cd7d07893f004f5f67c00d34609319d995dfb4dff03f5aa30c8008f1756",
+      "native_code_cell": 6,
+      "stage": "Fresh square-root payoff amplitude table and native preparation composition"
+    },
+    {
+      "index": 16,
+      "sha256": "105461cdd916a1c907a78e8049f790daecdbafd3fd84eadfb9e9757ffa8d9616",
+      "native_code_cell": 7,
+      "stage": "Construct explicitly bounded native iterative estimation workflow with original width cap"
+    },
+    {
+      "index": 19,
+      "sha256": "34cc93f71fca13815e3702bf0a7361e36ca6b61f96bb623dc88e86cec3c45f82",
+      "native_code_cell": 8,
+      "stage": "Create native base-family Program and independently check original full physical state"
+    },
+    {
+      "index": 20,
+      "sha256": "81e165536f6ab4a5812ff44248fceafd7ad94798ec7b69f098df7712f7c53a04",
+      "native_code_cell": 9,
+      "stage": "Show actual native resources and named output instead of a hosted circuit link"
+    },
+    {
+      "index": 23,
+      "sha256": "8aa8716fe1b502a9c3af78ab30ffd5e39fed3fcfe1f6820ecd41f88e42adcc85",
+      "native_code_cell": 10,
+      "stage": "Run actual sampled count-only adaptive estimation with original epsilon and alpha"
+    },
+    {
+      "index": 25,
+      "sha256": "0ffae099ebb8e4782427ad6f688e22a033cba1b4e05a4be8b3c4ad78e3fe9289",
+      "native_code_cell": 11,
+      "stage": "Scale actual amplitude estimate and confidence interval into option payoff"
+    },
+    {
+      "index": 27,
+      "sha256": "68bf04b391e8db73d2e28985fabc6e4d864577aad512f524ac27123b0af40541",
+      "native_code_cell": 12,
+      "stage": "Independently compute original discrete expected payoff for validation only"
+    },
+    {
+      "index": 28,
+      "sha256": "4b4c5233e238d3ba5bb63a3c70664a4c8bc10441c551521394d5d6b769c88f09",
+      "native_code_cell": 13,
+      "stage": "Retain original final price tolerance and independently check amplitude stopping-width/sample budget"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_option_pricing_notebooks.py",
+  "native_entrypoint": "examples.synthesis.applications.finance.option_pricing.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/option_pricing/overview/walkthrough.ipynb",
+  "scope": "All13sourcecode stages; original five-bit32pointlognormal grid,mu0.7,sigma0.13,strike1.9,fresh normalizedPDF andpayoffangles,source width20,native inplace preparation/reflection,independent absolute six-qubitCircuit/directstates,namedindicator,retainedprivateasset,explicit count-only local adaptive profileepsilon0.05/alpha0.01/k<=16/batch256/steps<=64/seed6100,actual adaptivecounts,scaledpriceinterval,sourcefinaltolerancefactor5,freshclassicalexpectedpayoffvalidation andactualprobability/payofffigure. Eachnewstructuralkcompilesonce;not runtimeparameterbinding orproprietaryIQAE equivalence. No sourceimporter,frozenquantumtable,newdependency,cloud,hardware,speedup orscalabilityclaim."
+}

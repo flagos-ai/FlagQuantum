@@ -1,0 +1,52 @@
+{
+  "schema": "flagquantum_qec_native_detector_execution_v1",
+  "status": "implemented_pending_freeze",
+  "owner": "Core / Simulation",
+  "public_entry_points": [
+    "Circuit.compile_detector_sampler(*, detector_map, observable_map, seed=None)",
+    "Circuit.detector_error_model(*, detector_map, observable_map)",
+    "CompiledDetectorSampler.sample(shots, *, separate_observables=False, append_observables=False, bit_packed=False)"
+  ],
+  "canonical_handle": "flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler",
+  "root_exports_added": [],
+  "outputs": {
+    "dense": "owned shot-major CPU bool",
+    "packed": "owned LSB-first CPU uint8; zero padding",
+    "default": "detectors",
+    "separate": "(detectors, observables)",
+    "append": "detectors then observables, packed across boundary"
+  },
+  "refusals": [
+    "conflicting flags",
+    "non-Clifford gates",
+    "conditional non-X gates",
+    "non-Pauli noise",
+    "non-CPU/default state/batch1",
+    "unsupported exact DEM",
+    "serialization",
+    "direct construction",
+    "cross-process/thread handle use"
+  ],
+  "limits": {
+    "qubits": 4096,
+    "measurements": 65536,
+    "operations": 100000,
+    "parity_rows": 65536,
+    "parity_entries": 100000,
+    "sample_payload_bytes": 67108864,
+    "principal_table_bytes": 67108864,
+    "analysis_support_cells": 1000000,
+    "dem_text_bytes": 16777216
+  },
+  "semantics": [
+    "same source and maps",
+    "noiseless reference normalized flips",
+    "unchanged old sampler/converter refusals",
+    "zero shots do not draw",
+    "validation failure does not draw",
+    "backend failure poisons handle",
+    "no approximation or fallback",
+    "no performance or full parity claim"
+  ],
+  "upstream_files": 96
+}

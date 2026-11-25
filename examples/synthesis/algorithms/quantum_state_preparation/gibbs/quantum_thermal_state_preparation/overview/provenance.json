@@ -1,0 +1,93 @@
+{
+  "upstream_path": "algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "77681120c4531d44e5e4a0360bd1df9ab2f58002",
+  "original_sha256": "d923e03bbddf1526475190e1b59d69870b3a3191175e21097f405330fe5d4392",
+  "scope": "All 16 source stages, both six-bit Fourier windows with 10,000 samples each, and 50 delta cycles with the original four-bit mixing window and 1,000 thermal samples. All 400 resets execute as channels.",
+  "native_semantic_adaptations": "Compute the windows, signed Glauber table and time controls from the original source constants. Use a local sample seed for each circuit. Compare both absolute complex Fourier states and the complete final density matrix, including all reset bits. The Gibbs comparison uses the source tolerance of 0.1.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_state_preparation.gibbs.quantum_thermal_state_preparation.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_thermal_state_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 9,
+      "native_code_cell": 1,
+      "sha256": "07618288853496aa1ea506c484dda7ad7635bd22099f8c3b9375674a30b0bd1e"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 2,
+      "sha256": "d0e38dc2b337b4991bd195fd1f548e5e25c92f79588da7331295766c17dd6f28"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 3,
+      "sha256": "a94f4f1397b31d49be7c060dce49ad75183644a6a0cc273ff3cd9c0cc96933be"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 4,
+      "sha256": "7b189a6eb232a2b882bf431dd2e178485f37e2176991b2844de00742fe50af65"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 5,
+      "sha256": "4f836dcc9e566a23c226eb26e9747d23e00078f66d0eb2f6ab40d24022cf7d49"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 6,
+      "sha256": "19dcdcd9b86387ac0cb5577651e563894dd9867bc0392f596d8d613531f846d2"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 7,
+      "sha256": "7511ca8c884e56387e008c355de0304f5d349d649bc822c7b289a1fea43cb9c4"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 8,
+      "sha256": "f3de67a4d5706707bcb54816d3201dcecccc6f4e5264b7270842d1c287186ce8"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 9,
+      "sha256": "b175049270c57aed5cabfa26691898452dbead4f1873e48ae3357098770feed3"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 10,
+      "sha256": "12f116cd809bcf1152486e31863e8fba4128210c54abd1b7528d02fa4262032c"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 11,
+      "sha256": "d725ad76d3ab22068d149b366690227ff7c79de9bcc6a9237232951a74e9027c"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 12,
+      "sha256": "50cfa705f1e2bcb7800f93dd7c10939d65324bd3458de41ebef72b3499c27cbb"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 13,
+      "sha256": "fc22144d72db1a6d19bd975a8e82bde3d7224336aee0f87ee34783aae9f3d785"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 14,
+      "sha256": "95d939432372357fbe06d7412723f51673ee9535c8633d58abd10a6c02594b3e"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 15,
+      "sha256": "f076eef9b60973239e8c1c8c931e9890d01f576240a81f0b04ad97407a563d62"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 16,
+      "sha256": "81515f9c7691ef03604422a0da9e42287c94a43e23764a3cef896ffe9f809980"
+    }
+  ]
+}

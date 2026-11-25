@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "fa9c62491a5b68e9e0a9379109af01cc2d2093a6f57a6717336017c1efdbcb04",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_guide.hamiltonian_simulation_guide_trotter.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_evolution.py",
+  "scope": "Complete original two-bit Hamiltonian quantum program: ordered first-order evolution at time one with ten repetitions. The broader multi-method Notebook remains pending.",
+  "native_semantic_adaptations": "Reuse native Observable tensor products and ordered Pauli rotations. Static coefficients, declared order, repetitions, bit order and absolute phase preserved. Classical CReal is explicitly specialized to a supplied finite real; no symbolic parameter retention or cloud execution claim."
+}

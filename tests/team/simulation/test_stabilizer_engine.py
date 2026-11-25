@@ -20,7 +20,9 @@ import builtins
 import dataclasses
 import itertools
 import sys
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 import torch
@@ -32,6 +34,7 @@ from flagquantum.errors import CapabilityError, FlagQuantumError, ValidationErro
 from flagquantum.simulation.stabilizer import (
     CLIFFORD_GATE_NAMES,
     StabilizerDependencyError,
+    engine,
     sample_stabilizer,
 )
 
@@ -52,7 +55,13 @@ PACKAGE = (
 # One generic representative per non-channel opcode the schema declares. The
 # angle is not a Clifford angle for any of the parameterized gates, and `ccx` and
 # `cswap` have no angle at all, so each entry's classification is unambiguous.
-GENERIC_GATES: dict[str, tuple[str, ...]] = {
+GENERIC_GATES: dict[
+    str,
+    tuple[str, int]
+    | tuple[str, int, int | float]
+    | tuple[str, int, int | float, int | float]
+    | tuple[str, int, float, float, float],
+] = {
     "i": ("i", 0),
     "x": ("x", 0),
     "y": ("y", 0),
@@ -117,7 +126,9 @@ def _gate_unitary(name: str) -> tuple[int, np.ndarray]:
     """Return the gate's wire count and dense unitary, built through `Circuit`."""
 
     call = GENERIC_GATES[name]
-    n_wires = get_operator_schema(name).arity
+    schema = get_operator_schema(name)
+    assert schema is not None
+    n_wires = schema.arity
     columns = [
         getattr(_basis_circuit(n_wires, index), call[0])(*call[1:])
         .state()
@@ -369,14 +380,14 @@ def test_the_shot_count_must_be_a_positive_integer(shots: object) -> None:
     """A shot count that is not a count would run a different number of shots."""
 
     with pytest.raises((ValidationError, TypeError)):
-        sample_stabilizer(fq.Circuit(2).h(0), shots=shots, seed=1)
+        getattr(engine, "sample_stabilizer")(fq.Circuit(2).h(0), shots=shots, seed=1)
 
 
 def test_the_shot_count_is_required() -> None:
     """Sampling is the whole capability, so there is no sensible default."""
 
     with pytest.raises(TypeError):
-        sample_stabilizer(fq.Circuit(2).h(0), seed=1)
+        getattr(engine, "sample_stabilizer")(fq.Circuit(2).h(0), seed=1)
 
 
 def test_an_explicit_none_shot_count_is_refused_before_it_reaches_the_engine() -> None:
@@ -389,7 +400,7 @@ def test_an_explicit_none_shot_count_is_refused_before_it_reaches_the_engine() -
     """
 
     with pytest.raises(ValidationError, match="positive shot count"):
-        sample_stabilizer(fq.Circuit(2).h(0), shots=None)
+        getattr(engine, "sample_stabilizer")(fq.Circuit(2).h(0), shots=None)
 
 
 def test_omitting_the_seed_samples_without_one() -> None:
@@ -457,11 +468,11 @@ def test_the_seed_must_be_an_integer_the_engine_accepts(seed: object) -> None:
     """A seed outside the engine's range is refused, never truncated or wrapped."""
 
     with pytest.raises(ValidationError, match="seed"):
-        sample_stabilizer(fq.Circuit(2).h(0), shots=2, seed=seed)
+        getattr(engine, "sample_stabilizer")(fq.Circuit(2).h(0), shots=2, seed=seed)
 
 
 def test_a_missing_engine_names_the_extra_that_provides_it(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Fail closed, and tell the caller the one command that fixes it.
 
@@ -469,12 +480,19 @@ def test_a_missing_engine_names_the_extra_that_provides_it(
     test replaces `__import__` rather than asserting on a message string alone.
     """
 
+    monkeypatch.setattr(engine, "__file__", str(tmp_path / "engine.py"))
     real_import = builtins.__import__
 
-    def refuse(name: str, *args: object, **kwargs: object):
+    def refuse(
+        name: str,
+        globals: Mapping[str, object] | None = None,
+        locals: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] = (),
+        level: int = 0,
+    ) -> ModuleType:
         if name == "stim" or name.startswith("stim."):
             raise ImportError("No module named 'stim'")
-        return real_import(name, *args, **kwargs)
+        return real_import(name, globals, locals, fromlist, level)
 
     monkeypatch.delitem(sys.modules, "stim", raising=False)
     monkeypatch.setattr(builtins, "__import__", refuse)

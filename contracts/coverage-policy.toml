@@ -155,6 +155,9 @@ min = 85
 [packages."remote.qpu"]
 min = 78
 
+[packages.realtime]
+min = 94
+
 [packages."remote.realtime"]
 min = 94
 

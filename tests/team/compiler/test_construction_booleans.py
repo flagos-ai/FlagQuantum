@@ -2,9 +2,12 @@
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture, qfunc
-from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
-from flagquantum.compiler._construction.profile import uint_type, verify_construction
+from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
+from flagquantum.compiler._construction.frontend.python import capture, qfunc
+from flagquantum.compiler._construction.verification.profile import (
+    uint_type,
+    verify_construction,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python import _cell
 
@@ -141,7 +144,23 @@ def test_helper_inlining_aliases_and_arithmetic_use_the_same_verified_graph() ->
 
 
 @pytest.mark.parametrize("expression", ["~x", "x & y", "x | y", "x ^ y"])
-def test_unadmitted_boolean_adjacent_syntax_is_still_refused(expression: str) -> None:
+def test_word_values_reuse_the_existing_checked_bitwise_operation(
+    expression: str,
+) -> None:
+    graph = capture(
+        _cell(f"def main(x,y):\n    return {expression}\n"), {"x": 1, "y": 1}
+    )
+    assert verify_construction((graph,), entry=graph.name) is graph
+    operation = graph.body.blocks[0].operations[-2]
+    assert operation.name == "qint.bitwise"
+    assert operation.results[0].type == uint_type(1)
+    assert operation.location and operation.location.line == 2
+
+
+@pytest.mark.parametrize("expression", ["~2", "x << y", "x >> y", "x & -1"])
+def test_unsigned_word_profile_does_not_admit_widthless_or_negative_values(
+    expression: str,
+) -> None:
     with pytest.raises(HybridVerificationError, match="construction.python"):
         capture(_cell(f"def main(x,y):\n    return {expression}\n"), {"x": 1, "y": 1})
 

@@ -7,7 +7,7 @@ Independent developer trials remain 0/2 and release_authorized=false.
 
 ## User workflow and architecture
 
-Run `python -m examples.synthesis_qmod_comparisons`, or copy the complete source
+Run `python -m examples.synthesis.tutorials.qmod.qmod_comparisons.main`, or copy the complete source
 and run example from the [synth README](../../flagquantum/synth/README.md).
 Users describe live inputs, fresh outputs, preparation, unsigned widths and
 resource ceilings. The helper computes x<y on all sixteen two-bit input pairs

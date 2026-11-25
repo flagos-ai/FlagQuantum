@@ -1,0 +1,430 @@
+# Five-category native migration
+
+Pinned upstream commit: `b69c4893d8264d1e59ce0909df2bd88efed25e00`.
+
+Groups use exact upstream paths without suffixes, so paired notebooks and
+quantum sources share one row. Python-only groups remain unclassified until
+main cases, helpers, data dependencies and verification criteria are reviewed.
+
+No notebook workflow is certified by a quantum-only counterpart.
+Validated local Notebook workflows: **212/213**.
+
+| Upstream group | Kind | Native quantum program | Full workflow |
+| --- | --- | --- | --- |
+| `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | [Native program](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview/main.py) | validated |
+| `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | [Native program](algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/main.py) | validated |
+| `algorithms/QML/qsvm/qsvm` | notebook_workflow | [Native program](algorithms/machine_learning/qsvm/overview/main.py) | validated |
+| `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/overview/main.py) | validated |
+| `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/main.py) | validated |
+| `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview/main.py) | validated |
+| `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/overview/main.py) | validated |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/overview/main.py) | validated |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/main.py) | pending |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/main.py) | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/benchmark_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/cluster_benchmark/plot_aggregated_results` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/color_code` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/cultivation` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/dem_decomp` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/stim_symbolic` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/stim_utils` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/utils` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/visualization` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/exhaustive_schedule_search` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/generate_zero_collision_schedules` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/chromobius/pybind/chromobius_pybind_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/chromobius/pybind/sinter_compat_pybind_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/_circuits_vs_chromobius_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/_make_circuit` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/_make_circuit_params` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/_make_circuit_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color2surface_code/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color2surface_code/_color2surface_layouts` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color2surface_code/_color2surface_layouts_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color2surface_code/_draw_mobius_graph` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color2surface_code/_keyed_constructions` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_color_code_layouts` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_color_code_layouts_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_keyed_constructions` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_midout_planar_color_code_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_midout_planar_color_code_circuits_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_mxyz_color_codes` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_mxyz_color_codes_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_superdense_planar_color_code_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_superdense_planar_color_code_circuits_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_toric_color_code_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/color_code/_toric_color_code_circuits_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/pyramid_code/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/pyramid_code/_keyed_constructions` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/pyramid_code/_pyramid_code_layouts` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/pyramid_code/_pyramid_code_layouts_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_keyed_constructions` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_keyed_constructions_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_rep_code_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_rep_code_circuits_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_rep_code_layouts` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/rep_code/_rep_code_layouts_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_keyed_constructions` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_surface_code_chunks` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_surface_code_chunks_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_surface_code_layouts` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_surface_code_layouts_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_surface_code_patches` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_transversal_cnot` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_transversal_cnot_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_xz_surface_code_memory_circuits` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/clorco/surface_code/_xz_surface_code_memory_circuits_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_circuit_util` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_circuit_util_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_builder` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_builder_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_measurement_tracker` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_noise` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_noise_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_patch` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_patch_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_pauli_string` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_pauli_string_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_stabilizer_code` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_stabilizer_code_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_tile` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_tile_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_util` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_core/_util_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_chunk` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_chunk_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow_util` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow_util_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow_verifier` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_flows/_flow_verifier_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_data` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_det_obs_annotation_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_empty_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_feedback_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_feedback_layer_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_interact_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_interact_swap_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_iswap_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_layer_circuit` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_layer_circuit_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_loop_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_measure_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_mpp_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_noise_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_qubit_coord_annotation_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_reset_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_rotation_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_shift_coord_annotation_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_sqrt_pp_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_swap_layer` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_transpile` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_layers/_transpile_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/__init__` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_closed_curve` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_closed_curve_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_css_observable_boundary_pair` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_geo` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_geo_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_open_curve` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_open_curve_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_order` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_patch_outline` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_patch_outline_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_patch_transition_outline` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_patch_transition_outline_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_path_outline` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_step_outline` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_step_outline_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_step_sequence_outline` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_surface_code` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_surface_code_legacy` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_surface_code_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_trans` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_viz_gltf_3d` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_viz_gltf_3d_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_viz_patch_outline_svg` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_surf/_viz_sequence_3d` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_util` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_util_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_viz_circuit_html` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_viz_patch_svg` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/gidney_circuits/src/gen/_viz_patch_svg_test` | python_unclassified | Pending | pending |
+| `algorithms/error_correction/syndrome_extraction_optimization/ilp_circuit_distance` | python_unclassified | Pending | pending |
+| `algorithms/foundational/bernstein_vazirani/bernstein_vazirani` | notebook_workflow | [Native program](algorithms/foundational/bernstein_vazirani/main.py) | validated |
+| `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
+| `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | [Native program](algorithms/foundational/quantum_teleportation/overview/main.py) | validated |
+| `algorithms/foundational/simon/simon` | notebook_workflow | [Native program](algorithms/foundational/simon/overview/main.py) | validated |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/main.py) | validated |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py) | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/main.py) | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp/overview/main.py) | validated |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt/overview/main.py) | validated |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization/overview/main.py) | validated |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/main.py) | validated |
+| `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/overview/main.py) | validated |
+| `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/overview/main.py) | validated |
+| `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview/main.py) | validated |
+| `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/overview/main.py) | validated |
+| `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/overview/main.py) | validated |
+| `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/main.py) | validated |
+| `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/lchs/overview/main.py) | validated |
+| `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/overview/main.py) | validated |
+| `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/main.py) | validated |
+| `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/hhl/overview/main.py) | validated |
+| `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/main.py) | validated |
+| `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/overview/main.py) | validated |
+| `algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_for_matrix/overview/main.py) | validated |
+| `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/main.py) | validated |
+| `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | [Native program](algorithms/quantum_primitives/gqsp/overview/main.py) | validated |
+| `algorithms/quantum_primitives/gradient_estimation/gradient_estimation` | notebook_workflow | [Native program](algorithms/quantum_primitives/gradient_estimation/overview/main.py) | validated |
+| `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |
+| `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/overview/main.py) | validated |
+| `algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean` | notebook_workflow | [Native program](algorithms/quantum_primitives/quantum_oracle_sketching_boolean/overview/main.py) | validated |
+| `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/swap_test/overview/main.py) | validated |
+| `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/overview/main.py) | validated |
+| `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/fermionic_gaussian/overview/main.py) | validated |
+| `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview/main.py) | validated |
+| `algorithms/quantum_walks/glued_trees/glued_trees` | notebook_workflow | [Native program](algorithms/quantum_walks/glued_trees/overview/main.py) | validated |
+| `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/overview/main.py) | validated |
+| `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
+| `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
+| `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | [Native program](algorithms/search_and_optimization/dqi/dqi_max_xorsat/overview/main.py) | validated |
+| `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
+| `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/overview/main.py) | validated |
+| `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
+| `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/main.py) | validated |
+| `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | [Native program](algorithms/search_and_optimization/quantum_likelihood_estimation/overview/main.py) | validated |
+| `applications/CFD/QLS_for_hybrid_solvers/banded_be` | python_unclassified | Pending | pending |
+| `applications/CFD/QLS_for_hybrid_solvers/cheb_utils` | python_unclassified | Pending | pending |
+| `applications/CFD/QLS_for_hybrid_solvers/chebyshev_approximation` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/main.py) | validated |
+| `applications/CFD/QLS_for_hybrid_solvers/classical_functions_be` | python_unclassified | Pending | pending |
+| `applications/CFD/QLS_for_hybrid_solvers/pauli_be` | python_unclassified | Pending | pending |
+| `applications/CFD/QLS_for_hybrid_solvers/qls_chebyshev_lcu` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/main.py) | validated |
+| `applications/CFD/QLS_for_hybrid_solvers/qls_qsvt` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/qls_qsvt/overview/main.py) | validated |
+| `applications/CFD/QLS_for_hybrid_solvers/verify_block_encoding` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/main.py) | validated |
+| `applications/CFD/double_slit_experiment/quantum_double_slit_experiment` | notebook_workflow | [Native program](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/overview/main.py) | validated |
+| `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | [Native program](applications/cfd/heat_eq_qsvt/overview/main.py) | validated |
+| `applications/CFD/qlbm/qlbm` | notebook_workflow | [Native program](applications/cfd/qlbm/overview/main.py) | validated |
+| `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | [Native program](applications/automotive/cooling_systems_optimization/overview/main.py) | validated |
+| `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/overview/main.py) | validated |
+| `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/overview/main.py) | validated |
+| `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | [Native program](applications/chemistry/lih_chemistry/overview/main.py) | validated |
+| `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/overview/main.py) | validated |
+| `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/overview/main.py) | validated |
+| `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | [Native program](applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial/overview/main.py) | validated |
+| `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/main.py) | validated |
+| `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview/main.py) | validated |
+| `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | [Native program](applications/chemistry/qpe_for_molecules/overview/main.py) | validated |
+| `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/overview/main.py) | validated |
+| `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
+| `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | [Native program](applications/chemistry/second_quantized_hamiltonian/overview/main.py) | validated |
+| `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | [Native program](applications/chemistry/tensor_hypercontraction/overview/main.py) | validated |
+| `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/overview/main.py) | validated |
+| `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/overview/main.py) | validated |
+| `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/overview/main.py) | validated |
+| `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | [Native program](applications/finance/autocallable_options/partial_exponential_state_preparation/overview/main.py) | validated |
+| `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview/main.py) | validated |
+| `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | [Native program](applications/finance/brownian_chebyshev_polynomials/overview/main.py) | validated |
+| `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/overview/main.py) | validated |
+| `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/main.py) | validated |
+| `applications/finance/option_pricing/option_pricing` | notebook_workflow | [Native program](applications/finance/option_pricing/overview/main.py) | validated |
+| `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/overview/main.py) | validated |
+| `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview/main.py) | validated |
+| `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_bruteforce_method/overview/main.py) | validated |
+| `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/overview/main.py) | validated |
+| `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_integration_method/overview/main.py) | validated |
+| `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/overview/main.py) | validated |
+| `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | [Native program](applications/image_processing/quantum_hadamard_edge_detection/overview/main.py) | validated |
+| `applications/logistics/facility_location/facility_location` | notebook_workflow | [Native program](applications/logistics/facility_location/overview/main.py) | validated |
+| `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/overview/main.py) | validated |
+| `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | [Native program](applications/logistics/traveling_salesman_problem/overview/main.py) | validated |
+| `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/overview/main.py) | validated |
+| `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/overview/main.py) | validated |
+| `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/overview/main.py) | validated |
+| `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/overview/main.py) | validated |
+| `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | [Native program](applications/optimization/kidney_exchange/kidney_exchange_problem/overview/main.py) | validated |
+| `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/main.py) | validated |
+| `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/overview/main.py) | validated |
+| `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/overview/main.py) | validated |
+| `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | [Native program](applications/optimization/max_induced_k_color_subgraph/overview/main.py) | validated |
+| `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | [Native program](applications/optimization/max_k_vertex_cover/overview/main.py) | validated |
+| `applications/optimization/min_graph_coloring/min_graph_coloring` | notebook_workflow | [Native program](applications/optimization/min_graph_coloring/overview/main.py) | validated |
+| `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | [Native program](applications/optimization/minimum_dominating_set/overview/main.py) | validated |
+| `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | [Native program](applications/optimization/qaoa_in_qaoa/overview/main.py) | validated |
+| `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | [Native program](applications/optimization/rectangles_packing/rectangles_packing_grid/overview/main.py) | validated |
+| `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/overview/main.py) | validated |
+| `applications/optimization/set_cover/set_cover` | notebook_workflow | [Native program](applications/optimization/set_cover/overview/main.py) | validated |
+| `applications/optimization/set_partition/set_partition` | notebook_workflow | [Native program](applications/optimization/set_partition/overview/main.py) | validated |
+| `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | [Native program](applications/optimization/variational_quantum_imaginary_time_evolution/overview/main.py) | validated |
+| `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | [Native program](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview/main.py) | validated |
+| `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | [Native program](applications/physical_systems/hhl_lanchester/overview/main.py) | validated |
+| `applications/physical_systems/ising_model/ising_model` | notebook_workflow | [Native program](applications/physical_systems/ising_model/overview/main.py) | validated |
+| `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | [Native program](applications/physical_systems/maxwell_equation/maxwell_2d_simulation/overview/main.py) | validated |
+| `applications/physical_systems/maxwell_equation/maxwell_utils` | python_unclassified | Pending | pending |
+| `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | [Native program](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/overview/main.py) | validated |
+| `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | [Native program](applications/plasma/vlasov_ampere/overview/main.py) | validated |
+| `applications/plasma/vlasov_ampere/vlasov_ampere_qiskit` | notebook_workflow | [Native program](applications/plasma/vlasov_ampere/vlasov_ampere_qiskit/overview/main.py) | validated |
+| `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/overview/main.py) | validated |
+| `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | [Native program](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/main.py) | validated |
+| `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/overview/main.py) | validated |
+| `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/overview/main.py) | validated |
+| `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission` | notebook_workflow | [Native program](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/main.py) | validated |
+| `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_winning_submission` | notebook_workflow | [Native program](community/hackathons/qinnovision_2025/advection_equation/winning/overview/main.py) | validated |
+| `community/Hackathons/iQuHack_2025/Challenge/classiq_iQuHack_2025_final` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/challenge_template/overview/main.py) | validated |
+| `community/Hackathons/iQuHack_2025/Challenge_solution/our_solution/classiq_iQuHack_2025_final_sol` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/gaussian_reference/overview/main.py) | validated |
+| `community/Hackathons/iQuHack_2025/Challenge_solution/winning_solution/classiq_iQuHack_2025_quantum_tree_sol` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/winning_gaussian/overview/main.py) | validated |
+| `community/Hackathons/iQuHack_2025/Workshop/WS_iQuHack_2025_final` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/workshop/overview/main.py) | validated |
+| `community/basic_examples/hw_aware_synthesis/hw_aware_synthesis` | notebook_workflow | [Native program](community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/main.py) | validated |
+| `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | [Native program](community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/main.py) | validated |
+| `community/basic_examples/superposition/superposition` | notebook_workflow | [Native program](community/basic_examples/superposition/main.py) | validated |
+| `community/basic_examples/vqe/vqe` | notebook_workflow | [Native program](community/basics/vqe/overview/main.py) | validated |
+| `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/main.py) | pending |
+| `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE` | notebook_workflow | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/overview/main.py) | validated |
+| `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py) | pending |
+| `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | [Native program](community/paper_implementation_project/bb84/bb84_implementation/overview/main.py) | validated |
+| `community/paper_implementation_project/block_encoding/checkerboard_BE_N8` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/checkerboard/main.py) | pending |
+| `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/laplacian_4x4/main.py) | pending |
+| `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | [Native program](community/paper_implementation_project/block_encoding/select_structures_be/overview/main.py) | validated |
+| `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/toeplitz/main.py) | pending |
+| `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/tridiagonal/main.py) | pending |
+| `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/overview/main.py) | validated |
+| `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Native program](community/paper_implementation_project/classical_shadows/main.py) | pending |
+| `community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding` | notebook_workflow | [Native program](community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/main.py) | validated |
+| `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/main.py) | validated |
+| `community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/main.py) | validated |
+| `community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression` | quantum_program | [Native program](functions/arithmetic/arithmetic_expression/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example` | notebook_workflow | [Native program](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_and/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_integer_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_invert/bitwise_invert_example/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_or/bitwise_or_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_or/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_or/bitwise_or_integer_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_xor/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/comparator/comparator_example` | notebook_workflow | [Native program](functions/arithmetic/comparator/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/comparator/comparator_integer_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_integer_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/extremum/extremum_example` | notebook_workflow | [Native program](functions/arithmetic/extremum/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | [Native program](functions/arithmetic/extremum/maximum_float_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | [Native program](functions/arithmetic/extremum/maximum_integer_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | [Native program](functions/arithmetic/extremum/minimum_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | [Native program](functions/arithmetic/modular_exp/modular_exp_example/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | [Native program](functions/arithmetic/modulo/modulo_example/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | [Native program](functions/arithmetic/multiplication/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_float_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | [Native program](functions/arithmetic/negation/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | [Native program](functions/arithmetic/subtraction/overview/main.py) | validated |
+| `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |
+| `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | [Native program](functions/linear_pauli_rotations/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | [Native program](functions/qct_qst/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | [Native program](functions/qct_qst/qct_qst_type1/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | [Native program](functions/qct_qst/qct_qst_type2/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | [Native program](functions/qct_qst/qct_type2/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | [Native program](functions/qct_qst/qst_type2/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | [Native program](functions/qpe/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | [Native program](functions/qpe/qpe_flexible/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | [Native program](functions/qsvt/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_partial_uniform_state/overview/main.py) | validated |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | [Native program](functions/data_encoding/encode_in_angle/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | [Native program](functions/data_encoding/encode_on_bloch/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | [Native program](functions/data_encoding/variational_data_encoding/overview/main.py) | validated |
+| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | [Native program](functions/hamiltonian_evolution/qdrift/overview/main.py) | validated |
+| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | [Native program](functions/hamiltonian_evolution/suzuki_trotter/main.py) | validated |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Native program](functions/state_preparation/example_prepare_state/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/prepare_state_and_amplitudes` | notebook_workflow | [Native program](functions/state_preparation/prepare_state_and_amplitudes/main.py) | validated |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/CRX` | quantum_program | [Native program](functions/standard_gates/crx/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/CX` | quantum_program | [Native program](functions/standard_gates/cx/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE` | quantum_program | [Native program](functions/standard_gates/phase/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/R` | quantum_program | [Native program](functions/standard_gates/r/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZ` | quantum_program | [Native program](functions/standard_gates/rz/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ` | quantum_program | [Native program](functions/standard_gates/rzz/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP` | quantum_program | [Native program](functions/standard_gates/swap/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/U` | quantum_program | [Native program](functions/standard_gates/u/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/X` | quantum_program | [Native program](functions/standard_gates/x/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/standard_gates` | notebook_workflow | [Native program](functions/standard_gates/overview/main.py) | validated |
+| `functions/qmod_library_reference/qmod_core_library/unitary/unitary` | notebook_workflow | [Native program](functions/unitary/main.py) | validated |
+| `tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/main.py) | pending |
+| `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/main.py) | pending |
+| `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/main.py) | pending |
+| `tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk` | notebook_workflow | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/main.py) | validated |
+| `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | [Native program](tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview/main.py) | validated |
+| `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | [Native program](tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/main.py) | pending |
+| `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
+| `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
+| `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/overview/main.py) | validated |
+| `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | [Native program](tutorials/basics/grover_graph_coloring/overview/main.py) | validated |
+| `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | [Native program](tutorials/basics/mcx/overview/main.py) | validated |
+| `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/overview/main.py) | validated |
+| `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
+| `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/overview/main.py) | validated |
+| `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/overview/main.py) | validated |
+| `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py) | validated |
+| `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/main.py) | validated |
+| `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | [Native program](tutorials/basics/quantumwalk_complex_network/overview/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/overview/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part2/overview/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/overview/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial_part2/overview/main.py) | validated |
+| `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | validated |
+| `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | [Native program](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | [Native program](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
+| `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle` | notebook_workflow | [Native program](tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hardware_aware_mcx/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hhl/hhl_example/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | [Native program](tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/main.py) | validated |
+| `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/main.py) | validated |
+| `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/main.py) | validated |
+| `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/main.py) | validated |
+| `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/option_pricing_workshop/overview/main.py) | validated |
+| `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/main.py) | validated |
+| `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/main.py) | validated |
+| `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview/main.py) | validated |
+| `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/overview/main.py) | validated |
+| `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/overview/main.py) | validated |
+| `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/overview/main.py) | validated |

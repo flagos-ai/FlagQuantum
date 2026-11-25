@@ -1,0 +1,25 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "2d68118e7b2aae757f94fbca34606dc3e18cad9a",
+  "original_sha256": "3344cc4ee431a4bf496e3be9a08d3b996f970f73a5480b11a34ad47985e302e2",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "d94eda5f85fc90f7f8e0cb29206783b4506cbf8b6513f253d726dd9923d480c6"
+    },
+    {
+      "index": 6,
+      "sha256": "e57b416826216ea536e27d6216aeedb951f0610a0089d118a88c8cd49805a247"
+    },
+    {
+      "index": 8,
+      "sha256": "5a80c414064a20ac2902f4dd2329bd0b8ab3baaef438bcbee44846120e27945b"
+    }
+  ],
+  "scope": "Retain the complete arithmetic predicate and all eight coherent inputs. Compare depth-objective synthesis under both original 10- and 12-qubit budgets, named readout, resource summaries and 1000 seeded local samples. Resource summaries replace graphical circuit display; no identical-candidate or optimality claim.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.arithmetic_expressions.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain the complete arithmetic predicate and all eight coherent inputs. Compare depth-objective synthesis under both original 10- and 12-qubit budgets, named readout, resource summaries and 1000 seeded local samples. Resource summaries replace graphical circuit display; no identical-candidate or optimality claim."
+}

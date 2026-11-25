@@ -65,7 +65,7 @@ from ...core.operator_schema import (
     get_operator_schema,
     inverse_operator,
 )
-from ..pipeline import _WireLocalProgram
+from .canonicalization import _WireLocalProgram
 
 
 def _declared_partner(opcode: str) -> str | None:

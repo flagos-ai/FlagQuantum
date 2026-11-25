@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/rainbow_options/rainbow_options_integration_method.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "698afa2388b97aac99b64b83f0d7ba74af07473754b24242d44f08cda3ea8a9c",
+  "native_entrypoint": "examples.synthesis.applications.finance.rainbow_options.rainbow_options_integration_method.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_rainbow_integration.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain original input distributions, exact affine maximum, five-bit unsigned two-fraction score and reference, both branches, 32-value exponential distribution, comparison XOR, complete preparation/inverse/reflection and iteration count. A temporary source-zero conjunction expresses the full reflection as bounded predicates. Output remains indicator; dropped source/reference words remain physical environment. Independent rational-branch Circuit checks complete complex amplitudes, absolute phase and zero scratch. Native resource measurements remain separate from immutable original importer baselines; no complete Notebook or optimality claim."
+}

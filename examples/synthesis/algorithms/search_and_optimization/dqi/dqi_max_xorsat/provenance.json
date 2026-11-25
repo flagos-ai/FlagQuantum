@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/dqi/dqi_max_xorsat.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "fe304ca66cbc23e7628e0358cc7d101b76b59a06b34c50162dae997b93bd613e",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.dqi.dqi_max_xorsat.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_dqi.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Prepare symmetric weight-zero/one/two amplitudes directly, then retain GF(2) transform, parity signs, 22-entry coherent XOR decoder and final Hadamards. Source consumed binary/unary preparation storage is not allocated; no native free API claim. Fourth weight must remain zero. No Compiler or public API change."
+}

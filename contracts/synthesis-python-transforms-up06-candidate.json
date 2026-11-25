@@ -1,0 +1,14 @@
+{
+  "schema": "flagquantum.synthesis_python_transform_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "signatures": {
+    "qct_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "qst_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "qct_qst_type2": "(target: 'QNum | QArray[QBit]', selector: 'QBit', /) -> 'None'",
+    "qct_qst_type1": "(target: 'QNum | QArray[QBit]', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-PYTHON-TRANSFORMS-UP06.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

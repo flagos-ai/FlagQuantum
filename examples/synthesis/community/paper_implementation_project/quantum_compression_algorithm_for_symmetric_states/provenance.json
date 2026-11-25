@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "79c03c4b8dca7c5c37ae9cbb48d62b5f88e2e71d27441bc8c252eb9507576f62",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_compression_algorithm_for_symmetric_states.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_symmetric_compression.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve the three-qubit preparation, Y absolute phase and two sparse two-level matrices. Native checked phase and Y-rotation conjugation implement indexed controlled H; adjacent identical CXs at the basis-change/one-hot boundary cancel exactly. Controlled X reads a static array slice; all8 compression basis columns and the untouched original preparation match an independent Circuit. No importer or new Compiler operation."
+}

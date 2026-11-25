@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/cybersecurity/patching_management/patch_min_vertex_cover.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a2b851ead5727fe7c121c50ea7e91966e3c6d65368b3a98633d52b1a3c62b735",
+  "native_entrypoint": "examples.synthesis.applications.cybersecurity.patching_management.patch_min_vertex_cover.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_applications.py",
+  "scope": "Complete eight-bit three-layer patching quantum program. Simplify each squared binary complement using (1-b)**2=1-b; retain all eighteen edges and penalty 10. The sole struct field v.x is explicit native array v with unchanged logical order. Full Notebook optimizer remains pending.",
+  "native_semantic_adaptations": "Reuse existing checked native polynomial phase, numeric/array allocation and loop/evolution effects. Explicit native storage is not general qstruct, numeric-array or array-control support. All source coefficients, phase conventions and layers are retained. No source importer is used in user examples."
+}

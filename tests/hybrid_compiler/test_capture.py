@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import pytest
 
@@ -13,6 +13,15 @@ from flagquantum.compiler._hybrid import (
     capture_source,
     tensor_type,
     verify_program,
+)
+from flagquantum.compiler._hybrid.capture import (
+    HybridCaptureError as RetainedHybridCaptureError,
+)
+from flagquantum.compiler._hybrid.capture import (
+    capture_function as retained_capture_function,
+)
+from flagquantum.compiler._hybrid.capture import (
+    capture_source as retained_capture_source,
 )
 
 pytestmark = pytest.mark.unit
@@ -50,8 +59,11 @@ def operations(program: HybridProgram) -> Iterator[Operation]:
     yield from region_operations(program.body)
 
 
-def test_catalyst_style_control_flow_captures_without_catalyst_dependency() -> None:
-    program = capture_source(
+@pytest.mark.parametrize("capture", (capture_source, retained_capture_source))
+def test_catalyst_style_control_flow_captures_without_catalyst_dependency(
+    capture: Callable[..., HybridProgram],
+) -> None:
+    program = capture(
         CATALYST_STYLE_SOURCE,
         (WEIGHTS, DATA),
         filename="cost_program.py",
@@ -68,12 +80,15 @@ def test_catalyst_style_control_flow_captures_without_catalyst_dependency() -> N
     assert names[-2:] == ["quantum.expectation", "program.return"]
 
 
-def test_capture_function_reads_source_without_invoking_function() -> None:
+@pytest.mark.parametrize("capture", (capture_function, retained_capture_function))
+def test_capture_function_reads_source_without_invoking_function(
+    capture: Callable[..., HybridProgram],
+) -> None:
     def valid_but_not_executable(data):
         qp.AngleEmbedding(data, wires=range(4))  # noqa: F821
         return qp.expval(qp.PauliZ(0))  # noqa: F821
 
-    program = capture_function(valid_but_not_executable, (DATA,))
+    program = capture(valid_but_not_executable, (DATA,))
 
     assert program.name == "valid_but_not_executable"
     assert [operation.name for operation in program.body.blocks[0].operations] == [
@@ -211,3 +226,33 @@ def branch(weights, data):
     )
     else_block = branch.regions[1].blocks[0]
     assert else_block.operations[-1].operands[0] == else_block.arguments[0]
+
+
+@pytest.mark.parametrize("capture", (capture_source, retained_capture_source))
+@pytest.mark.parametrize(
+    ("body", "code", "column"),
+    (
+        ("value = data.item()", "tensor.host_conversion", 16),
+        ("while True: pass", "control.while", 8),
+        ("qp.RX(0.2, wires=[0, 1])", "quantum.wires", 25),
+    ),
+)
+def test_nested_capture_failure_preserves_source_position(
+    capture: Callable[..., HybridProgram], body: str, code: str, column: int
+) -> None:
+    source = (
+        "def invalid(data):\n"
+        "    for wire in range(2):\n"
+        f"        {body}\n"
+        "    return qp.expval(qp.PauliZ(0))\n"
+    )
+
+    with pytest.raises(RetainedHybridCaptureError) as caught:
+        capture(source, (DATA,), filename="nested.py", line_offset=20)
+
+    diagnostic = caught.value.diagnostic
+    assert isinstance(caught.value, HybridCaptureError)
+    assert diagnostic.code == code
+    assert diagnostic.location.filename == "nested.py"
+    assert diagnostic.location.line == 23
+    assert diagnostic.location.column == column

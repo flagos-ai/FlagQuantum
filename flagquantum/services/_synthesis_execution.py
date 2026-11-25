@@ -1,26 +1,30 @@
 """Private CS06-A checks over the existing sealed Runtime execution plan."""
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import MappingProxyType
 
 import torch
 
 from ..compiler import ResourceEstimate, estimate_resources
-from ..compiler._construction.constraints import CircuitLimits
+from ..compiler._construction.verification.constraints import CircuitLimits
 from ..compiler.basis_conversion import require_basis
 from ..compiler.layout import Layout, _routing_swap_phases, final_layout
+from ..compiler.pipeline import schedule_layers
 from ..compiler.topology.coupling import CouplingMap
 from ..core.ir import CircuitIR
 from ..core.operator_schema import get_operator_schema
 from ..core.runtime_config import RuntimeConfig
+from ..noise import amplitude_damping_channel
 from ..runtime.dynamic._conditions import instruction_is_dynamic
 from ..runtime.execution_plan import ExecutionPlan
 from ..runtime.execution_plan_contract import (
     canonical_json,
     plan_execution_program,
+    plan_program,
     plan_to_dict,
 )
+from ..runtime.mps_result import native_mps
 from ..runtime.result import ExecutionResult
 
 
@@ -53,7 +57,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     assert isinstance(fingerprints, Mapping)
     if (
         plan.analysis is None
-        or decision["mode"] != "statevector"
+        or decision["mode"] not in {"statevector", "density_matrix", "mps"}
         or plan.state_mode != decision["mode"]
         or decision["backend"] not in {"torch", "pytorch"}
         or decision["device"] != "cpu"
@@ -65,7 +69,10 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         or decision["target"] not in {"auto", "state"}
         or decision["allow_approximate"]
         or decision["allow_backend_fallback"]
-        or plan.noisy_execution_plan is not None
+        or (
+            decision["mode"] in {"statevector", "mps"}
+            and plan.noisy_execution_plan is not None
+        )
         or payload["extensions"]
     ):
         raise ExecutionContractError(
@@ -106,7 +113,55 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
                 "execution.layers",
                 "layer order or qubit summary differs from the canonical program",
             )
-    actual = plan_execution_program(plan)
+    if decision["mode"] == "density_matrix":
+        noisy = plan.noisy_execution_plan
+        if noisy is None or noisy.evolution != "exact_channel":
+            raise ExecutionContractError(
+                "execution.profile", "reset requires exact channel evolution"
+            )
+        actual = plan_program(plan)
+        scheduled = replace(
+            actual,
+            instructions=tuple(
+                gate for layer in schedule_layers(actual) for gate in layer
+            ),
+        )
+        applied = plan_execution_program(plan)
+        if (
+            scheduled.instructions
+            and scheduled.content_hash
+            != replace(applied, metadata=actual.metadata).content_hash
+        ):
+            raise ExecutionContractError(
+                "execution.layers", "reset schedule differs from the sealed sequence"
+            )
+    else:
+        actual = plan_execution_program(plan)
+    if decision["mode"] == "mps":
+        from ..runtime.planner.estimates import (
+            estimate_mps_bytes,
+            exact_basis_mps_bond,
+            exact_interval_mps_bond,
+        )
+
+        bounds = (
+            exact_basis_mps_bond(actual),
+            exact_interval_mps_bond(tuple(gate.wires for gate in actual.instructions)),
+        )
+        if not any(
+            bond is not None
+            and plan.state_bytes
+            == estimate_mps_bytes(
+                actual.n_wires,
+                max_bond=bond,
+                complex_bytes=16 if decision["precision"] == "complex128" else 8,
+            )
+            for bond in bounds
+        ):
+            raise ExecutionContractError(
+                "execution.profile",
+                "exact MPS requires a checked basis-product or independent-interval rank bound",
+            )
     # Runtime already recomputed this fingerprint from the sealed program. Keep
     # its authoritative layer reconstruction, without rebuilding the record again.
     if program_fingerprint != actual.content_hash:
@@ -125,7 +180,32 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
             "execution.profile",
             "this contract checks a full state, without output projections",
         )
+    expected_reset = (
+        amplitude_damping_channel(1.0, dtype=torch.complex128, device="cpu").kraus
+        if decision["mode"] == "density_matrix"
+        else ()
+    )
+    resets = 0
     for gate in actual.instructions:
+        if (
+            decision["mode"] == "density_matrix"
+            and gate.name == "amplitude_damping"
+            and len(gate.wires) == 1
+            and gate.params == {"gamma": 1.0}
+            and gate.metadata == {"is_channel": True}
+            and isinstance(gate.matrix, tuple)
+            and len(gate.matrix) == 2
+            and all(
+                isinstance(matrix, torch.Tensor) and torch.equal(matrix, expected)
+                for matrix, expected in zip(
+                    gate.matrix,
+                    expected_reset,
+                    strict=True,
+                )
+            )
+        ):
+            resets += 1
+            continue
         schema = get_operator_schema(gate.name)
         if (
             schema is None
@@ -137,6 +217,10 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
                 "execution.profile",
                 "require registered static unitaries with explicit gate semantics",
             )
+    if decision["mode"] == "density_matrix" and resets == 0:
+        raise ExecutionContractError(
+            "execution.profile", "density execution needs a checked full reset"
+        )
     return actual
 
 
@@ -284,6 +368,7 @@ class CheckedExecution:
     _identity: str
     _program_hash: str
     _controls_json: str
+    numeric_formats: tuple[tuple[str, bool, int], ...] = ()
 
     def _check(self, plan: ExecutionPlan) -> CircuitIR:
         program = _program(plan)
@@ -320,13 +405,36 @@ class CheckedExecution:
             if result.plan.precision == "complex128"
             else torch.complex64
         )
+        if result.plan.state_mode == "mps":
+            native = native_mps(result)
+            if (
+                native is None
+                or native.bsz != 1
+                or native.n_qubits != program.n_wires
+                or native.device.type != "cpu"
+                or native.dtype != expected_dtype
+                or native.truncation_records
+                or sum(t.numel() * t.element_size() for t in native.tensors)
+                > result.plan.state_bytes
+            ):
+                raise ExecutionContractError(
+                    "execution.result",
+                    "require the exact CPU MPS returned by the checked plan",
+                )
+            resources = estimate_resources(program)
+            _check_limits(self.limits, resources)
+            return resources
+        dimension = 1 << program.n_wires
+        valid_shapes = (
+            {(dimension, dimension), (1, dimension, dimension)}
+            if result.plan.state_mode == "density_matrix"
+            else {(dimension,), (1, dimension)}
+        )
         if (
             not isinstance(state, torch.Tensor)
             or state.device.type != "cpu"
             or state.dtype != expected_dtype
-            or state.ndim not in {1, 2}
-            or state.shape[-1] != 1 << program.n_wires
-            or state.numel() != 1 << program.n_wires
+            or tuple(state.shape) not in valid_shapes
         ):
             raise ExecutionContractError(
                 "execution.result",
@@ -361,6 +469,25 @@ def inspect_execution(
     declarations checked/projected through a replayed Compiler layout; source
     semantic ownership and workspace cleanup remain Compiler obligations.
     """
+    checked, _ = _inspect_execution_with_resources(
+        plan, limits=limits, basis=basis, coupling=coupling, registers=registers
+    )
+    return checked
+
+
+def _inspect_execution_with_resources(
+    plan: ExecutionPlan,
+    *,
+    limits: CircuitLimits = _UNBOUNDED_LIMITS,
+    basis: Iterable[str] | None = None,
+    coupling: CouplingMap | None = None,
+    registers: Mapping[str, Sequence[int]] | None = None,
+) -> tuple[CheckedExecution, ResourceEstimate]:
+    """Return this inspection's costs for the immediate construction caller.
+
+    Nothing is cached on the checked plan: later resource access and execution
+    still revalidate the mutable payload and actual instruction layers.
+    """
     if not isinstance(limits, CircuitLimits):
         raise TypeError("limits must be CircuitLimits")
     program = _program(plan)
@@ -390,8 +517,9 @@ def inspect_execution(
                 )
             seen.add(q)
         mapped[name] = tuple(layout.physical_of(q) for q in ports)
-    _check_limits(limits, estimate_resources(program))
-    return CheckedExecution(
+    resources = estimate_resources(program)
+    _check_limits(limits, resources)
+    checked = CheckedExecution(
         plan,
         limits,
         gates,
@@ -401,3 +529,4 @@ def inspect_execution(
         program.content_hash,
         _controls(plan, program),
     )
+    return checked, resources

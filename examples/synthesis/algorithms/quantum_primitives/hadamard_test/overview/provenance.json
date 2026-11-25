@@ -1,0 +1,33 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/hadamard_test/hadamard_test.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a67f1f97af01a4386d2a7e3a62716f7a418c2d7a7bc48928e366d2344609fdba",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "sha256": "e3942a592c6e7018b7f5bd5fdf8f25aafe85f1f7ccf2642634b11f38565acf59"
+    },
+    {
+      "index": 10,
+      "sha256": "7196f6d68d3167218efc75d06c3a90f130cdc4be1e0d50fd77fd4419edd64bd9"
+    },
+    {
+      "index": 12,
+      "sha256": "ad6e995aee019957453d4e29ad33caa90bcfa9f2940d658b9d8be7fbde585ba7"
+    },
+    {
+      "index": 19,
+      "sha256": "5a78c50fae199a7edf6c42d858afd9e571e626f6afdaa53ede4e3d216fcab60f"
+    },
+    {
+      "index": 21,
+      "sha256": "43ab3bcf85252ae174f827bd11bd66ee1b0b19069a0327dd36c7c885e7608f91"
+    }
+  ],
+  "scope": "Retain four data qubits, helper composition with within/apply, controlled QFT and the original 100000 shots. Only the ancilla is public; drop retains an entangled environment. Independent validation checks the entire joint state and reduced purity, not zero hidden work.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.hadamard_test.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_interference_notebooks.py",
+  "native_notebook": "examples/synthesis/algorithms/quantum_primitives/hadamard_test/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain four data qubits, helper composition with within/apply, controlled QFT and the original 100000 shots. Only the ancilla is public; drop retains an entangled environment. Independent validation checks the entire joint state and reduced purity, not zero hidden work.",
+  "git_blob_sha1": "342073dbd4e1719d38b7db12f2c7ad56b2966033"
+}

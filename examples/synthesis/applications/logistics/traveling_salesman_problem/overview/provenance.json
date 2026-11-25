@@ -1,0 +1,98 @@
+{
+  "upstream_path": "applications/logistics/traveling_salesman_problem/traveling_salesman_problem.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "000f7141a492006abfbadb483d79b7e90853802a",
+  "original_sha256": "e8c58637c6931a8aefe38d42e67ef49334b20b0bb5509d5c1cc5df3a3b4fd329",
+  "scope": "All 17 source stages, four cities, 16 assignment bits, eight QAOA layers, 150 evaluations of the lower 60 percent sampled cost, and 2,048 draws for each optimization, final and uniform histogram.",
+  "native_semantic_adaptations": "Use native COBYLA and the grouped pi-ramp schedule from the available Classiq SDK reference. Preserve the last evaluated native binding and use independent local seeds for optimized and uniform readout. Enumerate the 24 feasible open paths as the classical reference. Report any invalid observed assignment as sampled.",
+  "native_entrypoint": "examples.synthesis.applications.logistics.traveling_salesman_problem.overview.main",
+  "native_notebook": "examples/synthesis/applications/logistics/traveling_salesman_problem/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_traveling_salesman_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "6b6728e380c86d4e0796c963d0f2213ff719df188e53b5ab2e2c780f23b9cf23"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "e78043ec862bcf78a0efc868d82c0d02cd836161ac8e2577cd571717796b80c4"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "sha256": "f2e0f1b34aa7742c14f8563898c048e98b971a5fcf204ee09d5cd9aff285e5d2"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "sha256": "0a32c13ec5a6c41d1f6eb33d4983cc39bef9f878904280213389e6aa4cd614cf"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "sha256": "8b381ed7d10ca79486504d6d66549afdfe169d181c0c881bebca92365bc85d4b"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "7fccaf06c0b8da4e4b83c4be9d05d183a6eca3b8ac63fba2f87dcc24e609ffab"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "6461e8406a33eb83ba3588c6917bc0e796227ca9900adc410a868f15c1f3a81b"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 10,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 11,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 12,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 13,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 14,
+      "sha256": "b4bad2ad11767636435b19f6aac5d52aed9705ec857286a69d1db6735c3a2b6a"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 15,
+      "sha256": "9608e766ca8fa6b68f5acd7b4e9479751522aeaef74dad7412dc9da0ff9af9c1"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "sha256": "aa7424788d01cb7a6ef2f2607df03e9f298783c95e049c512127624d2c5eeecf"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 17,
+      "sha256": "5cc6944c0276445942b3036dce4439108d0ddc24c0aec7dbd91c240d7959a8e6"
+    }
+  ]
+}

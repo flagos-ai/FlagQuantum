@@ -1,0 +1,21 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "314d959527c16e357ab2e3dffc9169c4b8dfcf5f368be27abd5aa88f226f968f",
+  "git_blob_sha1": "293d7b132a63de9134a0525d6510f326422e18ac",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "aa087e4f66693f3179c08d6a8ac69f853e6201b4e41c16d821c375f38832753d"
+    },
+    {
+      "index": 6,
+      "sha256": "0000786b6e20ab2e5f0eab94e59cd41543f2b222c2b5c1f7198068d4019c3588"
+    }
+  ],
+  "scope": "Retain evolution time 22, approximation target 1e-7, all 100 points from zero to one and both approximation/error panels. This is a classical polynomial workflow, not a quantum circuit. Native Torch cosine projection and Clenshaw evaluation replace external polynomial helpers. A conservative Bernstein-ellipse bound selects degree 49; the Classiq degree-selection policy is not reproduced. The exact-coefficient truncation bound and measured floating-point/quadrature error are reported separately. A 75-digit independent Decimal Bessel series checks coefficients, and 4097 points check actual error on [-1,1].",
+  "native_semantic_adaptations": "Retain evolution time 22, approximation target 1e-7, all 100 points from zero to one and both approximation/error panels. This is a classical polynomial workflow, not a quantum circuit. Native Torch cosine projection and Clenshaw evaluation replace external polynomial helpers. A conservative Bernstein-ellipse bound selects degree 49; the Classiq degree-selection policy is not reproduced. The exact-coefficient truncation bound and measured floating-point/quadrature error are reported separately. A 75-digit independent Decimal Bessel series checks coefficients, and 4097 points check actual error on [-1,1].",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.jacobi_anger_expansion.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vqe_grover_jacobi_notebooks.py"
+}

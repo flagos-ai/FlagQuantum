@@ -9,18 +9,24 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_register_cleanup import cleanup_composition, flag_value, less
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.selection import select_register_program
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
+from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from tests.integration.test_construction_register_execution import _check
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers, pressure
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_compiler_examples.register_cleanup.main import (
+    cleanup_composition,
+    flag_value,
+    less,
+)
 
 pytestmark = pytest.mark.integration
 MEMORY = 64 * 1024**2

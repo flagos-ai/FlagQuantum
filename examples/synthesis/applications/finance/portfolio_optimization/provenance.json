@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/portfolio_optimization/portfolio_optimization.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "481f4455d4045cd5c3f6f3edc7f866bb29a67c18b2d31e90968c0768fc4167a5",
+  "native_entrypoint": "examples.synthesis.applications.finance.portfolio_optimization.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_portfolio.py",
+  "scope": "Complete 12-bit three-layer quantum program with all covariance and return terms; two nonzero parameter vectors, both width/depth objectives, full source/native/independent Circuit amplitudes and resource rejection checks. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Preserve negative cost phase, gamma-first/beta-last parameters, three 3-bit asset words and slack weights 1,2,3. Existing QNum phase arithmetic, static loops and Pauli-X word evolution are reused. Explicit native fields replace qstruct storage without adding general numeric-array storage. Independent covariance and affine-square Circuit factors use at most six bits; all classical cost inputs are exhaustively checked. User examples never load Qmod."
+}

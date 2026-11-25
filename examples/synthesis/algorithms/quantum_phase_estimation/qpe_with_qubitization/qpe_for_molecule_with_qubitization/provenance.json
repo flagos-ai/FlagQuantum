@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "3bc5118a82cd3bc66df0c01f31ee489e8acecdfa4ce8ea96344972fb86988943",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_phase_estimation.qpe_with_qubitization.qpe_for_molecule_with_qubitization.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_molecular_walk.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve all sixteen selector leaves, the duplicate unused unary-tree leaf, source probabilities and coefficient signs, four data bits, five signed fractional phase bits, complete conjugated walk-power sequence and private data environment. Share selectors carrying the same Pauli on each data bit; prebind exact static powers. Reuse identical unsigned expression definitions without sharing storage or deleting dynamic effects. Independent tensor-product selector, probability-preparation extension, dense reflection and inverse Fourier validate complete amplitudes and absolute phase. Native resources remain separate from frozen importer baselines."
+}

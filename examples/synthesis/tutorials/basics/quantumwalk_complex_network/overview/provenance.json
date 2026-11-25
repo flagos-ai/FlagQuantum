@@ -1,0 +1,65 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0f51c5acaebfc7a88068520c92deb911a76c187992110f9d8c59d2a32e5e4e66",
+  "git_blob_sha1": "83e25be15a133ff6735b727585d77ea7c93b0d22",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "eed5dea7371d80be300ad96c47c32e2f26e3432e072de5d4c16881c5373ce487"
+    },
+    {
+      "index": 5,
+      "sha256": "ce73a874d33b1b36e0db6dbb84c0e588314e96cbaaa07b4574002a05d4ba4709"
+    },
+    {
+      "index": 7,
+      "sha256": "27eb980b62cfbe8964c140a0413ca07754dc9251ffb42ee958b98e68be480c29"
+    },
+    {
+      "index": 9,
+      "sha256": "cce56fcadec943b54ed68403f36d6633021514ab9b4d2f3fdebaae17e0e9c934"
+    },
+    {
+      "index": 11,
+      "sha256": "79426b34c3c82e5272a87758362170c1bcb672389c9cc1c2876b7ee955886a97"
+    },
+    {
+      "index": 13,
+      "sha256": "8b5e5f03f37ecbad66b46d10b97def98c425c68ad66dd051f3e727ab14489e32"
+    },
+    {
+      "index": 15,
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 17,
+      "sha256": "d760df8c5be2a71209b920fe22638779f0c28392296826a9859707ecf4ebedee"
+    },
+    {
+      "index": 20,
+      "sha256": "89e0fb3d12f12d089b56ad6925bc447049f2376ebe70a2653a8800f8645ff973"
+    },
+    {
+      "index": 22,
+      "sha256": "2d1464009cffb31df1c54a4e01511479942044810e08b3bf5ae81f4989e0fa67"
+    },
+    {
+      "index": 25,
+      "sha256": "abcaf813638fd8824b7a347c09bebe21bcc1e11a6de27d6cdd74709ea674c9cc"
+    },
+    {
+      "index": 28,
+      "sha256": "9e8866325a211dd894d5aa32349d1a1ee07163385e987d947b8ad29993484dc4"
+    },
+    {
+      "index": 30,
+      "sha256": "f763df823391d2aca3ba84ef322685e37169b5f036173da17b004d5cd7212c96"
+    }
+  ],
+  "scope": "Retain the seed312 four-node Watts-Strogatz graph,neighbor probabilities,three native walk rounds,position sampling and graph/sample plots. Retain all historical four/eight-node Torino counts and ideal arrays for times1..4,plus the original18by4inch five-panel eight-node comparison. Explicit1000localshots/seed17 replace unspecified cloud sampling. Historical data are labeled archived;no live hardware execution is claimed. Correct the final source plot swapped hardware-aware/agnostic aliases by following the data declarations. Optional commented credential/hardware calls remain documented prerequisites,not a completed hardware path. Dropped coin remains a quantum environment,not clean work.",
+  "native_semantic_adaptations": "Retain the seed312 four-node Watts-Strogatz graph,neighbor probabilities,three native walk rounds,position sampling and graph/sample plots. Retain all historical four/eight-node Torino counts and ideal arrays for times1..4,plus the original18by4inch five-panel eight-node comparison. Explicit1000localshots/seed17 replace unspecified cloud sampling. Historical data are labeled archived;no live hardware execution is claimed. Correct the final source plot swapped hardware-aware/agnostic aliases by following the data declarations. Optional commented credential/hardware calls remain documented prerequisites,not a completed hardware path. Dropped coin remains a quantum environment,not clean work.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantumwalk_complex_network.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantumwalk_complex_network/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_network_walk_notebook.py"
+}

@@ -47,8 +47,8 @@ is limited to gates that are their own inverse, which leaves the larger family o
 second `rz` rather than the first. This is the rule Qiskit's
 `CommutativeCancellation` applies through the same analysis. Nothing new is
 assumed: the group is the same group, the proof is the same proof, and the sum is
-the same `pipeline._add_values` the adjacent merge already performs, with the same
-`pipeline._is_zero` deciding that a vanished sum is a deletion. What changes is
+the same `canonicalization._add_values` the adjacent merge already performs, with the same
+`canonicalization._is_zero` deciding that a vanished sum is a deletion. What changes is
 only *where* the merged rotation may be written, which is the placement the
 commuting gap licenses.
 """
@@ -62,7 +62,7 @@ from typing import Any, cast
 
 from ...core.ir import CircuitIR, Instruction
 from ...core.operator_schema import canonical_opcode
-from ..pipeline import (
+from .canonicalization import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
     _add_values,
@@ -99,6 +99,12 @@ def _is_cancellable(
 
     return (
         instruction.matrix is None
+        # A routed SWAP decomposes to three marked CX leaves. Retain the
+        # complete witness until a rewrite can update its layout proof.
+        and not (
+            instruction.name == "cx"
+            and instruction.metadata.get("routing_phase") is not None
+        )
         and canonical_opcode(instruction.name) in self_inverse
         and not instruction.params
     )

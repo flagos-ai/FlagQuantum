@@ -1,0 +1,86 @@
+{
+  "original_result_retained": true,
+  "cases": [
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_tensor_bytes_land_on_the_wire_that_owns_them",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_an_unowned_wire_reports_no_bytes",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_bond_dimensions_land_on_the_bond_that_owns_them",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_an_unowned_site_reports_no_bond",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_an_unbounded_threshold_does_not_rebalance",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_mps_distribution_accounting.test_canonicalization_reports_each_counter_in_its_own_column",
+      "kind": "error",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_an_automatic_master_port_is_free_when_it_is_handed_over",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_preflight_asks_every_question_it_is_meant_to_ask",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_preflight_checks_each_device_a_lane_pinned_on_both_nodes",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_preflight_refuses_a_pinned_device_that_is_not_usable[answer0-1: 1 process(es) 35856]",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_preflight_refuses_a_pinned_device_that_is_not_usable[answer1-absent]",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_multinode_launch_plan.test_preflight_refuses_when_the_interface_is_missing_on_the_launch_host",
+      "kind": "failure",
+      "category": "sandbox_network_restriction"
+    },
+    {
+      "test": "tests.unit.test_training_compilation.test_checkpoint_v2_recovers_dynamic_detached_bindings[False-SGD]",
+      "kind": "failure",
+      "category": "qualified_writer_version_assertion_corrected_and_retested"
+    },
+    {
+      "test": "tests.unit.test_training_compilation.test_checkpoint_v2_recovers_dynamic_detached_bindings[False-Adam]",
+      "kind": "failure",
+      "category": "qualified_writer_version_assertion_corrected_and_retested"
+    },
+    {
+      "test": "tests.unit.test_training_compilation.test_checkpoint_v2_recovers_dynamic_detached_bindings[True-SGD]",
+      "kind": "failure",
+      "category": "qualified_writer_version_assertion_corrected_and_retested"
+    },
+    {
+      "test": "tests.unit.test_training_compilation.test_checkpoint_v2_recovers_dynamic_detached_bindings[True-Adam]",
+      "kind": "failure",
+      "category": "qualified_writer_version_assertion_corrected_and_retested"
+    }
+  ],
+  "consumer_recheck": "consumers-recheck.xml.gz"
+}

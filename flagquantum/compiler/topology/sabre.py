@@ -1,3 +1,15 @@
+# Portions adapted from Qiskit 2.6.2, crates/transpiler/src/passes/sabre/route.rs.
+# (C) Copyright IBM 2024
+# Portions adapted from Cirq 1.7.0, transformers/routing/route_circuit_cqc.py.
+# Copyright 2022 The Cirq Developers
+# Licensed under the Apache License, Version 2.0. See the repository LICENSE or
+# https://www.apache.org/licenses/LICENSE-2.0.
+# Modified for FlagQuantum: incidence-indexed native IR scoring, deterministic
+# ties, repeated-layout detection, bounded rollback and shortest-path progress.
+# Sources: docs/development/COMPILER_UPSTREAM_REUSE.md and
+# docs/development/COMPILER_SABRE_RELATIVE_SCORING.md.
+
+
 """SABRE-style lookahead SWAP planning for one undirected coupling topology.
 
 The planner implements the SABRE heuristic (Li, Ding, and Xie, "Tackling the
@@ -10,8 +22,11 @@ term over a bounded extended layer.
 The plan is one persistent layout for the whole circuit, so a materializer
 replays the forward SWAPs in reverse at the end to restore the logical output
 layout. The planner is deterministic: ties between equal-cost SWAP candidates
-resolve to the lexicographically smallest physical pair, so the same program and
-coupling map always produce the same plan without a seed.
+first use the lexicographically smallest physical pair. Three additional fixed-seed
+trials explore equal-cost choices and one layer-lookahead trial considers disjoint
+SWAP pairs, retaining a trial only when its complete route,
+including final restoration, uses fewer SWAPs. The same input always produces the
+same result without a user seed.
 
 Unlike the shortest-path strategies, this planner moves the layout before an
 operation rather than immediately before it, which is what makes it effective on
@@ -47,15 +62,18 @@ re-read nor re-written stays free to move past an operation on other qubits.
 from __future__ import annotations
 
 import math
+import random
 from collections import deque
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ...core.ir import CircuitIR, Instruction
 from ..optimization.ordering_barrier import is_ordering_barrier
+from ._layer_lookahead import choose_layer_swaps
 
 if TYPE_CHECKING:
-    from ..routing import CouplingMap
+    from .routing import CouplingMap
 
 # SABRE defaults. The extended layer is bounded so planning stays linear in the
 # circuit size, and the lookahead weight keeps the front layer dominant.
@@ -63,10 +81,9 @@ LOOKAHEAD_DECAY = 0.9
 LOOKAHEAD_EXTENDED_SIZE = 20
 LOOKAHEAD_WEIGHT = 0.5
 
-# A SWAP that executes no front-layer operation is only useful if it shortens
-# some blocked front-layer distance. On a connected topology of N qubits a useful
-# SWAP always exists within the graph diameter, so this many consecutive
-# stalled SWAPs means the front layer cannot be unblocked.
+# Bound speculative work between executed instructions. A heuristic can cycle on
+# a connected graph; reaching this budget triggers guaranteed shortest-path
+# progress rather than misclassifying the circuit as unroutable.
 STALLED_SWAP_LIMIT_PER_WIRE = 4
 
 # The layout search reroutes the reversed program until the swap count stops
@@ -188,7 +205,7 @@ def _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:
     if coupling.n_qubits == n_wires:
         return coupling
     # ``routing`` imports this module, so the value type is imported here.
-    from ..routing import CouplingMap as _CouplingMap
+    from .routing import CouplingMap as _CouplingMap
 
     return _CouplingMap(
         n_wires,
@@ -218,6 +235,82 @@ def _shifted_distance(
     return distances[first][second]
 
 
+def _relative_score_swap(
+    candidates: set[tuple[int, int]],
+    qubit_pairs: tuple[tuple[int, ...], ...],
+    front: list[int],
+    extended: list[int],
+    layout: list[int],
+    distances: tuple[tuple[float, ...], ...],
+    *,
+    tie_rng: random.Random | None = None,
+) -> tuple[int, int] | None:
+    """Score only interactions incident on either endpoint of a proposed SWAP."""
+
+    def absolute_score(edge: tuple[int, int]) -> float:
+        left, right = edge
+
+        def shifted(index: int) -> float:
+            return _shifted_distance(qubit_pairs[index], left, right, layout, distances)
+
+        score = sum(shifted(index) for index in front) / len(front)
+        if extended:
+            lookahead = 0.0
+            weight = 1.0
+            for index in extended:
+                lookahead += weight * shifted(index)
+                weight *= LOOKAHEAD_DECAY
+            score += LOOKAHEAD_WEIGHT * lookahead / len(extended)
+        return score
+
+    ordered = sorted(candidates)
+    if tie_rng is not None:
+        tie_rng.shuffle(ordered)
+    if not ordered:
+        return None
+    terms: list[tuple[int, int, float]] = []
+    incidence: list[list[tuple[int, float]]] = [[] for _ in layout]
+    for indices, scale in (
+        (front, 1.0 / len(front)),
+        (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),
+    ):
+        weight = 1.0
+        for index in indices:
+            first, second = (layout[wire] for wire in qubit_pairs[index])
+            coefficient = scale * weight
+            terms.append((first, second, coefficient))
+            if first != second:
+                incidence[first].append((second, coefficient))
+                incidence[second].append((first, coefficient))
+            if indices is extended:
+                weight *= LOOKAHEAD_DECAY
+    # All candidates share the omitted current-layout score. Near a rounding
+    # tie, replay the original absolute arithmetic to preserve its tie behavior.
+    magnitude = math.fsum(weight * distances[a][b] for a, b, weight in terms)
+    tie_tolerance = 4 * len(terms) * math.ulp(max(1.0, magnitude))
+    best: tuple[int, int] | None = None
+    best_score = 0.0
+    for left, right in ordered:
+        changes = []
+        # Coupling distances are symmetric. An interaction touching both
+        # endpoints keeps its distance; every other incident term changes only
+        # its moved endpoint. Preserve one contribution per source term.
+        for moved, destination in ((left, right), (right, left)):
+            before, after = distances[moved], distances[destination]
+            for other, coefficient in incidence[moved]:
+                if other != destination:
+                    changes.append(coefficient * (after[other] - before[other]))
+        score = math.fsum(changes)
+        if best is None:
+            best, best_score = (left, right), score
+        elif abs(score - best_score) <= tie_tolerance:
+            if absolute_score((left, right)) < absolute_score(best):
+                best, best_score = (left, right), score
+        elif score < best_score:
+            best, best_score = (left, right), score
+    return best
+
+
 def plan_sabre_swaps(
     program: CircuitIR,
     coupling: CouplingMap,
@@ -242,9 +335,132 @@ def plan_sabre_swaps(
             ``initial_layout`` is not a permutation of the circuit qubits, if a
             two-qubit operation is connected on the device only through qubits the
             circuit does not own, if an instruction states its classical condition
-            in a malformed or ambiguous way, or if the front layer cannot be
-            unblocked within the stalled-SWAP limit.
+            in a malformed or ambiguous way.
     """
+
+    baseline = _plan_sabre_trial(program, coupling, initial_layout=initial_layout)
+    if baseline is None:
+        raise RuntimeError("unbounded SABRE trial did not produce a plan")
+    return _select_sabre_trials(program, coupling, baseline)
+
+
+def _select_sabre_trials(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    baseline: SabrePlan,
+    *,
+    cost: Callable[[SabrePlan], int] | None = None,
+) -> SabrePlan:
+    """Retain the single-trial route unless a bounded trial is strictly cheaper."""
+    if not baseline.swaps:
+        return baseline
+    return min(
+        _sabre_trial_costs(program, coupling, baseline, cost=cost),
+        key=lambda item: item[1],
+    )[0]
+
+
+def _sabre_trial_costs(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    baseline: SabrePlan,
+    *,
+    cost: Callable[[SabrePlan], int] | None = None,
+) -> Iterator[tuple[SabrePlan, int]]:
+    """Yield completed trials once, preserving incumbent-based pruning and ties.
+
+    Consumers may inspect alternative plans without repeating search. A pruned
+    trial is absent, so this is not an enumeration of all equal-cost routes.
+    Dependencies and plans remain owned by this invocation.
+    """
+    score = (
+        cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
+    )
+    best_cost = score(baseline)
+    yield baseline, best_cost
+    if not baseline.swaps:
+        return
+    dependencies = _build_sabre_dependencies(program.instructions)
+    for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):
+        candidate = _plan_sabre_trial(
+            program,
+            coupling,
+            initial_layout=baseline.initial_logical_to_physical,
+            tie_rng=random.Random(seed) if seed is not None else None,
+            committed_swap_limit=best_cost,
+            layer_lookahead=use_layers,
+            _dependencies=dependencies,
+        )
+        if candidate is not None:
+            candidate_cost = score(candidate)
+            if candidate_cost < best_cost:
+                best_cost = candidate_cost
+            yield candidate, candidate_cost
+
+
+def _build_sabre_dependencies(
+    instructions: tuple[Instruction, ...],
+) -> tuple[list[list[int]], tuple[int, ...]]:
+    """Build read-only successors and initial indegrees for one source program."""
+    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
+    # share a predecessor still reaches zero pending predecessors.
+    successors: list[list[int]] = [[] for _ in range(len(instructions))]
+    pending = [0] * len(instructions)
+    last_on_wire: dict[int, int] = {}
+    for index, instruction in enumerate(instructions):
+        wire_pair = instruction.wires
+        for wire in wire_pair:
+            previous = last_on_wire.get(wire)
+            if previous is not None:
+                successors[previous].append(index)
+                pending[index] += 1
+            last_on_wire[wire] = index
+
+    # Classical order is order that no qubit records. Per bit, a read follows the
+    # write it observes, and a write follows every read it would invalidate and
+    # the earlier write whose value it replaces. A bit no measurement ever writes
+    # contributes no edge, so a program without classical state keeps the
+    # qubit-only graph it had. Processing in program order keeps every edge
+    # forward, so the graph stays acyclic and the front layer still empties on
+    # every program.
+    last_writer: dict[int, int] = {}
+    # Readers on independent qubits have no quantum edge ordering them; keeping
+    # only the most recent reader would let a write overtake an earlier reader.
+    readers_since_write: dict[int, list[int]] = {}
+    for index, instruction in enumerate(instructions):
+        written, read = _classical_accesses(instruction)
+        for bit in read:
+            producer = last_writer.get(bit)
+            if producer is not None:
+                successors[producer].append(index)
+                pending[index] += 1
+        if written is not None:
+            predecessors = (
+                last_writer.get(written),
+                *readers_since_write.pop(written, ()),
+            )
+            for predecessor in predecessors:
+                if predecessor is not None:
+                    successors[predecessor].append(index)
+                    pending[index] += 1
+            last_writer[written] = index
+        for bit in read:
+            readers_since_write.setdefault(bit, []).append(index)
+
+    return successors, tuple(pending)
+
+
+def _plan_sabre_trial(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    *,
+    initial_layout: tuple[int, ...] | None = None,
+    tie_rng: random.Random | None = None,
+    committed_swap_limit: int | None = None,
+    layer_lookahead: bool = False,
+    _dependencies: tuple[list[list[int]], tuple[int, ...]] | None = None,
+) -> SabrePlan | None:
+    """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
 
     n_wires = program.n_wires
     if coupling.n_qubits < n_wires:
@@ -306,44 +522,13 @@ def plan_sabre_swaps(
             f"{wire_pair[1]} of two-wire instruction {index}"
         )
 
-    # One edge per (instruction, qubit) pair, so an instruction whose two qubits
-    # share a predecessor still reaches zero pending predecessors.
-    successors: list[list[int]] = [[] for _ in range(count)]
-    pending = [0] * count
-    last_on_wire: dict[int, int] = {}
-    for index, wire_pair in enumerate(wires):
-        for wire in wire_pair:
-            previous = last_on_wire.get(wire)
-            if previous is not None:
-                successors[previous].append(index)
-                pending[index] += 1
-            last_on_wire[wire] = index
-
-    # Classical order is order that no qubit records. Per bit, a read follows the
-    # write it observes, and a write follows both the read it would invalidate and
-    # the earlier write whose value it replaces. A bit no measurement ever writes
-    # contributes no edge, so a program without classical state keeps the
-    # qubit-only graph it had. Processing in program order keeps every edge
-    # forward, so the graph stays acyclic and the front layer still empties on
-    # every program.
-    last_writer: dict[int, int] = {}
-    last_reader: dict[int, int] = {}
-    for index, instruction in enumerate(instructions):
-        written, read = _classical_accesses(instruction)
-        for bit in read:
-            producer = last_writer.get(bit)
-            if producer is not None:
-                successors[producer].append(index)
-                pending[index] += 1
-        if written is not None:
-            predecessors = (last_writer.get(written), last_reader.pop(written, None))
-            for predecessor in predecessors:
-                if predecessor is not None:
-                    successors[predecessor].append(index)
-                    pending[index] += 1
-            last_writer[written] = index
-        for bit in read:
-            last_reader[bit] = index
+    successors, initial_pending = (
+        _build_sabre_dependencies(instructions)
+        if _dependencies is None
+        else _dependencies
+    )
+    # Successors are read-only; each trial consumes its own remaining indegrees.
+    pending = list(initial_pending)
 
     logical_to_physical = list(placement)
     physical_to_logical = [0] * n_wires
@@ -357,6 +542,25 @@ def plan_sabre_swaps(
     front = [index for index in range(count) if pending[index] == 0]
     executed = 0
     stalled = 0
+    progress_swap_start = 0
+    seen_layouts: set[tuple[int, ...]] = set()
+    frontier_lookahead: list[int] | None = None
+
+    def exchange(left: int, right: int) -> None:
+        left_logical = physical_to_logical[left]
+        right_logical = physical_to_logical[right]
+        physical_to_logical[left], physical_to_logical[right] = (
+            right_logical,
+            left_logical,
+        )
+        logical_to_physical[left_logical] = right
+        logical_to_physical[right_logical] = left
+
+    def record_swap(left: int, right: int, anchor: int) -> None:
+        exchange(left, right)
+        swaps.append((left, right))
+        swap_placements.append(executed)
+        swap_anchors.append(anchor)
 
     def separation(index: int) -> float:
         left = logical_to_physical[wires[index][0]]
@@ -365,7 +569,11 @@ def plan_sabre_swaps(
 
     def extended_layer(blocked_front: list[int]) -> list[int]:
         """Return blocked operations reachable from the front, in BFS order."""
-
+        nonlocal frontier_lookahead
+        # SWAPs change placement, not dependency reachability. Rebuild only when
+        # a source instruction executes and changes the frontier.
+        if frontier_lookahead is not None:
+            return frontier_lookahead
         extended: list[int] = []
         seen = set(front)
         queue: deque[int] = deque()
@@ -382,6 +590,7 @@ def plan_sabre_swaps(
                 if successor not in seen:
                     seen.add(successor)
                     queue.append(successor)
+        frontier_lookahead = extended
         return extended
 
     def best_swap(blocked_front: list[int]) -> tuple[int, int] | None:
@@ -399,11 +608,24 @@ def plan_sabre_swaps(
                     )
         if not candidates:
             return None
+        if n_wires > 12:
+            return _relative_score_swap(
+                candidates,
+                wires,
+                blocked_front,
+                extended_layer(blocked_front),
+                logical_to_physical,
+                distances,
+                tie_rng=tie_rng,
+            )
+        # Preserve the lower-overhead full scoring path on small devices.
         extended = extended_layer(blocked_front)
         best: tuple[int, int] | None = None
         best_score = 0.0
-        # Sorted iteration makes an equal-cost tie deterministic.
-        for left, right in sorted(candidates):
+        ordered = sorted(candidates)
+        if tie_rng is not None:
+            tie_rng.shuffle(ordered)
+        for left, right in ordered:
             front_total = 0.0
             for index in blocked_front:
                 front_total += _shifted_distance(
@@ -426,10 +648,19 @@ def plan_sabre_swaps(
 
     stalled_limit = STALLED_SWAP_LIMIT_PER_WIRE * n_wires
     while front:
+        # A speculative suffix may still be rolled back by progress recovery.
+        # Only the prefix committed by an executed instruction is a lower bound
+        # on the final cost; using len(swaps) here would incorrectly prune it.
+        if (
+            committed_swap_limit is not None
+            and progress_swap_start >= committed_swap_limit
+        ):
+            return None
         executable = [
             index for index in front if not blocks[index] or separation(index) == 1
         ]
         if executable:
+            frontier_lookahead = None
             for index in executable:
                 front.remove(index)
                 placements[index] = tuple(
@@ -442,9 +673,63 @@ def plan_sabre_swaps(
                     if pending[successor] == 0:
                         front.append(successor)
             stalled = 0
+            progress_swap_start = len(swaps)
+            seen_layouts.clear()
             continue
 
         blocked_front = [index for index in front if blocks[index]]
+        layout = tuple(logical_to_physical)
+        if layout in seen_layouts or stalled >= stalled_limit:
+            # Qiskit's release valve undoes speculation since the last routed
+            # instruction. No source instruction has executed in this suffix,
+            # so removing it preserves both semantics and attribution.
+            for left, right in reversed(swaps[progress_swap_start:]):
+                exchange(left, right)
+            del swaps[progress_swap_start:]
+            del swap_placements[progress_swap_start:]
+            del swap_anchors[progress_swap_start:]
+            anchor = min(blocked_front, key=lambda index: (separation(index), index))
+            first, second = wires[anchor]
+            path = planning.shortest_path(
+                logical_to_physical[first], logical_to_physical[second]
+            )
+            # Bring both ends together, stopping one edge short. Every SWAP
+            # reduces their distance by one; the next iteration must execute
+            # this front-layer instruction. Unrelated dependencies stay intact.
+            required = len(path) - 2
+            for offset in range((required + 1) // 2):
+                record_swap(path[offset], path[offset + 1], anchor)
+            for offset in range(required // 2):
+                end = len(path) - 1 - offset
+                record_swap(path[end], path[end - 1], anchor)
+            continue
+        # Cirq tracks repeated search choices before forcing a shortest path.
+        # Track complete layouts here because FQ's frontier is a dependency DAG,
+        # rather than Cirq's disjoint two-qubit timesteps.
+        seen_layouts.add(layout)
+        if layer_lookahead:
+            candidates = {
+                (min(physical, neighbor), max(physical, neighbor))
+                for index in blocked_front
+                for qubit in wires[index]
+                for physical in (logical_to_physical[qubit],)
+                for neighbor in neighbours[physical]
+            }
+            moves = choose_layer_swaps(
+                candidates,
+                front,
+                wires,
+                blocks,
+                successors,
+                pending,
+                logical_to_physical,
+                distances,
+            )
+            if moves is not None:
+                for left, right in moves:
+                    record_swap(left, right, blocked_front[0])
+                stalled += len(moves)
+                continue
         choice = best_swap(blocked_front)
         if choice is None:
             raise ValueError(
@@ -452,23 +737,8 @@ def plan_sabre_swaps(
                 "disconnected across the front layer"
             )
         left, right = choice
-        left_logical = physical_to_logical[left]
-        right_logical = physical_to_logical[right]
-        physical_to_logical[left], physical_to_logical[right] = (
-            right_logical,
-            left_logical,
-        )
-        logical_to_physical[left_logical] = right
-        logical_to_physical[right_logical] = left
-        swaps.append((left, right))
-        swap_placements.append(executed)
-        swap_anchors.append(blocked_front[0])
+        record_swap(left, right, blocked_front[0])
         stalled += 1
-        if stalled > stalled_limit:
-            raise ValueError(
-                "SABRE swap insertion made no progress after "
-                f"{stalled} consecutive swaps on {n_wires} wires"
-            )
 
     if executed != count:
         raise RuntimeError(
@@ -569,6 +839,11 @@ def restore_swaps(
         if left < n_wires and right < n_wires:
             adjacency[left].append(right)
             adjacency[right].append(left)
+    # A layout already at home needs no spanning-forest traversal. Keep input
+    # validation and edge accounting above this fast path unchanged.
+    if placement == tuple(range(n_wires)):
+        return ()
+
     parent = [-1] * n_wires
     for root in range(n_wires):
         if parent[root] != -1:
@@ -608,15 +883,18 @@ def restore_swaps(
         )
         if leaf is None:
             raise ValueError("coupling map has no spanning forest over the circuit")
-        while logical_to_physical[leaf] != leaf:
-            physical = logical_to_physical[leaf]
-            step = _restore_path(physical, leaf, tree, active)[1]
+        physical = logical_to_physical[leaf]
+        # The active tree stays fixed until this token reaches its leaf. Walk
+        # its unique path once; SWAPs move tokens, not the remaining tree edges.
+        path = _restore_path(physical, leaf, tree, active) if physical != leaf else ()
+        for step in path[1:]:
             other = physical_to_logical[step]
             logical_to_physical[leaf] = step
             logical_to_physical[other] = physical
             physical_to_logical[step] = leaf
             physical_to_logical[physical] = other
             swaps.append((physical, step) if physical < step else (step, physical))
+            physical = step
         active[leaf] = False
     return tuple(swaps)
 
@@ -710,23 +988,39 @@ def plan_sabre_layout(
     reversed_program = CircuitIR(n_wires, tuple(reversed(program.instructions)))
     candidate = identity
     best_layout = identity
-    forward = plan_sabre_swaps(program, coupling, initial_layout=candidate)
-    best_cost = _restored_swap_count(forward, coupling)
+    # Keep the original deterministic forward/backward trajectory as candidate
+    # generation. Substituting a better forward route here can lead the reverse
+    # pass away from a valuable old layout. Evaluate each old candidate with the
+    # multi-trial planner, while retaining identity as a candidate throughout.
+    forward = _plan_sabre_trial(program, coupling, initial_layout=candidate)
+    if forward is None:
+        raise RuntimeError("unbounded SABRE trial did not produce a plan")
+    trajectory_cost = _restored_swap_count(forward, coupling)
+    best_cost = _restored_swap_count(
+        _select_sabre_trials(program, coupling, forward), coupling
+    )
     for _ in range(rounds):
-        backward = plan_sabre_swaps(
+        backward = _plan_sabre_trial(
             reversed_program,
             coupling,
             initial_layout=forward.final_logical_to_physical,
         )
+        if backward is None:
+            raise RuntimeError("unbounded SABRE trial did not produce a plan")
         trial = backward.final_logical_to_physical
         if trial == candidate:
             break
-        trial_forward = plan_sabre_swaps(program, coupling, initial_layout=trial)
+        trial_forward = _plan_sabre_trial(program, coupling, initial_layout=trial)
+        if trial_forward is None:
+            raise RuntimeError("unbounded SABRE trial did not produce a plan")
         trial_cost = _restored_swap_count(trial_forward, coupling)
-        if trial_cost >= best_cost:
+        improved = _select_sabre_trials(program, coupling, trial_forward)
+        improved_cost = _restored_swap_count(improved, coupling)
+        if improved_cost < best_cost:
+            best_layout, best_cost = trial, improved_cost
+        if trial_cost >= trajectory_cost:
             break
-        best_layout = trial
-        best_cost = trial_cost
+        trajectory_cost = trial_cost
         candidate = trial
         forward = trial_forward
     return best_layout

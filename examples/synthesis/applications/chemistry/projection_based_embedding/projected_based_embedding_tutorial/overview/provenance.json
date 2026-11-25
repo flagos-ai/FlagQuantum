@@ -1,0 +1,139 @@
+{
+  "upstream_path": "applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0d5120ec2f26b2971cc5f88d90ef0de64fbb13a3b5b0dce2ea0638a816de8fcc",
+  "git_blob_sha1": "bee70841003984fee705ea06c97533ebb51ae093",
+  "scope": "All21 source stages, original cc-pVDZ water with24 AOs and ten electrons, source-defined S F occupied concentric virtuals, eight active spatial orbitals,14 tapered bits,30 singles angles and100 actual local optimizer queries.",
+  "native_semantic_adaptations": "Fresh local PySCF B3LYP and CI replace the hosted chemistry calculator. Use the original technical-note coupling C_virtual.T @ S @ F @ C_occupied to select three virtuals. With the original empty environment, physical and embedded Hamiltonians coincide and are encoded once. Use native interleaved canonical fermions and two spin-parity stabilizers, whose chosen frame has its own thresholded term count; no vendor term-count equivalence is claimed. Keep source0.1 trimming and100-query/1e-4 settings, explicitly separating trimmed estimates from untrimmed physical expectations and fresh FCI. Native COBYLA differs from an unspecified hosted optimizer; preserve the actual best evaluated result and convergence status. Keep the disabled source diagonalization historical and independently check full states and spatial-integral CI energies.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.projection_based_embedding.projected_based_embedding_tutorial.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_projection_embedding_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "native_code_cell": 1,
+      "stage": "Use optional PySCF locally, without a vendor SDK or hosted chemistry service.",
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 2,
+      "stage": "Use the native canonical fermion and qubit representations.",
+      "sha256": "d62cb72820898298fd9ce29cc207fb16076cb477962f807648e70a27cc3f8c16"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "stage": "Regenerate the original cc-pVDZ B3LYP water geometry and all24 atomic orbitals.",
+      "sha256": "ffa5359d7c8c5c86fc1359eb3a852e245f488ed2a121d26a55c69048596c9f43"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 4,
+      "stage": "Keep oxygen as fragment, ten fragment electrons, zero environment electrons and three active virtuals.",
+      "sha256": "c40cd6c6935ac2ab52b3aa33faedcdf0b2731a3cdb691799ccd9ddc76bad1f91"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 5,
+      "stage": "Verify the original DFT-in-DFT, trace, zero-leakage and active-space FCI checks.",
+      "sha256": "d4a3a19ce4ae4634a3a634ee547f1150203f9b4a448576aa9643efd7d3d3225e"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 6,
+      "stage": "Retain both physical and embedded operator roles, which coincide for this empty environment.",
+      "sha256": "df6af9f86fec973b18d21481b82823d22959f033793cf173b56c7813fb41dde4"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 7,
+      "stage": "Reuse native Jordan-Wigner mapping, stabilizer reduction and the public optimizer.",
+      "sha256": "c42eeb9d8783ce2a4d9727dfd62b1aff80b158aa0f1b2e82c4a9051e51aa4d72"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 8,
+      "stage": "Inspect actual freshly generated canonical fermion terms.",
+      "sha256": "820ebbfaa6ab7ee480fe40e3ed1fd2cf883af8e1c143c1d4c3c127b520378bd8"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 9,
+      "stage": "Keep all16 source spin-orbital occupation modes.",
+      "sha256": "11426dc5aa6a2db2915a4ebf485d7d4ac06412852625ff20c0b663a6c43e6cec"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 10,
+      "stage": "Reduce the original two spin-parity symmetries to14 physical bits.",
+      "sha256": "07e4fb38ffb9f05a6d9e0ae5cf1ebb24ef72365ed1a2a741fc697c536bdf93a4"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 11,
+      "stage": "Read the Hartree-Fock state in the actual native Clifford frame.",
+      "sha256": "082422f29435e1304f4f58cc695a8df58cdf0eff95b69c94be0bcf7835aae668"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 12,
+      "stage": "Apply the original0.1 Pauli threshold in the declared native frame.",
+      "sha256": "ff6231acc171eb06e8e30f5963b1f3ee6b3e094f319d279a65b355b7affe65b6"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "stage": "Keep the disabled source diagonalization strictly historical.",
+      "sha256": "ca99e81fe07ea7b4cafee40f39ef5dc024c7ebe54b8a31aa6d6854c4e674519b"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 14,
+      "stage": "Build all30 spin-preserving singles and verify two nonzero complete states.",
+      "sha256": "ca01bf615b0fd6af46633f5b6e958f661ef1bfe681f0a321b4cf92692363e110"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 15,
+      "stage": "Run100 actual bounded native optimizer queries with the original1e-4 tolerance.",
+      "sha256": "596e552bc9413ea32a09bd1024f64182f1be158c200fe49f249aebde2a12266d"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 16,
+      "stage": "Read the actual best evaluated parameters without repairing the observed optimizer result.",
+      "sha256": "7bdeeca65fcb73f2a2aafb410190ff64ff272a66c65d6538ffd50f8e2b53f693"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 17,
+      "stage": "Keep physical energy evaluation in the same native tapering frame.",
+      "sha256": "7ff719057d6573b32902878c78875fb606e8c79f57c69a4ca8fa04e964806239"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 18,
+      "stage": "Apply the same source threshold to the physical Hamiltonian.",
+      "sha256": "fa8a6048e0ee88a51a22c017d8f5f9a49cc4ee8f0404078c6b80a8a05f6447f0"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 19,
+      "stage": "Report actual trimmed and untrimmed physical expectations separately.",
+      "sha256": "ca093a42273577b063aa8946b8f04829a77bc26396c8e3e9cdf71d587161311e"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 20,
+      "stage": "Retain the zero environment correction and source WF-in-DFT estimate.",
+      "sha256": "b5915c379d6e98ca5e1e8d1f8124b44cf12f051083075f7d982f17091ebf66d6"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 21,
+      "stage": "Compare actual native estimates with fresh full DFT and save the entire query history.",
+      "sha256": "e267b9fc4f8508a75b328eb11fd4d1c3342c9e34ffcc418c4ea013c64139553b"
+    }
+  ]
+}

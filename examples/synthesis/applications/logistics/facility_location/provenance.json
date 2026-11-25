@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/logistics/facility_location/facility_location.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "bf193efb21cb352c03fe6fe55405728eefe8c6e3d597ba0bb6ce2a9cb432a02c",
+  "native_entrypoint": "examples.synthesis.applications.logistics.facility_location.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_factors.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Expose the original three four-bit facility rows as one named assignments array with application index4*facility+customer. Retain all twelve costs, five layers, once-per-customer squared constraints and the squared count of empty facilities. Exact Boolean factors reuse the shared Compiler pass and restore all work bits; independent Circuit references use classical constraint factors and separately map original field-row readout order. No source importer in user examples."
+}

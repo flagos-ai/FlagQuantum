@@ -1,6 +1,7 @@
 """Train, checkpoint/resume and evaluate a CPU surface-code predecoder.
 
 Run with PYTHONPATH=. python examples/qec/ai_predecoder.py --steps 20 --shots 256
+The CPU evaluation uses bundled Sparse Blossom by default.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from pathlib import Path
 import torch
 
 from flagquantum.qec import (
+    DecodingGraph,
     DetectorErrorModel,
     PhenomenologicalNoise,
     RotatedSurfaceCode,
@@ -22,6 +24,7 @@ from flagquantum.qec.decoders._ai.assessment import evaluate
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.decoders._ai.spacetime import SpacetimePredecoder
 from flagquantum.qec.decoders._ai.training import Trainer
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 
 
 def main() -> None:
@@ -35,8 +38,8 @@ def main() -> None:
     parser.add_argument("--threshold", type=float, default=0.9)
     parser.add_argument(
         "--backend",
-        choices=("minimum_weight_matching", "pymatching"),
-        default="minimum_weight_matching",
+        choices=("sparse_blossom", "minimum_weight_matching", "pymatching"),
+        default="sparse_blossom",
     )
     args = parser.parse_args()
     torch.manual_seed(0)
@@ -52,9 +55,14 @@ def main() -> None:
     losses = [] if args.evaluate_only else trainer.train(args.steps)
     if not args.evaluate_only:
         trainer.save(args.checkpoint)
+    backend = (
+        SparseBlossomDecoder(DecodingGraph.from_detector_error_model(dem))
+        if args.backend == "sparse_blossom"
+        else get_decoder(args.backend, dem)
+    )
     report = evaluate(
         model,
-        get_decoder(args.backend, dem),
+        backend,
         shots=args.shots,
         seed=1001,
         threshold=args.threshold,
@@ -63,6 +71,7 @@ def main() -> None:
         json.dumps(
             {
                 "model": args.model,
+                "backend": args.backend,
                 "training_step": trainer.step,
                 "first_loss": losses[0] if losses else None,
                 "last_loss": losses[-1] if losses else None,

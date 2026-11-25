@@ -1,0 +1,7 @@
+qperm pred(const data:qbit[2],marker:qbit) {
+  marker ^= data[0] & data[1];
+}
+qfunc main(output q:qbit[2]) {
+  allocate(q);
+  grover_search(1,lambda(target) {phase_oracle(pred,target);},q);
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "f72e8f606f21ea3d88f7918fc913f1afdd8474105485bb48ef8c20b1a971afff",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.qsvt_matrix_inversion.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qsvt_inversion.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Flatten QsvtState into state and block ports;preserve all8x8matrix entries,4input amplitudes and70phases. Compose existing preparation,unitary,adjoint,negative control andRZ;no Compiler or public API change. Independent analytic projected-phase diagonals check absolute fullstates;source packed field order is explicitly permuted. Keep signal auxiliary and clean work;no postselection in fullstate validation."
+}

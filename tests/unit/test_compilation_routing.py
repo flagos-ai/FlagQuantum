@@ -42,12 +42,14 @@ def test_unknown_routing_strategy_is_rejected() -> None:
         )
 
 
-def test_reverse_direction_and_multiple_routed_gates_preserve_state() -> None:
+def test_explicit_restore_reverse_direction_and_multiple_gates_preserve_state() -> None:
     circuit = fq.Circuit(4)
     circuit.x(3).h(1).cx(3, 0).ry(2, theta=0.31).cx(0, 2)
     coupling = CouplingMap.line(4)
 
-    compiled = circuit.compile(coupling_map=coupling)
+    compiled = circuit.compile(
+        coupling_map=coupling, routing_strategy="restore_after_each_gate"
+    )
 
     for instruction in compiled.to_ir():
         if len(instruction.wires) == 2:
@@ -147,3 +149,65 @@ def test_persistent_layout_reuses_mapping_and_restores_final_permutation() -> No
     )
     assert compiled.to_ir().metadata["routing"]["strategy"] == "persistent_layout"
     assert torch.allclose(compiled.state(), circuit.state(), atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "_swap_instruction",
+        "_routing_metadata",
+        "_remap_instruction",
+        "_route_persistent_layout",
+        "_route_sabre",
+        "record_post_routing_optimization",
+    ),
+)
+def test_moved_emission_helpers_remain_direct_imports(name: str) -> None:
+    from flagquantum.compiler.topology import routing, routing_emission
+
+    assert getattr(routing, name) is getattr(routing_emission, name)
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    ("restore_after_each_gate", "persistent_layout", "sabre", "sabre_layout"),
+)
+def test_existing_entries_dispatch_to_emission(
+    monkeypatch: pytest.MonkeyPatch, strategy: str
+) -> None:
+    from unittest.mock import Mock
+
+    from flagquantum.compiler import routing as entry
+    from flagquantum.compiler.topology import routing, routing_emission
+
+    name = {
+        "restore_after_each_gate": "_route_restore_after_each_gate",
+        "persistent_layout": "_route_persistent_layout",
+        "sabre": "_route_sabre",
+        "sabre_layout": "_route_sabre",
+    }[strategy]
+    emitter = Mock(wraps=getattr(routing_emission, name))
+    monkeypatch.setattr(routing, name, emitter)
+    circuit = fq.Circuit(3).h(0).ry(2, theta=0.37).cx(0, 2)
+    routed = entry.route_to_topology(circuit, CouplingMap.line(3), strategy=strategy)
+    emitter.assert_called_once()
+    assert entry._routing_metadata is routing_emission._routing_metadata
+    assert (
+        entry.record_post_routing_optimization
+        is routing_emission.record_post_routing_optimization
+    )
+    assert routed.metadata["routing"]["mapping_restored"] is True
+    assert routed.metadata["routing"]["final_logical_to_physical"] == (0, 1, 2)
+    assert all(
+        len(op.wires) != 2 or CouplingMap.line(3).has_edge(*op.wires) for op in routed
+    )
+    torch.testing.assert_close(
+        fq.Circuit.from_ir(routed).state(), circuit.state(), atol=1e-6, rtol=1e-6
+    )
+    optimized = entry.record_post_routing_optimization(routed)
+    assert optimized.metadata["routing"][
+        "post_optimization_inserted_swap_count"
+    ] == sum(
+        op.name == "swap" and op.metadata.get("routing_phase") is not None
+        for op in routed
+    )

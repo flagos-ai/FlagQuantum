@@ -1,0 +1,151 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bf93420abe2c249a0d20880420a2a99e3561f86a9bddcbeb28b7187e1483d59c",
+  "git_blob_sha1": "52d14b018a9f0d2c361d161a12be1af5f86136a5",
+  "scope": "All 23 source code stages, original bit widths, full controlled arithmetic, two Suzuki–Trotter steps, four phase bits, two original sampling bindings and the third expectation binding.",
+  "native_semantic_adaptations": "Exercises have executable reference answers. Synthesis uses native qfunc and explicit checked conjugation. A typed Python callable and one reusable symbolic Circuit template use the public Circuit API. Original unspecified sampling uses 1,000 local draws per invocation. The conjugation inspection shows native source and actual resources instead of the hosted viewer.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.qmod_tutorial_part2.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part2/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_quantum_programming_part2_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Set up the local FlagQuantum session.",
+      "sha256": "30fa9d81458d7c67926e4fce7361380203366419c8707fbac2200b84370b5274"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "7A. Encode the product of two two-bit numbers as a phase.",
+      "sha256": "4678851875a353f2da841a08151273781efd08b8aeb99ddc48bc22d17dc4601f"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "stage": "7B. Mark the two solutions of 3a + b = 9 without changing their probabilities.",
+      "sha256": "f443ca98067dbb8bcfc18cc6f858d8db6d080c64416735d0931c56c4ad6467c6"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 4,
+      "stage": "8. Compute 2x + 1 in a local register. Flip the output if the value exceeds three, then uncompute.",
+      "sha256": "f4206dae3915bbdc1a8390037d89c165db484226bb75a29c6e27efd05a11f98b"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 5,
+      "stage": "9A. Add a three-bit quantum number to a four-bit accumulator initialized to two.",
+      "sha256": "a047d76cb94efffb1654fb7a84e48fbd87051e30057fe0a78b3a058d48d1c5d7"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 6,
+      "stage": "9B. Control only the phase block. The Fourier transform and its inverse surround both branches.",
+      "sha256": "b4f58c2f6fda3e11a3edd13436e12b801b14bd1cf4e5e0e222a876aed05bfffc"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 7,
+      "stage": "10A. Apply a two-step, second-order Suzuki–Trotter formula at time three on four qubits.",
+      "sha256": "8593bec00296be14876df70ecdda63b808354f0c14ab1430555e7e557a08ad29"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 8,
+      "stage": "10B. Observe X(0) + X(1) on the prepared plus pair.",
+      "sha256": "9778bb5fec8fc109cb1828b9675845f8cdb9a69942cfb702cd457dc77dc4b9ef"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 9,
+      "stage": "11A. Pass a one-qubit operation to a reusable Python function and apply it to three qubits.",
+      "sha256": "e82082ebdef736f33ac00ebeb04c0220e994f5b2aa5bfe7aa01ee6f30c882936"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 10,
+      "stage": "11B. Use a controlled RZ phase callback and four fractional phase bits.",
+      "sha256": "003a2a34f6c381aac3db38bedb79be2d9691b88f46efd9505d26e52ef261db26"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 11,
+      "stage": "12A. Build one symbolic template for both sampling bindings.",
+      "sha256": "c93d2544cb10a135de73cbda58e59c3d6eb12e16e9b9ac5ee8ff0f71e657a4ff"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 12,
+      "stage": "12B. Define a third binding for the observable experiment on the same template.",
+      "sha256": "a12c6f30319a8d7a7775f57c2b80677b15a4f69c81593359704c7d6a089d2a10"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 13,
+      "stage": "Solution 7A. Decompose the bilinear phase by bit significance using four controlled phases.",
+      "sha256": "f3fd715b7f434923ea4ab68c5fc8cb2e6e41ebf0ab3f4cc0c3dc40e99a76ae1d"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 14,
+      "stage": "Solution 7B. Use the predicate to apply a phase of pi.",
+      "sha256": "1831c2a593a0e159671c7e04be3beb0b341cf3bb8448e209c4de01b454837d7e"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 15,
+      "stage": "Solution 8. Use within/apply to give the local register a verified inverse.",
+      "sha256": "93d4dd357df4cee21e9690664e746361bfdef1a94dafa5a4d19cb33ca591bfb6"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 16,
+      "stage": "Solution 9A. The inverse transform translates phase into modular addition.",
+      "sha256": "3fd5c5f7042272201c0d1ccf0f054044a1a4d60cd1b39d9e299d502e6068bd4c"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 17,
+      "stage": "Solution 9B. Superpose the control and check both branches including their relative phase.",
+      "sha256": "2444c18d5abd629db7168c61d5ab1334149b108f147b3aa1051b38e3eb91f143"
+    },
+    {
+      "index": 56,
+      "native_code_cell": 18,
+      "stage": "Solution 10A. The independent reference uses dense Pauli exponentials for the same product formula.",
+      "sha256": "a3dbb603a6c43c37e6af36ab4a997d2c795ea066474f4955fa5646eeb7dd3d6b"
+    },
+    {
+      "index": 58,
+      "native_code_cell": 19,
+      "stage": "Solution 10B. Request the observable expectation on the native prepared circuit.",
+      "sha256": "e1bcd6f92f604572073eebaa94e9f3720d2f2a081f7fefcdf5ef529d26cbf163"
+    },
+    {
+      "index": 61,
+      "native_code_cell": 20,
+      "stage": "Solution 11A. Use a typed Python callable at circuit construction.",
+      "sha256": "7ab8cc42413c6447fbbb042a2ab7fbf7570c7ca1c6219b2260cdf952cb807f63"
+    },
+    {
+      "index": 63,
+      "native_code_cell": 21,
+      "stage": "Solution 11B. A conditional phase polynomial exactly expresses CRZ(pi), including the other eigenphase.",
+      "sha256": "98a54a6d2c3ac93a2730a6b29978a8bc0b585394e75cf5ba0f2462e24bc8589b"
+    },
+    {
+      "index": 66,
+      "native_code_cell": 22,
+      "stage": "Solution 12A. Bind and sample both settings without rebuilding the symbolic template.",
+      "sha256": "44a8a5a8441d04338a172723c80e3b6e0252a8ba3c29ca4c0618ba843c3dc23b"
+    },
+    {
+      "index": 68,
+      "native_code_cell": 23,
+      "stage": "Solution 12B. Bind the same template for a third observable measurement.",
+      "sha256": "bd12c1cc7d1ed0e4a9ec9e4348083cb2ff743e9aad4a635056cc1db808b546eb"
+    }
+  ]
+}

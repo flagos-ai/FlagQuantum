@@ -45,6 +45,7 @@ name an owner and removal version. Run
 | Compiler | `flagquantum.compiler` |
 | Runtime execution planning | `flagquantum.runtime.planner` |
 | Runtime API and contracts | `flagquantum.runtime` |
+| Realtime messaging, handler calls and channel/session contracts | `flagquantum.realtime` |
 | Distributed executor protocols | `flagquantum.runtime.distributed.protocols` |
 | Backend boundaries | `flagquantum.runtime.executors` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
@@ -61,6 +62,13 @@ name an owner and removal version. Run
 `flagquantum.runtime` is the sole runtime implementation namespace. New
 application, plugin, and backend code must use its explicit contracts,
 executors, distributed, and audit subpackages.
+
+`flagquantum.realtime` is a separate domain for the software messaging boundary.
+It imports only itself and the standard library. Core, Compiler, Runtime,
+Simulation, Kernels, QEC and Services cannot import either realtime path without
+a separately approved integration. `flagquantum.remote.realtime` contains only
+import compatibility; it owns no framing, decoder, transport or execution code.
+[ARCH-014](decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md) records this migration.
 
 The circuit implementation lives at `flagquantum.circuit`; `flagquantum.core`
 contains backend-neutral IR, operator schemas, parameters, configuration, and

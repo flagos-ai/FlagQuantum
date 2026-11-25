@@ -1,0 +1,10 @@
+{
+  "schema": "flagquantum.synthesis_native_quantized_expressions_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": ["quantize"],
+  "signature": "(expression: 'QNum | float', /, *, fractional_bits: 'int', literal_bits: 'int') -> 'QNum'",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-EXPLICIT-QUANTIZED-EXPRESSIONS-20261111.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

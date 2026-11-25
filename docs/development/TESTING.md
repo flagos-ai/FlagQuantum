@@ -55,7 +55,7 @@ for `benchmarks/results/scalability/`.
 | Situation | Command | What It Proves | What It Does Not Prove |
 | --- | --- | --- | --- |
 | Daily development or any issue baseline | `python tools/ci_tier.py pr-default` | Fast smoke/unit health for imports, minimal circuits, autograd, pure planner/audit helpers. | Runtime integration, distributed behavior, performance, or release readiness. |
-| Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
+| Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration and not slow` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
 | Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
 | Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
 | Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Three workloads (statevector, MPS, tensor network), each partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
@@ -99,7 +99,7 @@ performance measurements or a guaranteed total time for the full CI workflow.
 
 ```bash
 python -m pytest -m "smoke or unit" -q
-python -m pytest -m "integration" -q
+python -m pytest -m "integration and not slow" -q
 python -m pytest -m "distributed_cpu" -q
 python -m pytest -m "distributed_cpu or release_gate or benchmark_contract" -q
 python -m pytest -m "benchmark_contract or release_gate" -q
@@ -132,6 +132,7 @@ so the check is per test rather than per file.
 | Marker | Runtime Environment | Proves | Does Not Prove |
 | --- | --- | --- | --- |
 | `smoke` | Fast local CPU; no subprocess, GPU, or benchmark run. | Importability, minimal `fq.Circuit`, expectation, and autograd health. | Planner completeness, distributed semantics, performance, or release readiness. |
+| `openfermion` | Isolated optional workflow with real OpenFermion 1.7.1 on Python 3.10/3.12. | Ordered operator conversion, matrix agreement and round trips at the explicit migration boundary. | Native dependency requirements, upstream execution support, or full OpenFermion compatibility. |
 | `unit` | Fast local CPU pure logic. | IR, planner, audit, metadata, helper, and schema logic in isolation. | Runtime integration, process-group behavior, accelerator execution, or benchmark truth. |
 | `integration` | Local single-process developer environment. | Cross-module API/runtime behavior without cluster setup. | Multi-process transport, GPU execution, or scalability claims. |
 | `distributed_cpu` | CPU/local distributed simulators, planner/audit checks, or torch distributed semantics that do not require real accelerator capacity. | Rank ownership metadata, sharding intent, fail-closed gates, and development-production semantic parity where applicable. | Real multi-GPU capacity expansion, production transport performance, or release-grade scalability evidence. |
@@ -154,7 +155,7 @@ so the check is per test rather than per file.
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, `cotengra`,
-`stim`, and `pymatching` because its marker
+`stim`, `pymatching`, `kaiwu`, and `chemistry-pyscf` because its marker
 expression selects their suites, and installs neither `qiskit` nor `triton`: the
 other two cannot be measured there.
 `cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
@@ -304,7 +305,7 @@ single-process API boundaries.
 ```bash
 python tools/ci_tier.py pr-runtime
 # direct:
-python -m pytest -m "integration" -q
+python -m pytest -m "integration and not slow" -q
 ```
 
 This tier is seeded by `tests/test_native_circuit.py` and
@@ -363,6 +364,7 @@ the device and run the file directly.
 | --- | --- | --- |
 | `FLAGQUANTUM_ISING_SOURCE` | `tests/qec/test_ising_comparison.py` | Path to the pinned NVIDIA Ising-Decoding checkout; runs real-upstream CPU smoke, X/Z boundary-mask conformance and SafeTensors loading checks. Install the optional inference dependencies described in [the comparison protocol](QEC_AI_ISING_COMPARISON.md), then run this file directly. No gated weights are needed for these explicitly untrained integration checks. |
 | `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
+| `FLAGQUANTUM_TEST_TORCH_FL_FP64` | `tests/unit/test_statevector_ry_fp64.py`, `tests/unit/test_statevector_cx_fp64.py` | Direct FP64 RY/CX conformance on a provisioned Torch-FL GPU. Set to `1`, import `torch_fl` before pytest, and use the vendor configuration from `benchmarks/torch_fl_fp64/README.md`. These tests fail if the opted-in environment is missing; a stock CUDA FlagTree lane skips them and does not certify Torch-FL. |
 | `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validate_flagos_cuda_reference.py` |
 | `FLAGQUANTUM_TEST_ASCEND_910C` | `tests/test_ascend_910c_training.py`, `tests/unit/test_split_real_imag_statevector.py` | the pinned 910C stack and public-interface SGD example in `docs/guides/ASCEND_910C.md` |
 | `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validate_flagos_distributed_conformance.py` |
@@ -552,7 +554,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-five jobs:
+The checked-in `ci.yml` defines twenty-seven jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -567,13 +569,20 @@ The checked-in `ci.yml` defines twenty-five jobs:
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
+- `native-fermion`: independent Ubuntu source installations on Python 3.10 and
+  3.12, testing the native fermion workflow without optional science packages
+  before installing PySCF and requiring three real RHF cases to pass;
 - `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
   smoke compatibility on pull requests; manual full validation runs the complete
   smoke/unit suite on both interpreters;
 - `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
   interpreter;
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
-  proofs, running in parallel with the complete unit suite;
+  proofs, running in parallel with the complete unit suite. The full integration
+  selection is partitioned deterministically across eight jobs; the two launcher
+  proofs run only in shard zero. Available self-hosted runners determine
+  concurrency, without a matrix parallelism limit. Each job retains the
+  60-minute limit;
 - `cpu-core-3-12`: the required aggregation gate, reported to branch protection
   as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
@@ -621,9 +630,10 @@ The checked-in `ci.yml` defines twenty-five jobs:
   wheel inspection, and uploadable-artifact verification;
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
-- `coverage-shard`: sixteen deterministic, duration-balanced partitions of the
-  maintained package measured under the same marker expression on separate
-  runners;
+- `coverage-plan`: one complete collection of the maintained coverage selection,
+  partitioned in bounded file batches into at most 192 nonempty trusted PR/manual shards or 16 hosted shards;
+- `coverage-shard`: execute the explicit node list for each planned partition
+  under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
   with `tools/check_coverage.py`;
@@ -640,13 +650,11 @@ FlagQuantum install happen once per framework instead of once per version. This
 preserves the certified compatibility matrix while reducing runner cold starts
 and the serial queue behind the `light-b` and `light-c` capacity buckets.
 
-The GitHub-hosted jobs are partitioned across sixteen concurrency buckets per
-pull request or manual workflow run. The scope is part of every bucket name: it keeps
-one run at sixteen concurrent jobs without forcing a new pull request to wait for
-an older pull request's coverage or interpreter lane. The organisation-level
-20-runner pool remains the aggregate admission limit. Superseding a run of the
-same pull request still cancels the older run. Already-merged main revisions
-retain their own lightweight installed-wheel acceptance run.
+GitHub-hosted jobs share eight repository-wide concurrency buckets across
+workflow runs. Trusted self-hosted CPU jobs use independent run and matrix
+indices, so these hosted admission limits do not serialize the CPU pool.
+Superseding a run of the same pull request cancels the older run. Already-merged
+main revisions retain their lightweight installed-wheel acceptance run.
 
 Optional integration jobs name the test files they own and retain the marker
 selector inside that file set. This prevents an unrelated module-level
@@ -660,47 +668,39 @@ checks are owned by the `quality` job and are not repeated in a second full
 project environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
-The CPU core and runtime tiers use the dedicated A800 CPU runners with up to
-16 xdist workers, bounded by measured affinity, nested cgroup CPU quotas and
-memory limits, and isolated per-job environments. Trusted manual validation uses
-the same A800 route as same-repository PRs, rather than the two-worker hosted
-fallback. Each A800 host runs eight independent CPU services, each capped at
-12 logical CPU time units, 64 GiB memory and 4096 tasks. The combined CPU ceiling
-remains 96 units per host; memory ceilings are limits, not reservations. Existing
-GPU services are unchanged. Fork PRs run these tiers on GitHub-hosted Ubuntu with
-at most two workers. Coverage shards and distributed CPU contracts use the isolated A800 and
-MC550 service queue (`flagquantum-cpu`). MC550 services admit four coverage
-workers and one distributed launcher within their four-CPU/16-GiB limits. On
-A800: the deployed services admit twelve core/runtime workers, six coverage
-workers, or one distributed launcher with up to eight child ranks. The tool
-admits two distributed launchers only when a service exposes at least sixteen
-CPU time units and sufficient memory. Eight services per host reduce queues
-when the thirteen heavy CPU jobs of a full run become ready together.
-Portable optional SDK, dependency-bound and supply-chain checks retain the
-general CPU pool; full-history quality and coverage aggregation retain A100.
-Fork pull requests use GitHub-hosted Ubuntu. The manual source-hygiene job
-also uses A100, while the short PR hygiene job retains its hosted budget. See
-[A100 runner operation](A100_RUNNERS.md) for pool isolation and validation.
-Coverage uses the measured CPU/memory budget for work-stealing workers
-(six on the verified A800 services, four on MC550, at most two on hosted runners).
-Other measured CPU jobs retain resource and timing reports. The distributed
-CPU selector clears inherited platform rank variables before running and uses
-a separate budget for launchers that may spawn eight ranks; an explicit
-two-rank JAX regression remains outside pytest worker fan-out.
-The seven dependency-bound variants retain their declared Python and CPU Torch
-versions and may run concurrently on separate A100 registrations. The private-environment action clears inherited Python and framework library
-paths, retains the verified A100 bootstrap and CPU wheel cache, and bounds the
-domestic wheel download before falling back to the official CPU index. CPU jobs
-hide GPUs and verify dependency consistency and CPU-only framework selection.
-Core tiers use the same CPU installer while retaining their empty private
-virtual environments: the installer reads each host's configured wheel cache,
-uses the bounded domestic fallback, and caps official CPU downloads at five
-minutes. The no-NumPy and no-optional-framework checks remain unchanged.
-The sixteen coverage shards use checked-in duration hints from a cited CI run and a
-deterministic least-loaded assignment, then merge raw data before applying the
-unchanged coverage policy; their union is the former selection, not a reduced
-test set. Unmeasured tests receive a small default weight, so new tests remain
-evenly distributed without making the historical timing data authoritative.
+Trusted core and runtime suites use the qualified A800 image caches. The
+locked core images still prove the absence of NumPy and optional frameworks.
+Quality and online SDK downloads use hosted runners. Coverage and distributed
+CPU work use the locked coverage image on the generic CPU pool.
+Trusted manual CI runs use the same qualified CPU pool and 192-partition coverage
+plan as same-repository pull requests. Fork pull requests retain hosted runners
+and 16 partitions. Manual runs continue to include slow tests; the runner choice
+does not change the collected selection, time limits, or coverage thresholds.
+Source preparation uses the generic CPU pool. Source hygiene runs on a hosted
+runner to download its pre-commit hooks.
+Dependency-bound and supply-chain checks retain the general CPU pool.
+Fork PRs use hosted runners.
+
+The generic CPU pool includes isolated MC550, BW1100, and A800 services.
+MC550 services use four CPU time units and 16 GiB per slot, with a 64-CPU parent
+ceiling. BW1100 slots use four CPU time units and 24 GiB. Each A800 host has
+eight CPU services capped at 12 CPU time units and 64 GiB each. Worker selection
+uses the measured service quota without reserving half of an isolated slot again:
+four workers on the verified MC550/BW1100 slots, twelve on A800, and at most two
+on hosted runners. These ceilings are limits, not reservations. Existing service
+allocations and GPU services are unchanged.
+
+The distributed selector clears inherited platform rank variables before running
+and separately budgets launchers that may spawn eight ranks. An explicit two-rank
+JAX regression remains outside pytest worker fan-out. Dependency-bound variants
+retain their declared Python and CPU Torch versions in separate private environments.
+CPU jobs hide GPUs and verify dependency consistency and CPU-only frameworks.
+
+Coverage uses checked-in duration hints from a cited CI run to assign file batches
+by estimated duration. Batches contain at most 16 tests, so a large untimed file
+can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
+coverage is written outside the source tree, then combined before the unchanged
+coverage policy runs. Unmeasured tests receive the same positive default weight.
 Pull requests run complete smoke/unit coverage once on
 Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; manual
 full CI retains complete smoke/unit coverage on all supported interpreters. The
@@ -956,6 +956,217 @@ source and result artifacts with GitHub.
 For a dependency change, dispatch `publish-dev-container.yml` on the proposed
 branch with `ci-cpu=true`. The publisher resolves the core and coverage profiles,
 records their exact installed distributions, and checks them with networking
-disabled. Copy the four resulting image digests into the lock file and validate
-the PR. An outdated image is rejected when its dependency manifest differs from
-the checkout.
+disabled. Each `ci-image-lock-<profile>-py<version>` artifact contains a lock row
+with the published registry digest and the hash-verified OCI manifest digest
+from an actual offline export. Copy those four rows into the lock file, provision
+and qualify the caches, and validate the PR. An outdated image is rejected when
+its dependency manifest differs from the checkout.
+
+The native fermionic migration changes both `pyproject.toml` and the coverage
+profile. All four locked images must therefore be rebuilt and qualified before
+that PR can merge. A source-only manifest update does not update the immutable
+images. The `native-fermion` Ubuntu job independently installs the source and
+tests Python 3.10 / PyTorch 2.10 and Python 3.12 / PyTorch 2.14, first without
+optional science packages and then with PySCF 2.8 and 2.15 respectively. It runs
+on each PR and checks driver import before the real RHF tests. Coverage planning
+and execution also require a working PySCF import, so missing optional chemistry
+cannot turn those cases into a green run with only skips. These workflow changes
+use images rebuilt by workflow run `42582666522`; their complete lock rows are
+recorded in `docker/ci/images.lock`. Successful cache qualification and CI on the
+updated revision remain merge prerequisites until their evidence is recorded.
+
+
+## CPU runner routing and reliability
+
+Trusted same-repository PRs run distributed and coverage suites on the
+self-hosted CPU pool. Core compatibility, Python 3.12 unit tests, and runtime
+suites use the 16 A800 CPU slots with qualified locked image caches. Each
+matrix leg has a run-specific concurrency group. Source preparation uses the
+generic CPU pool. Pre-commit and fork PRs use GitHub-hosted runners.
+
+The images in `docker/ci/images.lock` pin both the registry manifest digest and
+the OCI manifest digest in its offline archive. **Prewarm locked CPU environments** verifies both A800
+hosts by default. Its explicitly requested `export-bundle` mode pulls the exact
+images on one hosted runner and exports a checksummed offline archive. Registry
+credentials stay in a temporary config on that hosted runner. The export uses
+one of the same eight global hosted concurrency groups.
+
+An administrator provisions that archive over the runner management connection,
+then runs qualification. This separates image lifecycle management from PR test
+execution: neither qualification nor core/runtime tests download image archives,
+log in to registries, or pull images. Missing caches fail with an explicit
+provisioning error. Docker archives do not preserve registry manifest references,
+so the launcher accepts the exact archive manifest digest pinned beside the
+registry manifest digest; a
+mutable cache tag alone is never sufficient. The archive manifest is read and hash-verified from the OCI index, independently
+of the Docker image store's local ID display. Qualification checks dependencies,
+CPU-only PyTorch, and the absence of optional frameworks from core with networking
+disabled.
+
+For a new lock or replacement A800 host:
+
+1. Request an offline export:
+   `gh workflow run prewarm-ci-cpu.yml --ref <branch> -f export-bundle=true`.
+   Record its run ID and the `locked-cpu-images` artifact SHA-256 from the API.
+2. Download the artifact on the provisioning workstation with
+   `gh run download <run-id> -n locked-cpu-images -D <bundle-directory>`.
+   Verify the downloaded archive files against `SHA256SUMS`. When downloading the
+   artifact ZIP directly, also verify its digest against the API artifact digest.
+3. Transfer the bundle once through the SSH management connection, then use the
+   existing trusted internal SSH connection to distribute it to the other A800
+   host. Use private temporary directories. On each host, run
+   `sha256sum --check SHA256SUMS`, then
+   `timeout --kill-after=15s 300s docker load --input images.tar.gz`.
+   Remove only that provisioning directory after a successful import. GitHub
+   credentials must not be copied to the hosts.
+4. Run `gh workflow run prewarm-ci-cpu.yml --ref <branch>` without export mode,
+   and require both host qualification jobs to succeed before rerunning CPU CI.
+
+The lock's archive manifest digests must match the export metadata before changing CPU routes.
+Keep the A800 CPU routing label off an unqualified replacement host. Lock changes
+also trigger qualification on trusted PRs. Coverage retains its already
+provisioned general CPU pool and the same locked environment. Test processes
+remain isolated and resource-budgeted.
+
+Online CPU installation first uses `FQ_CPU_WHEEL_CACHE`, or the provisioned
+`/opt/flagquantum-runners/tools/public-wheels` directory when unset. Each private
+environment resolves compatible wheel bytes rather than reusing another job's
+installed packages. The isolated-Python action creates a private build directory
+under `RUNNER_TEMP` and exports it as `TMPDIR` for its own subprocesses and later
+job steps. Pip and native compiler scratch files therefore use the runner job
+volume even when the host system temporary volume is full. Directory creation
+failure stops setup; it does not fall back to shared `/tmp`. The runner owns
+end-of-job cleanup. This does not remove other jobs' files or change persistent
+runner services. Missing Torch wheels retain the
+bounded mirror and official-index fallback. Self-hosted pip requests use a
+60-second socket timeout and at most two retries within the unchanged job limit.
+Supply-chain dependency installation selects the Aliyun mirror on self-hosted
+runners with the same availability check and official-index fallback. This
+job-specific selection avoids the repository-wide index variable, which may
+deliberately select official PyPI for other jobs. Vulnerability queries still
+contact PyPI directly. The 20-minute job limit, installed-environment
+audit, Bandit analysis, SBOM generation, and SBOM validation remain required.
+
+Source cache repair verifies Git objects and the exact workflow commit before
+any tests run; an incomplete cache falls back to the full source artifact. No
+tests or required checks are removed.
+
+SDK jobs that install dependencies online (JAX, Cirq, Azure, Braket, PennyLane, and Qiskit)
+use hosted Linux runners with 30-minute job limits. They do not depend on the
+two preinstalled SDK slots, and external download failures do not occupy the
+CPU suite pool. Move an SDK suite into that pool only after a locked image or
+verified complete wheel closure passes the same dependency and test checks.
+Qiskit retains its verified wheel preparation path on hosted runners: live
+metadata discovery can time out even when wheel bytes are cached locally.
+Triton retains its MC550 pool.
+
+Contributor workflow: open or update an internal PR, then inspect its CI run.
+Expected behavior: source preparation starts independently of coverage; ready
+core, runtime, coverage, and distributed matrix legs can use available CPU runners; every existing required
+check still has to pass. For acceptance, compare source queue time, suite wall
+time, and infrastructure failures across runs. Runner busy counts alone are
+not evidence of CPU efficiency or test reliability.
+
+Job-level result aggregators use `!cancelled()` so failed dependencies still
+reach the required gate, while a superseded PR run releases its workflow slot
+instead of scheduling `always()` aggregators after cancellation. Step-level
+resource reports remain available on failure.
+
+The required `CI complete` gate is the exception: it always runs with a
+two-minute limit and rejects failed, skipped, or cancelled dependencies. It must
+never become a skipped required check when a run is cancelled.
+
+Network-dependent SDK jobs share hosted groups 1, 2, 4, and 7. Fork PR runtime,
+Python 3.12 unit tests, and Python compatibility checks use hosted groups 3, 5,
+and 6 respectively. Trusted core/runtime jobs use independent self-hosted groups.
+Quality keeps group 0; Linux packaging uses group 6 and the Windows/macOS
+builds use groups 3/5. Long builds cannot occupy the quality group. The
+repository-wide hosted ceiling remains eight.
+
+CI and GPU artifact uploads retry a transient service failure at most twice,
+within a six-minute upload step budget. Each retry replaces only that job
+artifact, including any partial upload. Persistent failure still fails the job;
+tests are not automatically retried. Job/matrix-unique names prevent one job
+from replacing another job artifact.
+
+
+### Filling the existing CPU allocation
+
+The `coverage-plan` job collects the original marker selection once, then assigns
+file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
+PRs and trusted manual runs (16 on hosted fork runs). Each selected node appears exactly once in the
+plan. Coverage data stays under the runner temporary directory, outside the
+source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
+node list. Keeping bounded file batches together avoids full-repository collection on every
+worker while allowing a large test module to use several runners. The final coverage gate requires exactly the planned number of valid
+SQLite inputs; failed or missing shards remain failures.
+
+Python 3.12 coverage shards use coverage.py's `sysmon` core. In the locked
+coverage image (coverage.py 7.17.2), the same 62 one-/two-qubit synthesis tests
+recorded identical executed-line sets with `ctrace` and `sysmon`: 1,064 measured
+files and 11,577 executed lines. This changes line-event collection, not the
+selected tests, source scope, exclusions, or coverage floors. The configuration
+does not request branch coverage or dynamic contexts. Older interpreter and SDK
+lanes retain their own coverage configuration.
+
+Ordinary PR coverage excludes `slow`. The original 50-iteration induced-color
+and 100-iteration minimum-coloring Notebook acceptances carry that marker; their
+problem sizes, optimizer budgets and complete numerical assertions are retained.
+PR coverage keeps the two nonzero-parameter complete-state Circuit comparisons,
+bit-order and phase checks, model constraints, sampling and rejection tests. A
+two-iteration optimizer orchestration check uses an explicit probability-reader
+test double; it is not evidence of a complete quantum optimization run.
+
+Run the original-size acceptances explicitly with:
+
+```sh
+python -m pytest tests/integration/test_synthesis_induced_color_notebook.py \
+  tests/integration/test_synthesis_min_coloring_notebook.py -m slow -q
+```
+
+The `nightly` tier and manual dispatch of `ci.yml` include these full tests. PR
+shards retain a 60-minute budget. In a full-acceptance plan only shards containing
+these two tests receive 120 minutes and separate slots; a one-shard plan sums the
+two finite budgets. These are scheduling limits, not measured completion times.
+No coverage floor or numerical tolerance is lowered.
+
+The offline action measures the runner service before entering Docker. Containers
+inherit that CPU and memory budget and receive explicit CPU, memory, and affinity
+limits, including on shared Docker daemons. Recognized MC550, BW1100, and A800 CPU
+slot services use their own finite quota without reserving half of it again.
+No runner service quota or host allocation is increased.
+
+Resource artifacts include `test-usage.json`, which records pytest wall time,
+process CPU seconds including xdist children, and utilization relative to the
+assigned CI CPU quota. Whole-host CPU percentage is a different denominator:
+BW1100's existing CI slots account for about 16.7% of its logical CPUs and MC550's
+for about 40%. Idle time after the runnable test backlog drains is expected;
+runner occupancy alone does not prove improved throughput. Compare elapsed test
+time, CPU usage, queueing, and the unchanged correctness gates together.
+
+
+Container lifecycle is part of checkout isolation. The Python wrapper retains the
+container CID and removes that exact container when the command exits or receives
+cancellation, preserving the command's failure status. Before a reused self-hosted
+runner restores source, its verified source bootstrap removes previous locked CI
+containers only when both `RUNNER_NAME` and the mounted workspace match this
+exclusive registration. Containers belonging to another registration or workspace
+are left alone. This startup check also handles a hard-killed wrapper and legacy
+jobs that did not install an exit trap. Cleanup failures stop checkout rather than
+allowing an older test process to keep writing the new source tree.
+
+
+Coverage plan and result downloads use one bounded transport retry. Attempts
+stage in separate runner-temporary directories, so partial files from a failed
+transfer cannot enter the successful plan or coverage input set. Digest errors
+and a persistent transport failure still stop the job.
+
+### Cold dependency-bound source caches
+
+The dependency-bound jobs first reuse the incremental source artifact. When a
+self-hosted cache is incomplete, they try one 180-second HTTP/1.1 Git fetch of
+the exact workflow commit before the existing bounded API repair and full
+artifact fallback. The fetched commit ID and complete object closure must match;
+checkout still verifies `GITHUB_SHA`. This avoids the slow Actions blob-storage
+route when Git transport succeeds, without bypassing source identity checks or
+changing the 30-minute dependency-bound job limit.

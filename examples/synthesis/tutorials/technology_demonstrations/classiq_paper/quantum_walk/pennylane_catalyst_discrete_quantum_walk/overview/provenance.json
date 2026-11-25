@@ -1,0 +1,21 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk.ipynb",
+  "original_sha256": "94f3f637c91932f554826f1aac94c5b624ba0114f08e65156d5a65007e64b8a0",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "e8f8572ebb6a78fe138f99066c5043668b7ff7942545ac673db987f80dfc1760"
+    },
+    {
+      "index": 3,
+      "sha256": "183e42533eee81a7c5748fc6c0e268d0c9a48c02ac384276b1deb47788dc37e2"
+    }
+  ],
+  "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests CX/RZ/RY/RX then counts CNOT text in a jitted MLIR string. We count actual executable CX instructions instead. No qjit, Lightning runtime or MLIR-text timing equivalence is claimed.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.pennylane_catalyst_discrete_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "197fcb1c7e85855895a0ef4731fc7451a9b25d6a",
+  "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests CX/RZ/RY/RX then counts CNOT text in a jitted MLIR string. We count actual executable CX instructions instead. No qjit, Lightning runtime or MLIR-text timing equivalence is claimed. Preserve the original loop indentation: X(x[0]) occurs inside all five MCX iterations. This is a reversible permutation, but differs from modular increment on 32 of 64 positions. Do not silently replace it with arithmetic increment. CX/RZ/RY/RX. Exact logical phase uses one final RZ on an existing clean zero work qubit. Its cost is included; the transform is an isometry with zero input/output work, not an identity for dirty work."
+}

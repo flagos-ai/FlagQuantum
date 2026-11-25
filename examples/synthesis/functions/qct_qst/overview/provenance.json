@@ -1,0 +1,85 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "523df85d6903e5a69111ca8e4b6daf35311ace627f9b71e096776fc17223b8a4",
+  "git_blob_sha1": "8ec5403aad36f18d93bc60c749928165b2d83795",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "b3fb96711a488639082f0d56d2e1b1494e7a7cf8ee18eccb2ffff64f77cc3027"
+    },
+    {
+      "index": 4,
+      "sha256": "e9a7f5da1a8af277f1b286f87abee2378ac66fa63acf7b776291ba10ff5ab48b"
+    },
+    {
+      "index": 5,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 6,
+      "sha256": "658f14a76313f54b9a9dd30ea9b2ec9d561a2366f609b7beded79e9c55fa1369"
+    },
+    {
+      "index": 7,
+      "sha256": "04aa12ee76a1bca80ecc2dd114504f270deeee20a263657dcf5731444ed2c4da"
+    },
+    {
+      "index": 8,
+      "sha256": "e166da5bdb3e4bc967bfb5a78ecda22e10042cceb05f1c91db29f4a0ad4fbfbd"
+    },
+    {
+      "index": 9,
+      "sha256": "e81759219ff9bc819b80a10330261e892ef7bef4ddc6517925c047a55c054545"
+    },
+    {
+      "index": 10,
+      "sha256": "5a956c0f1e4d6f3d43eb502153899ee2c28b2155d47f15d93b84dde7fa8da9e6"
+    },
+    {
+      "index": 13,
+      "sha256": "94b6567a21ec2b072e769b8bd6c8db30ffcf65dcfd8daa1ba82dc93438e08281"
+    },
+    {
+      "index": 14,
+      "sha256": "0939ae3080c375405657777c4cd6934ebeb7cc00e63e08dddcccd0281c1c19af"
+    },
+    {
+      "index": 15,
+      "sha256": "e4dfd76888891f8c56ebe37803c4368361d4579c73e5831cea9b684f5c31592a"
+    },
+    {
+      "index": 16,
+      "sha256": "658f14a76313f54b9a9dd30ea9b2ec9d561a2366f609b7beded79e9c55fa1369"
+    },
+    {
+      "index": 17,
+      "sha256": "cd2afcd036fbc5c15a44b0a9a41a956fc484c43e2ce00362b7d02e9af327c000"
+    },
+    {
+      "index": 18,
+      "sha256": "627ca5fa4c1ff0760c11b5fd0e0c2c7dd89b944fe9697a9a61661213feae5b8e"
+    },
+    {
+      "index": 19,
+      "sha256": "c80626aa6544f5e5ce4c81e71f5549b84830f793bae6f8672abfc9457269fc97"
+    },
+    {
+      "index": 20,
+      "sha256": "7bab2c1f1cfdfd5b09b50ce9171a20bdeb2a3747bc5985b2422f52af40540736"
+    },
+    {
+      "index": 21,
+      "sha256": "2154c763147db6a1a0636084929696be1b805f29de4edc96fea4e7588faa77fc"
+    },
+    {
+      "index": 22,
+      "sha256": "0dee91e83541c53aebddc9a17c0cff9a2fac38284626110fa43296bc9c78d13d"
+    }
+  ],
+  "scope": "Complete four-stage local Notebook workflow:TypeI9elementDCT and7element+iDST;combinedTypeII8elementDCT/negativeDSTselectorblocks;standaloneTypeIIcosine andsine. Retain NumPyRandomState123and sequential9/7/8positive amplitude draws,normalization,realstatepreparation and printed measured/expected arrays. Native typed qfunc binds classicalrealarrays at synthesis time and reuses existing transform lowering. Classical executable source matrix conventions take precedence over prose dimension/index typos. Preserve the source0.01phase-aligned tolerance as historical context;acceptance additionally requires absolutecomplexamplitude1e-12,including relative+iandminus signs,declaredregisterorder andzero work. No source loader,new productionAPIor hardware claim.",
+  "native_semantic_adaptations": "Complete four-stage local Notebook workflow:TypeI9elementDCT and7element+iDST;combinedTypeII8elementDCT/negativeDSTselectorblocks;standaloneTypeIIcosine andsine. Retain NumPyRandomState123and sequential9/7/8positive amplitude draws,normalization,realstatepreparation and printed measured/expected arrays. Native typed qfunc binds classicalrealarrays at synthesis time and reuses existing transform lowering. Classical executable source matrix conventions take precedence over prose dimension/index typos. Preserve the source0.01phase-aligned tolerance as historical context;acceptance additionally requires absolutecomplexamplitude1e-12,including relative+iandminus signs,declaredregisterorder andzero work. No source loader,new productionAPIor hardware claim.",
+  "native_entrypoint": "examples.synthesis.functions.qct_qst.overview.main",
+  "native_notebook": "examples/synthesis/functions/qct_qst/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qct_qst_notebook.py"
+}

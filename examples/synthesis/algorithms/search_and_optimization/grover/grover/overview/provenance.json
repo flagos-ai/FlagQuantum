@@ -1,0 +1,85 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/grover/grover.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0266c0a4bad343c3b659fcdb540bf69142299e1e2d738746e4f17800c7313d39",
+  "git_blob_sha1": "ec928282eda448e1143c9060b5362459309cdaf3",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "3c7cf9de79f091e6cc64d97f5abe7413a255d702359cc5291fdd022624f24eaa"
+    },
+    {
+      "index": 8,
+      "sha256": "452f7cf2c6329ff8dd3acedb02d1ec5015b3f44999820bcb560f43a62d423b62"
+    },
+    {
+      "index": 11,
+      "sha256": "70658065085fd834fb7cac915fb179b1b547c000cd43350c7acadcfa4307d441"
+    },
+    {
+      "index": 13,
+      "sha256": "59a0993294a019efb5a1bb663c338e0d287ba2cbd93f4dd8a3ef976cb9456d03"
+    },
+    {
+      "index": 15,
+      "sha256": "a7d6a220f608230cafdb3021ba9de3195bbe6f012a2ee81766b1f51321dce1f9"
+    },
+    {
+      "index": 16,
+      "sha256": "6232780d6938dbdcb5c69add16449d41a5d4b1958a8b9716fd9440eb19a796bc"
+    },
+    {
+      "index": 18,
+      "sha256": "0ad2866b1b61ac7e061e9c322a288e230024db7a7ff5e58b63e352a3524bf6ca"
+    },
+    {
+      "index": 20,
+      "sha256": "571b8cf51d622bb5e03ee65c585e6a6a641e986057c68de9dec9a56120b6963a"
+    },
+    {
+      "index": 23,
+      "sha256": "4075d1f816f8382d176ac739e927b313ef44a781ffe01f4fa91ce9a21dfb44c4"
+    },
+    {
+      "index": 25,
+      "sha256": "46351b3e70e913a4e415791b69786291fa95dfca432e1a98ddf1041b86ff55d4"
+    },
+    {
+      "index": 27,
+      "sha256": "312075f850e3ce7d6dc07f0fc80ea71e19b850d56e1528108d911613b135d96e"
+    },
+    {
+      "index": 33,
+      "sha256": "c47590201c639b3bd2514d8549b1a605381b36293ba5d8102144afec972934ce"
+    },
+    {
+      "index": 35,
+      "sha256": "73692bd86c0a003f55f449b18de7f739dcca9fb02d69e1da48fea06784123e50"
+    },
+    {
+      "index": 36,
+      "sha256": "f33867dd756a1477d507bfc968b760c117d905e3884541f55ee34e663293d1e9"
+    },
+    {
+      "index": 37,
+      "sha256": "94a8e120e9373e0d61f57da94df50562604628c340629b9375ac359c350087d4"
+    },
+    {
+      "index": 39,
+      "sha256": "f7b7fc48ee3d596a9a7e8af95ac7770c7982dd9900d04abf3aad9bce6ee3619d"
+    },
+    {
+      "index": 41,
+      "sha256": "462d2aa7d5944f59362f1acbc96532b887adf0bcab379da3b6e8652e39b6c501"
+    },
+    {
+      "index": 42,
+      "sha256": "f2d6c2a7b157eeb5fc0cb197604d6000fb80b48bf03c729a7a9fa0eae96d2dd3"
+    }
+  ],
+  "scope": "Complete three-part adaptive Grover workflow:3-bit six-clause SAT,4-bit thirteen-clause SAT,5-bit six-edge MaxCut>=4;1000 shots per attempt;strict individual-row thresholds .45/.45/.1;bounded duplicate-consuming loop;truth tables,top3/top5/all32 observed results,planar graph and observed partition.",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.grover.grover.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/search_and_optimization/grover/grover/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_grover_notebook.py",
+  "native_semantic_adaptations": "Local static repetition binding replaces remote late-binding;explicit shot seeds1100/1200/1300 plus loop index replace unseeded source sampler.No identical remote outcome assertion.Integer bit i equals logicalq[i].Ties are sorted by packed word.The source n_solutions3/5 are display limits,both SAT truth tables have2 solutions.Local text drawings/resources replace hosted show.No new quantum kernel for retained four/five-bit counterparts."
+}

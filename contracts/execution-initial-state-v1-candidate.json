@@ -1,0 +1,22 @@
+{
+  "schema": "flagquantum.execution_initial_state",
+  "version": "1.0",
+  "status": "implemented_candidate",
+  "proposal": "contracts/execution-initial-state-proposal.json",
+  "authorization_record": "docs/api-changes/FQ-EXECUTION-INITIAL-STATE-20261112.md",
+  "implementation_authorized": true,
+  "release_authorized": false,
+  "run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None, initial_state: 'Tensor | None' = None) -> 'ExecutionResult'",
+  "plan_signature_unchanged": true,
+  "outer_plan_schema_unchanged": true,
+  "initial_state_extension": {
+    "namespace": "flagquantum.execution",
+    "kind": "initial_state",
+    "version": "1.0",
+    "payload": {
+      "representation": "statevector"
+    }
+  },
+  "scope": "exact_unbatched_cpu_pytorch_statevector",
+  "consumer_tests": "tests/api_contract/test_execution_initial_state.py"
+}

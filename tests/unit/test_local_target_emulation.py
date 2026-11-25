@@ -19,6 +19,7 @@ from flagquantum.core.target_capabilities import (
     CAPABILITY_NAMES,
     EvidenceLevel,
     FactExposure,
+    TargetCapabilitySnapshot,
 )
 from flagquantum.deployment.cloud import CloudBackendProfile
 from flagquantum.errors import CompilationError, ExecutionError
@@ -51,7 +52,7 @@ class _Profile:
         return CloudBackendProfile(**fields)  # type: ignore[arg-type]
 
 
-def _bell():
+def _bell() -> fq.Circuit:
     """A two-qubit program whose result depends on the compiled form."""
 
     return fq.Circuit(2, dtype="complex128").h(0).cx(0, 1)
@@ -62,7 +63,7 @@ def _snapshot(
     *,
     precision: str = "complex128",
     emission_profile: str = "openqasm-3.0",
-):
+) -> TargetCapabilitySnapshot:
     return emulation._target_snapshot(
         profile,
         precision=precision,
@@ -272,7 +273,7 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
     partial = replace(
         _bell().to_ir(),
         measurements=tuple(
-            lower_outputs(fq.counts(qubits=[0]), n_qubits=2, shots=8, seed=1)
+            lower_outputs(fq.counts(qubits=[0]), n_qubits=2, shots=8, seed=1) or ()
         ),
     )
     with pytest.raises(TargetEmulationError, match="terminal full-register"):
@@ -280,8 +281,10 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
 
     doubled = replace(
         _bell().to_ir(),
-        measurements=tuple(lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1))
-        + tuple(lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1)),
+        measurements=tuple(
+            lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1) or ()
+        )
+        + tuple(lower_outputs(fq.counts(), n_qubits=2, shots=8, seed=1) or ()),
     )
     with pytest.raises(TargetEmulationError, match="exactly one terminal"):
         emulate(doubled, target=_Profile.make(), shots=8, seed=1)
@@ -292,7 +295,7 @@ def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -
     observed = replace(
         _bell().to_ir(),
         measurements=tuple(
-            lower_outputs(expectation(fq.Z(0)), n_qubits=2, shots=None, seed=1)
+            lower_outputs(expectation(fq.Z(0)), n_qubits=2, shots=None, seed=1) or ()
         ),
     )
     with pytest.raises(TargetEmulationError, match="counts, samples requests"):
@@ -390,10 +393,10 @@ def test_emulation_error_is_an_execution_error() -> None:
 
 
 def test_emulation_reports_the_compilers_own_refusal_for_an_unreachable_gate() -> None:
-    # A basis with no z-rotation and no pi/2 pulse cannot carry Hadamard. The
-    # caller sees the compiler's diagnostic, not a reworded one.
+    # A CX-only basis cannot carry Hadamard. The caller sees the Compiler
+    # diagnostic; a universal U3 basis now has a verified exact conversion.
     with pytest.raises(CompilationError, match="no verified decomposition"):
-        emulate(_bell(), target=_Profile.make(basis_gates=("u3", "cx")))
+        emulate(_bell(), target=_Profile.make(basis_gates=("cx",)))
 
 
 def test_evaluated_at_is_forwarded_to_the_capability_matcher() -> None:

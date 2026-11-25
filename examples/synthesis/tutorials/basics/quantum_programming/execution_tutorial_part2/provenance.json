@@ -1,0 +1,6 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a5d068e4e3aafd7280db8560f9b0ee81339ce8cd631c026ee576f1660efc72a0",
+  "scope": "Quantum program at two nonzero parameter bindings; notebook optimization, sampling and sessions remain pending."
+}

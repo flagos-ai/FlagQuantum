@@ -10,7 +10,9 @@ This module builds that planner and measures it through the shipped consumer
 (``route_to_topology``) and the shipped optimizer, so every comparison is the same
 code path and the same cost model on both sides. The answer is negative, and the
 measurement is checked in so the decision can be re-tested rather than re-argued.
-On the 140-program basis this module measures by default, whose shipped baselines
+The numbers below are historical single-trial results. The live benchmark now
+reports that control separately from production multi-trial routing. On the
+140-program basis of the original measurement, whose baselines
 retain 2410 SWAPs (``sabre``) and 2051 (``sabre_layout``) after optimization:
 
 * The reference search is *correct*. Every compiled program is compared with its
@@ -59,7 +61,7 @@ from unittest.mock import patch
 import torch
 
 import flagquantum as fq
-import flagquantum.compiler.routing as routing_module
+import flagquantum.compiler.topology.routing_strategy as routing_strategy_module
 import flagquantum.compiler.topology.sabre as sabre_module
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
 from flagquantum.compiler.optimization.optimization_levels import (
@@ -120,7 +122,8 @@ class Configuration:
         label: Stable name of the row this configuration produces.
         strategy: Shipped routing strategy whose consumer materializes the plan.
         objective: ``None`` keeps the shipped SWAP search; every other value
-            selects a reference objective. ``published`` is Qiskit's
+            selects a reference objective. ``single_trial`` retains the historical
+            deterministic control. ``published`` is Qiskit's
             summed-distance window, ``front`` is the min-max front-layer key, and
             ``sabre`` reads the shipped planner's cost on a whole layout.
         search_depth: SWAPs in a candidate chain.
@@ -139,7 +142,7 @@ class Configuration:
     def planner(self) -> Any:
         """Return the SWAP search this configuration routes with."""
 
-        if self.objective is None:
+        if self.objective in (None, "single_trial"):
             return None
 
         def plan(
@@ -164,6 +167,8 @@ class Configuration:
 DEFAULT_CONFIGURATIONS = (
     Configuration("sabre", "sabre"),
     Configuration("sabre_layout", "sabre_layout"),
+    Configuration("sabre/single-trial", "sabre", "single_trial"),
+    Configuration("layout/single-trial", "sabre_layout", "single_trial"),
     # The fidelity anchor: the reference search at its smallest setting, where the
     # shipped planner's own decision rule is the only candidate it can consider.
     Configuration("sabre/d1w1", "sabre", "sabre", 1, 1),
@@ -616,13 +621,13 @@ def plan_lookahead_swaps(
 def _reference_planner(planner: Any) -> Iterator[None]:
     """Route with ``planner`` in place of the shipped SWAP search.
 
-    ``routing`` binds the shipped search at import, and ``sabre`` binds the one
-    its layout search calls, so both bindings are replaced: a measured plan must
-    be materialized by the shipped consumer, not by a copy of it.
+    ``routing_strategy`` binds the shipped search at import, and ``sabre`` binds
+    the one its layout search calls. Both bindings are replaced so the shipped
+    consumer materializes each measured plan.
     """
 
     with (
-        patch.object(routing_module, "plan_sabre_swaps", planner),
+        patch.object(routing_strategy_module, "plan_sabre_swaps", planner),
         patch.object(sabre_module, "plan_sabre_swaps", planner),
     ):
         yield
@@ -634,7 +639,29 @@ def _routed(
     """Compile one program through the consumer of the configured planner."""
 
     planner = configuration.planner()
-    with _reference_planner(planner) if planner else nullcontext():
+    # A reference experiment replaces the original deterministic search, not
+    # the production trial portfolio. Keep that historical control explicit.
+    with (
+        _reference_planner(planner) if planner else nullcontext(),
+        (
+            patch.object(
+                sabre_module,
+                "_select_sabre_trials",
+                side_effect=lambda program, coupling, baseline, **kwargs: baseline,
+            )
+            if configuration.objective is not None
+            else nullcontext()
+        ),
+        (
+            patch.object(
+                routing_strategy_module,
+                "_select_sabre_trials",
+                side_effect=lambda program, coupling, baseline, **kwargs: baseline,
+            )
+            if configuration.objective is not None
+            else nullcontext()
+        ),
+    ):
         routed = route_to_topology(program, device, strategy=configuration.strategy)
     return record_post_routing_optimization(
         optimize(routed, optimization_level=OPTIMIZATION_LEVEL)
@@ -746,7 +773,7 @@ def run_benchmark(
         # counted, so a configuration that fails closed on some cases is never
         # compared on output it did not produce.
         baseline = measured.get("sabre_layout")
-        shipped = measured.get("sabre")
+        shipped = measured.get("sabre/single-trial")
         anchor = measured.get("sabre/d1w1")
         if baseline is not None:
             for label, (value, _, _) in measured.items():
@@ -817,6 +844,7 @@ def run_benchmark(
         "distribution_semantics": "single_device_fast_path",
         "scalability_claim_allowed": False,
         "reference_algorithm": "qiskit_lookahead_swap_beam_search",
+        "reference_baseline": "explicit deterministic single-trial controls; live production portfolio reported separately",
         "cost_model": (
             "instruction count of the compiled program after topology routing and "
             "the shipped optimizer; swaps are counted by "
@@ -841,6 +869,7 @@ def run_benchmark(
         "max_state_difference": max_state_difference,
         "fidelity_anchor": {
             "configuration": "sabre/d1w1",
+            "baseline": "sabre/single-trial",
             "case_count": anchored_cases,
             "identical_inserted_swap_sequence_case_count": anchor_identical_swaps,
             "equal_planned_swap_count_case_count": anchor_equal_planned_swaps,

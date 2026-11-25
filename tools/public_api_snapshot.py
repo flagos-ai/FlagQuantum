@@ -44,6 +44,10 @@ TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
 GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 OPENQASM_IMPORT_CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 EXPERIMENT_CONTRACT = ROOT / "contracts" / "experiment-file-v1-candidate.json"
+INITIAL_STATE_CONTRACT = (
+    ROOT / "contracts" / "execution-initial-state-v1-candidate.json"
+)
+RUNTIME_INPUTS_CONTRACT = ROOT / "contracts/execution-runtime-inputs-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -340,6 +344,12 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(gradient_contract.get("signatures", {}))
     if openqasm_import_contract.get("implementation_authorized") is True:
         expected_signatures.update(openqasm_import_contract.get("signatures", {}))
+    initial_state_contract = json.loads(INITIAL_STATE_CONTRACT.read_text())
+    errors.extend(_validate_authorized_initial_state(initial_state_contract))
+    errors.extend(_validate_authorized_runtime_inputs())
+    expected_signatures["run"] = _initial_state_run_signature(
+        expected_signatures["run"]
+    )
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -396,6 +406,148 @@ def validate() -> tuple[str, ...]:
                 if str(inspect.signature(getattr(value, symbol))) != expected_signature:
                     errors.append(f"authorized Twin API signature changed: {symbol}")
     return tuple(errors)
+
+
+def _initial_state_run_signature(signature: str) -> str:
+    contract = json.loads(INITIAL_STATE_CONTRACT.read_text())
+    if contract.get("implementation_authorized") is not True:
+        return signature
+    signature = signature.replace(
+        "name: 'str | None' = None)",
+        "name: 'str | None' = None, initial_state: 'Tensor | None' = None)",
+    )
+    return _runtime_inputs_run_signature(signature)
+
+
+def _runtime_inputs_run_signature(signature: str) -> str:
+    contract = json.loads(RUNTIME_INPUTS_CONTRACT.read_text())
+    if contract.get("implementation_authorized") is not True:
+        return signature
+    return signature.replace(
+        "initial_state: 'Tensor | None' = None)",
+        "initial_state: 'Tensor | None' = None, inputs: 'Mapping[str, float | Tensor] | None' = None)",
+    )
+
+
+def _validate_authorized_runtime_inputs() -> list[str]:
+    import flagquantum as fq
+
+    contract = json.loads(RUNTIME_INPUTS_CONTRACT.read_text())
+    proposal = json.loads((ROOT / contract["proposal"]).read_text())
+    previous = json.loads(INITIAL_STATE_CONTRACT.read_text())["run_signature"]
+    expected = {
+        "schema": "flagquantum.execution_runtime_inputs",
+        "version": "1.0",
+        "status": "implemented_candidate",
+        "proposal": "contracts/execution-runtime-inputs-proposal.json",
+        "authorization_record": "docs/api-changes/FQ-EXECUTION-RUNTIME-INPUTS-20261112.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "previous_run_signature": previous,
+        "run_signature": _runtime_inputs_run_signature(previous),
+        "plan_signature_unchanged": True,
+        "outer_plan_schema_unchanged": True,
+        "runtime_inputs_extension": {
+            "namespace": "flagquantum.execution",
+            "kind": "runtime_inputs",
+            "version": "1.0",
+            "payload": {"parameters": "sorted_unique_symbolic_names"},
+        },
+        "scope": "exact_unbatched_cpu_pytorch_statevector_real_scalar_angles",
+        "consumer_tests": "tests/api_contract/test_execution_runtime_inputs.py",
+    }
+    approval = proposal.get("api_owner_approval") or {}
+    if (
+        contract != expected
+        or any(
+            type(contract.get(key)) is not bool
+            for key in (
+                "implementation_authorized",
+                "release_authorized",
+                "plan_signature_unchanged",
+                "outer_plan_schema_unchanged",
+            )
+        )
+        or proposal.get("implementation_authorized") is not True
+        or approval
+        != {
+            "kind": "explicit_human_user_approval",
+            "date": "2026-11-12",
+            "request": "Approved",
+            "record": expected["authorization_record"],
+        }
+        or not (ROOT / expected["authorization_record"]).is_file()
+        or str(inspect.signature(fq.run, eval_str=False)) != expected["run_signature"]
+    ):
+        return [
+            "runtime-input API differs from its explicitly approved additive contract"
+        ]
+    return []
+
+
+def _validate_authorized_initial_state(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+
+    proposal = json.loads(
+        (ROOT / "contracts/execution-initial-state-proposal.json").read_text()
+    )
+    errors: list[str] = []
+    historical_signature = json.loads(
+        (ROOT / "contracts/synthesis-program-run-v1-candidate.json").read_text()
+    )["run_signature"]
+    expected_signature = historical_signature.replace(
+        "name: 'str | None' = None)",
+        "name: 'str | None' = None, initial_state: 'Tensor | None' = None)",
+    )
+    expected = {
+        "schema": "flagquantum.execution_initial_state",
+        "version": "1.0",
+        "status": "implemented_candidate",
+        "proposal": "contracts/execution-initial-state-proposal.json",
+        "authorization_record": "docs/api-changes/FQ-EXECUTION-INITIAL-STATE-20261112.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "run_signature": expected_signature,
+        "plan_signature_unchanged": True,
+        "outer_plan_schema_unchanged": True,
+        "initial_state_extension": {
+            "namespace": "flagquantum.execution",
+            "kind": "initial_state",
+            "version": "1.0",
+            "payload": {"representation": "statevector"},
+        },
+        "scope": "exact_unbatched_cpu_pytorch_statevector",
+        "consumer_tests": "tests/api_contract/test_execution_initial_state.py",
+    }
+    if contract != expected or any(
+        type(contract.get(key)) is not bool
+        for key in (
+            "implementation_authorized",
+            "release_authorized",
+            "plan_signature_unchanged",
+            "outer_plan_schema_unchanged",
+        )
+    ):
+        errors.append(
+            "initial-state candidate exceeds the approved signature or execution scope"
+        )
+    approval = proposal.get("api_owner_approval", {})
+    if (
+        proposal.get("implementation_authorized") is not True
+        or approval.get("kind") != "explicit_human_user_approval"
+        or approval.get("date") != "2026-11-12"
+        or approval.get("review_commit") != "c420795e2e6d668a2039cbc986945449f7da345f"
+        or not (ROOT / expected["authorization_record"]).is_file()
+    ):
+        errors.append("initial-state API-owner approval record is missing")
+    if (
+        proposal["public_api"]["current_run_signature"] != historical_signature
+        or proposal["public_api"]["proposed_run_signature"] != expected_signature
+        or str(inspect.signature(fq.run, eval_str=False))
+        != _runtime_inputs_run_signature(expected_signature)
+    ):
+        errors.append("fq.run differs from the approved initial_state keyword addition")
+    return errors
 
 
 def _validate_authorized_execution_options(
@@ -496,7 +648,8 @@ def _validate_authorized_execution_plan(
             " | LindbladPlan'", " | LindbladPlan | SynthesisProgram'"
         )
     if (
-        str(inspect.signature(fq.run)) != approved_run_signature
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(approved_run_signature)
         or contract["proposed_signatures"]["run"] != approved_run_signature
     ):
         errors.append("proposal 092 root input union differs from approval")
@@ -660,7 +813,49 @@ _SYNTH_ACTIVE_EXPORTS = (
     "U",
     "prepare_uniform_interval_state",
     "control",
+    "X",
+    "RZ",
+    "PHASE",
+    "RZZ",
+    "prepare_bell_state",
+    "prepare_ghz_state",
+    "prepare_amplitudes",
+    "prepare_state",
+    "inplace_prepare_amplitudes",
+    "inplace_prepare_state",
+    "drop",
+    "qpe",
+    "select_rotation",
+    "QArray",
+    "H",
+    "S",
+    "RX",
+    "qft",
+    "qct_type2",
+    "qst_type2",
+    "qct_qst_type2",
+    "qct_qst_type1",
+    "unitary",
+    "modular_exp",
+    "suzuki_trotter",
+    "qdrift",
+    "min",
+    "max",
+    "RESET",
+    "quantize",
 )
+
+
+_SYNTH_ARRAY_SIGNATURES = {
+    "allocate": "(size_or_out: 'int | QNum | QArray[QBit]', out: 'QNum | QArray[QBit] | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_uniform_interval_state": "(start: 'int', stop: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "RZZ": "(angle: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_bell_state": "(state: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_ghz_state": "(size: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+}
 
 
 def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
@@ -755,7 +950,8 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
     if (
         proposal["proposed_run_signature"] != expected_run
         or contract.get("run_signature") != expected_run
-        or str(inspect.signature(fq.run, eval_str=False)) != expected_run
+        or str(inspect.signature(fq.run, eval_str=False))
+        != _initial_state_run_signature(expected_run)
     ):
         errors.append(
             "synthesis run signature exceeds the approved single input addition"
@@ -775,13 +971,22 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         synth.Program, "to_ir"
     ):
         errors.append("synthesis Program owner/coercion differs from admission")
-    if any(name in fq.__all__ for name in active_exports):
+    from flagquantum.observables import X as OBSERVABLE_X
+
+    if (
+        set(active_exports).intersection(fq.__all__) != {"X"}
+        or fq.X is not OBSERVABLE_X
+    ):
         errors.append("synthesis feature symbols must not enter stable root exports")
     for key, value in (
         ("probabilities_signature", synth.Program.probabilities),
         ("synthesize_signature", synth.synthesize),
     ):
-        if contract.get(key) != str(inspect.signature(value, eval_str=False)):
+        if contract.get(key) != (
+            _synthesis_pre_classical_signature(value)
+            if key == "synthesize_signature"
+            else str(inspect.signature(value, eval_str=False))
+        ):
             errors.append(f"synthesis {key} differs from its candidate contract")
     source_contract = json.loads(
         (ROOT / "contracts/synthesis-qmod-v1-candidate.json").read_text()
@@ -861,7 +1066,8 @@ def _validate_authorized_synthesis_qmod(contract: Any) -> list[str]:
     ):
         errors.append("Qmod source predecessor differs from reviewed phase baseline")
     if (
-        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(proposal["unchanged_run_signature"])
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
@@ -929,7 +1135,10 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
         errors.append("phase scope requires a Boolean flag and integer return width")
     if not (ROOT / expected["authorization_record"]).is_file():
         errors.append("predicate phase implementation authorization is missing")
-    if str(inspect.signature(synth.synthesize)) != expected["synthesize_signature"]:
+    if (
+        _synthesis_pre_classical_signature(synth.synthesize)
+        != expected["synthesize_signature"]
+    ):
         errors.append("predicate phase signature exceeds approved admission")
     if tuple(synth.__all__) != _SYNTH_ACTIVE_EXPORTS:
         errors.append("phase namespace differs from the authorized program successor")
@@ -938,7 +1147,8 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
     )
     errors.extend(_validate_authorized_synthesis_python_program(program_contract))
     if (
-        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(proposal["unchanged_run_signature"])
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
@@ -946,40 +1156,91 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
     return errors
 
 
-def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
-    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
-    import flagquantum as fq
-    from flagquantum import synth
-    from flagquantum.services import synthesis
+def _synthesis_pre_classical_signature(function: Any) -> str:
+    """Protect historical parameters independently of the classical successor."""
+    signature = inspect.signature(function, eval_str=False)
+    return str(
+        signature.replace(
+            parameters=[
+                p
+                for name, p in signature.parameters.items()
+                if name != "classical_inputs"
+            ]
+        )
+    )
 
-    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
-    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
-    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
-        return ["reviewed Python program contract changed"]
-    expected = json.loads(path.read_text())
-    if not isinstance(contract, dict) or json.dumps(
-        contract, sort_keys=True
-    ) != json.dumps(expected, sort_keys=True):
-        return ["Python program admission differs from its reviewed scope"]
+
+def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
+    from flagquantum import synth
+
+    previous = json.loads(
+        (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
+    )["synthesize_signature"]
+    expected_signature = previous.replace(
+        "memory_limit_bytes: 'int | None' = None",
+        "classical_inputs: 'Mapping[str, float | Sequence[float]] | None' = None, memory_limit_bytes: 'int | None' = None",
+    )
+    expected = {
+        "schema": "flagquantum.synthesis_native_classical_admission",
+        "version": "1.1",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["RX"],
+        "signatures": {"RX": "(angle: 'float', target: 'QBit', /) -> 'None'"},
+        "synthesize_signature": expected_signature,
+        "previous_synthesize_signature": previous,
+        "annotations": ["float", "list[float]", "int", "list[int]"],
+        "binding": "synthesis_time",
+        "real_input_bound": 2**53,
+        "max_classical_elements": 4096,
+        "helper_roles": ["classical", "inout"],
+        "new_ir": False,
+        "new_executor": False,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "integer_input_bound": 2**53,
+        "integer_index_bound": 4096,
+        "classical_conditionals": {
+            "binding": "synthesis_time",
+            "numeric_comparisons": ["==", "!=", "<", "<=", ">", ">="],
+            "logical_operators": ["and", "or", "not"],
+            "boolean_literals": True,
+            "numeric_truthiness": False,
+            "quantum_conditions": "refuse; use coherent control",
+            "max_condition_depth": 32,
+            "max_branch_nesting": 32,
+            "unselected_branch": "not captured; no branch return/break/continue anywhere",
+            "shared_capture_and_resource_budgets": True,
+        },
+        "extension_authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md",
+    }
     errors = []
-    if (
-        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
-        != contract["proposal_sha256"]
+    if contract != expected or any(
+        type(contract.get(name)) is not type(value) for name, value in expected.items()
     ):
-        errors.append("reviewed Python program proposal changed")
-    for filename, digest in contract["historical_contracts_sha256"].items():
-        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
-            errors.append("Python program must preserve historical synthesis contracts")
-    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
-        errors.append("Python program export delta exceeds authorization")
-    exports = _SYNTH_ACTIVE_EXPORTS
-    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
-        errors.append("Python program namespace differs from its reviewed scope")
-    if any(
-        getattr(synth, name, None) is not getattr(synthesis, name, None)
-        for name in exports
-    ):
-        errors.append("Python program facade must reuse Services symbols")
+        errors.append("native classical admission differs from its authorized scope")
+    if str(inspect.signature(synth.synthesize)) != expected_signature:
+        errors.append("native classical synthesis signature differs from approval")
+    if str(inspect.signature(synth.RX)) != expected["signatures"]["RX"]:
+        errors.append("native RX signature differs from approval")
+    if not (ROOT / str(expected["authorization_record"])).is_file():
+        errors.append("native classical authorization is missing")
+    if not (ROOT / str(expected["extension_authorization_record"])).is_file():
+        errors.append("native integer/control authorization is missing")
+    return errors
+
+
+_SYNTH_JOINT_SIGNATURES: dict[str, str] = {
+    "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+}
+
+
+def _validate_synthesis_phase_and_cleanup() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     phase_contract = json.loads(
         (ROOT / "contracts/synthesis-python-phase-up02-candidate.json").read_text()
     )
@@ -1017,6 +1278,70 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native program cleanup differs from its UP-03 authorization")
+    return errors
+
+
+def _validate_synthesis_quantization_and_reset() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    quantized_contract = json.loads(
+        (
+            ROOT / "contracts/synthesis-native-quantized-expressions-candidate.json"
+        ).read_text()
+    )
+    quantized_record = (
+        "docs/api-changes/FQ-SYNTH-EXPLICIT-QUANTIZED-EXPRESSIONS-20261111.md"
+    )
+    quantized_signature = "(expression: 'QNum | float', /, *, fractional_bits: 'int', literal_bits: 'int') -> 'QNum'"
+    if (
+        quantized_contract
+        != {
+            "schema": "flagquantum.synthesis_native_quantized_expressions_admission",
+            "version": "1.0",
+            "namespace": "flagquantum.synth",
+            "added_exports": ["quantize"],
+            "signature": quantized_signature,
+            "authorization_record": quantized_record,
+            "implementation_authorized": True,
+            "release_authorized": False,
+        }
+        or not (ROOT / quantized_record).is_file()
+        or not hasattr(synth, "quantize")
+        or str(inspect.signature(synth.quantize)) != quantized_signature
+    ):
+        errors.append(
+            "native quantize differs from its explicit bounded precision contract"
+        )
+    reset_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-reset-candidate.json").read_text()
+    )
+    reset_record = "docs/api-changes/FQ-SYNTH-NATIVE-RESET-20261111.md"
+    reset_signature = "(target: 'QBit', /) -> 'None'"
+    if (
+        reset_contract
+        != {
+            "schema": "flagquantum.synthesis_native_reset_admission",
+            "version": "1.0",
+            "namespace": "flagquantum.synth",
+            "added_exports": ["RESET"],
+            "signature": reset_signature,
+            "authorization_record": reset_record,
+            "implementation_authorized": True,
+            "release_authorized": False,
+        }
+        or not (ROOT / reset_record).is_file()
+        or not hasattr(synth, "RESET")
+        or str(inspect.signature(synth.RESET)) != reset_signature
+    ):
+        errors.append("native RESET differs from its authorized channel contract")
+    return errors
+
+
+def _validate_synthesis_gates_and_control() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
@@ -1034,16 +1359,30 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         errors.append("native R differs from its authorization")
     if (
         str(inspect.signature(synth.prepare_uniform_interval_state))
-        != "(start: 'int', stop: 'int', target: 'QNum', /) -> 'None'"
+        != _SYNTH_ARRAY_SIGNATURES["prepare_uniform_interval_state"]
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
-    if (
-        str(inspect.signature(synth.control))
-        != "(condition: 'QBit', body: 'Callable[[], None]', /) -> 'None'"
+    control_signature = "(condition: 'QNum | QArray[QBit] | bool', body: 'Callable[[], None]', /) -> 'None'"
+    control_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-array-control-candidate.json").read_text()
+    )
+    if control_admission != {
+        "schema": "flagquantum.synthesis_native_array_control_admission",
+        "version": "1.1",
+        "namespace": "flagquantum.synth",
+        "changed_signatures": {"control": control_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-PREPARATION-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(control_admission.get("implementation_authorized")) is not bool
+        or type(control_admission.get("release_authorized")) is not bool
+        or str(inspect.signature(synth.control)) != control_signature
         or not (ROOT / "docs/api-changes/FQ-SYNTH-SCALAR-CONTROL.md").is_file()
+        or not (ROOT / control_admission["authorization_record"]).is_file()
     ):
-        errors.append("native scalar control differs from its authorization")
+        errors.append("native coherent control differs from its authorization")
     pair_signatures = {
         "CX": "(control: 'QBit', target: 'QBit', /) -> 'None'",
         "SWAP": "(first: 'QBit', second: 'QBit', /) -> 'None'",
@@ -1064,18 +1403,519 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native pair gates differ from their authorization")
+    return errors
+
+
+def _validate_synthesis_transforms_and_preparation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    transform_contract = json.loads(
+        (ROOT / "contracts/synthesis-python-transforms-up06-candidate.json").read_text()
+    )
+    transform_signatures = {
+        "qct_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "qst_type2": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "qct_qst_type2": "(target: 'QNum | QArray[QBit]', selector: 'QBit', /) -> 'None'",
+        "qct_qst_type1": "(target: 'QNum | QArray[QBit]', /) -> 'None'",
+    }
+    if (
+        transform_contract.get("schema")
+        != "flagquantum.synthesis_python_transform_admission"
+        or transform_contract.get("version") != "1.0"
+        or transform_contract.get("namespace") != "flagquantum.synth"
+        or transform_contract.get("signatures") != transform_signatures
+        or transform_contract.get("implementation_authorized") is not True
+        or transform_contract.get("release_authorized") is not False
+        or transform_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-PYTHON-TRANSFORMS-UP06.md"
+        or not (ROOT / transform_contract["authorization_record"]).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in transform_signatures.items()
+        )
+    ):
+        errors.append("native trigonometric transforms differ from their authorization")
+    catalog_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-catalog-candidate.json").read_text()
+    )
+    catalog_signatures = {
+        "X": "(target: 'QBit', /) -> 'None'",
+        "RZ": "(angle: 'float', target: 'QBit', /) -> 'None'",
+        "PHASE": "(angle: 'float', target: 'QBit', /) -> 'None'",
+        "RZZ": "(angle: 'float', target: 'QNum', /) -> 'None'",
+        "prepare_bell_state": "(state: 'int', target: 'QNum', /) -> 'None'",
+        "prepare_ghz_state": "(size: 'int', target: 'QNum', /) -> 'None'",
+        "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'",
+        "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'",
+    }
+    if (
+        catalog_contract.get("namespace") != "flagquantum.synth"
+        or catalog_contract.get("signatures") != catalog_signatures
+        or catalog_contract.get("implementation_authorized") is not True
+        or catalog_contract.get("release_authorized") is not False
+        or catalog_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md").is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name)))
+            != _SYNTH_ARRAY_SIGNATURES.get(name, signature)
+            for name, signature in catalog_signatures.items()
+        )
+    ):
+        errors.append("native catalog operations differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_storage() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    joint_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-joint-storage-candidate.json").read_text()
+    )
+    if (
+        joint_contract.get("expanded_signatures") != _SYNTH_JOINT_SIGNATURES
+        or joint_contract.get("implementation_authorized") is not True
+        or joint_contract.get("release_authorized") is not False
+        or joint_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-JOINT-STORAGE-20261110.md"
+        or not (
+            ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-JOINT-STORAGE-20261110.md"
+        ).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in _SYNTH_JOINT_SIGNATURES.items()
+        )
+    ):
+        errors.append("joint native storage differs from its authorized admission")
+    inplace_contract = json.loads(
+        (
+            ROOT / "contracts/synthesis-native-inplace-preparation-candidate.json"
+        ).read_text()
+    )
+    inplace_signatures = {
+        "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    }
+    if (
+        inplace_contract.get("namespace") != "flagquantum.synth"
+        or inplace_contract.get("added_exports") != list(inplace_signatures)
+        or inplace_contract.get("signatures") != inplace_signatures
+        or inplace_contract.get("implementation_authorized") is not True
+        or inplace_contract.get("release_authorized") is not False
+        or inplace_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md"
+        or not (
+            ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md"
+        ).is_file()
+        or any(
+            not callable(function := getattr(synth, name, None))
+            or str(inspect.signature(function)) != _SYNTH_JOINT_SIGNATURES[name]
+            for name, signature in inplace_signatures.items()
+        )
+    ):
+        errors.append("native in-place preparation differs from its authorized scope")
+    hidden_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-hidden-storage-candidate.json").read_text()
+    )
+    if (
+        hidden_contract.get("added_exports") != ["drop"]
+        or hidden_contract.get("signatures")
+        != {"drop": "(target: 'QNum | QArray[QBit]', /) -> 'None'"}
+        or hidden_contract.get("implementation_authorized") is not True
+        or hidden_contract.get("release_authorized") is not False
+        or hidden_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md"
+        or not (ROOT / hidden_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.drop)) != hidden_contract["signatures"]["drop"]
+    ):
+        errors.append("native hidden storage differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_qpe() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    matrix_qpe_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-matrix-qpe-candidate.json").read_text()
+    )
+    if (
+        matrix_qpe_contract.get("added_exports") != ["qpe"]
+        or matrix_qpe_contract.get("signatures")
+        != {
+            "qpe": "(callback: 'Callable[[], None]', phase_result: 'QNum', /) -> 'None'"
+        }
+        or matrix_qpe_contract.get("implementation_authorized") is not True
+        or matrix_qpe_contract.get("release_authorized") is not False
+        or matrix_qpe_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md"
+        or not (ROOT / matrix_qpe_contract["authorization_record"]).is_file()
+    ):
+        errors.append("native matrix qpe differs from its authorized scope")
+    callback_qpe_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-qpe-callback-candidate.json").read_text()
+    )
+    if (
+        callback_qpe_contract.get("signatures") != matrix_qpe_contract["signatures"]
+        or callback_qpe_contract.get("callback_ownership_changes") is not False
+        or callback_qpe_contract.get("conditional_global_phase_preserved") is not True
+        or callback_qpe_contract.get("shared_control_lowering_owner") != "compiler"
+        or callback_qpe_contract.get("native_effect_operations_max") != 4096
+        or callback_qpe_contract.get("implementation_authorized") is not True
+        or callback_qpe_contract.get("release_authorized") is not False
+        or callback_qpe_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-QPE-CALLBACK-20261110.md"
+        or not (ROOT / callback_qpe_contract["authorization_record"]).is_file()
+    ):
+        errors.append("native qpe callbacks differ from their authorized scope")
+    power_qpe_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-qpe-power-candidate.json").read_text()
+    )
+    if (
+        power_qpe_contract.get("signatures")
+        != {
+            "qpe": "(callback: 'Callable[[], None] | Callable[[int], None]', phase_result: 'QNum', /) -> 'None'"
+        }
+        or power_qpe_contract.get("callback_ownership_changes") is not False
+        or power_qpe_contract.get("conditional_global_phase_preserved") is not True
+        or power_qpe_contract.get("phase_bits_max") != 8
+        or power_qpe_contract.get("native_effect_operations_max") != 4096
+        or power_qpe_contract.get("implementation_authorized") is not True
+        or power_qpe_contract.get("release_authorized") is not False
+        or power_qpe_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-QPE-POWER-20261113.md"
+        or not (ROOT / power_qpe_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.qpe)) != power_qpe_contract["signatures"]["qpe"]
+    ):
+        errors.append("native qpe power callbacks differ from their authorized scope")
+    rotation_table_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-rotation-table-candidate.json").read_text()
+    )
+    if (
+        rotation_table_contract.get("added_exports") != ["select_rotation"]
+        or rotation_table_contract.get("implementation_authorized") is not True
+        or rotation_table_contract.get("release_authorized") is not False
+        or rotation_table_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-ROTATION-TABLE-20261110.md"
+        or not (ROOT / rotation_table_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.select_rotation))
+        != rotation_table_contract["signatures"]["select_rotation"]
+    ):
+        errors.append("native rotation tables differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_views_and_unitary() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    views = json.loads(
+        (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
+    )
+    if (
+        views.get("namespace") != "flagquantum.synth"
+        or views.get("added_exports") != ["QArray", "H", "S"]
+        or views.get("expanded_signatures") != _SYNTH_ARRAY_SIGNATURES
+        or views.get("signatures")
+        != {"H": "(target: 'QBit', /) -> 'None'", "S": "(target: 'QBit', /) -> 'None'"}
+        or views.get("implementation_authorized") is not True
+        or views.get("release_authorized") is not False
+        or views.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md").is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in {
+                **_SYNTH_ARRAY_SIGNATURES,
+                **views.get("signatures", {}),
+            }.items()
+        )
+    ):
+        errors.append("native bit-array operations differ from their authorized scope")
+    fourier = json.loads(
+        (ROOT / "contracts/synthesis-native-fourier-candidate.json").read_text()
+    )
+    fourier_signature = "(target: 'QNum | QArray[QBit]', /) -> 'None'"
+    if fourier != {
+        "schema": "flagquantum.synthesis_native_fourier_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["qft"],
+        "signatures": {"qft": fourier_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(fourier.get("implementation_authorized")) is not bool
+        or type(fourier.get("release_authorized")) is not bool
+        or not (ROOT / fourier["authorization_record"]).is_file()
+        or str(inspect.signature(synth.qft)) != fourier_signature
+    ):
+        errors.append("native Fourier operation differs from its authorized scope")
+    matrix_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-unitary-candidate.json").read_text()
+    )
+    matrix_signature = "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QBit]', /) -> 'None'"
+    if matrix_admission != {
+        "schema": "flagquantum.synthesis_native_unitary_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["unitary"],
+        "signatures": {"unitary": matrix_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(matrix_admission.get("implementation_authorized")) is not bool
+        or type(matrix_admission.get("release_authorized")) is not bool
+        or not (ROOT / matrix_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.unitary)) != _SYNTH_JOINT_SIGNATURES["unitary"]
+    ):
+        errors.append("native unitary operation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_modular_exponentiation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    modular_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-modular-exp-candidate.json").read_text()
+    )
+    modular_signature = "(n: 'int', a: 'int', x: 'QNum', power: 'QNum', /) -> 'None'"
+    if modular_admission != {
+        "schema": "flagquantum.synthesis_native_modular_exp_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["modular_exp"],
+        "signatures": {"modular_exp": modular_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(modular_admission.get("implementation_authorized")) is not bool
+        or type(modular_admission.get("release_authorized")) is not bool
+        or not (ROOT / modular_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.modular_exp)) != modular_signature
+    ):
+        errors.append("native modular exponentiation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_pauli_evolution() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    evolution_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-evolution-candidate.json").read_text()
+    )
+    evolution_signature = "(operator: 'Observable', time: 'float', order: 'int', repetitions: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'"
+    if evolution_admission != {
+        "schema": "flagquantum.synthesis_native_evolution_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["suzuki_trotter"],
+        "signatures": {"suzuki_trotter": evolution_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(evolution_admission.get("implementation_authorized")) is not bool
+        or type(evolution_admission.get("release_authorized")) is not bool
+        or not (ROOT / evolution_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.suzuki_trotter))
+        != evolution_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        )
+    ):
+        errors.append("native Pauli evolution differs from its authorized scope")
+    sampled_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-qdrift-candidate.json").read_text()
+    )
+    sampled_signature = "(operator: 'Observable', time: 'float', samples: 'int', target: 'QNum | QArray[QBit]', seed: 'int' = 0, /) -> 'None'"
+    if sampled_admission != {
+        "schema": "flagquantum.synthesis_native_qdrift_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["qdrift"],
+        "signatures": {"qdrift": sampled_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-QDRIFT-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(sampled_admission.get("implementation_authorized")) is not bool
+        or type(sampled_admission.get("release_authorized")) is not bool
+        or str(inspect.signature(synth.qdrift))
+        != sampled_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        )
+        or not (ROOT / sampled_admission["authorization_record"]).is_file()
+    ):
+        errors.append(
+            "native sampled Pauli evolution differs from its authorized scope"
+        )
+    pauli_views = json.loads(
+        (ROOT / "contracts/synthesis-native-pauli-views-candidate.json").read_text()
+    )
+    expanded_pauli_signatures = {
+        "suzuki_trotter": evolution_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        ),
+        "qdrift": sampled_signature.replace(
+            "QNum | QArray[QBit]", "QNum | QArray[QBit] | Sequence[QBit]"
+        ),
+    }
+    if pauli_views != {
+        "schema": "flagquantum.synthesis_native_pauli_views_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "expanded_signatures": expanded_pauli_signatures,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-PAULI-VIEWS-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        not (ROOT / pauli_views["authorization_record"]).is_file()
+        or any(
+            type(pauli_views.get(key)) is not bool
+            for key in ("implementation_authorized", "release_authorized")
+        )
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in expanded_pauli_signatures.items()
+        )
+    ):
+        errors.append("native Pauli views differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_numeric_interpretation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
+    numeric_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-exact-numbers-candidate.json").read_text()
+    )
+    numeric_signature = "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Mapping[tuple[Fraction, ...], float]'"
+    if numeric_admission != {
+        "schema": "flagquantum.synthesis_native_exact_numbers_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["min", "max"],
+        "signatures": dict.fromkeys(
+            ("min", "max"), "(left: 'QNum | float', right: 'QNum | float', /) -> 'QNum'"
+        ),
+        "added_program_methods": {"numeric_probabilities": numeric_signature},
+        "annotations": [
+            "QNum[width]",
+            "QNum[width, signed, fractional_bits]",
+            "Annotated[QNum, (width, signed, fractional_bits)]",
+        ],
+        "raw_probabilities_unchanged": True,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EXACT-NUMBERS-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        any(
+            str(inspect.signature(getattr(synth, name)))
+            != "(left: 'QNum | float', right: 'QNum | float', /) -> 'QNum'"
+            for name in ("min", "max")
+        )
+        or str(inspect.signature(synth.Program.numeric_probabilities))
+        != numeric_signature
+        or not (ROOT / numeric_admission["authorization_record"]).is_file()
+        or any(
+            type(numeric_admission.get(key)) is not bool
+            for key in (
+                "raw_probabilities_unchanged",
+                "implementation_authorized",
+                "release_authorized",
+            )
+        )
+    ):
+        errors.append("native numeric interpretation differs from its authorized scope")
+    return errors
+
+
+def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
+    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
+    import flagquantum as fq
+    from flagquantum import synth
+    from flagquantum.services import synthesis
+
+    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
+    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed Python program contract changed"]
+    expected = json.loads(path.read_text())
+    if not isinstance(contract, dict) or json.dumps(
+        contract, sort_keys=True
+    ) != json.dumps(expected, sort_keys=True):
+        return ["Python program admission differs from its reviewed scope"]
+    errors = []
+    if (
+        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
+        != contract["proposal_sha256"]
+    ):
+        errors.append("reviewed Python program proposal changed")
+    for filename, digest in contract["historical_contracts_sha256"].items():
+        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
+            errors.append("Python program must preserve historical synthesis contracts")
+    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
+        errors.append("Python program export delta exceeds authorization")
+    exports = _SYNTH_ACTIVE_EXPORTS
+    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
+        errors.append("Python program namespace differs from its reviewed scope")
+    if any(
+        getattr(synth, name, None) is not getattr(synthesis, name, None)
+        for name in exports
+    ):
+        errors.append("Python program facade must reuse Services symbols")
+    errors.extend(_validate_synthesis_phase_and_cleanup())
+    errors.extend(_validate_synthesis_quantization_and_reset())
+    errors.extend(_validate_synthesis_gates_and_control())
+    errors.extend(_validate_synthesis_transforms_and_preparation())
+    errors.extend(_validate_synthesis_storage())
+    errors.extend(_validate_synthesis_qpe())
+    errors.extend(_validate_synthesis_views_and_unitary())
+    errors.extend(_validate_synthesis_modular_exponentiation())
+    errors.extend(_validate_synthesis_pauli_evolution())
+    errors.extend(_validate_synthesis_numeric_interpretation())
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),
         ("probabilities_signature", synth.Program.probabilities),
     ):
-        if str(inspect.signature(value)) != contract[field]:
+        signature = (
+            _initial_state_run_signature(contract[field])
+            if field == "run_signature"
+            else contract[field]
+        )
+        if (
+            _synthesis_pre_classical_signature(value)
+            if field == "synthesize_signature"
+            else str(inspect.signature(value))
+        ) != signature:
             errors.append("Python program must preserve run/read/synthesize signatures")
     for name, signature in contract["new_operation_signatures"].items():
-        if str(inspect.signature(getattr(synth, name))) != signature:
+        if str(inspect.signature(getattr(synth, name))) != _SYNTH_ARRAY_SIGNATURES.get(
+            name, signature
+        ):
             errors.append("Python program operation signature differs from approval")
-    if set(exports).intersection(fq.__all__):
+    from flagquantum.observables import X as OBSERVABLE_X
+
+    if set(exports).intersection(fq.__all__) != {"X"} or fq.X is not OBSERVABLE_X:
         errors.append("Python program symbols must not enter Stable Core exports")
+    errors.extend(
+        _validate_authorized_synthesis_classical(
+            json.loads(
+                (
+                    ROOT / "contracts/synthesis-native-classical-candidate.json"
+                ).read_text()
+            )
+        )
+    )
     return errors
 
 

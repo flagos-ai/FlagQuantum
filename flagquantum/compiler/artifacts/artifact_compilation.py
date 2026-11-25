@@ -23,7 +23,7 @@ from ..lowering.target_legalization import (
     TargetLegalizationResult,
     legalize_circuit_for_target,
 )
-from ..routing import CouplingMap
+from ..topology.coupling import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
 from .physical_plan import PhysicalCircuitPlan, build_physical_circuit_plan
 from .target_artifact import build_target_artifact

@@ -1,0 +1,106 @@
+{
+  "scope": "Read-only query compatibility and diagnostic budget inspection; no benchmark execution, exclusivity, performance, attribution or scalability claim.",
+  "query_definition": {
+    "source_commit": "2a7bca5a08c9a2b7a6247e11c0d3ed251af8dbf9",
+    "path": "tools/hardware_telemetry.py",
+    "probe_timeout_seconds": 0.25
+  },
+  "host_observation": {
+    "scope": "read-only query compatibility/budget observations; not benchmark execution, host reservation, attribution or performance evidence",
+    "observations": [
+      {
+        "probe": "gpu",
+        "iteration": 0,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 9,
+        "elapsed_seconds": 0.22969164699316025
+      },
+      {
+        "probe": "processes",
+        "iteration": 0,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 2593,
+        "elapsed_seconds": 0.07472025230526924
+      },
+      {
+        "probe": "gpu",
+        "iteration": 1,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 9,
+        "elapsed_seconds": 0.22046800144016743
+      },
+      {
+        "probe": "processes",
+        "iteration": 1,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 2593,
+        "elapsed_seconds": 0.07787021808326244
+      },
+      {
+        "probe": "gpu",
+        "iteration": 2,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 9,
+        "elapsed_seconds": 0.19809327647089958
+      },
+      {
+        "probe": "processes",
+        "iteration": 2,
+        "returncode": 0,
+        "stderr": "",
+        "row_count": 2593,
+        "elapsed_seconds": 0.07709434628486633
+      }
+    ]
+  },
+  "raw_answer_sha256": "0f8caf9e6128a85be8eb9bc95fc538df849d53654c2ed3d650d4395d4c280aeb",
+  "decision": "Increase only the GPU diagnostic query timeout from 0.25 to 0.5 seconds; retain 0.25 seconds for process accounting and all existing workload budgets.",
+  "collector_probe": {
+    "implementation_commit": "2a7bca5a08c9a2b7a6247e11c0d3ed251af8dbf9",
+    "measurement_source": "Uncommitted collector timeout adjustment, identified by exact source SHA-256 below; other watchdog/workload code was not executed by this probe.",
+    "report": {
+      "scope": "actual collector read-only Linux compatibility probe; no quantum benchmark or performance attribution",
+      "collector_source_sha256": "33be596425581a329f2504600ce5b2e2a6de91d14d621ba5a6488df8439f5fb3",
+      "samples": [
+        {
+          "elapsed_seconds": 1.1496245861053467e-05,
+          "collection_seconds": 0.33154074288904667,
+          "gpu_rows": 9,
+          "process_rows": 2562,
+          "owned_affinity_rows": 3,
+          "unavailable_fields": {},
+          "sample_sha256": "5a1a414996ebcb5fb9786d8fcde432905033375590176a6dc9d99c6f73feb28f"
+        },
+        {
+          "elapsed_seconds": 1.3345600347965956,
+          "collection_seconds": 0.3298739641904831,
+          "gpu_rows": 9,
+          "process_rows": 2562,
+          "owned_affinity_rows": 3,
+          "unavailable_fields": {},
+          "sample_sha256": "646637ca1f0b529c081a96ad26c82f74a3b0f01cf8f9da8057d8fda9d41aa311"
+        },
+        {
+          "elapsed_seconds": 2.6689150035381317,
+          "collection_seconds": 0.32538729161024094,
+          "gpu_rows": 9,
+          "process_rows": 2562,
+          "owned_affinity_rows": 3,
+          "unavailable_fields": {},
+          "sample_sha256": "44db18cf63ea8492377dace393000131a64fbbdb1530469efdb8b94515195b72"
+        }
+      ],
+      "temporary_directory_removed_on_exit": true
+    },
+    "driver_sha256": "770bff341a8b9e1dcf27d044fec483de84591ce9fc64bd3fb460c5fd7c574f2a",
+    "driver": "import os,time,tempfile,json,hashlib\nfrom pathlib import Path\nsource='\"\"\"Record read-only hardware observations during one watchdog-owned command.\"\"\"\\n\\nfrom __future__ import annotations\\n\\nimport json\\nimport os\\nimport subprocess\\nimport time\\nfrom pathlib import Path\\nfrom typing import TypedDict\\n\\n\\nclass TelemetrySample(TypedDict):\\n    observed_at_unix_seconds: float\\n    elapsed_seconds: float\\n    collection_seconds: float\\n    process_group: int\\n    observations: dict[str, str]\\n\\n\\n_COMMANDS = {\\n    \"gpu\": (\\n        \"nvidia-smi\",\\n        \"--query-gpu=index,uuid,pstate,clocks.current.sm,clocks.current.memory,\"\\n        \"utilization.gpu,utilization.memory,memory.used,power.draw,temperature.gpu\",\\n        \"--format=csv,nounits\",\\n    ),\\n    # Include other processes to expose shared-host CPU load. Do not collect\\n    # arguments, environments or credentials from their command lines.\\n    \"processes\": (\"ps\", \"-axo\", \"pid=,pgid=,psr=,pcpu=,rss=,comm=\"),\\n}\\n\\n\\ndef record_sample(destination: Path, group: int, started: float) -> None:\\n    \"\"\"Append one bounded diagnostic snapshot; unavailable data stays explicit.\"\"\"\\n    before = time.monotonic()\\n    sample: TelemetrySample = {\\n        \"observed_at_unix_seconds\": time.time(),\\n        \"elapsed_seconds\": before - started,\\n        \"collection_seconds\": 0.0,\\n        \"process_group\": group,\\n        \"observations\": {},\\n    }\\n    observations = sample[\"observations\"]\\n    observations[\"cuda_visible_devices\"] = os.environ.get(\\n        \"CUDA_VISIBLE_DEVICES\", \"unset\"\\n    )\\n    for name, command in _COMMANDS.items():\\n        try:\\n            result = subprocess.run(\\n                command,\\n                text=True,\\n                capture_output=True,\\n                timeout=0.5 if name == \"gpu\" else 0.25,\\n            )\\n        except (OSError, UnicodeError, subprocess.SubprocessError) as error:\\n            observations[f\"{name}_error\"] = f\"{type(error).__name__}: {error}\"\\n        else:\\n            observations[name] = result.stdout\\n            if result.returncode or result.stderr:\\n                observations[f\"{name}_diagnostic\"] = (\\n                    f\"returncode={result.returncode}\\\\n{result.stderr}\"\\n                )\\n    try:\\n        observations[\"load_average_1_5_15_minutes\"] = str(os.getloadavg())\\n    except OSError as error:\\n        observations[\"load_average_error\"] = str(error)\\n\\n    affinities = []\\n    for row in observations.get(\"processes\", \"\").splitlines():\\n        fields = row.split(maxsplit=5)\\n        if len(fields) != 6 or not fields[0].isdigit() or not fields[1].isdigit():\\n            observations[\"affinity_error\"] = \"unrecognized process accounting row\"\\n            continue\\n        if int(fields[1]) != group:\\n            continue\\n        pid = int(fields[0])\\n        try:\\n            allowed = sorted(os.sched_getaffinity(pid))\\n        except (AttributeError, OSError) as error:\\n            affinities.append(f\"pid={pid} unavailable: {error}\")\\n        else:\\n            affinities.append(f\"pid={pid} allowed_cpus={allowed}\")\\n    observations[\"owned_process_affinities\"] = \"\\\\n\".join(affinities)\\n    sample[\"collection_seconds\"] = time.monotonic() - before\\n    # Stream snapshots rather than retaining a command-length in-memory history.\\n    with destination.open(\"a\", encoding=\"utf-8\") as stream:\\n        stream.write(json.dumps(sample, allow_nan=False) + \"\\\\n\")\\n'\nnamespace={\"__name__\":\"telemetry_probe\"};exec(compile(source,\"hardware_telemetry.py\",\"exec\"),namespace)\nwith tempfile.TemporaryDirectory(prefix=\"fq-telemetry-probe-\") as root:\n output=Path(root)/\"samples.jsonl\";started=time.monotonic()\n for index in range(3):\n  namespace[\"record_sample\"](output,os.getpgrp(),started)\n  if index<2:time.sleep(1)\n rows=output.read_text().splitlines();summaries=[]\n for row in rows:\n  sample=json.loads(row);observations=sample[\"observations\"]\n  summaries.append({\"elapsed_seconds\":sample[\"elapsed_seconds\"],\"collection_seconds\":sample[\"collection_seconds\"],\"gpu_rows\":len(observations.get(\"gpu\",\"\").splitlines()),\"process_rows\":len(observations.get(\"processes\",\"\").splitlines()),\"owned_affinity_rows\":len(observations[\"owned_process_affinities\"].splitlines()),\"unavailable_fields\":{k:v for k,v in observations.items() if k.endswith((\"_error\",\"_diagnostic\"))},\"load_average\":observations.get(\"load_average_1_5_15_minutes\"),\"sample_sha256\":hashlib.sha256(row.encode()).hexdigest()})\n print(json.dumps({\"scope\":\"actual collector read-only Linux compatibility probe; no quantum benchmark or performance attribution\",\"collector_source_sha256\":hashlib.sha256(source.encode()).hexdigest(),\"samples\":summaries,\"temporary_directory_removed_on_exit\":True}))\n",
+    "report_stdout_sha256": "165ad2e7682680b22be49d8fd25d9a64abffee00b99a435b22fc9503849444df",
+    "retained_scope": "Public summary retains sample timings, row counts, probe status, source/driver and digests. Internal device identifiers, inventories, affinity and host load are omitted. Temporary raw collector inventories were removed at probe exit; their hashes are fingerprints, not available benchmark evidence."
+  },
+  "raw_answer_retention": "Original host answer is retained privately; the public archive contains only query timings, status, counts and a digest. Internal device identifiers, process inventory, affinity and host load are omitted."
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "f18bb82be58a87a92471ceaa84a006d4bd93d7cc83d33c1e3474079853259d20",
+  "native_entrypoint": "examples.synthesis.applications.finance.hybrid_hhl_for_portfolio_optimization.portfolio_optimization_with_hhl.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_matrix_hhl.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Original matrix entries,all rotation angles,source register order,width and fractional metadata retained. Allocate the indicator before the pure within/apply region; it remains fresh zero until table application. Shared Walsh/Gray synthesis plus reversible matrix QPE reuse existing effects. Independent Householder,matrix powers,dense Fourier and direct table blocks compare complete absolute-phase states at source input and two nonzero input variations. Actual matrix decomposition workspace is charged and clean. Dirty dropped environments remain physical and are marginalized,not reset or recycled. No algorithmic performance or complete Notebook claim. All phase,data and comparison bits retained after drop; existing overlap helper generalized by static array length and compared with direct Fredkin Circuit."
+}

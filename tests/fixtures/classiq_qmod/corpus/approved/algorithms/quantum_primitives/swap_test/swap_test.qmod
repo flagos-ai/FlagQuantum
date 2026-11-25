@@ -1,0 +1,20 @@
+// Swap Test (quantum primitive)
+
+// This example prepares two (fixed) quantum states |psi1> and |psi2>, then runs `swap_test`.
+// The measurement result (test) gives:
+// P(test = |0>) = 1/2 * (1 + |<psi1|psi2>|^2)
+// Higher probability of |0> is a higher overlap between the states.
+
+error_bound: real = 0.0;
+psi1_amplitudes: real[] = [0.38964653465072402, -0.16156075826981242, 0.28510722047613951, 0.03801429606348528, 0.52269657087292254, -0.32312151653962484, -0.31361794252375352, 0.51319299685705122];
+psi2_amplitudes: real[] = [-0.28505573384448246, 0.50359846312525247, 0.36107059620301118, 0.05701114676889649, -0.27555387604966641, -0.18053529810150559, 0.63662447225267760, 0.13302600912742518];
+
+qfunc main(output test: qbit) {
+ state1: qbit[];
+ state2: qbit[];
+ prepare_amplitudes(psi1_amplitudes, error_bound, state1);
+ prepare_amplitudes(psi2_amplitudes, error_bound, state2);
+ swap_test(state1, state2, test);
+ drop(state1);
+ drop(state2);
+}

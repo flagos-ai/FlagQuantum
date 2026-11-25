@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "oblivious_amplitude_amplification.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification.qmod",
+      "git_blob_sha1": "0b2a5e4d4282c2b7bc6413478f00b902752dc427",
+      "sha256": "2eb114b6709e3b13fea4099471c413b77b2e009d2d2235e4da35e6582d8827f8"
+    }
+  ]
+}

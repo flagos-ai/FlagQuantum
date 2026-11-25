@@ -1,0 +1,77 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/qaoa/qaoa_demonstration.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "2fb0e192d7ed2f20691f9f5e2bb38ef979f4f6b4",
+  "original_sha256": "550ae676b6c8667227d41fbc374cec07322487c6afc175b3e8a8461c4d933141",
+  "scope": "All 12 source stages, original seven-vertex graph, ten QAOA layers, all 61 cost terms, 400 optimizer budget and 10,000 draws per objective query. Preserve the original 218-row Qiskit comparison trace.",
+  "native_semantic_adaptations": "Regenerate the source graph from seed 79 by drawing once for each lexicographically ordered unordered pair, and derive the Walsh coefficients from ordered missing-edge penalties. Native COBYLA uses the public current norm-based initialization, with a 400-query ceiling and one additional 10,000-draw readout for a best evaluated candidate. Plot native query indices alongside the source reference indices. Count CX and depth after an independently verified projective CX/U3 conversion. Preserve absolute phase in native execution.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.qaoa.qaoa_demonstration.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qaoa_clique_benchmark_notebook.py",
+  "input_data": {
+    "source": "qiskit_res.npy",
+    "sha256": "7af3622f025b53a548a6fad85c54a79626a164dddd316e5447401965248dacb7"
+  },
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "sha256": "e04bb7ecc4085ba26922c80ce7f70e38672b61294fc2cd5eea8768701eb54c43"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 2,
+      "sha256": "a58599bdc89a2bc4b92ffb09d44a20f58223798b4516084480ede21dde4be622"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "e03027380c5a3863d3501bb6a46af721ca3dcd12fd59df50e9a7b2224c83f4bc"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "ed02bc6e2af33534617ca09b749f98fc78fb5cc4283fcc50956d434ebf5e3074"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 5,
+      "sha256": "5f8b9e8ab73cadd35177fa82ea03851183529258a59698108a71c96c8d0b2b6d"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 6,
+      "sha256": "e035cee604666129fe19eb691ab8c7a6fc1bec8ee99e8035699ef1d0612dc923"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "97041bd8a30e8a24e151da8bbcbb9255f4c330659f4ff531b9239224c656c344"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "6345b7bd6c0b07ba68f111413222cdd74a0548a66b6b5cffa3859a34db96c6e4"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 9,
+      "sha256": "5088a74db7bfbdfabc9ece7f07bf5b081a873765b60d4ac99ba12a19cae75964"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 10,
+      "sha256": "8951e515a3f8fb77794020685d00454cd3a367e6ce65c2d32633c4a3cdcb0780"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 11,
+      "sha256": "d80f5a91854d22902ad35dedf037179d1da6662c4dd1bd11030276b81ba40d8a"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 12,
+      "sha256": "72f907e1023839cec911516bf433caa91a65da744ac7d0bd78fe62d1be0179bb"
+    }
+  ]
+}

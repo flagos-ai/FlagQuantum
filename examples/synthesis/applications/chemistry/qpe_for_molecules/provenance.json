@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/chemistry/qpe_for_molecules/qpe_for_molecules.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9dbdf81f075934e8179772046a8dd072f71c4f0edaf431161a8c72f779a49902",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.qpe_for_molecules.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_molecular_qpe.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain49orderedPaulis includingidentity,sixstatebits,sevenphasebits andpower-specificStrangsteps[1,1,1,2,4,10,26]. Genericcontiguouscommutingrunsallowexactcenter/boundaryhalfstepmerging underexisting4096effectcap. Rawphasearrayretains signedfractionalword/128interpretation. Nativeboundarrays,suzuki_trotter,control andinverseqft reused;no productionchanges."
+}

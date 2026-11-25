@@ -1,0 +1,83 @@
+{
+  "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/qls_qsvt.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f7845ed6450e4ad39dfc9bdfdfc4a210db5c1a7a8e8fcc0ca97dde32195d598e",
+  "git_blob_sha1": "79ff266c19200329ddfa8f83b9fa2f970fa153cb",
+  "scope": "All fourteen source stages, both original nozzle matrices and right-hand sides, degree-101 Pauli and degree-255 banded inverses, fresh phase fitting and the original solution thresholds.",
+  "native_semantic_adaptations": "Use the native Pauli and banded encodings, fit the symmetric phases in normalized block coordinates, and pack each exact phase stream into a bounded CPU simulator operation. The full-state reference evaluates the phase streams sequentially. The independent SVD reference checks the postselected solution.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qls_for_hybrid_solvers.qls_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/qls_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_cfd_qsvt_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "4ee35c930d1fcdf48784d9da166749ca62feebd4dbe233456e5ec46b31684736"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "8232cdaba48c6da0b907f6da319559eee1546241a11a7517357861465e5b1b5b"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "sha256": "3de97c3a519f8a4962fefcfe4fab2337fc2553e55974cc2efbd5779540f927d0"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "06f618906409d41f32eac8cb91aae58687f5459f6082a2a9641513be1d0f75ba"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "sha256": "3db3f4b38612329ef718865572a0bf960ba4690ad1499c1122861a1c49f8f866"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 6,
+      "sha256": "c02af3cead8065cf9987f6c9be58aefea2444421fa0abbb695a243cf1e05c9c7"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 7,
+      "sha256": "b1834d91a8f6ffaeeccafb0021ed50e5ed987b38bc57292b2ff11cd5537541d7"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 8,
+      "sha256": "b8444c9494cece7c2a935050a0501d72ad3d8e71fb1b02073611de69f9370d81"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 9,
+      "sha256": "a5aa9952d4c2143a42e9d86e9e11dadf5f95b1fd7d9ef47b51e6b6eec1d604e2"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 10,
+      "sha256": "853522160959464e4fb5423555690f8f2a1efc5315c6cd79af02e311db615a19"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 11,
+      "sha256": "0e689a3b5949d347745b040a311e43fcd336e5cb0fe9223bbd183d57f21ec299"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 12,
+      "sha256": "95c802d7250353327a7b6997b2cc9c78d9232fc9cd75b93bc5523a8bc38c951d"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 13,
+      "sha256": "a37bdc81ee377070162f07daa4637e6f6d8105e4dab06686c676d1007f2e1ad3"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 14,
+      "sha256": "a70b6302f6b0b72adefd8df0f072763b18c7e9652bf08c7ff2255b2c16e3c935"
+    }
+  ]
+}

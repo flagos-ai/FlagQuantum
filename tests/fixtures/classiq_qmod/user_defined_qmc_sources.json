@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qmc_user_defined.qmod",
+      "source_path": "algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined.qmod",
+      "git_blob_sha1": "39582518486519a476e388ee5a739bfb45d6c331",
+      "sha256": "75823b088f4e730ff750c3bdb7c8b4a2f1d5a8dfdb22e14a3111e5593555a20d"
+    }
+  ]
+}

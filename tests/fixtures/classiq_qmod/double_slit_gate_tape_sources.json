@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_double_slit_experiment.qmod",
+      "source_path": "applications/CFD/double_slit_experiment/quantum_double_slit_experiment.qmod",
+      "git_blob_sha1": "3cf844c4844217a622adeefdfa38255f480ec95b",
+      "sha256": "ec6de8a9d82cad74f9c98aa3255728a652d275194f77e6bdee2d9e3717d59736"
+    }
+  ]
+}

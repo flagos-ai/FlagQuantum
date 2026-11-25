@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "dqi_max_xorsat.qmod",
+      "source_path": "algorithms/search_and_optimization/dqi/dqi_max_xorsat.qmod",
+      "git_blob_sha1": "5c1cc2da7166b2a182a751b64a4f4febed899b64",
+      "sha256": "fe304ca66cbc23e7628e0358cc7d101b76b59a06b34c50162dae997b93bd613e"
+    }
+  ]
+}

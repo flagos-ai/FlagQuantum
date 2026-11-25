@@ -10,6 +10,7 @@ from ..core import _artifacts
 from ..core import _compilation_evidence as _evidence_v1
 from ..core import _compilation_evidence_v2 as _evidence_v2
 from ..core import _compilation_evidence_v3 as _evidence_v3
+from ..core import _compilation_evidence_v4 as _evidence_v4
 
 _MAX_JSON_BYTES = 18 * 1024 * 1024
 _PROGRAM_TYPES = (
@@ -21,6 +22,7 @@ _EVIDENCE_TYPES = (
     _evidence_v1.CompilationEvidenceBundle,
     _evidence_v2.CompilationEvidenceBundleV2,
     _evidence_v3.CompilationEvidenceBundleV3,
+    _evidence_v4.CompilationEvidenceBundleV4,
 )
 
 
@@ -91,6 +93,7 @@ class CompilationEvidence:
         _evidence_v1.CompilationEvidenceBundle
         | _evidence_v2.CompilationEvidenceBundleV2
         | _evidence_v3.CompilationEvidenceBundleV3
+        | _evidence_v4.CompilationEvidenceBundleV4
     ) = field(repr=False)
 
     def __post_init__(self) -> None:

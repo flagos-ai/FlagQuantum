@@ -1,0 +1,85 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "428e8ad7e5bd58733f072a3e3037beac5fb9224def9799818b96996ccad78aaa",
+  "git_blob_sha1": "1e0a50aae6c72396f06bf6e0ef421ca2e5928a82",
+  "scope": "All twelve original execution stages, coherent three-bit arithmetic, original 2,048 and 10,000 shot counts, and three-qubit ideal, noisy, and MPS demonstrations.",
+  "native_semantic_adaptations": "Use native synthesis and execution. The Pittsburgh workflow uses a public IBM FakePittsburgh 0.49.0 calibration snapshot, uniform Pauli gate errors, and asymmetric readout confusion on physical chain 0–1–2. Discover installed local backends via FlagQuantum.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.execution_tutorial.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/execution_tutorial/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_execution_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Synthesize the coherent square-plus-one function and inspect its resource estimate.",
+      "sha256": "279321cc3a139b6ecdf9e834c9f8e0f7e65dc9e0abaf604fbb4156b0e444ab08"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Draw 2,048 actual samples from the compiled arithmetic circuit.",
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Read the named input and output values.",
+      "sha256": "32c220482c68413fbf8290e3b1e49b0a85901cfcd62ab0738760568a2a6e8a57"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "stage": "Repeat with 10,000 shots.",
+      "sha256": "1b22351b95bb9e8db8e56b9a6d9a2f2c2e822e62255bcb5c43e0e83800ffdf08"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Read the larger sample and check all eight coherent amplitudes and the work bit.",
+      "sha256": "7ec12ba836d7d55b4533604e412e22595c1eacde816b75bb36e827a8b1765efa"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Prepare the three-qubit GHZ program with native Python qfunc.",
+      "sha256": "a141cc5d35b98417a4f54329c6952aa8f3300d6a806b01ab0acdb43f2a123871"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "stage": "Run a local density-matrix model with Pittsburgh snapshot data on physical chain 0–1–2. Gate noise and measurement assignment errors are verified separately.",
+      "sha256": "143c74829559b5a4eddfdddbd71c5999fb0a10bf3c5e09ff027abb6875b59f58"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "stage": "Inspect the ideal complex statevector.",
+      "sha256": "e9f95caf151b6aaeead763f21c5a3384333ce8c81f0dc4aa032945ae127d8bca"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 9,
+      "stage": "Discover installed local execution backends.",
+      "sha256": "ce492713a97f50de09c6bcf9f4e202be23902a87b35549532a7c8da3877cdd9e"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 10,
+      "stage": "Run the requested statevector and MPS modes independently.",
+      "sha256": "2e4de8d5aa1f0bb41d21911d5a021ef69e896d037455c72109ee26a9ae7b95d9"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 11,
+      "stage": "Check both nonzero amplitudes in the explicit default-mode result.",
+      "sha256": "af8d66b5b49bdee36214a63bd4d3ef108a58a4b18606c293c0c7c6738bc09db4"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 12,
+      "stage": "Read the actual backend-native MPS counts.",
+      "sha256": "e7daf3ad6f7fc6e433f0b51698a3a77c451e8608fd0d0645b3a2460615948b1f"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ is false; no GitHub review or trial is fabricated.
 
 ## User experience
 
-Run python -m examples.synthesis_boolean_predicate for both value and phase.
+Run python -m examples.synthesis.tutorials.arithmetic.boolean_predicate.main for both value and phase.
 Users declare input widths, known preparation, a one-bit computation, its
 value/phase effect and resource ceilings. Gates, temporary allocation,
 physical indices, uncomputation and bitstring decoding are automatic.

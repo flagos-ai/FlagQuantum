@@ -1,0 +1,45 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "6559e7fc79bfc29e7d0171dc38d3b3f7584649f02e5af6e4375cbed748395832",
+  "git_blob_sha1": "ac09e9f0c1bb3f92fa5ca111bd4d43152ff28801",
+  "reviewed_code_cells": [
+    {
+      "index": 12,
+      "sha256": "574fa772188e2762876e86fa46caa110fe61ac52cc859eb8ddc5593df5b5b618"
+    },
+    {
+      "index": 14,
+      "sha256": "e3550f72f1c97203d4508de6adee8307cce071370666b839d60123b38d07dd33"
+    },
+    {
+      "index": 21,
+      "sha256": "28938d13216fa435ce071d304f45e400bc7e94a2ae3720440ebdbcdb65da1048"
+    },
+    {
+      "index": 33,
+      "sha256": "e218080145944a662fb88f5d276cb231ca1c2f431659c8340316b85131d82264"
+    },
+    {
+      "index": 35,
+      "sha256": "a229d69e503271d2076836e336e0be6e52b08c8bc05174f4aa09a4fdd5e08e68"
+    },
+    {
+      "index": 36,
+      "sha256": "6dd8606e5b7e2e91ff427f8254bea5d1e287ddbeed2683fc03940ecf664f99f6"
+    },
+    {
+      "index": 37,
+      "sha256": "32624c3e8ff2943c3c629f105f5a31dc34af54ed10e60f3f67ec3f835363def3"
+    },
+    {
+      "index": 39,
+      "sha256": "34f151b9aeb31f3d5ee52fcf64701184f9a983be3d6d2e22266d40e45375b388"
+    }
+  ],
+  "scope": "Retain the original two-qubit Hamiltonian, three initial methods, all 100 time points from 0 to 2, first-order Suzuki formulas with 10 initial and 30 sweep repetitions, and 288 qDRIFT samples. Bind an explicit local seed zero. Exact evolution specializes a static native unitary using a Hermitian spectral decomposition; there is no new synth.exponentiate operation. Each time is bound before synthesis, rather than dynamically binding one compiled program. Native products use declared term order; no Classiq transpilation, search or remote-sampler equivalence is claimed. Diagonal magnetization uses named logical probabilities, not physical wire IDs or bitstring parsing. Torch CPU matrix_exp replaces SciPy for the ideal curve; independent Taylor evolution checks all exact states. Retain all four plotted curves.",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_guide.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lcu_evolution_notebooks.py",
+  "native_semantic_adaptations": "Retain the original two-qubit Hamiltonian, three initial methods, all 100 time points from 0 to 2, first-order Suzuki formulas with 10 initial and 30 sweep repetitions, and 288 qDRIFT samples. Bind an explicit local seed zero. Exact evolution specializes a static native unitary using a Hermitian spectral decomposition; there is no new synth.exponentiate operation. Each time is bound before synthesis, rather than dynamically binding one compiled program. Native products use declared term order; no Classiq transpilation, search or remote-sampler equivalence is claimed. Diagonal magnetization uses named logical probabilities, not physical wire IDs or bitstring parsing. Torch CPU matrix_exp replaces SciPy for the ideal curve; independent Taylor evolution checks all exact states. Retain all four plotted curves."
+}

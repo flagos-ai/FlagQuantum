@@ -1,0 +1,229 @@
+{
+  "upstream_path": "applications/logistics/vehicle_routing_problem/vehicle_routing_problem.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "cada3951d98a71766b0c3951552db6ce88c83bceb538956b54bf5b21577c519e",
+  "git_blob_sha1": "c3ea74e43839dd9c8599caea53dcf1bcbffff32b",
+  "scope": "All 36 source stages, fresh six-location data, original sixteen-bit twelve-layer routing circuit, 26 finite-shot native optimizer queries, 30,000 final draws, and actual route plots.",
+  "native_semantic_adaptations": "Use the source's observed 26-query minimum expansion for its 24-dimensional optimizer. Native COBYLA retains radius 0.7 and finite sampled objectives, with an explicit 26-query stop. Report its own trajectory and the best actually queried parameters; preserve every scale, location, layer and sample count.",
+  "native_entrypoint": "examples.synthesis.applications.logistics.vehicle_routing_problem.overview.main",
+  "native_notebook": "examples/synthesis/applications/logistics/vehicle_routing_problem/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vehicle_routing_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "native_code_cell": 1,
+      "stage": "Load the native problem, circuit compiler, and workflow.",
+      "sha256": "578f34ad0c51ac1734ad49a7ca00f0478cd6c580de4045085f4cf2906f06a766"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 2,
+      "stage": "Keep two cities per vehicle.",
+      "sha256": "ef1bae7c0dc8f23a12da1e52f1074ea1a476727218b86ade6338c154c0805c00"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 3,
+      "stage": "Keep four positions, including each depot at both ends.",
+      "sha256": "79b95fe465b1883b7bce214d4c767dbeedd8c1df286dc1e2a225b09867d67bbe"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 4,
+      "stage": "Retain every route position.",
+      "sha256": "18fe4e133249647037b393d9c4ba2902d0f06a3385ef3d1f87b70161453fed4b"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 5,
+      "stage": "Inspect all four route positions.",
+      "sha256": "9003355e963ec7e7fadd042c896c833d9f64ea8ac66c826e2da25dc63e3b49e2"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 6,
+      "stage": "Choose both interior positions.",
+      "sha256": "c249edc33ca9e0dc9f93544ad960310b09b1a02158008850afb1f2066ba7f622"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "stage": "Generate the original six positions from RandomState(10).",
+      "sha256": "0a74b6a7c51e699ae246430884217a2d63f21d75d7efbc3141cd415fd257a9c0"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "stage": "Retain every original coordinate for the source graph.",
+      "sha256": "ca639baf54e5e51f2c78e27666b7b6d9898d226b0ab6e44856fa0052966d615a"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 9,
+      "stage": "Compute all original Euclidean distances and their normalization.",
+      "sha256": "8123071c1d8dff0646c98006f0f774af1da5a03e0a79eb41ad9b11f138d4db72"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 10,
+      "stage": "Inspect the unscaled six-location geometry.",
+      "sha256": "ef2c39bf36c788b6eebeb1454837248bab845774e4fcfb2341ff90b8fed22dee"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 11,
+      "stage": "Use the original six-location distance normalization.",
+      "sha256": "225b68fe653275d86aa042973fc6f9197a25605d8bc4fb34862ef29872ad35b5"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 12,
+      "stage": "Retain normalized distances for every pair.",
+      "sha256": "c1eb735d71cb55822595148c4998f279ae266f628944753f6dca4b30625bf38a"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 13,
+      "stage": "Inspect normalized distances.",
+      "sha256": "ef2c39bf36c788b6eebeb1454837248bab845774e4fcfb2341ff90b8fed22dee"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 14,
+      "stage": "Retain the original global scale.",
+      "sha256": "d4d342819c0e889e9084db15e2e125e22a7e6aa5d4e883cd3000036f863ec865"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 15,
+      "stage": "Retain the relative objective scale.",
+      "sha256": "4d0135b07b67129de6e5fee4db74b13ddfe93f8711f36b3a33cb0cea72cd77ac"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "stage": "Form the objective normalization.",
+      "sha256": "e9c509de7d1b80e491b704dda98ba6050af1c67fd7db00d281981a0c426d7a3c"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 17,
+      "stage": "Retain the source constraint ratio.",
+      "sha256": "ddbea4e88bab6160ce9de428d7a5927e7a95c2fbfc062f99c55f842c098a29e2"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 18,
+      "stage": "Form the source penalty scale.",
+      "sha256": "47eaaae0b3ba9bdfcd2035bfad06d36c65e974c58394bc7f91eb91321d8dc545"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 19,
+      "stage": "Use the original city/position/vehicle indicator.",
+      "sha256": "4a133b6e75504eb709e2750873460a86035ec67f999f7e6448ca74f5fb3f7ef9"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 20,
+      "stage": "Validate the two classes of assignment constraints.",
+      "sha256": "b5f5e3026d1f18d6279dd136379147a66b2faf4400f5d31346062a16e99e5b0e"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 21,
+      "stage": "Keep the original travel objective in the scalar oracle.",
+      "sha256": "09eac5d03b098fcc10bb1b9296235356a0246a30d5ac8b0da149a0a73753097a"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 22,
+      "stage": "Evaluate every assignment's travel and penalty costs.",
+      "sha256": "7895a32255dd16bee875f26ff632d12830c0e647887d6a323f6b68f4dfe2d1a7"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 23,
+      "stage": "Check the complete original sixteen-bit decision domain.",
+      "sha256": "257c894f79938cbaefedf5ecdb21a9ec3106984e23a760fa4756fe6180c9ea20"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 24,
+      "stage": "Use the native twelve-layer qfunc.",
+      "sha256": "868d33fccb8581a5d15c8123b21f55f680ba4f155005a12e3865d7497bfe28e0"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 25,
+      "stage": "Synthesize the complete native circuit with fresh distances.",
+      "sha256": "67cd406e867870d74ea083264dac6726a3da4f9e45fa5a04fa80e1857c8ea185"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 26,
+      "stage": "Keep the source sample size and initialization schedule.",
+      "sha256": "2e749ba18f3f27cc01fbcfdf8153769915a390a26422e0f811a707b9bc741e74"
+    },
+    {
+      "index": 57,
+      "native_code_cell": 27,
+      "stage": "Use original costs for measured outcomes.",
+      "sha256": "8322574ebb6f324ae8662932e9f76572605721886b7509650b86148cdee5dfe4"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 28,
+      "stage": "Retain actual optimization observations.",
+      "sha256": "d9b3015d047d3d6674f13fcefbaa513b04e2e4957b7a8af85907341a47763877"
+    },
+    {
+      "index": 61,
+      "native_code_cell": 29,
+      "stage": "Run the original observed 26-query finite-shot budget.",
+      "sha256": "1ddbf664d5fe57b98255009287c8b2b1a8828c414e01a84f2b04aa175cbee8c8"
+    },
+    {
+      "index": 63,
+      "native_code_cell": 30,
+      "stage": "Retain the recorded sampled objective trace.",
+      "sha256": "85c83253e4b3ac181b5960644b7e56e8f0380dfc9addbbc65eebde02f8e35511"
+    },
+    {
+      "index": 65,
+      "native_code_cell": 31,
+      "stage": "Plot actual optimized angles alongside the source locations.",
+      "sha256": "b53cf9f038e26942df0b19d829d535d98508092c527a20662cc1df4360f0a5bd"
+    },
+    {
+      "index": 67,
+      "native_code_cell": 32,
+      "stage": "Read the actual final 30,000-shot distribution.",
+      "sha256": "5c92168a737996ca200697206f39655095269a6dec4f83bba582c67fd76daf88"
+    },
+    {
+      "index": 68,
+      "native_code_cell": 33,
+      "stage": "Sort observed outcomes by the original objective.",
+      "sha256": "28bc2449daef76575dc744a40aacd7073e935b11424776031af4f14ac5f21a9b"
+    },
+    {
+      "index": 70,
+      "native_code_cell": 34,
+      "stage": "Select the lowest-cost actually observed assignment.",
+      "sha256": "694d59962b74c40c87312eb3c5c43bb2c87b4b19f0d40a96e743b9ab3b60a160"
+    },
+    {
+      "index": 71,
+      "native_code_cell": 35,
+      "stage": "Decode each vehicle's route.",
+      "sha256": "e9066222a1b5e2318cefe6a093334e022606c82e2d3b7b3bc06b862ce9d84fc8"
+    },
+    {
+      "index": 72,
+      "native_code_cell": 36,
+      "stage": "Plot the original geometry and actual observed routes.",
+      "sha256": "5d713868ede2af459fb44c58b54432ba70908bc050355e745995449661b12c81"
+    }
+  ]
+}

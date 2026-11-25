@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/grover/grover.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0c13b87b292de8e4abfa4bd9c9f3c5c847973a647a652419ee0eb772d87a81c6",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.grover.grover.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_predicates.py",
+  "scope": "Quantum program only; the associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve the original six graph edges, >=4 cut predicate and static iteration binding. The native phase guard evaluates the full Boolean/arithmetic predicate directly and uses no marker/work qubit. An independent classical cut counter and dense oracle/reflection matrices check every complete state."
+}

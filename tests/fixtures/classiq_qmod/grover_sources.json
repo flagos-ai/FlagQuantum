@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "3_sat_grover.qmod",
+      "upstream_path": "algorithms/search_and_optimization/grover/3_sat_grover.qmod",
+      "git_blob_sha1": "f995a51dc48bfe6930178457e33aa1802a48459c",
+      "sha256": "c33d090e750dd4b3fcae7d2bd26d72d655297f27e7ce45ab50a697a6e6c58e72"
+    },
+    {
+      "file": "grover_max_cut.qmod",
+      "upstream_path": "algorithms/search_and_optimization/grover/grover_max_cut.qmod",
+      "git_blob_sha1": "defaa1ddf4de9c9aa1b8847bfd6842d33fb80f08",
+      "sha256": "0138bb2f8a6d85c54dd3d7953c818cc856b0c125dafd3201b438eb5d25529e53"
+    }
+  ]
+}

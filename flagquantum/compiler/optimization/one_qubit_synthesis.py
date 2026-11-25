@@ -42,7 +42,7 @@ from typing import Any
 
 from ...core.ir import Instruction
 from ...core.operator_schema import canonical_opcode, get_operator_schema
-from ..pipeline import _is_zero
+from .canonicalization import _is_zero
 
 #: A 2x2 matrix of Python complex numbers, rows first.
 Matrix = list[list[complex]]
@@ -133,7 +133,7 @@ def _polar_angle(value: Any) -> float | None:
     """Return `value` as a float for branch selection, or None when it has none.
 
     A trainable value never selects a branch, for the same reason
-    `pipeline._is_zero` refuses to call a trainable angle zero: the short forms
+    `canonicalization._is_zero` refuses to call a trainable angle zero: the short forms
     omit `theta` entirely, which would silently detach a rotation initialized at
     zero from the autograd graph.
     """
@@ -292,10 +292,16 @@ def _zyz_angles(matrix: Matrix) -> tuple[float, float, float]:
             _principal(cmath.phase(bottom_left)),
             _principal(cmath.phase(top_right) - math.pi),
         )
+    # Near an anti-diagonal unitary, the small diagonal entries can acquire
+    # different relative roundoff. Recover their phase sum from the determinant
+    # so an unreliable bottom-right phase cannot rotate the dominant entries.
+    determinant_phase = cmath.phase(top_left * bottom_right - top_right * bottom_left)
     return (
         2.0 * math.atan2(abs(bottom_left), abs(top_left)),
         _principal(cmath.phase(bottom_left) - cmath.phase(top_left)),
-        _principal(cmath.phase(bottom_right) - cmath.phase(bottom_left)),
+        _principal(
+            determinant_phase - cmath.phase(bottom_left) - cmath.phase(top_left)
+        ),
     )
 
 
@@ -407,6 +413,62 @@ def canonical_euler_angles(instruction: Instruction) -> tuple[Any, Any, Any] | N
     if source is None:
         return None
     return source(instruction)
+
+
+def _euler_scalar_phase(opcode: str, params: Mapping[str, Any]) -> Any:
+    """Return the scalar convention without detaching parameter expressions."""
+    if opcode == "rz":
+        return -0.5 * params["theta"]
+    if opcode == "sx":
+        return _QUARTER_PI
+    if opcode == "sxdg":
+        return -_QUARTER_PI
+    return None
+
+
+def _synthesize_u3(
+    instruction: Instruction,
+    *,
+    can_run: Callable[[Instruction], bool] | None = None,
+) -> tuple[Instruction, ...] | None:
+    """Emit the absolute-phase U3 form if every leaf meets the target predicate.
+
+    A rejected leading U3 needs no scalar-correction construction. Without a
+    predicate, target-independent optimization retains the same complete word.
+    """
+    angles = canonical_euler_angles(instruction)
+    if angles is None:
+        return None
+    theta, phi, lam = angles
+    result = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": theta, "phi": phi, "lbd": lam},
+        metadata=instruction.metadata,
+    )
+    if can_run is not None and not can_run(result):
+        return None
+    scalar = _euler_scalar_phase(instruction.name, instruction.params)
+    if scalar is None:
+        return (result,)
+    # P(a) X P(a) X = exp(i*a) I. Keep the scalar as gates because
+    # CircuitIR has no scalar phase field; never detach trainable angles.
+    x = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": math.pi, "phi": 0.0, "lbd": math.pi},
+        metadata=instruction.metadata,
+    )
+    phase = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": 0.0, "phi": 0.0, "lbd": scalar},
+        metadata=instruction.metadata,
+    )
+    correction = (x, phase, x, phase)
+    if can_run is not None and not all(can_run(item) for item in correction):
+        return None
+    return (result, *correction)
 
 
 def is_diagonal_one_qubit(instruction: Instruction) -> bool:
@@ -612,11 +674,30 @@ def synthesize_one_qubit_matrix(
     if not _is_unitary(target):
         raise ValueError("matrix must be a 2x2 unitary")
     return _emit_leaves(
-        _leaves(*_zyz_angles(target), z_rotation=z_rotation, pulse_opcode=pulse_opcode),
+        _matrix_leaves(target, z_rotation=z_rotation, pulse_opcode=pulse_opcode),
         qubits=(qubit,),
         metadata={} if metadata is None else metadata,
         z_rotation=z_rotation,
         pulse_opcode=pulse_opcode,
+    )
+
+
+def _matrix_leaves(
+    matrix: Matrix, *, z_rotation: str, pulse_opcode: str
+) -> tuple[tuple[str, float | None], ...]:
+    """Numeric leaf recipes shared by emission and two-qubit cost selection."""
+    theta, phi, lam = _zyz_angles(matrix)
+    # KAK factors with a polar angle of pi/2 may recover
+    # one or two ulps away from pi/2 on a different BLAS/libm platform. Only
+    # canonicalize this matrix-derived angle, never a user's declared rotation.
+    if abs(theta - _HALF_PI) <= 4 * math.ulp(_HALF_PI):
+        theta = _HALF_PI
+    return tuple(
+        (opcode, None if angle is None else float(angle))
+        for opcode, angle in _leaves(
+            theta, phi, lam, z_rotation=z_rotation, pulse_opcode=pulse_opcode
+        )
+        if opcode == pulse_opcode or not _is_zero(angle, atol=_PHASE_EPS)
     )
 
 

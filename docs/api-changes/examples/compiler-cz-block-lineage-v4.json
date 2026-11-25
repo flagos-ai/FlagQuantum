@@ -1,0 +1,556 @@
+{
+  "status": "proposal_fixture_not_a_supported_v4_bundle",
+  "implementation_commit": "0abaf72ba387c490e9ba847b8dfd63ddc6c839ee",
+  "purpose": "Demonstrate a many-to-many relation using independently checked prototype output; no version 4 reader or production integration is implemented.",
+  "source_instructions": [
+    {
+      "opcode": "swap",
+      "physical_qubits": [
+        0,
+        1
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "cx",
+      "physical_qubits": [
+        1,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "native_input_instructions": [
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        0,
+        1
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        1,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        0,
+        1
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        1,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    }
+  ],
+  "proposed_final_instructions": [
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": -3.141592653589793
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        0,
+        1
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948968
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    },
+    {
+      "opcode": "cz",
+      "physical_qubits": [
+        0,
+        1
+      ],
+      "parameters": {}
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        0
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948968
+      }
+    },
+    {
+      "opcode": "rx",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": 1.5707963267948966
+      }
+    },
+    {
+      "opcode": "rz",
+      "physical_qubits": [
+        1
+      ],
+      "parameters": {
+        "theta": -1.5707963267948966
+      }
+    }
+  ],
+  "proposed_block_rewrite": {
+    "input_instruction_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27
+    ],
+    "output_instruction_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22
+    ],
+    "physical_qubits": [
+      0,
+      1
+    ],
+    "baseline_cz_count": 4,
+    "replacement_cz_count": 2,
+    "equivalence": "unitary_up_to_global_phase",
+    "phase_real": -0.9999999999999996,
+    "phase_imag": -2.7755575615628898e-17,
+    "max_abs_residual": 8.163159687020605e-16
+  },
+  "initial_logical_to_physical": [
+    0,
+    1
+  ],
+  "final_logical_to_physical": [
+    0,
+    1
+  ],
+  "reference": "Complete-column operator embedding using Simulation gate matrices, independent of compiler matrix multiplication and KAK."
+}

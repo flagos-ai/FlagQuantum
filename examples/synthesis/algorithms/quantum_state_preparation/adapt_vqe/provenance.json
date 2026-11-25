@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0c68ef1bd549575de7caa9eae9ea1b541c416e30b2bca7f1492f80ed1d941801",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_state_preparation.adapt_vqe.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_pauli_applications.py",
+  "scope": "Complete original four-bit single-layer ansatz, including real-array parameter binding and nested mutable helpers. The full ADAPT-VQE optimization/selection Notebook remains pending.",
+  "native_semantic_adaptations": "Reuse existing Observable and bounded Suzuki-Trotter capture. Preserve all coefficients, term order, time/repetitions, LSB target indexing and absolute phase. Classical parameters specialize at synthesis. Source bytes and licenses stay test-side; no cloud execution claim."
+}

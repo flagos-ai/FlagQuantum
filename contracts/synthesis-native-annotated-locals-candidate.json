@@ -1,0 +1,16 @@
+{
+  "schema": "flagquantum.synthesis_native_annotated_locals_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "syntax": "local: Annotated[QNum, literal_width] = unsigned_expression",
+  "existing_equivalent": "local: QNum[literal_width] = unsigned_expression",
+  "width_range": [1, 256],
+  "signed_scaled_metadata": false,
+  "new_internal_effect": false,
+  "new_physical_ir_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-ANNOTATED-LOCALS-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

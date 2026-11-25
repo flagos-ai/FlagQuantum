@@ -11,7 +11,7 @@ source control blocks. See the
 ## User computation and constraints
 
 Save the following in a Python source file or run
-python -m examples.synthesis_controlled_predicate:
+python -m examples.synthesis.tutorials.control.controlled_predicate.main:
 
 ```python
 import flagquantum as fq

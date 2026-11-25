@@ -1,0 +1,8 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "6e67fc80d979fd09f3ae45961688ce947dd397bb18e2f10f678a51d8a9f44f17",
+  "hamiltonian_data_sha256": "90581b0478d4b38d5be2158f79e99056abc8fe507f2c3c8ac62f31fc1450413c",
+  "scope": "Retained 2-qubit, 3-term quantum program with 288 qDRIFT samples at fixed seed zero. Complete companion Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Ordered coefficients, term identities and logical indices are retained in plain numeric JSON. Native Observable and Pauli evolution replace source-language structs. No source importer is used by this example."
+}

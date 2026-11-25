@@ -1,0 +1,72 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/hhl/hhl_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "b0c0fceb43417fd4ab8ae758e85ba856b6bde7e4e8bb89665baeadd0611da3e2",
+  "git_blob_sha1": "083f1409e922e75cbac3fad59de868385873bef7",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "25baaecf64ff1b1ae94882470de0f95e910e7690e1081a43e8b0cbad2895eae2",
+      "native_code_cell": 1,
+      "stage": "Original rounded matrix/RHS, explicit physical preparation normalization and classical solve"
+    },
+    {
+      "index": 3,
+      "sha256": "85bc29b5050bf112aa475394460a215decd76488bab8f7262284449e3b1f6f7f",
+      "native_code_cell": 2,
+      "stage": "Separate native actual cost measurement from source transpilation metadata"
+    },
+    {
+      "index": 6,
+      "sha256": "d7423ccbf2b969c62d2f1243d6ba88f477b2ad4ed4289081fd5f09e008025bc5",
+      "native_code_cell": 3,
+      "stage": "Visible complete native HHL root, synthesis, execution and named readout"
+    },
+    {
+      "index": 7,
+      "sha256": "36af8d47002f9bfa7e776755308e1520c72cf6fa97dc816c4f2e49e7d70cef27",
+      "native_code_cell": 5,
+      "stage": "Actual synthesis, complete-state oracle, target conversion and source postselection for all seven precisions"
+    },
+    {
+      "index": 8,
+      "sha256": "acea3e6df61fb7311867811fcf6cc255e3bb1bb8844f2a839787d797bce07a80",
+      "native_code_cell": 6,
+      "stage": "Retain complete original precision/cost/fidelity reporting"
+    },
+    {
+      "index": 11,
+      "sha256": "2eeaa578204eadea694fc6010b8a8d1cddd16e2bb1bc050870e74c8288601f6f",
+      "native_code_cell": 7,
+      "stage": "Preserve all original historical comparison observations with explicit status"
+    },
+    {
+      "index": 12,
+      "sha256": "5088a74db7bfbdfabc9ece7f07bf5b081a873765b60d4ac99ba12a19cae75964",
+      "native_code_cell": 8,
+      "stage": "Preserve optional source installation stage as nonexecuting historical metadata"
+    },
+    {
+      "index": 13,
+      "sha256": "038da1b34ee82d3b95a304a2cc6a8734d4862e4aea44e15ad6421329136fa41a",
+      "native_code_cell": 9,
+      "stage": "Distinguish actual native independent oracle from commented historical SDK code"
+    },
+    {
+      "index": 14,
+      "sha256": "6f07b788a7dc0e271cf6f16814fa7f494d76e1aa9b88700a0ce5db8929c80dea",
+      "native_code_cell": 10,
+      "stage": "Preserve historical sweep status without claiming a new SDK execution"
+    },
+    {
+      "index": 16,
+      "sha256": "f5a1ae951fdffd6e914d363353bf7f92d9b7b7a8813c39ef52331a9121edcaf3",
+      "native_code_cell": 11,
+      "stage": "Actual final seven-point fidelity/depth/CX figure with measured versus historical labels"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_hhl_precision_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.hhl.hhl_example.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/hhl/hhl_example/overview/walkthrough.ipynb",
+  "scope": "Complete all10sourcecode stages,original rounded8x8matrix/eightelementRHS,explicit preparation normalization of norm0.9999999994356988,classical solve keeps raw RHS,all seven precision2..8,literal fractional roots,powered exact matrix QPE,reciprocal table,source phasezero/indicatorone filtering and scale,squared overlap,independent absolute native/converted states,actual exact CX/U3 resources and final measured/historical plot. Optional source Qiskit cells are fully commented and preserved as historical nonexecution metadata. No sourceimporter,compiler/API/dependencychange,frozen216change,hardware,speedup,scalability or optimality claim."
+}

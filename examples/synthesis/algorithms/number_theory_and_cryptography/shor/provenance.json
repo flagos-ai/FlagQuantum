@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/shor/shor.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "938e365f085aec5378693c5c466261ca0ccc9e8b5720979bce7da10a9e4516b0",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.shor.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_period_feedback.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve modulus21,base11,five residue bits and ten all-fractional phase bits. Compose existing Hadamard, modular_exp and inverse QFT rather than adding a powered-callback API. The modular exponent is read as stored counter bits; final numeric phase interpretation is unchanged. Private residue starts at1 by incrementing allocated zero storage and remains a retained environment after drop. Independent controlled residue-permutation matrices and analytic inverse DFT verify complete absolute state and all work."
+}

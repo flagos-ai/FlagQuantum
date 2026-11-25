@@ -85,7 +85,6 @@ def fake(monkeypatch: pytest.MonkeyPatch) -> list[_Call]:
             "python": "test",
             "torch": "test",
             "stim": "test",
-            "pymatching": "test",
         },
     )
 
@@ -138,7 +137,7 @@ def test_eight_calls_keep_shots_batch_and_decoder(fake: list[_Call]) -> None:
     ex.main()
     assert len(fake) == 8
     assert [(c.decoder, c.shots, c.batch_size, c.seed) for c in fake] == [
-        ("pymatching", 35, 16, seed) for *_, seed in ex._points()
+        ("sparse_blossom", 35, 16, seed) for *_, seed in ex._points()
     ]
 
 
@@ -258,7 +257,6 @@ def test_output_complete_only_after_eight_points(
         "python",
         "torch",
         "stim",
-        "pymatching",
     }
     assert [r["record_type"] for r in rows[1:-1]] == ["point"] * 8
     assert rows[-1] == {
@@ -276,6 +274,7 @@ def test_real_point_matches_original_source_reference(
 ) -> None:
     pytest.importorskip("stim")
     pytest.importorskip("pymatching")
+    pytest.importorskip("flagquantum.qec.decoders._sparse_blossom")
     basis, distance, profile, seed = point
     code = RotatedSurfaceCode(distance=distance)
     memory = build_memory_circuit(

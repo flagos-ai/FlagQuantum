@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "time_marching.qmod",
+      "source_path": "algorithms/quantum_differential_equations_solvers/time_marching/time_marching.qmod",
+      "git_blob_sha1": "06c6b486196e804d90986cf04174bb8aff8cd941",
+      "sha256": "bd82222da499fc6fc5f07896173a88cadea46b68935df57d2374d18671ce31fe"
+    }
+  ]
+}

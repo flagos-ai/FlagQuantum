@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
 import stat
+from collections.abc import Mapping, Sequence
 from os import PathLike
 from pathlib import Path
 from typing import NoReturn
@@ -42,6 +44,8 @@ def load_qmod(
     *,
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
+    machine_precision: int | None = None,
 ) -> QmodImport:
     """Read a regular UTF-8 file or adapt text without execution or network I/O.
 
@@ -96,7 +100,38 @@ def load_qmod(
         else:
             assert isinstance(source, str)
             text = source
-        return parse_qmod(text, filename=filename, source_version=version)
+        if (
+            machine_precision is None
+            and is_file
+            and "amplitude_amplification" in text
+            and ("SIGNED" in text or "True" in text)
+        ):
+            options = Path(filename).with_suffix(".synthesis_options.json")
+            if options.is_file():
+                try:
+                    with options.open("rb") as stream:
+                        options_bytes = stream.read(16385)
+                    if len(options_bytes) > 16384:
+                        reject(
+                            token,
+                            "budget.source",
+                            "Qmod companion options exceed 16 KiB",
+                        )
+                    preferences = json.loads(options_bytes).get("preferences", {})
+                    machine_precision = preferences.get("machine_precision")
+                except (OSError, ValueError, AttributeError):
+                    reject(token, "precision", "invalid Qmod companion preferences")
+        if machine_precision is not None and (
+            type(machine_precision) is not int or not 1 <= machine_precision <= 8
+        ):
+            reject(token, "precision", "machine precision must be an integer in 1..8")
+        return parse_qmod(
+            text,
+            filename=filename,
+            source_version=version,
+            classical_inputs=classical_inputs,
+            machine_precision=machine_precision,
+        )
     except UnicodeError:
         _conversion(
             HybridVerificationError(

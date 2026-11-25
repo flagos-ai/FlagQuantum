@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "189900a2706e62fd41a7ce7043985ea7d9022a56edfe26f333173db6bf6bc03e",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantumwalk_complex_network.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_controlled_preparation.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain all four original conditional probability vectors and three walk rounds. Named QArray storage is borrowed as a complete raw QNum selector in helpers. Controlled inverse/preparation composition produces phase-exact Grover reflection, then logical array SWAPs exchange position and coin. The dropped coin remains a quantum environment and is included in independent full-state acceptance; it is not treated as clean work. No source importer is used by the native example."
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "18fe4b4fc77d633510916897a7c3f301e1336fad86ee75734946b56db282ca1d",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.comparator.comparator_2vars_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_numbers.py",
+  "scope": "Quantum program only; associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain complete signed input domains and exact binary output scales. Explicit Annotated metadata has the same meaning as QNum[width, signed, fractional_bits]. Native |= creates fresh numeric outputs; literal ^= modifies a raw initialized word. Numeric probabilities decode verified formats without changing the raw reader. Both maximum originals compute max(3.5,a), including the integer-named file."
+}

@@ -1,0 +1,139 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "cf8bc9bea879fe8823be7148bdc50630085d4ce90c0e8c1960502271c65bb08c",
+  "git_blob_sha1": "11e4b839f7e41b8066d798599becf07af72af20d",
+  "scope": "All 21 source stages, the original order-five subgroup, six scalar and six point bits, 2,048 joint draws, and both full reversible arithmetic Circuits.",
+  "native_semantic_adaptations": "Use native qfunc for the table-driven sampled route. Build the runtime field arithmetic with public Circuit instructions and six padded Kaliski rounds. The source compiles its full arithmetic circuits only. Validate the emitted permutation on all 64 occupied scalar branches, require zero workspace, and execute the actual inverse Fourier suffix on the equivalent clean subspace.",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.elliptic_curves.elliptic_curve_discrete_log.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_elliptic_curve_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Set the original curve, generator, seed and target.",
+      "sha256": "3fab1b539bc49262499122707d080e8af3659f57d744c87df87b6475860545f5"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 2,
+      "stage": "Use two three-bit scalar registers and a six-bit point register.",
+      "sha256": "beb433906d10f0be86b3c50ab6c783e657ca5a1d4630cf6cec11beadad7c9429"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "stage": "Control point translations with the three bits of each scalar.",
+      "sha256": "c5abbfe0839225383cbab630b6e35f322122f81c1d3ceef5eb929019d34fee78"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 4,
+      "stage": "Double the generator classically to supply each controlled addend.",
+      "sha256": "6c150f922c1e9c2de157802fc1db9c88b934311df1a594028cfeb32a894adf90"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 5,
+      "stage": "Use the table-driven point translation for the sampled route.",
+      "sha256": "373f26154cbf56063abad2a5ffbe6dded9bb69126d4f5dbfde4a78833dc4ccb6"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "stage": "Pass the source generator to the original-orbit translation.",
+      "sha256": "0969858451d4cfe70932cfd78766ba9a9b57a561d1c28ec44798a4f348b544a2"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 7,
+      "stage": "Synthesize and sample the native point addition.",
+      "sha256": "c340a65e5fb2aa2be8e421603287c3fd9730dee1f33f9bb011cfd42f708ea91b"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "stage": "Check the sample against the affine curve equation.",
+      "sha256": "d777796f390f2ca80fda1b87e19976015fda80140ab0682d5613038edb179344"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 9,
+      "stage": "Compose both scalar accumulations and the inverse QFTs.",
+      "sha256": "fa62a7210ae5feffac5ce2e4801bf55888fe21173bb8e722b4bf7da1e262662b"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 10,
+      "stage": "Synthesize the complete mock period-finding program.",
+      "sha256": "e570d6d38ffab86c80b1962a2e630c74c99732ab9b52542dd82ae9050beb1310"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 11,
+      "stage": "Read the actual instruction mix from the synthesized program.",
+      "sha256": "d0b3f2ed486086bbc0e6975d53e8fc6b9ec5b01a75e8bcf3da6d76f5e071228f"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 12,
+      "stage": "Keep the native circuit depth in the resource report.",
+      "sha256": "d8d3aa7d3ab454b890e8f47d1307fb1eb268e77e533b04641ac446a0de097bca"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 13,
+      "stage": "Draw 2,048 joint scalar-and-point samples.",
+      "sha256": "ffdca9616b7aa07f8a1ff600cd76f3d60934571e4a360f69b90e16407c3d38f3"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 14,
+      "stage": "Sort by count and inspect the ten highest-frequency outcomes.",
+      "sha256": "5d224d90020ee3e705b4ae46715ae0700b1396939fe0091177151f2fd1855bcd"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 15,
+      "stage": "Round measured fixed-point scalars to order-five residues.",
+      "sha256": "2b1d9ea17532c8fc4d2b199dbe7e4bf3de7c8ab19fa1b43523ba087856bec61a"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 16,
+      "stage": "Skip rows with noninvertible rounded right residues.",
+      "sha256": "4c45aa48d01820d18add741ea7e9929a7c3d17aa67b69e6d405d1abe08784d11"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 17,
+      "stage": "Verify the ten highest-frequency eligible logarithms.",
+      "sha256": "a7acc93ff025efac58a85d19b0ac308865a5bec2850fa8b8cf166c72629eef5d"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 18,
+      "stage": "Use six reversible Kaliski rounds and clear the slope from the output.",
+      "sha256": "74fb238e08442c641ce89ac0708ce4dcaad43392f5ed0a7159abb612f0eac06e"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 19,
+      "stage": "Build and inspect the arithmetic point-addition Circuit.",
+      "sha256": "b0fbb00971e640c7e562c5836c4dbdbba3c723d997e9f05a74bb39201deba600"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 20,
+      "stage": "Compose both arithmetic scalar multiplications in one Circuit.",
+      "sha256": "fa62a7210ae5feffac5ce2e4801bf55888fe21173bb8e722b4bf7da1e262662b"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 21,
+      "stage": "Inspect the arithmetic Circuit and verify its complete coherent result.",
+      "sha256": "10734553c3c3110607eac7c3593f3c6870398ff1a572389f5e7414439a9a05ac"
+    }
+  ]
+}

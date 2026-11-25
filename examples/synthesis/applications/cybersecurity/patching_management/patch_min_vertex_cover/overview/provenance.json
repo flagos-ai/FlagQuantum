@@ -1,0 +1,152 @@
+{
+  "upstream_path": "applications/cybersecurity/patching_management/patch_min_vertex_cover.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "941a318e347f1442c4657fb086ff810f675379cfc7da1a9af01ccad0b116e918",
+  "git_blob_sha1": "9a009ce9edc56628d8c39b97e90a449fc310e930",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "ba2f4b821fa3f79b59e3f3c4082f7b44ff88ef7ddc477e2259c54548eedf3db6"
+    },
+    {
+      "index": 4,
+      "sha256": "942947871ac6c844a78eaccae84decdc827d2519b4432d8a1aed4c13eecab12c"
+    },
+    {
+      "index": 5,
+      "sha256": "8f751d17b2e41022567da578ac6a9d1b1b252220ab4313046e6454a9937dd073"
+    },
+    {
+      "index": 7,
+      "sha256": "6e3bc3cf3359eb9c083a0ebd6c7f51474d019fc96b7bb3a184a075bcf4c2e485"
+    },
+    {
+      "index": 9,
+      "sha256": "e234c22c2dc7a136b6c53e4ba262157f70042d1768465212ee9ef0a1898c52ea"
+    },
+    {
+      "index": 11,
+      "sha256": "a10113e4c9425b3deac92fc4d7e107c0859b9ca3a986202438a1d182bca6f09e"
+    },
+    {
+      "index": 12,
+      "sha256": "1cf68dac70309a2eae6cab5b96cc45d9404bd6d48b7db04493016f3dab17a49d"
+    },
+    {
+      "index": 14,
+      "sha256": "98c31c4d44250876fe99c931a8446127c2a1e045fd1d5119b1f60b6ea85195b0"
+    },
+    {
+      "index": 16,
+      "sha256": "798987f469dd6bba731c2a2a6d6cb0894f49c8141109835f40b63aa2730aa26a"
+    },
+    {
+      "index": 20,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 23,
+      "sha256": "a28daef95d130e240870b210db58ea10de610dabaed79f34c6ac26ed372cbbe2"
+    },
+    {
+      "index": 25,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 27,
+      "sha256": "66eb29306bf2ae397d30b3f983b9ba84a5713939e93149122b0e9a16c8173d9b"
+    },
+    {
+      "index": 29,
+      "sha256": "412b1f97875431c40f4e6f1b70c6519fba58645e788b4f7cc5234744da03cbd4"
+    },
+    {
+      "index": 31,
+      "sha256": "c46f30aabf5a513323e959bf5b3db1e36c5c454518afabaa6ea97f8b8fad1368"
+    },
+    {
+      "index": 32,
+      "sha256": "a52fa92ab61e6239f93bad4f9f2a62e3fd48fda1fe84b9862a98aac7907c02c5"
+    },
+    {
+      "index": 34,
+      "sha256": "e61b33388bb40024ee11afaad8bb22335f0ba776581534907498502fccf01d8b"
+    }
+  ],
+  "scope": "Complete original17-cell minimum vertex cover patching workflow:8-resource7-vulnerability graph,illustrativekillchain,bipartiteanddualviews,3-layerQAOA,penalty10,CVaR0.9,60iterationsearch,actualoptimized/uniformsamples,minimumfeasibleobservedcover,andremainingattackgraph.",
+  "native_entrypoint": "examples.synthesis.applications.cybersecurity.patching_management.patch_min_vertex_cover.overview.main",
+  "native_notebook": "examples/synthesis/applications/cybersecurity/patching_management/patch_min_vertex_cover/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_patching_notebook.py",
+  "frozen_quantum_entry_sha256": "2491768894bab6ef54974a65756166c40dd73e0d135aa937123977741acbeaec",
+  "native_semantic_adaptations": "Direct Python binaryobjectiveandconstraintsreplacePyomo;preserveoriginalincidences,8resourcevertices,18dualedges,all256assignments,3layersandpenalty10. Explicitresourcepartitionavoidssourceunorderedbipartitesetorientation. NativeNelderMeadwithsharedexplicitinitialscheduleand60iterationbudget/quantile0.9usesexactlocalprobabilitiesinplaceofimplicitprovideroptimizer;nohostedtrajectoryequalityclaim.1000actualseededdrawseachreplaceunspecifiedshotcount. Minimizerankingoverridesmaximumsizesharedsubsetordering. DeterministicforcelayoutreplacesKamadaKawaiwithoutSciPy;remainingbipartitepartitionrestrictedtosurvivingresources.Independentexhaustiveclassicalreferenceonlylabelscoverageandneverinjectsquantumsamples. No provider/release/hardware/advantageclaim.",
+  "cell_mapping": [
+    {
+      "source_index": 2,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 4,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 5,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 7,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 9,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 11,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 14,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 16,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 20,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 23,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 25,
+      "native_code_cell": 12
+    },
+    {
+      "source_index": 27,
+      "native_code_cell": 13
+    },
+    {
+      "source_index": 29,
+      "native_code_cell": 14
+    },
+    {
+      "source_index": 31,
+      "native_code_cell": 15
+    },
+    {
+      "source_index": 32,
+      "native_code_cell": 16
+    },
+    {
+      "source_index": 34,
+      "native_code_cell": 17
+    }
+  ]
+}

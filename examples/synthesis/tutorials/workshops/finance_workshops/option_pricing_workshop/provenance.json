@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/finance_workshops/Option_Pricing_Workshop.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "613e41b10a31835383e46d673108dd4dcfba79b707ae9ce4b6f1063bc1b52ffc",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.finance_workshops.option_pricing_workshop.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_option_pricing.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "All32raw decimal probabilities and32raw angle values are retained. The source selector>=13 conditional table becomes an explicitly derived finite effective-angle tuple with zero angles below the cutoff. This selector-only static fold reuses existing select_rotation;it does not admit arbitrary controlled table callbacks or execute quantum data in host Python. Native ordinary helpers and bounded loops retain A followed by(-A R0 A\u2020 Z)^k and its global sign. k0/1/2 unchanged-original/native/Circuit complete states,nonzero marker and threshold boundaries,two further coherent input vectors,clean work,named marginals and actual width/operation/depth/memory constraints pass. No public API/production change or optimization claim."
+}

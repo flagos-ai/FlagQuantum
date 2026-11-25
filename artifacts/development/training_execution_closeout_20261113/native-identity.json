@@ -1,0 +1,13 @@
+{
+  "source_sha256": {
+    "setup.py": "a78168c4c14d8f17bedfb0c05068ba1b235907845f3a5278f26c0889fd126090",
+    "flagquantum/simulation/native_cpu/csrc/linear_permutation.h": "d09a76d61265e2a59184c594865fb4a4bba0edf1cd0be8d7e44c7bea4fc97f19",
+    "flagquantum/simulation/native_cpu/csrc/module.cpp": "84a452c94048cd4cfa538a9fed98ed8575920e6a54544c1a71f5dc36cf4b6112",
+    "flagquantum/simulation/native_cpu/csrc/permutation.cpp": "bdec7b9edd94be918dfa35838c0cfd08987560313e9fd49f2d9033ac52a256d0",
+    "flagquantum/simulation/native_cpu/csrc/rotation_adjoint.cpp": "42805c0a254d312b58c0dfe94de8f27e99444b0aed99a7d9ffbe0e1758f5e5ba"
+  },
+  "binary_sha256": "71c87099ff894ae56d837edab27f9af4c8bbd43f0bc7fdb2562072071ff1d107",
+  "binary_retained": false,
+  "build_reproducibility": "Build command and source hashes retained; rebuild with setup.py when the temporary library expires. The binary is not installed into this checkout.",
+  "qualification_method": "Reused the previously built real extension after verifying every recorded native source hash and its binary hash against the prepared checkout. This round did not rebuild or install it."
+}

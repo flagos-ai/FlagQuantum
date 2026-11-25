@@ -5,21 +5,17 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_register_cleanup import (
-    cleanup_composition,
-    copy_reference,
-    flag_value,
-    less,
-)
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     Schedule,
     adjoint_value_candidate,
 )
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,
@@ -32,6 +28,12 @@ from flagquantum.compiler._hybrid.model import (
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.core.ir import Instruction
 from tests.register_program_cases import Registers, pressure
+from tools.synthesis_compiler_examples.register_cleanup.main import (
+    cleanup_composition,
+    copy_reference,
+    flag_value,
+    less,
+)
 
 pytestmark = pytest.mark.unit
 

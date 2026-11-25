@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
-from math import isqrt
 from typing import TYPE_CHECKING, Any
 
 from ...compiler import compile as compile_program
@@ -21,6 +20,11 @@ from ...core.ir import CircuitIR, MeasurementNode
 from ...core.ising import IsingBraidProgram
 from ...errors import CapabilityError, ValidationError
 from ..dynamic._conditions import instruction_is_dynamic
+from ..dynamic._final_outputs import (
+    mark_dynamic_final_outputs,
+    resolve_dynamic_final_output_options,
+    validate_dynamic_final_outputs,
+)
 from ..execution_plan import (
     CircuitAnalysis,
     EvolutionSemantics,
@@ -47,6 +51,7 @@ from .candidates import (
     RuntimeCandidateBuilder,
 )
 from .estimates import (
+    _mps_storage_policy,
     estimate_density_bytes,
     estimate_mps_bytes,
     estimate_state_bytes,
@@ -781,6 +786,14 @@ def _validated_plan_program(
     measurements: Sequence[MeasurementNode] | None,
     noise_model: NoiseModel | None,
 ) -> CircuitIR:
+    construction = getattr(program, "circuit_param", {})
+    if isinstance(construction, Mapping) and construction.get("inputs") is not None:
+        # Plans cannot preserve live tensors; refuse before lossy IR conversion.
+        raise CapabilityError(
+            "execution planning does not support custom initial states because "
+            "ExecutionPlan v1 does not serialize them; use Circuit.state() for "
+            "local statevector execution, or express state preparation as gates"
+        )
     source_ir = program.to_ir() if hasattr(program, "to_ir") else program
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("program must be a Circuit or CircuitIR")
@@ -788,11 +801,6 @@ def _validated_plan_program(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     )
     if measurements is not None:
-        if is_dynamic:
-            raise CapabilityError(
-                "dynamic planning does not accept outputs; measurements and final "
-                "samples are defined by the DynamicCircuit"
-            )
         if source_ir.measurements:
             raise ValidationError(
                 "measurements cannot be supplied when the program already contains "
@@ -800,7 +808,10 @@ def _validated_plan_program(
             )
         if any(not isinstance(request, MeasurementNode) for request in measurements):
             raise TypeError("measurements must contain MeasurementNode instances")
-        source_ir = replace(source_ir, measurements=tuple(measurements))
+        requests = tuple(measurements)
+        if is_dynamic:
+            requests = mark_dynamic_final_outputs(source_ir, requests)
+        source_ir = replace(source_ir, measurements=requests)
     if noise_model is not None:
         from ...noise import NoiseModel
 
@@ -833,12 +844,6 @@ def _validate_dynamic_plan_request(
     """Validate the approved local planning slice before compilation."""
 
     validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
-    construction = getattr(program, "circuit_param", {})
-    if isinstance(construction, Mapping) and construction.get("inputs") is not None:
-        raise CapabilityError(
-            "dynamic planning does not yet support custom initial states because "
-            "ExecutionPlan v1 does not serialize them"
-        )
     if resolved.mode != "auto":
         raise CapabilityError("dynamic planning supports mode='auto' only")
     if resolved.backend not in {"auto", "pytorch"}:
@@ -928,6 +933,8 @@ def plan(
             "dynamic planning takes precision from DynamicCircuit; "
             "ExecutionOptions.precision must be None"
         )
+    if is_dynamic:
+        options = resolve_dynamic_final_output_options(source_ir, options)
     runtime_config = getattr(program, "runtime_config", None)
     resolved = resolve_execution_options(
         options,
@@ -935,7 +942,6 @@ def plan(
         runtime_config=runtime_config,
     )
     world_size = resolve_distributed_backend_policy().effective_world_size
-    construction = getattr(program, "circuit_param", {})
     if (
         not is_dynamic
         and not source_ir.measurements
@@ -956,9 +962,6 @@ def plan(
         and not _requires_dynamic_gradients(program, source_ir)
         and not resolved.allow_approximate
         and not resolved.allow_backend_fallback
-        and not (
-            isinstance(construction, Mapping) and construction.get("inputs") is not None
-        )
         and any(map(supports_dynamic_select, source_ir.instructions))
     ):
         candidate = lower_select_program(source_ir, "dynamic_unary_iteration")
@@ -966,6 +969,9 @@ def plan(
             source_ir = candidate
             is_dynamic = True
     if is_dynamic:
+        validate_dynamic_final_outputs(
+            source_ir, shots=resolved.shots, batch_size=resolved.batch_size
+        )
         _validate_dynamic_plan_request(
             program,
             source_ir,
@@ -1049,31 +1055,17 @@ def plan(
             f"target={resolved.target!r} requires a measurement embedded in the program"
         )
     stable_trajectory_count = 32
-    stable_mps_max_bond: int | None = None
     complex_bytes = 16 if resolved.precision == "complex128" else 8
-    if (
-        has_noise
-        and resolved.mode == "auto"
-        and resolved.allow_approximate
-        and resolved.memory_limit_bytes is not None
-        and estimate_density_bytes(
-            source_ir.n_wires,
-            bsz=resolved.batch_size,
-            complex_bytes=complex_bytes,
-        )
-        > resolved.memory_limit_bytes
-    ):
-        denominator = (
-            resolved.batch_size
-            * source_ir.n_wires
-            * 2
-            * complex_bytes
-            * stable_trajectory_count
-        )
-        stable_mps_max_bond = max(
-            1,
-            isqrt(resolved.memory_limit_bytes // denominator),
-        )
+    stable_mps_max_bond, basis_mps = _mps_storage_policy(
+        source_ir,
+        resolved,
+        has_noise,
+        is_dynamic,
+        world_size,
+        zero_initial_state=isinstance(program, CircuitIR),
+        complex_bytes=complex_bytes,
+        trajectory_count=stable_trajectory_count,
+    )
     internal_plan = plan_advanced(
         source_ir,
         bsz=resolved.batch_size,
@@ -1087,7 +1079,9 @@ def plan(
         require_gradients=resolved.require_gradients,
         allow_approximate=resolved.allow_approximate,
         config=selected_config,
-        optimize=not is_dynamic,
+        # Retain the proved vocabulary: floating Euler replacements can create
+        # tiny intermediate superpositions and invalidate the rank-one bound.
+        optimize=not (is_dynamic or basis_mps),
     )
     if has_noise:
         noisy_mps = internal_plan.state_mode == "mps"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -12,11 +13,12 @@ pytestmark = pytest.mark.integration
 def _run() -> str:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.remote.realtime_device_call"],
+        [sys.executable, "-m", "examples.realtime.device_call"],
         cwd=root,
         check=True,
         capture_output=True,
         text=True,
+        timeout=30,
     )
     return completed.stdout
 
@@ -27,6 +29,58 @@ def test_realtime_device_call_user_example_runs_end_to_end() -> None:
     assert "FlagQuantum realtime device call check passed" in stdout
     assert "registered channels: ('host-dispatch',)" in stdout
     assert "round 1 correction: 1" in stdout
+
+
+def test_realtime_round_trip_is_independent_of_execution_and_qec() -> None:
+    """Run the canonical path without initializing Remote or numerical engines."""
+    root = Path(__file__).resolve().parents[2]
+    script = """\
+        import importlib.abc
+        import runpy
+        import sys
+
+        forbidden = (
+            "flagquantum.remote", "flagquantum.compiler", "flagquantum.runtime",
+            "flagquantum.simulation", "flagquantum.qec", "torch",
+        )
+
+        def is_forbidden(name):
+            return any(name == root or name.startswith(root + ".") for root in forbidden)
+
+        class RejectExecution(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if is_forbidden(fullname):
+                    raise AssertionError(f"Messaging unexpectedly requires {fullname}")
+
+        sys.meta_path.insert(0, RejectExecution())
+        runpy.run_module("examples.realtime.device_call", run_name="__main__")
+        assert not any(is_forbidden(name) for name in sys.modules)
+        """
+    completed = subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(script)],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert "round 1 correction: 1" in completed.stdout
+    assert "mismatched schema status: -2" in completed.stdout
+    assert "FlagQuantum realtime device call check passed" in completed.stdout
+
+
+def test_old_example_entry_point_forwards_to_the_canonical_workflow() -> None:
+    root = Path(__file__).resolve().parents[2]
+    completed = subprocess.run(
+        [sys.executable, "-m", "examples.remote.realtime_device_call"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert completed.stdout == _run()
 
 
 def test_the_wire_format_is_stated_rather_than_implied() -> None:

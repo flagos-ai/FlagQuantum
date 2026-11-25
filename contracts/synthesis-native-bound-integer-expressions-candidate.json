@@ -1,0 +1,15 @@
+{
+  "schema": "flagquantum.synthesis_native_bound_integer_expressions_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "constants": ["plain bound integer parameters", "active bounded static range indices"],
+  "semantics": "replace loaded synthesis-time integer names with literals before existing unsigned expression checks",
+  "quantum_input_required": true,
+  "real_coercion": false,
+  "new_physical_ir_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-BOUND-INTEGER-EXPRESSIONS-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

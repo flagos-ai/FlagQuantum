@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "c26326402f1d9970e4e1b592b3b4665e419b96adf756ed0a43d5d63047e4a211",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_differential_equations_solvers.discrete_poisson_solver.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_poisson.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve 64 real spatial amplitudes, Type-II sine/cosine transforms, all 16 diagonal Pauli terms including both identity terms, six phase bits and 64 inversion angles. Native fractional phase storage preserves raw bits and table lookup; source unsigned integer numeric interpretation is explicitly distinct. Spatial views use bounded mathematical unitary kernels. No production changes."
+}

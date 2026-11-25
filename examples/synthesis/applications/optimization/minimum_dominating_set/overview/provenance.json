@@ -1,0 +1,88 @@
+{
+  "upstream_path": "applications/optimization/minimum_dominating_set/minimum_dominating_set.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "348d6781a1565124ee5a88a616928c02d1e24f51",
+  "original_sha256": "3554701e054f576d8c2dd559fe87c714341cac462cd6a77f6a3e463d2ff08df9",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "c97b87366883c0d89d829f86112c5e2e4d699ed4171864e76e0fe62ebcc96f71",
+      "native_code_cell": 1
+    },
+    {
+      "index": 5,
+      "sha256": "1d400735931d0a6ad3389c0785edae05f73b3e827a24f6952d5e3bf995942db8",
+      "native_code_cell": 2
+    },
+    {
+      "index": 7,
+      "sha256": "96156a7faa40cfe0cb57461f94e77fd34b358969c22f3f6c2095be7bcbaea04b",
+      "native_code_cell": 3
+    },
+    {
+      "index": 8,
+      "sha256": "ac9f6769cbd89c37636abadb742b2bbb289a1727997fbd690e1364930f1dd373",
+      "native_code_cell": 4
+    },
+    {
+      "index": 10,
+      "sha256": "d5a8ed4f59182873f9bb6909f93d9182e74b13dcfa815c27757f6d46065508af",
+      "native_code_cell": 5
+    },
+    {
+      "index": 12,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 6
+    },
+    {
+      "index": 14,
+      "sha256": "6149149a8116c9a0e6f1a3ac5f28bd1a57f3a93f1a9f3988d711f40d10ff2a98",
+      "native_code_cell": 7
+    },
+    {
+      "index": 16,
+      "sha256": "31e4ef9bfb2baabe0d8b759518ad5ce2c9b57e494e7d895682856764d78da0bd",
+      "native_code_cell": 8
+    },
+    {
+      "index": 19,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373",
+      "native_code_cell": 9
+    },
+    {
+      "index": 21,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042",
+      "native_code_cell": 10
+    },
+    {
+      "index": 23,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b",
+      "native_code_cell": 11
+    },
+    {
+      "index": 25,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280",
+      "native_code_cell": 12
+    },
+    {
+      "index": 26,
+      "sha256": "747b4e503a787a7827754da9806367068456b18659f780985349b9823ff6037d",
+      "native_code_cell": 13
+    },
+    {
+      "index": 28,
+      "sha256": "1d788b3f272752a9a7c16d3897e5327ca0d03c377fda223bcab04265fea8b678",
+      "native_code_cell": 14
+    },
+    {
+      "index": 29,
+      "sha256": "3ba6cd2035e9622c2f6e143c0fce46fbfb3ecdd85d8b4590092243ef5a9d5b61",
+      "native_code_cell": 15
+    }
+  ],
+  "native_semantic_adaptations": "Reuse the native qfunc for the original seed-8 closed neighborhoods and retain every slack register. Exact local CVaR integrates all joint decision/slack masses. Native Nelder\u2013Mead and an explicit linear pi schedule replace the unpinned hosted optimizer; actual query counts are shown separately from the iteration budget. Use 1000 actual CPU draws for each comparison. NetworkX seeded spring layout renders the same underlying graph with selected nodes and incident edges; it does not reproduce hosted layout coordinates. Exhaustive search over 64 decision assignments replaces Couenne and only runs after sampling. No historical optimizer trajectory or optimum guarantee for the observed quantum sample.",
+  "scope": "All fifteen code stages: fresh six-node graph (edge probability 0.6, seed 8), six decision bits, fourteen encoded slack bits, six QAOA layers, penalty 10, 70 optimizer iterations, 70% lower-tail CVaR, optimized and uniform samples, and an independent exhaustive constrained solution.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.minimum_dominating_set.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/minimum_dominating_set/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_minimum_dominating_set_notebook.py"
+}

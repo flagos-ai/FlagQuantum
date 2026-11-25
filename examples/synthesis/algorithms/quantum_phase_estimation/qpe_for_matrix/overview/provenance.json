@@ -1,0 +1,89 @@
+{
+  "upstream_path": "algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "d6773c953c3d27e8009add6cf49ba8bd8a48a3e7847885982b8e381cd2823327",
+  "git_blob_sha1": "f6b06c494afe1c879d17a7625d0f8e14fa8a4034",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "75c1cc1b6a4b853d7a3f57949861c7dc5bc1c17647d32eba84a541c7e6f43dd7"
+    },
+    {
+      "index": 5,
+      "sha256": "2a1f2b1da42267664e44e3870eb02a81135d63cc32735d9f369cbf8d3faa8e6f"
+    },
+    {
+      "index": 8,
+      "sha256": "63516ca04605f1f8820213c55a887c2de78593b0de4c2383fe141ccfe07264d9"
+    },
+    {
+      "index": 12,
+      "sha256": "e9435014f99e739bd78aebb4438c481d0d57fe142ac94718fe242d70aa8c7ed9"
+    },
+    {
+      "index": 15,
+      "sha256": "8d881e73b6937ba95d82dedc2c1e86097f4735bc2ec96a0fcdbc703e0b7b8e31"
+    },
+    {
+      "index": 17,
+      "sha256": "745f1d0404bbef91fdb8139677176a81436599aadeab25489e26b96d96cb691c"
+    },
+    {
+      "index": 19,
+      "sha256": "b0b9cf7e9853fbe295e798abfb680f76569c4437ab7b58b7332eec9a76618dad"
+    },
+    {
+      "index": 20,
+      "sha256": "45d2aae25399345c3fc2f7f12d5e606ddf982300fd46517d2b8cdd2817b10b3f"
+    },
+    {
+      "index": 22,
+      "sha256": "d1f46e4f54f5f9319d11a7fd861866374c2c93592dbcc627bef31b2376c49c0e"
+    },
+    {
+      "index": 24,
+      "sha256": "2fac6c443d72fdef6da7b05d1421833b3667d677cf06ec3ad80a441fd9b40dbc"
+    },
+    {
+      "index": 26,
+      "sha256": "4a59d611557c4eb98f933696dda427df5fb776b4f4f2db631f20ad139111dff6"
+    },
+    {
+      "index": 27,
+      "sha256": "d54a25e3be13332581cc6d8b0ac69ebd7d9b73cfdecad3ce112d52347fff3c9e"
+    },
+    {
+      "index": 30,
+      "sha256": "13cb5ff6476f7364fec3949ea001101d66664e8b0cf80cc8f7675aa32f9e43c5"
+    },
+    {
+      "index": 33,
+      "sha256": "0fb81d1b311dd922ff03e810a68209b1f324ff52fba0af7b372120222be6d4a4"
+    },
+    {
+      "index": 35,
+      "sha256": "da764c36b86694cef399bf0ce625cca5bc786aca29aeaed7f7ffc14cf3ecefc4"
+    },
+    {
+      "index": 36,
+      "sha256": "8edd239d7007856c6b8af629839c35b727cba1a763859b9e31e9426af2751b21"
+    },
+    {
+      "index": 38,
+      "sha256": "793a69a438c653ddcd212249ada20ebc1c26399d173a70244034b34a211f3da0"
+    },
+    {
+      "index": 40,
+      "sha256": "6ba51b62b3c91aad6be2a19252b90fe500a13ee9f8b93c76dd636f3ca463ca55"
+    },
+    {
+      "index": 41,
+      "sha256": "e552451ef462473fea121dbfd95ee3bddc1181f3ffb5290877017d818b0efef9"
+    }
+  ],
+  "scope": "Complete matrix-QPE workflow: original4x4 matrix,seed8 amplitudes,.02 desired resolution,seven signed fractional phase bits,exact and order2 approximate evolutions with per-power repetitions2,3,5,7,11,16,23;10000 shots each,top2 energies,source intervals,all4 classical eigenvalues,comparison plot and local resources/drawing.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_phase_estimation.qpe_for_matrix.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_matrix_qpe_notebook.py",
+  "native_semantic_adaptations": "Native qpe one-argument callback binds static powers without repeating each family member.Host lookup replaces symbolic ceiling/log.The exact real symmetric exponential uses spectral decomposition rather than SciPy,without a new dependency.Local sampling seeds1400/1401 replace unseeded remote shots.No identical hosted outcome claim.Drop retains two entangled private data bits.Local resources/text drawing replace hosted show.Pauli reference exponentials use cos(a)I+i*sin(a)P to avoid small-angle general matrix-exp error;absolute-state tolerance remains2e-11."
+}

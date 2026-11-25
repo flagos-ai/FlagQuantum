@@ -24,3 +24,10 @@ reader on 2026-11-03. Follow
 `docs/development/TRAINING_CHECKPOINT_IDENTITY_CONTRACT.md`; land that contract
 and fake before implementation. This permits no additional Compiler import or
 Simulation dependency and preserves legacy v1 validation.
+
+The user separately approved the qualified v3 checkpoint writer and strict
+v1/v2/v3 reader on 2026-11-12. Follow
+`docs/development/TRAINING_PARAMETER_STATE_PROPOSAL.md` and its approval record.
+Land the contract and replacement fake first. Preserve the v1/v2 algorithms,
+public signatures, state_dict and restore metadata; add no Compiler import or
+Simulation dependency.

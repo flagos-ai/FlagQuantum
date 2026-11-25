@@ -1,0 +1,21 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example.ipynb",
+  "original_sha256": "b8b597fe79eb758c4298e7a2631bc6e5fafbf6b8653c58b6f3b4a135d4dcd7bb",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "6d42e3d5aa825cf905d6d00472fbae4561975bc249fe4e6c5a71e362bce29874"
+    },
+    {
+      "index": 4,
+      "sha256": "a12b6801d2173b242780661e9cb23fa5b92d229bd7ac8fc7e9f49c70ec76a60b"
+    }
+  ],
+  "scope": "Native reconstruction of the commented Catalyst QSVT: six data bits, four exact phases, positive block controls, negative-zero reflection and big-endian modular shifts. Explicit ten-logical-wire correction and local CX/U3 pipeline. No unchanged foreign SDK execution, qjit/MLIR, source gate-set, optimizer or timing equivalence.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.qsvt.catalyst_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_catalyst_paper_qsvt_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "ec0c66b0b548a7385b5a115672747a59116396f0",
+  "native_semantic_adaptations": "The entire source is commented. It declares size+3 device wires but uses auxiliary wire size+3; native allocates size+4=ten logical wires and discloses this correction. Both block controls select one. Preserve the big-endian Adder word [data0,...,data5,deletion], negative-zero reflection and radian projector angles. Native packed arithmetic binds deletion as LSB followed by reversed data bit views. Explicit local eleven-physical/one-work/100000-operation/64MiB policy. Local exact CX/U3 conversion replaces the foreign CX/RZ/RY/RX plus qjit pipeline; reported counts are native target instructions, not MLIR CNOT counts or source basis parity. No foreign SDK runs."
+}

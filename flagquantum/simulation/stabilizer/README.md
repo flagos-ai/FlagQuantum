@@ -50,6 +50,13 @@ the ones no amplitude store can hold.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
   replacement Clifford kernel replaces, and keeping it in one place is what
   makes that replacement a local change.
+- `qec.adapters.stim.memory_to_stim_text` reuses the same positioned operation
+  translation. In an embedded build, `_circuit_text.py` serializes that sequence
+  and the native parser validates it, so constructing an owned memory circuit
+  does not require the Python Stim package. In a standard build the existing
+  SDK parser remains the reference path. The embedded engine still owns text
+  sampling and strict DEM conversion; this does not expand the accepted gate or
+  noise domain.
 - The accepted gates are `CLIFFORD_GATE_NAMES`. Everything else - a
   parameterized rotation, `t`, `ccx`, `cswap` - is refused with `CapabilityError`
   naming the accepted set. Nothing is approximated and nothing falls back. Noise
@@ -75,6 +82,8 @@ the ones no amplitude store can hold.
   refusals because they are separate facts.
 - Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
+- Run `python -m pytest tests/team/simulation/test_stim_memory_export.py tests/team/simulation/test_stim_annotated_engine.py -q`
+  after changing annotated text serialization or its embedded validation path.
 
 The private `_fault_signatures.py` primitive reuses the engine's Clifford images
 to propagate recorded-measurement and terminal-Z parities backwards through gates,
@@ -93,7 +102,7 @@ is a numerical primitive. It also must not import Runtime, and it does not read
 lowered `MeasurementNode`s, because reconciling a caller's requested qubits with
 an already-lowered output request is a Runtime decision.
 
-## Why the engine is an external distribution
+## Why the engine reuses Stim
 
 The dependency policy requires a new production dependency to record a
 documented need, an ownership boundary, a licence and supply-chain review, a
@@ -137,6 +146,9 @@ invalid records and independently authored measurement distributions. A future
 Clifford kernel can replace this private boundary without changing the QEC
 consumer, as the controlled-record replacement test demonstrates.
 
+The embedded build uses the same prepared measurement boundary for positioned
+Pauli noise; the standard profile continues to use the Stim Python SDK.
+
 A seed reproduces a run on one engine version and one machine instruction set
 and does not pin a bit pattern. That is the engine's documented behaviour, so a
 seeded comparison across hosts is a comparison of distributions, not of bits.
@@ -162,3 +174,291 @@ Run `python -m pytest tests/team/simulation/test_stim_annotated_engine.py -q`
 for independent SDK, joint-law, reference, bounds and failure evidence.
 Pure scalar and Pauli-support checks live in `_validation.py`; their validation
 behavior is unchanged and they hold no SDK state.
+
+External measurement conversion shares the text parser and deterministic
+reference check with the Stim experiment sampler. The SDK converter stays in
+the engine and returns owned bool tensors to the QEC adapter.
+
+`_record_conversion.py` also prepares a reference once for native static
+terminal Z readout. It reuses the annotation emitter, parser, deterministic
+reference check and owned-buffer validation. Layout and readout column
+selection are owned by QEC composition. The private preparation returns a
+tensor-only callable, keeping Stim's converter inside Simulation.
+
+## Engine design notes
+
+A stabilizer circuit conjugates a Pauli group instead of evolving an amplitude
+vector, so its tableau grows quadratically with the qubit count rather than
+exponentially. Clifford circuits therefore reach qubit counts no amplitude store
+can hold while answering what a fault-tolerance workflow measures.
+### Engine responsibilities
+One conversion and four entry points:
+
+- translating validated FlagQuantum IR while refusing unsupported instructions,
+- sampling outcomes for a requested qubit list,
+- expanding a Pauli string through the circuit and reading it against the zero
+  state for stabilizer-basis expectation requests,
+- sampling measurements recorded by a Clifford program with positioned noise, and
+- surveying that route without running it, so a caller can choose between the
+  stabilizer and dense regimes before allocating a dense state.
+
+The positioned-noise entry point exists because a detector error model is defined
+between syndrome rounds rather than at a named gate: the program locates data
+errors at round boundaries and measurement errors before check readout. It is
+deliberately not reachable from the planned stabilizer
+mode, which refuses a channel outright. The readout is reachable from it, and is
+the one entry point here that needs no external engine at all: expanding a Pauli
+through a Clifford circuit is Pauli algebra, not tableau simulation.
+
+It owns no device selection, no shot policy, no seed stream, no dispatch, and no
+public result assembly. A caller that needs those goes through Runtime, which
+owns them. The survey is not a claim about a program: it reports which
+instructions the noise route would execute and which it would refuse, and it
+decides nothing on the caller's behalf.
+
+### Optional Stim dependency and replacement boundary
+The dependency policy requires a new production dependency to record a
+documented need, an ownership boundary, a licence and supply-chain review, a
+replacement interface, and an exit plan. For this module those are:
+
+- Need. Stim is the reference implementation of stabilizer simulation and of the
+  detector error model that a fault-tolerance workflow needs. Re-deriving it
+  would be research spent on an algorithm that is already solved and already
+  published, and it would put this repository's own Clifford phase bookkeeping
+  in the path of every sampling result.
+- Ownership boundary. `flagquantum.simulation.stabilizer` owns the conversion
+  and the sampling call. The dependency is never imported by Core, by the
+  import-time path, or by any other domain.
+- Licence and supply chain. Stim is Apache-2.0, published by Google Quantum AI,
+  and imports no NVIDIA component, so it sits in the open-neutral dependency
+  class rather than in the accelerated-compute class this project has to
+  replace.
+- Replacement interface and exit plan. The entry points are the seam. A native
+  tableau implementation can replace the bodies of `sample_stabilizer` and
+  `sample_noisy_measurements` without changing a caller, and the Clifford gate
+  set below is the contract a replacement has to satisfy. That work is scheduled
+  separately rather than scaffolded here, so this module holds exactly one
+  implementation of each. The readout entry point is already native for the same
+  reason it can be: the Clifford phase bookkeeping this module would otherwise
+  owe the engine is what it performs there, and it performs it without importing
+  one.
+
+### Stabilizer refusal boundaries
+An instruction outside the Clifford gate set is refused with a named error
+naming the accepted set. The positioned-noise entry accepts one class of channel
+and one measurement shape: a channel whose Kraus operators are a mixture of Pauli
+operators up to a global phase, on as many qubits as the channel acts on, and one
+qubit per measurement.
+That class is not a list of names - it is decided by the operators the channel
+carries, through `KrausChannel.unitary_mixture` - and it is exactly the class a
+tableau absorbs, because sampling one branch of it moves the Pauli frame and
+leaves the tableau alone. An amplitude damping, phase damping, reset, or thermal
+relaxation channel is refused because no Pauli frame represents it; so is a
+unitary that is not a Pauli up to a global phase, such as a coherent
+over-rotation by an angle that is not a multiple of pi, even though it is a
+one-branch unitary mixture. A multi-qubit measurement is refused because the
+caller reads the record back one recorded bit at a time. Nothing is approximated,
+decomposed, or silently dropped, because a stabilizer result that quietly
+answers a different circuit is worse than a refusal: the caller cannot tell the
+two apart from the samples.
+
+
+### Prepared explicit measurement sampler
+
+`Circuit.compile_sampler` delegates to `measurement_sampler.py`. It lowers
+the admitted exact Clifford program and single-bit X feedback to Stim 1.16.0.
+Stim owns sampling, packing and its bounded write batches. FlagQuantum owns
+preflight budgets, tensor and column semantics, and no-replace publication.
+Run `python -m examples.qec.compiled_measurement_sampler` with the Stim extra.
+
+The opt-in embedded wheel uses a private Stim source extension for prepared
+measurement sampling on macOS arm64 and Linux x86_64. The source lock and license are under
+`csrc/`. Both implementations use the same Clifford and single-slot X
+feedback admission rules before engine preparation.
+
+## Explicit dynamic measurement conversion
+
+`Circuit.compile_m2d_converter(detector_map=..., observable_map=...)` retains
+explicit measurement order, including repeated writes to one classical slot.
+QEC owns map validation and the public compiled handle; `_record_conversion.py`
+owns lowering, reference preparation and numerical conversion. The embedded
+profile reuses the pinned upstream converter and determinism analyzer without
+importing Stim; the standard profile uses Stim 1.16.0 behind the same boundary.
+No sampling is needed to convert supplied records.
+
+Run `python -m examples.qec.dynamic_measurement_conversion` for the short path,
+and the two `test_explicit_*conversion*.py` files under `tests/qec` and
+`tests/team/simulation` for core fakes and independent upstream conformance.
+The input is dense CPU bool. T, conditional H, noise, sweeps and routed programs
+are refused. Packed sampling and b8 writing remain separate sampler features.
+
+## Embedded detector producer
+
+`_detector_sampling.py` owns bounded source lowering, numerical preparation and
+exact error analysis. `_embedded_sampler.py` is the numerical wheel boundary.
+QEC owns maps, output layout, packed padding and the public handle lifecycle.
+Reuse the existing Pauli classifier; old sampler/converter noise refusals stay.
+The current embedded bridge invokes pinned FrameSimulator and ErrorAnalyzer
+without importing Stim Python. No additional upstream file is introduced. Run
+`tests/qec/test_native_detector_execution.py` and
+`tests/team/simulation/test_native_detector_execution_conformance.py`; the latter
+replaces a fake stream with the numerical stream behind one unchanged consumer.
+
+
+## Measurement record file formats
+
+The existing compiled measurement sampler writes `01`, `b8`, `r8`, `hits`,
+`dets`, and `ptb64` through Stim 1.16.0's existing codecs. See the executable
+`examples/qec/compiled_measurement_sampler.py` golden path and
+`docs/development/COMPILED_MEASUREMENT_FILE_FORMATS_PROPOSAL.md` for the byte
+bounds and acceptance scope. `dets` contains measurement `M` indices here;
+this method does not write detector/observable streams. `ptb64` requires shots
+in multiples of 64. Every explicit measurement keeps its own source-order
+column even when a classical slot is overwritten.
+
+The private file validator owns byte bounds and complete stream validation;
+it is not a public parser or a second codec. Keep `b8` exact-size admission,
+no-overwrite publication and cleanup intact when editing this workflow. Run
+`tests/unit/test_compiled_measurement_sampler_contract.py` first, followed by
+`tests/team/simulation/test_compiled_measurement_sampler_conformance.py`.
+File writing does not materialize the complete shot table in Python. The 1 GiB
+final-file bound and existing frame estimates do not impose process RSS or
+aggregate scratch-space limits.
+
+
+### Detector-file workflow
+
+`Circuit.compile_detector_sampler` owns maps and a reusable execution handle;
+Simulation owns the source lowering, reference normalization and numerical
+writer. The approved `sample_write` candidate streams six formats through the
+same private stream boundary as `sample`, with no new registry or backend.
+QEC validates layout and lifecycle; the shared private file validator checks
+framing before no-replace publication. Same-call observable output preserves
+correlation. Upstream files remain unchanged.
+
+The contributor golden path is `examples/qec/native_detector_sampling.py`;
+its deterministic file witness prints `detector_bytes 64`. Start with
+`tests/qec/test_native_detector_execution.py`, then numerical replacement tests
+in `tests/team/simulation/test_native_detector_execution_conformance.py`.
+See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
+publication limits and installed-wheel acceptance. No public file reader,
+research execution, universal Clifford-control support or RSS cap is added.
+
+## Stream supplied measurement files
+
+`_record_conversion.py` extends the existing dense converter boundary with a
+prepared file callback. The original lowered source and reference serve both
+methods; no second circuit representation or backend registry is introduced.
+The SDK callback normalizes paths to strings; the embedded callback uses
+`stream_measurements_to_detection_events_helper` from the unchanged 96-file
+Stim 1.16.0 closure. Both numerical implementations buffer 1024 records.
+
+`_measurement_file_validation.py` inspects regular input snapshots with reads
+of at most 64 KiB, retaining no all-shot table or unbounded token. Snapshot and
+aggregate outputs each have a 1 GiB guard, and padded principal tables have a
+64 MiB guard. These are request bounds, not RSS or filesystem quota guarantees.
+Outputs are staged, checked and linked without replacement; paired visibility
+is sequential. Cleanup reports residue, and a contained I/O error leaves the
+dense converter usable. Selected PTB64 output and sweep files refuse early.
+
+The golden path is `examples/qec/measurement_file_conversion.py`. Start with
+`tests/qec/test_measurement_file_conversion.py` for fake/SDK/embedded consumer
+replacement, malformed files, budgets and publication failures. No sampling,
+noise admission, research run or decoding is implied by file conversion.
+
+## Shot-file reading
+
+The public record I/O composition lives in
+`flagquantum.qec.execution.shot_data`; Simulation's private `_shot_data.py` owns
+snapshot admission, count/allocation checks and codec access. The embedded
+CPython cursor reuses the locked Stim reader; it introduces no numerical
+algorithm, decoder, scheduler or public SDK object. The standard build supports
+eager reading through pinned Stim; iteration requires the embedded build.
+Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
+checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
+for byte and numerical conformance. The ten-minute user path is
+`python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.
+
+## Write caller-owned shot data
+
+The private `_shot_data_write.py` owns tensor admission, the single bounded
+bytearray copy, codec selection and no-replace publication. Embedded mode uses
+the existing 96-file Stim 1.16.0 closure and `write_table_data`; SDK mode uses
+the same pinned Python writer. No upstream source or translation unit is added.
+Start with `tests/qec/test_shot_data_writing.py`, then run
+`tests/team/simulation/test_shot_data_writing_conformance.py`. The 64 MiB
+principal estimate and 1 GiB output bound are request guards, not RSS guarantees.
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.
+
+## Embedded noiseless execution candidate
+
+The candidate changes only the internal implementation of `sample_stabilizer`.
+After existing input, seed and Clifford validation, an embedded build uses the
+existing private `_EmbeddedSampler`, with a terminal measurement in requested
+wire order. The returned CPU `int64` tensor owns its storage. The genuine build
+marker selects this route; a load or link failure retains its cause in
+`StabilizerDependencyError` and does not select the SDK instead. Marker-free
+installations retain the SDK route. Positioned-noise execution and Runtime
+metadata are unchanged. No Runtime orchestration belongs in this package.
+
+Fresh macOS arm64 offline wheel/sdist and installed acceptance passed: 82 tests
+in the no-SDK profile and 246 each with the SDK and with the embedded marker
+absent. Real embedded preparation/sampling and the existing 16,384-wire
+regression were verified separately from replacement fakes. Focused tests passed
+208 cases; complete smoke/unit passed 20,567, with 296 selected-node skips and
+36 additional collection skips. Integration completed all 12,274 selected nodes
+across disjoint groups: 12,028 passed and 246 skipped. Historical failed attempts
+and approved recovery evidence are retained; this was not one uninterrupted run.
+Start with `tests/team/simulation/test_embedded_stabilizer_engine.py` and the
+public workflow in `examples/stabilizer_sampling.py`. Final-head publication and
+actual-main acceptance remain separate gates; no maturity or parity is promoted.
+
+## Embedded external Stim text experiments
+
+On opt-in macOS arm64 and Linux x86_64 embedded builds, the existing
+`run_stim_experiment()` consumes annotated Stim text using the bundled
+Stim 1.16.0 engine. Original-circuit sampling and strict DEM conversion
+remain separate. The engine retains the source byte limit, symbolic repeat
+limit, qubit and record limits, gauge rejection, coordinate handling, and
+complete detector and observable shape. Marker-free builds use the Stim SDK.
+The FlagQuantum memory-circuit text exporter still uses the SDK.
+Start with `tests/team/simulation/test_stim_annotated_engine.py` for exact-model
+and original-circuit checks.

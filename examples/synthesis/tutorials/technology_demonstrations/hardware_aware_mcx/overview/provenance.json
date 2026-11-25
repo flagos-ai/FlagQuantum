@@ -1,0 +1,40 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8a9647c7b0f9905791175dfe134bcd08aafc67b7e72986e55e3afad495375844",
+  "git_blob_sha1": "afc29788bec46c0e0e6592942acb37f9a42e42fa",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "2da1a368649c2f16bf781e7e2eaf885d7bc6a36f2fbc203130b2aab7f73b57a9"
+    },
+    {
+      "index": 3,
+      "sha256": "70ddc4d282fd2b0ff5d983c701e6cb130e31d4af768616cb449660aa4fea0657"
+    },
+    {
+      "index": 5,
+      "sha256": "c30042461af4cf85aa847f96bcc7d14cd6919af707e00161ba2ddffd93b0092b"
+    }
+  ],
+  "scope": "Complete three-cell hardware-aware MCX workflow:15 controls,width18,depth objective,CX/U basis,all-to-all and line connectivity; actual depth and named readout; independent full complex-state oracle and clean workspace for original zero,coherent,active target0/1 and near-active inputs.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.hardware_aware_mcx.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/hardware_aware_mcx/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_native_mcx_workspace.py",
+  "frozen_quantum_entry_sha256": "19fb867457519d0cb6cdc5cc11d8f6154c2ede35d5eeae11815497caadeb0889",
+  "cell_mapping": [
+    {
+      "source_index": 1,
+      "native": "walkthrough code1:15-control qfunc and both checked target compilations"
+    },
+    {
+      "source_index": 3,
+      "native": "walkthrough code2:actual all-to-all depth"
+    },
+    {
+      "source_index": 5,
+      "native": "walkthrough code3:actual line depth"
+    }
+  ],
+  "native_semantic_adaptations": "Deterministic native construction replaces unspecified Classiq seed and hosted circuit viewer with local resources, connectivity checks and named readout. Same one-clean decomposition in both topologies; native routing inserts CX-only SWAPs on the line. No claim of Classiq algorithm identity,optimality,resource equality or hardware timing. Independent Circuit preparation is followed by direct all-ones basis permutation; no dense65536-square matrix and no shared MCX decomposition. Parent quantum example is unchanged."
+}

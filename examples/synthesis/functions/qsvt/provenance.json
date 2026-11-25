@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qsvt/qsvt.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "8d859d86ecf3d0c3c68d1ddc9707e1f382a304439cdc27ae51689581783d6457",
+  "native_entrypoint": "examples.synthesis.functions.qsvt.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qsvt_program.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep original4-bit state,4-bit ref,live indicator,live QSVT aux and all six original phases. Root expression XOR ind ^= state <= ref uses checked unsigned arithmetic into initialized storage and its involutive inverse under within/apply. A reusable read-only projected RZ composition preserves the marker half-angle and conditional global phase without mutating its borrows. Independent Circuit explicitly enumerates comparator permutations and projected diagonal matrices; every projector word and nonzero marker is checked. This is the concrete source square-root polynomial, not a generic QSVT callback API. Current native lowering uses more physical/work qubits, gates and depth than the frozen source; all costs remain explicit with no optimization claim."
+}

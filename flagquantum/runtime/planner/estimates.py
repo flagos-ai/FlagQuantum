@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from math import isqrt
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...core.ir import CircuitIR
+    from ..options_resolver import ResolvedExecutionOptions
+
 
 def estimate_state_bytes(n_qubits: int, bsz: int = 1, complex_bytes: int = 8) -> int:
     """Estimate dense statevector memory."""
@@ -127,3 +134,123 @@ __all__ = [
     "estimate_tensor_network_bytes",
     "estimate_tensor_network_working_set_bytes",
 ]
+
+
+def exact_interval_mps_bond(qubits: tuple[tuple[int, ...], ...]) -> int | None:
+    """Bound all intermediate bond ranks for independent short qubit intervals.
+
+    Reordering inside an interval cannot entangle it with a disjoint interval.
+    A width-w interval therefore contributes at most 2**floor(w/2) across
+    any one physical cut, even during a swap-based gate application.
+    """
+    intervals = sorted((min(support), max(support)) for support in qubits if support)
+    end = -1
+    start = 0
+    largest = 1
+    for left, right in intervals:
+        if left > end:
+            start = left
+        end = max(end, right)
+        largest = max(largest, end - start + 1)
+        if largest > 12:
+            return None
+    return 1 << (largest // 2)
+
+
+def exact_basis_mps_bond(source_ir: CircuitIR) -> int | None:
+    """Prove rank one for a closed permutation/sign circuit on implicit zero input.
+
+    This proof applies to raw CircuitIR only, not an external initial tensor.
+    The caller must establish that initialization contract before using it.
+    CX/SWAP stay outside this storage proof: their current exact SVD path may
+    retain zero singular directions even for a mathematical product state.
+    """
+    arities = {"i": 1, "x": 1, "z": 1, "ccx": 3}
+    if any(
+        arities.get(gate.name) != len(gate.wires)
+        or len(set(gate.wires)) != len(gate.wires)
+        or any(
+            type(wire) is not int or not 0 <= wire < source_ir.n_wires
+            for wire in gate.wires
+        )
+        or gate.params
+        or gate.matrix is not None
+        or gate.metadata
+        for gate in source_ir.instructions
+    ):
+        return None
+    return 1
+
+
+def _exact_mps_bond(
+    source_ir: CircuitIR,
+    resolved: ResolvedExecutionOptions,
+    has_noise: bool,
+    is_dynamic: bool,
+    world_size: int,
+    *,
+    zero_initial_state: bool = False,
+) -> int | None:
+    if (
+        resolved.mode == "mps"
+        and not resolved.allow_approximate
+        and not has_noise
+        and not is_dynamic
+        and source_ir.n_wires > 32
+        and world_size == 1
+    ):
+        if zero_initial_state and exact_basis_mps_bond(source_ir) == 1:
+            return 1
+        return exact_interval_mps_bond(
+            tuple(gate.wires for gate in source_ir.instructions)
+        )
+    return None
+
+
+def _mps_storage_policy(
+    source_ir: CircuitIR,
+    resolved: ResolvedExecutionOptions,
+    has_noise: bool,
+    is_dynamic: bool,
+    world_size: int,
+    *,
+    zero_initial_state: bool,
+    complex_bytes: int,
+    trajectory_count: int,
+) -> tuple[int | None, bool]:
+    """Keep exact rank proofs and the existing noisy storage estimate together."""
+    bond = _exact_mps_bond(
+        source_ir,
+        resolved,
+        has_noise,
+        is_dynamic,
+        world_size,
+        zero_initial_state=zero_initial_state,
+    )
+    preserve_basis_vocabulary = (
+        bond == 1 and zero_initial_state and exact_basis_mps_bond(source_ir) == 1
+    )
+    if (
+        has_noise
+        and resolved.mode == "auto"
+        and resolved.allow_approximate
+        and resolved.memory_limit_bytes is not None
+        and estimate_density_bytes(
+            source_ir.n_wires,
+            bsz=resolved.batch_size,
+            complex_bytes=complex_bytes,
+        )
+        > resolved.memory_limit_bytes
+    ):
+        denominator = (
+            resolved.batch_size
+            * source_ir.n_wires
+            * 2
+            * complex_bytes
+            * trajectory_count
+        )
+        bond = max(
+            1,
+            isqrt(resolved.memory_limit_bytes // denominator),
+        )
+    return bond, preserve_basis_vocabulary

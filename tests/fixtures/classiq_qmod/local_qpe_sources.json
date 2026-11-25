@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qpe_for_grover_operator.qmod",
+      "source_path": "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator.qmod",
+      "git_blob_sha1": "28eb64741e94345164488d0aae2a923d16ae05c1",
+      "sha256": "cfa1b27282bf3f6da92004202942d6148a30badf848c8a894cc5941f5afb2a95"
+    }
+  ]
+}

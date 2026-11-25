@@ -1,0 +1,160 @@
+{
+  "upstream_path": "tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3e47e10f0234cbcd723bebc6a78883c81f3b106cf922b57de896afdf98259010",
+  "git_blob_sha1": "17946a697f9a2d16e66e89013b6ceb342522670b",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "419c4f42db5a51e34583e15a3b22e2dab73cbe31f0d6d0676516ba28c40426e7"
+    },
+    {
+      "index": 7,
+      "sha256": "5c83b9cef2146feac5423cf4b8607752d18b0848adcef5011bf9a47a3d089766"
+    },
+    {
+      "index": 9,
+      "sha256": "afa45fce04669f5b8156fceb032bd345d017380d6cb341a78c147ff44866c51e"
+    },
+    {
+      "index": 11,
+      "sha256": "2001d2bba2f218cef415924265611b5b51fc37b4812175ae1bd072c4b2c2905b"
+    },
+    {
+      "index": 13,
+      "sha256": "c9a1090ca73a15573a8457d437ec54e8b287c3cfd0806b7e7a978f97a82a2873"
+    },
+    {
+      "index": 15,
+      "sha256": "1b5d3fd13b30521c5af68450c055a6f755b45ba5c5bccb9c6b4fcbcc91caf1e0"
+    },
+    {
+      "index": 17,
+      "sha256": "11d7aa5ef782cd403d1ca553bbb23433be8cc918f126b6ea6ff5dbf743adf4d9"
+    },
+    {
+      "index": 18,
+      "sha256": "feb153c2a3b873bff2108a7bba4b84ce7c05ab66fcd27ec0277acbca8119b198"
+    },
+    {
+      "index": 20,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 22,
+      "sha256": "332c52b3988eaafe38f1f8a8cd85e1ee18f7da7d385a1ce7e56fde897a3a9cb2"
+    },
+    {
+      "index": 24,
+      "sha256": "79040297ed443184a8276b880bfc1cdfcf133fd1f5157c8ea73eeaad05ae1a57"
+    },
+    {
+      "index": 26,
+      "sha256": "12e83b451c87cb8328e8bc2524fcf2f87137b8480e122d214d4a3a865391443e"
+    },
+    {
+      "index": 28,
+      "sha256": "f8c17da6be38ab6f22300d34a7677837b445d3d6d75ef2544c9193b2dac43266"
+    },
+    {
+      "index": 30,
+      "sha256": "17eaa7eeb95ec1e73a70e0da69aabcd3c5cf23bd16dc5779359e96d0324e2f4d"
+    },
+    {
+      "index": 32,
+      "sha256": "85c83253e4b3ac181b5960644b7e56e8f0380dfc9addbbc65eebde02f8e35511"
+    },
+    {
+      "index": 34,
+      "sha256": "8f5383c49d2935ac29e78fe222775f62844ed51656dac8f84d696defa4ecf07a"
+    },
+    {
+      "index": 38,
+      "sha256": "2b7419f04e56dce80637ce2bc763483cd4979b3adad05604f1f72c6509ee34d0"
+    },
+    {
+      "index": 41,
+      "sha256": "46ba73799d321b6cb1469fbdfcf2bab706b3df3e9a55fa64c93e9004398f2740"
+    }
+  ],
+  "scope": "Complete original 18-cell native portfolio equality workshop; all source scenarios, costs, encodings, objective-call caps, actual 1000 samples each, traces, cost plots, classical minima and independent absolute Circuit verification.",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.finance_workshops.combi_workshop_equality_constriants_po.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_portfolio_workshops.py",
+  "frozen_quantum_entry_sha256": "3af08a8efbc4cdffc407690354fc64c52afb20c6162d9c548a2511cea9061cb2",
+  "native_semantic_adaptations": "Retain 4 layers / return scale 1.5 / no penalty / 30 calls; 3 layers / scale 1.7 / no penalty / 10 calls; 3 layers / scale 10 / penalty 2 / 40 calls. All three assets are unsigned 2-bit values. The first two scenarios are unconstrained despite the declared budget 6. The last has a soft equality penalty. Its draft cell spells PENALTY differently from the used Penalty; the native model uses the final complete solution value 2. Preserve every original scenario and problem size. Users supply high-level\ncosts and classical parameters; the native qfunc prepares uniform registers,\napplies positive cost phases, and mixes with RX(beta). No physical wires or bit\ndecoding are required in the workflow. The companion portfolio_programs.py shows\nthe complete native quantum functions.\n\nThe source uses SciPy COBYLA, whose maxiter limits objective evaluations. Native\nCOBYLA counts trust-region iterations, so this workflow stops BEFORE an extra\nobjective execution at the source cap, selects the best actually evaluated\nparameters, and reports evaluation_budget and nonconvergence. It does not invent\nan optimizer return value or claim the same optimization trajectory. Exact local\nmean probabilities replace provider shot-noisy estimates; final 1,000 seeded\nsamples are actual draws. Sampling/readout and independent verification are\noutside the objective-call cap. Classical exhaustive minima are comparison labels,\nnever substituted for quantum observations. Penalties stay soft; results retain\ninfeasible assignments. No remote service, hardware or advantage claim.\n",
+  "cell_mapping": [
+    {
+      "source_index": 4,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 7,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 9,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 11,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 13,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 15,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 17,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 18,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 20,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 22,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 24,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 26,
+      "native_code_cell": 12
+    },
+    {
+      "source_index": 28,
+      "native_code_cell": 13
+    },
+    {
+      "source_index": 30,
+      "native_code_cell": 14
+    },
+    {
+      "source_index": 32,
+      "native_code_cell": 15
+    },
+    {
+      "source_index": 34,
+      "native_code_cell": 16
+    },
+    {
+      "source_index": 38,
+      "native_code_cell": 17
+    },
+    {
+      "source_index": 41,
+      "native_code_cell": 18
+    }
+  ]
+}

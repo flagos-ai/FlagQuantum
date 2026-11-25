@@ -21,7 +21,8 @@ performance evidence, and API Change Proposals.
 | [ARCH-010](ARCH_010_QISKIT_FEATURE_SPACE_NON_GOALS.md) | Deliberate non-goals against the Qiskit feature space | Proposed | Planning and boundary record only; no code, public API, contract, or capability-level change. |
 | [ARCH-011](ARCH_011_COMPILER_RESPONSIBILITY_BOUNDARY.md) | Compiler responsibility boundary and pass infrastructure | Proposed | Resolve the boundary disagreement between `architecture.toml` and the long-horizon contract; no Stable Core, capability, or implementation authorization. |
 | [ARCH-012](ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md) | CUDA-Q parity control sequence and proprietary backend replacement | Approved | Amends the `AGENTS.md` control sequence to allow a replacement-gated second track, and sets dependency policy for replacing NVIDIA-proprietary simulation cores. No Stable Core, schema, or maturity change. |
-| [ARCH-013](ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md) | Realtime messaging protocol and device-call boundary | Approved | Defines the software half of the realtime surface under `flagquantum/remote/realtime/` and states what a hardware partner owns. No Stable Core, schema, public export, or maturity change. |
+| [ARCH-013](ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md) | Realtime messaging protocol and device-call boundary | Approved; placement superseded by ARCH-014 | Defines the software protocol and hardware non-goals; its original Remote placement is historical. |
+| [ARCH-014](ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md) | Realtime package ownership beside Runtime | Approved | Moves the existing implementation to `flagquantum.realtime`, preserves old imports, wire behavior and non-goals, and enforces dependency isolation. |
 
 ## Mapping Rules to Machine Gates
 

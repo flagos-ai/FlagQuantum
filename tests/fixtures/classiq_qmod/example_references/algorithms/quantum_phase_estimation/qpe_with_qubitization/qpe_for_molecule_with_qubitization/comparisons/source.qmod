@@ -1,0 +1,640 @@
+qstruct BlockEncodedState {
+  data: qnum<4>;
+  block: qnum<4>;
+}
+
+qstruct BlockEncodedState__0 {
+  data: qnum<4, False, 0>;
+  block: qnum<4, False, 0>;
+}
+
+qperm prepare_basis_state_expanded___0(output arr: qbit[4]) {
+  allocate(4, arr);
+  X(arr[0]);
+  X(arr[2]);
+}
+
+qfunc hadamard_transform_expanded___0(target: qbit[5]) {
+  repeat (index: 5) {
+    H(target[index]);
+  }
+}
+
+qperm cases_0_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  IDENTITY(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_1_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  X(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_2_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  Y(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_3_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  Z(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm switch_expanded___0(selector: int, pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  if (selector == 0) {
+    cases_0_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+  } else {
+    if (selector == 1) {
+      cases_1_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+    } else {
+      if (selector == 2) {
+        cases_2_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+      } else {
+        if (selector == 3) {
+          cases_3_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+        }
+      }
+    }
+  }
+}
+
+qfunc apply_pauli_term_expanded___0(pauli_string: IndexedPauli[], x: qbit[4]) {
+  repeat (i: 1) {
+    switch_expanded___0(pauli_string[i].pauli, pauli_string, i, x);
+  }
+}
+
+qfunc unitaries_0_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___0([
+    IndexedPauli {
+      pauli=Pauli::I,
+      index=0
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_1_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___0([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=0
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_2_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___0([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=2
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_3_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___0([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=1
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_4_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___0([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qperm cases_4_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  IDENTITY(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_5_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  X(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_6_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  Y(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_7_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  Z(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm switch_expanded___1(selector: int, pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  if (selector == 0) {
+    cases_4_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+  } else {
+    if (selector == 1) {
+      cases_5_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+    } else {
+      if (selector == 2) {
+        cases_6_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+      } else {
+        if (selector == 3) {
+          cases_7_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+        }
+      }
+    }
+  }
+}
+
+qfunc apply_pauli_term_expanded___1(pauli_string: IndexedPauli[], x: qbit[4]) {
+  repeat (i: 2) {
+    switch_expanded___1(pauli_string[i].pauli, pauli_string, i, x);
+  }
+}
+
+qfunc unitaries_5_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=2
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qperm cases_8_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  IDENTITY(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_9_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  X(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_10_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  Y(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm cases_11_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, const x_captured__apply_pauli_term__20: qbit[4]) {
+  Z(x_captured__apply_pauli_term__20[pauli_string_captured__apply_pauli_term__20[i_captured__apply_pauli_term__20].index]);
+}
+
+qperm switch_expanded___2(selector: int, pauli_string_captured__apply_pauli_term__20: IndexedPauli[], i_captured__apply_pauli_term__20: int, x_captured__apply_pauli_term__20: qbit[4]) {
+  if (selector == 0) {
+    cases_8_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+  } else {
+    if (selector == 1) {
+      cases_9_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+    } else {
+      if (selector == 2) {
+        cases_10_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+      } else {
+        if (selector == 3) {
+          cases_11_lambda___0_0_expanded___0(pauli_string_captured__apply_pauli_term__20, i_captured__apply_pauli_term__20, x_captured__apply_pauli_term__20);
+        }
+      }
+    }
+  }
+}
+
+qfunc apply_pauli_term_expanded___2(pauli_string: IndexedPauli[], x: qbit[4]) {
+  repeat (i: 4) {
+    switch_expanded___2(pauli_string[i].pauli, pauli_string, i, x);
+  }
+}
+
+qfunc unitaries_6_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___2([
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=2
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_7_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___2([
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=2
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_8_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___2([
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=2
+    },
+    IndexedPauli {
+      pauli=Pauli::Y,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_9_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___2([
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=2
+    },
+    IndexedPauli {
+      pauli=Pauli::X,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_10_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=1
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_11_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=0
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_12_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=2
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_13_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=2
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc unitaries_14_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4: qbit[4]) {
+  apply_pauli_term_expanded___1([
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=1
+    },
+    IndexedPauli {
+      pauli=Pauli::Z,
+      index=3
+    }
+  ], data_captured__lcu_unary_paulis__4);
+}
+
+qfunc half_unitaries_3_lambda___0_0_expanded___0(const half_indicator: qbit, half_index: int, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  control (half_indicator) {
+    if (half_index == 0) {
+      unitaries_0_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+    } else {
+      if (half_index == 1) {
+        unitaries_1_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+      } else {
+        if (half_index == 2) {
+          unitaries_2_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+        } else {
+          if (half_index == 3) {
+            unitaries_3_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+          } else {
+            if (half_index == 4) {
+              unitaries_4_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+            } else {
+              if (half_index == 5) {
+                unitaries_5_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+              } else {
+                if (half_index == 6) {
+                  unitaries_6_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                } else {
+                  if (half_index == 7) {
+                    unitaries_7_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                  } else {
+                    if (half_index == 8) {
+                      unitaries_8_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                    } else {
+                      if (half_index == 9) {
+                        unitaries_9_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                      } else {
+                        if (half_index == 10) {
+                          unitaries_10_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                        } else {
+                          if (half_index == 11) {
+                            unitaries_11_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                          } else {
+                            if (half_index == 12) {
+                              unitaries_12_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                            } else {
+                              if (half_index == 13) {
+                                unitaries_13_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                              } else {
+                                if (half_index == 14) {
+                                  unitaries_14_lambda___0_0_expanded___0(data_captured__lcu_unary_paulis__4);
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@disable_const_checks(sel_bit)
+qfunc _unary_iteration_expanded___0(const sel_bit: qbit, const parent: qbit, left_half_index: int, right_half_index: int, num_unitaries: int, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  aux: qbit;
+  if (right_half_index >= num_unitaries) {
+    half_unitaries_3_lambda___0_0_expanded___0(parent, left_half_index, data_captured__lcu_unary_paulis__4);
+  } else {
+    allocate(1, aux);
+    X(sel_bit);
+    within {
+      control (parent) {
+        CX(sel_bit, aux);
+      }
+    } apply {
+      half_unitaries_3_lambda___0_0_expanded___0(aux, left_half_index, data_captured__lcu_unary_paulis__4);
+      CX(parent, aux);
+      X(sel_bit);
+      half_unitaries_3_lambda___0_0_expanded___0(aux, right_half_index, data_captured__lcu_unary_paulis__4);
+    }
+    free(aux);
+  }
+}
+
+qfunc _unary_recurse_expanded___0(const sel_bits: qbit[1], const parent: qbit, index: int, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  _unary_iteration_expanded___0(sel_bits[0], parent, index, index + 1, 15, data_captured__lcu_unary_paulis__4);
+}
+
+qfunc half_unitaries_2_lambda___0_0_expanded___0(const half_indicator: qbit, half_index: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_1_captured___unary_recurse__13: qbit[1]) {
+  _unary_recurse_expanded___0(sel_bits___0_1_captured___unary_recurse__13, half_indicator, half_index, data_captured__lcu_unary_paulis__4);
+}
+
+@disable_const_checks(sel_bit)
+qfunc _unary_iteration_expanded___1(const sel_bit: qbit, const parent: qbit, left_half_index: int, right_half_index: int, num_unitaries: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_1_captured___unary_recurse__13: qbit[1]) {
+  aux: qbit;
+  if (right_half_index >= num_unitaries) {
+    half_unitaries_2_lambda___0_0_expanded___0(parent, left_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_1_captured___unary_recurse__13);
+  } else {
+    allocate(1, aux);
+    X(sel_bit);
+    within {
+      control (parent) {
+        CX(sel_bit, aux);
+      }
+    } apply {
+      half_unitaries_2_lambda___0_0_expanded___0(aux, left_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_1_captured___unary_recurse__13);
+      CX(parent, aux);
+      X(sel_bit);
+      half_unitaries_2_lambda___0_0_expanded___0(aux, right_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_1_captured___unary_recurse__13);
+    }
+    free(aux);
+  }
+}
+
+qfunc _unary_recurse_expanded___1(const sel_bits: qbit[2], const parent: qbit, index: int, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  _unary_iteration_expanded___1(sel_bits[1], parent, index, index + 2, 15, data_captured__lcu_unary_paulis__4, sel_bits[0:1]);
+}
+
+qfunc half_unitaries_1_lambda___0_0_expanded___0(const half_indicator: qbit, half_index: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_2_captured___unary_recurse__10: qbit[2]) {
+  _unary_recurse_expanded___1(sel_bits___0_2_captured___unary_recurse__10, half_indicator, half_index, data_captured__lcu_unary_paulis__4);
+}
+
+@disable_const_checks(sel_bit)
+qfunc _unary_iteration_expanded___2(const sel_bit: qbit, const parent: qbit, left_half_index: int, right_half_index: int, num_unitaries: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_2_captured___unary_recurse__10: qbit[2]) {
+  aux: qbit;
+  if (right_half_index >= num_unitaries) {
+    half_unitaries_1_lambda___0_0_expanded___0(parent, left_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_2_captured___unary_recurse__10);
+  } else {
+    allocate(1, aux);
+    X(sel_bit);
+    within {
+      control (parent) {
+        CX(sel_bit, aux);
+      }
+    } apply {
+      half_unitaries_1_lambda___0_0_expanded___0(aux, left_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_2_captured___unary_recurse__10);
+      CX(parent, aux);
+      X(sel_bit);
+      half_unitaries_1_lambda___0_0_expanded___0(aux, right_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_2_captured___unary_recurse__10);
+    }
+    free(aux);
+  }
+}
+
+qfunc _unary_recurse_expanded___2(const sel_bits: qbit[3], const parent: qbit, index: int, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  _unary_iteration_expanded___2(sel_bits[2], parent, index, index + 4, 15, data_captured__lcu_unary_paulis__4, sel_bits[0:2]);
+}
+
+qfunc half_unitaries_0_lambda___0_0_expanded___0(const half_indicator: qbit, half_index: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_3_captured__unary_select__7: qbit[3]) {
+  _unary_recurse_expanded___2(sel_bits___0_3_captured__unary_select__7, half_indicator, half_index, data_captured__lcu_unary_paulis__4);
+}
+
+@disable_const_checks(msb)
+qfunc _unary_root_expanded___0(const msb: qbit, right_half_index: int, num_unitaries: int, data_captured__lcu_unary_paulis__4: qbit[4], const sel_bits___0_3_captured__unary_select__7: qbit[3]) {
+  within {
+    X(msb);
+  } apply {
+    if (num_unitaries > 0) {
+      half_unitaries_0_lambda___0_0_expanded___0(msb, 0, data_captured__lcu_unary_paulis__4, sel_bits___0_3_captured__unary_select__7);
+    }
+  }
+  if (right_half_index < num_unitaries) {
+    half_unitaries_0_lambda___0_0_expanded___0(msb, right_half_index, data_captured__lcu_unary_paulis__4, sel_bits___0_3_captured__unary_select__7);
+  }
+}
+
+qfunc unary_select_expanded___0(const selector: qnum<4, False, 0>, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  sel_bits: qbit[4];
+  selector -> sel_bits;
+  _unary_root_expanded___0(sel_bits[3], 8, 15, data_captured__lcu_unary_paulis__4, sel_bits[0:3]);
+  sel_bits -> selector;
+}
+
+qfunc select_0_lambda___0_0_expanded___0(const _block: qnum<4, False, 0>, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  unary_select_expanded___0(_block, data_captured__lcu_unary_paulis__4);
+}
+
+qfunc prepare_select_expanded___0(block: qnum<4, False, 0>, data_captured__lcu_unary_paulis__4: qbit[4]) {
+  within {
+    inplace_prepare_state([
+      0.045630072820696,
+      0.086739383197585,
+      0.086739383197585,
+      0.113725586193483,
+      0.113725586193483,
+      0.085098942097053,
+      0.022786476693496,
+      0.022786476693496,
+      0.022786476693496,
+      0.022786476693496,
+      0.060910951530297,
+      0.083697428223792,
+      0.083697428223792,
+      0.060910951530297,
+      0.087978380017955,
+      0.0
+    ], 0, block);
+  } apply {
+    select_0_lambda___0_0_expanded___0(block, data_captured__lcu_unary_paulis__4);
+    if (True) {
+      assign_phase_table([
+        3.141592653589793,
+        0.0,
+        0.0,
+        3.141592653589793,
+        3.141592653589793,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ], block);
+    }
+  }
+}
+
+qfunc lcu_unary_paulis_expanded___0(data: qbit[4], block: qnum<4, False, 0>) {
+  prepare_select_expanded___0(block, data);
+}
+
+qfunc be_hamiltonian_expanded___0(state: BlockEncodedState__0) {
+  lcu_unary_paulis_expanded___0(state.data, state.block);
+}
+
+qfunc my_reflect_about_zero_expanded___0(qba: qnum<4, False, 0>) {
+  control (qba == 0) {
+    phase (pi);
+  }
+  phase (pi);
+}
+
+qfunc walk_operator_expanded___0(state: BlockEncodedState__0) {
+  be_hamiltonian_expanded___0(state);
+  my_reflect_about_zero_expanded___0(state.block);
+}
+
+qfunc qft_no_swap_expanded___0(qbv: qbit[5]) {
+  repeat (i: 5) {
+    H(qbv[i]);
+    repeat (j: (5 - i) - 1) {
+      CPHASE(pi / (2 ** (j + 1)), qbv[(i + j) + 1], qbv[i]);
+    }
+  }
+}
+
+qfunc qft_expanded___0(target: qbit[5]) {
+  repeat (index: 2) {
+    SWAP(target[index], target[4 - index]);
+  }
+  qft_no_swap_expanded___0(target);
+}
+
+qfunc qpe_on_walk_expanded___0(state: BlockEncodedState__0, phase_var: qbit[5]) {
+  hadamard_transform_expanded___0(phase_var);
+  control (phase_var[0]) {
+    walk_operator_expanded___0(state);
+  }
+  repeat (i: 4) {
+    within {
+      control (not phase_var[i + 1]) {
+        control (state.block == 0) {
+          phase (pi);
+        }
+      }
+    } apply {
+      power (2 ** i) {
+        walk_operator_expanded___0(state);
+      }
+    }
+  }
+  invert {
+    qft_expanded___0(phase_var);
+  }
+}
+
+qfunc main(output block: qnum<4, False, 0>, output phase_var: qnum<5, True, 5>) {
+  data: qnum<4, False, 0>;
+  prepare_basis_state_expanded___0(data);
+  allocate(4, block);
+  allocate(5, phase_var);
+  qpe_on_walk_expanded___0({data, block}, phase_var);
+  drop(data);
+}

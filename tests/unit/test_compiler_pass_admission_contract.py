@@ -335,12 +335,14 @@ def test_the_inline_loop_the_contract_replaces_is_gone(
 ) -> None:
     # The declared replacement target must not still exist, or the contract is
     # describing a second implementation rather than a replacement.
-    source = (ROOT / "flagquantum/compiler/pipeline.py").read_text(encoding="utf-8")
+    source = (ROOT / "flagquantum/compiler/optimization/pipeline.py").read_text(
+        encoding="utf-8"
+    )
 
     assert "while True" not in source
     # The manager is the single fixed-point authority: every `to_fixed_point` call
-    # in this module sits inside `_optimize_to_fixed_point`, and there is one of
-    # them. The site is counted by attribute name rather than by a construction
+    # in the optimization implementation sits inside `_optimize_to_fixed_point`.
+    # There is one such site, counted by attribute name rather than a construction
     # spelling, so the pin is about the replacement and not about how the registry
     # handed to the manager is assembled.
     module = ast.parse(source)

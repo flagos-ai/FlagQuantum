@@ -1,3 +1,13 @@
+# Qiskit-derived Weyl and basis-decomposition formulas.
+# (C) Copyright IBM 2017, 2024.
+# (C) Copyright IBM 2026 (CX pulse synthesis templates).
+# Licensed under the Apache License, Version 2.0. See the repository LICENSE or
+# https://www.apache.org/licenses/LICENSE-2.0.
+# Modified for FlagQuantum: native Instruction output, deterministic pure-Python
+# algebra, register convention, and target gate selection. The inspected upstream
+# reference and the limits of the ancestry audit are documented in
+# docs/development/COMPILER_UPSTREAM_REUSE.md.
+
 """Two-qubit unitary synthesis by KAK decomposition over a published entangler.
 
 `gates.native` publishes the gates a target can execute. A supercontrolled
@@ -48,18 +58,15 @@ has no field in which to record it, and no basis of a z-rotation, a pulse, and a
 supercontrolled entangler can carry the phase of an arbitrary ``SU(4)``. Expect
 ``|Tr(source^dagger * synthesized)| / 4 == 1`` and a nonzero phase.
 
-**No specialization is applied.** A target that sits exactly on a symmetric
-point such as `SWAP` has a canonical shorter form in Qiskit, which rewrites the
-factors so that the remaining single-qubit gates cancel against the entangler.
-This module always returns the general factors, which are an exact
-decomposition of the same matrix. The gate counts for those inputs are
-therefore Qiskit's *pulse_optimize=False* counts, not its specialized ones.
-
-**`pulse_optimize` is absent on purpose.** Qiskit's pulse-optimal chooser only
-applies to a ``{rz, sx}`` basis around a CNOT and removes one or two single-qubit
-gates between entanglers. Dropping it removes a few hundred lines of
-float-threshold branching. A gate-count comparison against Qiskit has to pass
-``pulse_optimize=False`` on the Qiskit side.
+**Local pulse synthesis.** Numeric CX/RZ/SX targets use Qiskit-derived two-
+and three-CX Euler commutation templates when the proposal uses no more SX
+pulses, is strictly shorter overall, and passes a complete 4x4 operator check
+at 1e-12 up to a single global phase. The three-CX template exchanges the Weyl
+local factors and output labels to preserve the caller's CX direction. Other
+entanglers and one-qubit bases retain the general factor sequence. This is not
+Qiskit's complete family of symmetric-point specializations; comparisons must
+keep the other SDK's production optimizations enabled. See
+``docs/development/COMPILER_CX_PULSE_SYNTHESIS.md`` for source and limitations.
 
 Every number is deterministic: the one randomized step Qiskit has -- the
 diagonalization of ``M2`` -- uses the same fixed first attempt here and a
@@ -72,17 +79,22 @@ from __future__ import annotations
 import cmath
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import lru_cache
 from types import MappingProxyType
 from typing import Any
 
 from ...core.ir import Instruction
+from .one_qubit_optimization import _instruction_matrix as _one_qubit_matrix
 from .one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
     _as_complex_matrix,
+    _matrix_leaves,
+    _zyz_angles,
     synthesize_one_qubit_matrix,
 )
+from .two_qubit_optimization import _IDENTITY, _lifted_matrix
 
 __all__ = ("SUPERCONTROLLED_ENTANGLERS", "synthesize_two_qubit")
 
@@ -136,6 +148,10 @@ _UNITARY_ATOL = 1.0e-9
 #: accepted, matching the tolerance Qiskit uses.
 _M2_ATOL = 1.0e-13
 _M2_TRIALS = 100
+
+#: Resolve exact entangler classes in radians without squaring small offsets
+#: into a rounded unit fidelity. Residual verification remains the caller's gate.
+_WEYL_ZERO_ATOL = 1.0e-13
 
 #: Qiskit's fixed first attempt at mixing ``Re(M2)`` with ``Im(M2)``. Only the
 #: ratio matters, so it is kept verbatim; agreement with Qiskit on which valid
@@ -332,7 +348,10 @@ def _jacobi_eigh(matrix: RealMatrix) -> tuple[list[float], RealMatrix]:
             for row in range(size)
             for column in range(row + 1, size)
         )
-        if off_diagonal <= 1e-16:
+        # This is a squared norm: 1e-16 would permit entries near 1e-8,
+        # well above the subsequent M2 reconstruction tolerance. Leave room
+        # for reconstruction roundoff without loosening that acceptance gate.
+        if off_diagonal <= (_M2_ATOL * 0.01) ** 2:
             break
         for row in range(size - 1):
             for column in range(row + 1, size):
@@ -618,9 +637,9 @@ def _z_rotation_matrix(theta: float) -> Matrix:
 class _BasisDecomposer:
     """The zero- to three-entangler closed forms for one supercontrolled basis.
 
-    This is Qiskit's `TwoQubitBasisDecomposer` with `pulse_optimize=False` and
-    `euler_basis="ZSX"`, and with the specialized rewrites left out: the
-    classification of a target is not used, only its general Weyl angles.
+    Use Qiskit's `TwoQubitBasisDecomposer` general factor closed forms.
+    Pulse templates are a separately verified proposal over those factors. Exact representability is classified from Weyl coordinates rather
+    than rounded average fidelities.
     """
 
     def __init__(self, entangler: str) -> None:
@@ -711,41 +730,22 @@ class _BasisDecomposer:
         self.q2l = self.u3l
         self.q2r = self.u3r
 
-    def traces(self, target: _Weyl) -> tuple[complex, complex, complex, complex]:
-        """The expected ``Tr(source^dagger * synthesized)`` per entangler count."""
-
-        ta, tb, tc = target.a, target.b, target.c
-        basis_b = self.basis.b
-        return (
-            4
-            * complex(
-                math.cos(ta) * math.cos(tb) * math.cos(tc),
-                math.sin(ta) * math.sin(tb) * math.sin(tc),
-            ),
-            4
-            * complex(
-                math.cos(_PI4 - ta) * math.cos(basis_b - tb) * math.cos(tc),
-                math.sin(_PI4 - ta) * math.sin(basis_b - tb) * math.sin(tc),
-            ),
-            4 * complex(math.cos(tc), 0.0),
-            4 + 0j,
-        )
-
     def entangler_count(self, target: _Weyl) -> int:
-        """The fewest entanglers whose expected fidelity is highest.
-
-        A FlagQuantum native gate set is exact, so the expected fidelity of a
-        count is `(4 + |trace|^2) / 20` with no per-application weighting, and
-        the lowest count wins a tie. That is Qiskit's `np.argmax` over its
-        default `basis_fidelity=1.0`, which returns the first maximum.
-        """
-
-        expected = [(4.0 + abs(trace) ** 2) / 20.0 for trace in self.traces(target)]
-        best = 0
-        for count in range(1, 4):
-            if expected[count] > expected[best]:
-                best = count
-        return best
+        """Choose the shortest exact closed form at coordinate precision."""
+        if max(abs(target.a), abs(target.b), abs(target.c)) <= _WEYL_ZERO_ATOL:
+            return 0
+        if (
+            max(
+                abs(target.a - self.basis.a),
+                abs(target.b - self.basis.b),
+                abs(target.c - self.basis.c),
+            )
+            <= _WEYL_ZERO_ATOL
+        ):
+            return 1
+        if abs(target.c) <= _WEYL_ZERO_ATOL:
+            return 2
+        return 3
 
     def decomposition(self, target: _Weyl, count: int) -> tuple[Matrix, ...]:
         """The 2x2 factors for `count` entanglers, in application order.
@@ -797,6 +797,14 @@ class _BasisDecomposer:
                 _matmul(target.k1l, self.u0l),
             )
         raise ValueError(f"{count} is not an entangler count this module can emit")
+
+
+@lru_cache(maxsize=len(SUPERCONTROLLED_ENTANGLERS))
+def _prepared_basis(entangler: str) -> _BasisDecomposer:
+    # Only fixed gate constants are retained. Decomposition reads these factors
+    # without mutating them; input matrices, instructions and metadata stay local.
+    # The six valid names bound storage; invalid names raise before insertion.
+    return _BasisDecomposer(entangler)
 
 
 # ------------------------------------------------------------------- public API
@@ -863,12 +871,41 @@ def synthesize_two_qubit(
     # Decompose in the low-control kron convention, then read the result back on
     # the caller's own qubits; see the module docstring.
     target = _weyl_decomposition(_swap_register(target_matrix))
-    decomposer = _BasisDecomposer(entangler)
+    decomposer = _prepared_basis(entangler)
     count = decomposer.entangler_count(target)
     factors = decomposer.decomposition(target, count)
 
     left_qubit, right_qubit = qubit_list
     annotations: Mapping[str, Any] = {} if metadata is None else metadata
+    if (
+        entangler == "cx"
+        and z_rotation == "rz"
+        and pulse_opcode == "sx"
+        and count in (2, 3)
+    ):
+        pulse_factors, pulse_qubits = factors, qubit_list
+        if count == 3:
+            # Ud(a,b,c) commutes with exchanging the two index bits. Exchange
+            # the local factors and labels so the pulse template's reversed CXs
+            # retain the caller's original physical direction without another KAK.
+            mirrored = replace(
+                target, k1l=target.k1r, k1r=target.k1l, k2l=target.k2r, k2r=target.k2l
+            )
+            pulse_factors = decomposer.decomposition(mirrored, count)
+            pulse_qubits = qubit_list[::-1]
+        candidate = _cx_pulse_leaves(pulse_factors, pulse_qubits, annotations)
+        baseline_recipes = [
+            recipe
+            for factor in factors
+            for recipe in _matrix_leaves(factor, z_rotation="rz", pulse_opcode="sx")
+        ]
+        if (
+            sum(item.name == "sx" for item in candidate)
+            <= sum(opcode == "sx" for opcode, _ in baseline_recipes)
+            and len(candidate) < count + len(baseline_recipes)
+            and _verified_cx_pulses(target_matrix, candidate, (left_qubit, right_qubit))
+        ):
+            return candidate
     entangler_params: Mapping[str, Any] = (
         {} if decomposer.angle is None else {"theta": decomposer.angle}
     )
@@ -940,4 +977,217 @@ def _local_leaves(
             metadata=metadata,
         )
         or ()
+    )
+
+
+# Adapted from Qiskit 2.6.2 basis_decomposer.rs, get_sx_vz_{2,3}cx_efficient_euler.
+# The caller retains the general factor sequence unless the bounded proposal is
+# shorter and passes complete-operator verification. Global phase stays quotiented.
+def _x_rotation_matrix(theta: float) -> Matrix:
+    cosine, sine = math.cos(theta / 2), -1j * math.sin(theta / 2)
+    return [[cosine, sine], [sine, cosine]]
+
+
+def _zxz_angles(matrix: Matrix) -> tuple[float, float, float]:
+    theta, phi, lam = _zyz_angles(matrix)
+    return lam - _PI2, theta, phi + _PI2
+
+
+def _cx_pulse_leaves(
+    factors: tuple[Matrix, ...],
+    qubits: Sequence[int],
+    metadata: Mapping[str, Any],
+) -> tuple[Instruction, ...]:
+    hadamard: Matrix = [
+        [_FRAC_1_SQRT_2, _FRAC_1_SQRT_2],
+        [_FRAC_1_SQRT_2, -_FRAC_1_SQRT_2],
+    ]
+    control = [_zxz_angles(factor) for factor in factors[::2]]
+    target = [
+        _zxz_angles(_matmul(_matmul(hadamard, factor), hadamard))
+        for factor in factors[1::2]
+    ]
+    leaves: list[Instruction] = []
+
+    def local(matrix: Matrix, index: int) -> None:
+        leaves.extend(
+            _local_leaves(
+                matrix,
+                qubits[index],
+                z_rotation="rz",
+                pulse_opcode="sx",
+                metadata=metadata,
+            )
+        )
+
+    def gate(opcode: str, index: int, angle: float | None = None) -> None:
+        leaves.append(
+            Instruction(
+                opcode,
+                (qubits[index],),
+                params={} if angle is None else {"theta": angle},
+                metadata=metadata,
+            )
+        )
+
+    def cx(reverse: bool = False) -> None:
+        pair = (qubits[1], qubits[0]) if reverse else (qubits[0], qubits[1])
+        leaves.append(Instruction("cx", pair, metadata=metadata))
+
+    if len(control) == 3:
+        local(
+            _matmul(
+                _z_rotation_matrix(control[0][2] + control[1][0] + _PI2),
+                _matmul(
+                    _x_rotation_matrix(control[0][1]), _z_rotation_matrix(control[0][0])
+                ),
+            ),
+            0,
+        )
+        local(
+            _matmul(
+                _x_rotation_matrix(target[0][2] + target[1][0]),
+                _matmul(
+                    _z_rotation_matrix(target[0][1]), _x_rotation_matrix(target[0][0])
+                ),
+            ),
+            1,
+        )
+        cx()
+        gate("sx", 0)
+        gate("rz", 0, control[1][1] - _PI)
+        gate("sx", 0)
+        gate("rz", 1, target[1][1])
+        cx()
+        local(
+            _matmul(
+                _z_rotation_matrix(control[2][2]),
+                _matmul(
+                    _x_rotation_matrix(control[2][1]),
+                    _z_rotation_matrix(control[1][2] + control[2][0] + _PI2),
+                ),
+            ),
+            0,
+        )
+        local(
+            _matmul(
+                _x_rotation_matrix(target[2][2]),
+                _matmul(
+                    _z_rotation_matrix(target[2][1]),
+                    _x_rotation_matrix(target[1][2] + target[2][0]),
+                ),
+            ),
+            1,
+        )
+        return tuple(leaves)
+
+    x12 = control[1][2] + control[2][0]
+    # Only classify roundoff around an exact multiple. A misplaced branch still
+    # has to satisfy the independent complete operator check before admission.
+    pi_multiple = abs(math.sin(x12)) <= _WEYL_ZERO_ATOL
+    odd_multiple = math.cos(x12) < 0
+    x02 = x12 - control[1][0]
+    leading_z = control[0][2] - x02 if pi_multiple else control[0][2] + control[1][0]
+    local(
+        _matmul(
+            hadamard,
+            _matmul(
+                _z_rotation_matrix(leading_z),
+                _matmul(
+                    _x_rotation_matrix(control[0][1]), _z_rotation_matrix(control[0][0])
+                ),
+            ),
+        ),
+        0,
+    )
+    local(
+        _matmul(
+            hadamard,
+            _matmul(
+                _x_rotation_matrix(target[0][2] + target[1][0]),
+                _matmul(
+                    _z_rotation_matrix(target[0][1]), _x_rotation_matrix(target[0][0])
+                ),
+            ),
+        ),
+        1,
+    )
+    cx(True)
+    gate("rz", 0, -control[1][1] if pi_multiple and odd_multiple else control[1][1])
+    if not pi_multiple:
+        local(_x_rotation_matrix(x12), 0)
+    local(_x_rotation_matrix(target[1][1]), 1)
+    gate("rz", 1, target[1][2] + target[2][0])
+    cx(True)
+    gate("rz", 0, control[2][1])
+    local(_x_rotation_matrix(target[2][1]), 1)
+    cx(True)
+    local(
+        _matmul(
+            _z_rotation_matrix(control[3][2]),
+            _matmul(
+                _x_rotation_matrix(control[3][1]),
+                _matmul(_z_rotation_matrix(control[2][2] + control[3][0]), hadamard),
+            ),
+        ),
+        0,
+    )
+    local(
+        _matmul(
+            _x_rotation_matrix(target[3][2]),
+            _matmul(
+                _z_rotation_matrix(target[3][1]),
+                _matmul(_x_rotation_matrix(target[2][2] + target[3][0]), hadamard),
+            ),
+        ),
+        1,
+    )
+    return tuple(leaves)
+
+
+def _verified_cx_pulses(
+    source: Matrix, candidate: Sequence[Instruction], pair: tuple[int, int]
+) -> bool:
+    product = _IDENTITY
+    for instruction in candidate:
+        if len(instruction.wires) == 1:
+            if instruction.wires[0] not in pair:
+                return False
+            factor = _one_qubit_matrix(instruction)
+            if factor is None:
+                return False
+            # Left multiplication by a local gate combines row pairs; no lifted
+            # 4x4 matrix or arithmetic on its structural zeros is needed.
+            row_pairs = (
+                ((0, 2), (1, 3))
+                if instruction.wires[0] == pair[0]
+                else ((0, 1), (2, 3))
+            )
+            updated = product.copy()
+            for lower, upper in row_pairs:
+                for index, row in enumerate((lower, upper)):
+                    updated[row] = [
+                        factor[index][0] * left + factor[index][1] * right
+                        for left, right in zip(
+                            product[lower], product[upper], strict=True
+                        )
+                    ]
+            product = updated
+            continue
+        reverse = len(instruction.wires) == 2 and instruction.wires == pair[::-1]
+        matrix = _lifted_matrix(instruction, pair[::-1] if reverse else pair)
+        if matrix is None:
+            return False
+        product = _matmul(_swap_register(matrix) if reverse else matrix, product)
+    row, column = max(
+        ((i, j) for i in range(4) for j in range(4)),
+        key=lambda index: abs(product[index[0]][index[1]]),
+    )
+    if abs(product[row][column]) < 1e-15:
+        return False
+    phase = source[row][column] / product[row][column]
+    return abs(abs(phase) - 1) <= 1e-12 and all(
+        abs(source[i][j] - phase * product[i][j]) <= 1e-12
+        for i in range(4)
+        for j in range(4)
     )

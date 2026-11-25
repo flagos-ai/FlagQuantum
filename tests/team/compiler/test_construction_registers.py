@@ -6,18 +6,20 @@ from typing import Literal
 
 import pytest
 
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import verify_register_program
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.model import (
     Block,
     HybridProgram,
@@ -174,7 +176,7 @@ def test_initialization_errors_fail_before_any_lowering(
         raise AssertionError("invalid semantics must fail before gate emission")
 
     monkeypatch.setattr(
-        "flagquantum.compiler._construction.register_lowering._copy", forbidden
+        "flagquantum.compiler._construction.codegen.registers._copy", forbidden
     )
     with pytest.raises(
         HybridVerificationError, match="register.(uninitialized|initialized)"

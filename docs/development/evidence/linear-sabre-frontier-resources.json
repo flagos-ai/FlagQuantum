@@ -1,0 +1,1131 @@
+{
+  "scope": "Native planner and router development control; no SDK ranking or formal host qualification",
+  "base_commit": "5b9cf3878664393e8667ca175ec8669f37fb3bc9",
+  "implementation_commit": "52b116a14f8242883e6bd644004e26326376824e",
+  "baseline_source_sha256": "edae69396475444b3dba1c798cf3d95965bb5cf640c1ce8a0b8cf05d627997e3",
+  "candidate_source_sha256": "99a2592671c8c6d8605190d117de6432c33589a14976f323376d91aa77d966e7",
+  "driver_sha256": "be46c59d5893a685a7ee8de9dd9da49ff98890136210c420c5fdb09eacafada1",
+  "driver_source": "\"\"\"First-run control of source-identical SABRE frontier maintenance.\"\"\"\n\nfrom __future__ import annotations\n\nimport gc\nimport hashlib\nimport json\nimport random\nimport statistics\nimport subprocess\nimport sys\nimport time\nimport tracemalloc\nimport types\nfrom dataclasses import asdict\nfrom pathlib import Path\nfrom unittest.mock import patch\n\nfrom flagquantum.compiler import CouplingMap, route_to_topology\nfrom flagquantum.compiler.topology import sabre\nfrom flagquantum.core.ir import CircuitIR, Instruction\n\nBASE = \"5b9cf3878664393e8667ca175ec8669f37fb3bc9\"\nOUT = Path(\"/private/tmp/fq-linear-frontier-resources-20261122.json\")\nsource = subprocess.check_output(\n    [\"git\", \"show\", BASE + \":flagquantum/compiler/topology/sabre.py\"],\n    text=True,\n    timeout=20,\n)\nold = types.ModuleType(\"flagquantum.compiler.topology._frontier_baseline\")\nold.__package__ = \"flagquantum.compiler.topology\"\nsys.modules[old.__name__] = old\nexec(compile(source, \"<frozen-main-sabre>\", \"exec\"), old.__dict__)\noriginal = old._plan_sabre_trial\ncandidate = sabre._plan_sabre_trial\nimplementations = {\"baseline\": original, \"candidate\": candidate}\nroot = Path.cwd()\nassert not subprocess.check_output([\"git\", \"status\", \"--porcelain\"], timeout=20)\nhead = subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], text=True, timeout=20).strip()\n\n\ndef digest(value):\n    return hashlib.sha256(\n        json.dumps(value, sort_keys=True, separators=(\",\", \":\")).encode()\n    ).hexdigest()\n\n\ndef program(width, layers, mixed):\n    if not mixed:\n        return CircuitIR(\n            width,\n            tuple(\n                Instruction(\"cz\", (q, q + 1))\n                for _ in range(layers)\n                for q in range(0, width, 2)\n            ),\n        )\n    rng = random.Random(706)\n    return CircuitIR(\n        width,\n        tuple(\n            Instruction(\"cx\", tuple(rng.sample(range(width), 2)))\n            for _ in range(layers)\n        ),\n    )\n\n\nreport = {\n    \"scope\": \"Native planner and router development control; no SDK ranking or formal host qualification\",\n    \"base_commit\": BASE,\n    \"implementation_commit\": head,\n    \"baseline_source_sha256\": hashlib.sha256(source.encode()).hexdigest(),\n    \"candidate_source_sha256\": hashlib.sha256(\n        (root / \"flagquantum/compiler/topology/sabre.py\").read_bytes()\n    ).hexdigest(),\n    \"driver_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"driver_source\": Path(__file__).read_text(),\n    \"warmups\": 2,\n    \"retained_rounds\": 9,\n    \"rows\": [],\n    \"completed\": False,\n}\nwith OUT.open(\"x\") as stream:\n    stream.write(json.dumps(report, indent=2) + \"\\n\")\n\nfor width, layers, mixed, workflow in (\n    (256, 1024, False, \"single-trial\"),\n    (512, 512, False, \"single-trial\"),\n    (6, 64, True, \"single-trial\"),\n    (12, 128, True, \"single-trial\"),\n    (6, 64, True, \"router\"),\n    (12, 128, True, \"router\"),\n):\n    ir = program(width, layers, mixed)\n    checks = []\n\n    def run(variant, trace=False):\n        coupling = CouplingMap.line(width)\n        function = implementations[variant]\n        with patch.object(sabre, \"_plan_sabre_trial\", function):\n            if trace:\n                tracemalloc.start()\n            try:\n                started = time.perf_counter()\n                result = (\n                    function(ir, coupling)\n                    if workflow == \"single-trial\"\n                    else route_to_topology(ir, coupling, strategy=\"sabre\")\n                )\n                elapsed = time.perf_counter() - started\n                peak = tracemalloc.get_traced_memory()[1] if trace else None\n            finally:\n                if trace:\n                    tracemalloc.stop()\n        assert result is not None\n        normalized = asdict(result) if workflow == \"single-trial\" else result.to_dict()\n        return digest(normalized), elapsed, peak\n\n    expected = None\n\n    def verify(variant, phase, iteration, observed):\n        global expected\n        if expected is None:\n            expected = observed\n        assert expected == observed, (width, layers, workflow, variant, phase)\n        checks.append(\n            {\"variant\": variant, \"phase\": phase, \"iteration\": iteration, \"output_sha256\": observed}\n        )\n\n    for iteration in range(2):\n        for variant in implementations:\n            observed, _, _ = run(variant)\n            verify(variant, \"warmup\", iteration, observed)\n    samples = {variant: [] for variant in implementations}\n    for iteration in range(9):\n        order = (\"baseline\", \"candidate\") if iteration % 2 == 0 else (\"candidate\", \"baseline\")\n        for variant in order:\n            observed, elapsed, _ = run(variant)\n            verify(variant, \"timed\", iteration, observed)\n            samples[variant].append(elapsed)\n    peaks = {}\n    for variant in implementations:\n        gc.collect()\n        observed, _, peaks[variant] = run(variant, trace=True)\n        verify(variant, \"traced\", 0, observed)\n    medians = {variant: statistics.median(values) for variant, values in samples.items()}\n    row = {\n        \"width\": width,\n        \"layers_or_gates\": layers,\n        \"operation_count\": len(ir.instructions),\n        \"mixed\": mixed,\n        \"workflow\": workflow,\n        \"samples_seconds\": samples,\n        \"median_seconds\": medians,\n        \"candidate_baseline_ratio\": medians[\"candidate\"] / medians[\"baseline\"],\n        \"python_peak_bytes\": peaks,\n        \"sample_verification\": checks,\n    }\n    assert len(checks) == 24\n    report[\"rows\"].append(row)\n    OUT.write_text(json.dumps(report, indent=2) + \"\\n\")\n    print(json.dumps({k: v for k, v in row.items() if k not in (\"samples_seconds\", \"sample_verification\")}), flush=True)\n\nreport[\"completed\"] = True\nreport[\"admission_passed\"] = (\n    all(row[\"candidate_baseline_ratio\"] <= 1.05 for row in report[\"rows\"])\n    and all(row[\"candidate_baseline_ratio\"] <= .95 for row in report[\"rows\"][:2])\n    and all(\n        row[\"python_peak_bytes\"][\"candidate\"] <= 1.05 * row[\"python_peak_bytes\"][\"baseline\"]\n        and row[\"python_peak_bytes\"][\"candidate\"] <= row[\"python_peak_bytes\"][\"baseline\"] + 128 * 1024\n        for row in report[\"rows\"]\n    )\n)\nOUT.write_text(json.dumps(report, indent=2) + \"\\n\")\nassert not subprocess.check_output([\"git\", \"status\", \"--porcelain\"], timeout=20)\nprint(json.dumps({\"completed\": True, \"admission_passed\": report[\"admission_passed\"]}), flush=True)\n",
+  "warmups": 2,
+  "retained_rounds": 9,
+  "rows": [
+    {
+      "width": 256,
+      "layers_or_gates": 1024,
+      "operation_count": 131072,
+      "mixed": false,
+      "workflow": "single-trial",
+      "samples_seconds": {
+        "baseline": [
+          0.16737829201156273,
+          0.14790616696700454,
+          0.1668675830005668,
+          0.14745208399835974,
+          0.16685920901363716,
+          0.14970304199960083,
+          0.17259599996032193,
+          0.1689478749758564,
+          0.14863595803035423
+        ],
+        "candidate": [
+          0.14544316701358184,
+          0.14656475000083447,
+          0.14701025001704693,
+          0.14552337501663715,
+          0.14570687501691282,
+          0.14593808399513364,
+          0.14823770802468061,
+          0.14874275005422533,
+          0.14598450000630692
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.16685920901363716,
+        "candidate": 0.14598450000630692
+      },
+      "candidate_baseline_ratio": 0.874896272547809,
+      "python_peak_bytes": {
+        "baseline": 34931184,
+        "candidate": 34931184
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "2c24f970d30662e3f75883433b2449a1e3c7b63064584ce066fcefc4e1db12a1"
+        }
+      ]
+    },
+    {
+      "width": 512,
+      "layers_or_gates": 512,
+      "operation_count": 131072,
+      "mixed": false,
+      "workflow": "single-trial",
+      "samples_seconds": {
+        "baseline": [
+          0.18904491601279005,
+          0.1693538340041414,
+          0.16856312501477078,
+          0.16747500002384186,
+          0.165952917013783,
+          0.16673854197142646,
+          0.16600220801774412,
+          0.1669253750005737,
+          0.16630512499250472
+        ],
+        "candidate": [
+          0.16288458299823105,
+          0.187585833016783,
+          0.1666592500405386,
+          0.1825329169514589,
+          0.16343341703759506,
+          0.18087745795492083,
+          0.1812307499931194,
+          0.1624065000214614,
+          0.18399708298966289
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.1669253750005737,
+        "candidate": 0.18087745795492083
+      },
+      "candidate_baseline_ratio": 1.0835827563921854,
+      "python_peak_bytes": {
+        "baseline": 44970392,
+        "candidate": 44970392
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "468c1a07188c53a4717e50a15fb0c0306e8409ae66dc9271517fb13a0d9c3c58"
+        }
+      ]
+    },
+    {
+      "width": 6,
+      "layers_or_gates": 64,
+      "operation_count": 64,
+      "mixed": true,
+      "workflow": "single-trial",
+      "samples_seconds": {
+        "baseline": [
+          0.0004899170016869903,
+          0.0004902079817838967,
+          0.0004865420050919056,
+          0.0005178329884074628,
+          0.000507500022649765,
+          0.00048762501683086157,
+          0.00048620899906381965,
+          0.0004859589971601963,
+          0.0005054580396972597
+        ],
+        "candidate": [
+          0.0004893330042250454,
+          0.00048266700468957424,
+          0.0005022910190746188,
+          0.0006056670099496841,
+          0.0004903330118395388,
+          0.0005030829925090075,
+          0.00048508303007110953,
+          0.0004845410003326833,
+          0.0004841249901801348
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.0004899170016869903,
+        "candidate": 0.0004893330042250454
+      },
+      "candidate_baseline_ratio": 0.9988079665332417,
+      "python_peak_bytes": {
+        "baseline": 27456,
+        "candidate": 27672
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "f9c28dc38b75a77133c56993980e2e4f6ee957a7370a1d2eff5b25b5d5503595"
+        }
+      ]
+    },
+    {
+      "width": 12,
+      "layers_or_gates": 128,
+      "operation_count": 128,
+      "mixed": true,
+      "workflow": "single-trial",
+      "samples_seconds": {
+        "baseline": [
+          0.0035800000187009573,
+          0.0034482500050216913,
+          0.003579666023142636,
+          0.0034287500311620533,
+          0.0033916670363396406,
+          0.0035339589812792838,
+          0.003417207975871861,
+          0.00345933303469792,
+          0.003479750012047589
+        ],
+        "candidate": [
+          0.003442667017225176,
+          0.003516583004966378,
+          0.0034210000303573906,
+          0.0034456250141374767,
+          0.003455083991866559,
+          0.0033823750563897192,
+          0.003383625007700175,
+          0.0033632080303505063,
+          0.0034187909914180636
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.00345933303469792,
+        "candidate": 0.0034210000303573906
+      },
+      "candidate_baseline_ratio": 0.9889189609800385,
+      "python_peak_bytes": {
+        "baseline": 69772,
+        "candidate": 69988
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "c1802b482aa108d454fbce058676ed3f6e28399e7372c9f52b9d0f4575a46da8"
+        }
+      ]
+    },
+    {
+      "width": 6,
+      "layers_or_gates": 64,
+      "operation_count": 64,
+      "mixed": true,
+      "workflow": "router",
+      "samples_seconds": {
+        "baseline": [
+          0.0027118330472148955,
+          0.002720083051826805,
+          0.0027266250108368695,
+          0.0027198330499231815,
+          0.002670583955477923,
+          0.0026612079818733037,
+          0.002651666000019759,
+          0.0026644589961506426,
+          0.0027202920173294842
+        ],
+        "candidate": [
+          0.0026989589678123593,
+          0.002776084002107382,
+          0.0027247079997323453,
+          0.0026774159632623196,
+          0.00262937496881932,
+          0.0027177499723620713,
+          0.0027650000411085784,
+          0.002679582976270467,
+          0.00263291597366333
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.0027118330472148955,
+        "candidate": 0.0026989589678123593
+      },
+      "candidate_baseline_ratio": 0.9952526283224706,
+      "python_peak_bytes": {
+        "baseline": 137292,
+        "candidate": 137292
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "379ed1be310bb7f5accc790bc6097804a6f207e40f554c0fc0feca1875853bfb"
+        }
+      ]
+    },
+    {
+      "width": 12,
+      "layers_or_gates": 128,
+      "operation_count": 128,
+      "mixed": true,
+      "workflow": "router",
+      "samples_seconds": {
+        "baseline": [
+          0.018043541989754885,
+          0.0180083749582991,
+          0.017778499983251095,
+          0.017822499969042838,
+          0.018029708007816225,
+          0.017854625009931624,
+          0.018198166973888874,
+          0.01807400002144277,
+          0.017927334003616124
+        ],
+        "candidate": [
+          0.01798283396055922,
+          0.0179764999775216,
+          0.01794579200213775,
+          0.018034250009804964,
+          0.017916375014465302,
+          0.01784658298129216,
+          0.017956499999854714,
+          0.017892042000312358,
+          0.01781345799099654
+        ]
+      },
+      "median_seconds": {
+        "baseline": 0.0180083749582991,
+        "candidate": 0.01794579200213775
+      },
+      "candidate_baseline_ratio": 0.9965247860339276,
+      "python_peak_bytes": {
+        "baseline": 475036,
+        "candidate": 475036
+      },
+      "sample_verification": [
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "warmup",
+          "iteration": 1,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 1,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 2,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 3,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 4,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 5,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 6,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 7,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "timed",
+          "iteration": 8,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "baseline",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        },
+        {
+          "variant": "candidate",
+          "phase": "traced",
+          "iteration": 0,
+          "output_sha256": "7714188e5668af1a2130e5619b9689500147ae717061ba2a1c22429058ab2df9"
+        }
+      ]
+    }
+  ],
+  "completed": true,
+  "admission_passed": false
+}

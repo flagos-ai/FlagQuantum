@@ -1,15 +1,15 @@
 # Migrating a Stim workflow to FlagQuantum
 
-FlagQuantum replaces the half of a Stim-based QEC study that sits **after**
-circuit generation: reading a detector error model, sampling it, and decoding a
-syndrome. It does not replace Stim's circuit layer, and it does not ask you to
-stop using it.
+FlagQuantum supports both Stim interoperability and bounded native QEC circuit
+execution. Keep Stim circuit generation when needed, or use native Circuit IR
+with measurement maps. Compiled samplers and converters use an embedded pinned
+engine in qualified wheels; SDK-backed profiles use the optional Stim adapter.
+Vendor objects remain behind the numerical boundary.
 
-The interface between the two halves is the detector error model text, which
-Stim already writes and FlagQuantum reads. No Stim object crosses the boundary,
-no circuit is re-simulated, and nothing under `flagquantum/` imports `stim` — the
-reader, the model sampler, and both in-tree decoders are Stim-free, so the
-`stim` extra is only needed by the half that generates circuits.
+The model sampler draws declared fault mechanisms; circuit detector sampling
+executes the original noisy circuit. These are distinct distributions and
+validation routes, not interchangeable performance claims. The guide's original
+model-reading examples remain supported below.
 
 | Stim | FlagQuantum |
 | --- | --- |
@@ -17,7 +17,7 @@ reader, the model sampler, and both in-tree decoders are Stim-free, so the
 | `circuit.detector_error_model(...)` | keep it: write the model text with Stim |
 | `dem_from_stim_text(text)` | `DetectorErrorModel.from_stim_text(text)` |
 | `dem.compile_sampler(...).sample(...)` | `DetectorErrorModel.dem_sampling(...)` |
-| `circuit.compile_detector_sampler(...)` | `DetectorErrorModel.dem_sampling(...)` for a model, or keep circuit sampling |
+| `circuit.compile_detector_sampler(...)` | Native `circuit.compile_detector_sampler(detector_map=..., observable_map=...)` for admitted circuits; DEM sampling remains separate |
 | `pymatching.Matching.from_detector_error_model(...)` | `get_decoder("minimum_weight_matching", model)` |
 
 ## Read the model text
@@ -366,3 +366,170 @@ The runnable, gate-checked version of every block above is
 [`tests/qec/test_stim_user_migration.py`](../../tests/qec/test_stim_user_migration.py),
 which executes each block in one namespace and compares its output against the
 values quoted here.
+
+
+## Fixed-shot reports from your Stim circuit
+
+Use `run_stim_experiment` when you already hold supported Stim circuit text and
+want complete logical-failure counts and a confidence interval. This entry uses
+the original circuit as its sampling source, strict DEM analysis and the selected
+decoder's existing default configuration. Install the `stim` extra; the
+`pymatching` selection additionally requires that extra.
+
+```python
+from flagquantum.qec.execution.experiments import run_stim_experiment
+
+text = (
+    "R 0 1\nX_ERROR(0.125) 0\nX_ERROR(0.25) 1\nM 0 1\n"
+    "DETECTOR rec[-2]\nDETECTOR rec[-1]\n"
+    "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
+)
+result = run_stim_experiment(
+    text, decoder="sparse_blossom", shots=35, batch_size=16, seed=53
+)
+print(result.shots, result.logical_failures, result.observable_failures)
+# 35 0 (0, 0) -- exact decoding of all four independent-fault outcomes
+print(result.sampling_source)
+# stim_circuit -- original external circuit sampling source
+```
+
+Expected: `35 0 (0, 0)` followed by `stim_circuit`. The swapped logical columns
+are deliberate. This small independent-fault example has an exact logical
+prediction for each syndrome; it makes no physical suppression or speed claim.
+The runnable script is
+[`stim_memory_experiment.py`](../../examples/qec/stim_memory_experiment.py).
+
+`StimExperimentResult` is separate from the existing `MemoryExperimentResult`.
+For FlagQuantum memory declarations continue using `run_memory_experiment`.
+Keep using the lower-level bridge when you need direct samples or manual decoder
+control. Unsupported hyperedges, isolated-detector/parallel-edge translation
+cases and other existing refusals remain explicit; this entry does not enable
+approximate graph conversion, implicit decoder fallback or adaptive stopping.
+See the [approved contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md).
+
+
+## Write detector samples without retaining all shots
+
+The detector-file candidate adds the familiar `sampler.sample_write` method;
+see the [approved contract and executable example](../development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md).
+Run `python examples/qec/native_detector_sampling.py` in a qualified profile.
+The example retains the original decoder workflow and adds a deterministic
+repeated-slot witness, expected to print `detector_bytes 64`.
+
+Use `format="b8", append_observables=True` for detector-then-observable bits.
+Alternatively set `obs_out_filepath=...` and `obs_out_format="b8"` to write
+same-shot logical flips separately. Six formats are supported: 01, b8, r8,
+hits, dets and ptb64. Dets files name detectors D and logicals L; measurement
+files name occurrences M. These are reference-normalized flips, not raw records.
+
+Select at most one observable layout. Ptb64 requires shots divisible by 64.
+Existing destinations are refused. Final files total at most 1 GiB, with
+conservative sparse bounds and a 64 MiB principal-table estimate. These guards
+are not total disk or process RSS limits. Both streams validate before sequential
+no-replace publication; two-file atomic visibility is not promised. Failures
+invalidate the handle and retain errors. T gates, conditional H, general controls
+and non-Pauli noise remain outside this admitted path. Public file reading and
+streaming decoder composition remain future work.
+
+## Keep the familiar converter file method
+
+Use the existing native Circuit converter, then call
+`converter.convert_file(measurements_filepath=..., measurements_format="b8",
+detection_events_filepath=..., detection_events_format="b8")`.
+`python -m examples.qec.measurement_file_conversion` is a complete runnable
+repeated-classical-slot example: three writes retain three occurrence columns,
+and fixed records 010 produce detectors 10 and observable 1.
+
+Stim users keep the keyword names and defaults. Six input formats are accepted;
+selected PTB64 outputs and sweep files are refused in this bounded native route.
+Unlike detector `sample_write()`, this converter permits appended observables
+and a separate observable file together. `Path` inputs normalize to strings at
+the SDK boundary. No complete file is turned into a Python shot tensor.
+See the [API](../reference/API.md#convert-a-measurement-file-to-detector-and-logical-files)
+and [approved scope](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).
+
+## Captured records and batch decoding candidate
+
+Use the familiar `read_shot_data_file` name from
+`flagquantum.qec.execution.shot_data`. Results are owned Torch bool/uint8 tensors
+instead of NumPy arrays. The new `iter_shot_data_file` is a FlagQuantum extension
+for the embedded build, not an upstream Stim API. Its independently packed
+detectors can feed the existing `PyMatchingDecoder.decode_packed_batch`.
+See [shot-file decoding](../../examples/qec/shot_file_decoding.py) and the
+[approved contract](../development/QEC_SHOT_DATA_READING_PROPOSAL.md). Standard
+SDK builds support eager reads only. Zero-column records remain an explicit
+gap, and the reading candidate is not full parity.
+
+## Write caller-owned records
+
+Pass a CPU Torch table to `write_shot_data_file`; bool rows are dense and uint8
+rows are already bit-packed. The format remains Stim's `01`, `b8`, `r8`,
+`ptb64`, `hits` or `dets`. Supply `num_measurements` alone, or detector and
+observable widths. The example `python -m examples.qec.shot_file_encoding`
+prints two shots and the exact `b8` bytes. The writing candidate uses the Stim
+1.16.0 SDK or an embedded build; installed acceptance is pending.
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.
+
+## Existing noiseless execution with an embedded build
+
+The recovered candidate keeps the existing public workflow:
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(3).x(1),
+    options=fq.ExecutionOptions(mode="stabilizer", shots=8, seed=7),
+    outputs=fq.samples(),
+)
+assert result.samples is not None
+assert result.samples.tolist() == [[[0, 1, 0]] * 8]
+print(result.runtime["execution_path"])
+# local_stabilizer -- the existing local execution path is preserved
+```
+
+An embedded build selects the private native sampler without loading the Stim
+Python package; a marker-free build retains the optional SDK path. Existing
+Clifford validation and refusal behavior remain in force. Fresh no-SDK installed
+acceptance verifies this workflow through the real native sampler, separately
+from replacement fakes. The existing 16,384-wire regression also passed in the
+embedded installation. This is bounded local evidence, not a full Stim parity
+claim; PR delivery and actual-main acceptance remain separate gates.

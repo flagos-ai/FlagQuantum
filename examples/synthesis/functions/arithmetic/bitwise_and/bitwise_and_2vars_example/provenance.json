@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "19606f976123747e326be525173bfa132a289bee89b3c17d0697af8c71120358",
+  "scope": "Quantum program only; related Notebook workflows remain pending.",
+  "native_semantic_adaptations": "Fresh unsigned two-register bitwise AND uses the shared word operation.",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_and.bitwise_and_2vars_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py"
+}

@@ -1,0 +1,29 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk.ipynb",
+  "original_sha256": "e8646c758d9dd277533759759f52672d0a50ba4b223a8d92b985cf3859963f1a",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "2c64d6070f0e54a5dd7c95a806bc84e70fc0e6bc0e3836303890142d030be0aa"
+    },
+    {
+      "index": 3,
+      "sha256": "5254ee009e62f2936da46a1d7ed406dd23bd1e30817ba6abc9a8b694283c30f9"
+    },
+    {
+      "index": 4,
+      "sha256": "b3e3c50dc6a32c82ad23737f83373fe898e44ec30acb948b85c013918f489145"
+    },
+    {
+      "index": 6,
+      "sha256": "e44cf27d6a29a74c70bb1949eea527e9113061e141f065e1ca9ea8175cedb68a"
+    }
+  ],
+  "scope": "Complete source six-bit walk compilation workflow: width12,CX/U3 target, two actual candidates, deterministic bounded CX selection, measured local durations, independent full-state and all-input-column acceptance. No global optimizer, private compiler timing, hardware or speedup equivalence claim.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.classiq_discrete_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_discrete_walk_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "505c8cdae892159b9d5a5c29f9e6434aeb094b25",
+  "native_semantic_adaptations": "Complete source six-bit walk compilation workflow: width12,CX/U3 target, two actual candidates, deterministic bounded CX selection, measured local durations, independent full-state and all-input-column acceptance. No global optimizer, private compiler timing, hardware or speedup equivalence claim."
+}

@@ -29,8 +29,8 @@ models, or runtime contracts here.
    ```
 
 The first golden scenario is nested tensor-indexed loops with data-dependent
-RX/RY selection, a CX loop, and a scalar expectation. `capture.py` parses the
-restricted Python source into that representation without invoking the function
+RX/RY selection, a CX loop, and a scalar expectation. The
+[Python capture frontend](frontend/README.md) parses the restricted Python source into that representation without invoking the function
 or reading tensor values. It remains compilation only and does not execute the
 program.
 
@@ -75,6 +75,14 @@ trace. `lowering.py` converts that trace to the existing `CircuitIR` with Core
 reference; reusable structure identity never serializes or hashes their values.
 The optional structure cache is bounded and reports hit, miss, and eviction.
 
+`runtime_inputs.py` owns the input validation and structural signature shared by
+static specialization and dynamic lowering. Descriptors include declared types,
+concrete shapes, dtype names and device classes; numerical input values are
+excluded. `diagnostics.py` owns their shared `SpecializationError`.
+`specialize.py` retains the former helper and error names as direct aliases.
+See the [local contributor guide](README.md#input-validation-and-specialization-ownership)
+for ownership, compatibility scope and the shortest accepted/rejected workflow.
+
 The verified Program IR normalization stage is split by responsibility:
 `analysis.py` computes facts, `rewrites.py` owns SSA substitution and cloning,
 `transforms.py` contains concrete transformations, and `passes.py` verifies and
@@ -110,7 +118,11 @@ not introduce a target dialect, `TargetIR`, general pass registry, stable pass
 extension API, device optimization, or performance claim. Operations that may
 fail at runtime are not removed merely because their result is unused.
 
-`dynamic_lowering.py` owns the separate bounded measurement-feedback profile.
+`dynamic/program.py` owns the separate bounded measurement-feedback profile.
+`dynamic/expressions.py` owns predicate canonicalization and condition-partitioned
+classical values. The retained `dynamic_lowering.py` entry aliases the lowering
+function and result type. The [dynamic guide](dynamic/README.md) describes the
+implementation boundary and executable feedback workflow.
 Capture represents a top-level measurement as a boolean SSA value plus a new
 linear quantum effect. A direct `if` on that value lowers both branches to
 classically conditioned instructions on one Core `CircuitIR`; it does not

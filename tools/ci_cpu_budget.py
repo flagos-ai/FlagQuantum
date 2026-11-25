@@ -83,10 +83,14 @@ def read_limits(directories: dict[str, list[Path]]) -> tuple[list[float], list[i
 
 
 def is_dedicated_cpu_service(directories: dict[str, list[Path]]) -> bool:
-    """Recognize MC550 slots with their own finite CPU and memory limits."""
+    """Recognize verified CPU slot services with finite per-slot limits."""
     common = set(directories["cpu"]).intersection(directories["memory"])
     for directory in common:
-        if re.fullmatch(r"fqmc-cpu(?:0[1-9]|1[0-6])\.service", directory.name):
+        if re.fullmatch(
+            r"(?:fqmc-cpu(?:0[1-9]|1[0-6])|fq-bw1100-(?:pilot|cpu(?:0[1-9]|1[0-6]))-runner|"
+            r"actions\.runner\.flagos-ai-FlagQuantum\.a800-\d+-flagquantum-cpu-[1-8])\.service",
+            directory.name,
+        ):
             cpu, memory = read_limits({"cpu": [directory], "memory": [directory]})
             if cpu and memory:
                 return True
@@ -130,6 +134,15 @@ def main(*, dedicated: bool = False) -> None:
     physical_memory = int(os.sysconf("SC_PAGE_SIZE")) * int(os.sysconf("SC_PHYS_PAGES"))
     cpu = min([float(len(affinity)), *quotas])
     memory = min([physical_memory, *memory_limits])
+    # A container's namespace can hide the runner service and its stricter limits.
+    # Only the host probe writes this file, before the Python wrapper is installed.
+    if inherited := os.environ.get("FQ_CI_HOST_BUDGET"):
+        host = json.loads(Path(inherited).read_text())
+        if host["runner"] != os.environ.get("RUNNER_NAME"):
+            raise RuntimeError("Inherited CPU budget belongs to another runner")
+        cpu = min(cpu, float(host["effective_cpus"]))
+        memory = min(memory, int(host["memory_limit_bytes"]))
+        dedicated = dedicated or bool(host["dedicated_service"])
     workers = select_workers(cpu, memory, shared, dedicated)
     distributed_workers = select_distributed_workers(cpu, memory, shared, dedicated)
     report = {
@@ -158,13 +171,15 @@ def main(*, dedicated: bool = False) -> None:
         tempfile.mkdtemp(prefix="fq-ci-report-", dir=os.environ.get("RUNNER_TEMP"))
     )
     payload = json.dumps(report, indent=2)
-    (report_directory / "resources.json").write_text(payload + "\n")
+    report_path = report_directory / "resources.json"
+    report_path.write_text(payload + "\n")
     print(payload, flush=True)
     if "GITHUB_ENV" in os.environ:
         with Path(os.environ["GITHUB_ENV"]).open("a") as stream:
             stream.write(
                 f"FQ_PYTEST_WORKERS={workers}\nFQ_DISTRIBUTED_WORKERS={distributed_workers}\n"
                 f"FQ_CI_REPORT_DIR={report_directory}\n"
+                f"FQ_CI_HOST_BUDGET={inherited or report_path}\n"
             )
             if shared:
                 for name in [

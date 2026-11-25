@@ -1,0 +1,37 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "7167afb734aac83005a68b0dd47099d511f71a67",
+  "original_sha256": "fbe17e1da6eec3573ad0d7a13a3db5f3732e5ee2984b183e1d4ad21363f997a3",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "fa67c1796abe8dee885c077693d12b02f7eb3636a6ba0432eddc062c31e56860"
+    },
+    {
+      "index": 3,
+      "sha256": "3c75bc31b6e4a8ffaf795fa8ce33214b07382d6be0ad7b51eb16f69ac0d20058"
+    },
+    {
+      "index": 4,
+      "sha256": "00c7e35cc9db8526fda5ebb08a083421a9e074b927dd2de24e886865633bb337"
+    },
+    {
+      "index": 7,
+      "sha256": "44453c7ac748039ab29f36148b5e495f23d161602e257b49b49762443d40983f"
+    },
+    {
+      "index": 8,
+      "sha256": "3c75bc31b6e4a8ffaf795fa8ce33214b07382d6be0ad7b51eb16f69ac0d20058"
+    },
+    {
+      "index": 9,
+      "sha256": "49170ece73567106749ce2b705c293d641085de8e14e9af31e68b198026d94f1"
+    }
+  ],
+  "scope": "Retain both original four-/five-qubit domains [0,3) and [2,8), both sampling stages and both bar plots. Use fresh allocated outputs and 1000 seeded samples from exact local probabilities. This certifies fresh-input states, not arbitrary-input in-place unitary equivalence.",
+  "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_partial_uniform_state.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/state_preparation/prepare_partial_uniform_state/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain both original four-/five-qubit domains [0,3) and [2,8), both sampling stages and both bar plots. Use fresh allocated outputs and 1000 seeded samples from exact local probabilities. This certifies fresh-input states, not arbitrary-input in-place unitary equivalence."
+}

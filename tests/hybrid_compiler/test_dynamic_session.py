@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 
 import pytest
@@ -14,6 +15,12 @@ from flagquantum.compiler._hybrid import (
     lower_dynamic_program,
     scalar_type,
     tensor_type,
+)
+from flagquantum.compiler._hybrid.dynamic_lowering import (
+    LoweredDynamicProgram as RetainedLoweredDynamicProgram,
+)
+from flagquantum.compiler._hybrid.dynamic_lowering import (
+    lower_dynamic_program as retained_lower_dynamic_program,
 )
 from flagquantum.core.ir import Instruction
 from flagquantum.core.parameters import Parameter
@@ -181,8 +188,14 @@ def _lowered():
     return lower_dynamic_program(capture_source(SOURCE, ()))
 
 
-def test_capture_and_lower_measurement_feedback_to_existing_circuit_ir() -> None:
-    lowered = _lowered()
+@pytest.mark.parametrize(
+    "lower", (lower_dynamic_program, retained_lower_dynamic_program)
+)
+def test_capture_and_lower_measurement_feedback_to_existing_circuit_ir(
+    lower: Callable[..., RetainedLoweredDynamicProgram],
+) -> None:
+    lowered = lower(capture_source(SOURCE, ()))
+    assert isinstance(lowered, RetainedLoweredDynamicProgram)
     ir = lowered.circuit
 
     assert tuple(instruction.name for instruction in ir.instructions) == (
@@ -235,7 +248,12 @@ def test_seeded_session_is_reproducible() -> None:
     assert torch.equal(first.classical_bits, second.classical_bits)
 
 
-def test_dynamic_profile_fails_closed_on_unsupported_semantics() -> None:
+@pytest.mark.parametrize(
+    "lower", (lower_dynamic_program, retained_lower_dynamic_program)
+)
+def test_dynamic_profile_fails_closed_on_unsupported_semantics(
+    lower: Callable[..., RetainedLoweredDynamicProgram],
+) -> None:
     source = """
 def conditional_measurement():
     qp.H(wires=0)
@@ -245,9 +263,9 @@ def conditional_measurement():
     return bit
 """
     with pytest.raises(SpecializationError, match="dynamic.conditional_measurement"):
-        lower_dynamic_program(capture_source(source, ()))
+        lower(capture_source(source, ()))
     with pytest.raises(SpecializationError, match="expected 0 runtime input"):
-        lower_dynamic_program(capture_source(SOURCE, ()), (torch.tensor(1.0),))
+        lower(capture_source(SOURCE, ()), (torch.tensor(1.0),))
 
 
 def test_runtime_rejects_invalid_shots_gradient_and_classical_order() -> None:

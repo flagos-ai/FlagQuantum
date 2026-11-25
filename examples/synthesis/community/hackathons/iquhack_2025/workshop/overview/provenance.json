@@ -1,0 +1,109 @@
+{
+  "upstream_path": "community/Hackathons/iQuHack_2025/Workshop/WS_iQuHack_2025_final.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f4091582b2b2b46c1edf92b29758826829428f231ae2f17575fb88d89edbf3e2",
+  "git_blob_sha1": "a9a0d955f93b73d47d34525d0a8ec6d7bf0c0651",
+  "scope": "All 16 source stages, including both exercise solutions, the seed-zero 32-outcome distribution, exact signed addition, all 2,048 amplitude-loading draws, and the five-qubit exponential QFT.",
+  "native_semantic_adaptations": "Use native qfunc for amplitude, probability, arithmetic and Fourier programs. The signed source's original values use public Circuit sign extension and modular increments under a checked 14-wire bound. Recover both actual measurement tables from one local sample and execute the optional single-draw bonus with the statevector workflow.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.iquhack_2025.workshop.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/iquhack_2025/workshop/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_iquhack_workshop_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 9,
+      "native_code_cell": 1,
+      "stage": "Use the installed local FlagQuantum runtime.",
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 2,
+      "stage": "Run the exercises locally with a seeded sampling generator.",
+      "sha256": "bbdeb407b181b85f255c2170a1a8a5d3e156474dd89a082a5e5b9b6ff1ef3e61"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 3,
+      "stage": "Use the provided native reference solution for both uniform input registers.",
+      "sha256": "3fd38909afba4d180ad54a455264eaa6ce092e6f7220aed1061800b8a1ee1dbd"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 4,
+      "stage": "Inspect the synthesized coherent arithmetic and its complete-state check.",
+      "sha256": "0e992231041f3699c0909380d8649c11b860f48e1f5ae53d3032588bc890c399"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 5,
+      "stage": "Regenerate the original NumPy seed-zero probability array.",
+      "sha256": "bea470180394ba9eb0a17ba147f26babac64d2fc1cfef997a54ce0298cf92213"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 6,
+      "stage": "Synthesize the probability preparation at the original L2 threshold.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 7,
+      "stage": "Add the original signed fixed-point operands in half-units.",
+      "sha256": "daaddfac0453b06ee250d03e8e0fb40a51f4d6e880bc88be85d1b988169c0a71"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 8,
+      "stage": "Inspect the 14-bit circuit and all 256 coherent input pairs.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 9,
+      "stage": "Load every one of the 32 fractional squares into the indicator.",
+      "sha256": "10dff3cc06b3e4a7b7735164ed515aff746dd63d9e69e39190ec8f3116ad926d"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 10,
+      "stage": "Draw the original 2,048 joint samples.",
+      "sha256": "8a2438638ba4269d90507f84d017090106f5a80868fc89091c4d373b1d80a953"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 11,
+      "stage": "Read the joint index and indicator counts.",
+      "sha256": "6fa832c3907ad1d5a819d1057e7a9dedb65257a955f07fc43e8d8ccee37103ff"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 12,
+      "stage": "Read the index marginal from the same observed draws.",
+      "sha256": "a10bb6c89bbeb36b9d6d07cd85e15fbc9731694395b225dea129b6b4e7dc290a"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "stage": "Inspect the synthesized indexed-rotation Circuit resources.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 14,
+      "stage": "Use a five-qubit exponentially decaying probability grid and apply the QFT.",
+      "sha256": "6ac3db9fd70a78d82bcb12a48ffc245719536e6f319cf35ea5db4fa34291a7b2"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 15,
+      "stage": "Check the Fourier output and perform the one-shot bonus.",
+      "sha256": "b664a8aab22b1f25a20d26df83009c3758e4613f3d3a5c0cfebf0118b087a7ae"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 16,
+      "stage": "Report the actual sampled result from the bonus run.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    }
+  ]
+}

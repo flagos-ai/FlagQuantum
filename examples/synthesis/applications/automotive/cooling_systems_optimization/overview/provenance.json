@@ -1,0 +1,161 @@
+{
+  "upstream_path": "applications/automotive/cooling_systems_optimization/cooling_systems_optimization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e5b2cf777bb075843b42eeaa0d90cf192d40c184c6ad60904fa4202db0bfc8ab",
+  "git_blob_sha1": "1184ed14597088f4049eaecd3f3d39848fe2e4eb",
+  "original_assets": [
+    {
+      "path": "applications/automotive/cooling_systems_optimization/data/costs.npy",
+      "native_path": "data/costs.json",
+      "native_sha256": "6aa978ad0c639683e1cf584f3da8ba1532cf7dd4b8320b8f1b8b2ae961ad5975",
+      "native_value_encoding": "json_float64_vector",
+      "sha256": "dd67928e4e0a4138bf4964338bbfc92bad9230630e9572a6ee553cc4e0e7a1ca",
+      "git_blob_sha1": "14b02229b45bc2d1b6c9966dce61c67070c337fb"
+    }
+  ],
+  "scope": "All 23 source stages, fresh four-node thermal model and 64 design configurations, full degree-11 inverse, original full model definition with execution disabled, and the complete original one-phase-bit mock QAE model.",
+  "native_semantic_adaptations": "Compose the conductance LCU and inverse using exact local packed simulator operands. Define original-size full QAE but leave its execution disabled as in the source. Keep the source's explicitly precomputed mock costs solely as data for its separate experiment; regenerate physical matrices and check signed solutions independently. Reuse a symbolic native Circuit for two validation bindings.",
+  "native_entrypoint": "examples.synthesis.applications.automotive.cooling_systems_optimization.overview.main",
+  "native_notebook": "examples/synthesis/applications/automotive/cooling_systems_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_cooling_optimization_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Set up the local quantum and thermal experiment.",
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "stage": "Use the native amplitude preparation, block encoding and phase fitting.",
+      "sha256": "f696187a37a23041ac6e74eef90cb056f55e6e8e1759822e722ba17871a8301b"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Retain the original ambient temperature, heats and six resistances.",
+      "sha256": "5e617c456138c1eb76fc2bb26b3b0ded77d657a230b0219124559cc0923060b6"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "stage": "Regenerate the four-node matrix from its conductance toggles.",
+      "sha256": "b42d8498f4c377e3b27b8633bb41f937f171a66c3360eb856e05ea191fa09a40"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "stage": "Inspect the all-links thermal system.",
+      "sha256": "24383e7e145fc43f2e86730103dbc60a43b1190f7944e731ae19c89e5be269ed"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Build the original pair subblocks and selector-based LCU.",
+      "sha256": "8a76abcad013ed3f98a7d8e4a3a57461c4ac788e95e35a2c647a7ca90bb18f91"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "stage": "Retain the original three selector bits, two block bits and two data bits.",
+      "sha256": "6c6a9259851349e8fb1cd1191ea724e845f105ad73bc586cee31a51949330ee2"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Execute and verify the complete thermal and mock workflows.",
+      "sha256": "f2af19529348bc59621c2d4b2d482420954d3e76faf99252a2d299b9cd22f298"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 9,
+      "stage": "Report the original LCU normalization and fresh physical matrix.",
+      "sha256": "3f129af47f45dae6688f02d7a2278325026740bc9ed544b3996ef5570f83b91b"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "stage": "Verify the independently constructed encoded block.",
+      "sha256": "594fe18c5a4ac8d2d131a93562a79f9d299aba62a80608b627c2c4de825141d0"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 11,
+      "stage": "Fit the standalone degree-11 reciprocal demonstration on [1/3, 1].",
+      "sha256": "97774a2f7cbc3d1c030fb885e2d6f03b98bbc08c9ca4fc098793e08b2590be2d"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 12,
+      "stage": "Keep the full thermal inverse, separate from the standalone reciprocal demonstration.",
+      "sha256": "29e5da4323d9fd6084efdbe40b1ceec97e3316ca17df7cfc8b97b25c7652365d"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "stage": "Prepare the original signed four-entry heat vector.",
+      "sha256": "2dc1ec98ebb734d80426ec2e501a9f1e03fa0a94bd9945f08e4928c000090289"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "stage": "Run all eleven inverse queries and retain the measured circuit width.",
+      "sha256": "9a2869756a9a156949d73bac17c476120359e71fc174dec46d12177a04ddec9e"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 15,
+      "stage": "Check the projected amplitudes against the independent diagonalization.",
+      "sha256": "b74276316557f0296c95656e2f2afccca4be365f8e5dd94f3cc13679ac7edfa6"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 16,
+      "stage": "Read the signed updates and the original temperature magnitudes.",
+      "sha256": "e20a825fd0da7cfbb9317a36a2b6dff91073bcd48b7e3ec15a381c3f12692a6e"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 17,
+      "stage": "Preserve the prescribed phase function sin(pi*y/32) on the QAE register.",
+      "sha256": "cb3642a89f8f0d6758532eb6ab167087fae360c0a65383c8a8521d523445dd3f"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 18,
+      "stage": "Validate all 64 configurations of the coherent thermal oracle.",
+      "sha256": "bad4c18f17d73c4ceec0bc1962a5b02b51e16d00f70cf41fd4965f6d90f1b29f"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 19,
+      "stage": "Define the original-sized five-bit QAE and full design model.",
+      "sha256": "f9980b1d30ccae35ba449255094a050162104bdaf0f9f35ae8653f362eb0d092"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 20,
+      "stage": "Keep the full 20-bit QuSO run disabled, as in the source.",
+      "sha256": "b4b933dd3d7301e67d83c4d687036561571c2cfd4b3888c33c380a82afb5b11b"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 21,
+      "stage": "Load the original 64 mock costs only for the separate one-bit circuit.",
+      "sha256": "5281d37723985c00b5e30be52f662b943c14abb22fdc606d686e6024b2fc0d8b"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 22,
+      "stage": "Use one symbolic mock model for two finite nonzero angle pairs.",
+      "sha256": "4c17f90033ce3d7dc85c958339113f7ca7b9a898a52cd443a54bb68fd0f42d24"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 23,
+      "stage": "Report actual block, inverse and mock-circuit validation results.",
+      "sha256": "3431c2650cb50bcb0d7cc5332900ef7b58208a1f75e4a566ea75f237369bfe3f"
+    }
+  ]
+}

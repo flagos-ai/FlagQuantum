@@ -2,21 +2,27 @@
 
 from dataclasses import replace
 from itertools import product
+from pathlib import Path
 from typing import Literal
 
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_normalization import QMOD, main
+from examples.synthesis.tutorials.arithmetic.normalization.main import main
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     _logical_cost,
     schedule_arithmetic,
 )
-from tests.integration.test_synthesis_register_workflow import check_state
+from flagquantum.compiler._construction.codegen.registers import RegisterCandidate
+from flagquantum.compiler._construction.frontend.python import capture
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
+QMOD = (
+    Path(__file__).resolve().parents[1]
+    / "fixtures/classiq_qmod/teaching_sources/tutorials/arithmetic/normalization/source.qmod"
+).read_text()
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])
@@ -35,6 +41,7 @@ def test_unified_program_and_qmod_share_and_keep_all_complex_amplitudes(
         check_state(program, fq.run(program), expected)
         selected = program.selection.selected
         assert selected is not None and selected.arithmetic is not None
+        assert isinstance(selected.arithmetic, RegisterCandidate)
         segment = selected.arithmetic.segments[0]
         assert segment.normalization is not None
         assert len(segment.normalization.squares) == 1
@@ -76,6 +83,7 @@ qfunc main(output x:qbit,output first:qnum,output second:qnum) {
     check_state(program, fq.run(program), {(0, 1, 0): 2**-0.5, (1, 0, 1): 2**-0.5})
     selected = program.selection.selected
     assert selected is not None and selected.arithmetic is not None
+    assert isinstance(selected.arithmetic, RegisterCandidate)
     assert len(selected.arithmetic.segments) == 2
     assert (
         selected.arithmetic.segments[0].normalization
@@ -88,7 +96,9 @@ def repeated(x: int, y: int) -> int:
 
 
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
-def test_exact_xor_for_every_input_and_target_on_the_normalized_graph(strategy) -> None:
+def test_exact_xor_for_every_input_and_target_on_the_normalized_graph(
+    strategy: Literal["retain", "recompute"],
+) -> None:
     from benchmarks.synthesis.verification import classical_apply, encode
 
     graph = capture(repeated, {"x": 2, "y": 2})
@@ -143,7 +153,9 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
     import torch
 
     from benchmarks.synthesis.verification import classical_apply, encode
-    from examples.synthesis_normalization import circuit_reference
+    from examples.synthesis.tutorials.arithmetic.normalization.main import (
+        circuit_reference,
+    )
 
     reference = circuit_reference().to_ir()
     permutation = replace(
@@ -164,7 +176,7 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
 
 def test_wide_declared_return_preserves_all_256_nonzero_xor_targets() -> None:
     from benchmarks.synthesis.verification import classical_apply, encode
-    from flagquantum.compiler._construction.profile import uint_type
+    from flagquantum.compiler._construction.verification.profile import uint_type
     from flagquantum.compiler._hybrid.model import (
         INDEX,
         Block,

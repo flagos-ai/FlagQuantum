@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/block_encoding/toeplitz_BE_N16.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5b9038970ff95355496fdde1c6cdd5cbc1130249d45fff49b5ac90631ab94796",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding.toeplitz.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_toeplitz.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve all4coefficients,8logical bits and data,s,j,dlt output order. Use centered phase table between data Hadamards for exactRX; mark pre-update overflow with j+s<1 or j+s>16,then reversible Fourier shift j+=s-1. Moving XOR marking before disjoint position update preserves original signed snapshot and nonzero flag semantics without signed hidden storage. Independent Circuit retains directRX matrices and signed classical snapshot permutation. All256unitary columns,coherence and2nonzero angle bindings pass. Native8physical/0work5769operations/depth4691 versus original11physical151operations/depth128; fewer qubits but more gates/depth,not an optimality claim."
+}

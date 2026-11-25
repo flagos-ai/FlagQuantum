@@ -1,0 +1,19 @@
+{
+  "schema": "flagquantum.synthesis_native_controlled_pauli_rotation_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "operation": "control(predicate, lambda: R(theta, phi, target))",
+  "axes": {
+    "X": "phi congruent to 0 modulo pi; sign follows cos(phi)",
+    "Y": "phi congruent to pi/2 modulo pi; sign follows sin(phi)"
+  },
+  "composite_predicate_operators": ["&", "|", "^", "~"],
+  "maximum_predicate_bits": 8,
+  "authority": "existing qreg.pauli_rotation verifier and controlled lowering",
+  "new_ir_or_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-PAULI-ROTATION-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

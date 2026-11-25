@@ -1,0 +1,138 @@
+{
+  "upstream_path": "algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "9b81367e99589d895bfb11a881bfeb2e43ff6840",
+  "original_sha256": "76fa18afebb498b2308d3eaa31192d55f40b7432f86270c90457a8ebfb324f81",
+  "scope": "Original four-mode orbital factorization, eight-mode one-electron ring, two-mode pairing Hamiltonian, Majorana canonical planes, Bogoliubov relation, and full-state validation across all 25 code stages.",
+  "native_semantic_adaptations": "The ring uses freshly computed adjacent orbital rotations from the native Fermi\u2013Hubbard example. The two-mode case uses Hermitian iA eigenvectors to reconstruct the real canonical planes, then solves the two quasiparticle annihilator equations and synthesizes a bounded parity-preserving preparation. Direct Fock-space diagonalization is an independent oracle only. The final matrix check verifies the canonical unitary relation; it does not reproduce the OpenFermion double-Givens or particle-hole factor order. This example makes no general multi-mode pairing claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_state_preparation.fermionic_gaussian.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_state_preparation/fermionic_gaussian/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_fermionic_gaussian_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "native_code_cell": 1,
+      "sha256": "4ab146c495fdc58a40a87864eddc53772a4839b3ce4502c61a3465ec6c5d128f"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 2,
+      "sha256": "a79a5eb120dfb1d5eb8d0bdc9b8cb1a9ff210b9e8472c76c6930f29a244d2f35"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 3,
+      "sha256": "81bb496f930e4c2b035a53e7b0354391f30ac7f3c0a57d1594643c1a9cd3c687"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 4,
+      "sha256": "712669049f40d7f145efd20f013b48ecb90c30841941270be4f6c3ec94ad198a"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 5,
+      "sha256": "f92df0ecdec4b725c6dc6a5e6a5dfeeb014ea5b4ee99d6dd1a41afeb205c7bee"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 6,
+      "sha256": "e033e82587467f177528a488a2f90042db1be5ba669d40af803cc98c39b06c32"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 7,
+      "sha256": "75ae9dfbd97a13f49b1c4452a7423a7248be2bf54c9f2a627e263feb20b31461"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 8,
+      "sha256": "a2829d253d9eb81155b089c90e10ff6e733108d298c71b9cdebffe44c4f95db4"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 9,
+      "sha256": "a6745a570bc293bcb37649046d3103d532e535c3906f0a33bb32c70867142a1d"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 10,
+      "sha256": "90389cef45b2452f432abefa5fd5653baf70cbe4c98c9884c889fc926d3335f6"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 11,
+      "sha256": "de7fc817ee23d0deac99fecb929d458a35800b2cf9018a9935ad022d2e64931a"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 12,
+      "sha256": "c6a6f9c9fc852107d7cef13cdca7b2083dfead2bf6ce1f0b54f5366a7de92cce"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 13,
+      "sha256": "18aad32f90e3400c42183b01b37a5fac048e2524f212c9481130bdb9538f4a8b"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 14,
+      "sha256": "103988bc8b6108eb45c729d916bb4753ae5604f46ff8b902e7f13c4cb863e1da"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 15,
+      "sha256": "0098d5b868cf52124e23cc32bca372e3f38ae6cf25270fc0155cbd1369dc6ff0"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 16,
+      "sha256": "912cdaf72d05765884d1263c3a22136ea07f0799a9c32a26cf4dfe08e0a1bca6"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 17,
+      "sha256": "3008ffc7a4fe0d48e97677498d8e351ffcf952d78aeb51c7a0266c5a85b42042"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 18,
+      "sha256": "a5af43090cc42cfebc8ab61fe196fa204b6988ce132f1441f28b4465815ca027"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 19,
+      "sha256": "977e05102f6b143a67f29d321c38384fcb883594d01840280744efa32f928da0"
+    },
+    {
+      "index": 54,
+      "native_code_cell": 20,
+      "sha256": "e6bc408f0779aad5b65918c4f10be1b58773aa796048d2a497a9ce2dbc9f58fa"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 21,
+      "sha256": "5a4a3b4b079c3169960c791aae2e612b5b98a655621bfd5a40e9b610ae6fc522"
+    },
+    {
+      "index": 57,
+      "native_code_cell": 22,
+      "sha256": "de6e003f6b8e17ab78e668a1632e2c75e0a1f67fc7ba1d0bb5db36b47505a69a"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 23,
+      "sha256": "81d820d812bee7da63792fe208df368696804dee2936b91976a9e203e571d70c"
+    },
+    {
+      "index": 63,
+      "native_code_cell": 24,
+      "sha256": "a11d06aa1a651bc1b2b0b6a1079702442911b49c11bedf3f20c445fa71d1822b"
+    },
+    {
+      "index": 65,
+      "native_code_cell": 25,
+      "sha256": "201426bd78ed5387951d78ea12c563a44099d60e3cb249db8945060af9a38aac"
+    }
+  ]
+}

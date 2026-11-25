@@ -1,0 +1,7 @@
+{
+  "upstream_path": "functions/function_usage_examples/mcx/mcx_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0d312206d63c0d4e6624304c1519db57956db35717e81e5f55e3ae2bb113edd1",
+  "scope": "Complete retained 7-control quantum program; companion Notebook workflow pending.",
+  "native_semantic_adaptations": "Native captured all-ones control reuses checked indexed control-X effects, existing bounded clean-workspace lowering and CPU execution."
+}

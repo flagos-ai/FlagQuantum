@@ -6,7 +6,7 @@ The primary user workflow is a composable Python `qfunc` program: allocate its
 ports, prepare Hadamards and call an arithmetic helper in the same program, then
 use `synth.synthesize(main)`, `fq.run(program)` and named
 `program.probabilities(...)`. See the runnable
-[example](../../examples/synthesis_arithmetic_baseline.py). The frozen measured
+[example](../../examples/synthesis/tutorials/arithmetic/arithmetic_baseline/main.py). The frozen measured
 corpus retains its original pure-function/InputState harness; it is historical
 benchmark machinery, not a reversal of the unified program-entry design.
 
@@ -171,7 +171,7 @@ python -m benchmarks.synthesis.normalization \
 The comparison checks the frozen baseline hash and identical configuration.
 Timeouts stay incomplete, not successful optimizations. Logical resource gains
 do not imply target, timing, runtime or memory-residency speedups. The native
-unified qfunc workflow is `examples/synthesis_normalization.py`; the old corpus
+unified qfunc workflow is `examples/synthesis/tutorials/arithmetic/normalization/main.py`; the old corpus
 entry points are retained to preserve measurement comparability.
 
 ## AO-02 arithmetic implementations
@@ -190,7 +190,7 @@ both schedules), including cleanup and every small input/target combination.
 It excludes preparation/target optimization and must not be mixed with the
 full-program matrix's counts. No timing, peak memory or release claim follows
 from these static resources. The user workflow remains the unified qfunc entry:
-`python -m examples.synthesis_arithmetic_implementations`.
+`python -m examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main`.
 
 ## PF-00 Python time and process memory
 

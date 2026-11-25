@@ -8,12 +8,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
+from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_construction_addition_execution import _encode
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python import _cell
 
 pytestmark = pytest.mark.integration

@@ -1,0 +1,127 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "10081939fa74e64e39ff479683345eaf29b720a25e251f44d9736d53fcabcc56",
+  "git_blob_sha1": "1332aaececea7de76379e5e2c190fe58584c705b",
+  "scope": "All 19 source stages, both 128-site 50-step circles, four-dimensional four-step hypercube, original finite shot counts, and the full nine-width 1024-site CX sweep.",
+  "native_semantic_adaptations": "Bind static step counts and use local finite draws. Preserve the distinct source classical trajectory experiment. Compare exact CX/U3 costs of the native arithmetic and MCX cascade under every width, selecting the lowest CX count among visited compiler candidates.",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_advanced_discrete_walk_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "native_code_cell": 1,
+      "stage": "Use native quantum walks, seeded local samples and the exact CX basis benchmark.",
+      "sha256": "dfa6453d7ccba89db629914e3f17d1294d097e5c29f3c505e8c1ae542962677b"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 2,
+      "stage": "Retain the Hadamard quantum coin and the fair classical coin.",
+      "sha256": "14824f74062ccad36fa22812961ee53d4ccf80f1d1a64055c7fea0b848df64b8"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 3,
+      "stage": "Use reversible modular shifts in the two coin directions.",
+      "sha256": "902ad416787639e6ae4d7785918a5b1d80eba1b3d2a342f9f87955757ce7432f"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 4,
+      "stage": "Run each independent classical path from zero.",
+      "sha256": "4d908a15408691fe7fe8d1c10f36a73828a5b51a542be6ecfd48536769b07681"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 5,
+      "stage": "Keep the original fifty time steps.",
+      "sha256": "8a1dd7d5de0e8c46237378c9994497a0aa4e96c8f1cea9dde85af5ad7b66de2a"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 6,
+      "stage": "Execute the unbalanced native walk and verify its entire state.",
+      "sha256": "02e8335fc073047e9d4ccf0421c89e79d1c48da2eb01690f3c8640f16e9b6383"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "stage": "Plot signed sampled positions with the original classical comparison.",
+      "sha256": "c32fd9d5bd1fe7459ac1ea34de44f23b9f96225e7895b8b5175a7f7e2df83d8c"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 8,
+      "stage": "Use the same coin-and-shift composition with each initial coin state.",
+      "sha256": "d6c371d89f9a52fabbda7ad964b699676acbd7c905a83b2c6174ea3b5faa1971"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 9,
+      "stage": "Prepare the balanced complex coin with H and S and preserve fifty steps.",
+      "sha256": "e824c99e2e102b950108f85ce38f66e3e0865fcdf2019de19e63d732497fd4f0"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 10,
+      "stage": "Show the balanced walk's finite-shot marginal.",
+      "sha256": "17c381a90bd0e73935cb3332883178004dfb9abc58784cb218209a8d427df489"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 11,
+      "stage": "Select one Hamming-distance-one direction per two-bit coin value.",
+      "sha256": "c4161afe02f9ffaf70525c9dcf3c7e629471ed567c171b27e06ef97736eddc5a"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 12,
+      "stage": "Use the full four-dimensional hypercube and uniform direction state.",
+      "sha256": "7e572d1e542bf9c66ed896b9889db41899f304484451049d52163101c82fb27f"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 13,
+      "stage": "Verify the four-step hypercube amplitudes with the independent Circuit.",
+      "sha256": "76f140a099315daa9730d9e64daea7f1b2e348deb13a01716855f7e751a44bf3"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 14,
+      "stage": "Retain all ten thousand hypercube draws.",
+      "sha256": "8f6f0b449bda2477fd2be5a9286422eb33e9ea47712e4cd4cf4456f25b52f4f9"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 15,
+      "stage": "Compare the observed opposite corner with its exact probability.",
+      "sha256": "c9560c9d61a4266ff43a8f5499f666675592cbd6786a3d1d05d7522f3fbaed3c"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 16,
+      "stage": "Keep the source's classical trajectory visit-frequency comparison.",
+      "sha256": "9e176b30a124dea3a923ef83096c708634db72dba7a37fc44f5bb1fb110d1e23"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 17,
+      "stage": "Compile both kinds of increment at the original ten-bit size.",
+      "sha256": "77790f4e3e6944db436c494239f7ab40b77dc96e1cf856bc845ff44d882ac5c7"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 18,
+      "stage": "Verify the selected endpoint Circuits after basis conversion and read actual CX counts.",
+      "sha256": "f6bc3792f7f3804a107e569a75be2ccd9aae23c9eb3b66df41d908096a3f306b"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 19,
+      "stage": "Plot both source construction styles against the physical width cap.",
+      "sha256": "7d1aaccc6f0d425a33c656a3881573f24464e6e030a01eff492270c4f7df765c"
+    }
+  ]
+}

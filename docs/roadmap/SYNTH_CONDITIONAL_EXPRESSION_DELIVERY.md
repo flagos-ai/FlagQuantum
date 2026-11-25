@@ -11,7 +11,7 @@ Independent trials remain 0/2 and release authorization remains false.
 ## User workflow
 
 Save the following in a source-retaining Python file, or run
-`python -m examples.synthesis_conditional`:
+`python -m examples.synthesis.tutorials.arithmetic.conditional.main`:
 
 ```python
 import flagquantum as fq

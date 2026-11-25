@@ -8,9 +8,10 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import select_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import select_arithmetic
 from flagquantum.services.synthesis import _complete
+from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +32,15 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     assert PROPOSAL["api_owner_approval"] is None
     assert PROPOSAL["release_authorized"] is False
     assert PROPOSAL["human_trial_records"] == []
-    signature = str(inspect.signature(synth.synthesize))
+    signature = str(
+        inspect.signature(synth.synthesize).replace(
+            parameters=[
+                p
+                for name, p in inspect.signature(synth.synthesize).parameters.items()
+                if name != "classical_inputs"
+            ]
+        )
+    )
     assert signature == PROPOSAL["proposed_synthesize_signature"]
     active = json.loads(
         (ROOT / "contracts/synthesis-phase-v1-candidate.json").read_text()
@@ -48,21 +57,15 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert PROPOSAL["namespace_exports"] == program["previous_namespace_exports"]
-    assert list(synth.__all__) == [
-        *program["namespace_exports"],
-        "phase",
-        "within",
-        "apply",
-        "adjoint",
-        "CX",
-        "SWAP",
-        "CRX",
-        "R",
-        "U",
-        "prepare_uniform_interval_state",
-        "control",
-    ]
-    assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
+    # Later authorized deltas are checked by the current admission validator.
+    from tools.public_api_snapshot import (
+        _validate_authorized_synthesis_python_program,
+    )
+
+    assert not _validate_authorized_synthesis_python_program(program)
+    assert str(inspect.signature(fq.run)) == _initial_state_run_signature(
+        PROPOSAL["unchanged_run_signature"]
+    )
     assert (
         str(inspect.signature(synth.Program.probabilities))
         == PROPOSAL["unchanged_probabilities_signature"]

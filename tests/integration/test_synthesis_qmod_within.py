@@ -9,21 +9,25 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_local_registers import local_composition
-from examples.synthesis_qmod_within import SOURCE
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from tests.integration.test_construction_register_execution import _check
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_compiler_examples.local_registers.main import (
+    local_composition,
+)
+from tools.synthesis_import_examples.qmod_within.main import SOURCE
 
 pytestmark = pytest.mark.integration
 
@@ -239,21 +243,21 @@ def test_scope_phase_is_observable_by_interference(
 
 def test_user_constraints_include_hidden_locals_and_source_effect_order() -> None:
     program = synth.synthesize(
-        SOURCE, source_format="qmod", max_qubits=10, max_workspace=6
+        SOURCE, source_format="qmod", max_qubits=6, max_workspace=2
     )
-    assert program.report["resources"].n_qubits == 10
-    assert program.report["workspace_qubits"] == 6
+    assert program.report["resources"].n_qubits == 6
+    assert program.report["workspace_qubits"] == 2
     main = SOURCE[SOURCE.index("qfunc main") :]
     helper = """qfunc mark(const x:qnum<2>,const y:qnum<2>) {a:qbit; b:qbit;
       within {a=x<y; b=x==y;} apply {phase(a,pi); phase(b,pi);}
     }"""
     overlapping = helper + main
     alternative = synth.synthesize(overlapping, source_format="qmod")
-    assert alternative.report["resources"].n_qubits == 11
-    assert alternative.report["workspace_qubits"] == 7
+    assert alternative.report["resources"].n_qubits == 7
+    assert alternative.report["workspace_qubits"] == 3
     with pytest.raises(synth.SynthesisError):
         synth.synthesize(
-            overlapping, source_format="qmod", max_qubits=10, max_workspace=6
+            overlapping, source_format="qmod", max_qubits=6, max_workspace=2
         )
 
 

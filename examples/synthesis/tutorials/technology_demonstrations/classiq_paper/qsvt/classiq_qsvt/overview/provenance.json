@@ -1,0 +1,33 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt.ipynb",
+  "original_sha256": "625fe306c852c85670046af388f46f82a4c6198a21777f8b9bb206f44d105ae8",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "31b28a7520a42927ea16d7e6330e44349a08c42a8657d275d94286d73b3260db"
+    },
+    {
+      "index": 3,
+      "sha256": "070d319baeca29902e28b5630df6714410b0b133b39e3cc9a9a85cf068f48124"
+    },
+    {
+      "index": 5,
+      "sha256": "c18140ca15e1680d2e2b5f167338c5ea023c9d3ba384fddb803528f40d0d1aed"
+    },
+    {
+      "index": 6,
+      "sha256": "b3e3c50dc6a32c82ad23737f83373fe898e44ec30acb948b85c013918f489145"
+    },
+    {
+      "index": 8,
+      "sha256": "ac9915614287d939e02d56b6a9eb8fcfa71b1d25e8bd8fab70b736c651308917"
+    }
+  ],
+  "scope": "Complete source degree-three QSVT compilation workflow:six data bits,three block bits,one logical auxiliary,four exact phases,width11,actual CX/U3 costs and measured local durations. Native/target independent complete-state,coherence,phase and work checks. No global optimum,private optimizer/custom-pass or timing equivalence claim.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.qsvt.classiq_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_paper_qsvt_notebook.py",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "208a9577f709b9da17304cffcddbe5c70db2073d",
+  "native_semantic_adaptations": "Explicit phase-polynomial projector preserves source controlled-X/RZ action within width11;caller-owned two-U3 RZ identity preserves absolute phase. Independent reference is a dense correctness-only Circuit. Complete source degree-three QSVT compilation workflow:six data bits,three block bits,one logical auxiliary,four exact phases,width11,actual CX/U3 costs and measured local durations. Native/target independent complete-state,coherence,phase and work checks. No global optimum,private optimizer/custom-pass or timing equivalence claim."
+}

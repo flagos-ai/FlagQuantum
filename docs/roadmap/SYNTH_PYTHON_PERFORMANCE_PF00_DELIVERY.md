@@ -40,7 +40,7 @@ print(program.report["resources"])
 There are sixteen outcomes `(x,y,x*x+y)` of probability 1/16. The actual
 uniform program remains 16 total qubits, eight workspace qubits, 81 logical
 operations and depth 59. The matching Qmod and independent nine-qubit Circuit
-are retained in `examples.synthesis_arithmetic_implementations` and the AO-00
+are retained in `examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main` and the AO-00
 benchmark reference; no new user performance configuration is needed.
 
 PF-00 establishes how much Python work that request incurs, where diagnostic

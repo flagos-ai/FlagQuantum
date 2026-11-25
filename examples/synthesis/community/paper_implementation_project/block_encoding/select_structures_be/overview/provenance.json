@@ -1,0 +1,63 @@
+{
+  "upstream_path": "community/paper_implementation_project/block_encoding/select_structures_BE.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "c6c9329460fa22c5c069d69d078cc3f57228b015",
+  "original_sha256": "39ec582202a5b230ee3db4f708b2a31801b49e6d2f23268fb11ff87f8093ee81",
+  "scope": "All ten source code stages and the original checkerboard, Toeplitz, symmetric tridiagonal, and 4 by 4 grid Laplacian models. Preserve the dimensions 8, 16, 16, and 16, the respective scales 8, 4, 3, and 5, and the original uniform input.",
+  "native_semantic_adaptations": "Generate signed coefficients from a reproducible local seed. Use native synth for amplitudes and a bounded public Circuit SELECT for each structured address map. Compare absolute complex amplitudes directly to each declared matrix product. The native Laplacian encodes the same matrix scaled by the magnitude of its diagonal. The historical checkerboard and Laplacian prints show opposite overall signs between their projected and theoretical vectors. This workflow preserves the signed theoretical matrices and verifies their native projections directly.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding.select_structures_be.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/block_encoding/select_structures_be/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_structured_blocks_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "ef5565d03991668a5033a9e1acdc0cfbabfb52a374944d2730ae539795b75f8b"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 2,
+      "sha256": "9f837f61a5916ec79182918394d58a20cd64947f72cc78d8d63422ceaa6d8852"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 3,
+      "sha256": "8133686cade4ae5707e4fbfbbc1488085847fd1b78fdf259d69c99801c746936"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 4,
+      "sha256": "7be0105ec0f1aa2e40d79df82d0083eeb9f50d3cade814681b900abffc4b427a"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 5,
+      "sha256": "14281d67c8c8de6e76593db5634676e3deaca1d78e2552be60c9f7482c0641c0"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 6,
+      "sha256": "91a0420111a3bfa6636b22310616900b5f292cb5ab3c99b4942f48fed6b2a3aa"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 7,
+      "sha256": "10971fad82d643b1ae52f1ce8acabfa3aaa2bd8c6418b5ab50a87e133b5dbd7e"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 8,
+      "sha256": "c947893f585ab7eb7d6fafec9f945193030ea0e7275e2cd97edf504c585c6601"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 9,
+      "sha256": "01b9a2b4f88871a1089550154c1b76b2b7d36b77ad823db94d7bbddfc66920c0"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 10,
+      "sha256": "be3257221013862e31b5c8607cb1eec2890eeed9cd32461ad31e7b6a5c10c2e1"
+    }
+  ]
+}

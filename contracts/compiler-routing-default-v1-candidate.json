@@ -1,0 +1,34 @@
+{
+  "schema": "flagquantum.compiler_routing_default_authorization",
+  "version": "1.0",
+  "status": "implementation_authorized",
+  "proposal": "docs/api-changes/FQ-COMPILER-AUTO-ROUTING-20261118.md",
+  "owner": "compiler",
+  "approval": {
+    "source": "explicit_user_approval_in_task",
+    "date": "2026-11-18",
+    "scope": "native_compile_routing_strategy_default_only"
+  },
+  "change": {
+    "qualified_name": "flagquantum.compiler.pipeline.compile",
+    "re_export": "flagquantum.compiler.compile",
+    "parameter": "routing_strategy",
+    "previous_default": "restore_after_each_gate",
+    "approved_default": "auto"
+  },
+  "invariants": {
+    "explicit_strategy_behavior_unchanged": true,
+    "no_topology_skips_route_search": true,
+    "final_layout_policy_unchanged": true,
+    "calibrated_strategy_restrictions_unchanged": true,
+    "root_native_target_admission_unchanged": true,
+    "routing_plan_serialization_unchanged": true,
+    "route_to_topology_default_unchanged": true
+  },
+  "release": {
+    "planned_minor": "0.5.0",
+    "version_confirmation": "pending",
+    "explicit_previous_strategy_deprecated": false,
+    "removal_version": null
+  }
+}

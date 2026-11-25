@@ -21,6 +21,7 @@ from ..core.runtime_config import (
     runtime_config,
 )
 from ..errors import CapabilityError, ExecutionError
+from ._run import run
 from .backend_registry import resolve_device, resolve_dtype
 from .distributed.backend_policy import (
     DistributedBackendPolicy,
@@ -43,10 +44,7 @@ from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan
 
 if TYPE_CHECKING:
-    from ..circuit import Circuit
-    from ..core.ising import IsingBraidProgram
     from ..noise import NoiseModel
-    from .options import ExecutionOptions
     from .result import ExecutionResult
 
 
@@ -625,7 +623,10 @@ def _run_statevector_mode(
         precision_plan=precision_plan,
     )
     if (
-        provided_execution_plan is None
+        (
+            provided_execution_plan is None
+            or getattr(circuit_or_ir, "_inputs", None) is not None
+        )
         and coupling_map is None
         and hasattr(circuit_or_ir, "state")
         and getattr(circuit_or_ir, "dtype", None) == options["dtype"]
@@ -1065,37 +1066,6 @@ def _run_native(
     if return_plan:
         return result, execution_plan
     return result
-
-
-def run(
-    program_or_plan: Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram,
-    *,
-    options: ExecutionOptions | None = None,
-    measurements: Sequence[MeasurementNode] | None = None,
-    noise_model: NoiseModel | None = None,
-) -> ExecutionResult:
-    """Plan and execute a program, or execute one validated plan exactly."""
-
-    from .plan_execution import execute_plan
-
-    if isinstance(program_or_plan, ExecutionPlan):
-        if options is not None:
-            raise TypeError("options must be None when executing an ExecutionPlan")
-        if measurements is not None:
-            raise TypeError("measurements must be None when executing an ExecutionPlan")
-        if noise_model is not None:
-            raise TypeError("noise_model must be None when executing an ExecutionPlan")
-        return execute_plan(program_or_plan)
-    from .planner import plan
-
-    return execute_plan(
-        plan(
-            program_or_plan,
-            options=options,
-            measurements=measurements,
-            noise_model=noise_model,
-        )
-    )
 
 
 def run_advanced(

@@ -1,0 +1,7 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/add_bell_states/add_bell_states.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "c03923daf2a5b58ea1a5c70f7834fef661418b547b60c9d1b7572c11be99acb2",
+  "scope": "Quantum program only; no additional Notebook workflow exists for this path.",
+  "native_semantic_adaptations": "Python output names a/b/total correspond to original A/B/sum. Fresh total |= a+b preserves both prepared inputs."
+}

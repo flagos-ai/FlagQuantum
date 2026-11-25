@@ -1,0 +1,45 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/gqsp/gqsp.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3e24d5ff6c734a6feddd17285724974cabb68a0d7029c9e85fc76c9a4b4004e3",
+  "git_blob_sha1": "d6a24c572a6feef6193299cb1a582134e06ea756",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 5,
+      "sha256": "b3a2f971b84bee107c0f019a17bc8ea1e65fbb4e97c7f5d47e16bba23d6367ec"
+    },
+    {
+      "index": 7,
+      "sha256": "dfaf018cb6434b742116f254e2c401ecc8556ae9fb1fc23183ed017004015ffd"
+    },
+    {
+      "index": 9,
+      "sha256": "992354aea1ccb4c037473ab1f785737976d065d647ecd273c9f704016c1c07f3"
+    },
+    {
+      "index": 11,
+      "sha256": "0f3703b7bc66d7024085172cd3cb9d8db7eacea01bb2d299b34cb8db84c04218"
+    },
+    {
+      "index": 13,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 15,
+      "sha256": "940a9fc005694a710801fd07e87407f9ef6c2a68aba74ef2777a88a199187ed6"
+    },
+    {
+      "index": 17,
+      "sha256": "1dd77e613a7b9c2c7b21e49baf580af3cf11936c51773cbc5827f40af1b55a7e"
+    }
+  ],
+  "scope": "Complete source GQSP Notebook:0.99-scaled Laurent polynomial,negative_power3,seven fractional input bits,actual bounded spectral phase solving,native execution,public numeric readout,100000 seed123local multinomial samples and original comparison plot. Check exact projected probabilities and finite sampling separately;no postselection renormalization. Correct plot label to actualcos^6(2*pi*x)/128 and move legend above data. New phase fullstate compared to independent Circuit with identical newly computed angles;frozen original phase branch remains separate. Example-local degree1..6real polynomial profile has no fixed-phase fallback. No production API,dependency,general solver,hardware,analytic certificate or optimality claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.gqsp.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_primitives/gqsp/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_gqsp_notebook.py",
+  "native_semantic_adaptations": "Complete source GQSP Notebook:0.99-scaled Laurent polynomial,negative_power3,seven fractional input bits,actual bounded spectral phase solving,native execution,public numeric readout,100000 seed123local multinomial samples and original comparison plot. Check exact projected probabilities and finite sampling separately;no postselection renormalization. Correct plot label to actualcos^6(2*pi*x)/128 and move legend above data. New phase fullstate compared to independent Circuit with identical newly computed angles;frozen original phase branch remains separate. Example-local degree1..6real polynomial profile has no fixed-phase fallback. No production API,dependency,general solver,hardware,analytic certificate or optimality claim."
+}

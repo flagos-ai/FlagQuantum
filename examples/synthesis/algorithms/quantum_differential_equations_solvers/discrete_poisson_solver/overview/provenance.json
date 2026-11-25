@@ -1,0 +1,108 @@
+{
+  "upstream_path": "algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "dfeecb8776397bce41c1f28d28a84c177a52ebdf5f45f9ab39f75560d5262682",
+  "git_blob_sha1": "07a9a71efe07c828082f4e0096ae638364869627",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "sha256": "aae062bc42895c5c18ec43a9e5934cc4020ad5d09505517d1cfc9069f4d70d1b",
+      "native_code_cell": 1,
+      "stage": "Public native imports and existing numerical dependencies"
+    },
+    {
+      "index": 11,
+      "sha256": "fd2e1621defe77dd8b2f9338a9bcc05ae4bd3ff5a5cf3a8de9b16854cc35c4b6",
+      "native_code_cell": 2,
+      "stage": "Recompute both eight-term spectra and complete Walsh expansions"
+    },
+    {
+      "index": 13,
+      "sha256": "9ae132ef9dca6400ee4902be00bb4710d550c3161933a00b6d818a7709b10ff7",
+      "native_code_cell": 3,
+      "stage": "Visible static powered Hamiltonian helper"
+    },
+    {
+      "index": 15,
+      "sha256": "e77b2c2c75b30e01eb7c42ea2922d2a41673ab8e267b3e704b47bc130e6deea2",
+      "native_code_cell": 4,
+      "stage": "Normalized Type-II sine/cosine matrices on checked static views"
+    },
+    {
+      "index": 18,
+      "sha256": "53aac99cc36402b3116e60e552722882a5716f3126c7f65b92d68d8c3562231f",
+      "native_code_cell": 7,
+      "stage": "Reciprocal rotation helper; QPE lifetime is explicitly owned by the root"
+    },
+    {
+      "index": 21,
+      "sha256": "9f836fe65ee529d9922841aa7a39da7b567e869c6dad41306cdb76b999b112d9",
+      "native_code_cell": 8,
+      "stage": "Original grid, tanh-squared source and actual normalization"
+    },
+    {
+      "index": 23,
+      "sha256": "54d9b1a56b77c4724fcb80e79edc624c935c67bf7f37761a1c09e097e093bab8",
+      "native_code_cell": 9,
+      "stage": "Actual normalized source contour"
+    },
+    {
+      "index": 25,
+      "sha256": "d2bdbb316c3e08573fcaa95f86e8d2dbb288193a25a6e9fc62e66214b69b644e",
+      "native_code_cell": 10,
+      "stage": "Retain source spectral operator in source term order"
+    },
+    {
+      "index": 27,
+      "sha256": "d1849d80d2e47140e8cec50583a64c0879d3ad6796b443e8d305ae0b632c655a",
+      "native_code_cell": 11,
+      "stage": "Source six-bit precision, maximum eigenvalue bound and reciprocal prefactor"
+    },
+    {
+      "index": 29,
+      "sha256": "a9335a13ca78e40f42bcf50c38d5a15a66092f47024c2e7f4c43a9d40f863b60",
+      "native_code_cell": 12,
+      "stage": "Visible complete native root, actual synthesis and independent full-state validation"
+    },
+    {
+      "index": 32,
+      "sha256": "658f14a76313f54b9a9dd30ea9b2ec9d561a2366f609b7beded79e9c55fa1369",
+      "native_code_cell": 13,
+      "stage": "Actual local statevector execution and named readout"
+    },
+    {
+      "index": 33,
+      "sha256": "4ded5d00e4458d908d79bb111d92d83013bd5ab3d4a8c442acc652d70b32b213",
+      "native_code_cell": 14,
+      "stage": "Actual indicator-one estimator-zero postselection and source filtering"
+    },
+    {
+      "index": 34,
+      "sha256": "18ca6faf679c6f756a91d85c511a4b388a7a6d5579a520e609d975405813cf46",
+      "native_code_cell": 15,
+      "stage": "Retain source reciprocal normalization and real projection"
+    },
+    {
+      "index": 36,
+      "sha256": "724dc5fe4f44ab70d0c0bd1de28ded5268d526f28bc596deb88ba0aaaa12d15c",
+      "native_code_cell": 16,
+      "stage": "Retain original center sign convention"
+    },
+    {
+      "index": 38,
+      "sha256": "06f706f3101609403bae8033b06c7251d11deb35897bb48c291a8696e4c421b2",
+      "native_code_cell": 17,
+      "stage": "Fresh finite-difference boundaries, transposed RHS and classical solve"
+    },
+    {
+      "index": 39,
+      "sha256": "5d37f3a4f58ac6fb96b70d5c77a31d486d5fea20230bf34d665ba62e00f87446",
+      "native_code_cell": 18,
+      "stage": "Actual original quantum/classical contour comparison"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_poisson_notebook.py",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_differential_equations_solvers.discrete_poisson_solver.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/walkthrough.ipynb",
+  "scope": "All16original source code stages;fresh8x8grid,normalized64amplitudes,two complete Walsh spectra,six fractional native QPE bits with explicit source integer-word reciprocal table,13physicalqubits,powered first-order commuting evolution,source postselection and normalization,independent full complex Circuit states,named numeric probabilities,classical boundary matrix and both actual contour figures. Source-scale accuracy discrepancy and axis conventions explicitly reported;no scalar fit,transpose fix,precision increase or accuracy claim. Static unitary views preserve existing transform contract. No source importer,compiler/API/dependency change,hardware,speedup,scalability or optimality claim."
+}

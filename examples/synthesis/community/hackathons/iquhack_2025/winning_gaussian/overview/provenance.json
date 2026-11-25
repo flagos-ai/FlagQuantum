@@ -1,0 +1,115 @@
+{
+  "upstream_path": "community/Hackathons/iQuHack_2025/Challenge_solution/winning_solution/classiq_iQuHack_2025_quantum_tree_sol.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "246946c66e544e5c4763a6f841844d8795c2126875faf6a04cf57f273f906919",
+  "git_blob_sha1": "78bc48bd9f576fb480046168ac7aae2f4c79d786",
+  "scope": "All 17 source stages, original eight- and 127-qubit resolutions, tuned RY and CRY, truncated Fourier transformation, measured signed-grid MSE and native exports.",
+  "native_semantic_adaptations": "Use public Circuit construction and exact native CX/U basis conversion. Simulate only the source execution stage and compare every complex amplitude with an independent binary reference. Export both native IR JSON artifacts and verify their round-trip content identities.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.iquhack_2025.winning_gaussian.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/iquhack_2025/winning_gaussian/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_iquhack_winning_gaussian_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 11,
+      "native_code_cell": 1,
+      "stage": "Use the local native runtime and the source algorithm parameters.",
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 2,
+      "stage": "Run on the local CPU and seed the single stage-one draw.",
+      "sha256": "bbdeb407b181b85f255c2170a1a8a5d3e156474dd89a082a5e5b9b6ff1ef3e61"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 3,
+      "stage": "Use native Circuit and Matplotlib for the two stages.",
+      "sha256": "6bb1189b681de28188ae462a8f9199fddd6b56d233686f9d2b6a539a14555c7f"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 4,
+      "stage": "Retain the tuned product rotations and truncated Fourier schedule.",
+      "sha256": "b69c2d760b8081ee6efd3cec2955159150f29ddf3d5d4bb3bb2b056acd3cab34"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 5,
+      "stage": "Keep the original stage width ceilings of 18 and 127.",
+      "sha256": "8fe03a3f32cf0dda6237d237a0e418f83ccbeddf29b53e6feb42d31cbe91fa9c"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 6,
+      "stage": "Compile the original eight-qubit first stage.",
+      "sha256": "d8eb09d14ab9322c75d957dc33cf0f6ee852e43d57c5812a67804c6b32a4cda2"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 7,
+      "stage": "Inspect the first-stage program width.",
+      "sha256": "d124fc3a890a7a226d620a60d23f3689db88f1e29d09c490ce5ccd2c8da98031"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 8,
+      "stage": "Simulate the first stage and draw one actual sample.",
+      "sha256": "9e914bb1c1fed72b251b9e499bf0ab479326316ea3274af065af0ea64126dcdc"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 9,
+      "stage": "Retain the complete signed probability grid.",
+      "sha256": "9bb146f979ec100a142db9950f8fe8e047068a20cb2bd3ab2733d35d5499f398"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 10,
+      "stage": "Compile the original 127-qubit second stage.",
+      "sha256": "347eb9196d23a40126bed66f24b5de8bb84f3fdb40af13e3f4edc110d8db3f00"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 11,
+      "stage": "Inspect the second-stage program width.",
+      "sha256": "c4a8c78d479010229f5033c7a9924a3ed5c04711710d7af6243c3db31b355bd3"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 12,
+      "stage": "Evaluate the mean squared error on every signed fixed-point coordinate.",
+      "sha256": "1ac9a911991f1eddd8fce628cdf0aa51937414bed6bb4745744770c5a3b431b3"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 13,
+      "stage": "Use the native static resource estimator.",
+      "sha256": "dafb7efa302125f3febb668d979da13eeaa7720c6310f376f600123fe7bbfa67"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 14,
+      "stage": "Compare actual and theoretical distributions and show first-stage resources.",
+      "sha256": "671f7ac31fff1f69df1629a518f8f11e54ba3992a7d3868131f329c8717c2560"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 15,
+      "stage": "Report the full-scale second-stage operation counts.",
+      "sha256": "39518dfbdd47cfa17e0eb702e3c916796e8bdb71d8928d8f6cfd3d83ccaeadf5"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 16,
+      "stage": "Export round-trip checked native circuit IR.",
+      "sha256": "ceaae97c96c9a403a8430676723fd08fb6eb62feb7bbdd9cff33a74a70c13109"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 17,
+      "stage": "Save both native stages under the original Quantum Tree name.",
+      "sha256": "e33bb8e1bf9912635de768472beda6fd715a3c0fb464d7f2559ee35bedcacc4d"
+    }
+  ]
+}

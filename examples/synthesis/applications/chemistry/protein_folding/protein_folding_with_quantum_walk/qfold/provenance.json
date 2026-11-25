@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "b456350a74f0e34f7ee6206c224dc432ad43aa4b90be158076c8502ca8e2373f",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.protein_folding.protein_folding_with_quantum_walk.qfold.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_predicate_walks.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain both original nonzero angles,uniform phi/psi,coin/shift/inverse-coin order and C/M zero-state oracle. Native c/m locals are named coin_bit/move_bit and retained via drop,not assumed clean workspace. Predicate-R and predicate-X use borrowed whole raw registers with caller/formal names allowed to differ;inverse predicate scratch is freshened and cleaned. Source/native/independent full states,two new angle/data models,all16operator columns including nonzero environment,named marginals and actual budgets pass. Native11physical/7work/399operations/depth315 versus source4physical/0work/87operations/depth69;no optimization claim."
+}

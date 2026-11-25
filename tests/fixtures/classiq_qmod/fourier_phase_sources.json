@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "algo_design_QCE_tutorial_part_I.qmod",
+      "source_path": "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I.qmod",
+      "git_blob_sha1": "1dac9e99e799cb8ed53d5e49324e291477511109",
+      "sha256": "9af2e559531a540f5a633e26557c644b35c062cff2de49079cfe3d8477cd8497"
+    },
+    {
+      "file": "quantum_sawtooth_map.qmod",
+      "source_path": "applications/physical_systems/quantum_chaos/quantum_sawtooth_map.qmod",
+      "git_blob_sha1": "3d08cbb6f3727535e46851c4d54b2c8bd6a112b0",
+      "sha256": "36a17564a2c366044fc84d36e2a017aeb645ef86bc27445d4344ce19fc34b1b7"
+    }
+  ]
+}

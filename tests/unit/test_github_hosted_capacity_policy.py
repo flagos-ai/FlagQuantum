@@ -61,7 +61,7 @@ def _groups(job: dict[str, object]) -> set[str]:
     # Evaluate the hosted fallback of both trusted-pool selectors. Their CPU
     # arms have independent groups and do not consume hosted capacity.
     group = re.sub(
-        r"\$\{\{ \(github\.event_name != 'pull_request' \|\| "
+        r"\$\{\{ \(github\.event_name (?:!= 'pull_request' \|\||== 'pull_request' &&) "
         r"github\.event\.pull_request\.head\.repo\.full_name == github\.repository\) "
         r"&& format\('(?:a100-cpu|self-hosted)-\{0\}-[a-z0-9-]+-\{1\}', "
         r"github\.run_id, strategy\.job-index \|\| 0\) \|\| 'gh' \}\}",
@@ -73,6 +73,8 @@ def _groups(job: dict[str, object]) -> set[str]:
         return {group}
     strategy = job.get("strategy")
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
+    if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
+        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(192)]}
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
     if values is None and isinstance(matrix.get("include"), list):
@@ -182,7 +184,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == (60 if job == "cpu-runtime" else 30)
         assert definition["needs"] == "prepare-source"
         download = next(
             step
@@ -232,7 +234,11 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
 )
 def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> None:
     definition = _document("ci.yml")["jobs"][job]
-    assert definition["needs"] == "prepare-source"
+    assert definition["needs"] == (
+        ["prepare-source", "coverage-plan"]
+        if job == "coverage-shard"
+        else "prepare-source"
+    )
     assert definition["env"]["CUDA_VISIBLE_DEVICES"] == ""
     for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
         assert definition["env"][variable] == "1"
@@ -245,14 +251,24 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         assert definition["runs-on"] == A800_CPU_ROUTE
         assert definition["timeout-minutes"] == 60
         assert any(
-            step.get("uses") == "./.github/actions/isolated-python" for step in steps
+            step.get("uses") == "./.github/actions/offline-cpu"
+            and step["with"]["profile"] == "coverage-py3.12"
+            for step in steps
         )
+        assert not any("pip install" in step.get("run", "") for step in steps)
     else:
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == (
+            "${{ github.event_name == 'pull_request' && 60 || matrix.timeout-minutes }}"
+        )
     if job == "coverage-shard":
-        assert [
-            row["shard"] for row in definition["strategy"]["matrix"]["include"]
-        ] == list(range(16))
+        assert (
+            definition["strategy"]["matrix"]
+            == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
+        )
+        assert (
+            "192"
+            in _document("ci.yml")["jobs"]["coverage-plan"]["env"]["FQ_COVERAGE_SHARDS"]
+        )
     else:
         assert "python tools/ci_tier.py pr-distributed" in commands
 
@@ -314,6 +330,11 @@ def test_python_312_required_check_aggregates_parallel_suites() -> None:
 
 
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
+    job = _document("ci.yml")["jobs"]["cpu-runtime"]
+    assert job["strategy"] == {
+        "fail-fast": False,
+        "matrix": {"shard": list(range(8))},
+    }
     expensive_steps = [
         step
         for step in _steps("ci.yml", "cpu-runtime")
@@ -321,6 +342,16 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         or "torchrun" in str(step.get("run", ""))
     ]
     assert len(expensive_steps) == 3
+    runtime = next(
+        step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
+    )
+    assert runtime["run"] == (
+        "python tools/ci_tier.py pr-runtime --shard-count 8 "
+        "--shard-index ${{ matrix.shard }}"
+    )
+    for step in expensive_steps:
+        if "torchrun" in step["run"]:
+            assert step["if"] == "matrix.shard == 0"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
@@ -353,8 +384,8 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
             assert token in command
         for token in (
             "-p tools.pytest_shard",
-            "--fq-shard-count 16",
-            "--fq-shard-index ${{ matrix.shard }}",
+            '"@$plan"',
+            'python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }}',
         ):
             assert token in command
 
@@ -377,12 +408,24 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     shard = _document("ci.yml")["jobs"]["coverage-shard"]
     strategy = shard.get("strategy")
     assert isinstance(strategy, dict)
-    assert strategy.get("matrix") == {
-        "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(16)]
-    }
+    assert (
+        strategy.get("matrix") == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
+    )
 
     final = _github_hosted_jobs("ci.yml")["coverage"]
-    assert final.get("needs") == "coverage-shard"
+    assert final.get("needs") == ["prepare-source", "coverage-plan", "coverage-shard"]
+    assert final["runs-on"] == A800_CPU_ROUTE
+    assert final["timeout-minutes"] == 20
+    source_steps = final["steps"]
+    full_source = next(
+        step
+        for step in source_steps
+        if step.get("with", {}).get("name", "").startswith("ci-source-${{")
+    )
+    assert full_source["if"] == (
+        "steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'"
+    )
+    assert full_source["with"]["digest-mismatch"] == "error"
     commands = "\n".join(
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
@@ -390,24 +433,29 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     download = next(
         step
         for step in _steps("ci.yml", "coverage")
-        if step.get("uses") == "actions/download-artifact@v8.0.2"
+        if step.get("uses") == "./.github/actions/download-artifact"
+        and "pattern" in step.get("with", {})
     )
-    assert download["with"]["digest-mismatch"] == "error"
-    assert commands.index("rm -rf coverage-data") < commands.index("integrity_check")
+    assert download["with"]["merge-multiple"] is True
+    assert download["timeout-minutes"] == 6
+    assert not download.get("continue-on-error", False)
     assert commands.index("integrity_check") < commands.index(
-        "coverage combine coverage-data"
+        'coverage combine "$FQ_COVERAGE_INPUTS"'
     )
-    assert "coverage combine coverage-data" in commands
-    assert commands.index("coverage combine coverage-data") < commands.index(
+    assert 'coverage combine "$FQ_COVERAGE_INPUTS"' in commands
+    assert commands.index('coverage combine "$FQ_COVERAGE_INPUTS"') < commands.index(
         "tools/check_coverage.py"
     )
 
 
 @pytest.mark.parametrize("case", ["complete", "missing", "corrupt", "unexpected"])
-def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path, case):
+@pytest.mark.parametrize("count", [16, 192])
+def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(
+    tmp_path, case, count
+):
     directory = tmp_path / "coverage-data"
     directory.mkdir()
-    for i in range(16):
+    for i in range(count):
         with sqlite3.connect(directory / f".coverage.{i}") as connection:
             connection.execute("CREATE TABLE sample (value INTEGER)")
             connection.execute("INSERT INTO sample VALUES (1)")
@@ -416,7 +464,7 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     elif case == "corrupt":
         (directory / ".coverage.2").write_bytes(b"truncated sqlite database")
     elif case == "unexpected":
-        (directory / ".coverage.16").write_bytes(b"stale prior shard")
+        (directory / f".coverage.{count}").write_bytes(b"stale prior shard")
     before = {p.name: p.read_bytes() for p in directory.iterdir()}
     step = next(
         step
@@ -426,6 +474,11 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     script = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
     result = subprocess.run(
         [sys.executable, "-c", script],
+        env={
+            **os.environ,
+            "FQ_COVERAGE_SHARDS": str(count),
+            "FQ_COVERAGE_INPUTS": str(directory),
+        },
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -433,7 +486,7 @@ def test_coverage_download_validation_refuses_partial_or_corrupt_inputs(tmp_path
     )
     if case == "complete":
         assert result.returncode == 0, result.stderr
-        assert "Validated all 16" in result.stdout
+        assert f"Validated all {count}" in result.stdout
     else:
         assert result.returncode != 0
         assert (
@@ -488,6 +541,62 @@ def test_the_container_matrix_does_not_land_all_at_once() -> None:
             "the container matrix is not capped, so one push to main holds a "
             "runner per variant"
         )
+
+
+def test_container_builds_cannot_hold_a_trusted_pull_request_ci_capacity_lock() -> None:
+    publish = _document("publish-dev-container.yml")["jobs"]["publish"]
+    build_groups = _groups(publish)
+    assert len(build_groups) == publish["strategy"]["max-parallel"] == 2
+    for name, job in _github_hosted_jobs("ci.yml").items():
+        # Trusted pool jobs have independent locks, checked by the CPU routing
+        # policy; their hosted fallback is only used by fork pull requests.
+        if "flagquantum-cpu" in str(job["runs-on"]):
+            continue
+        assert not (
+            _groups(job) & build_groups
+        ), f"CI job {name} waits behind a development container build"
+
+
+def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
+    build_groups = _groups(_document("publish-dev-container.yml")["jobs"]["publish"])
+    jobs = _github_hosted_jobs("openfermion-interop.yml")
+    assert jobs
+    for name, job in jobs.items():
+        assert not (_groups(job) & build_groups), name
+
+
+def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
+    job = _document("ci.yml")["jobs"]["native-fermion"]
+    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert len(job["strategy"]["matrix"]["include"]) == 2
+    isolated = next(
+        step
+        for step in job["steps"]
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
+    assert isolated["with"]["self-hosted-pypi-index"] == (
+        "https://mirrors.aliyun.com/pypi/simple"
+    )
+    native_install = next(
+        step
+        for step in job["steps"]
+        if step.get("name")
+        == "Install the native package without optional science dependencies"
+    )
+    assert native_install["run"] == (
+        "python -m pip install --no-build-isolation -e . 'pytest>=7,<10'"
+    )
+    commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
+    assert not any(
+        step.get("uses", "").startswith("actions/checkout@") for step in job["steps"]
+    )
+    assert 'test "$sha" = "$GITHUB_SHA"' in commands
+    assert 'git checkout --force --detach "$sha"' in commands
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
+    assert "importlib.util.find_spec(name) is None" in commands
+    assert "tests/integration/test_native_chemistry_driver.py" in commands
+    assert _document("ci.yml")["jobs"]["package"]["runs-on"] == "ubuntu-22.04"
 
 
 def test_the_release_matrix_leaves_capacity_for_other_repositories() -> None:
@@ -583,7 +692,9 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
     None
 ):
     jobs = _document("ci.yml")["jobs"]
-    assert all(job.get("if") in (None, "${{ always() }}") for job in jobs.values())
+    for name, job in jobs.items():
+        expected = "${{ always() }}" if name == "ci-complete" else "${{ !cancelled() }}"
+        assert job.get("if") in (None, expected)
     core_steps = _steps("ci.yml", "cpu-core")
     full = next(
         s for s in core_steps if s.get("run") == "python tools/ci_tier.py pr-default"
@@ -662,6 +773,7 @@ def test_merge_gate_waits_for_every_ci_job_including_source_hygiene(
     complete = jobs["ci-complete"]
     assert complete["name"] == "CI complete"
     assert complete["if"] == "${{ always() }}"
+    assert complete["timeout-minutes"] == 2
     assert set(complete["needs"]) == set(jobs) - {"ci-complete"}
     step = complete["steps"][0]
     assert step["env"]["NEEDS_JSON"] == "${{ toJSON(needs) }}"
@@ -713,7 +825,7 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
     None
 ):
     job = _document("ci.yml")["jobs"]["distributed-cpu"]
-    assert job["if"] == "${{ always() }}"
+    assert job["if"] == "${{ !cancelled() }}"
     assert job["needs"] == "distributed-cpu-shard"
     assert job["steps"] == [
         {
@@ -721,3 +833,43 @@ def test_distributed_cpu_retains_its_stable_check_and_rejects_a_failed_partition
             "run": "test '${{ needs.distributed-cpu-shard.result }}' = success",
         }
     ]
+
+
+def test_coverage_data_stays_outside_the_source_tree_copied_by_mutation_tests():
+    job = _document("ci.yml")["jobs"]["coverage-shard"]
+    expected = "${{ runner.temp }}/fq-coverage/.coverage.${{ matrix.shard }}"
+    assert "COVERAGE_FILE" not in job["env"]
+    upload = next(
+        s
+        for s in job["steps"]
+        if s.get("with", {}).get("name", "").startswith("coverage-shard-")
+    )
+    assert upload["with"]["path"] == expected
+    commands = [
+        s["run"] for s in job["steps"] if "python -m pytest" in s.get("run", "")
+    ]
+    assert len(commands) == 2
+    assert all('mkdir -p "$RUNNER_TEMP/fq-coverage"' in command for command in commands)
+    assert all(
+        'export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"'
+        in command
+        for command in commands
+    )
+
+
+def test_dependency_bounds_uses_checked_mirror_without_changing_torch_spec() -> None:
+    job = _document("ci.yml")["jobs"]["dependency-bounds"]
+    isolated = next(
+        step
+        for step in job["steps"]
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"] == {
+        "torch-spec": "${{ matrix.torch }}",
+        "self-hosted-pypi-index": "https://mirrors.aliyun.com/pypi/simple",
+    }
+    assert any(
+        step.get("uses") == "./.github/actions/install-cpu-torch"
+        and step["with"]["torch-spec"] == "${{ matrix.torch }}"
+        for step in job["steps"]
+    )

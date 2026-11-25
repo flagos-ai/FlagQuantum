@@ -1,0 +1,302 @@
+[
+  {
+    "seed": 0,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.4432899320127035e-15
+  },
+  {
+    "seed": 1,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.0674400701435648e-15
+  },
+  {
+    "seed": 2,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 2.0183475960220235e-15
+  },
+  {
+    "seed": 3,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.2269290903640981e-15
+  },
+  {
+    "seed": 4,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.0948510389028343e-15
+  },
+  {
+    "seed": 5,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 6.866350197783356e-16
+  },
+  {
+    "seed": 6,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 2.6858449694084783e-15
+  },
+  {
+    "seed": 7,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 2.3052588782060247e-15
+  },
+  {
+    "seed": 8,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.0244214106980608e-15
+  },
+  {
+    "seed": 9,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 8.005932084973442e-16
+  },
+  {
+    "seed": 10,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.1102230246251565e-15
+  },
+  {
+    "seed": 11,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.1188630228279524e-15
+  },
+  {
+    "seed": 12,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 5.465215958137726e-15
+  },
+  {
+    "seed": 13,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.336885555457667e-15
+  },
+  {
+    "seed": 14,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 2.0411201962889075e-15
+  },
+  {
+    "seed": 15,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.1443916996305594e-15
+  },
+  {
+    "seed": 16,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.2658490090568385e-15
+  },
+  {
+    "seed": 17,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.191874962812805e-15
+  },
+  {
+    "seed": 18,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 8.678958683574893e-16
+  },
+  {
+    "seed": 19,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.2536951095120469e-15
+  },
+  {
+    "seed": 20,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 8.431117486225705e-16
+  },
+  {
+    "seed": 21,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 4.11197236867648e-15
+  },
+  {
+    "seed": 22,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.021398642066749e-15
+  },
+  {
+    "seed": 23,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 3.572176009035959e-15
+  },
+  {
+    "seed": 24,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.2412670766236366e-15
+  },
+  {
+    "seed": 25,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 3.0847422370805075e-15
+  },
+  {
+    "seed": 26,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.3750219730625941e-15
+  },
+  {
+    "seed": 27,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 3.3385238915062165e-15
+  },
+  {
+    "seed": 28,
+    "baseline_operations": 37,
+    "cleanup_operations": 25,
+    "residual": 1.247457973265988e-15
+  },
+  {
+    "seed": 29,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 9.50197851991224e-16
+  },
+  {
+    "seed": 30,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 1.3895575646688724e-14
+  },
+  {
+    "seed": 31,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.2959208739370123e-15
+  },
+  {
+    "seed": 32,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 8.833950494912839e-16
+  },
+  {
+    "seed": 33,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 2.531698018113677e-15
+  },
+  {
+    "seed": 34,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.3877787807814457e-15
+  },
+  {
+    "seed": 35,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 3.065703529144609e-15
+  },
+  {
+    "seed": 36,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 8.092071311423671e-16
+  },
+  {
+    "seed": 37,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 6.140921104957897e-16
+  },
+  {
+    "seed": 38,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 2.0183475960220235e-15
+  },
+  {
+    "seed": 39,
+    "baseline_operations": 36,
+    "cleanup_operations": 26,
+    "residual": 2.0183475960220235e-15
+  },
+  {
+    "seed": 40,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 2.9831756714991726e-15
+  },
+  {
+    "seed": 41,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 4.620782372656675e-15
+  },
+  {
+    "seed": 42,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 1.8445715318880183e-15
+  },
+  {
+    "seed": 43,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 8.64442489944963e-16
+  },
+  {
+    "seed": 44,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.3656758613026004e-15
+  },
+  {
+    "seed": 45,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 4.733334065604929e-15
+  },
+  {
+    "seed": 46,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 3.92336621888915e-15
+  },
+  {
+    "seed": 47,
+    "baseline_operations": 38,
+    "cleanup_operations": 26,
+    "residual": 4.920806032022786e-15
+  },
+  {
+    "seed": 48,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 9.243565156191136e-15
+  },
+  {
+    "seed": 49,
+    "baseline_operations": 37,
+    "cleanup_operations": 26,
+    "residual": 1.5315673060066887e-15
+  }
+]

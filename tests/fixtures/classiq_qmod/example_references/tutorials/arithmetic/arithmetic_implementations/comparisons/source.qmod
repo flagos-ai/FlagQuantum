@@ -1,0 +1,7 @@
+qfunc energy(const x:qnum<2>,const y:qnum<2>,output result:qnum) {
+    result=x*x+y;
+}
+qfunc main(output x:qnum<2>,output y:qnum<2>,output result:qnum) {
+    allocate(x);allocate(y);hadamard_transform(x);hadamard_transform(y);
+    energy(x,y,result);
+}

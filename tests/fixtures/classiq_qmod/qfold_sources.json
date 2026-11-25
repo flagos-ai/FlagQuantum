@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qfold.qmod",
+      "source_path": "applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold.qmod",
+      "git_blob_sha1": "c49f7ef277e66371d1b12fcce8bb12f28e16336e",
+      "sha256": "b456350a74f0e34f7ee6206c224dc432ad43aa4b90be158076c8502ca8e2373f"
+    }
+  ]
+}

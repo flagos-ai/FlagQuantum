@@ -283,15 +283,20 @@ def test_compact_cx_adjoint_gather_has_explicit_environment_rollback(
     assert fused_compact_cx_adjoint_gather(ket, ket, images) is None
 
 
+@pytest.mark.parametrize("extension_loaded", (False, True))
 def test_compact_cx_runtime_threshold_and_rollback(
     monkeypatch: pytest.MonkeyPatch,
+    extension_loaded: bool,
 ) -> None:
+    import flagquantum.simulation.native_cpu.adjoint as native_adjoint
+
+    monkeypatch.setattr(native_adjoint, "_load_extension", lambda: extension_loaded)
     monkeypatch.delenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", raising=False)
     assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)
 
     monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "1")
     assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(21)
-    assert reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)
+    assert reverse_adjoint_cx.use_compact_cpu_cx_mapping(22) is extension_loaded
 
     monkeypatch.setenv("FQ_NATIVE_CPU_COMPACT_CX_INDEX", "0")
     assert not reverse_adjoint_cx.use_compact_cpu_cx_mapping(22)

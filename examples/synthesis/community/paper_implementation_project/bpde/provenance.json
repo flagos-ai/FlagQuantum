@@ -1,0 +1,6 @@
+{
+  "upstream_path": "community/paper_implementation_project/bpde/bpde.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "4413d7ceb261befcd2989100f01e37742d588a82e78d34234bd2f6b0907b7dae",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "7cf818c5d745cfb719f195242aa04f0eadaa55ef82b55bb7ae889c4d92e351e8",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.fermi_hubbard_model_1d.fermi_hubbard_1d.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_pauli_views.py",
+  "scope": "Quantum program only; full associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain all ten numerical Givens matrices with their original ordered pairs. Native helper borrowing uses bounded array slices for exchange terms and scalar contact-phase arguments. Retain all zero-time, positive and negative exchange calls and repeated contact phases. num_iter=1/2 is checked against independent dense matrix exponentials without a source importer in user code."
+}

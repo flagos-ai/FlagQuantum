@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "03355169f74f239a89d223d1b641f57f98d88f3d",
+  "original_sha256": "f636d94279f18fda4753a8f787546a9ff7b55188818fc2cb9510a2014af75007",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "fba8815b4b1a83486de45a65071ee141d90e866e4dc7d8ee6cb6c10e21f0d668"
+    },
+    {
+      "index": 3,
+      "sha256": "50a976632f63282450edf0ac5a16877d3072bbe0a52e2942775369d4b83f0ef6"
+    },
+    {
+      "index": 5,
+      "sha256": "aa7b23a113a553b49a0a4d5fbade444e5315ce436e96b75b5ccb2428ecb67f9c"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_or.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_bitwise_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/bitwise_or/overview/walkthrough.ipynb",
+  "scope": "Complete local computational bitwise-OR Notebook: both original examples, widths/signs/values, synthesis, execution, named exact readout and1000seeded samples per example. All native code cells execute in order; independent full-state Circuit acceptance remains separate.",
+  "native_semantic_adaptations": "Typed Annotated widths/sign replace allocate metadata arguments. Local CPU execution and seeded samples from executed numeric probabilities replace cloud sample/table output; no hardware result is claimed."
+}

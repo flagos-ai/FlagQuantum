@@ -1,0 +1,13 @@
+{
+  "scope": "single_device_fast_path; inspected development controls; no ranking, qualified performance or scalability claim",
+  "base_commit": "b3ed982a0d90a05ec69b093723aa1b6e83630463",
+  "implementation_commit": "466df8dbfb04196d5a50582cc35d2a9f8e21b2da",
+  "candidate_source_sha256": "31abc7d42b0448481435f3102a2a71d69a8d4f51101c2fce1d2545e657df0be2",
+  "baseline_source_sha256": "13ba7b064c0363cbc7b9d9aa047a4ada0115be15502d21e694db6b92b61421e2",
+  "runner_sha256": "d97145278c91177b8916e4e624a530d12437e26c4721f9a5d31763d29c1df7f3",
+  "python": "3.12.14",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "numerical_cases": 2400,
+  "complete": true,
+  "workflows": []
+}

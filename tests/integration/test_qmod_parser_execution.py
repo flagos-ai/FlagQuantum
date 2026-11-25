@@ -6,11 +6,11 @@ from typing import Literal
 
 import pytest
 
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.scheduling.selection import (
     ConstructionBudget,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,

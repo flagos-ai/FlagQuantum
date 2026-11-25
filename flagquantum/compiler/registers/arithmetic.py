@@ -10,7 +10,7 @@
 """Register-level arithmetic decompositions."""
 
 from ...core.ir import Instruction
-from .._arithmetic_kernels import ripple_add_modular
+from ._arithmetic_kernels import ripple_add_modular
 
 
 def controlled_add_or_subtract_ir(

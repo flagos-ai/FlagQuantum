@@ -1,0 +1,41 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qsvt/qsvt.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e34fba6a9cb3e6114ec3fb19aa670efa4e04777ebf79845e019cae04cacb4476",
+  "git_blob_sha1": "972ee770e69e07ef8f8f7c269be29ab751f894f4",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 4,
+      "sha256": "75959a8c6aa9d6d5d77b9fc90fe17f68d75f42c58ad152231760a18471350224"
+    },
+    {
+      "index": 5,
+      "sha256": "37ee77ee88415a9f1fcc508e554c7816c36cc0032d887e3fb29028104c49848b"
+    },
+    {
+      "index": 6,
+      "sha256": "a5d29be69997d14ffb2e0bc1519730a47469c926d0ea7b6b2b6023f0197cc707"
+    },
+    {
+      "index": 7,
+      "sha256": "6dc8a405af08eee10073da6c256a978e65ea741053b8b306558b2c681761171e"
+    },
+    {
+      "index": 8,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 9,
+      "sha256": "b095ff88d6821389cc8b7261e37c2a9ff5298e4672029aa1019f45e9712bdef2"
+    }
+  ],
+  "scope": "Complete original degree-5 odd-polynomial QSVT Notebook: retain seed1 coefficients,500point normalization,phase finding,ten logical outputs,odd-degree projection,16measured/target values and original comparison plot. Fit six native projector angles with existing native Nelder-Mead using bounded seeded starts,not precomputed frozen phases. New phases checked against independent Circuit fullstate including absolutephase and clean work;projected polynomial checked separately. Phase branch need not equal frozen Classiq phase array,so no cross-branch complementary fullstate equivalence claim. Native angle equals twice scalar QSP phase. Existing qfunc composition and public named probabilities reused;no production API or dependency added. Numerical fit validation on4097points is not an analytic uniform-error certificate or generic QSP solver.",
+  "native_semantic_adaptations": "Complete original degree-5 odd-polynomial QSVT Notebook: retain seed1 coefficients,500point normalization,phase finding,ten logical outputs,odd-degree projection,16measured/target values and original comparison plot. Fit six native projector angles with existing native Nelder-Mead using bounded seeded starts,not precomputed frozen phases. New phases checked against independent Circuit fullstate including absolutephase and clean work;projected polynomial checked separately. Phase branch need not equal frozen Classiq phase array,so no cross-branch complementary fullstate equivalence claim. Native angle equals twice scalar QSP phase. Existing qfunc composition and public named probabilities reused;no production API or dependency added. Numerical fit validation on4097points is not an analytic uniform-error certificate or generic QSP solver.",
+  "native_entrypoint": "examples.synthesis.functions.qsvt.overview.main",
+  "native_notebook": "examples/synthesis/functions/qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qsvt_notebook.py"
+}

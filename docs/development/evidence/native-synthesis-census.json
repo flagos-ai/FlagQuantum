@@ -1,0 +1,270 @@
+{
+  "scope": "Untimed exact-matrix census; every original synthesis still executes; no speedup or default-admission claim",
+  "implementation_commit": "e254f5da6b6d92e303d22dd92239b3a66b81c3c7",
+  "driver_source": "import collections,hashlib,json,struct,subprocess,sys\nfrom functools import partial\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom sdkbench.p0 import Bundle\nfrom sdkbench.p0.evaluators import routing\nfrom benchmarks import compiler_sabre_trial_reuse as reuse\nfrom flagquantum.compiler.optimization import _cz_blocks as blocks\nfrom flagquantum.compiler.topology import sabre\nconfig=workflow_configuration('flagquantum-target-artifact')\nbundle=Bundle(Path('/private/tmp/sdkbench-product-conformance-20261121/docs/implementation'))\noriginal=blocks.synthesize_two_qubit\nchoose=reuse._choose_native_route\nrows=[]\nfor width,family,topology in ((6,'qft','grid'),(6,'repetition','ring'),(12,'qft','grid')):\n    groups=[]\n    def counted_choice(*args,**kwargs):\n        queries=collections.Counter();outputs={};conflicts=[];sequence=[]\n        def count(matrix,**options):\n            pair=options['qubits']\n            assert len(pair)==2 and options['entangler']=='cz'\n            key=hashlib.sha256(b''.join(struct.pack('!dd',v.real,v.imag) for row in matrix for v in row)).hexdigest()\n            result=original(matrix,**options)\n            output=None if result is None else [(g.name,tuple(pair.index(w) for w in g.wires),dict(g.params)) for g in result]\n            encoded=json.dumps(output,sort_keys=True,separators=(',',':'),allow_nan=False)\n            if key in outputs and outputs[key]!=encoded:conflicts.append(key)\n            outputs[key]=encoded;queries[key]+=1;sequence.append((key,None if result is None else len(result)))\n            return result\n        with patch.object(blocks,'synthesize_two_qubit',count):\n            result=choose(*args,**kwargs)\n        forecasts={}\n        for capacity in (4,8,16):\n            cache=collections.OrderedDict();hits=0\n            for key,length in sequence:\n                if key in cache:\n                    hits+=1;cache.move_to_end(key)\n                elif length is None or length<=32:\n                    cache[key]=None\n                    if len(cache)>capacity:cache.popitem(last=False)\n            forecasts[capacity]=hits\n        groups.append({'bounded_lru_hit_forecasts':forecasts,'proposal_lengths':dict(collections.Counter(length for _,length in sequence)),'calls':sum(queries.values()),'distinct_exact_matrices':len(queries),'repeated_calls':sum(v-1 for v in queries.values()),'histogram':dict(collections.Counter(queries.values())),'output_conflicts':conflicts})\n        return result\n    adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':'flagquantum-target-artifact','compiler_options':config}}))\n    source=fixture(width,family,topology,'01'*32)\n    with patch.object(reuse,'_choose_native_route',counted_choice),patch.object(sabre,'_select_sabre_trials',partial(reuse._select,native_budget=config['options']['max_native_added_operations'])):\n        payload=adapter.execute('route',source,11)\n    metrics=routing(payload,source,None,bundle.cases[f'ROUTE-LINE-{width:02d}'],0)\n    row={'case':[width,family,topology],'selection_calls':groups,'metrics':metrics,'audit':dict(adapter.audit),'payload_sha256':hashlib.sha256(json.dumps({k:payload[k] for k in ('operations','final_layout')},sort_keys=True,separators=(',',':')).encode()).hexdigest()}\n    rows.append(row);print(json.dumps(row),flush=True)\nreport={'scope':'Untimed exact-matrix census; every original synthesis still executes; no speedup or default-admission claim','implementation_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=15).strip(),'driver_source':Path(__file__).read_text(),'rows':rows}\nwith Path('/private/tmp/fq-native-synthesis-bounds-census-20261123.json').open('x') as stream:stream.write(json.dumps(report,indent=2)+'\\n')\n",
+  "rows": [
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "selection_calls": [
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 8,
+            "8": 9,
+            "16": 12
+          },
+          "proposal_lengths": {
+            "28": 2,
+            "20": 7,
+            "24": 5,
+            "29": 3,
+            "23": 6,
+            "22": 3,
+            "19": 7,
+            "18": 10,
+            "26": 1,
+            "25": 2,
+            "16": 3,
+            "21": 2,
+            "3": 3,
+            "0": 1
+          },
+          "calls": 55,
+          "distinct_exact_matrices": 32,
+          "repeated_calls": 23,
+          "histogram": {
+            "1": 20,
+            "2": 8,
+            "3": 2,
+            "7": 1,
+            "6": 1
+          },
+          "output_conflicts": []
+        },
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 8,
+            "8": 9,
+            "16": 12
+          },
+          "proposal_lengths": {
+            "28": 2,
+            "20": 7,
+            "24": 5,
+            "29": 3,
+            "23": 6,
+            "22": 3,
+            "19": 7,
+            "18": 10,
+            "26": 1,
+            "25": 2,
+            "16": 3,
+            "21": 2,
+            "3": 3,
+            "0": 1
+          },
+          "calls": 55,
+          "distinct_exact_matrices": 32,
+          "repeated_calls": 23,
+          "histogram": {
+            "1": 20,
+            "2": 8,
+            "3": 2,
+            "7": 1,
+            "6": 1
+          },
+          "output_conflicts": []
+        },
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 8,
+            "8": 9,
+            "16": 12
+          },
+          "proposal_lengths": {
+            "28": 2,
+            "20": 7,
+            "24": 5,
+            "29": 3,
+            "23": 6,
+            "22": 3,
+            "19": 7,
+            "18": 10,
+            "26": 1,
+            "25": 2,
+            "16": 3,
+            "21": 2,
+            "3": 3,
+            "0": 1
+          },
+          "calls": 55,
+          "distinct_exact_matrices": 32,
+          "repeated_calls": 23,
+          "histogram": {
+            "1": 20,
+            "2": 8,
+            "3": 2,
+            "7": 1,
+            "6": 1
+          },
+          "output_conflicts": []
+        }
+      ],
+      "metrics": {
+        "max_semantic_error": 1.3530843112619093e-15,
+        "full_cz_count": 63,
+        "two_body_dependency_depth": 38,
+        "verification": "full-operator"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 87,
+        "accepted_block_rewrites": 6,
+        "serialized_artifact_bytes": 13593
+      },
+      "payload_sha256": "215c6820322ed157cad7c164466c24f30970395ee09b31924b6172289e2cefd7"
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "selection_calls": [
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 21,
+            "8": 25,
+            "16": 31
+          },
+          "proposal_lengths": {
+            "20": 18,
+            "24": 8,
+            "18": 4,
+            "21": 2,
+            "16": 4,
+            "25": 3,
+            "19": 5,
+            "23": 2
+          },
+          "calls": 46,
+          "distinct_exact_matrices": 15,
+          "repeated_calls": 31,
+          "histogram": {
+            "17": 1,
+            "7": 1,
+            "3": 2,
+            "1": 8,
+            "2": 2,
+            "4": 1
+          },
+          "output_conflicts": []
+        },
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 21,
+            "8": 25,
+            "16": 31
+          },
+          "proposal_lengths": {
+            "20": 18,
+            "24": 8,
+            "18": 4,
+            "21": 2,
+            "16": 4,
+            "25": 3,
+            "19": 5,
+            "23": 2
+          },
+          "calls": 46,
+          "distinct_exact_matrices": 15,
+          "repeated_calls": 31,
+          "histogram": {
+            "17": 1,
+            "7": 1,
+            "3": 2,
+            "1": 8,
+            "2": 2,
+            "4": 1
+          },
+          "output_conflicts": []
+        },
+        {
+          "bounded_lru_hit_forecasts": {
+            "4": 21,
+            "8": 25,
+            "16": 31
+          },
+          "proposal_lengths": {
+            "20": 18,
+            "24": 8,
+            "18": 4,
+            "21": 2,
+            "16": 4,
+            "25": 3,
+            "19": 5,
+            "23": 2
+          },
+          "calls": 46,
+          "distinct_exact_matrices": 15,
+          "repeated_calls": 31,
+          "histogram": {
+            "17": 1,
+            "7": 1,
+            "3": 2,
+            "1": 8,
+            "2": 2,
+            "4": 1
+          },
+          "output_conflicts": []
+        }
+      ],
+      "metrics": {
+        "max_semantic_error": 6.179029502236603e-15,
+        "full_cz_count": 76,
+        "two_body_dependency_depth": 55,
+        "verification": "full-operator"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 84,
+        "accepted_block_rewrites": 4,
+        "serialized_artifact_bytes": 18691
+      },
+      "payload_sha256": "fabf1dfb5d396167184dd30241bcbd28fb840a54d62694c2c652fb627d104d25"
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "selection_calls": [],
+      "metrics": {
+        "max_semantic_error": 1.3843020324286894e-14,
+        "full_cz_count": 352,
+        "two_body_dependency_depth": 150,
+        "verification": "three-probes-only"
+      },
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "native_baseline_cz_count": 432,
+        "accepted_block_rewrites": 38,
+        "serialized_artifact_bytes": 67040
+      },
+      "payload_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6"
+    }
+  ]
+}

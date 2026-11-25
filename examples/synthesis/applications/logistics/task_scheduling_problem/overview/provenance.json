@@ -1,0 +1,181 @@
+{
+  "upstream_path": "applications/logistics/task_scheduling_problem/task_scheduling_problem.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "29955ff0a323ac41057e1f2789344aad38bae177aad9d4c4811ab70e404bb6a3",
+  "git_blob_sha1": "71ad7da453160aabd9f16f33fd6e9566dda3334d",
+  "scope": "All 28 task-scheduling stages, both original task graphs, full 12- and 24-bit encodings, eight layers, original CVaR and evaluation budgets, all actual finite samples, and independent exact schedules.",
+  "native_semantic_adaptations": "Generate penalties and bounded binary slack with native Python, synthesize one generic qfunc, and use native COBYLA with a coupling-norm schedule and explicit source budgets 20 and 1. Each objective and final sample uses 2,048 actual draws. Compare original constraints with independent exact enumeration. Preserve invalid observed assignments in their plots.",
+  "native_entrypoint": "examples.synthesis.applications.logistics.task_scheduling_problem.overview.main",
+  "native_notebook": "examples/synthesis/applications/logistics/task_scheduling_problem/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_task_scheduling_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "stage": "Load the native scheduling model and workflow.",
+      "sha256": "efbca299e1196cefd700807ec918264ba9ca6f09f1f96de20a41702a85c9183f"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Generate the original constraints and bounded slack encoding.",
+      "sha256": "14960e82ef458bb317615fec9d4c0fbcb1b51ce9e862158503d63bb0df6fb5a5"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Use the source task and resource plots.",
+      "sha256": "d4888da115a0d1deb4d0ef3785248e80a832aa3b49a6010f89e89efa4033d285"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "stage": "Keep both original input graph factories.",
+      "sha256": "133b29d861e1825a4053ed40652a71cbeeb937bbf059a4798c1cfa4617fb890e"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Retain the complete small graph and capacity data.",
+      "sha256": "a8616bff0c394f9337e013999e300c57a600daf25550f721c861a635c1ec9531"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Inspect its full active-variable mapping.",
+      "sha256": "a287bc93811ed5d336fcb0a24d92ab92f3fd8846afa44c9cf96d3d85d7ee1d48"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "stage": "Retain penalty 20 and eight complete QAOA layers.",
+      "sha256": "4c624f8974a3966f4fbaf64ad6b87532f95c36c83aa85e1b56425c2d43024666"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 8,
+      "stage": "Synthesize the freshly generated small model.",
+      "sha256": "435da85df27be7f55980c575d3f8c58a7938f89e0fc0afcc7cb75e1096d313a8"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 9,
+      "stage": "Inspect its actual resource product.",
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 10,
+      "stage": "Optimize with twenty actual CVaR queries at alpha 0.3.",
+      "sha256": "0989ba332e5a0738ddb47cff5af3e431c7a77b801ceea7685cce9c978afba901"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 11,
+      "stage": "Retain every measured small-model objective.",
+      "sha256": "0ff1051ce8394ca463dcdd9723609c8473dc7497e6e19338cc8fdddd7a1803c5"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 12,
+      "stage": "Keep all 2,048 actual final observations.",
+      "sha256": "66eb29306bf2ae397d30b3f983b9ba84a5713939e93149122b0e9a16c8173d9b"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 13,
+      "stage": "Read the selected original three-by-four matrix and cost.",
+      "sha256": "f3ebabd8f3cebce8f01502da29391bce09bc2ee4799fe965c93f179a74d70189"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 14,
+      "stage": "Retain the full observed cost distribution.",
+      "sha256": "29d0bc59eedb083ea4f8de402ad2b2d470d4ac54e58970cbc2bb76719483f68e"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 15,
+      "stage": "Keep the observed small-model schedule for plotting.",
+      "sha256": "3bd1dcffe450666a9a18752b73f81016ae10ab7f8878d5f73b3e9873ee30017c"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 16,
+      "stage": "Solve the original small constraints by independent exact enumeration.",
+      "sha256": "4901dfb91d8738cfc7119fbecb64ba4c68780b18a1b0e205be848bc29ee90d4b"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 17,
+      "stage": "Retain the independent classical small-model schedule.",
+      "sha256": "2a62624227c81641600103f95c9b09db047fc67866078b937e7aa1c430d265da"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 18,
+      "stage": "Retain the complete six-task, five-slot large problem.",
+      "sha256": "4a37d50429b6fea888b65db98a262331ff7d7fc90226019514cbcf511cbf7fdb"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 19,
+      "stage": "Inspect all fifteen active large-model assignment variables.",
+      "sha256": "7d8dc51d8feb17a0d76f4439003d3cb99c94714fe9451983a575b9a83679d8f1"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 20,
+      "stage": "Generate the large model with the original penalty and eight layers.",
+      "sha256": "f2079fa7e232527f61b4d5d2c117b56201afde74c11f45583717063592977725"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 21,
+      "stage": "Compile all twenty-four original active quantum bits.",
+      "sha256": "012ffd3e36841c01d77d3bc584c754a6fa4ffd80461d5874ad74309761db7253"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 22,
+      "stage": "Execute the source's explicit one-query budget at alpha 0.6.",
+      "sha256": "0b2456c4cea029a0897c4c8afcdbff22414d0b243c84e37377168fac7342406b"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 23,
+      "stage": "Keep all 2,048 actual final large-model draws.",
+      "sha256": "694fd5ad38bb8908ae3918afa7f08cbbd4045f46858b4196877d1481dd425aca"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 24,
+      "stage": "Read the selected five-by-six matrix and original cost.",
+      "sha256": "f3ebabd8f3cebce8f01502da29391bce09bc2ee4799fe965c93f179a74d70189"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 25,
+      "stage": "Retain all observed large-model costs for the histogram.",
+      "sha256": "29d0bc59eedb083ea4f8de402ad2b2d470d4ac54e58970cbc2bb76719483f68e"
+    },
+    {
+      "index": 51,
+      "native_code_cell": 26,
+      "stage": "Plot the actual selected schedules and both complete input models.",
+      "sha256": "8af68fd023c92ad716fa9ffea1de2affaa833985a644c8b0e3f1b09bd0cd9fac"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 27,
+      "stage": "Solve the original large constraints independently.",
+      "sha256": "99deceaffcfec9c3ade760fee0840ceae6d3fec03d9a95fb6195e689146c767c"
+    },
+    {
+      "index": 54,
+      "native_code_cell": 28,
+      "stage": "Show both independent classical schedules and report every observation.",
+      "sha256": "be2d1a3adee3ef975e835b5c5636de7c26f21afdd084bd8b4682bde1c057bb60"
+    }
+  ]
+}

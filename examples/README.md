@@ -1,36 +1,30 @@
 # FlagQuantum Examples
 
-[Composable arithmetic synthesis](synthesis_arithmetic_implementations.py): run
-`python -m examples.synthesis_arithmetic_implementations` to allocate, prepare
-superpositions, compose a Python qfunc, compute `x*x+y`, and read named outcomes.
-The example also executes matching Qmod and prints actual resources.
+Choose [high-level quantum programming with synth](synthesis/README.md) for
+computation, quantum data and synthesis constraints. The examples below cover
+Circuit construction, training, simulation and deployment.
 
-[Coherent predicate synthesis](synthesis_predicate.py): run
-`python -m examples.synthesis_predicate` for named basis and uniform results of
-`x*x+y<5`, using the maintained synth facade without gate design or bit decoding.
+## Start with the integrated QEC workflow
 
-Private constrained-synthesis contributor workflows:
+Follow the [Stim/PyMatching quickstart](../docs/guides/QEC_INTEGRATION_QUICKSTART.md)
+for installation, a complete original-circuit report, decoder selection and
+lower-level samples. The [compatibility table](../docs/reference/QEC_STIM_PYMATCHING_COMPATIBILITY.md)
+distinguishes native code and optional SDK routes.
 
-- [Candidate selection](synthesis_selection.py): run
-  `python -m examples.synthesis_selection` to compare both schedules under
-  different final constraints, then check and execute their real Runtime plans.
-- [Complete static costs](synthesis_selection_costs.py): run
-  `python -m examples.synthesis_selection_costs` for both candidates of four
-  computation families at two widths and two targets, plus the manual baseline.
-  Larger rows are Compiler costs, not dense-state or hardware measurements.
+- [Existing Stim circuit report](qec/stim_memory_experiment.py): run
+  `python examples/qec/stim_memory_experiment.py` with the Stim extra. The
+  bundled Sparse Blossom solver decodes 35 shots and two deliberately swapped logical columns. Expected output is
+  `35 0 (0, 0)` followed by `stim_circuit`.
+- [Native memory declarations](qec/memory_experiment.py): use repetition or
+  `--code surface --basis x` / `--code surface --basis z` for fixed-shot reports.
+- [Inspect the bridge](qec/stim_experiment_bridge.py) and
+  [compare complete records](qec/decoder_comparison.py) for step-by-step use.
 
-[`synthesis_execution_contract.py`](synthesis_execution_contract.py) demonstrates
-the private CS06-A seam: `python -m examples.synthesis_execution_contract` rejects
-planning-induced basis drift, checks an actual routed plan and verifies its
-nonidentity output placement and complex phase. This expert plan example leaves
-the normal synthesis facade unchanged.
+These supported software workflows do not start hardware jobs or scientific
+performance studies. The historical migration/reference demonstrations are
+listed separately below.
 
-[`synthesis_workspace.py`](synthesis_workspace.py) is the private CS-05 Compiler
-diagnostic: `python -m examples.synthesis_workspace` compares retained and
-cleanup/recompute workspace costs for one high-level source program and executes
-both small coherent blocks on the existing CPU path. This is an advanced explicit
-port example; the normal named CS-04 workflow is unchanged. It does not expose
-CS-06 constraint-based candidate selection.
+## Circuit, training and deployment workflows
 
 Runnable, copy-ready workflows for building and training quantum AI programs
 with the current FlagQuantum API.
@@ -44,6 +38,77 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/toric_distance_acceptance.py`](qec/toric_distance_acceptance.py)
+  checks both logical observables of a periodic square Toric code using original
+  noisy shots, a strict undecomposed DEM, Stim 1.16.0 reference mechanisms and
+  BP/OSD decoding. With an embedded build and the Stim extra, run
+  `python -m examples.qec.toric_distance_acceptance 15 z`.
+  Expected JSON includes `"status": "passed"`, `"observables": 2` and
+  `"syndrome_reproduced": 64`; add `--noise-profile correlated` to include Y faults.
+
+- [`qec/embedded_memory_export.py`](qec/embedded_memory_export.py) constructs a
+  noisy repetition-code memory, exports its original Stim text, then samples,
+  builds the strict DEM and decodes 64 fixed shots through the embedded
+  stabilizer engine. Run it in a wheel built with the embedded Stim profile:
+  `FQ_BUILD_EMBEDDED_STIM=1 python -m build --wheel --no-isolation`, install that
+  wheel without the `stim` extra, then run
+  `python -m examples.qec.embedded_memory_export`. The output reports 64 shots,
+  the observed logical failure count, and `sampling_source="stim_circuit"`.
+
+- [`qec/colour_distance_acceptance.py`](qec/colour_distance_acceptance.py)
+  checks a triangular 6.6.6 colour patch using original noisy shots, an
+  undecomposed strict DEM, Stim 1.16.0 reference mechanisms and bundled BP/OSD
+  decoding. In an embedded build with the Stim extra, run
+  `python -m examples.qec.colour_distance_acceptance 15 z`; the JSON reports
+  `"status": "passed"`, `"distance": 15` and `"syndrome_reproduced": 64`.
+
+
+- [`qec/code_distance_acceptance.py`](qec/code_distance_acceptance.py)
+  accepts the specified Surface and Repetition distances using original noisy
+  circuit shots, strict DEM analysis and bundled Sparse Blossom decoding.
+  Run `python -m examples.qec.code_distance_acceptance surface 30 z` with the
+  Stim 1.16.0 extra and an embedded build. Expected JSON fields include
+  `"status": "passed"`, `"distance": 30` and `"shots": 64`.
+
+- [`synthesis_offline_deployment.py`](synthesis_offline_deployment.py) uses the
+  synthesis, compiler, and deployment namespaces to export OpenQASM and build
+  a deployment package for a fixed local target. Run
+  `python -m examples.synthesis_offline_deployment`.
+
+- Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
+  `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
+  mathematical data. Some `comparisons/circuit.py` entrypoints delegate to shared
+  references, and `synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py`
+  defines its quantum function through the synthesis namespace.
+
+- Other synthesis support files use their owning module APIs instead of importing
+  the root alias: `__init__.py`, `ansatz.py`, `approximation.py`, `archive.py`,
+  `arithmetic.py`, `arithmetic_candidate.py`, `benchmark.py`, `classical.py`,
+  `datasets.py`, `even_phases.py`, `exact_basis.py`, `fitting.py`,
+  `graph_optimization_plot.py`, `iterative.py`, `kaliski.py`, `measurements.py`,
+  `model.py`, `phases.py`, `phasing.py`, `plots.py`, `plotting.py`,
+  `portfolio_programs.py`, `presentation.py`, `problem.py`, `program.py`,
+  `quantum.py`, `reference_programs.py`, `reference_rotation_basis.py`,
+  `symmetry.py`, `synthesis.py`, and `workflow.py`. Their workflow entry points
+  and roles are linked from the [synthesis catalog](synthesis/CATALOG.md).
+
+- [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
+  differentiates a real orbital angle through domain tensor functions.
+
+- [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
+  converts repeated-slot dynamic records to reference-normalized detector and
+  observable flips using explicit measurement ordinals.
+
+- [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
+  reuses one Clifford sampler for dense records, packed records and a b8 file
+  that Stim reads back independently.
+- [`qec/stim_measurement_conversion.py`](qec/stim_measurement_conversion.py)
+  converts existing CPU measurement records into reference-normalized detector
+  and logical flips using the optional Stim extra.
+
+- [`qec/terminal_measurement_conversion.py`](qec/terminal_measurement_conversion.py)
+  uses the same native circuit for ordinary simulation and QEC record
+  conversion before and after compilation and placement.
 - `qec/matched_primary.py`: guarded fixed primary capture and externally hash-bound replay/32-comparison summaries; reuses shared prediction shards and existing statistics; no trusted controller or formal execution CLI.
 - `qec/matched_parity.py`: verifies frozen decisions before a single shared probe and composes explicit CNN/MLP parity paths; hardware-only receipt guards and two-host verification; no primary sampler or CLI.
 - `qec/matched_validation.py`: internal shared physical-validation capture and all sixty threshold trials with explicit architecture identities; no primary sampler or launch CLI.
@@ -89,7 +154,9 @@ These examples do not use that alias:
   refusal. Core Torch is sufficient; circuit execution separately needs Stim.
 
 - [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
-  QEC predecoder through domain imports; it does not use the root-level alias.
+  QEC predecoder through domain imports. CPU evaluation uses bundled Sparse
+  Blossom by default. Choose `--backend minimum_weight_matching` to use the
+  built-in reference decoder.
 
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
@@ -175,9 +242,17 @@ These examples do not use that alias:
   circuit the declared device can actually run, so a provider sees the whole path
   end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
-- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+- [`realtime/device_call.py`](realtime/device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
   a channel between two programs rather than a program to run.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) forwards to
+  `realtime/device_call.py` for compatibility with the previous example path.
+  Run `python -m examples.realtime.device_call` for the canonical offline workflow.
+- [`realtime/feedback_loop.py`](realtime/feedback_loop.py) uses the existing
+  realtime handler and loopback channel to restore a classical binary state over
+  three rounds per shot. Run `python -m examples.realtime.feedback_loop`; both
+  shots print `corrected states=(0, 0, 0)`. It models five noisy observations of
+  one state, not a quantum circuit or a QEC decoder.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
@@ -211,7 +286,7 @@ These examples do not use that alias:
   cost, and different logical predictions need not indicate a decoding defect.
 - [`qec/surface_memory_sweep.py`](qec/surface_memory_sweep.py) reports eight
   fixed CPU Surface points: X/Z, distances 3/5 and two explicit noise profiles.
-  Install the existing Stim/PyMatching extras. Each point uses 35 shots in
+  Install the Stim extra for the bundled Sparse Blossom workflow. Each point uses 35 shots in
   batches 16, 16, 3 and a declared keyed seed; stdout contains configuration,
   eight point records and a completion record only on full success. The JSON
   lines are example output, not a persistence API. Wilson intervals are
@@ -220,15 +295,21 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
-- [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
-  fixed-shot experiment through its canonical QEC execution import. It uses one
-  original source and exact final partial batches with five default decoders;
-  install the Stim and PyMatching extras. Reports counts without a speed claim.
-  Add `--code surface --basis z` or `--code surface --basis x` for distance-three,
+- [`qec/check_matrix_matching.py`](qec/check_matrix_matching.py) imports a
+  weighted check matrix through canonical QEC modules rather than the root alias.
+  CPU and the PyMatching extra are required. It prints the column mapping,
+  independent edge costs and the unique selected pair edge.
+- [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
+  external Stim circuit through the canonical QEC fixed-shot report entry,
+  with the Stim extra and bundled Sparse Blossom. It prints `35 0 (0, 0)`
+  and `stim_circuit`.
+- [`qec/memory_experiment.py`](qec/memory_experiment.py) reports fixed-shot
+  counts using the Stim extra and bundled Sparse Blossom by default.
+  Select `--decoder minimum_weight_matching` for the reference matcher or use
+  `--decoder all` with both extras to compare the example's decoders. Use
+  `--code surface --basis z` or `--code surface --basis x` for distance-three,
   three-round memory using 35 shots in batches of 16, 16 and 3. X memory uses
-  the certified all-data X product. Each command reports five decoder counts
-  and checks the fixed-shot interval; zero observed failures do not establish
-  logical suppression, a threshold or decoder performance.
+  the all-data X product.
   Use `--batch-size 1`, `--batch-size 35` or `--batch-size 64` to request
   respectively 35 single-shot batches, one full batch or one capped batch.
   The default remains 16. Each setting advances one seeded stream; different
@@ -344,7 +425,11 @@ python -m examples.local.measure
 python -m examples.local.train
 python -m examples.local.dynamic_feedback
 python -m examples.local.dynamic_many_shots
+python -m examples.local.dynamic_final_outputs
 ```
+
+The [dynamic final outputs example](local/dynamic_final_outputs.py) requests
+samples and counts together after mid-circuit feedback.
 
 They cover local statevector simulation, exact and sampled measurements,
 PyTorch-native training, and experimental local dynamic feedback without
@@ -928,65 +1013,8 @@ are not a unitary-gate fidelity claim. Detached numeric plans replay exactly,
 but JSON does not preserve the training graph. All solvers, bindings, outputs
 and artifacts reuse the existing shared dynamics workflow.
 
-[Predicate phase synthesis](synthesis_phase_oracle.py):
-`python -m examples.synthesis_phase_oracle` uses the public synthesize entry with
-output_mode="phase", a two-bit x*x+y<5 predicate, named uniform inputs and a
-qubit ceiling. It executes the existing Program and prints named probabilities
-and actual costs, with no private imports, gates, wire indices or decoding.
-Each input pair has probability 1/16; phase/workspace correctness is verified
-separately by complete amplitude and interference tests. Logical CPU only;
-native Qmod phase and explicit basis/topology are refused.
-
-[Composite predicate synthesis](synthesis_boolean_predicate.py): run
-`python -m examples.synthesis_boolean_predicate` to compute
-(x<2 and y==1) or not(x==y) in value and phase modes through the public Program.
-Named probabilities and actual costs require no gates, physical wires or
-bitstring decoding. Uniform probabilities alone do not certify phase; complete
-complex-state and interference acceptance supplies that evidence. Boolean
-operands are one-bit values; source is fully validated without host execution.
-
-[Controlled predicate phase](synthesis_controlled_predicate.py): run
-`python -m examples.synthesis_controlled_predicate` to mark enable and (x<y)
-with the existing public synthesis/Program/run flow, then demonstrate a two-input
-mask under a two-qubit, zero-workspace ceiling. No gates, physical indices,
-private helpers or decoding are required. Complete amplitude and interference
-acceptance checks the control-zero branch and exact relative phase; uniform
-probabilities alone do not establish that effect.
-
-[Static loop synthesis](synthesis_static_loop.py): run
-`python -m examples.synthesis_static_loop` to compile a weighted sum and a
-loop-carried predicate through the existing value/phase Program flow. Declare
-quantum UInt widths and classical steps separately; result widths, gates,
-workspace cleanup and named reading are automatic. Only bounded classical
-range loops are admitted; there is no data-dependent quantum loop or native
-source grammar expansion. Full amplitudes, not uniform probabilities alone,
-verify the phase effect.
-
-[Coherent value selection](synthesis_conditional.py): run
-`python -m examples.synthesis_conditional` to compute an unsigned minimum from
-`x if x<y else y` and mark a selected one-bit predicate in phase mode. Both use
-the existing public synth/Program/run/named-reader workflow. The compiler handles
-branch widths, coherent choice and exact workspace cleanup; users specify the
-computation, quantum widths, preparation and constraints. Full amplitude tests,
-rather than uniform probabilities alone, certify phase.
-
-[Interval predicate synthesis](synthesis_interval.py): run
-`python -m examples.synthesis_interval` for `low <= x <= high and x != excluded`
-in the existing value/phase Program flow. All six unsigned relations and chains
-reuse the current comparator kernels and cleanup. The middle value captures
-once; unsupported source still fails after a false prefix. Quantum widths,
-classical constants, preparation and budgets are explicit; gates, workspace,
-physical maps and bit decoding are automatic.
-
-[Ordered phase borrows](synthesis_register_phase.py) is a **private Compiler
-contributor trial**. Run `python -m examples.synthesis_register_phase` to assemble
-owned IR, then use the existing Services bridge, checked Program/run and named
-reading. The source copies a reference, applies a predicate phase, mutates an
-input, computes a product, applies another phase and interferes the result.
-It demonstrates local scratch cleanup/reuse and quantum basis-constant borrowing.
-Its IR producer is not public Python/Qmod syntax; ordinary users keep the
-existing high-level predicate entry. Full complex-state tests verify the signs
-and external reference; probabilities alone cannot establish them.
+Further synthesis tutorials, including predicates, coherent control and workspace
+scheduling, are indexed in [the synthesis examples](synthesis/README.md).
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --round-trip`
 to partition and reassemble a fixed three-layer DEM on CPU.
@@ -996,3 +1024,19 @@ to display the detector and logical rows in the same fault-column order.
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --decode-rounds`
 to feed fixed detector events in round-local order and inspect the decoder records.
+
+[Native detector sampling and exact DEM](qec/native_detector_sampling.py): run
+`python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or Stim 1.16.0. The three-data-qubit code-capacity workflow
+samples 35 shots in 16/16/3 batches and reports actual logical failures.
+
+[Measurement-file conversion](qec/measurement_file_conversion.py): run
+`python -m examples.qec.measurement_file_conversion` with the embedded wheel or
+Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
+1. Expected output: `shots 64`, `detectors 10; observables 1`, `file_bytes 64 64`.
+The example performs bounded file conversion, not sampling or a research study.
+
+- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build, with bundled Sparse Blossom).
+- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats, stream them back and decode packed batches (embedded build, with bundled Sparse Blossom).
+
+- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build, with bundled Sparse Blossom).

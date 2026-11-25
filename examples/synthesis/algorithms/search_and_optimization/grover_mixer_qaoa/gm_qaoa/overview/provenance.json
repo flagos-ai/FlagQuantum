@@ -1,0 +1,88 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "07faeaa5165cffd158a91d9133d03dea268c94a6",
+  "original_sha256": "fa658594c1693d1dba7e4f276c3340ef96dec439b35c2a6fefaab0ed65388948",
+  "scope": "All 15 source stages, four qubits and three layers in both the ordinary and Grover-mixer circuits, two budgets of 30 objective queries with 1000 actual draws per query, two independently sampled 1000-draw final distributions, and side-by-side comparison.",
+  "native_semantic_adaptations": "Use native COBYLA with the source linear pi schedule and a hard cap of 30 actual objective queries for each run. All objective means use actual local draws with explicit advancing seeds. On budget stop retain the best evaluated parameters. The ordinary run uses the source squared one-hot penalty; the Grover mixer retains the Dicke preparation and literal controlled rotation and uses the unpenalized objective. No hosted execution or historical optimizer trajectory equivalence.",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.grover_mixer_qaoa.gm_qaoa.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_grover_mixer_qaoa_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "d8b5c8242faf8ed4f6d1c05db9e04dbb6b1a49928da8022b1cb572a56c68653e",
+      "native_code_cell": 1
+    },
+    {
+      "index": 6,
+      "sha256": "b4b56fbc93a658467566b81f6d7ae54c53394740258e21b8f6f9f090d4abd861",
+      "native_code_cell": 2
+    },
+    {
+      "index": 7,
+      "sha256": "95c79f82de3d513a0fc5570263c192857e1f2fa9723377987345f9f5a44a1ac3",
+      "native_code_cell": 3
+    },
+    {
+      "index": 8,
+      "sha256": "4a6cf320ac1f8d544979ea6f8d20716a9e3948aa4f5adedd0434ee2046aa8f2b",
+      "native_code_cell": 4
+    },
+    {
+      "index": 9,
+      "sha256": "b9d3b65ebecbecd35761ab990e84b49cf0330b794fa095330a6a57e1105018d9",
+      "native_code_cell": 5
+    },
+    {
+      "index": 10,
+      "sha256": "c3ff762a383b2f3925aa90782cc60f2e107d1f402faf8eb7de7910acc92ccfb7",
+      "native_code_cell": 6
+    },
+    {
+      "index": 11,
+      "sha256": "6da45315d280a3b86ad5a5cac353021a01ec635148222f27f042758b330acda5",
+      "native_code_cell": 7
+    },
+    {
+      "index": 13,
+      "sha256": "1d6e88ca5c88733626339af7691c243bb58106d916f7c1df65b6887ec6df9859",
+      "native_code_cell": 8
+    },
+    {
+      "index": 14,
+      "sha256": "0a4bf18120f1a3d9bf99924496e0ce692b2bb7e99d6ac3e3b3ac7844dcc12bdb",
+      "native_code_cell": 9
+    },
+    {
+      "index": 15,
+      "sha256": "8a5c7cbfa784b2dee3d6ca6cde5b8c91c1f6615f558543d68f2dfc285fb18d04",
+      "native_code_cell": 10
+    },
+    {
+      "index": 16,
+      "sha256": "21ade9aa7989c83360300ddeb3fe9670a7d889f7ac08900f0f1fc589e5001668",
+      "native_code_cell": 11
+    },
+    {
+      "index": 17,
+      "sha256": "10453ce3c1053ad2aee898ef240279a58401fcb347fce9590154eacbd416bab5",
+      "native_code_cell": 12
+    },
+    {
+      "index": 18,
+      "sha256": "3ea66030af5ba8932714c531195666a60289b2beb3c6d4e2cdbb7a09c3da5316",
+      "native_code_cell": 13
+    },
+    {
+      "index": 19,
+      "sha256": "5b480808a3554794a4a7c7bb311dca1676d54fdec2aa1270967afce6722d2048",
+      "native_code_cell": 14
+    },
+    {
+      "index": 20,
+      "sha256": "c3b9fbeef58ca04b91281fc117e3e6c4d70cab8ffdac1b560baaad4375833d37",
+      "native_code_cell": 15
+    }
+  ]
+}

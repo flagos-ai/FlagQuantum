@@ -4,8 +4,10 @@ from typing import Literal
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from tests.integration.test_construction_register_execution import _check as check_model
 from tests.register_program_cases import Registers, square_plus_one
 

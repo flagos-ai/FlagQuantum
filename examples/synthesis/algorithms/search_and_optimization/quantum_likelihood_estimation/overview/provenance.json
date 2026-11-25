@@ -1,0 +1,118 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "ab46e085b1f4a893df7bdd4fefe461c7b9df6245",
+  "original_sha256": "2882e407e0b76d64a97fce76a43e057b0ee39bcf89237bddcb6cde624754fb3e",
+  "scope": "All 21 source stages, four one-qubit Hamiltonians, standard particle selection, and eight entropy-annealing steps with 20 neighbors per update. Each real experiment draws one native outcome and runs a complete posterior update.",
+  "native_semantic_adaptations": "Specialize each experimental setting through native qfunc. Execute the proposal likelihoods using FlagQuantum batched Circuit gates, with explicit per-item angles. Verify both paths against independent complex amplitude formulas. Keep the source stopping limits and use a reproducible local seed for the physical outcome stream.",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.quantum_likelihood_estimation.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/search_and_optimization/quantum_likelihood_estimation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_quantum_likelihood_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "dfa6453d7ccba89db629914e3f17d1294d097e5c29f3c505e8c1ae542962677b"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "20d93c97fc05a22b314fafdd77d03de9ab8c0f193e86129a4cf09a1c23af2705"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "b5e223c08440c9025fe971fe895741fb504d25deb9fb6d8c369e74e6ac51081f"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "fd3cb67b3812cf38442578f720e4fa308fb749b958ba4d2636cbcb2c67f8c531"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "sha256": "95e80747e8a85385b71571f080fa7dcdb2671310a930bba4d77a00f94b32114f"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "be91e2f6e92dfba5ed613a2bcc507d1d37ec612f681ba72a94866a98963c8e67"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "6b39440d1e3794a9f2a92e8895d3d60fcd37d3790a0a41f24460fd42b126aec9"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "c546119fc4f3b17a5ad10d9a7764914199f1ca072a22f263ada978ce35c447b2"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "cb7e71e283b20b9bdbd439ee10d47a8075b9e58aaa7970c71aa492718d465a98"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 10,
+      "sha256": "d12223e56f3088bfe7596012d9f622518d468d8a96faf13d8ace57df93b26dd0"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 11,
+      "sha256": "dfcb67558155bc29f5ea0ccb9c9689cf5332f7c142875e7bb86f222a0e73eaea"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 12,
+      "sha256": "8c79d33aa9eb0fb8573be28d0d8a23b2f788178c61c9d90357331ed856775f47"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 13,
+      "sha256": "68d7e24e057fb662634c810d6f8d6e42675648e00a300f31a32446bc1b3fb113"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 14,
+      "sha256": "a6c65f351bff3661fd6e7d7ac0132a66eb738aa85696a1764589659405d1c6fd"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 15,
+      "sha256": "0d68fc5b105cc9f5f9e2f18ab93f2eb68fe0dd9140b99260104fa4946526fead"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 16,
+      "sha256": "e1ec77e2899e0ea4e91edc2514686fe53e0479c41d7502f5232dd7660ed4e987"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 17,
+      "sha256": "1f841ada9e67cb2e070a25ac7aac1e1abb5f319197c09efbccbc21a41df8eb9c"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 18,
+      "sha256": "458b7d6bad071a3feea9fef36dedf5fd7ad2a6378ef592a6753729d23feb056d"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 19,
+      "sha256": "9767cbe5e2f9303fa624b1ac1660c486b10104afa325cf188946470f096e3933"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 20,
+      "sha256": "2e99fd7e1cfb06e481e676d5fa5fdb2ac7d144a38fb3d29ee95305475babdf55"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 21,
+      "sha256": "9b5c148cf2f3c1c5f6fb795d3d0642c825563324b9a23fc38b7b74833df3fa65"
+    }
+  ]
+}

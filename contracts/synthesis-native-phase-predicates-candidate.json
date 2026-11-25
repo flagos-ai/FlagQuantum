@@ -1,0 +1,17 @@
+{
+  "schema": "flagquantum.synthesis_native_phase_predicate_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "operation": "control(predicate, lambda: phase(value, coefficient))",
+  "boolean_operators": ["&", "|", "^", "~"],
+  "integer_condition_operators": ["+", "-", "*", "literal powers 0..8", "&", "|", "^", "% positive power-of-two literal"],
+  "maximum_predicate_bits": 8,
+  "subtraction_semantics": "mathematical_integer_without_unsigned_wrap",
+  "authority": "flagquantum.compiler._phase_polynomial.expand_phase",
+  "phase_value_grammar_changed": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-PHASE-PREDICATES-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

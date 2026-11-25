@@ -4,6 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.simulation.native_cpu.rotation as native_rotation
 import flagquantum.simulation.statevector.batching as statevector_batching
 from flagquantum.core.ir import Instruction
 from flagquantum.errors import ValidationError
@@ -19,6 +20,24 @@ from flagquantum.simulation.statevector.program import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(params=(False, True), ids=("portable", "native"))
+def native_layer_available(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> bool:
+    available: bool = request.param
+    monkeypatch.setenv("FQ_CPU_NATIVE_PRODUCT_STATE_INITIALIZATION", "1")
+    monkeypatch.setenv("FQ_CPU_NATIVE_STATIC_PRODUCT_STATE_INITIALIZATION", "1")
+    if available:
+        if not native_rotation.native_cpu_one_qubit_layer_available():
+            pytest.skip(
+                "The optional native CPU one-qubit layer operator is unavailable."
+            )
+    else:
+        monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "0")
+        monkeypatch.setenv("FQ_CPU_NATIVE_CLIFFORD_MATCHING", "0")
+    return available
 
 
 def _circuit(theta: torch.Tensor) -> fq.Circuit:
@@ -260,7 +279,7 @@ def test_chunked_bounded_initial_state_has_a_complete_rollback(
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_chunked_native_layer_initializes_final_slices_directly(
-    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype, native_layer_available: bool
 ) -> None:
     def circuit() -> fq.Circuit:
         result = fq.Circuit(4, bsz=5, dtype=dtype)
@@ -289,17 +308,19 @@ def test_chunked_native_layer_initializes_final_slices_directly(
     tolerance = 1e-6 if dtype == torch.complex64 else 1e-14
     torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
     torch.testing.assert_close(fallback, expected, rtol=tolerance, atol=tolerance)
-    assert selected._initial_state_batch_window_workspace is None
-    assert selected._last_statevector_runtime["statevector_batch_assembly"] == (
-        "direct_preallocated"
-    )
-    assert (
-        selected._last_statevector_runtime["native_cpu_product_state_initialization"]
-        == 1
-    )
+    if native_layer_available:
+        assert selected._initial_state_batch_window_workspace is None
+    else:
+        assert selected._initial_state_batch_window_workspace is not None
+        assert selected._initial_state_batch_window_workspace.shape == (2, 2**4)
+    assembly = "direct_preallocated" if native_layer_available else "preallocated_copy"
+    assert selected._last_statevector_runtime["statevector_batch_assembly"] == assembly
+    assert selected._last_statevector_runtime[
+        "native_cpu_product_state_initialization"
+    ] == int(native_layer_available)
     assert (
         initializer_rollback._last_statevector_runtime["statevector_batch_assembly"]
-        == "direct_preallocated"
+        == assembly
     )
     assert (
         initializer_rollback._last_statevector_runtime[
@@ -314,7 +335,7 @@ def test_chunked_native_layer_initializes_final_slices_directly(
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
 def test_chunked_static_clifford_layer_initializes_final_slices_directly(
-    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype, native_layer_available: bool
 ) -> None:
     angles = torch.linspace(-0.3, 0.4, 5, dtype=torch.float64)
 
@@ -342,14 +363,17 @@ def test_chunked_static_clifford_layer_initializes_final_slices_directly(
 
     tolerance = 1e-6 if dtype == torch.complex64 else 1e-14
     torch.testing.assert_close(actual, expected, rtol=tolerance, atol=tolerance)
-    assert selected._initial_state_batch_window_workspace is None
+    if native_layer_available:
+        assert selected._initial_state_batch_window_workspace is None
+    else:
+        assert selected._initial_state_batch_window_workspace is not None
+        assert selected._initial_state_batch_window_workspace.shape == (2, 2**6)
     assert selected._last_statevector_runtime["statevector_batch_assembly"] == (
-        "direct_preallocated"
+        "direct_preallocated" if native_layer_available else "preallocated_copy"
     )
-    assert (
-        selected._last_statevector_runtime["native_cpu_product_state_initialization"]
-        == 1
-    )
+    assert selected._last_statevector_runtime[
+        "native_cpu_product_state_initialization"
+    ] == int(native_layer_available)
     assert rollback._last_statevector_runtime["statevector_batch_assembly"] == (
         "preallocated_copy"
     )

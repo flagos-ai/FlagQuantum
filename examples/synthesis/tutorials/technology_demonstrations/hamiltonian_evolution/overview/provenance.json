@@ -1,0 +1,109 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "912070f71d1c06a960dae4fa7f12dcae824cbaeaaeb2508ca3f3c284b0494ea7",
+  "git_blob_sha1": "0380ea4ad86e20d4b4d55508bec852803d69c352",
+  "scope": "All 16 source stages; fresh 551-term water Hamiltonian; 12-bit first-, second- and fourth-order products, both 13-bit coherent controls, and the original 1,000/2,000 qDRIFT draws.",
+  "native_semantic_adaptations": "Reuse fresh native integrals and verify the benchmark's reversed Pauli label order. Compose exact checked short steps under public Circuit operations. Control each diagonal Pauli phase and check the absolute branch relation. Convert to CX/U with a full-state check up to one global phase. The historical Qiskit counts are literal source comparator data, not reruns.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.hamiltonian_evolution.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/hamiltonian_evolution/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hamiltonian_evolution_benchmark_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Regenerate the original water Hamiltonian from its STO-3G model.",
+      "sha256": "68314fe8afcb0afe58e8bfe0fbd0dbfe895a9723032c92b2bbf2aec21aa55145"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Keep orders 1, 2, and 4 with 6, 4 and 1 repeated steps, and both qDRIFT sizes.",
+      "sha256": "e538ec85703a68f0c993242b4e90138f06e571c951a1f825d46afb5d11ddf0c7"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Prepare the seven-row resource report.",
+      "sha256": "fcd238d15ab658cec3f73001b4c136cb88ea1e1be3c30e1497b48d2b7d436587"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "stage": "Use the original named CX/U basis for all current metrics.",
+      "sha256": "e03027380c5a3863d3501bb6a46af721ca3dcd12fd59df50e9a7b2224c83f4bc"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "stage": "Execute all three product formulas and check independent complete states.",
+      "sha256": "0e1413f43cadd42bfa2e5dfa47d751c724eff6bcfa24dc2e6530f983cffd817d"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Inspect both controlled products, including the coherent superposition of branches.",
+      "sha256": "8ad6c412d92954d2b324ef249f57832252f128d2307502d0eeea219899eb80a9"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 7,
+      "stage": "Synthesize, sample schedules and verify qDRIFT with 1,000 and 2,000 terms.",
+      "sha256": "d87569a5c26ef8ce62fcbd2023fe3514cf0ba9fd89408c18615cf4d7555aa903"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "stage": "Load the seven historical Qiskit resource rows recorded by the upstream Notebook.",
+      "sha256": "c660d2c62b90b41ad7545140b3633b6f1dbe78e555275b68c339f56dc0a358c0"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 9,
+      "stage": "The source's Qiskit setup was provided as a commented reproduction note.",
+      "sha256": "5088a74db7bfbdfabc9ece7f07bf5b081a873765b60d4ac99ba12a19cae75964"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 10,
+      "stage": "Use the same fresh Hamiltonian for product and sampled evolution.",
+      "sha256": "d1122aad5a6dce49c8f4448dcb504dacfacec362fa12940df782fd10b84e5473"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 11,
+      "stage": "Check the six-step first-order product against its independent factor sequence.",
+      "sha256": "1881d005bfcce6b256e7b30434e1720b23d16faddd39015ffabebef313b0e2dc"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 12,
+      "stage": "Check the second-order and five-part fourth-order symmetric products.",
+      "sha256": "72e011f259aea6bc96495b5087e75e5675d6fc30b11c160ab508119d9239ea02"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 13,
+      "stage": "Check the two controlled native products after common-basis conversion.",
+      "sha256": "23e4133da3e139082e1bcc738967a8e7fc6394d2b8dc452c302df0b8e844e0fd"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "stage": "Check both sampled sequences against independent inverse-CDF reference circuits.",
+      "sha256": "568234485ff22158a19171c83fe8a59739571a14c128974dde3c2b26d29f8920"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 15,
+      "stage": "Report actual local counts and the source-reported comparator separately.",
+      "sha256": "faad4b936f025f853a8491547e0692b88ac6357b3a4c2609d05344213183f263"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 16,
+      "stage": "Plot the CX/U counts and depths for all seven cases.",
+      "sha256": "18bcedf90ce5f7b5bff0f678c7e0464fb4220d9181c79c077ba90449118e1f62"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/adapt_qaoa/adapt_qaoa.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e1c3a471e0b31b501c3f110031d43738446d2befff8eae49948875f0b24accd0",
+  "native_entrypoint": "examples.synthesis.applications.optimization.adapt_qaoa.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_polynomial_phase.py",
+  "scope": "Complete retained one-layer eight-bit quantum ansatz, including every cost coefficient and the selected X mixer. Adaptive operator selection, training and complete Notebook workflow remain pending.",
+  "native_semantic_adaptations": "Pass gamma/beta as scalar classical helper parameters instead of source one-element slice arrays. Preserve all quantum operations, coefficients, selected mixer, absolute phase and eight-bit order. No source importer in native examples."
+}

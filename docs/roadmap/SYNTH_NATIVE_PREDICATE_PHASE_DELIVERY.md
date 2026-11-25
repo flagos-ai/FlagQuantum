@@ -25,7 +25,7 @@ result = fq.run(program)
 print(dict(program.probabilities(result, registers=("x", "y"))))
 ```
 
-Run `python -m examples.synthesis_native_predicate_phase`. Each pair has
+Run `python -m examples.synthesis.tutorials.control.native_predicate_phase.main`. Each pair has
 probability 1/16; full amplitudes are (-1)**int(x<y)/4. Users need no temporary
 flag declaration, assignment or explicit scope. Existing Python predicates remain
 available through the same Program/run/reader workflow.

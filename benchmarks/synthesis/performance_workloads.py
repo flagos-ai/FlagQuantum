@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypedDict
 
 if TYPE_CHECKING:
-    from flagquantum.compiler._construction.frontend_python import Definition
+    from flagquantum.compiler._construction.frontend.python import Definition
     from flagquantum.services.synthesis import Program
 
 from .expressions import Case, corpus
@@ -171,7 +171,7 @@ class Prepared:
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module
             spec.loader.exec_module(module)
-            from flagquantum.compiler._construction.frontend_python import (
+            from flagquantum.compiler._construction.frontend.python import (
                 _QuantumFunction,
             )
 
@@ -211,7 +211,7 @@ class Prepared:
                 functions=self.helpers,
                 **limits,
             )
-        from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+        from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 
         if not isinstance(function, _QuantumFunction):
             raise TypeError("native entry requires typed qfunc")

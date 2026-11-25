@@ -41,14 +41,12 @@ def toric_code(linear_size: int) -> CssCode:
     over the matrices derived here: the least weight of a logical operator of each
     family is found -- the two rings and the two cuts, each of weight
     ``linear_size`` -- and the smaller of the two becomes the record's ``distance``.
-    The search is given the linear size as its bound. That bound is the whole cost
-    of this function, because the search tries every qubit subset up to the bound:
-    measured, the record builds in 0.00 s at size two, three and four,
-    0.34 s at five and 23.1 s at six, on 2 * size ** 2 data qubits. It is
-    therefore a way to write down the small tori an experiment is built from and
-    not a way to write down a large one, and a caller who wants a larger lattice
-    wants a decoder that reads its distance from the lattice instead -- which is
-    the work of its own row rather than this route's.
+    The search is given the linear size as its bound. Each qubit joins two
+    checks of the opposite family, so commuting supports are unions of graph
+    cycles. The matrix route derives two logical-signature bits and searches the
+    corresponding four-sheet graph for a shortest nontrivial cycle. This proves
+    the distance without enumerating every qubit subset or assuming a geometric
+    distance formula. Other matrix shapes retain their existing exact search.
 
     Args:
         linear_size: The number of vertices along one side of the torus, an

@@ -1,0 +1,187 @@
+"""Retain every diagonal cost coefficient and QAOA layer in native Python."""
+
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import (
+    RX,
+    Output,
+    QArray,
+    QBit,
+    allocate,
+    hadamard_transform,
+    qfunc,
+    suzuki_trotter,
+)
+
+WIDTH = 16
+PARAMETER_COUNT = 8
+HAMILTONIAN = (
+    55.88370523985192 * fq.I()
+    + -9.0 * (fq.Z(2))
+    + -18.0 * (fq.Z(1))
+    + -36.0 * (fq.Z(0))
+    + -8.832631926125373 * (fq.Z(9))
+    + -10.306904879981644 * (fq.Z(14))
+    + -8.77025274122942 * (fq.Z(7))
+    + -8.783983124933648 * (fq.Z(3))
+    + -8.63268163633288 * (fq.Z(5))
+    + -8.786636892236 * (fq.Z(8))
+    + -8.912474132062354 * (fq.Z(4))
+    + -8.626408787156214 * (fq.Z(10))
+    + -8.81546517453033 * (fq.Z(15))
+    + -8.824562227844806 * (fq.Z(6))
+    + -8.995327376260379 * (fq.Z(13))
+    + -10.290459732671009 * (fq.Z(12))
+    + -10.305916608487868 * (fq.Z(11))
+    + 1.5 * (fq.Z(2) @ fq.Z(15))
+    + 1.5 * (fq.Z(2) @ fq.Z(14))
+    + 1.5 * (fq.Z(2) @ fq.Z(5))
+    + 1.5 * (fq.Z(2) @ fq.Z(4))
+    + 1.5 * (fq.Z(2) @ fq.Z(3))
+    + 1.5 * (fq.Z(2) @ fq.Z(13))
+    + 1.5 * (fq.Z(2) @ fq.Z(12))
+    + 1.5 * (fq.Z(2) @ fq.Z(11))
+    + 1.5 * (fq.Z(2) @ fq.Z(10))
+    + 1.5 * (fq.Z(2) @ fq.Z(9))
+    + 1.5 * (fq.Z(2) @ fq.Z(8))
+    + 1.5 * (fq.Z(2) @ fq.Z(7))
+    + 1.5 * (fq.Z(2) @ fq.Z(6))
+    + 1.5 * (fq.Z(14) @ fq.Z(15))
+    + 1.5 * (fq.Z(5) @ fq.Z(15))
+    + 1.5 * (fq.Z(4) @ fq.Z(15))
+    + 1.5 * (fq.Z(3) @ fq.Z(15))
+    + 1.5 * (fq.Z(13) @ fq.Z(15))
+    + 1.5 * (fq.Z(12) @ fq.Z(15))
+    + 1.5 * (fq.Z(11) @ fq.Z(15))
+    + 1.5 * (fq.Z(9) @ fq.Z(15))
+    + 1.5 * (fq.Z(8) @ fq.Z(15))
+    + 1.5 * (fq.Z(7) @ fq.Z(15))
+    + 1.5 * (fq.Z(6) @ fq.Z(15))
+    + 1.5 * (fq.Z(5) @ fq.Z(14))
+    + 1.5 * (fq.Z(4) @ fq.Z(14))
+    + 1.5 * (fq.Z(3) @ fq.Z(14))
+    + 1.5 * (fq.Z(13) @ fq.Z(14))
+    + 1.5 * (fq.Z(10) @ fq.Z(14))
+    + 1.5 * (fq.Z(9) @ fq.Z(14))
+    + 1.5 * (fq.Z(8) @ fq.Z(14))
+    + 1.5 * (fq.Z(7) @ fq.Z(14))
+    + 1.5 * (fq.Z(6) @ fq.Z(14))
+    + 1.5 * (fq.Z(4) @ fq.Z(5))
+    + 1.5 * (fq.Z(3) @ fq.Z(5))
+    + 1.5 * (fq.Z(5) @ fq.Z(13))
+    + 1.5 * (fq.Z(5) @ fq.Z(12))
+    + 1.5 * (fq.Z(5) @ fq.Z(11))
+    + 1.5 * (fq.Z(5) @ fq.Z(10))
+    + 1.5 * (fq.Z(5) @ fq.Z(9))
+    + 1.5 * (fq.Z(5) @ fq.Z(8))
+    + 1.5 * (fq.Z(5) @ fq.Z(7))
+    + 1.5 * (fq.Z(5) @ fq.Z(6))
+    + 1.5 * (fq.Z(3) @ fq.Z(4))
+    + 1.5 * (fq.Z(4) @ fq.Z(13))
+    + 1.5 * (fq.Z(4) @ fq.Z(12))
+    + 1.5 * (fq.Z(4) @ fq.Z(11))
+    + 1.5 * (fq.Z(4) @ fq.Z(10))
+    + 1.5 * (fq.Z(4) @ fq.Z(9))
+    + 1.5 * (fq.Z(4) @ fq.Z(8))
+    + 1.5 * (fq.Z(4) @ fq.Z(7))
+    + 1.5 * (fq.Z(4) @ fq.Z(6))
+    + 1.5 * (fq.Z(3) @ fq.Z(13))
+    + 1.5 * (fq.Z(3) @ fq.Z(12))
+    + 1.5 * (fq.Z(3) @ fq.Z(11))
+    + 1.5 * (fq.Z(3) @ fq.Z(10))
+    + 1.5 * (fq.Z(3) @ fq.Z(9))
+    + 1.5 * (fq.Z(3) @ fq.Z(8))
+    + 1.5 * (fq.Z(3) @ fq.Z(7))
+    + 1.5 * (fq.Z(3) @ fq.Z(6))
+    + 1.5 * (fq.Z(12) @ fq.Z(13))
+    + 1.5 * (fq.Z(11) @ fq.Z(13))
+    + 1.5 * (fq.Z(10) @ fq.Z(13))
+    + 1.5 * (fq.Z(9) @ fq.Z(13))
+    + 1.5 * (fq.Z(8) @ fq.Z(13))
+    + 1.5 * (fq.Z(7) @ fq.Z(13))
+    + 1.5 * (fq.Z(6) @ fq.Z(13))
+    + 1.5 * (fq.Z(10) @ fq.Z(12))
+    + 1.5 * (fq.Z(9) @ fq.Z(12))
+    + 1.5 * (fq.Z(8) @ fq.Z(12))
+    + 1.5 * (fq.Z(7) @ fq.Z(12))
+    + 1.5 * (fq.Z(6) @ fq.Z(12))
+    + 1.5 * (fq.Z(10) @ fq.Z(11))
+    + 1.5 * (fq.Z(9) @ fq.Z(11))
+    + 1.5 * (fq.Z(8) @ fq.Z(11))
+    + 1.5 * (fq.Z(7) @ fq.Z(11))
+    + 1.5 * (fq.Z(6) @ fq.Z(11))
+    + 1.5 * (fq.Z(9) @ fq.Z(10))
+    + 1.5 * (fq.Z(8) @ fq.Z(10))
+    + 1.5 * (fq.Z(7) @ fq.Z(10))
+    + 1.5 * (fq.Z(6) @ fq.Z(10))
+    + 1.5 * (fq.Z(8) @ fq.Z(9))
+    + 1.5 * (fq.Z(7) @ fq.Z(9))
+    + 1.5 * (fq.Z(7) @ fq.Z(8))
+    + 1.5 * (fq.Z(6) @ fq.Z(8))
+    + 1.5 * (fq.Z(6) @ fq.Z(7))
+    + 3.0 * (fq.Z(1) @ fq.Z(2))
+    + 3.0 * (fq.Z(1) @ fq.Z(15))
+    + 3.0 * (fq.Z(1) @ fq.Z(14))
+    + 3.0 * (fq.Z(1) @ fq.Z(5))
+    + 3.0 * (fq.Z(1) @ fq.Z(4))
+    + 3.0 * (fq.Z(1) @ fq.Z(3))
+    + 3.0 * (fq.Z(1) @ fq.Z(13))
+    + 3.0 * (fq.Z(1) @ fq.Z(12))
+    + 3.0 * (fq.Z(1) @ fq.Z(11))
+    + 3.0 * (fq.Z(1) @ fq.Z(10))
+    + 3.0 * (fq.Z(1) @ fq.Z(9))
+    + 3.0 * (fq.Z(1) @ fq.Z(8))
+    + 3.0 * (fq.Z(1) @ fq.Z(7))
+    + 3.0 * (fq.Z(1) @ fq.Z(6))
+    + 3.0 * (fq.Z(10) @ fq.Z(15))
+    + 3.0 * (fq.Z(12) @ fq.Z(14))
+    + 3.0 * (fq.Z(11) @ fq.Z(14))
+    + 3.0 * (fq.Z(11) @ fq.Z(12))
+    + 3.0 * (fq.Z(6) @ fq.Z(9))
+    + 6.0 * (fq.Z(0) @ fq.Z(2))
+    + 6.0 * (fq.Z(0) @ fq.Z(15))
+    + 6.0 * (fq.Z(0) @ fq.Z(14))
+    + 6.0 * (fq.Z(0) @ fq.Z(5))
+    + 6.0 * (fq.Z(0) @ fq.Z(4))
+    + 6.0 * (fq.Z(0) @ fq.Z(3))
+    + 6.0 * (fq.Z(0) @ fq.Z(13))
+    + 6.0 * (fq.Z(0) @ fq.Z(12))
+    + 6.0 * (fq.Z(0) @ fq.Z(11))
+    + 6.0 * (fq.Z(0) @ fq.Z(10))
+    + 6.0 * (fq.Z(0) @ fq.Z(9))
+    + 6.0 * (fq.Z(0) @ fq.Z(8))
+    + 6.0 * (fq.Z(0) @ fq.Z(7))
+    + 6.0 * (fq.Z(0) @ fq.Z(6))
+    + 12.0 * (fq.Z(0) @ fq.Z(1))
+)
+DEFAULT_PARAMS = (0.013, 0.026, 0.039, 0.052, 0.065, 0.078, 0.091, 0.104)
+
+
+@qfunc
+def cost_layer(gamma: float, target: QArray[QBit]) -> None:
+    suzuki_trotter(HAMILTONIAN, gamma, 1, 1, target)
+
+
+@qfunc
+def main(params_list: list[float], target: Output[QArray[QBit]]) -> None:
+    allocate(16, target)
+    hadamard_transform(target)
+    for layer in range(4):
+        cost_layer(params_list[2 * layer], target)
+        for bit in range(16):
+            RX(params_list[2 * layer + 1], target[bit])
+
+
+def build_program(params: tuple[float, ...] = DEFAULT_PARAMS) -> synth.Program:
+    if len(params) != PARAMETER_COUNT:
+        raise ValueError("This retained QAOA program requires 8 parameters")
+    return synth.synthesize(
+        main, classical_inputs={"params_list": params}, max_workspace=0
+    )
+
+
+if __name__ == "__main__":
+    program = build_program()
+    result = fq.run(program)
+    print(program.report["resources"])
+    print("State norm:", result.statevector().norm().item())

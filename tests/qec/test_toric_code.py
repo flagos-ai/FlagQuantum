@@ -85,11 +85,11 @@ not prove that the record agrees with another framework's torus vertex by vertex
 the closed forms in points 1 and 6 are what stand in for that, and they pin the
 size, the check count and the distance rather than the wire numbering.
 
-The distance search is the whole cost of building the record, so five is the
-largest linear size this file builds: measured, the record takes 0.00 s at size
-two, three and four, 0.34 s at five and 23.1 s at six. Sizes two through five
-carry every claim here, and size six is excluded because it is 23 s of search for
-one more point on the same closed forms.
+These small records remain the independent algebra scenarios. The former subset
+search measured 0.34 s at size five and 23.1 s at six; those historical costs no
+longer set the supported list. ``test_toric_distance_search.py`` compares the exact
+cycle route to exhaustive search and covers the full odd-distance list through
+fifteen without changing the record's validation rules.
 """
 
 from __future__ import annotations
@@ -103,6 +103,7 @@ from flagquantum.qec import (
     CssCode,
     Pauli,
     RotatedSurfaceCode,
+    StabilizerCode,
     build_memory_circuit,
     css_code_matrices,
     derive_anticommuting_logical_product,
@@ -112,8 +113,7 @@ from flagquantum.qec.gf2 import rank
 
 pytestmark = pytest.mark.unit
 
-# The linear sizes this file builds. Five is the largest the record's distance
-# search reaches before the bound starts to dominate the build cost.
+# Small records for the detailed algebra scenarios below.
 _SIZES = (2, 3, 4, 5)
 
 
@@ -171,7 +171,9 @@ def test_the_torus_carries_the_closed_form_size_at_every_linear_size(
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
     matrices = css_code_matrices(code)
+    assert matrices.hx is not None
     z_rank = rank(_rows_as_bits(matrices.hz.tolist()))
     x_rank = rank(_rows_as_bits(matrices.hx.tolist()))
     square = linear_size * linear_size
@@ -203,6 +205,7 @@ def test_no_check_is_cut_down_because_the_lattice_has_no_boundary(
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
     z_weights = Counter(len(support) for support in _z_supports(code))
     x_weights = Counter(len(support) for support in _x_supports(code))
 
@@ -211,7 +214,7 @@ def test_no_check_is_cut_down_because_the_lattice_has_no_boundary(
     assert z_weights[4] == x_weights[4] == linear_size * linear_size
 
     for supports in (_z_supports(code), _x_supports(code)):
-        incidence = Counter()
+        incidence: Counter[int] = Counter()
         for support in supports:
             for wire in support:
                 incidence[wire] += 1
@@ -248,6 +251,7 @@ def test_the_two_check_families_are_different_matrices_that_commute(
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
 
     assert _z_supports(code) != _x_supports(code)
     for z_support in _z_supports(code):
@@ -274,7 +278,9 @@ def test_the_matrices_leave_two_logical_qubits(linear_size: int) -> None:
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
     matrices = css_code_matrices(code)
+    assert matrices.hx is not None
 
     assert matrices.num_z_logicals == 2
     assert matrices.num_x_logicals == 2
@@ -299,7 +305,9 @@ def test_the_matrices_leave_two_logical_qubits(linear_size: int) -> None:
     from flagquantum.qec import SteaneCode, triangular_colour_code
 
     assert css_code_matrices(SteaneCode()).num_z_logicals == 1
-    assert css_code_matrices(triangular_colour_code(3)).num_z_logicals == 1
+    colour = triangular_colour_code(3)
+    assert isinstance(colour, StabilizerCode)
+    assert css_code_matrices(colour).num_z_logicals == 1
 
 
 @pytest.mark.parametrize("linear_size", _SIZES)
@@ -321,6 +329,7 @@ def test_the_declared_logical_operators_wrap_the_torus(linear_size: int) -> None
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
     z_observables = [
         observable for observable in code.logical_observables if observable.z_qubits
     ]
@@ -354,6 +363,7 @@ def test_the_record_proves_the_distance_it_is_asked_for(linear_size: int) -> Non
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
 
     assert code.distance == linear_size
     assert code.x_distance == linear_size
@@ -375,7 +385,11 @@ def test_a_heavier_logical_representative_does_not_raise_the_distance() -> None:
     """
 
     declared = _torus(5)
+    assert isinstance(declared, StabilizerCode)
     matrices = css_code_matrices(declared)
+    assert matrices.hx is not None
+    assert matrices.lx is not None
+    assert matrices.lz is not None
     face = _z_supports(declared)[0]
     ring = tuple(
         observable.z_qubits
@@ -420,6 +434,7 @@ def test_the_memory_circuit_reads_out_both_logical_qubits(linear_size: int) -> N
     """
 
     code = _torus(linear_size)
+    assert isinstance(code, StabilizerCode)
     memory = build_memory_circuit(code, rounds=1)
     observables = memory.observables.observables
 

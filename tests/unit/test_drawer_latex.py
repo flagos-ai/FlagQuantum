@@ -3,19 +3,57 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
+from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.drawer import LatexFigure, draw, draw_hybrid, draw_latex
-from flagquantum.drawer import latex_figure as rendering
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize(
+    ("gate", "statement"),
+    [
+        ("ch", r"box {$H$} q[0] | q[2];"),
+        ("csx", r"box {$\sqrt{X}$} q[0] | q[2];"),
+        ("csxdg", r"box {$\sqrt{X}^{\dagger}$} q[0] | q[2];"),
+        ("iswap", r"box {$\mathrm{iSWAP}$} (q[2], q[0]);"),
+        ("iswapdg", r"box {$\mathrm{iSWAP}^{\dagger}$} (q[2], q[0]);"),
+        ("dcx", r"box {$\mathrm{DCX}$} (q[2], q[0]);"),
+        ("ecr", r"box {$\mathrm{ECR}$} (q[2], q[0]);"),
+    ],
+)
+def test_registered_two_qubit_gates_preserve_operand_roles(
+    gate: str, statement: str
+) -> None:
+    ir = CircuitIR(3, (Instruction(gate, (2, 0)),))
+    assert statement in draw_latex(ir).source
+    assert statement in draw_latex(ir.to_dict()).source
+
+
+def test_registered_unitary_gallery_exports_without_changing_ir() -> None:
+    instructions = tuple(
+        Instruction(
+            schema.opcode,
+            tuple(range(schema.arity)),
+            dict.fromkeys(schema.parameters, 0.25),
+        )
+        for schema in OPERATOR_SCHEMAS.values()
+        if schema.unitary
+    )
+    ir = CircuitIR(3, instructions)
+    original = ir.to_dict()
+    figure = draw_latex(ir)
+    assert figure.source == draw_latex(original).source
+    assert ir.to_dict() == original
 
 
 def test_lppl_runtime_and_license_are_distributed_verbatim(tmp_path: Path) -> None:
@@ -146,15 +184,21 @@ def test_hybrid_source_is_explicit_and_copies_labels() -> None:
     assert "cnot q[1] | q[0];" in figure.source
     assert "predictions" in figure.source and "head update" in figure.source
     assert "Loss + optimizer" not in draw_hybrid(circuit).source
-    for count in (True, 0, -1, 1.5):
+    invalid_options: tuple[dict[str, Any], ...] = (
+        {"head_outputs": True},
+        {"head_outputs": 0},
+        {"head_outputs": -1},
+        {"head_outputs": 1.5},
+    )
+    for options in invalid_options:
         with pytest.raises((TypeError, ValueError)):
-            draw_hybrid(circuit, head_outputs=count)
+            draw_hybrid(circuit, **options)
 
 
 def test_missing_tools_and_plain_text_repr_do_not_compile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: None)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
     figure = draw_latex(fq.Circuit(1).h(0))
     assert figure._repr_mimebundle_(include=["text/plain"]) == {
         "text/plain": repr(figure)
@@ -172,7 +216,7 @@ def test_render_cache_and_mime_selection(
 ) -> None:
     calls: list[list[str]] = []
     directories: list[Path] = []
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: "/tools/" + name)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tools/" + name)
 
     def run(
         command: list[str], *, cwd: Path, **kwargs: Any
@@ -190,7 +234,7 @@ def test_render_cache_and_mime_selection(
             (cwd / "figure.png").write_bytes(b"\x89PNG\r\n\x1a\n")
         return subprocess.CompletedProcess(command, 0, "")
 
-    monkeypatch.setattr(rendering.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     figure = draw_latex(fq.Circuit(1).h(0))
     assert "image/svg+xml" in figure._repr_mimebundle_()
     assert figure.render("svg") == figure.render("svg")
@@ -205,7 +249,7 @@ def test_render_failures_keep_diagnostics_and_cleanup(
     monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
     directories: list[Path] = []
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: "/tools/" + name)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tools/" + name)
 
     def run(
         command: list[str], *, cwd: Path, **kwargs: Any
@@ -220,7 +264,7 @@ def test_render_failures_keep_diagnostics_and_cleanup(
         (cwd / "figure.pdf").write_bytes(b"%PDF-1.7\n")
         return subprocess.CompletedProcess(command, 0, "")
 
-    monkeypatch.setattr(rendering.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     figure = draw_latex(fq.Circuit(1).h(0))
     with pytest.raises(
         RuntimeError, match="timed out" if failure == "timeout" else "diagnostic"
@@ -241,8 +285,9 @@ def test_display_option_invokes_ipython_without_changing_result(
     assert seen == [figure]
     hybrid = draw_hybrid(fq.Circuit(1), display=True)
     assert seen == [figure, hybrid]
+    invalid_options: dict[str, Any] = {"training": 1}
     with pytest.raises(TypeError, match="training must be"):
-        draw_hybrid(fq.Circuit(1), training=1)
+        draw_hybrid(fq.Circuit(1), **invalid_options)
     assert isinstance(draw(fq.Circuit(1).h(0)), str)
 
 
@@ -268,7 +313,7 @@ def test_invalid_render_budget_is_rejected_without_compilation(timeout: float) -
 def test_tex_live_disables_shell_escape_and_checks_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: "/tools/" + name)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tools/" + name)
 
     def run(
         command: list[str], *, cwd: Path, **kwargs: Any
@@ -278,7 +323,7 @@ def test_tex_live_disables_shell_escape_and_checks_output(
         (cwd / "figure.pdf").write_bytes(b"%PDF-1.7\n")
         return subprocess.CompletedProcess(command, 0, "")
 
-    monkeypatch.setattr(rendering.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     figure = draw_latex(fq.Circuit(1).h(0), engine="pdflatex")
     assert figure.render().startswith(b"%PDF-")
     with pytest.raises(ValueError, match="engine must be"):
@@ -289,7 +334,7 @@ def test_tex_live_disables_shell_escape_and_checks_output(
 def test_bad_external_compiler_output_is_rejected(
     monkeypatch: pytest.MonkeyPatch, failure: str
 ) -> None:
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: "/tools/" + name)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tools/" + name)
 
     def run(
         command: list[str], *, cwd: Path, **kwargs: Any
@@ -300,7 +345,7 @@ def test_bad_external_compiler_output_is_rejected(
             (cwd / "figure.pdf").write_bytes(b"invalid PDF")
         return subprocess.CompletedProcess(command, 0, "")
 
-    monkeypatch.setattr(rendering.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     with pytest.raises(RuntimeError):
         draw_latex(fq.Circuit(1).h(0)).render()
 
@@ -320,8 +365,9 @@ def test_invalid_figure_configuration_is_rejected(options: dict[str, Any]) -> No
 
 def test_unsupported_image_extensions_do_not_start_rendering(tmp_path: Path) -> None:
     figure = draw_latex(fq.Circuit(1))
+    invalid_options: dict[str, Any] = {"format": "gif"}
     with pytest.raises(ValueError, match="render format"):
-        figure.render("gif")
+        figure.render(**invalid_options)
     with pytest.raises(ValueError, match="output extension"):
         figure.save(tmp_path / "figure.gif")
     assert not (tmp_path / "figure.gif").exists()
@@ -331,10 +377,10 @@ def test_unsupported_image_extensions_do_not_start_rendering(tmp_path: Path) -> 
 @pytest.mark.parametrize("data", [None, b"invalid image"])
 def test_missing_or_corrupt_converter_images_are_rejected(
     monkeypatch: pytest.MonkeyPatch,
-    format: str,
+    format: Literal["png", "svg"],
     data: bytes | None,
 ) -> None:
-    monkeypatch.setattr(rendering.shutil, "which", lambda name: "/tools/" + name)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tools/" + name)
     monkeypatch.setattr(LatexFigure, "_compile_pdf", lambda self: b"%PDF-1.7\n")
 
     def run(
@@ -344,6 +390,6 @@ def test_missing_or_corrupt_converter_images_are_rejected(
             (cwd / ("figure." + format)).write_bytes(data)
         return subprocess.CompletedProcess(command, 0, "")
 
-    monkeypatch.setattr(rendering.subprocess, "run", run)
+    monkeypatch.setattr(subprocess, "run", run)
     with pytest.raises(RuntimeError):
         draw_latex(fq.Circuit(1)).render(format)

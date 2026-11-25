@@ -343,13 +343,23 @@ def _same(left: Matrix, right: Matrix) -> bool:
 def _matmul(left: Matrix, right: Matrix) -> Matrix:
     """The product that applies `right` first."""
 
-    return [
-        [
-            sum(left[row][inner] * right[inner][column] for inner in range(4))
-            for column in range(4)
-        ]
-        for row in range(4)
-    ]
+    result: Matrix = []
+    for index in range(4):
+        row = left[index]
+        result.append(
+            [
+                sum(
+                    (
+                        row[0] * right[0][column],
+                        row[1] * right[1][column],
+                        row[2] * right[2][column],
+                        row[3] * right[3][column],
+                    )
+                )
+                for column in range(4)
+            ]
+        )
+    return result
 
 
 def _scalar_angle(value: Any) -> float | None:
@@ -666,6 +676,38 @@ def _two_qubit_sub_runs(
     return runs
 
 
+_BlockKey = tuple[tuple[str, tuple[int, ...], tuple[tuple[str, str], ...]], ...]
+
+
+def _block_key(
+    instructions: Sequence[Instruction], pair: tuple[int, ...]
+) -> _BlockKey | None:
+    """Identify immutable scalar gate blocks independently of physical qubits.
+
+    Matrices, tensor parameters and other caller-owned values are not cached.
+    Exact numeric spellings retain signed zero and avoid tolerance-based keys.
+    Metadata is attached separately when a verified replacement is instantiated.
+    """
+    members = []
+    for instruction in instructions:
+        if instruction.matrix is not None or any(
+            type(value) not in (int, float) or not math.isfinite(value)
+            for value in instruction.params.values()
+        ):
+            return None
+        members.append(
+            (
+                canonical_opcode(instruction.name),
+                tuple(pair.index(wire) for wire in instruction.wires),
+                tuple(
+                    (name, repr(value))
+                    for name, value in sorted(instruction.params.items())
+                ),
+            )
+        )
+    return tuple(members)
+
+
 def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
     """Collapse each block over one ordered qubit pair into one exact gate.
 
@@ -746,25 +788,43 @@ def collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
         closed_blocks.append((pair, members))
 
     replaced: list[Instruction | None] = list(output)
+    # A phase/arithmetic lowering repeats the same local blocks on many pairs.
+    # Reuse the exact solver result only within this pass; no program, mutable
+    # parameter or matrix survives into a later compilation through this cache.
+    replacements: dict[_BlockKey, tuple[Instruction, ...] | None] = {}
+
+    def solve(
+        positions: Sequence[int], pair: tuple[int, ...]
+    ) -> tuple[Instruction, ...] | None:
+        instructions = [output[position] for position in positions]
+        metadata = instructions[0].metadata
+        key = _block_key(instructions, pair)
+        if key is not None and key in replacements:
+            cached = replacements[key]
+            if cached is None:
+                return None
+            return tuple(
+                replace(item, wires=pair, metadata=metadata) for item in cached
+            )
+        result = _replacement(instructions, pair=pair, metadata=metadata)
+        if key is not None:
+            replacements[key] = result
+        return result
+
     for pair, members in closed_blocks:
         # Program order: the assembly appends members in the order the program puts
         # them in and the sub-run splitter reads that order, so an out-of-order member
         # list would split a block into the wrong sub-runs rather than fail.
         positions = sorted(members)
-        block = _replacement(
-            [output[position] for position in positions],
-            pair=pair,
-            metadata=output[positions[0]].metadata,
-        )
+        block = solve(positions, pair)
         if block is not None:
             _write_replacement(replaced, positions, block)
             continue
         for run in _two_qubit_sub_runs(positions, output):
-            narrower = _replacement(
-                [output[position] for position in run],
-                pair=pair,
-                metadata=output[run[0]].metadata,
-            )
+            # An all-two-qubit block is its own fallback and already declined.
+            if run == positions:
+                continue
+            narrower = solve(run, pair)
             if narrower is not None:
                 _write_replacement(replaced, run, narrower)
     return replace(

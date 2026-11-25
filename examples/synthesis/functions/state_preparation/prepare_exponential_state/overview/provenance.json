@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "15b3f0ba68237c11d48e9da134270fec81503005",
+  "original_sha256": "df164dfe90d2997459adb9111cb976b1f59244e531b5b1e23834244f2b76ceec",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "9b42147e933541143435f484edf1f3558c6a9542c6b2bbac00d4236107fba6f1"
+    },
+    {
+      "index": 3,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_exponential_state.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_library_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/state_preparation/prepare_exponential_state/overview/walkthrough.ipynb",
+  "scope": "Fresh five-qubit probabilities proportional to exp(-0.1*n), exact local readout and all 32 complex amplitudes. This is fresh-output preparation, not a promise of the original in-place action on arbitrary entangled input.",
+  "native_semantic_adaptations": "Native qfunc definitions and local CPU execution retain the original problem dimensions and constants. Add exact named readout; supplemental coherent inputs are explicitly labeled. No cloud/hardware or resource-optimality claim."
+}

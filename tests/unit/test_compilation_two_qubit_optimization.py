@@ -16,6 +16,7 @@ inside the fold.
 
 import math
 import random
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -455,6 +456,45 @@ def test_the_replacement_keeps_the_run_position_and_the_first_metadata() -> None
     assert [item.name for item in folded.instructions] == ["h", "cz", "h"]
     assert folded.instructions[1].metadata == {"origin": "router"}
     assert folded.instructions[1].wires == (0, 1)
+
+
+def test_repeated_blocks_reuse_the_solver_and_keep_wires_and_metadata() -> None:
+    instructions = tuple(
+        instruction
+        for index, pair in enumerate(((0, 1), (2, 3), (1, 0), (3, 2)))
+        for instruction in (
+            Instruction("h", (pair[1],), metadata={"origin": index}),
+            Instruction("cz", pair),
+            Instruction("h", (pair[1],)),
+            Instruction("ccx", (0, 1, 2)),
+        )
+    )
+    source = CircuitIR(4, instructions)
+    with patch(
+        "flagquantum.compiler.optimization.two_qubit_optimization._replacement",
+        wraps=_replacement,
+    ) as solver:
+        for _ in range(2):
+            folded = collapse_two_qubit_blocks(source)
+            assert tuple(
+                (item.name, item.wires, item.metadata["origin"])
+                for item in folded.instructions
+                if item.name != "ccx"
+            ) == (
+                ("cx", (0, 1), 0),
+                ("cx", (2, 3), 1),
+                ("cx", (1, 0), 2),
+                ("cx", (3, 2), 3),
+            )
+        assert solver.call_count == 2  # Once per invocation, not per wire pair.
+
+
+def test_block_cache_does_not_reuse_mutable_matrix_values() -> None:
+    matrix = torch.tensor(_IDENTITY, dtype=torch.complex128)
+    source = CircuitIR(2, (Instruction("unitary", (0, 1), matrix=matrix),))
+    assert not collapse_two_qubit_blocks(source).instructions
+    matrix.copy_(torch.tensor(_runtime_matrix(_instruction("cx"))))
+    assert collapse_two_qubit_blocks(source).instructions == source.instructions
 
 
 def test_the_pass_reaches_a_fixed_point_and_is_idempotent() -> None:

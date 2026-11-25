@@ -112,3 +112,32 @@ To add, move, or remove an unstable name:
 Do not add an implementation to this package. If a capability is stable enough
 to have a real implementation, it belongs in its owning domain; if it is not,
 it belongs here only as a delegation entry.
+
+### Bundled Sparse Blossom matching
+
+`flagquantum.experimental.qec.SparseBlossomDecoder` accepts a FlagQuantum
+`DecodingGraph` and predicts logical flips for batches of CPU detector bits.
+FlagQuantum wheels include the pinned PyMatching 2.4.0 C++ core under its
+Apache-2.0 license. The decoder has no runtime dependency on the PyMatching
+Python package. Source builds use the vendored files and a C++20 compiler.
+
+For a circuit-derived decoding graph, use `decoder="sparse_blossom"` with the
+[QEC experiment entry points](../qec/README.md#run-a-batch-experiment-with-the-bundled-matcher).
+Use `run_stim_matching_experiment` to combine a caller-supplied matching graph
+with fixed shots from an annotated Stim circuit. Both workflows use the existing Stim
+sampling support. The graph must use the same detector and logical-observable
+ordering as the circuit. This experimental decoder supports up to 64 logical
+observables and one edge per detector pair. It uses PyMatching's fixed-point
+weight discretization. Very close weights can be tied after discretization.
+
+```python
+from flagquantum.experimental.qec import run_stim_matching_experiment
+from flagquantum.qec.dem.graph import DecodingGraph, DecodingGraphEdge
+
+source = "R 0\nX_ERROR(0.1) 0\nM 0\nDETECTOR rec[-1]\nOBSERVABLE_INCLUDE(0) rec[-1]"
+graph = DecodingGraph(1, 1, (DecodingGraphEdge((0, 1), 0.1, (0,)),))
+result = run_stim_matching_experiment(
+    source, graph=graph, shots=100, batch_size=32, seed=1
+)
+assert result.logical_failures == 0
+```

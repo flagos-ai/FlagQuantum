@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "qsvt_sqrt_polynomial.qmod",
+      "source_path": "functions/qmod_library_reference/classiq_open_library/qsvt/qsvt.qmod",
+      "git_blob_sha1": "54330885eb0e003b1facf5a64b040078f469cf7e",
+      "sha256": "8d859d86ecf3d0c3c68d1ddc9707e1f382a304439cdc27ae51689581783d6457"
+    }
+  ]
+}

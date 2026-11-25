@@ -1,0 +1,115 @@
+{
+  "upstream_path": "applications/chemistry/tensor_hypercontraction/tensor_hypercontraction.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "238a954f3014f5a8ca55f2e43fbc08e0b2f884b541f721f7cce45fb5fac5604f",
+  "git_blob_sha1": "e8992537be0f0eb8c1b05e2b1cd6f0a9f7e28bb5",
+  "scope": "All seventeen tensor-hypercontraction notebook stages, freshly generated full inputs, both PREPARE blocks, SELECT, fifteen clock leaves, and full native Circuit IR resource reports.",
+  "native_semantic_adaptations": "Build the original reversible regions using public native Circuit, using clean comparison flags and a two-flag controlled reflection. Report static native gate/depth metrics and independently trace the emitted subcircuits. The original is a resource experiment and the full state is not simulated.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.tensor_hypercontraction.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/tensor_hypercontraction/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_tensor_hypercontraction_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Load the native compiler and reproducible inputs.",
+      "sha256": "346548b590633cd8b5e7802be6135c519c70254e0c68ea816d30ba95ec5e0d33"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Keep original precision and spin-register widths.",
+      "sha256": "6d0985e0d0f1b013402e2bf6846b9560cd40703014241f0b7e6a4dacfe993bbd"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "stage": "Generate all tables, their rotation, and the sine clock.",
+      "sha256": "8ddfe21e6948cb61abd712b2a4a4254d13cdf20238f7ed36c0b972bc161fb9c3"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "stage": "Allocate the full record, spin, and clock layout.",
+      "sha256": "9ac7a47b83ac8e0dae258485958f1ac66953ff07323293623107091429596254"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "stage": "Reserve the traversal flags for nested clock and QROM calls.",
+      "sha256": "b7623bd8cef4b21523fb98655a6d580b257da96b81d25bdb91c49ff99534dbf5"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Compile the first PREPARE block.",
+      "sha256": "9c622eac3be8a51a6faeeb0689bb146c93473b66f6a71f68e734a997ac6a3f9e"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "stage": "Use native IR resource reporting.",
+      "sha256": "b1925f5b31f6c7132c4e3d9954b96a26f9770c21550d91b05d75d27bdab87c88"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Inspect the resources for PREPARE part 1.",
+      "sha256": "665c9a78d561d378f7c472bddda5683f08eadac78467a10a5e55912f23455901"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 9,
+      "stage": "Compile address arithmetic, alias lookup and swaps.",
+      "sha256": "64d3b37b365720d980f0249cf6bd7a42bfb334f885f0e3ece6e8447f37c95dd2"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 10,
+      "stage": "Inspect the resources for PREPARE part 2.",
+      "sha256": "0e307096c3bbc970e2ba918d04e938a8e92d13bf89cefdd80270a74db5a42345"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 11,
+      "stage": "Combine both PREPARE stages.",
+      "sha256": "8552147eb5eecc9ac306ec7dc38215274455c3d80eeac8ea37bb1b429a2ebb16"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 12,
+      "stage": "Compile SELECT, including digital rotations and phases.",
+      "sha256": "74fbf08cd039429fe09f18af8abd8933702b70c2295088986271bd3801d382b1"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 13,
+      "stage": "Inspect SELECT resources.",
+      "sha256": "31fc1d02dc9b30a239fc99f1e18ba26c8ad110d7dbbbb50c81528114df6ad755"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 14,
+      "stage": "Use the inverse preparation and a wide controlled phase for reflection.",
+      "sha256": "bbfa305ca868c6ad2303d1d70912ac44d9004b692e5aea5d36a265afd597ef44"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 15,
+      "stage": "Add the original clock and spin state preparations and the inverse QFT.",
+      "sha256": "508cccd84a52da1eeaccd6e2b8bef86bb45b09a04d452c587cc42ec6268d5e0d"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 16,
+      "stage": "Materialize the full native circuit product.",
+      "sha256": "011e51acea10112a7c63c07940cbb02f75d8ee61f83819a704fc0575320b0aed"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 17,
+      "stage": "Report the full resources and audit the emitted reversible subcircuits.",
+      "sha256": "7029ce1f84182afd4a52c19dc1c69f53e728b37bdf00155a31e68d0319360708"
+    }
+  ]
+}

@@ -18,7 +18,7 @@ named results with its existing identity and amplitude-budget checks. There is
 no new Program wrapper, executor, schema, registry or root export.
 
 The normal source workflow needs no physical numbers, gates or bit decoding.
-Run python -m examples.algorithms.synthesis_source_trial, optionally followed by
+Run python -m examples.synthesis.tutorials.getting_started.source_trial.main, optionally followed by
 a local source path. See [usage and exact bounds](../../flagquantum/synth/README.md).
 
 ## Source and memory contracts

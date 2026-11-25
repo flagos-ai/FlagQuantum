@@ -49,7 +49,9 @@ reading, and for a `measure` it is also the only correct one.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -377,7 +379,11 @@ class CommutationAnalysis:
         }
 
 
-def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
+_CommutationKey = tuple[tuple[str, tuple[int, ...], bool, bool], ...]
+_COMMUTATION_PAIR_CACHE_LIMIT = 512
+
+
+def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
     """Partition ``ir`` into commuting blocks, one ordered partition per qubit.
 
     The sweep is the one Qiskit's `CommutationAnalysis` performs: walk a qubit's
@@ -386,7 +392,9 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
     open a new one with the candidate. The result is a valid partition rather than
     the coarsest one -- a candidate that fails is not retried against the block
     opened after it -- and a valid one is all a consumer needs, because the
-    guarantee it uses is that a block's members pairwise commute.
+    guarantee it uses is that a block's members pairwise commute. Structurally
+    equivalent members share one predicate evaluation; logical pair counters and
+    the first failing member remain identical to the ungrouped sweep.
     """
 
     positions_by_qubit: dict[int, list[int]] = {}
@@ -395,6 +403,18 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
             positions_by_qubit.setdefault(qubit, []).append(position)
 
     instructions = tuple(ir)
+    keys = tuple(
+        (
+            canonical_opcode(gate.name),
+            gate.wires,
+            gate.matrix is not None,
+            bool(gate.params),
+        )
+        for gate in instructions
+    )
+    # The structural predicate reads no angle values or matrix contents. Retain
+    # only bounded boolean facts during this sweep, never caller-owned operands.
+    verdicts: dict[_CommutationKey, bool] = {}
     blocks_by_qubit: dict[int, tuple[tuple[int, ...], ...]] = {}
     block_index: dict[tuple[int, int], int] = {}
     queried = 0
@@ -402,19 +422,34 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
     for qubit, positions in positions_by_qubit.items():
         blocks: list[tuple[int, ...]] = []
         open_block: list[int] = []
+        representatives: dict[
+            tuple[str, tuple[int, ...], bool, bool], tuple[int, Instruction]
+        ] = {}
         for position in positions:
             candidate = instructions[position]
             accepted = True
-            for member in open_block:
-                queried += 1
-                if commute(instructions[member], candidate):
-                    commuting += 1
-                else:
+            compared = len(open_block)
+            # commute is parameter-value blind. These classes preserve every rule,
+            # including matrix overrides and the empty-parameter fixed-gate check.
+            key = keys[position]
+            for member_key, (offset, member) in representatives.items():
+                pair = (member_key, key)
+                verdict = verdicts.get(pair)
+                if verdict is None:
+                    verdict = commute(member, candidate)
+                    if len(verdicts) < _COMMUTATION_PAIR_CACHE_LIMIT:
+                        verdicts[pair] = verdict
+                if not verdict:
                     accepted = False
+                    compared = offset + 1
                     break
+            queried += compared
+            commuting += compared - (not accepted)
             if not accepted:
                 blocks.append(tuple(open_block))
                 open_block = []
+                representatives.clear()
+            representatives.setdefault(key, (len(open_block), candidate))
             open_block.append(position)
             block_index[(position, qubit)] = len(blocks)
         blocks.append(tuple(open_block))
@@ -426,6 +461,68 @@ def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
         queried_pairs=queried,
         commuting_pairs=commuting,
     )
+
+
+@dataclass
+class _CommutationMemo:
+    active: bool = True
+    entry: (
+        tuple[
+            Callable[[Instruction, Instruction], bool],
+            _CommutationKey,
+            CommutationAnalysis,
+        ]
+        | None
+    ) = None
+
+
+_COMMUTATION_MEMO: ContextVar[_CommutationMemo | None] = ContextVar(
+    "flagquantum_compilation_commutation", default=None
+)
+
+
+@contextmanager
+def _reuse_commutation_analysis() -> Iterator[None]:
+    """Own one structural analysis during one fixed-point optimization call."""
+    memo = _CommutationMemo()
+    token = _COMMUTATION_MEMO.set(memo)
+    try:
+        yield
+    finally:
+        # A copied context must not extend this compilation's cache lifetime.
+        memo.active = False
+        memo.entry = None
+        _COMMUTATION_MEMO.reset(token)
+
+
+def analyze_commutation(ir: CircuitIR) -> CommutationAnalysis:
+    """Partition ``ir`` into commuting blocks, one ordered partition per qubit.
+
+    The structural sweep and logical pair counters are unchanged. Standalone
+    calls compute independently; the compiler may reuse one identical structural
+    result within its own fixed-point optimization call.
+    """
+    memo = _COMMUTATION_MEMO.get()
+    if memo is None or not memo.active:
+        return _sweep_commutation(ir)
+
+    # The predicate reads no parameter values, matrix contents or metadata.
+    # Rebuild this key because Instruction parameter dictionaries are mutable.
+    key = tuple(
+        (gate.name, gate.wires, gate.matrix is not None, bool(gate.params))
+        for gate in ir.instructions
+    )
+    predicate = commute
+    previous = memo.entry
+    if previous is not None and previous[0] is predicate and previous[1] == key:
+        return previous[2]
+    # Release the old result before allocating another analysis.
+    memo.entry = None
+    del previous
+    result = _sweep_commutation(ir)
+    if memo.active and commute is predicate:
+        memo.entry = (predicate, key, result)
+    return result
 
 
 __all__ = ["CommutationAnalysis", "analyze_commutation", "commute"]

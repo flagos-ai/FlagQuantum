@@ -11,19 +11,19 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.frontend.python import capture
 
 pytestmark = pytest.mark.integration
 
 
 def test_workspace_example_runs_the_fixed_cost_table_and_both_cpu_paths() -> None:
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_workspace"],
+        [sys.executable, "-m", "tools.synthesis_compiler_examples.workspace.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

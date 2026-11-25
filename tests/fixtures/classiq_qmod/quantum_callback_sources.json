@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "hidden_shift.qmod",
+      "source_path": "algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift.qmod",
+      "git_blob_sha1": "476d80c851ffa24eb5375c70e9a3623fd9cc1af6",
+      "sha256": "13edfda2a42c77f76da852fb6d568c0df785f6991eaa6f79863d87f5cd499830"
+    },
+    {
+      "file": "deutsch_jozsa.qmod",
+      "source_path": "algorithms/foundational/deutsch_jozsa/deutsch_jozsa.qmod",
+      "git_blob_sha1": "9b2bd0276d61651a05af8756902c7a7ff5dfd968",
+      "sha256": "bff22e530fb7b716bd30f846cc20efa9293c45072c2c89aa3f6bbc6e6e3b903e"
+    }
+  ]
+}

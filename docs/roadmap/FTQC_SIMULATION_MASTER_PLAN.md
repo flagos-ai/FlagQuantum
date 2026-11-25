@@ -1,5 +1,22 @@
 # General-Purpose High-Performance Fault-Tolerant Quantum Simulation
 
+## Toric distance vertical path — 2026-11-18
+
+The existing Toric constructor now uses an exact matrix-derived logical-cycle
+search for eligible two-logical-qubit incidence codes. Public APIs, bounded
+refusals, the 98 upstream Stim files and 37 translation units are unchanged.
+The candidate qualifies d=3,5,7,9,11,13,15 with both logical observables,
+X/Z readout and independent/correlated noise: 28 configurations in each of
+SDK and no-SDK embedded installed profiles, 64 shots and three rounds each.
+Strict DEM comparison uses Stim 1.16.0 without disjoint-error approximation;
+bundled BP/OSD decoding must reproduce every sampled syndrome. No-SDK runs
+consume captured original noisy text; exporting that text still requires the
+SDK. Recorded logical residuals are observations, not suppression or threshold
+claims. Final-head regressions and automatic CI remain publication gates;
+actual-main acceptance requires a separately authorized merge.
+See [the configuration records](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
+
+
 ## Master Plan, PR Roadmap, and Requirement-by-Requirement Acceptance Checklist
 
 Version: 1.0, English master roadmap. Date: 2026-10-24, Asia/Shanghai.
@@ -1013,3 +1030,204 @@ index 0 in the middle round refers to D1. The first round buffers, the second
 commits fault column 1 and logical observable 0, and the third completes the
 record with that single fault. This exercises round ordering and the handoff
 from DEM chunks to decoder records for FTS-07 and R08.
+
+
+## Measurement-file delivery and detector-file follow-up — 2026-11-10
+
+[#1112](https://github.com/flagos-ai/FlagQuantum/pull/1112) merged as
+`c46d8580109cf6c11de588a39aab6a6260ffe9a5`, reviewed head
+`293ed910ff9120eaa0aa6a5aa870cb095475e987`. All 231 CI jobs passed run
+`42596124252` attempt 2. The authorized recovery executed only cpu-core (3.10)
+and CI complete; 229 successes were reused. Its original report-upload failure
+remains retained. Exact-main installed-wheel smoke `42638677612`, job
+`129233581560`, passed wheel build, install and checks outside source. This
+accepts six measurement-file formats, not complete Stim parity or new GPU evidence.
+
+The [detector-file proposal](../development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md)
+is API-owner approved under SHA-256
+`88a3f48afcd6bb919672172cd89285bf56c8aa57cdab6a9934a2fadb88cf38cb`.
+The local candidate reuses all 96 pinned upstream files and adds bounded native
+and SDK detector writing with optional same-shot observable files. Candidate
+local acceptance passed: 229 focused tests (3 skipped), 18,992 smoke/unit tests
+(295 skipped), 7,025 integration tests (227 skipped), static checks and an offline
+macOS arm64 installed-wheel profile without the Stim Python package. Complete
+node accounting reuses prior passes and bounded continuations; original failures
+and timeouts remain retained. PR/main delivery remains pending, so no actual-main
+completion is claimed for this candidate. The first profile run retained a missing TemporaryDirectory
+import failure; its two cases passed after the approved import correction.
+
+FTS-04/R03/R08 gain the accepted measurement-file slice and remain partial.
+FTS-02/R04/M2 are unchanged. FTS-07 decoder/model evidence is reused, not promoted.
+Remaining bundles include measurement-to-detector file conversion, bounded
+public record reading/streaming decode, and the remaining pinned API inventory.
+No new performance, threshold, hardware or capacity evidence is inferred.
+
+## Measurement-file conversion package — accepted slice, 2026-11-11
+
+The prerequisite [#1116](https://github.com/flagos-ai/FlagQuantum/pull/1116)
+merged as `0bf869e29c3cad0f5a0cac6d30018d7cb996a7e2`, reviewed head
+`2e30db35378a3e48876c4b0e42c533b9634f137a`. This is a verified merge identity;
+it does not by itself add a dedicated actual-main QEC/GPU receipt.
+
+The [26-path file-conversion proposal](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
+was explicitly approved with SHA-256
+`e2ef1156625a8760425f936f1e72c824e5d3fa8200e231f4e589acaf9cf8bc5a`.
+[#1120](https://github.com/flagos-ai/FlagQuantum/pull/1120) delivered
+`CompiledMeasurementsToDetectionEventsConverter.convert_file` and merged as
+`504dc460f34f745db67566597cd69a94e345c298`, reviewed head
+`bdb9d470cfeded5199642dd39fc43bfd08b2c6e1`. The actual-main tree is
+`f55b8a1f42ac8fab3c10466943729e5556f421f0`.
+
+The accepted implementation uses six input/five output formats and the unchanged
+96-file Stim 1.16.0 source closure. External fixed records `010` witness three
+occurrence columns, latest-slot X feedback, detectors `10` and logical `1`.
+This is a fixed-record conversion check, not a new circuit-sampling statistic.
+Input and aggregate output retain their 1 GiB limits; combined staging retains
+its 2 GiB limit. Parsing uses 64 KiB reads and native batches of 1,024 records.
+The 64 MiB principal-table guard is not a process RSS limit.
+
+### PR checks and actual-main acceptance
+
+- [PR CI run 42820197535](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197535),
+  attempt 2: all 233 jobs successful. The bounded recovery reused 224 successes.
+- [PR GPU run 42820197316](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197316),
+  attempt 3: one-GPU-local and two-GPU-distributed-required both passed after
+  actual numerical execution. These checks used the PR merge-preview commit,
+  not the actual squash merge, and are not actual-main GPU evidence.
+- [Actual-main installed-wheel smoke 42850330342](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330342),
+  job `129948918656`, passed. The current workflows do not automatically run full
+  CI or GPU on a main push; no manual dispatch was used for this acceptance.
+- An offline macOS arm64 build and independent CPython 3.12.14 installation from
+  the exact actual-main checkout passed with Torch 2.14.1. All 1,168 packaged
+  source/data members match Git, wheel, sdist and installation; all 1,033 tracked
+  Python modules are packaged. All 96 frozen upstream hashes are unchanged.
+- Without the Stim or PyMatching Python package, the installed public example
+  made exactly one embedded `convert_file` call. The existing installed verifier
+  passed 30 fixed-byte file-conversion cases, repeated-slot X feedback and early
+  refusal of T and conditional H before engine preparation. No source overlay or
+  dynamic-library override was used.
+
+The installed-acceptance receipt has SHA-256
+`87302424a110f56481dcc3917f7cf8f68c7542258fd09348b013aab3efd2c3a5`.
+The actual-main wheel has SHA-256
+`8e495b4b32eccaff2c80973aebcb849a186d0ed21e60d09a0c7666b731e45ecc`;
+the sdist has SHA-256
+`dca673be6db60f076dce1772247f283a2f50f1453152b8e7c93cb8ce1df71d20`.
+Original CI/GPU, environment and installation failure logs remain retained.
+Accepted broad tests and CI/GPU were not rerun for this local-main acceptance.
+
+Run the existing user workflow from the checkout after installation:
+
+```bash
+python examples/qec/measurement_file_conversion.py
+```
+
+Expected and observed output:
+
+```text
+shots 64
+detectors 10; observables 1
+file_bytes 64 64
+```
+
+[Actual-main container publication 42850330277](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330277)
+completed successfully on the exact merge SHA: CPU `129948918884`, CUDA
+`129948919078`, CPU-no-JAX `129954343222` and CUDA-no-JAX `129965376117` all
+succeeded. `publish-ci-cpu` was intentionally skipped. This completes the
+observed automatic main publication gate; no manual rerun was submitted.
+
+### Requirement progress and next step
+
+| Item | Accepted increment | Overall state |
+| --- | --- | --- |
+| FTS-04 / R03 | Actual-main embedded measurement-file to detector/logical-file conversion, with independent fixed-byte and no-SDK installed evidence | Partially complete |
+| R08 | Bounded file conversion without an all-shot table; source and publication limits preserved | Partially complete; no new throughput, capacity or sampling-statistics claim |
+| P0 / FTS-02 / R04 | No additional W1-W8 measurement campaign or baseline freeze | Unchanged |
+| M0-M5 | No milestone-wide acceptance added | Unchanged |
+| Complete Stim/PyMatching parity | This file-conversion slice only | Incomplete |
+
+Next, finish observing the existing container publication. A separate 28-path
+native shot-file reading and packed-batch decoding proposal has been prepared
+against Stim 1.16.0 and the existing 96-file source closure. Proposed functions
+read_shot_data_file and iter_shot_data_file are not implemented or approved by
+this progress entry. The proposal preserves the existing decoder and keeps
+arbitrary-data file writing and other upstream domains as explicit gaps. No research task, threshold claim, hardware
+qualification, mixed Clifford/non-Clifford acceptance or performance promotion
+is added here.
+
+## Native shot-file reading candidate — 2026-11-11
+
+The user approved the 28-path record-reading package under SHA-256
+`dd34a168261cdc11b3e0f4da8dbf75c20f8129b3908b449c98b94f382994e225`.
+Its prerequisite actual-main container publication has passed. The candidate
+adds familiar eager reading and an embedded-only iterator feeding the existing
+packed decoder. The initial contract/fake and SDK observations remain retained.
+Local qualification passed: 356 focused source tests (10 skipped), 52 installed
+native tests without the Stim Python package (one SDK-reference skip), the
+standalone native verifier, and all five wheel/sdist installation profiles.
+Ruff, Black and strict Mypy passed for 11 Python files. Broad smoke/unit passed
+19,382 tests (378 skipped); integration passed 6,910 (310 skipped), within the
+approved 2,400/3,600-second budgets. The owned temporary CPU extension was removed
+by inode and SHA-256 after testing. All 96 upstream files remain byte-identical;
+1,170 package members match source, wheel, sdist and installed artifacts.
+Final-head example, PR checks/review and actual-main acceptance remain separate
+publication gates. FTS-04/R03 and FTS-07/R08 remain partial;
+FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or complete
+parity claim is added. Next: publish this qualified candidate, complete its
+actual-main acceptance, then propose arbitrary-data file writing and review the
+remaining pinned upstream inventory.
+
+## Caller-owned shot-data writing candidate — 2026-11-11
+
+The user approved the 27-path writer package under proposal SHA-256
+`b22e6af76b65abd4a93ff97e9825197f83fe815b509b226f33b65b2818eeba83`.
+It adds `write_shot_data_file` for CPU bool and packed uint8 tensors across the
+six locked Stim 1.16.0 encodings, reusing the current 96-file embedded closure.
+Fake and source conformance have passed, including fixed bytes and the SDK
+replacement route. The embedded build, no-SDK wheel verifier, installed
+profiles, broad smoke/unit and integration tiers, final-head example and PR
+publication remain pending. No merge is authorized. The existing 64 MiB
+principal estimate and 1 GiB output estimate remain request guards, not RSS
+claims. FTS-02/R04/M0-M5 and research status do not advance.
+
+## Approved native DEM sampling delivery (2026-11-12)
+
+PR #1152 is merged as `39b16b446733c215a14c59332bcf69c350f62069`.
+Actual-main source acceptance passed 345 tests with one expected SDK-only skip,
+using accepted binaries rather than a fresh main wheel. The next approved
+32-path bundle adds reusable independent-DEM sampling, error recording/replay
+and six-format streamed files. It reuses two unchanged Stim 1.16.0 templates
+(98 source files, 37 translation units). The approved compatibility amendment
+adds one existing test path, bringing implementation scope to 33 paths.
+macOS arm64 offline wheel/sdist and
+installed native acceptance passed: core 79 passed/1 expected SDK-only skip,
+SDK profile 80 passed. Complete smoke/unit passed 19,971 tests
+(172 skipped); integration passed 7,459 (279 skipped).
+No Stim Python package is present in the accepted core installation; real
+`prepare_dem`, `sample_dem` and `write_dem` calls were recorded. Existing
+exclusive-group `dem_sampling` and rejection rules remain. Final-head example
+and PR publication are the remaining delivery steps; merge is not authorized.
+See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md).
+Full upstream DEM text/REPEAT compatibility, categorical native sampling,
+Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
+expansion remain explicit gaps. No maturity or full-parity claim is promoted.
+
+## Recovered embedded noiseless execution candidate — 2026-11-13
+
+This slice replaces an implementation behind the existing stabilizer sampling
+boundary. It preserves the local CPU path, terminal measurement ordering,
+marker-free SDK implementation, positioned-noise behavior and existing
+16,384-wire regression. It introduces no numerical core or horizontal public
+abstraction and makes no capacity, performance or maturity promotion.
+
+The initial 11-path scope includes two separately approved SDK-test isolation
+repairs, for 13 paths. Fresh qualification replaces the unavailable prior
+artifacts: 208 focused tests, one offline macOS arm64 wheel/sdist build, no-SDK
+embedded installation 82 passed, embedded with SDK 246 passed, and marker-free
+SDK 246 passed. Actual native calls and the 16,384-wire regression are recorded
+separately from replacement fakes. Complete smoke/unit passed 20,567 tests, with
+296 selected-node skips and 36 collection skips. Integration completed 12,274
+unique nodes across disjoint groups (12,028 passed, 246 skipped); historical
+failed attempts and approved recoveries remain retained. Final-head publication
+and actual-main acceptance remain separate gates, with merge separately
+authorized. Existing capability maturity and all broader FTQC gaps remain.

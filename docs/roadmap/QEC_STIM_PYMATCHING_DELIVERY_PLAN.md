@@ -1,5 +1,41 @@
 # QEC Stim and PyMatching delivery plan
 
+## SDK-free memory export candidate — 2026-11-19
+
+The opt-in embedded profile now exports owned memory circuits through the same
+positioned operation translation and native text validator used by execution.
+`memory_to_stim_text()` keeps its signature, parity order, binary64 noise values,
+resource bounds and failure categories. The standard profile retains its SDK
+path. No vendor source or public contract changes are required.
+
+The candidate generated all 28 Toric configurations directly from constructors
+without Stim or PyMatching, then sampled original noisy circuits, constructed
+strict undecomposed DEMs and decoded with BP/OSD. Mechanisms agree with Stim
+1.16.0 references. The preceding Toric campaign below is historical: its
+no-SDK profile consumed captured text and did not prove SDK-free export.
+SDK and no-SDK installed acceptance passed. Full smoke/unit acceptance accounts
+for 21,162 passed and 344 runtime-skipped nodes; full integration accounts for
+12,183 passed and 276 runtime-skipped nodes. Completed records were merged
+without repeating completed tests. The per-configuration and source evidence is
+recorded in [the acceptance artifact](../../artifacts/development/qec_sdk_free_memory_export_20261119.json).
+
+## Toric distance implementation candidate — 2026-11-18
+
+The existing Toric constructor now uses an exact matrix-derived logical-cycle
+search for eligible two-logical-qubit incidence codes. Public APIs, bounded
+refusals, the 98 upstream Stim files and 37 translation units are unchanged.
+The candidate qualifies d=3,5,7,9,11,13,15 with both logical observables,
+X/Z readout and independent/correlated noise: 28 configurations in each of
+SDK and no-SDK embedded installed profiles, 64 shots and three rounds each.
+Strict DEM comparison uses Stim 1.16.0 without disjoint-error approximation;
+bundled BP/OSD decoding must reproduce every sampled syndrome. No-SDK runs
+consume captured original noisy text; exporting that text still requires the
+SDK. Recorded logical residuals are observations, not suppression or threshold
+claims. Final-head regressions and automatic CI remain publication gates;
+actual-main acceptance requires a separately authorized merge.
+See [the configuration records](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
+
+
 Status: phase one accepted; continuing compatibility/performance delivery,
 updated 2026-10-26 (Asia/Shanghai). Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
@@ -717,3 +753,451 @@ changed. Zero-noise PyMatching isolated-detector refusal remains explicit.
 Focused correctness and actual-SDK acceptance are in progress; exact-head full
 CI/GPU, reviews/rules, normal pinned merge and exact merge/Main smoke acceptance
 are still required. No performance, threshold, GPU or capacity claim is made.
+
+
+## Matrix-defined weighted matching capability candidate
+
+The approved13-path bundle adds neutral weighted graph records, explicit matrix
+column/boundary/merge semantics, signed-cost SDK decoding and an installed
+user route. It replaces private preparation behind the existing DEM adapter
+without widening its public graph type. The contract commit preceded implementation.
+Local validation and actual-main admission remain separate; no new candidate
+is accepted by reusing PR1087 evidence. Negative-cost and probability domains
+remain distinct. This is not full graph mutation, correlated decoding, all
+upstream input compatibility, native replacement or performance certification.
+## November 5 external Stim experiment integration
+
+C/007's original fixed-shot memory implementation was merged in
+[#932](https://github.com/flagos-ai/FlagQuantum/pull/932); its earlier candidate
+wording is historical. The noisy Surface X/Z composition and actual-main
+acceptance were delivered in [#1012](https://github.com/flagos-ai/FlagQuantum/pull/1012).
+The complete-result batch contract through #904 and existing four optional
+installed profiles are reused, not reimplemented.
+
+The owner approved the separate
+[Stim-text experiment contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md)
+on 2026-11-05. `run_stim_experiment` and `StimExperimentResult` compose the existing
+strict bridge, original-circuit sampler, complete-result decoder and fixed-shot
+statistics without root re-exports. Final reviewed-head CI/GPU and actual-main
+admission are pending. The new user script and installed smoke check an
+asymmetric two-observable source; the original four installed sample cells stay
+unchanged and the report has its own field.
+
+This closes no scientific study or release-wide parity claim. FTS-02/09
+measurements, FTS-08 threshold analysis, general performance/capacity, arbitrary
+plugins/configuration, hardware feedback and other unapproved scope remain open.
+
+
+## Combined SI-01 through SI-06 delivery in PR 1087
+
+The owner requested completing the whole Stim/PyMatching integration tranche in
+[#1087](https://github.com/flagos-ai/FlagQuantum/pull/1087) before waiting for the
+final checks. Existing bridge and decoder implementations are reused with their
+bounded independent references. The software candidate includes the external
+report API, unified user guide, support/version table, example index and required
+installed-profile coverage of external reports, complete decoder records and
+native repetition/Surface X/Z reports. No additional public API is introduced.
+
+| Work package | Candidate state | Final acceptance |
+| --- | --- | --- |
+| SI-01 | Source/receipt inventory and stale progress reconciliation complete | No broader parity status is inferred |
+| SI-02 | Existing strict bridge/source semantics reused and regression-tested | Final-head checks remain required |
+| SI-03 | Existing logical/full-result decoder routes reused; real installed decoder-record checks added | Required profile results remain required |
+| SI-04 | Original-text report and unified native/external user workflows implemented | Final-head user code must run |
+| SI-05 | Existing four-wheel-profile/sdist gate now checks the integrated public workflows | Real final-candidate installations remain pending |
+| SI-06 | Quickstart, compatibility table, example index and delivery ledger connected | Actual-main receipt and separate release authorization remain pending |
+
+See the [quickstart](../guides/QEC_INTEGRATION_QUICKSTART.md). Original failure
+logs and older cancelled/superseded heads remain historical evidence. Final
+reviewed-head CI/GPU and normal actual-main acceptance still gate delivery; no
+force merge, check weakening, runner change or research execution is authorized
+by combining this tranche. No PyPI/tag publication is part of this PR.
+
+
+## Consolidated SDK delivery in PR1087
+
+The owner requested one coherent PR covering the approved external Stim report,
+packed predictions, SDK batch weights and matched detector pairs. PR1090 and
+PR1091 are superseded only after their contents are audited into this candidate.
+All prior evidence and approval scopes remain retained; no new upstream feature
+is inferred. Final-head integration and actual-main acceptance remain pending.
+## External Stim measurement conversion candidate
+
+The backend-neutral `convert_measurement_records` entry selects the source
+text dialect with `circuit_format`. The [conversion contract](../development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md)
+covers existing CPU records, reference normalization, and sweep controls.
+Installed-package and main acceptance are tracked separately.
+
+
+## Native terminal measurement conversion candidate
+
+The [native terminal readout contract](../development/QEC_TERMINAL_READOUT_CONVERSION_PROPOSAL.md)
+extends the same FlagQuantum circuit from ordinary local simulation to
+conversion of CPU terminal Z records into detector and logical flips. It uses
+explicit logical readout columns, shared parity maps, and one prepared
+reference per converter. The conformance suite compares all eight records
+across bound, compiled and placed variants against independent XOR and checks
+the emitted physical measurement order. This advances the terminal-measurement
+slice of FTS-04 after acceptance. Mid-circuit records, full upstream parity
+and broader QEC or FTQC milestone acceptance remain separate work.
+
+
+## PR1092 bounded integration after native conversion
+
+PR1092 is reconciled with actual main
+`290d80ec3e2ffc958a3da5221e4a076e4e8a5900` within its original 14 paths plus
+one explicitly approved doctest execution path. The complete existing main
+sampling/conversion and installed-profile checks are retained. PR1087's SDK
+experiment/output-view bundle remains a separate branch; neither PR is merged
+into the other and its pending checks are not counted as main acceptance.
+
+`MatchingGraph` and `PyMatchingGraphDecoder` now join the real public docstring
+execution list, preserving all 105 prior entries and the discovery assertion.
+The graph adapter resolves the current loader from the authoritative probability
+adapter module instead of keeping an imported function binding. Existing missing
+SDK behavior and error identity therefore remain replaceable for both consumers;
+no matching algorithm, cost interpretation, public signature or refusal domain
+changes. The former installed-profile fake now replaces that same authoritative
+loader, preserving its exception assertion. Its initial local failure is retained.
+
+Local core and real-SDK correctness, independent optimization references and the
+matrix user example passed. Minimum and observed-CI versions of Ruff, Black and
+strict Mypy were checked using existing tools. Old CI formatting, missing
+executable doctest registration, loader replacement and artifact-upload failures
+remain separately recorded. No old CI attempt is manually rerun. Final-head CI
+and real installed-profile/main admission remain separate gates. FTS-04/R08 and
+full Stim/PyMatching parity remain partial; FTS-02 and M2 are not closed here.
+## PR1087 integration after native conversion PR1106
+
+PR1106 was merged at `290d80ec3e2ffc958a3da5221e4a076e4e8a5900` with
+reviewed tree `c227466575d6a116ff66aafa27a78a562be71c1f`; actual-main source and
+all 36 changed blobs match its reviewed head, and main smoke passed. Its native
+installation evidence is reused. No exact-main full-CI/package receipt is
+inferred from that source audit or from the PR checks.
+
+PR1087 is now being reconciled with that main within its existing 24 paths.
+The combined installed verifier retains external experiments, complete decoder
+records, packed predictions, SDK weights, matched pairs, text conversion,
+terminal conversion and prepared measurement sampling. The historical API
+fixture is unchanged: the existing incremental contract now registers only the
+three additional methods covered by their separately approved proposals.
+The old Black and compatibility failures remain retained, alongside the separate
+artifact-upload timeout. No old CI attempt was rerun.
+
+Local core/SDK correctness and final-head user examples are distinct from final
+CI and installed-profile admission. SI-01 through SI-06 remain candidates pending
+those delivery gates. PR1092 remains a separate matrix/weighted-graph candidate
+with conflicts and unresolved historical failures; it is not counted as merged.
+R03/R08 and FTS-04 remain partial; FTS-02 and M2 are not closed by these changes.
+No research measurement, threshold or performance study is authorized here.
+
+
+## Current integration after PR1087 merge
+
+PR1087 is merged at `1004335d287c58952205829cef5a49636dbdfad2` with complete
+reviewed tree `1fe6e615b7c8f69ba67301a85e2a9a841f2a4336`. Its main smoke passed.
+A fresh standard-core sdist/wheel installation passed with 918 Python/typing
+members and all 96 vendor members equal. Its once-budgeted exact-main CI
+`42350953562` remains a separate admission gate; no completed full-main receipt
+or new GPU validation is inferred here.
+
+The earlier wording that PR1087 remains an unmerged branch describes the prior
+baseline. PR1092 now incorporates that actual main directly, preserving packed
+predictions, SDK weights, matched pairs, original-circuit reports and all existing
+sampling/conversion profile checks. Graph-specific helpers and tests are added
+without overwriting main's helpers/assertions or duplicating top-level test names.
+The original 15-path approval still bounds this PR's difference from main.
+
+At the previous PR1092 head, all three unsuccessful coverage partitions passed
+their test steps (183/185/185 tests); Action download failures occurred during
+artifact upload. Their raw logs remain. Main drift then required this new source
+head, so no recovery request was submitted for the superseded old head. Normal
+automatic checks must validate the reconciled source. The first local static
+check also caught an omitted test-only SimpleNamespace import during assembly;
+it was restored in the existing test path without removing an assertion, and
+its original log remains. No numerical threshold, fixture, dependency or runner
+configuration is changed. R03/R08/FTS-04 remain partial; FTS-02 and M2 remain open.
+
+## Native circuit detector execution candidate
+
+The approved bounded native detector sampling/DEM contract is implemented as a
+direct-main candidate. `Circuit.compile_detector_sampler` and
+`Circuit.detector_error_model` consume the same explicit-record maps;
+`examples/qec/native_detector_sampling.py` demonstrates decoding all 35 records
+without requiring equal tied decoder solutions. No new upstream source files are
+needed. This extends FTS-04 / R03 / R08; those requirements remain partial.
+FTS-02, mixed-route M2, full Stim/PyMatching parity, natural monitoring reliability
+and performance/capacity/scalability evidence remain open. Main admission and
+final-head evidence are recorded separately; implementation is not an admission
+receipt. Historical raw evidence and prior failed CI records remain unchanged.
+
+## Integration after native detector delivery
+
+PR1107 merged as `2a073ab9d540f2868b57612a98a182bb6e41a915` after all 231
+reviewed-head CI jobs passed. Its actual-main source tree equals that reviewed
+head; 169 focused CPU tests and the native detector example passed. The exact-main
+installed-wheel smoke `42557150575` passed. The user explicitly authorized this
+CPU Stim delivery without GPU acceptance; its failed two-GPU performance job
+`128955855211` remains failed and retained, with no rerun or threshold change.
+Prior embedded no-SDK acceptance is reused for unchanged source/build inputs,
+not described as a fresh embedded installation on the merge commit.
+
+PR1092 is now reconciled with that main commit. The three overlapping append
+sections retain both graph and native-detector documentation, doctest entries
+and installed-profile tests. The approved difference from main remains 15 paths.
+Its previous head's 231 successful CI jobs and successful GPU checks are
+historical receipts; the reconciled head still requires its own automatic CI
+before merge and actual-main CPU acceptance. R03/R08/FTS-04 remain partial;
+FTS-02, R04, M2 and complete Stim/PyMatching parity remain open.
+
+### PR1092 reconciled-source acceptance
+
+The reconciled candidate passed Ruff, Black, strict Mypy for the nine focused
+Python files, dependency policy, documentation source/link checks and repository
+language checks. The SDK regression selection passed 219 tests with three
+existing environment-profile skips; it includes the independent exhaustive
+weighted-graph optimum oracle, real PyMatching comparisons, existing decoder
+contracts, public doctests and native detector execution/conformance. A separate
+source environment verified that neither Stim nor PyMatching was importable and
+passed 92 tests with five existing environment-dependent skips. These are source
+tests, not fresh installed-wheel/sdist evidence.
+
+The original strict-Mypy failure remains retained. Two existing test helpers
+received precise annotations: the syndrome list element type and the import
+interceptor's argument/return types. Assertions, missing-dependency behavior,
+thresholds and numerical code remain unchanged. No dependency installation,
+manual CI recovery or research execution was performed. Automatic checks and
+installed-profile admission on the final head, followed by actual-main
+acceptance, remain required before this candidate counts as delivered.
+
+
+## PR1092 actual-main CPU acceptance and next file-format slice
+
+PR1092 is merged at `fdc8a75c1ea28ebb7e77ab2fe8197ea2c73f570f`, with reviewed
+head `00274ba5c1ac5a91fcbad79f2f6eda0bcd11f474` and identical source tree
+`3f8fbf183560fc8c715f74f7da5c643b1e8900c4`. The previous pending wording is
+historical. CI run `42560162309` passed all 231 jobs on attempt 1 without reruns.
+Four wheel profiles and sdist-both passed installed acceptance; artifact
+`13650100440` has SHA-256
+`f2a4da687b88dfd342dd83e2615e177ff719c1af9f6e1eb4bf15bcd43a7f6f39`.
+Actual-main focused regression passed 97 tests and installed-wheel main smoke
+`42563554390` passed. Matrix mapping `(0, 1, 2)`, weights `(2.0, 3.0, 1.0)` and
+selected edge `(2,)` at cost `1.0` were verified on the actual main.
+
+GPU run `42560162316` failed its variance threshold with concurrent GPU use
+reported. That failure remains retained and excluded from this CPU delivery
+under user instruction. An extra local installed-smoke invocation against a
+source-overlay environment correctly failed its provenance guard; it is not
+installation evidence and was not retried. Valid installation evidence is the
+five CI profiles and actual-main installed-wheel smoke described above.
+
+The previously approved six measurement-file output slice is delivered through
+PR1112; the dated acceptance below supersedes its original pending status. It reuses the 96-file
+Stim 1.16.0 closure, preserves source occurrence columns and the single-slot X
+feedback path, and adds no detector file output or public file reader.
+FTS-04/R03/R08 remain partial, gaining this slice only after its own acceptance.
+FTS-02/R04/M2 are unchanged. No performance, threshold or scalability evidence
+is inferred. Next gaps are detector-file output, measurement-to-detector file
+conversion/streaming decode, and remaining inventoried upstream APIs.
+
+
+## Measurement-file delivery and detector-file follow-up — 2026-11-10
+
+[#1112](https://github.com/flagos-ai/FlagQuantum/pull/1112) merged as
+`c46d8580109cf6c11de588a39aab6a6260ffe9a5`, reviewed head
+`293ed910ff9120eaa0aa6a5aa870cb095475e987`. All 231 CI jobs passed run
+`42596124252` attempt 2. The authorized recovery executed only cpu-core (3.10)
+and CI complete; 229 successes were reused. Its original report-upload failure
+remains retained. Exact-main installed-wheel smoke `42638677612`, job
+`129233581560`, passed wheel build, install and checks outside source. This
+accepts six measurement-file formats, not complete Stim parity or new GPU evidence.
+
+The [detector-file proposal](../development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md)
+is API-owner approved under SHA-256
+`88a3f48afcd6bb919672172cd89285bf56c8aa57cdab6a9934a2fadb88cf38cb`.
+The local candidate reuses all 96 pinned upstream files and adds bounded native
+and SDK detector writing with optional same-shot observable files. Candidate
+local acceptance passed: 229 focused tests (3 skipped), 18,992 smoke/unit tests
+(295 skipped), 7,025 integration tests (227 skipped), static checks and an offline
+macOS arm64 installed-wheel profile without the Stim Python package. Complete
+node accounting reuses prior passes and bounded continuations; original failures
+and timeouts remain retained. PR/main delivery remains pending, so no actual-main
+completion is claimed for this candidate. The first profile run retained a missing TemporaryDirectory
+import failure; its two cases passed after the approved import correction.
+
+FTS-04/R03/R08 gain the accepted measurement-file slice and remain partial.
+FTS-02/R04/M2 are unchanged. FTS-07 decoder/model evidence is reused, not promoted.
+Remaining bundles include measurement-to-detector file conversion, bounded
+public record reading/streaming decode, and the remaining pinned API inventory.
+No new performance, threshold, hardware or capacity evidence is inferred.
+
+## Measurement-file conversion package — accepted slice, 2026-11-11
+
+The prerequisite [#1116](https://github.com/flagos-ai/FlagQuantum/pull/1116)
+merged as `0bf869e29c3cad0f5a0cac6d30018d7cb996a7e2`, reviewed head
+`2e30db35378a3e48876c4b0e42c533b9634f137a`. This is a verified merge identity;
+it does not by itself add a dedicated actual-main QEC/GPU receipt.
+
+The [26-path file-conversion proposal](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
+was explicitly approved with SHA-256
+`e2ef1156625a8760425f936f1e72c824e5d3fa8200e231f4e589acaf9cf8bc5a`.
+[#1120](https://github.com/flagos-ai/FlagQuantum/pull/1120) delivered
+`CompiledMeasurementsToDetectionEventsConverter.convert_file` and merged as
+`504dc460f34f745db67566597cd69a94e345c298`, reviewed head
+`bdb9d470cfeded5199642dd39fc43bfd08b2c6e1`. The actual-main tree is
+`f55b8a1f42ac8fab3c10466943729e5556f421f0`.
+
+The accepted implementation uses six input/five output formats and the unchanged
+96-file Stim 1.16.0 source closure. External fixed records `010` witness three
+occurrence columns, latest-slot X feedback, detectors `10` and logical `1`.
+This is a fixed-record conversion check, not a new circuit-sampling statistic.
+Input and aggregate output retain their 1 GiB limits; combined staging retains
+its 2 GiB limit. Parsing uses 64 KiB reads and native batches of 1,024 records.
+The 64 MiB principal-table guard is not a process RSS limit.
+
+### PR checks and actual-main acceptance
+
+- [PR CI run 42820197535](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197535),
+  attempt 2: all 233 jobs successful. The bounded recovery reused 224 successes.
+- [PR GPU run 42820197316](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197316),
+  attempt 3: one-GPU-local and two-GPU-distributed-required both passed after
+  actual numerical execution. These checks used the PR merge-preview commit,
+  not the actual squash merge, and are not actual-main GPU evidence.
+- [Actual-main installed-wheel smoke 42850330342](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330342),
+  job `129948918656`, passed. The current workflows do not automatically run full
+  CI or GPU on a main push; no manual dispatch was used for this acceptance.
+- An offline macOS arm64 build and independent CPython 3.12.14 installation from
+  the exact actual-main checkout passed with Torch 2.14.1. All 1,168 packaged
+  source/data members match Git, wheel, sdist and installation; all 1,033 tracked
+  Python modules are packaged. All 96 frozen upstream hashes are unchanged.
+- Without the Stim or PyMatching Python package, the installed public example
+  made exactly one embedded `convert_file` call. The existing installed verifier
+  passed 30 fixed-byte file-conversion cases, repeated-slot X feedback and early
+  refusal of T and conditional H before engine preparation. No source overlay or
+  dynamic-library override was used.
+
+The installed-acceptance receipt has SHA-256
+`87302424a110f56481dcc3917f7cf8f68c7542258fd09348b013aab3efd2c3a5`.
+The actual-main wheel has SHA-256
+`8e495b4b32eccaff2c80973aebcb849a186d0ed21e60d09a0c7666b731e45ecc`;
+the sdist has SHA-256
+`dca673be6db60f076dce1772247f283a2f50f1453152b8e7c93cb8ce1df71d20`.
+Original CI/GPU, environment and installation failure logs remain retained.
+Accepted broad tests and CI/GPU were not rerun for this local-main acceptance.
+
+Run the existing user workflow from the checkout after installation:
+
+```bash
+python examples/qec/measurement_file_conversion.py
+```
+
+Expected and observed output:
+
+```text
+shots 64
+detectors 10; observables 1
+file_bytes 64 64
+```
+
+[Actual-main container publication 42850330277](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330277)
+completed successfully on the exact merge SHA: CPU `129948918884`, CUDA
+`129948919078`, CPU-no-JAX `129954343222` and CUDA-no-JAX `129965376117` all
+succeeded. `publish-ci-cpu` was intentionally skipped. This completes the
+observed automatic main publication gate; no manual rerun was submitted.
+
+### Requirement progress and next step
+
+| Item | Accepted increment | Overall state |
+| --- | --- | --- |
+| FTS-04 / R03 | Actual-main embedded measurement-file to detector/logical-file conversion, with independent fixed-byte and no-SDK installed evidence | Partially complete |
+| R08 | Bounded file conversion without an all-shot table; source and publication limits preserved | Partially complete; no new throughput, capacity or sampling-statistics claim |
+| P0 / FTS-02 / R04 | No additional W1-W8 measurement campaign or baseline freeze | Unchanged |
+| M0-M5 | No milestone-wide acceptance added | Unchanged |
+| Complete Stim/PyMatching parity | This file-conversion slice only | Incomplete |
+
+Next, finish observing the existing container publication. A separate 28-path
+native shot-file reading and packed-batch decoding proposal has been prepared
+against Stim 1.16.0 and the existing 96-file source closure. Proposed functions
+read_shot_data_file and iter_shot_data_file are not implemented or approved by
+this progress entry. The proposal preserves the existing decoder and keeps
+arbitrary-data file writing and other upstream domains as explicit gaps. No research task, threshold claim, hardware
+qualification, mixed Clifford/non-Clifford acceptance or performance promotion
+is added here.
+
+## Native shot-file reading candidate — 2026-11-11
+
+The user approved the 28-path record-reading package under SHA-256
+`dd34a168261cdc11b3e0f4da8dbf75c20f8129b3908b449c98b94f382994e225`.
+Its prerequisite actual-main container publication has passed. The candidate
+adds familiar eager reading and an embedded-only iterator feeding the existing
+packed decoder. The initial contract/fake and SDK observations remain retained.
+Local qualification passed: 356 focused source tests (10 skipped), 52 installed
+native tests without the Stim Python package (one SDK-reference skip), the
+standalone native verifier, and all five wheel/sdist installation profiles.
+Ruff, Black and strict Mypy passed for 11 Python files. Broad smoke/unit passed
+19,382 tests (378 skipped); integration passed 6,910 (310 skipped), within the
+approved 2,400/3,600-second budgets. The owned temporary CPU extension was removed
+by inode and SHA-256 after testing. All 96 upstream files remain byte-identical;
+1,170 package members match source, wheel, sdist and installed artifacts.
+Final-head example, PR checks/review and actual-main acceptance remain separate
+publication gates. FTS-04/R03 and FTS-07/R08 remain partial;
+FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or complete
+parity claim is added. Next: publish this qualified candidate, complete its
+actual-main acceptance, then propose arbitrary-data file writing and review the
+remaining pinned upstream inventory.
+
+## Caller-owned shot-data writing candidate — 2026-11-11
+
+The user approved the 27-path writer package under proposal SHA-256
+`b22e6af76b65abd4a93ff97e9825197f83fe815b509b226f33b65b2818eeba83`.
+It adds `write_shot_data_file` for CPU bool and packed uint8 tensors across the
+six locked Stim 1.16.0 encodings, reusing the current 96-file embedded closure.
+Fake and source conformance have passed, including fixed bytes and the SDK
+replacement route. The embedded build, no-SDK wheel verifier, installed
+profiles, broad smoke/unit and integration tiers, final-head example and PR
+publication remain pending. No merge is authorized. The existing 64 MiB
+principal estimate and 1 GiB output estimate remain request guards, not RSS
+claims. FTS-02/R04/M0-M5 and research status do not advance.
+
+## Approved native DEM sampling delivery (2026-11-12)
+
+PR #1152 is merged as `39b16b446733c215a14c59332bcf69c350f62069`.
+Actual-main source acceptance passed 345 tests with one expected SDK-only skip,
+using accepted binaries rather than a fresh main wheel. The next approved
+32-path bundle adds reusable independent-DEM sampling, error recording/replay
+and six-format streamed files. It reuses two unchanged Stim 1.16.0 templates
+(98 source files, 37 translation units). The approved compatibility amendment
+adds one existing test path, bringing implementation scope to 33 paths.
+macOS arm64 offline wheel/sdist and
+installed native acceptance passed: core 79 passed/1 expected SDK-only skip,
+SDK profile 80 passed. Complete smoke/unit passed 19,971 tests
+(172 skipped); integration passed 7,459 (279 skipped).
+No Stim Python package is present in the accepted core installation; real
+`prepare_dem`, `sample_dem` and `write_dem` calls were recorded. Existing
+exclusive-group `dem_sampling` and rejection rules remain. Final-head example
+and PR publication are the remaining delivery steps; merge is not authorized.
+See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md).
+Full upstream DEM text/REPEAT compatibility, categorical native sampling,
+Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
+expansion remain explicit gaps. No maturity or full-parity claim is promoted.
+
+## Recovered noiseless stabilizer implementation candidate — 2026-11-13
+
+The approved slice replaces the implementation behind existing
+`sample_stabilizer`, retaining the SDK route and the public execution contract.
+Scope is the initial 11 paths plus two approved SDK-test isolation repairs, for
+13 paths total. It reuses the existing 98 upstream files and 37 translation units
+without a dependency, API, CI or runner change.
+
+The original temporary artifacts were unavailable and were not reused as proof.
+Fresh qualification now passed 208 focused tests, one offline macOS arm64
+wheel/sdist build, and three actual installed profiles: no-SDK embedded 82 tests,
+embedded with SDK 246, marker-free SDK 246. Real native calls and the existing
+16,384-wire regression are independent of replacement-fake evidence. Complete
+smoke/unit passed 20,567 tests, with 296 selected-node skips plus 36 collection
+skips. Integration completed all 12,274 unique selected nodes across disjoint
+groups: 12,028 passed and 246 skipped. Two failed test attempts, subsequent
+startup errors and approved recoveries remain retained; no uninterrupted-run
+claim is made. Final-head gates, PR publication and actual-main acceptance are
+separate delivery steps. Merge requires separate approval. No maturity,
+performance, scalability or full Stim parity claim follows.

@@ -1,5 +1,6 @@
 import contextlib
 import os
+import platform
 import sys
 from pathlib import Path
 from unittest import mock
@@ -215,6 +216,9 @@ def test_build_backend_supports_spdx_license_metadata() -> None:
     assert project["project"]["license-files"] == [
         "LICENSE",
         "flagquantum/drawer/tex/licenses/*.txt",
+        "third_party/openfermion/LICENSE",
+        "third_party/openfermion/NOTICE",
+        "flagquantum/qec/decoders/csrc/vendor/pymatching-2.4.0/LICENSE",
     ]
     assert "setuptools>=77.0.3" in project["build-system"]["requires"]
 
@@ -228,7 +232,9 @@ def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
     assert "trailing_zero_count" in source
 
 
-def _build_ext_command(inplace: bool, torch_file: Path | None = None):
+def _build_ext_command(
+    inplace: bool, torch_file: Path | None = None, *, args: tuple[str, ...] = ()
+):
     """Return a configured `build_ext` command without running a build.
 
     `setup.py` cannot be imported, so it is executed with `setuptools.setup`
@@ -253,13 +259,52 @@ def _build_ext_command(inplace: bool, torch_file: Path | None = None):
         patched,
     ):
         exec(compile(source, "setup.py", "exec"), namespace)
-        command = captured["cmdclass"]["build_ext"](
-            Distribution({"ext_modules": captured["ext_modules"]})
+        distribution = Distribution(
+            {
+                "ext_modules": captured["ext_modules"],
+                "cmdclass": captured["cmdclass"],
+                "script_name": "setup.py",
+                "script_args": list(args),
+            }
         )
-        command.initialize_options()
+        if args:
+            distribution.parse_command_line()
+        command = distribution.get_command_obj("build_ext")
         command.inplace = inplace
         command.finalize_options()
     return command
+
+
+@pytest.mark.parametrize(
+    ("system", "machine", "opt_in", "embedded"),
+    [
+        ("linux", "x86_64", False, False),
+        ("linux", "x86_64", True, True),
+        ("darwin", "arm64", True, True),
+        ("linux", "aarch64", True, None),
+        ("win32", "AMD64", True, None),
+    ],
+)
+def test_embedded_stim_build_is_platform_gated_and_opt_in(
+    monkeypatch: pytest.MonkeyPatch,
+    system: str,
+    machine: str,
+    opt_in: bool,
+    embedded: bool | None,
+) -> None:
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setattr(sys, "platform", system)
+    monkeypatch.setattr(platform, "machine", lambda: machine)
+    monkeypatch.setenv("FQ_BUILD_EMBEDDED_STIM", str(int(opt_in)))
+    if os.name == "nt":
+        monkeypatch.setenv("CL", os.environ.get("CL", ""))
+    if embedded is None:
+        with pytest.raises(RuntimeError, match="macOS arm64 and Linux x86_64 only"):
+            _build_ext_command(False)
+        return
+    command = _build_ext_command(False)
+    native = "flagquantum.simulation.stabilizer._embedded_stim"
+    assert any(extension.name == native for extension in command.extensions) == embedded
 
 
 def _torch_library_rpath() -> str:
@@ -359,18 +404,53 @@ def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
     path it opens is the one the runtime loads.
     """
 
-    checked: list[str] = []
+    checked: list[tuple[bool, str]] = []
     monkeypatch.setattr(BuildExtension, "run", lambda self: None)
-    for inplace, expected in ((True, 1), (False, 0)):
+    for inplace in (True, False):
         command = _build_ext_command(inplace=inplace)
         monkeypatch.setattr(
             command,
             "_require_loadable_artifact",
-            lambda ext, name=f"{expected}": checked.append(name),
+            lambda ext, inplace=inplace: checked.append((inplace, ext.name)),
         )
         command.run()
 
-    assert checked == ["1"]
+    assert checked == [
+        (True, "flagquantum.simulation.native_cpu._C"),
+        (True, "flagquantum.qec.decoders._sparse_blossom"),
+    ]
+
+
+def test_msvc_parallel_request_builds_extensions_serially(monkeypatch) -> None:
+    command = _build_ext_command(inplace=False, args=("build_ext", "--parallel", "2"))
+    assert command.parallel == 2
+    original_flags = "/O2 /std:c++17 /Brepro"
+    observed: list[list[str]] = []
+    monkeypatch.setenv("CL", original_flags)
+    monkeypatch.setattr(
+        BuildExtension,
+        "build_extension",
+        lambda self, ext: observed.append(os.environ["CL"].split()),
+    )
+    # Run the real setuptools scheduler without configuring a compiler.
+    monkeypatch.setattr(
+        BuildExtension,
+        "build_extensions",
+        lambda self: super(BuildExtension, self).build_extensions(),
+    )
+
+    def unexpected_parallel_build() -> None:
+        pytest.fail("MSVC extensions must build serially when sharing CL")
+
+    monkeypatch.setattr(
+        command, "_build_extensions_parallel", unexpected_parallel_build
+    )
+    with monkeypatch.context() as windows:
+        windows.setattr(os, "name", "nt")
+        windows.setattr(sys, "platform", "win32")
+        command.build_extensions()
+    assert observed == [original_flags.split(), ["/O2", "/Brepro", "/std:c++20"]]
+    assert os.environ["CL"] == original_flags
 
 
 def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(

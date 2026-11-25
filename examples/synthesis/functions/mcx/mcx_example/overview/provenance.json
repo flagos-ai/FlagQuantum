@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/function_usage_examples/mcx/mcx_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "a617612d7f304329e1a6a44e59383af2145ba1ee",
+  "original_sha256": "1bd62855eea5090114acf72bcc87e142eec80014235527307a2b62c4db3fb8f9",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "f6fbe52a9d2222704850d0cad914a6f6ecb79d5dc8a336ac0a8b520d37e9e1a4"
+    },
+    {
+      "index": 4,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.mcx.mcx_example.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_library_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/mcx/mcx_example/overview/walkthrough.ipynb",
+  "scope": "Original seven-control zero-input program plus a supplemental coherent phased input. Complete complex states, absolute phase and clean work are checked; no optimality claim.",
+  "native_semantic_adaptations": "Native qfunc definitions and local CPU execution retain the original problem dimensions and constants. Add exact named readout; supplemental coherent inputs are explicitly labeled. No cloud/hardware or resource-optimality claim."
+}

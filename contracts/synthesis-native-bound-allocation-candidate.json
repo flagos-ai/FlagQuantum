@@ -1,0 +1,35 @@
+{
+  "schema": "flagquantum.synthesis_native_bound_allocation_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "semantics": "Specialize a checked synthesis-time integer allocation width before existing register construction and lowering.",
+  "width_range": [
+    1,
+    256
+  ],
+  "static_integer_bound": 4096,
+  "expression_depth_limit": 32,
+  "syntax": [
+    "integer literal",
+    "bound int parameter",
+    "static module or closure integer name",
+    "active bounded loop index",
+    "checked classical integer-array read",
+    "unary + and -",
+    "binary +, - and *"
+  ],
+  "excluded": [
+    "bool and float",
+    "unbound and quantum-dependent values",
+    "host calls including len",
+    "dynamic attributes",
+    "variable-width numeric annotations",
+    "quantum type aliases"
+  ],
+  "new_physical_ir_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

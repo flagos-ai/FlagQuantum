@@ -160,12 +160,14 @@ class ExecutionPlan:
     taken about it. Frozen because it records a decision already made -- a
     consumer that could edit it could contradict the plan it is executing.
 
-    `recommended_mode` and `world_size` are recommendations, not enforcement:
-    `fq.run` accepts a plan and still chooses. `shardable_wires` names the
-    qubits a sharded statevector layout may cut, which is every qubit but the
-    last. A `runtime_config` of ``None`` means the plan was built without one;
-    `routing_plan` and `noisy_execution_plan` are present only when the
-    corresponding feature was in play.
+    For a plan accepted by ``fq.run``, its serialized contract fixes the execution
+    decision. Execution validates that contract and its environment; it does not
+    choose another backend, recompile, or replan. ``Circuit.runtime_plan()`` is the
+    separate runtime-selection explanation, not this executable contract.
+    `shardable_wires` names the qubits a sharded statevector layout may cut, which
+    is every qubit but the last. A `runtime_config` of ``None`` means the plan was
+    built without one; `routing_plan` and `noisy_execution_plan` are present only
+    when the corresponding feature was in play.
     """
 
     analysis: CircuitAnalysis | None

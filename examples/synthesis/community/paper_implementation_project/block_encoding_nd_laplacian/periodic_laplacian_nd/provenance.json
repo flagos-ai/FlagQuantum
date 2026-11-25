@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "dec02cb26988bcb6c5b6ff25e76a90811fa5ec84766d408212c2b0a49125fb63",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding_nd_laplacian.periodic_laplacian_nd.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_laplacian_nd.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Expose the original packed3-bit j as j1(two high bits),j0(low bit),in that readout order; selector and dimension match l and k. Existing whole-register QFT plus coherent polynomial phases implement each conditional modular shift without physical gate design. No subregister QFT support is claimed. All64 packed position/selector/dimension initial values and a phase-weighted coherent state match independent complete permutations; hidden work is zero.62ops/depth41/6physical vs original21ops/depth17/7physical is an explicit gate/workspace tradeoff."
+}

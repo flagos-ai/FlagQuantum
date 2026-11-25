@@ -1,0 +1,36 @@
+{
+  "upstream_path": "applications/benchmarking/randomized_benchmarking/randomized_benchmarking.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "9a5278cfdf4897ee1773e2d68ac2eebd34cd3c8547c10d264ff31209834555fc",
+  "git_blob_sha1": "b0b7190ead4ff1cab4c2e0fa0d65fdec0c40cf6f",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "6a39db09e1028e35cb0dc1960cf543bb9528956269062e93f401d0b7332a21e3",
+      "native_code_cell": 1,
+      "stage": "Fresh source-seeded Clifford words, native root models and absolute SX/RZ semantics"
+    },
+    {
+      "index": 3,
+      "sha256": "e3fa1a8ba20b7123f1b4bcee1806a2537d726ba2715de74da0a9d64296f73eb4",
+      "native_code_cell": 2,
+      "stage": "Concurrent native synthesis of all five original-length models"
+    },
+    {
+      "index": 5,
+      "sha256": "4de66e75e57562d92877447cef681c104ec70a3ce7576f796df85d0ea23dfccd",
+      "native_code_cell": 3,
+      "stage": "Ten actual local statevector/density-matrix execution jobs, batches three and independent full-state/density checks"
+    },
+    {
+      "index": 7,
+      "sha256": "696ce18a68cc1e5269c69a045a6580f8a821ff9c6f8084124d802ec658f0929d",
+      "native_code_cell": 4,
+      "stage": "Explicit source-label diagnostic, correctly associated empirical survival curves and ideal-data identifiability limit"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_randomized_benchmarking_notebook.py",
+  "native_entrypoint": "examples.synthesis.applications.benchmarking.randomized_benchmarking.overview.main",
+  "native_notebook": "examples/synthesis/applications/benchmarking/randomized_benchmarking/overview/walkthrough.ipynb",
+  "scope": "All4sourcecode stages; original one-qubit five independently source-seeded words5/10/15/20/25, filtered hardware gate order, RZ(pi), absoluteSX, checked inverse, concurrent synthesis, ten explicitly local statevector/density-matrix jobs in batches3/3/3/1, independently verified native/full Circuit/dense states, density matrices, zero workspace, explicit1024seeded actual samples each, actual resources, job-identity-tagged survival analysis and source eight-label mismatch diagnostic, final observed plot. No source importer, provider backend equivalence, cloud job, noisy-device fitted RB/error estimate, historical count fitting, frozen216change, new dependency or scalability claim."
+}

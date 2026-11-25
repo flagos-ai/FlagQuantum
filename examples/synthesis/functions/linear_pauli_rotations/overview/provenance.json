@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "3f44e7a6854e48ca3a90463349cc0c39a6dee858",
+  "original_sha256": "7e48c5378aa284613224d4afdad7bc4fe0ab44e3ef20100181991ffe0353637d",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "af835c9be87f103a03d38a871b9b131a544ad780c69bb84c0115b6aae3263b63"
+    },
+    {
+      "index": 4,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.linear_pauli_rotations.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_library_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/linear_pauli_rotations/overview/walkthrough.ipynb",
+  "scope": "Six-bit control and three Y targets with retained slopes/offsets, original zero input and supplemental coherent phased control. All512complex amplitudes and zero work are checked.",
+  "native_semantic_adaptations": "Native qfunc definitions and local CPU execution retain the original problem dimensions and constants. Add exact named readout; supplemental coherent inputs are explicitly labeled. No cloud/hardware or resource-optimality claim."
+}

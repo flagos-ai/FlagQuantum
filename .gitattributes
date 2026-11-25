@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# The Sparse Blossom source lock hashes the upstream LF bytes.
+flagquantum/qec/decoders/csrc/vendor/pymatching-2.4.0/** text eol=lf

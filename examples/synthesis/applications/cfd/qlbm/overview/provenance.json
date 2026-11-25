@@ -1,0 +1,108 @@
+{
+  "upstream_path": "applications/CFD/qlbm/qlbm.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "3362b5e3a989f2fb09431d83cfabb8688d05ad8c",
+  "original_sha256": "45ab19d8e498aa45258a3abf9d91a2cffd8a29e7b06beb049d12c311ae54850a",
+  "scope": "All 19 source stages, the original 8 by 8 lattice, four velocity magnitudes, nine CFL events and thirteen streaming and reflection updates. Take 2048 samples and retain both spatial and velocity marginals.",
+  "native_semantic_adaptations": "Use the approved normalization of the four equal velocity amplitudes from 0.25 to 0.5. Recompute the CFL schedule with exact rational event times and bind it to the native quantum program. Keep the source field order, modulo-eight streaming and post-stream reflection. Use a local sample seed instead of the hosted random stream.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qlbm.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/qlbm/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qlbm_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 9,
+      "native_code_cell": 1,
+      "sha256": "7d64d2cccbe069068d0f44318532a457c173dfacf9e2a7651101e9b649a440a1"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 2,
+      "sha256": "bef7041c56bed802ce0c7eb369ff89bd0d43129688c2404441ea8670a7e03407"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 3,
+      "sha256": "f96cac70830b8bc5c779a6200ba35666366bda90f64f18c160d5755e0c28a054"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 4,
+      "sha256": "1d725a016ed7d8a242b76002d0640d780364b8325d7ecc53a0613d492aaabf73"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 5,
+      "sha256": "55b940c6bf1c291f5acb4de7bcb965c4634ab7f62b50106d598e25d94cc54df1"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 6,
+      "sha256": "03a6282bc18f0bef4117f7d3b5a6ba84cbad567a9a1efa58b2352e359f36103e"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 7,
+      "sha256": "b3b6146d7294c8aa8eb46076ae4b029cbcbb677b1b3d9186aa643c8bc0a2940e"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 8,
+      "sha256": "12de8c97f4cbb950d93eb5b44006c1fc2845d5a6251480c4cfbeffe79e871e95"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 9,
+      "sha256": "e2f2535e33f022b12a774e8d3909937100d9d0a4c661bbd139c6bcfc13528ea6"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 10,
+      "sha256": "2597d8f1b7a9a143abb0d77ea8644dce56b2e1b15d3f70489848d3a83827c938"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 11,
+      "sha256": "6f0f9231d9f71c18a3554deb8d84afda095e7597b1f43407a172a854464d8c1c"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 12,
+      "sha256": "a7bea165e5ca61add196d37bdde957c4da24f8e9d4a22f661a16ba85d3a50f2e"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 13,
+      "sha256": "85b86c286aa3dd5ae2579072a58299e852e0bb9a122fd3bc96e352bab49fc21d"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 14,
+      "sha256": "5ebf239c326df1c6652df41765f1dcf7f5d9959b04c6acb91107b2c35c61fbad"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 15,
+      "sha256": "5c3d5339f70bc926d6ca94b3ec04a95fba3f7482138f13ef510c1834d033613f"
+    },
+    {
+      "index": 52,
+      "native_code_cell": 16,
+      "sha256": "21fc2c9d39ace08538f724c51c586ae7f431d109bf67aa7a983ee2571b288cc0"
+    },
+    {
+      "index": 54,
+      "native_code_cell": 17,
+      "sha256": "a0b6be8ed441d3d11ed7015faf7b02ec4bdf5b68c0f6c1fe527150baa319c4aa"
+    },
+    {
+      "index": 60,
+      "native_code_cell": 18,
+      "sha256": "4a4b8360d4449b59d49a3ab58530e5f6317ea3cd7058dca7cf31e0dc4ffbbdc3"
+    },
+    {
+      "index": 62,
+      "native_code_cell": 19,
+      "sha256": "0356d95590e349d5561e791993b47b80302bf9b6609303b86ac25170bedaf917"
+    }
+  ]
+}

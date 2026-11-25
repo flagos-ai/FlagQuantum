@@ -48,6 +48,40 @@ result = run_repetition_memory_experiment(
 print(result.logical_error_rate)
 ```
 
+## Run a batch experiment with the bundled matcher
+
+Choose `decoder="sparse_blossom"` in `run_memory_experiment` or
+`run_stim_experiment` to decode a batch with FlagQuantum's bundled Sparse
+Blossom C++ solver. The experiment needs Stim for sampling. The solver is
+included in the FlagQuantum wheel and uses no PyMatching Python package.
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+)
+from flagquantum.qec.execution.experiments import run_memory_experiment
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+result = run_memory_experiment(
+    memory,
+    noise=PhenomenologicalNoise(data_flip=0.005, measurement_flip=0.005),
+    decoder="sparse_blossom",
+    shots=4096,
+    batch_size=1024,
+    seed=23,
+)
+print(result.logical_error_rate, result.confidence_interval)
+```
+
+The experiment samples the original noisy circuit, using Stim's graphlike DEM
+decomposition to choose matching weights. Uniform Pauli channels can be
+represented as equivalent depolarizing channels during DEM construction.
+The backend accepts one matching edge per detector pair and up to 64 logical
+observables. Unsupported graphs raise a capability error. Fixed-point edge
+weights can give very close paths equal matching cost.
+
 ## Declare a code and its detection layout
 
 The `codes` package holds the code records and `circuit.py` turns one into a memory
@@ -570,10 +604,12 @@ carries one X-type and one Z-type stabilizer, so the two check blocks are the sa
 matrix and the patch is read out in either basis; and a face on the triangle's
 edge spans four qubits while a face in its bulk spans six, so one data fault
 lights three detectors and the model is **not** graphlike — the matcher refuses it
-and the belief-propagation decoder answers it. The distance is searched for over
-the derived matrices exactly as it is for a code a caller writes, so the reported
-distance is a property of the patch and not of the logical string the record
-declares. At distance three that patch is the Steane code under a relabelling of
+and the belief-propagation decoder answers it. The distance is proved over the derived matrices by an exact syndrome
+trellis: prefixes sharing unfinished check parities retain only their minimum
+weight. For this self-dual one-logical-qubit code, odd kernel words are exactly
+the logical coset. The bounded live-check width makes distances through fifteen
+practical without skipping validation or assuming the requested distance. Wider
+frontiers and other code shapes retain the exact subset search. At distance three that patch is the Steane code under a relabelling of
 its wires; the family grows away from it, and either way nothing downstream can
 tell which route produced the record.
 

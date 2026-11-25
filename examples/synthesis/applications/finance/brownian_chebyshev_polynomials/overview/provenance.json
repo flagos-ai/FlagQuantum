@@ -1,0 +1,97 @@
+{
+  "upstream_path": "applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "976bca2921fbb5c6ae9107e86594f423d322383669bd544cc2310747d28c7ac9",
+  "git_blob_sha1": "6fcee1012f7b0e5b14d4c549be75fb299e6d7150",
+  "scope": "All 14 source stages; fresh sixteen-bin and two-bin distributions, original sine and Chebyshev demonstrations, full four-term native Wiener recurrence and all 32 joint time/coefficient branches.",
+  "native_semantic_adaptations": "Use exact fixed-point reversible Circuit output columns for the two multi-bit demonstrations. Regenerate the Gaussian weights and prove equality with the retained native qfunc's symmetric literal probabilities. Keep its signed eight-fractional-bit output contract and verify the complete state under the source width bound.",
+  "native_entrypoint": "examples.synthesis.applications.finance.brownian_chebyshev_polynomials.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/brownian_chebyshev_polynomials/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_brownian_chebyshev_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "stage": "Regenerate the truncated Gaussian distribution by integrating the bin masses.",
+      "sha256": "544d241e68b846ce72b614d9743cbb35e39a5e9786da675c7ee122042e2af0f8"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "stage": "Keep four terms, one time bit and the original sixteen bins for visualization.",
+      "sha256": "2126d02045734c42376950d441ed2dc78259062471579dfc9448536e46880f15"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Plot the actual discretized Gaussian and the verified price marginal.",
+      "sha256": "5a29a5e9bb43234562a9a67c84511793790aad0999c818179145542d5b458eab"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Regenerate the two exact Gaussian weights of each coherent series coefficient.",
+      "sha256": "d8e9cc178e228eea2d938370ccec01cab3c6b2fa12fb9b07cc769c4d556ee822"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Encode the sine approximation on all eight original three-bit inputs.",
+      "sha256": "4cb5071577c93e8cec17ef7d0b3997fb08f3bb78ba4dde41ed894397ed507263"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 6,
+      "stage": "Inspect the measured sine arithmetic resources.",
+      "sha256": "5691235a9e53c5603afea43f8584e77345ce36b8f0a28f58e2c435bfecf3e7af"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 7,
+      "stage": "Apply the original standalone recurrence on all four input values.",
+      "sha256": "89f7eef193e2cd3691891fd2cfada4c5cd4c712de733ba8a98ffdd77134aeaa3"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "stage": "Inspect the reversible recurrence circuit resources.",
+      "sha256": "081603af86bb78133db6734290299e006b4e7ecde0cb58900c40977acd914cb2"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 9,
+      "stage": "Verify all four Gaussian coefficient registers and the original two time choices.",
+      "sha256": "48cba96d75adbaf17c2bc432ecfdcb4586b6cc052fcf49d75291793da6aad1ef"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 10,
+      "stage": "Read the signed price transformation through the native named marginal.",
+      "sha256": "372727688c09fe20741a035844e572b54df15f2956291b89715a46a6ece7e458"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 11,
+      "stage": "Verify the complete native Wiener/price state and clean compiler workspace.",
+      "sha256": "9a1735d3feecff34a6682433772a7969187ae294c7bddb2460a3c125b864b783"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 12,
+      "stage": "Apply the original width constraint to the actual price circuit.",
+      "sha256": "b4aab71b2d0b117157dface7aa93cb24dd22c160652f912ae13a3841174e9f5b"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 13,
+      "stage": "Inspect the local circuit width, instruction count and depth.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 14,
+      "stage": "Report physical width and independently checked execution outcomes.",
+      "sha256": "34c2231ad23b092f536a441246fbf15ca0c4f892ada8f31d06fd2248d7edbff7"
+    }
+  ]
+}

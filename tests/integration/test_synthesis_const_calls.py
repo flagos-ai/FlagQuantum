@@ -5,12 +5,13 @@ from dataclasses import replace
 import pytest
 
 import flagquantum as fq
-from examples.synthesis_const_calls import const_composition
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_profile import register_type
-from flagquantum.compiler._construction.selection import ConstructionBudget
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import ConstructionBudget
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_type,
+)
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,
@@ -22,8 +23,9 @@ from flagquantum.compiler._hybrid.model import (
 )
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_compiler_examples.const_calls.main import const_composition
 
 pytestmark = pytest.mark.integration
 
@@ -231,7 +233,9 @@ def test_nested_phase_cannot_bypass_target_guard_and_unused_phase_does_not_restr
     p.emit("qreg.allocate", x)
     p.emit("qreg.allocate", y)
     p.emit("qreg.call", x, y, out, callee="value_call")
-    from flagquantum.compiler._construction.selection import select_register_program
+    from flagquantum.compiler._construction.scheduling.selection import (
+        select_register_program,
+    )
 
     assert select_register_program(
         p.finish(), functions, target=target

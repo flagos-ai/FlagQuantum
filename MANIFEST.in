@@ -1,9 +1,12 @@
+include third_party/openfermion/PROVENANCE.toml
 prune tests
 prune benchmarks
 prune examples
 prune .fq_jax_cache
 prune .pytest_cache
 recursive-include flagquantum/simulation/native_cpu/csrc *.cpp *.h
+recursive-include flagquantum/simulation/stabilizer/csrc *.cc *.cpp *.h *.inl *.json *.md LICENSE
+recursive-include flagquantum/qec/decoders/csrc *.cc *.cpp *.h *.inl *.json LICENSE
 global-exclude *.py[cod]
 global-exclude *.parquet
 global-exclude *.ipynb

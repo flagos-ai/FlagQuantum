@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/negation/negation_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "7ce922121c73548731a1ca322bb34029ac91a6af",
+  "original_sha256": "53dd8713c8d9dc9c45a4006d2976cbbf5a416d25dffba5c1bc4ca9de136fa860",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "281c8daf91e9542592449f321fa3536a7e29453f807e51a391727bddb4eb2eb7"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.negation.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_comparison_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/negation/overview/walkthrough.ipynb",
+  "scope": "Complete local computational Notebook workflow: original quantum definitions, exact signed/unsigned domains, synthesis, local CPU execution and named readout. Seeded1000shot host samples replace cloud sampling; independent full states and clean workspace are checked separately.",
+  "native_semantic_adaptations": "Use Annotated width/sign metadata with allocate instead of allocation metadata arguments. Preserve both comparator examples and the full signed negation input domain including -4. Local execution and seeded exact-probability sampling replace cloud calls; no hardware claim."
+}

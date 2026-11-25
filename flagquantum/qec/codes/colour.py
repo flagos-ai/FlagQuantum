@@ -38,10 +38,12 @@ def triangular_colour_code(distance: int) -> CssCode:
     logical operator of each family is found and the smaller of the two becomes the
     record's ``distance``. The bound that search is given is the requested distance
     itself, since a smaller one would refuse the code whose distance is the number
-    asked for, and that bound is the whole cost of this function: the search tries
-    every qubit subset up to the distance, so the family is affordable at the small
-    distances an experiment is built from and is not a way to write down a large
-    patch.
+    asked for. An exact syndrome trellis merges partial operators with identical
+    unfinished check parities, keeping only the lightest. Odd kernel words are
+    precisely the logical coset of this self-dual, one-logical-qubit patch, so this
+    still proves the minimum rather than assuming the requested distance. The
+    trellis is used only within its bounded live-check width; wider matrices
+    retain the exact subset search.
 
     **At distance three this is the Steane code, relabelled.** The smallest patch
     has seven data vertices over three faces, and its three weight-four checks are

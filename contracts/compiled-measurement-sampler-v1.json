@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_implementation_candidate",
+  "proposal": "docs/development/STIM_ALIGNED_COMPILED_MEASUREMENT_SAMPLER_PROPOSAL.md",
+  "approval_sha256": "9c07b5dd31e7601a616d9e1ba957d0cd2553200f5d9cf5cc068080ef2504a75e",
+  "entry": "flagquantum.Circuit.compile_sampler",
+  "handle": "flagquantum.simulation.stabilizer.measurement_sampler.CompiledMeasurementSampler",
+  "root_exports_added": [],
+  "engine": "Stim 1.16.0",
+  "record_order": "explicit source measurement occurrence order",
+  "write_format": "b8",
+  "max_payload_bytes": 67108864,
+  "max_frame_estimate_bytes": 67108864,
+  "max_file_bytes": 1073741824,
+  "max_qubits": 4096,
+  "max_measurements": 65536,
+  "max_lowered_operations": 100000
+}

@@ -1,0 +1,3594 @@
+{
+  "manifest": {
+    "base_commit": "fa2dfce21e2c8c0a055a90bc5f005de6d6b2a2bd",
+    "implementation_commit": "11745ab11070765974b90f5a8f512bf4c30576b1",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "input_nonce": "e99f9400cba6007b9be3900694e5ea6440bf570cd07046e060ca7856689a47ad",
+    "drawn_at_utc": "2026-11-22T02:07:18.904055+00:00",
+    "protocol_sha256": "87930d3988542325a371dedc273ef13049b01d3cd9161970f6b95efc002007a5",
+    "runner_sha256": "eaf8de069d8d7f4bc3c8208426159436954ef6c37ef0574ea3d5f10efbed3fe7",
+    "selector_ast_sha256": "e82d1c21564135b684fcfd49428819a07367dd0066aeff1ec59866ee3ce2c77f",
+    "native_budget": 20000,
+    "comparison_nonces": [
+      "0101010101010101010101010101010101010101010101010101010101010101",
+      "61357a88d4608fa7ca10295537fee2aeeb3e88cf1a2d2e4825fe094335d17f8b"
+    ],
+    "scope": "single_device_fast_path; prospective quality only; no qualified time/RSS/SDK ranking/scalability claim"
+  },
+  "execution": {
+    "command": [
+      "/Users/baai/Documents/liuwei/sdkbench/.venv/bin/python",
+      "-m",
+      "benchmarks.compiler_sabre_native_cost",
+      "--sdkbench-root",
+      "/private/tmp/sdkbench-product-conformance-20261121",
+      "--nonce",
+      "e99f9400cba6007b9be3900694e5ea6440bf570cd07046e060ca7856689a47ad",
+      "--output",
+      "/private/tmp/fq-native-cz-prospective-results-20261122.json"
+    ],
+    "timeout_seconds": 600,
+    "returncode": 0,
+    "log": "/private/tmp/fq-native-cz-prospective-results-20261122.log"
+  },
+  "input_counts": {
+    "new_source_target_pairs": 51,
+    "repeated_source_target_controls": 9
+  },
+  "input_fingerprints": [
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line"
+      ],
+      "source_target_sha256": "60e3e4e26f867e50de83bd2ffd7bfdd3b25037a5aa8bd08299a9819da0b85c76",
+      "previous_source_target_sha256": [
+        "a09810710e4c0df8bac47c779d6229b4f77dd8d558bf6775f75aa196b6673ecc",
+        "1b421752f428ba0e89391efddc012e2e050179c6dd09ebed3d11d204d30447e7"
+      ],
+      "probe_sha256": "8ff5b5273c9bf1502132e4ef2a7f18407916a71ba2639ea7bd0cadf17f095e17",
+      "previous_probe_sha256": [
+        "8d0b591522680a531007d6e9815ef54721d74b429a909eb5e926cf3de064bb40",
+        "bed50ecd4a5299bfb42dec86c78bf6a42ec7697638ad160ef8d283d27c1336c8"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring"
+      ],
+      "source_target_sha256": "919f8d8fc535f8109845e5abd573267a885ba343360f01a31e1d932acf62361e",
+      "previous_source_target_sha256": [
+        "56ebfded80b0392beb288eb95a3ee12b3ce78746381883682b36df7ea98303d5",
+        "ddd759ab684dee4bcbb23ff10da76127935fceb5c27fffb7a15d8107cb2e6b72"
+      ],
+      "probe_sha256": "8ff5b5273c9bf1502132e4ef2a7f18407916a71ba2639ea7bd0cadf17f095e17",
+      "previous_probe_sha256": [
+        "8d0b591522680a531007d6e9815ef54721d74b429a909eb5e926cf3de064bb40",
+        "bed50ecd4a5299bfb42dec86c78bf6a42ec7697638ad160ef8d283d27c1336c8"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid"
+      ],
+      "source_target_sha256": "c36bc15906a5f00fe7c378aafd214f1b67cc881a0b1a3fd519edb684ae6ed4f3",
+      "previous_source_target_sha256": [
+        "7d05de7c7f065a7c4d5df722b6aaaff13a9d2afb440e8803546275b7eb879e4e",
+        "c63bf9fa9600c1bb905849c6912ce77e6db4487bf8d3deab46fd83d2c84046c0"
+      ],
+      "probe_sha256": "8ff5b5273c9bf1502132e4ef2a7f18407916a71ba2639ea7bd0cadf17f095e17",
+      "previous_probe_sha256": [
+        "8d0b591522680a531007d6e9815ef54721d74b429a909eb5e926cf3de064bb40",
+        "bed50ecd4a5299bfb42dec86c78bf6a42ec7697638ad160ef8d283d27c1336c8"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse"
+      ],
+      "source_target_sha256": "60e3e4e26f867e50de83bd2ffd7bfdd3b25037a5aa8bd08299a9819da0b85c76",
+      "previous_source_target_sha256": [
+        "d17c7d1f74170d3d09255210bfdd18380c12f7d29d42cd88ca375253a86ef0ee",
+        "7a38a5e6a5ae423bef7006962624302e5c7731e98e2c42a0918ee36044fe210d"
+      ],
+      "probe_sha256": "8ff5b5273c9bf1502132e4ef2a7f18407916a71ba2639ea7bd0cadf17f095e17",
+      "previous_probe_sha256": [
+        "8d0b591522680a531007d6e9815ef54721d74b429a909eb5e926cf3de064bb40",
+        "bed50ecd4a5299bfb42dec86c78bf6a42ec7697638ad160ef8d283d27c1336c8"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line"
+      ],
+      "source_target_sha256": "953762fe3eb490583edc36fb9b16ff4a539cf9ccc92b6cdfbc79ca7e2f41039d",
+      "previous_source_target_sha256": [
+        "46c479bc0fae4b7513683ded43b54058438f0ad90d86eec89354eaf4e1a9f25d",
+        "e5069c888defbce381f730f879280b00fafe6ab24c77a92aaf57fe10770f7efa"
+      ],
+      "probe_sha256": "9680460d7fb425ac42b1a72c76a8298f7b9d8f129b50d27f2cb8529fef477008",
+      "previous_probe_sha256": [
+        "12d17a7f6f3614e5d10f6f32126e093c6b1ba8247a6db50f29b6a16cb4a821c7",
+        "91a53861bfa4d5a4b3072c2cf4b9f59e5548f96d62a7992af2f7a28273cea679"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring"
+      ],
+      "source_target_sha256": "db7671117aa0799552c3289898f13ccae9a1d1b60392df91b25fdaf47734dbf4",
+      "previous_source_target_sha256": [
+        "29f6cf4e13125dc74cc09f27aeb5d1ac34f58ffaa703abd2083a4f8afc195242",
+        "92d198bf53dad251fcf33c8fc9f2c955052f87e6080560191ce553f4e0a4c1ba"
+      ],
+      "probe_sha256": "9680460d7fb425ac42b1a72c76a8298f7b9d8f129b50d27f2cb8529fef477008",
+      "previous_probe_sha256": [
+        "12d17a7f6f3614e5d10f6f32126e093c6b1ba8247a6db50f29b6a16cb4a821c7",
+        "91a53861bfa4d5a4b3072c2cf4b9f59e5548f96d62a7992af2f7a28273cea679"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid"
+      ],
+      "source_target_sha256": "6007319c4aac4c4fd6b7821447082cafc90b63fec6d6da9580a45377d8fafe1a",
+      "previous_source_target_sha256": [
+        "d1c42d6202f26d66b718fb3872c23073079cb157892a15bb786595a7b238b02a",
+        "68054013ffb78a5aea664cf79a643a4deab20991e8943564f1efe73f11db6dd5"
+      ],
+      "probe_sha256": "9680460d7fb425ac42b1a72c76a8298f7b9d8f129b50d27f2cb8529fef477008",
+      "previous_probe_sha256": [
+        "12d17a7f6f3614e5d10f6f32126e093c6b1ba8247a6db50f29b6a16cb4a821c7",
+        "91a53861bfa4d5a4b3072c2cf4b9f59e5548f96d62a7992af2f7a28273cea679"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse"
+      ],
+      "source_target_sha256": "b4c3eec20edcdf5f64a46c87351effa6381768889999c688775336b1aea99fac",
+      "previous_source_target_sha256": [
+        "46c479bc0fae4b7513683ded43b54058438f0ad90d86eec89354eaf4e1a9f25d",
+        "c8a65aeb70acecdfc6f6bcf7ae37cb72baf4402973e704c4f1b211c20f64fefe"
+      ],
+      "probe_sha256": "9680460d7fb425ac42b1a72c76a8298f7b9d8f129b50d27f2cb8529fef477008",
+      "previous_probe_sha256": [
+        "12d17a7f6f3614e5d10f6f32126e093c6b1ba8247a6db50f29b6a16cb4a821c7",
+        "91a53861bfa4d5a4b3072c2cf4b9f59e5548f96d62a7992af2f7a28273cea679"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line"
+      ],
+      "source_target_sha256": "afd7da03febfa6a9472f1ecbaf56e3313929c01f44a6272cd2caa2528d303909",
+      "previous_source_target_sha256": [
+        "ce4e4ba52262a10d37ee0886a3c923b168b9c8c719abdda6f65dc947149315c8",
+        "76c1b5b8bf73e9f1fcb5244a7e87c3ea8fd6700591a1f5922f8711172b8cc111"
+      ],
+      "probe_sha256": "5304f0420e7bf417cba5e451affb39d900bdf5333b92305da69ba6f7369c8411",
+      "previous_probe_sha256": [
+        "4c3538ec8abbb52bf2502c2b7249b20082061648999e3fd7d25fed0243afc183",
+        "d23c5284ac21b42889ef392caf1efb30f273be6536bc34477d0c2f5727c9cd0b"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring"
+      ],
+      "source_target_sha256": "0615543b7cabf5ee8edcd31724a6b14df72a3770b689004349686e48d2c7351e",
+      "previous_source_target_sha256": [
+        "915bbca7137b6f93068d5813b6a290257c23b74f382d7c63274f9efeb52e9d8a",
+        "63b2357e8f1b1dfbeec2b449dbdbaae05484257e36af7b9ac7b178b8673e2236"
+      ],
+      "probe_sha256": "5304f0420e7bf417cba5e451affb39d900bdf5333b92305da69ba6f7369c8411",
+      "previous_probe_sha256": [
+        "4c3538ec8abbb52bf2502c2b7249b20082061648999e3fd7d25fed0243afc183",
+        "d23c5284ac21b42889ef392caf1efb30f273be6536bc34477d0c2f5727c9cd0b"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid"
+      ],
+      "source_target_sha256": "353391438bc1e68d3a3b3db3bc19819d413b9c7bfcf5c1079b66cbb8027fbd3d",
+      "previous_source_target_sha256": [
+        "6964fd1bcc0b456fafbc2ce8b26859c2bd6e789411af919ab4ced2efe7224d42",
+        "35211ebb2f1adb132f5715efcd4f3a0c13f0e1031a9e5acd2cf221d79b06579b"
+      ],
+      "probe_sha256": "5304f0420e7bf417cba5e451affb39d900bdf5333b92305da69ba6f7369c8411",
+      "previous_probe_sha256": [
+        "4c3538ec8abbb52bf2502c2b7249b20082061648999e3fd7d25fed0243afc183",
+        "d23c5284ac21b42889ef392caf1efb30f273be6536bc34477d0c2f5727c9cd0b"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse"
+      ],
+      "source_target_sha256": "454e49f8841fb481bf38d7ad11b6a995ccb496df9c436a17aaae5404acfd12c7",
+      "previous_source_target_sha256": [
+        "c4ed23a24e211d7dd4103fa88c1ef2e76080460dc2cb68aff4f444f142380985",
+        "24b779fbdc63c8c412736bcc4aef3cc1d4238b267e86396e1df16fb12bc93f55"
+      ],
+      "probe_sha256": "5304f0420e7bf417cba5e451affb39d900bdf5333b92305da69ba6f7369c8411",
+      "previous_probe_sha256": [
+        "4c3538ec8abbb52bf2502c2b7249b20082061648999e3fd7d25fed0243afc183",
+        "d23c5284ac21b42889ef392caf1efb30f273be6536bc34477d0c2f5727c9cd0b"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line"
+      ],
+      "source_target_sha256": "4169dcdf332bff528a06b020398b91cd2c6f90ee2724cfd53407ebacdc51a080",
+      "previous_source_target_sha256": [
+        "4169dcdf332bff528a06b020398b91cd2c6f90ee2724cfd53407ebacdc51a080",
+        "4169dcdf332bff528a06b020398b91cd2c6f90ee2724cfd53407ebacdc51a080"
+      ],
+      "probe_sha256": "da80286cbb79ce8b0f42ba77e08526404730da66d458ffe19434d82fc5831cab",
+      "previous_probe_sha256": [
+        "0a0bd2bc8dcfa6b3a18b0f07e572d604ff5c1de2f215b8a56f5a85179c80dd24",
+        "a0caf964117ad2395fdb0791b81b015b4512627c36abde78cd36a3b1e9bc3178"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring"
+      ],
+      "source_target_sha256": "c970f5b83c49930431c9d2e63f0911cf780abe1c2956ed939c6a3c236863a875",
+      "previous_source_target_sha256": [
+        "c970f5b83c49930431c9d2e63f0911cf780abe1c2956ed939c6a3c236863a875",
+        "c970f5b83c49930431c9d2e63f0911cf780abe1c2956ed939c6a3c236863a875"
+      ],
+      "probe_sha256": "da80286cbb79ce8b0f42ba77e08526404730da66d458ffe19434d82fc5831cab",
+      "previous_probe_sha256": [
+        "0a0bd2bc8dcfa6b3a18b0f07e572d604ff5c1de2f215b8a56f5a85179c80dd24",
+        "a0caf964117ad2395fdb0791b81b015b4512627c36abde78cd36a3b1e9bc3178"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "source_target_sha256": "26129a5cdfe6f491a9d98f341d67ca1231b32846e8519e772a03f1430f430f62",
+      "previous_source_target_sha256": [
+        "26129a5cdfe6f491a9d98f341d67ca1231b32846e8519e772a03f1430f430f62",
+        "26129a5cdfe6f491a9d98f341d67ca1231b32846e8519e772a03f1430f430f62"
+      ],
+      "probe_sha256": "da80286cbb79ce8b0f42ba77e08526404730da66d458ffe19434d82fc5831cab",
+      "previous_probe_sha256": [
+        "0a0bd2bc8dcfa6b3a18b0f07e572d604ff5c1de2f215b8a56f5a85179c80dd24",
+        "a0caf964117ad2395fdb0791b81b015b4512627c36abde78cd36a3b1e9bc3178"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse"
+      ],
+      "source_target_sha256": "78cfae71d12957933b484cdb0268157b563a9151765745e954ef9370842fcca3",
+      "previous_source_target_sha256": [
+        "c970f5b83c49930431c9d2e63f0911cf780abe1c2956ed939c6a3c236863a875",
+        "926732ae0d8a83c1c767bb11cbd4459f44988d4a199fdbeb835f314411f1a6c2"
+      ],
+      "probe_sha256": "da80286cbb79ce8b0f42ba77e08526404730da66d458ffe19434d82fc5831cab",
+      "previous_probe_sha256": [
+        "0a0bd2bc8dcfa6b3a18b0f07e572d604ff5c1de2f215b8a56f5a85179c80dd24",
+        "a0caf964117ad2395fdb0791b81b015b4512627c36abde78cd36a3b1e9bc3178"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line"
+      ],
+      "source_target_sha256": "3c32f89bb5f09fae3cfcd395ef4ae8666956ba7364b03bd96e555769758d08c4",
+      "previous_source_target_sha256": [
+        "1df3a7e953ec4747219b8d5a0a0eafdfb39db68f0cdadd9abe39a495b6996025",
+        "0c649676ebe9fa1d3960e0a4621567076cc9114ee27c70998b8daf4a91b1c31c"
+      ],
+      "probe_sha256": "d677229a691ad6e5c5301855e48c80073c1839dd65540573c031a32fd9709c7f",
+      "previous_probe_sha256": [
+        "87985bf2d0d906c088b27ea74734a7771d70610ff2ebe4dfb2a7a23bbd7a44d3",
+        "aace163a6571c69c38cd5bc8a70f40a3ea9dbc91386ab2242336be4ef8bae269"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "source_target_sha256": "ff3c0686a8afca7874bd991992b84ebd1895c2bc54ac0a90a8858dcecaf7b331",
+      "previous_source_target_sha256": [
+        "17647b543f3e679f6b90f1277cfe3fd35ab0d3705dedd8a025f5171a846d6ee4",
+        "14e2fa85c7b237e0791208fd6b9891de65c01437501a91d4953356fc3b755569"
+      ],
+      "probe_sha256": "d677229a691ad6e5c5301855e48c80073c1839dd65540573c031a32fd9709c7f",
+      "previous_probe_sha256": [
+        "87985bf2d0d906c088b27ea74734a7771d70610ff2ebe4dfb2a7a23bbd7a44d3",
+        "aace163a6571c69c38cd5bc8a70f40a3ea9dbc91386ab2242336be4ef8bae269"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid"
+      ],
+      "source_target_sha256": "159c1d258425b229d22e3d04df14ebf1ac9c93c01b430d725d5016f7ca740a4a",
+      "previous_source_target_sha256": [
+        "8e1bde7952558ecd7e41de49ab729c9d65597980c1e2e3711b1eb22d4e52fb1a",
+        "85a9db3d4a558f409b4c7d674d793b4b7cfdad32018d6e8fe22c7970dc2e926e"
+      ],
+      "probe_sha256": "d677229a691ad6e5c5301855e48c80073c1839dd65540573c031a32fd9709c7f",
+      "previous_probe_sha256": [
+        "87985bf2d0d906c088b27ea74734a7771d70610ff2ebe4dfb2a7a23bbd7a44d3",
+        "aace163a6571c69c38cd5bc8a70f40a3ea9dbc91386ab2242336be4ef8bae269"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse"
+      ],
+      "source_target_sha256": "b14abb37b2d75867e3487d3c173ac87599feba9daad569bc75b0c0d9f4d94541",
+      "previous_source_target_sha256": [
+        "25eda7b0baf9f410b81547cc7956fa8dda6e5517b2dbba5ba47439296e84c8eb",
+        "25f61314929b7a6dec4f954b922ad5604b90114b6edf45c895f28fff9c90e652"
+      ],
+      "probe_sha256": "d677229a691ad6e5c5301855e48c80073c1839dd65540573c031a32fd9709c7f",
+      "previous_probe_sha256": [
+        "87985bf2d0d906c088b27ea74734a7771d70610ff2ebe4dfb2a7a23bbd7a44d3",
+        "aace163a6571c69c38cd5bc8a70f40a3ea9dbc91386ab2242336be4ef8bae269"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line"
+      ],
+      "source_target_sha256": "609aea0e39212e5e7f63d2602d5a0789e3463d3b4ca169888a5e7481fc06aa2c",
+      "previous_source_target_sha256": [
+        "a984095656ca2bd93b8eaf27fe1881662f875c091cc559e4906d8be0a38a5910",
+        "09ef24b0b40c91addf08635be56b2bf9bf5544ce15a5034d4a10717d245f3426"
+      ],
+      "probe_sha256": "d1ee99d0fd6794e11c84bc997bf5bdb87a3b699d3137bd7a8db91fef94cd55f3",
+      "previous_probe_sha256": [
+        "879fd5ee75d510bbff45db75cfd41266df432095c959ec258ffecca3e6df4ca7",
+        "0aff631173d1ff9e0a1674ab91ea5f6bf2a0b38ab8040d41b065aba74e205740"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring"
+      ],
+      "source_target_sha256": "5add98f61478efd850d94c1eee45de28cf5c2cfcc2845e99ea4704cf01f7da29",
+      "previous_source_target_sha256": [
+        "9b604c32afb1ede855076148c520b2722c8dc5bdb268a8b5a4455b4cae29b862",
+        "34cf18ae3fa227e7c150c7f5fe05eef7e36d249d5d14b45e3bb425afedc9d50a"
+      ],
+      "probe_sha256": "d1ee99d0fd6794e11c84bc997bf5bdb87a3b699d3137bd7a8db91fef94cd55f3",
+      "previous_probe_sha256": [
+        "879fd5ee75d510bbff45db75cfd41266df432095c959ec258ffecca3e6df4ca7",
+        "0aff631173d1ff9e0a1674ab91ea5f6bf2a0b38ab8040d41b065aba74e205740"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid"
+      ],
+      "source_target_sha256": "5a10511d164ec101139ec6aee4a586e35dd44f3c8e105b122d864b6bfd36488f",
+      "previous_source_target_sha256": [
+        "984a487848ce54af26a9b77030b8f1e5b6201180d9346bd78e30f98c1f18824a",
+        "0bf6505ae6b51bf83b9b1a056a91b3df77a89f556d635d50f1cad248c06c0add"
+      ],
+      "probe_sha256": "d1ee99d0fd6794e11c84bc997bf5bdb87a3b699d3137bd7a8db91fef94cd55f3",
+      "previous_probe_sha256": [
+        "879fd5ee75d510bbff45db75cfd41266df432095c959ec258ffecca3e6df4ca7",
+        "0aff631173d1ff9e0a1674ab91ea5f6bf2a0b38ab8040d41b065aba74e205740"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse"
+      ],
+      "source_target_sha256": "a53740b221dbd3c7d138d1241fc48cfc75da3557d297ad37db3210c5a3378781",
+      "previous_source_target_sha256": [
+        "2d1e2597e6a9b9003b52ebdb22382e16b0d8907c959c1c60208e8835cb9121d0",
+        "615512328e77036475ad293e339e011878a7d7612372a6d73c8484d435ef4e03"
+      ],
+      "probe_sha256": "d1ee99d0fd6794e11c84bc997bf5bdb87a3b699d3137bd7a8db91fef94cd55f3",
+      "previous_probe_sha256": [
+        "879fd5ee75d510bbff45db75cfd41266df432095c959ec258ffecca3e6df4ca7",
+        "0aff631173d1ff9e0a1674ab91ea5f6bf2a0b38ab8040d41b065aba74e205740"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "source_target_sha256": "a1778eff7c9eb501cef8e717e4d58554a19109128ed8ec8a9f4f5142c9f37b60",
+      "previous_source_target_sha256": [
+        "371b4da34443e6a1eaaf4a6c11f3202bd3ef2883498fcdff0be10c749c7d3b5d",
+        "c908dcf3e70c2eaa701d4ccff101f7a7aa85ba949af650beb22802e711de37b2"
+      ],
+      "probe_sha256": "e730d7c3c3cd92139f7b4df94619eaf6fec3815a6d9193ac87af9b4e3ba66c22",
+      "previous_probe_sha256": [
+        "35eacc7a99e92ffbde4262bd4cb5624eb3bd9a2eb20b75de969a65d81abffb1c",
+        "eddfff19e777d336da3b0a642904494b63a74e515e1868fa5f7e7497fce9ac71"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring"
+      ],
+      "source_target_sha256": "3cabeaf3eda5535dbd6ba9bf61c36ef0382a6d082af163c8746054dfe03d013e",
+      "previous_source_target_sha256": [
+        "d53a47eb4648b8c73a815f37e74276db3c8a22dae84089517685b64ea4145116",
+        "2c567a2e5df751ab0668e86879746602f8356ea22b9c05231b55c97a06f8abf6"
+      ],
+      "probe_sha256": "e730d7c3c3cd92139f7b4df94619eaf6fec3815a6d9193ac87af9b4e3ba66c22",
+      "previous_probe_sha256": [
+        "35eacc7a99e92ffbde4262bd4cb5624eb3bd9a2eb20b75de969a65d81abffb1c",
+        "eddfff19e777d336da3b0a642904494b63a74e515e1868fa5f7e7497fce9ac71"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid"
+      ],
+      "source_target_sha256": "a89d513891fe9ba444814f707713f1f13306c2ffdd13df97959e0a959b79e2a5",
+      "previous_source_target_sha256": [
+        "fb1ff7241c67cc1d524df7ca1a42118472284209d828eedca6b885bba3fcd24e",
+        "61cb911156e840aa819e876eda7c671fd7e2c23f214e6200233162f833873561"
+      ],
+      "probe_sha256": "e730d7c3c3cd92139f7b4df94619eaf6fec3815a6d9193ac87af9b4e3ba66c22",
+      "previous_probe_sha256": [
+        "35eacc7a99e92ffbde4262bd4cb5624eb3bd9a2eb20b75de969a65d81abffb1c",
+        "eddfff19e777d336da3b0a642904494b63a74e515e1868fa5f7e7497fce9ac71"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse"
+      ],
+      "source_target_sha256": "08631e9420398825a6ae9872746462a1eddd928b1bde99adc9b9de784bd4a438",
+      "previous_source_target_sha256": [
+        "14ba02080cc049720dfe26a043da12e1b8951581a923d9f146a618cf3793c865",
+        "1913243ac472d4582908633f84ee09d8763a2eef2153c972658e2da9de2af0a5"
+      ],
+      "probe_sha256": "e730d7c3c3cd92139f7b4df94619eaf6fec3815a6d9193ac87af9b4e3ba66c22",
+      "previous_probe_sha256": [
+        "35eacc7a99e92ffbde4262bd4cb5624eb3bd9a2eb20b75de969a65d81abffb1c",
+        "eddfff19e777d336da3b0a642904494b63a74e515e1868fa5f7e7497fce9ac71"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line"
+      ],
+      "source_target_sha256": "5fa198ea6c6ef2b0dff91f661e7688399425164d8bcc373d148f9644836e108e",
+      "previous_source_target_sha256": [
+        "479f6e83eedfa019504d3c53c748e61ad634fa5e440ba6442541e66f9aac3909",
+        "ee1d329508265789a82fecdcb312e8ee448afcf5bc95a52acd5fe01db44a0611"
+      ],
+      "probe_sha256": "360e989641705aeee50058600321da2d65eb1d4aa0a7109cac3fa3f0771bf30c",
+      "previous_probe_sha256": [
+        "948021643495a30230f95efc2fe99c2db4269a43b6e0d30bb6895406733a1f62",
+        "d6f86d38a9183ca3f9d02510cfc966391cccc0db1423d1ad12eab7fb61ce98d7"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring"
+      ],
+      "source_target_sha256": "29edab839b3d19a4880b3129d0a003cc322310bc0b1766727e70cc75583ac05b",
+      "previous_source_target_sha256": [
+        "7f46d3b99e4c8ef7560262e64a1eb5b6525f87c96573f11d1d43dddc8cbba312",
+        "571c546edfd9e76b8cafe449756458a7a38313652fd74898c68c7fd61a8a114f"
+      ],
+      "probe_sha256": "360e989641705aeee50058600321da2d65eb1d4aa0a7109cac3fa3f0771bf30c",
+      "previous_probe_sha256": [
+        "948021643495a30230f95efc2fe99c2db4269a43b6e0d30bb6895406733a1f62",
+        "d6f86d38a9183ca3f9d02510cfc966391cccc0db1423d1ad12eab7fb61ce98d7"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid"
+      ],
+      "source_target_sha256": "b24ed0f54457b143951f9758e500d0e66af6bfc8be69929f4c007206e6fd6de1",
+      "previous_source_target_sha256": [
+        "d541923f893271496075a014201f6ddf0f5e20298ea77db5e4288329569c8af2",
+        "62ff007a809dd361fa59d88d82a3aac8c775e6f8e2463f742becb3cf4e8bcde5"
+      ],
+      "probe_sha256": "360e989641705aeee50058600321da2d65eb1d4aa0a7109cac3fa3f0771bf30c",
+      "previous_probe_sha256": [
+        "948021643495a30230f95efc2fe99c2db4269a43b6e0d30bb6895406733a1f62",
+        "d6f86d38a9183ca3f9d02510cfc966391cccc0db1423d1ad12eab7fb61ce98d7"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse"
+      ],
+      "source_target_sha256": "c8df4ebb5806ac2654be499ccaa5a3a153ea8a20982e5748517d72d763761a94",
+      "previous_source_target_sha256": [
+        "39d24417a926ff0490c894b96cef1a27d4cd87b7dd3327c8f462ce8354db1fac",
+        "6506a9f947d4f857c9d6c230a21280413c08c1d933809edad9c4164bc4f5ce7e"
+      ],
+      "probe_sha256": "360e989641705aeee50058600321da2d65eb1d4aa0a7109cac3fa3f0771bf30c",
+      "previous_probe_sha256": [
+        "948021643495a30230f95efc2fe99c2db4269a43b6e0d30bb6895406733a1f62",
+        "d6f86d38a9183ca3f9d02510cfc966391cccc0db1423d1ad12eab7fb61ce98d7"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line"
+      ],
+      "source_target_sha256": "5c7079f9fb4d1bbea8ae342b76b16fbdb16742e412031d7b7e330eed66a3e610",
+      "previous_source_target_sha256": [
+        "5c7079f9fb4d1bbea8ae342b76b16fbdb16742e412031d7b7e330eed66a3e610",
+        "5c7079f9fb4d1bbea8ae342b76b16fbdb16742e412031d7b7e330eed66a3e610"
+      ],
+      "probe_sha256": "788081bd757745d4943d5f774671cef9ef69a8385dbce03242e8a59cb2459603",
+      "previous_probe_sha256": [
+        "57237a7e5b4019b3cce6a03c4d8421d4e3f1eb69e1df44684935ddd0bfefec30",
+        "adf50503601fcd54d02dc747bdcd1c4e213ccef9881ed7a0b4fdc518e40133ea"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring"
+      ],
+      "source_target_sha256": "a81a833fe821f126e32d91347115212a21ad44e5e537ccff0960b3c0e612b459",
+      "previous_source_target_sha256": [
+        "a81a833fe821f126e32d91347115212a21ad44e5e537ccff0960b3c0e612b459",
+        "a81a833fe821f126e32d91347115212a21ad44e5e537ccff0960b3c0e612b459"
+      ],
+      "probe_sha256": "788081bd757745d4943d5f774671cef9ef69a8385dbce03242e8a59cb2459603",
+      "previous_probe_sha256": [
+        "57237a7e5b4019b3cce6a03c4d8421d4e3f1eb69e1df44684935ddd0bfefec30",
+        "adf50503601fcd54d02dc747bdcd1c4e213ccef9881ed7a0b4fdc518e40133ea"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid"
+      ],
+      "source_target_sha256": "22049045c32c4304438eb3ecf7a984d6acb96e1707404afbd6c886d9ebe85f36",
+      "previous_source_target_sha256": [
+        "22049045c32c4304438eb3ecf7a984d6acb96e1707404afbd6c886d9ebe85f36",
+        "22049045c32c4304438eb3ecf7a984d6acb96e1707404afbd6c886d9ebe85f36"
+      ],
+      "probe_sha256": "788081bd757745d4943d5f774671cef9ef69a8385dbce03242e8a59cb2459603",
+      "previous_probe_sha256": [
+        "57237a7e5b4019b3cce6a03c4d8421d4e3f1eb69e1df44684935ddd0bfefec30",
+        "adf50503601fcd54d02dc747bdcd1c4e213ccef9881ed7a0b4fdc518e40133ea"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse"
+      ],
+      "source_target_sha256": "96693a189615f20b8b0cf442a07f4d39e7d998613643e3fb3cfd3ca486239cc4",
+      "previous_source_target_sha256": [
+        "f0b4acde60eda0d1c9baa95ceefefe9226553ecb8e9538889d65cbc35d5eaf4d",
+        "8232906bb813b573cc341ee482780138a1e07945161e546d7909bd987fe79b3c"
+      ],
+      "probe_sha256": "788081bd757745d4943d5f774671cef9ef69a8385dbce03242e8a59cb2459603",
+      "previous_probe_sha256": [
+        "57237a7e5b4019b3cce6a03c4d8421d4e3f1eb69e1df44684935ddd0bfefec30",
+        "adf50503601fcd54d02dc747bdcd1c4e213ccef9881ed7a0b4fdc518e40133ea"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line"
+      ],
+      "source_target_sha256": "2975ef142834c26a435da8111fd975e1bc762c593bf1620df45c89d6dac39a2a",
+      "previous_source_target_sha256": [
+        "d51308f6a92592bb79123f80c000f9230178ee85e039d5076ea9e15d93faa145",
+        "8e416e2bbae4690c18bc03c44956ef9e1fa982cbd7bbe2d162931fb982a8fed2"
+      ],
+      "probe_sha256": "1264200ac99b60ea52170148c9b0209252b231fc493d9962774ea71ace39c5f2",
+      "previous_probe_sha256": [
+        "153ba6d64a87ad5eced18b75be6eedc0a053c732c20869db088725ff930eb75a",
+        "be13445697d784281208e564741f0bc9cd1e00548a5b8a838e40241c19f3a8bb"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring"
+      ],
+      "source_target_sha256": "cbc69062e9fbfde23f8d79110ede70ef7a345d8471c7b1eb180bfd7eabf7b7b2",
+      "previous_source_target_sha256": [
+        "fef71e059370a4a53ddf84612891e165113c887445b9ddc565b822b4fc13c5cd",
+        "7972725e5e981bd5ff825d7270eba2d8b45c14bfb530f3d769633fc77d02c733"
+      ],
+      "probe_sha256": "1264200ac99b60ea52170148c9b0209252b231fc493d9962774ea71ace39c5f2",
+      "previous_probe_sha256": [
+        "153ba6d64a87ad5eced18b75be6eedc0a053c732c20869db088725ff930eb75a",
+        "be13445697d784281208e564741f0bc9cd1e00548a5b8a838e40241c19f3a8bb"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid"
+      ],
+      "source_target_sha256": "1b2e149c7d52b6fe03a38aee9e7efea15e1423ceba45f109692661fb6b217dd9",
+      "previous_source_target_sha256": [
+        "3e73a3903efc9f3024e6ba90d50b129a40a3674fbedfce84189d1b3f25bfc719",
+        "ec68675fc6a9384d98336569737692cda4fba52816ad7a8ed3262eee8dc56db7"
+      ],
+      "probe_sha256": "1264200ac99b60ea52170148c9b0209252b231fc493d9962774ea71ace39c5f2",
+      "previous_probe_sha256": [
+        "153ba6d64a87ad5eced18b75be6eedc0a053c732c20869db088725ff930eb75a",
+        "be13445697d784281208e564741f0bc9cd1e00548a5b8a838e40241c19f3a8bb"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse"
+      ],
+      "source_target_sha256": "b097241b27e7015cde8e61de744ae8ecda78bcf718792f6e7d1c98492bc86d65",
+      "previous_source_target_sha256": [
+        "7458f5d65f6b2be20e9597531c7ea958d6f3dd9aa1c7bb4baaad45be5b5ae26c",
+        "fa0b91e9d15d5dae7f0027d8ffae1e4fe570b84fda5eda5cd40b4b41ad20007e"
+      ],
+      "probe_sha256": "1264200ac99b60ea52170148c9b0209252b231fc493d9962774ea71ace39c5f2",
+      "previous_probe_sha256": [
+        "153ba6d64a87ad5eced18b75be6eedc0a053c732c20869db088725ff930eb75a",
+        "be13445697d784281208e564741f0bc9cd1e00548a5b8a838e40241c19f3a8bb"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line"
+      ],
+      "source_target_sha256": "9dfd3c689b52456a0659afa5a87e573856428eb423a6f4178451c0f7489a6632",
+      "previous_source_target_sha256": [
+        "49d2d54e6e99079111dc05172be33cea91cad518dc350404bb73e13f9e103530",
+        "253bc501dabe5c47ac67105a6b4aca2943cf171f67590c571f9b3b54c6e38152"
+      ],
+      "probe_sha256": "a547569dd6557313b3fdadee0d953e541fcc5805504d57773bd03923a6a52794",
+      "previous_probe_sha256": [
+        "91e259df0d48e08b84f2ae9d363f0ae7f66433c60e9860224625d9773725adfd",
+        "fce63bf8ed18a37e4858588639bf72ca0fbf66b2ce22698b39d90550ba44c8dc"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring"
+      ],
+      "source_target_sha256": "52f5742460afb18a11a30f221e570cc90e47932bc136453a0de49d935429b20c",
+      "previous_source_target_sha256": [
+        "e34e61f8d99a836dbd95968ad414c6e00622a47f62993aaf4c213d01c8744273",
+        "ba20eb00ef2506d5cf7b304a2cabc97f1e31b7d9c85d1bc0d4ce8a50aac77cc2"
+      ],
+      "probe_sha256": "a547569dd6557313b3fdadee0d953e541fcc5805504d57773bd03923a6a52794",
+      "previous_probe_sha256": [
+        "91e259df0d48e08b84f2ae9d363f0ae7f66433c60e9860224625d9773725adfd",
+        "fce63bf8ed18a37e4858588639bf72ca0fbf66b2ce22698b39d90550ba44c8dc"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid"
+      ],
+      "source_target_sha256": "87b4d864505b251df5934781f96e1c22257f162c1e3af17facc848380f3c0893",
+      "previous_source_target_sha256": [
+        "f7e0f7d137abb0715f2796fd58a556e358c9448f646540d318aceb8ece7dee46",
+        "104feccf1c56eb6b0e8d20e76f3d52e9518daaf08e9f837c48687facce2fcf3a"
+      ],
+      "probe_sha256": "a547569dd6557313b3fdadee0d953e541fcc5805504d57773bd03923a6a52794",
+      "previous_probe_sha256": [
+        "91e259df0d48e08b84f2ae9d363f0ae7f66433c60e9860224625d9773725adfd",
+        "fce63bf8ed18a37e4858588639bf72ca0fbf66b2ce22698b39d90550ba44c8dc"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse"
+      ],
+      "source_target_sha256": "dfa61b96a203e6756d4faf5c4e58329151e1d14db3cd6d12510721d76fe92505",
+      "previous_source_target_sha256": [
+        "4a29004924c8f7aa500e8f4fabbed86dcf4f9b1ec207fbbda6d7c5ce27c6cc12",
+        "9d9dd29e1a82a3f362e38fe686ca716b0c2021a9fd9dcac408826c1ea4bba468"
+      ],
+      "probe_sha256": "a547569dd6557313b3fdadee0d953e541fcc5805504d57773bd03923a6a52794",
+      "previous_probe_sha256": [
+        "91e259df0d48e08b84f2ae9d363f0ae7f66433c60e9860224625d9773725adfd",
+        "fce63bf8ed18a37e4858588639bf72ca0fbf66b2ce22698b39d90550ba44c8dc"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line"
+      ],
+      "source_target_sha256": "ef7a5b16d63383e152a2cfebd079d80770334916d6565c1ee109e8610b7bf968",
+      "previous_source_target_sha256": [
+        "114e38ff634917fe6b89cae1969427335a3401e6f43b6c8cc75779996cd9d10d",
+        "ffb5a423a1ef36fa1c752dd8968020f07c5705ee070d783fad94b2c9e91ebac6"
+      ],
+      "probe_sha256": "4d8c1ccd175ce0255f4b7d2101ede9d3209f91335c319531436d8d2c8c8d395a",
+      "previous_probe_sha256": [
+        "9b6f82a0ebaafc37bd08c145f4c496853ec17cf26bf59d0f3e14837d16bf9d20",
+        "5ebed52aca0ef69ecff89c3270b2f6d896614123f409a60d4d451d9ecc0bca7d"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring"
+      ],
+      "source_target_sha256": "9b39c243b432074668686aabaddfce8d3c458c365169669237da2f6095d1bbde",
+      "previous_source_target_sha256": [
+        "93581441a9ec784e4307b265abe3737434e40260573b692a4b53840db62fb4b9",
+        "93b2485e644cdf2b4100fd5ab15fe72e55e0ef7f35b453da00984d25db7fff5c"
+      ],
+      "probe_sha256": "4d8c1ccd175ce0255f4b7d2101ede9d3209f91335c319531436d8d2c8c8d395a",
+      "previous_probe_sha256": [
+        "9b6f82a0ebaafc37bd08c145f4c496853ec17cf26bf59d0f3e14837d16bf9d20",
+        "5ebed52aca0ef69ecff89c3270b2f6d896614123f409a60d4d451d9ecc0bca7d"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid"
+      ],
+      "source_target_sha256": "369d78fdb383a08cdee3386b752b84356be5f194e2eaefc0bfe5fbf6ad7d53fc",
+      "previous_source_target_sha256": [
+        "c7e02304dc92564c4e2302173ab8445e920af1b9f893e193b7751b999a00cf09",
+        "dc51b7ff5153561a97d2691c39d0e55e47d1805be403ef20bac7ab247e2b00fb"
+      ],
+      "probe_sha256": "4d8c1ccd175ce0255f4b7d2101ede9d3209f91335c319531436d8d2c8c8d395a",
+      "previous_probe_sha256": [
+        "9b6f82a0ebaafc37bd08c145f4c496853ec17cf26bf59d0f3e14837d16bf9d20",
+        "5ebed52aca0ef69ecff89c3270b2f6d896614123f409a60d4d451d9ecc0bca7d"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse"
+      ],
+      "source_target_sha256": "809f1ac18267bd959b1e9d702e27708621ada0738bcca9b4af50c8282f103330",
+      "previous_source_target_sha256": [
+        "119eb86a3b266b9b70c5e236962b763f3280788242253f8972ef3525c4f98e54",
+        "abedc4ed5333aa8fa48e28a54ba41343f15627377a2c65f0e843a00deda6671a"
+      ],
+      "probe_sha256": "4d8c1ccd175ce0255f4b7d2101ede9d3209f91335c319531436d8d2c8c8d395a",
+      "previous_probe_sha256": [
+        "9b6f82a0ebaafc37bd08c145f4c496853ec17cf26bf59d0f3e14837d16bf9d20",
+        "5ebed52aca0ef69ecff89c3270b2f6d896614123f409a60d4d451d9ecc0bca7d"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line"
+      ],
+      "source_target_sha256": "64c815dc8ad98056dddba1162cabd6a35817c623197c997ebd0aa024c75449da",
+      "previous_source_target_sha256": [
+        "a7c645ddba09f22eb08b712133fc7bb53870a3d5c920af93a38474c579d2dc32",
+        "a1838330a25af8e7ef68ecabf9840719ad487afb38da9be3a1bb6a96d53c18ae"
+      ],
+      "probe_sha256": "a3e32ce12d672e5b8c774c84e3df68f6de2ac050d669a261eee0302b7f4f1a3a",
+      "previous_probe_sha256": [
+        "c84ca6e20f33a16e7301bd96c8bab7305ff8a1c4f6c68b20fc2af7d001e090b2",
+        "3ed2bd16f0b74a30eba9ff6f3cbe74a8a36c15367e2f5f630370f7a68da7338f"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring"
+      ],
+      "source_target_sha256": "b44996a5c0c88df27cef1a9ab33981d93adb226168dc6b26244586c296b47508",
+      "previous_source_target_sha256": [
+        "8963eeee304eaac71a16b100c7f2eb5b922b7b254db01d8c648c7c0ad23a5ac7",
+        "182e7beb79e327fe4f1f5eafdbabadbbf13e4740c66c65c842cd3c1ac890f650"
+      ],
+      "probe_sha256": "a3e32ce12d672e5b8c774c84e3df68f6de2ac050d669a261eee0302b7f4f1a3a",
+      "previous_probe_sha256": [
+        "c84ca6e20f33a16e7301bd96c8bab7305ff8a1c4f6c68b20fc2af7d001e090b2",
+        "3ed2bd16f0b74a30eba9ff6f3cbe74a8a36c15367e2f5f630370f7a68da7338f"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid"
+      ],
+      "source_target_sha256": "fccc28e94e7207b6fd823ce56710c527d698089622d6b3d2f3b496abea66fd82",
+      "previous_source_target_sha256": [
+        "f9c9dd539c9515a07931aaeaff9cd1578b2192df7ddeece5ec250e67593612a3",
+        "19164decf0db8dc7aa086ef5a1fab93c4474c2fcf4f2a82ca618b4ee576cab09"
+      ],
+      "probe_sha256": "a3e32ce12d672e5b8c774c84e3df68f6de2ac050d669a261eee0302b7f4f1a3a",
+      "previous_probe_sha256": [
+        "c84ca6e20f33a16e7301bd96c8bab7305ff8a1c4f6c68b20fc2af7d001e090b2",
+        "3ed2bd16f0b74a30eba9ff6f3cbe74a8a36c15367e2f5f630370f7a68da7338f"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse"
+      ],
+      "source_target_sha256": "b1ba8f1bc9e6280b5ec21d6c775fb0dd57927ef8f8651927ee275ebe73afc745",
+      "previous_source_target_sha256": [
+        "6e684cf25e10eaba2e0c02aae7e8eb6e9bb9300bda1df8ea387cdc2573f65c6c",
+        "8cc437fd09174ef37ab3318ec838b3f90a4fe9fee56eb7244f0ace662046740c"
+      ],
+      "probe_sha256": "a3e32ce12d672e5b8c774c84e3df68f6de2ac050d669a261eee0302b7f4f1a3a",
+      "previous_probe_sha256": [
+        "c84ca6e20f33a16e7301bd96c8bab7305ff8a1c4f6c68b20fc2af7d001e090b2",
+        "3ed2bd16f0b74a30eba9ff6f3cbe74a8a36c15367e2f5f630370f7a68da7338f"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "source_target_sha256": "bc42d4fb3fbf6b1e3b8fe4ff2a0eab46b7ed0ebffbc2663455ef687896ae57ee",
+      "previous_source_target_sha256": [
+        "bc42d4fb3fbf6b1e3b8fe4ff2a0eab46b7ed0ebffbc2663455ef687896ae57ee",
+        "bc42d4fb3fbf6b1e3b8fe4ff2a0eab46b7ed0ebffbc2663455ef687896ae57ee"
+      ],
+      "probe_sha256": "a4a26ef8cbd89724c1fcd897a6671dd7ea671a094d53247e62fe395c062b1396",
+      "previous_probe_sha256": [
+        "ba5d8ae68bf2c9a5d213035613ef73b151d9e2224e05a7c5b5eb51c94ba55ea3",
+        "e02d5c9b5b6feb873c49b438a312a8a5b7c2d59fb0335348dad664ad2eb6a5a5"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring"
+      ],
+      "source_target_sha256": "09b42c9657c1363cfc05b46c722deb2a98843e83e53bfc77694e9f13078ab25b",
+      "previous_source_target_sha256": [
+        "09b42c9657c1363cfc05b46c722deb2a98843e83e53bfc77694e9f13078ab25b",
+        "09b42c9657c1363cfc05b46c722deb2a98843e83e53bfc77694e9f13078ab25b"
+      ],
+      "probe_sha256": "a4a26ef8cbd89724c1fcd897a6671dd7ea671a094d53247e62fe395c062b1396",
+      "previous_probe_sha256": [
+        "ba5d8ae68bf2c9a5d213035613ef73b151d9e2224e05a7c5b5eb51c94ba55ea3",
+        "e02d5c9b5b6feb873c49b438a312a8a5b7c2d59fb0335348dad664ad2eb6a5a5"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "source_target_sha256": "310ffca8b38a516b991d45df2eed12aafce985a4c63a5c170e7543060399790a",
+      "previous_source_target_sha256": [
+        "310ffca8b38a516b991d45df2eed12aafce985a4c63a5c170e7543060399790a",
+        "310ffca8b38a516b991d45df2eed12aafce985a4c63a5c170e7543060399790a"
+      ],
+      "probe_sha256": "a4a26ef8cbd89724c1fcd897a6671dd7ea671a094d53247e62fe395c062b1396",
+      "previous_probe_sha256": [
+        "ba5d8ae68bf2c9a5d213035613ef73b151d9e2224e05a7c5b5eb51c94ba55ea3",
+        "e02d5c9b5b6feb873c49b438a312a8a5b7c2d59fb0335348dad664ad2eb6a5a5"
+      ],
+      "new_source_target_pair": false
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse"
+      ],
+      "source_target_sha256": "b9a532ce81f3427878186e352c4105985f186963102263297939df1f59f21765",
+      "previous_source_target_sha256": [
+        "74b19942f4a8978b9df72a269b5d9b2bfb8d1545e41fcb2ab1ae0297e49a7c66",
+        "3b3e3711926fe60aa5d76e3ef872e641f19052171075244e936012e9a149a573"
+      ],
+      "probe_sha256": "a4a26ef8cbd89724c1fcd897a6671dd7ea671a094d53247e62fe395c062b1396",
+      "previous_probe_sha256": [
+        "ba5d8ae68bf2c9a5d213035613ef73b151d9e2224e05a7c5b5eb51c94ba55ea3",
+        "e02d5c9b5b6feb873c49b438a312a8a5b7c2d59fb0335348dad664ad2eb6a5a5"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line"
+      ],
+      "source_target_sha256": "95dfea8192023d02eafcaaae5f956fa75f15e4e0bdf4c26046ac2c3b829183f5",
+      "previous_source_target_sha256": [
+        "c2556b2f3bead453df8e25a65a0134c8b530b351c33b2f14fd5df3edea3c0cc8",
+        "426d2f779e272c31e042375c6da015e619c01ca49e11c6a5f86605dd962199f8"
+      ],
+      "probe_sha256": "3055dc5cb0fabac2968a2a41d2c2f3a88d5aaf75dbc44d28678c9ebc7d48b89e",
+      "previous_probe_sha256": [
+        "58289ad55968a25d4613b4f7d7796432941e9572818840050c9e7685dc7e3584",
+        "293125b42dbf10fcb0d032d29157d860a8c563dd78c42524b09369f43f753180"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring"
+      ],
+      "source_target_sha256": "a3d092aa9ddbea970d2fd7040cb1442188efbd445c5f17962089445e4be0f7b7",
+      "previous_source_target_sha256": [
+        "5883a48781ce3ae5092ac3c609b9600a7e06206088ed4f7b89db88231d10127c",
+        "3a15b5fe00e16682b9a1381dc7a4e5d568acdd3827b35f39b1281cf60859726f"
+      ],
+      "probe_sha256": "3055dc5cb0fabac2968a2a41d2c2f3a88d5aaf75dbc44d28678c9ebc7d48b89e",
+      "previous_probe_sha256": [
+        "58289ad55968a25d4613b4f7d7796432941e9572818840050c9e7685dc7e3584",
+        "293125b42dbf10fcb0d032d29157d860a8c563dd78c42524b09369f43f753180"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid"
+      ],
+      "source_target_sha256": "bfae7b870cfb89157963a3040f63c65103b7c2c5d705a93c3e928035070065db",
+      "previous_source_target_sha256": [
+        "deea3478127cbb4b8cfd397b95aa09c3941d19d0f7a748da9474a07307c79faf",
+        "f1b43056b317bb22b70e99d2d9cfa9b03bbfe3a5c0b863ada549c89d5f24daeb"
+      ],
+      "probe_sha256": "3055dc5cb0fabac2968a2a41d2c2f3a88d5aaf75dbc44d28678c9ebc7d48b89e",
+      "previous_probe_sha256": [
+        "58289ad55968a25d4613b4f7d7796432941e9572818840050c9e7685dc7e3584",
+        "293125b42dbf10fcb0d032d29157d860a8c563dd78c42524b09369f43f753180"
+      ],
+      "new_source_target_pair": true
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse"
+      ],
+      "source_target_sha256": "3a26e2f50010687337bc5c8eed1d26113b983f2b39d270bfb614c9005a17bbe4",
+      "previous_source_target_sha256": [
+        "f528327a87a10f25a0cd4fcd05eabb063eabcfaa6e4afe2dd190da1da90dcaf0",
+        "b5f606bc59088fda94a9602e3b7ace6d72d1a5808f437765c1883e754155c2e7"
+      ],
+      "probe_sha256": "3055dc5cb0fabac2968a2a41d2c2f3a88d5aaf75dbc44d28678c9ebc7d48b89e",
+      "previous_probe_sha256": [
+        "58289ad55968a25d4613b4f7d7796432941e9572818840050c9e7685dc7e3584",
+        "293125b42dbf10fcb0d032d29157d860a8c563dd78c42524b09369f43f753180"
+      ],
+      "new_source_target_pair": true
+    }
+  ],
+  "report": {
+    "scope": "Inspected single-device development experiment; production policy disabled; no qualified performance, held-out, ranking or scalability claim",
+    "implementation_commit": "fa2dfce21e2c8c0a055a90bc5f005de6d6b2a2bd",
+    "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+    "nonce": "e99f9400cba6007b9be3900694e5ea6440bf570cd07046e060ca7856689a47ad",
+    "runner_sha256": "eaf8de069d8d7f4bc3c8208426159436954ef6c37ef0574ea3d5f10efbed3fe7",
+    "native_budget": 20000,
+    "complete": true,
+    "rows": [
+      {
+        "case": [
+          6,
+          "qaoa",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.210187483211274e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 37,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 2.210187483211274e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 37,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13905
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13905
+          }
+        },
+        "development_seconds": 0.21365741698537022
+      },
+      {
+        "case": [
+          6,
+          "qaoa",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4215251829987738e-15,
+            "full_cz_count": 34,
+            "two_body_dependency_depth": 18,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4215251829987738e-15,
+            "full_cz_count": 34,
+            "two_body_dependency_depth": 18,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 8048
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 36,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 8048
+          }
+        },
+        "development_seconds": 0.09535616700304672
+      },
+      {
+        "case": [
+          6,
+          "qaoa",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.56542430709323e-15,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 25,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.56542430709323e-15,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 25,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9323
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9323
+          }
+        },
+        "development_seconds": 0.12464700001874007
+      },
+      {
+        "case": [
+          6,
+          "qaoa",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.210187483211274e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 37,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 2.210187483211274e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 37,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13905
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13905
+          }
+        },
+        "development_seconds": 0.18121291699935682
+      },
+      {
+        "case": [
+          6,
+          "ising",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 9.697188018423238e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 47,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 9.697188018423238e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 47,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13825
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 13825
+          }
+        },
+        "development_seconds": 0.18536820900044404
+      },
+      {
+        "case": [
+          6,
+          "ising",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 7.205338876476098e-15,
+            "full_cz_count": 46,
+            "two_body_dependency_depth": 25,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 7.205338876476098e-15,
+            "full_cz_count": 46,
+            "two_body_dependency_depth": 25,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 10208
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 10208
+          }
+        },
+        "development_seconds": 0.1263148750003893
+      },
+      {
+        "case": [
+          6,
+          "ising",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 6.045365714718357e-15,
+            "full_cz_count": 44,
+            "two_body_dependency_depth": 26,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 6.045365714718357e-15,
+            "full_cz_count": 44,
+            "two_body_dependency_depth": 26,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 9960
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 48,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 9960
+          }
+        },
+        "development_seconds": 0.14059016699320637
+      },
+      {
+        "case": [
+          6,
+          "ising",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 6.2222033166756914e-15,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 22,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 6.2222033166756914e-15,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 22,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9032
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 42,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 9032
+          }
+        },
+        "development_seconds": 0.11244891601381823
+      },
+      {
+        "case": [
+          6,
+          "hopping",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          }
+        },
+        "development_seconds": 0.2042822080256883
+      },
+      {
+        "case": [
+          6,
+          "hopping",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          }
+        },
+        "development_seconds": 0.2079088329919614
+      },
+      {
+        "case": [
+          6,
+          "hopping",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 7.293166543329413e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 49,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 7.293166543329413e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 49,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 74,
+            "accepted_block_rewrites": 7,
+            "serialized_artifact_bytes": 19197
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 74,
+            "accepted_block_rewrites": 7,
+            "serialized_artifact_bytes": 19197
+          }
+        },
+        "development_seconds": 0.2869563330023084
+      },
+      {
+        "case": [
+          6,
+          "hopping",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 4.7767457728648684e-15,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 56,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 16038
+          }
+        },
+        "development_seconds": 0.2098448750039097
+      },
+      {
+        "case": [
+          6,
+          "qft",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.987626749397768e-15,
+            "full_cz_count": 75,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.987626749397768e-15,
+            "full_cz_count": 75,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 111,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 15883
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 111,
+            "accepted_block_rewrites": 14,
+            "serialized_artifact_bytes": 15883
+          }
+        },
+        "development_seconds": 0.2858500829897821
+      },
+      {
+        "case": [
+          6,
+          "qft",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 93,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 16780
+          }
+        },
+        "development_seconds": 0.24252033297671005
+      },
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.3530843112619093e-15,
+            "full_cz_count": 63,
+            "two_body_dependency_depth": 38,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 5,
+            "serialized_artifact_bytes": 14099
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 87,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 13593
+          }
+        },
+        "development_seconds": 0.3318177080072928
+      },
+      {
+        "case": [
+          6,
+          "qft",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4827857773713034e-15,
+            "full_cz_count": 59,
+            "two_body_dependency_depth": 40,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4827857773713034e-15,
+            "full_cz_count": 59,
+            "two_body_dependency_depth": 40,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 69,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 13248
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 69,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 13248
+          }
+        },
+        "development_seconds": 0.2502674169954844
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.0320297871499672e-14,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 53,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.0320297871499672e-14,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 53,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16075
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16075
+          }
+        },
+        "development_seconds": 0.21605899999849498
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 9.75307389110035e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 44,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 9.75307389110035e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 44,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16316
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16316
+          }
+        },
+        "development_seconds": 0.21402683400083333
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 8.164480785155632e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 62,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 8.164480785155632e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 62,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16263
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 16263
+          }
+        },
+        "development_seconds": 0.24886449999758042
+      },
+      {
+        "case": [
+          6,
+          "repetition",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.0725725531734155e-14,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "candidate": {
+            "max_semantic_error": 1.0725725531734155e-14,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 15413
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 15413
+          }
+        },
+        "development_seconds": 0.20014291699044406
+      },
+      {
+        "case": [
+          8,
+          "qaoa",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.2428176919397965e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 40,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.2428176919397965e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 40,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 92,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 18428
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 92,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 18428
+          }
+        },
+        "development_seconds": 0.35968562500784174
+      },
+      {
+        "case": [
+          8,
+          "qaoa",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.2954318308551903e-15,
+            "full_cz_count": 80,
+            "two_body_dependency_depth": 43,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.2954318308551903e-15,
+            "full_cz_count": 80,
+            "two_body_dependency_depth": 43,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 92,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16887
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 92,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 16887
+          }
+        },
+        "development_seconds": 0.24614350000047125
+      },
+      {
+        "case": [
+          8,
+          "qaoa",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.165648664845488e-16,
+            "full_cz_count": 38,
+            "two_body_dependency_depth": 16,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 4.165648664845488e-16,
+            "full_cz_count": 38,
+            "two_body_dependency_depth": 16,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 38,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 8510
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 38,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 8510
+          }
+        },
+        "development_seconds": 0.09649458300555125
+      },
+      {
+        "case": [
+          8,
+          "qaoa",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 6.38717551402673e-16,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 30,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 6.38717551402673e-16,
+            "full_cz_count": 50,
+            "two_body_dependency_depth": 30,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 50,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 10862
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 50,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 10862
+          }
+        },
+        "development_seconds": 0.1879104170075152
+      },
+      {
+        "case": [
+          8,
+          "ising",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.1474279170302312e-15,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 70,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.1474279170302312e-15,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 70,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 25286
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 25286
+          }
+        },
+        "development_seconds": 0.32429641601629555
+      },
+      {
+        "case": [
+          8,
+          "ising",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.343854348079401e-15,
+            "full_cz_count": 78,
+            "two_body_dependency_depth": 35,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.343854348079401e-15,
+            "full_cz_count": 78,
+            "two_body_dependency_depth": 35,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 78,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 15878
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 78,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 15878
+          }
+        },
+        "development_seconds": 0.1880151660006959
+      },
+      {
+        "case": [
+          8,
+          "ising",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.0103182026100664e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 40,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.0103182026100664e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 40,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 14460
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 14460
+          }
+        },
+        "development_seconds": 0.21187004202511162
+      },
+      {
+        "case": [
+          8,
+          "ising",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.2325475812854657e-15,
+            "full_cz_count": 72,
+            "two_body_dependency_depth": 38,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.2325475812854657e-15,
+            "full_cz_count": 72,
+            "two_body_dependency_depth": 38,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 14702
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 14702
+          }
+        },
+        "development_seconds": 0.1867019170022104
+      },
+      {
+        "case": [
+          8,
+          "hopping",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          }
+        },
+        "development_seconds": 0.38995983300264925
+      },
+      {
+        "case": [
+          8,
+          "hopping",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          }
+        },
+        "development_seconds": 0.3835420000250451
+      },
+      {
+        "case": [
+          8,
+          "hopping",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.7408191746414812e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 100,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.7408191746414812e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 100,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 148,
+            "accepted_block_rewrites": 10,
+            "serialized_artifact_bytes": 34177
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 148,
+            "accepted_block_rewrites": 10,
+            "serialized_artifact_bytes": 34177
+          }
+        },
+        "development_seconds": 0.4819230000139214
+      },
+      {
+        "case": [
+          8,
+          "hopping",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.990386368423112e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 80,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 112,
+            "accepted_block_rewrites": 8,
+            "serialized_artifact_bytes": 27952
+          }
+        },
+        "development_seconds": 0.37952874999609776
+      },
+      {
+        "case": [
+          8,
+          "qft",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.94777804273477e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 77,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 4.94777804273477e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 77,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 218,
+            "accepted_block_rewrites": 27,
+            "serialized_artifact_bytes": 30700
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 218,
+            "accepted_block_rewrites": 27,
+            "serialized_artifact_bytes": 30700
+          }
+        },
+        "development_seconds": 0.575752333010314
+      },
+      {
+        "case": [
+          8,
+          "qft",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 4.340533276572805e-15,
+            "full_cz_count": 142,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 4.340533276572805e-15,
+            "full_cz_count": 142,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 194,
+            "accepted_block_rewrites": 22,
+            "serialized_artifact_bytes": 28138
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 194,
+            "accepted_block_rewrites": 22,
+            "serialized_artifact_bytes": 28138
+          }
+        },
+        "development_seconds": 0.494277958991006
+      },
+      {
+        "case": [
+          8,
+          "qft",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.6105738260406797e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 97,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.6105738260406797e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 97,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 170,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 32097
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 170,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 32097
+          }
+        },
+        "development_seconds": 0.497639082983369
+      },
+      {
+        "case": [
+          8,
+          "qft",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.316554172494731e-15,
+            "full_cz_count": 150,
+            "two_body_dependency_depth": 95,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.9459731768199666e-15,
+            "full_cz_count": 138,
+            "two_body_dependency_depth": 89,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 158,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 29850
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 158,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 27587
+          }
+        },
+        "development_seconds": 0.6516108330106363
+      },
+      {
+        "case": [
+          8,
+          "repetition",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 3.1087562402832653e-15,
+            "full_cz_count": 94,
+            "two_body_dependency_depth": 69,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 3.1087562402832653e-15,
+            "full_cz_count": 94,
+            "two_body_dependency_depth": 69,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 102,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 22049
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 102,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 22049
+          }
+        },
+        "development_seconds": 0.3149600000178907
+      },
+      {
+        "case": [
+          8,
+          "repetition",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.6372178930022424e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.6372178930022424e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 27718
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 27718
+          }
+        },
+        "development_seconds": 0.3902196669951081
+      },
+      {
+        "case": [
+          8,
+          "repetition",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.6112583793526083e-15,
+            "full_cz_count": 52,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.6112583793526083e-15,
+            "full_cz_count": 52,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 14271
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 72,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 14271
+          }
+        },
+        "development_seconds": 0.21058345897472464
+      },
+      {
+        "case": [
+          8,
+          "repetition",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.8571363289776713e-15,
+            "full_cz_count": 56,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.8571363289776713e-15,
+            "full_cz_count": 56,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 14871
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 66,
+            "accepted_block_rewrites": 3,
+            "serialized_artifact_bytes": 14871
+          }
+        },
+        "development_seconds": 0.21069308300502598
+      },
+      {
+        "case": [
+          12,
+          "qaoa",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.467457126824487e-15,
+            "full_cz_count": 254,
+            "two_body_dependency_depth": 106,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.467457126824487e-15,
+            "full_cz_count": 254,
+            "two_body_dependency_depth": 106,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 258,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 50525
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 258,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 50525
+          }
+        },
+        "development_seconds": 1.0867607920081355
+      },
+      {
+        "case": [
+          12,
+          "qaoa",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4378796306930041e-15,
+            "full_cz_count": 218,
+            "two_body_dependency_depth": 82,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4378796306930041e-15,
+            "full_cz_count": 218,
+            "two_body_dependency_depth": 82,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 222,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 43670
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 222,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 43670
+          }
+        },
+        "development_seconds": 0.7563485419959761
+      },
+      {
+        "case": [
+          12,
+          "qaoa",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 8.205810482861443e-16,
+            "full_cz_count": 148,
+            "two_body_dependency_depth": 61,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 8.205810482861443e-16,
+            "full_cz_count": 148,
+            "two_body_dependency_depth": 61,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 150,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 29806
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 150,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 29806
+          }
+        },
+        "development_seconds": 0.48846437499742024
+      },
+      {
+        "case": [
+          12,
+          "qaoa",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 6.080645016245334e-16,
+            "full_cz_count": 124,
+            "two_body_dependency_depth": 61,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 6.080645016245334e-16,
+            "full_cz_count": 124,
+            "two_body_dependency_depth": 61,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 25003
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 25003
+          }
+        },
+        "development_seconds": 0.40658424998400733
+      },
+      {
+        "case": [
+          12,
+          "ising",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4073483449641642e-15,
+            "full_cz_count": 218,
+            "two_body_dependency_depth": 99,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4073483449641642e-15,
+            "full_cz_count": 218,
+            "two_body_dependency_depth": 99,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 222,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 42442
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 222,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 42442
+          }
+        },
+        "development_seconds": 0.9988017499854323
+      },
+      {
+        "case": [
+          12,
+          "ising",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4814985362369763e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 74,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4814985362369763e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 74,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 34715
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 1,
+            "serialized_artifact_bytes": 34715
+          }
+        },
+        "development_seconds": 0.8032432920008432
+      },
+      {
+        "case": [
+          12,
+          "ising",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.2954749528798452e-15,
+            "full_cz_count": 180,
+            "two_body_dependency_depth": 90,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.2954749528798452e-15,
+            "full_cz_count": 180,
+            "two_body_dependency_depth": 90,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 35038
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 180,
+            "accepted_block_rewrites": 0,
+            "serialized_artifact_bytes": 35038
+          }
+        },
+        "development_seconds": 0.4957743330160156
+      },
+      {
+        "case": [
+          12,
+          "ising",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.249251448742641e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.249251448742641e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 144,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 26171
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 144,
+            "accepted_block_rewrites": 2,
+            "serialized_artifact_bytes": 26171
+          }
+        },
+        "development_seconds": 0.4687549170048442
+      },
+      {
+        "case": [
+          12,
+          "hopping",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          }
+        },
+        "development_seconds": 0.7462170420039911
+      },
+      {
+        "case": [
+          12,
+          "hopping",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          }
+        },
+        "development_seconds": 0.745184875006089
+      },
+      {
+        "case": [
+          12,
+          "hopping",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.6093562678162975e-15,
+            "full_cz_count": 278,
+            "two_body_dependency_depth": 218,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.6093562678162975e-15,
+            "full_cz_count": 278,
+            "two_body_dependency_depth": 218,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 298,
+            "accepted_block_rewrites": 13,
+            "serialized_artifact_bytes": 62507
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 298,
+            "accepted_block_rewrites": 13,
+            "serialized_artifact_bytes": 62507
+          }
+        },
+        "development_seconds": 1.0775590840203222
+      },
+      {
+        "case": [
+          12,
+          "hopping",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.7012473016707674e-15,
+            "full_cz_count": 192,
+            "two_body_dependency_depth": 181,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 208,
+            "accepted_block_rewrites": 11,
+            "serialized_artifact_bytes": 45871
+          }
+        },
+        "development_seconds": 0.7441980000003241
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 3.6909441164678517e-14,
+            "full_cz_count": 396,
+            "two_body_dependency_depth": 137,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 3.6909441164678517e-14,
+            "full_cz_count": 396,
+            "two_body_dependency_depth": 137,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 528,
+            "accepted_block_rewrites": 62,
+            "serialized_artifact_bytes": 75725
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 528,
+            "accepted_block_rewrites": 62,
+            "serialized_artifact_bytes": 75725
+          }
+        },
+        "development_seconds": 1.7059906250215136
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 5.251875114378881e-14,
+            "full_cz_count": 322,
+            "two_body_dependency_depth": 131,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 5.251875114378881e-14,
+            "full_cz_count": 322,
+            "two_body_dependency_depth": 131,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 444,
+            "accepted_block_rewrites": 59,
+            "serialized_artifact_bytes": 61535
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 444,
+            "accepted_block_rewrites": 59,
+            "serialized_artifact_bytes": 61535
+          }
+        },
+        "development_seconds": 1.3622370839875657
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.0425928062024058e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.0425928062024058e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 432,
+            "accepted_block_rewrites": 38,
+            "serialized_artifact_bytes": 67040
+          }
+        },
+        "development_seconds": 1.4498402909957804
+      },
+      {
+        "case": [
+          12,
+          "qft",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.954609435554855e-14,
+            "full_cz_count": 376,
+            "two_body_dependency_depth": 186,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.954609435554855e-14,
+            "full_cz_count": 376,
+            "two_body_dependency_depth": 186,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 420,
+            "accepted_block_rewrites": 18,
+            "serialized_artifact_bytes": 72274
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 420,
+            "accepted_block_rewrites": 18,
+            "serialized_artifact_bytes": 72274
+          }
+        },
+        "development_seconds": 1.7487507080077194
+      },
+      {
+        "case": [
+          12,
+          "repetition",
+          "line"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.6732308277903798e-15,
+            "full_cz_count": 106,
+            "two_body_dependency_depth": 74,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.6732308277903798e-15,
+            "full_cz_count": 106,
+            "two_body_dependency_depth": 74,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 24826
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 114,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 24826
+          }
+        },
+        "development_seconds": 0.38791858399054036
+      },
+      {
+        "case": [
+          12,
+          "repetition",
+          "ring"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 2.326341149472307e-15,
+            "full_cz_count": 106,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 2.326341149472307e-15,
+            "full_cz_count": 106,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 24931
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 126,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 24931
+          }
+        },
+        "development_seconds": 0.41044429200701416
+      },
+      {
+        "case": [
+          12,
+          "repetition",
+          "grid"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.4033044459902308e-15,
+            "full_cz_count": 68,
+            "two_body_dependency_depth": 51,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.4033044459902308e-15,
+            "full_cz_count": 68,
+            "two_body_dependency_depth": 51,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 17536
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 84,
+            "accepted_block_rewrites": 4,
+            "serialized_artifact_bytes": 17536
+          }
+        },
+        "development_seconds": 0.3028209169860929
+      },
+      {
+        "case": [
+          12,
+          "repetition",
+          "sparse"
+        ],
+        "result": {
+          "baseline": {
+            "max_semantic_error": 1.1938124470981842e-15,
+            "full_cz_count": 80,
+            "two_body_dependency_depth": 65,
+            "verification": "three-probes-only"
+          },
+          "candidate": {
+            "max_semantic_error": 1.1938124470981842e-15,
+            "full_cz_count": 80,
+            "two_body_dependency_depth": 65,
+            "verification": "three-probes-only"
+          },
+          "baseline_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19744
+          },
+          "candidate_audit": {
+            "native_program_builds": 1,
+            "native_executions": 0,
+            "native_compilations": 1,
+            "compiler_seed_supported": 0,
+            "native_baseline_cz_count": 96,
+            "accepted_block_rewrites": 6,
+            "serialized_artifact_bytes": 19744
+          }
+        },
+        "development_seconds": 0.39060662500560284
+      }
+    ],
+    "failures": [],
+    "quality_regressions": []
+  },
+  "raw_report_sha256": "154a685dbbdd6965ae76f84136941abbb936a2be0b285a9e88915215ff7e993b",
+  "raw_report_format": "json.dumps(report, indent=2) + newline",
+  "execution_log": "(6, 'qaoa', 'line') inspected\n(6, 'qaoa', 'ring') inspected\n(6, 'qaoa', 'grid') inspected\n(6, 'qaoa', 'sparse') inspected\n(6, 'ising', 'line') inspected\n(6, 'ising', 'ring') inspected\n(6, 'ising', 'grid') inspected\n(6, 'ising', 'sparse') inspected\n(6, 'hopping', 'line') inspected\n(6, 'hopping', 'ring') inspected\n(6, 'hopping', 'grid') inspected\n(6, 'hopping', 'sparse') inspected\n(6, 'qft', 'line') inspected\n(6, 'qft', 'ring') inspected\n(6, 'qft', 'grid') inspected\n(6, 'qft', 'sparse') inspected\n(6, 'repetition', 'line') inspected\n(6, 'repetition', 'ring') inspected\n(6, 'repetition', 'grid') inspected\n(6, 'repetition', 'sparse') inspected\n(8, 'qaoa', 'line') inspected\n(8, 'qaoa', 'ring') inspected\n(8, 'qaoa', 'grid') inspected\n(8, 'qaoa', 'sparse') inspected\n(8, 'ising', 'line') inspected\n(8, 'ising', 'ring') inspected\n(8, 'ising', 'grid') inspected\n(8, 'ising', 'sparse') inspected\n(8, 'hopping', 'line') inspected\n(8, 'hopping', 'ring') inspected\n(8, 'hopping', 'grid') inspected\n(8, 'hopping', 'sparse') inspected\n(8, 'qft', 'line') inspected\n(8, 'qft', 'ring') inspected\n(8, 'qft', 'grid') inspected\n(8, 'qft', 'sparse') inspected\n(8, 'repetition', 'line') inspected\n(8, 'repetition', 'ring') inspected\n(8, 'repetition', 'grid') inspected\n(8, 'repetition', 'sparse') inspected\n(12, 'qaoa', 'line') inspected\n(12, 'qaoa', 'ring') inspected\n(12, 'qaoa', 'grid') inspected\n(12, 'qaoa', 'sparse') inspected\n(12, 'ising', 'line') inspected\n(12, 'ising', 'ring') inspected\n(12, 'ising', 'grid') inspected\n(12, 'ising', 'sparse') inspected\n(12, 'hopping', 'line') inspected\n(12, 'hopping', 'ring') inspected\n(12, 'hopping', 'grid') inspected\n(12, 'hopping', 'sparse') inspected\n(12, 'qft', 'line') inspected\n(12, 'qft', 'ring') inspected\n(12, 'qft', 'grid') inspected\n(12, 'qft', 'sparse') inspected\n(12, 'repetition', 'line') inspected\n(12, 'repetition', 'ring') inspected\n(12, 'repetition', 'grid') inspected\n(12, 'repetition', 'sparse') inspected\n",
+  "setup_notes": [
+    "The first manifest preparation used the wrong historical nonce field and failed before any nonce draw or workload execution. It was corrected to input_nonce.",
+    "The first result-audit assertion expected a different probe label; inspection confirmed the actual evaluator label three-probes-only. The audit was corrected without rerunning, changing or omitting any result."
+  ],
+  "decision": {
+    "quality_rule_passed": true,
+    "production_admission_allowed": false,
+    "reason": "Prospective quality check only; affordable resource overhead and formal resource qualification remain unmet",
+    "summary": {
+      "new": {
+        "improved": 1,
+        "unchanged": 50,
+        "regressed": 0
+      },
+      "repeated": {
+        "improved": 1,
+        "unchanged": 8,
+        "regressed": 0
+      }
+    },
+    "changed_pairs": [
+      {
+        "case": [
+          6,
+          "qft",
+          "grid"
+        ],
+        "input_group": "repeated",
+        "before": [
+          65,
+          48
+        ],
+        "after": [
+          63,
+          38
+        ]
+      },
+      {
+        "case": [
+          8,
+          "qft",
+          "sparse"
+        ],
+        "input_group": "new",
+        "before": [
+          150,
+          95
+        ],
+        "after": [
+          138,
+          89
+        ]
+      }
+    ],
+    "maximum_semantic_residual": 5.251875114378881e-14,
+    "complete_operator_acceptances": 40,
+    "three_probe_acceptances": 80
+  }
+}

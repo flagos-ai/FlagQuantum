@@ -6,11 +6,24 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
+from ...core._compilation_evidence import CouplingEvidence, MappingTransitionEvidence
+from ...core._compilation_evidence_v4 import (
+    BlockRewriteEvidence,
+    NativeInputInstructionEvidence,
+    PhysicalInstructionEvidenceV4,
+    PhysicalPlanEvidenceV4,
+)
 from ...core.ir import CircuitIR
 from ...errors import CompilationError
+from ..lowering.native_block_optimization import _identity as _block_identity
+from ..lowering.schedule_legalization import (
+    CircuitSchedule,
+    schedule_circuit_dependencies,
+)
 from ..lowering.target_legalization import TargetLegalizationResult
-from ..routing import CouplingMap
+from ..topology.coupling import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
+from .native_block_evidence import _native_input_evidence, _output_instruction_evidence
 
 
 class PhysicalPlanError(CompilationError):
@@ -115,7 +128,7 @@ def _plan_identity_payload(plan: PhysicalCircuitPlan) -> dict[str, object]:
             "predecessors": item.predecessors,
             "dependency_kinds": item.dependency_kinds,
         }
-        for item in plan.instructions
+        for item in plan._single_source_instructions()
     ]
     mapping_transitions: list[dict[str, object]] = []
     for item in plan.mapping_transitions:
@@ -197,7 +210,10 @@ class PhysicalCircuitPlan:
     pre_restore_logical_to_physical: tuple[int, ...]
     final_logical_to_physical: tuple[int, ...]
     mapping_transitions: tuple[MappingTransition, ...]
-    instructions: tuple[PhysicalInstructionRecord, ...]
+    instructions: (
+        tuple[PhysicalInstructionRecord, ...]
+        | tuple[PhysicalInstructionEvidenceV4, ...]
+    )
     topology_legalization_identity: str | None
     native_gate_legalization_identity: str
     direction_legalization_identity: str | None
@@ -214,11 +230,18 @@ class PhysicalCircuitPlan:
     logical_result_physical_slots: tuple[int, ...] = ()
     allocation_identity: str | None = None
     plan_identity: str = ""
+    native_input_circuit_hash: str | None = None
+    native_input_instructions: tuple[NativeInputInstructionEvidence, ...] = ()
+    block_rewrites: tuple[BlockRewriteEvidence, ...] = ()
+    native_block_optimization_identity: str | None = None
+    mapping_transition_space: str | None = None
 
     @property
     def version(self) -> str:
         """Return the closed private physical-plan schema version."""
 
+        if self.block_rewrites:
+            return "4.0"
         if self.physical_slot_count > self.logical_qubit_count:
             return "3.0"
         if self.coupling_direction_semantics == "directed_cx":
@@ -253,19 +276,87 @@ class PhysicalCircuitPlan:
             identity_layout=identity_layout,
             allocated=allocated,
         )
+        collective_evidence = self._v4_evidence() if self.version == "4.0" else None
         self._validate_instruction_records(source, recorded_coupling)
-        if self.critical_path != _critical_path(self.legalization):
+        if self.critical_path != _critical_path(self.legalization.schedule):
             raise PhysicalPlanError("physical plan critical path is inconsistent")
-        expected_identity = hashlib.sha256(
-            json.dumps(
-                _plan_identity_payload(self),
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-        ).hexdigest()
+        expected_identity = (
+            collective_evidence.plan_identity
+            if collective_evidence is not None
+            else hashlib.sha256(
+                json.dumps(
+                    _plan_identity_payload(self),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+        )
         if self.plan_identity and self.plan_identity != expected_identity:
             raise PhysicalPlanError("plan_identity does not match physical plan")
         object.__setattr__(self, "plan_identity", expected_identity)
+
+    def _single_source_instructions(self) -> tuple[PhysicalInstructionRecord, ...]:
+        records: list[PhysicalInstructionRecord] = []
+        for item in self.instructions:
+            if not isinstance(item, PhysicalInstructionRecord):
+                raise PhysicalPlanError(
+                    "legacy physical plan has collective instruction records"
+                )
+            records.append(item)
+        return tuple(records)
+
+    def _v4_evidence(self) -> PhysicalPlanEvidenceV4:
+        if (
+            self.native_input_circuit_hash is None
+            or self.native_block_optimization_identity is None
+        ):
+            raise PhysicalPlanError(
+                "collective physical plan lacks retained native evidence"
+            )
+        records: list[PhysicalInstructionEvidenceV4] = []
+        for item in self.instructions:
+            if not isinstance(item, PhysicalInstructionEvidenceV4):
+                raise PhysicalPlanError(
+                    "collective physical plan has single-source instruction records"
+                )
+            records.append(item)
+        return PhysicalPlanEvidenceV4(
+            source_circuit_hash=self.source_circuit_hash,
+            physical_circuit_hash=self.program.content_hash,
+            target_snapshot_id=self.target_snapshot_id,
+            topology_identity=self.topology_identity,
+            coupling=(
+                None
+                if self.coupling_n_qubits is None
+                else CouplingEvidence(self.coupling_n_qubits, self.coupling_edges)
+            ),
+            initial_logical_to_physical=self.initial_logical_to_physical,
+            pre_restore_logical_to_physical=self.pre_restore_logical_to_physical,
+            final_logical_to_physical=self.final_logical_to_physical,
+            mapping_transitions=tuple(
+                MappingTransitionEvidence(
+                    routed_instruction_index=item.routed_instruction_index,
+                    source_instruction_index=item.source_instruction_index,
+                    phase=item.phase,
+                    physical_wires=item.physical_qubits,
+                    layout_before=item.layout_before,
+                    layout_after=item.layout_after,
+                )
+                for item in self.mapping_transitions
+            ),
+            instructions=tuple(records),
+            topology_legalization_identity=self.topology_legalization_identity,
+            native_gate_legalization_identity=self.native_gate_legalization_identity,
+            schedule_identity=self.schedule_identity,
+            schedule_depth=self.schedule_depth,
+            maximum_parallel_width=self.maximum_parallel_width,
+            critical_path=self.critical_path,
+            native_input_circuit_hash=self.native_input_circuit_hash,
+            native_input_instructions=self.native_input_instructions,
+            block_rewrites=self.block_rewrites,
+            native_block_optimization_identity=self.native_block_optimization_identity,
+            mapping_transition_space=self.mapping_transition_space or "",
+        )
 
     def _validate_topology_evidence(
         self,
@@ -371,6 +462,47 @@ class PhysicalCircuitPlan:
         return identity_layout, allocated
 
     def _validate_stage_identities(self) -> None:
+        block = self.legalization.native_block_optimization
+        native = self.legalization.native_gate_legalization
+        if block is not None and (
+            block.source_program is not native.program
+            or block.program is not self.program
+            or block.source_content_hash != native.program.content_hash
+            or block.target_snapshot_id != self.target_snapshot_id
+            or block.optimization_identity
+            != _block_identity(
+                block.source_program,
+                block.program,
+                block.target_snapshot_id,
+                block.rewrites,
+                block.rejection_counts,
+            )
+        ):
+            raise PhysicalPlanError("physical plan native block stage is inconsistent")
+        if self.version == "4.0":
+            if (
+                block is None
+                or self.block_rewrites != block.rewrites
+                or self.native_input_circuit_hash != native.program.content_hash
+                or self.native_block_optimization_identity
+                != block.optimization_identity
+                or self.coupling_direction_semantics == "directed_cx"
+                or self.allocation_identity is not None
+            ):
+                raise PhysicalPlanError(
+                    "collective physical plan stage evidence is inconsistent"
+                )
+        elif (
+            (block is not None and block.rewrites)
+            or self.native_input_circuit_hash is not None
+            or self.native_input_instructions
+            or self.block_rewrites
+            or self.native_block_optimization_identity is not None
+            or self.mapping_transition_space is not None
+        ):
+            raise PhysicalPlanError(
+                "legacy physical plan has collective block evidence"
+            )
         direction = self.legalization.direction_legalization
         if self.direction_legalization_identity != (
             None if direction is None else direction.legalization_identity
@@ -504,7 +636,31 @@ class PhysicalCircuitPlan:
     ) -> None:
         if len(self.instructions) != len(self.program.instructions):
             raise PhysicalPlanError("physical plan instruction count is inconsistent")
-        for index, item in enumerate(self.instructions):
+        if self.version == "4.0":
+            topology = self.legalization.topology_legalization
+            routed = source if topology is None else topology.program
+            native = self.legalization.native_gate_legalization
+            baseline_records = _physical_instruction_records(
+                self.legalization,
+                source,
+                routed,
+                program=native.program,
+                schedule=schedule_circuit_dependencies(
+                    native.program, target_snapshot_id=self.target_snapshot_id
+                ),
+            )
+            block = self.legalization.native_block_optimization
+            assert block is not None
+            if self.native_input_instructions != _native_input_evidence(
+                baseline_records
+            ) or self.instructions != _output_instruction_evidence(
+                block, self.legalization.schedule
+            ):
+                raise PhysicalPlanError(
+                    "collective physical plan lineage failed replay"
+                )
+            return
+        for index, item in enumerate(self._single_source_instructions()):
             self._validate_instruction_record(index, item, source, coupling)
 
     def _validate_instruction_record(
@@ -705,13 +861,13 @@ def _mapping_evidence(
     return tuple(transitions), pre_restore_layout, pre_restore_occupancy
 
 
-def _critical_path(legalization: TargetLegalizationResult) -> tuple[int, ...]:
-    records = legalization.schedule.instructions
+def _critical_path(schedule: CircuitSchedule) -> tuple[int, ...]:
+    records = schedule.instructions
     if not records:
         return ()
     by_index = {item.instruction_index: item for item in records}
     current = min(
-        (item for item in records if item.layer == legalization.schedule.depth - 1),
+        (item for item in records if item.layer == schedule.depth - 1),
         key=lambda item: item.instruction_index,
     )
     reversed_path = [current.instruction_index]
@@ -731,6 +887,9 @@ def _physical_instruction_records(
     legalization: TargetLegalizationResult,
     source: CircuitIR,
     routed: CircuitIR,
+    *,
+    program: CircuitIR | None = None,
+    schedule: CircuitSchedule | None = None,
 ) -> tuple[PhysicalInstructionRecord, ...]:
     native = legalization.native_gate_legalization
     decompositions = {item.instruction_index: item for item in native.decompositions}
@@ -747,11 +906,13 @@ def _physical_instruction_records(
     if native_index != len(native.program.instructions):
         raise PhysicalPlanError("native decomposition records do not cover the program")
 
+    final_program = legalization.program if program is None else program
+    final_schedule = legalization.schedule if schedule is None else schedule
     schedule_by_index = {
-        item.instruction_index: item for item in legalization.schedule.instructions
+        item.instruction_index: item for item in final_schedule.instructions
     }
     records: list[PhysicalInstructionRecord] = []
-    for physical_index, instruction in enumerate(legalization.program.instructions):
+    for physical_index, instruction in enumerate(final_program.instructions):
         raw_native_index = instruction.metadata.get(
             "native_instruction_index", physical_index
         )
@@ -826,12 +987,17 @@ def build_physical_circuit_plan(
     topology = legalization.topology_legalization
     native = legalization.native_gate_legalization
     direction = legalization.direction_legalization
+    block = legalization.native_block_optimization
     schedule = legalization.schedule
     if schedule.program is not legalization.program:
         raise PhysicalPlanError(
             "physical plan stages do not share the legalized CircuitIR"
         )
-    if direction is None and native.program is not legalization.program:
+    if (
+        direction is None
+        and (native.program if block is None else block.program)
+        is not legalization.program
+    ):
         raise PhysicalPlanError("native legalization does not own final CircuitIR")
     if direction is not None and (
         direction.source_program is not native.program
@@ -915,7 +1081,27 @@ def build_physical_circuit_plan(
                 "routing pre-restore physical occupancy is inconsistent"
             )
 
-    instruction_records = _physical_instruction_records(legalization, source, routed)
+    baseline_records = _physical_instruction_records(
+        legalization,
+        source,
+        routed,
+        program=native.program if block is not None and block.rewrites else None,
+        schedule=(
+            schedule_circuit_dependencies(
+                native.program, target_snapshot_id=legalization.target_snapshot_id
+            )
+            if block is not None and block.rewrites
+            else None
+        ),
+    )
+    instruction_records: (
+        tuple[PhysicalInstructionRecord, ...]
+        | tuple[PhysicalInstructionEvidenceV4, ...]
+    ) = (
+        _output_instruction_evidence(block, schedule)
+        if block is not None and block.rewrites
+        else baseline_records
+    )
 
     if topology is not None:
         assert coupling_map is not None
@@ -950,7 +1136,7 @@ def build_physical_circuit_plan(
         schedule_identity=schedule.schedule_identity,
         schedule_depth=schedule.depth,
         maximum_parallel_width=schedule.maximum_parallel_width,
-        critical_path=_critical_path(legalization),
+        critical_path=_critical_path(legalization.schedule),
         logical_qubit_count=source.n_wires,
         physical_slot_count=legalization.program.n_wires,
         initial_physical_to_logical=initial_occupancy,
@@ -958,6 +1144,25 @@ def build_physical_circuit_plan(
         final_physical_to_logical=final_occupancy,
         logical_result_physical_slots=result_slots,
         allocation_identity=allocation_identity,
+        native_input_circuit_hash=(
+            native.program.content_hash
+            if block is not None and block.rewrites
+            else None
+        ),
+        native_input_instructions=(
+            _native_input_evidence(baseline_records)
+            if block is not None and block.rewrites
+            else ()
+        ),
+        block_rewrites=() if block is None else block.rewrites,
+        native_block_optimization_identity=(
+            block.optimization_identity
+            if block is not None and block.rewrites
+            else None
+        ),
+        mapping_transition_space=(
+            "topology_program" if block is not None and block.rewrites else None
+        ),
     )
 
 

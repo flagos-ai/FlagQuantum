@@ -1,0 +1,33 @@
+{
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "sha256": "c6432f40056701b337911bb621f0a2abf940334085a50579e5d34fad79c98368"
+    },
+    {
+      "index": 10,
+      "sha256": "3c4053f77d501bc8ae965216ad1c900a89634c4c7ee9952990cb657b50376bec"
+    },
+    {
+      "index": 12,
+      "sha256": "c7865fe0b551395dba80dab714d64a7bfbe673cbb96c8597d8e04897bf5f0f15"
+    },
+    {
+      "index": 14,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 16,
+      "sha256": "fb8f20ba2ad08a108fe4e7931c4d4150e4f0a03536aa4838bb25dcf30929f0bd"
+    }
+  ],
+  "git_blob_sha1": "8ab46314cca76cad4a247312e4f54be7995da631",
+  "upstream_path": "algorithms/foundational/quantum_teleportation/quantum_teleportation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "825138d38526f35a8a497ad55aaf59d3db351eaebe72321e5a3d91fd9bae7d77",
+  "scope": "Native teleportation Notebook with explicitly deferred private feedback, actual Bob density and 1000 local observations.",
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.quantum_teleportation.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/foundational/quantum_teleportation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_teleportation_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen private coherent-feedback qfunc. Only Bob output channel matches measured private feedback; Alice and Bell remain retained environment, not reset work. No generic midcircuit measurement or physical classical transmission. Source sample has no explicit shot count; native 1000 local shots and seed3 are explicit adaptations. Original plus input and two nonzero complex inputs accepted."
+}

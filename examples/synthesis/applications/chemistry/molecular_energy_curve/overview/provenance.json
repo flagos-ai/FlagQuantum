@@ -1,0 +1,38 @@
+{
+  "upstream_path": "applications/chemistry/molecular_energy_curve/molecular_energy_curve.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e54482e2e8af1a598bf35e91c26e8cc3496ee7d3de966d33ae01ed5bb37958c9",
+  "git_blob_sha1": "31cc9bcc0906cbb34e91f62c2ff72624704dbbc9",
+  "scope": "All five source stages, all twelve original distances, neutral singlet H2 in STO-3G, one tapered UCCSD angle, a 500-iteration ceiling, and fresh RHF, FCI and VQE curves.",
+  "native_semantic_adaptations": "Build fresh native RHF, four-mode Jordan-Wigner Hamiltonians and each verified invariant one-qubit sector. The retained native qfunc executes all variational evaluations. Use FlagQuantum COBYLA with the original zero initial angle and exact local statevector expectations. An independent PySCF audit recomputes the source ancillary MP2, CISD, CCSD methods and the RHF and FCI comparison energies. The ancillary methods do not enter the plotted energies.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.molecular_energy_curve.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/molecular_energy_curve/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hydrogen_energy_curve_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "faabce5697ee0799df6d73ec7375734d19ad279b85fb593d5ee89f6f94c6b138"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "3317fcfa24e23e3c0d951f8f784828f0b216f7aae51f926c387d19641c399c92"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "85962606a0c9e53feea938b3e9b97e1d4e75d0673fe5e766384ec288d36b4c03"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 5,
+      "sha256": "6a4d64a1a499b2b7a7f21ec88db941177d0967b2ed3935a56b0b7a2a15b1f377"
+    }
+  ]
+}

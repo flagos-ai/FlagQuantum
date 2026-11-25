@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from itertools import product
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -9,20 +10,26 @@ import torch
 
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
-from examples.synthesis_arithmetic_implementations import QMOD, main
+from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main import main
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler import ResourceEstimate
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     _logical_cost,
     adjoint_value_candidate,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.codegen.registers import RegisterCandidate
+from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
+QMOD = (
+    Path(__file__).resolve().parents[1]
+    / "fixtures/classiq_qmod/teaching_sources/tutorials/arithmetic/arithmetic_implementations/comparisons/source.qmod"
+).read_text()
 
 
 def square(x: int) -> int:
@@ -105,6 +112,7 @@ def test_native_and_qmod_complete_uniform_state_and_actual_costs(
         assert len(program.registers["result"]) == 4
         check_state(program, fq.run(program), expected)
         resource = program.report["resources"]
+        assert isinstance(resource, ResourceEstimate)
         assert (
             resource.n_qubits,
             program.report["workspace_qubits"],
@@ -121,6 +129,7 @@ def test_native_and_qmod_complete_uniform_state_and_actual_costs(
             old.resources.n_operations,
             old.resources.depth,
         ) == (16, 8, 81, 59)
+        assert isinstance(old.arithmetic, RegisterCandidate)
         segment = old.arithmetic.segments[0]
         assert {rule for _, rule in segment.implementation_rules} == {
             "square_symmetry",
@@ -273,7 +282,7 @@ def test_constant_tradeoff_retains_the_actual_conservative_candidate() -> None:
 def test_optional_implementation_probe_has_a_recorded_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compiler._construction import lowering
+    from flagquantum.compiler._construction.codegen import arithmetic as lowering
 
     monkeypatch.setattr(lowering, "_NORMALIZATION_PROBE_MAX_OPERATIONS", 10)
     result, _ = candidate(times_three, {"x": 4})
