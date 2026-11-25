@@ -225,3 +225,52 @@ factories is traversed and compared, including these symbolic GreaterThan calls.
 The original symbolic LessThanEqual decomposition refusal remains explicit.
 Physical binding still rejects unresolved widths. Frozen sources are unchanged.
 See SORTING_FILE_AUDIT.md and `g2-symbolic-sorting-recursive-20261122.json`.
+
+## Complete original test-file acceptance (2026-11-25)
+
+Q-0181's complete 503-line original test file contains 37 tests and two helpers.
+Its frozen Git blob is `9876537e8199b0e6af0ca7bf9f595f94304146d6`.
+The complete earlier original run of 395 passes, 15 skips and six xfails is
+reused together with both accepted notebook kernels. Source bytes are unchanged.
+The following mapping covers every original function and parameter family;
+implementation parent Q-0180 retains its separately recorded gaps.
+
+| Original functions | Native owner and complete assertion disposition |
+| --- | --- |
+| `test_clineardepthgreaterthan_example`, `test_greater_than`, `test_gt_k`, `test_lt_k_symb`, `test_leq_symb`, `test_equals`, `test_eq_k`, `test_lineardepthhalfgreaterthan_small`, `test_lineardepthhalflessthan_small`, `test_lineardepthhalfgreaterthanequal_small`, `test_lineardepthhalflessthanequal_small` | All actual factory protocols observed before source skip policy; existing constructor, catalog, typed graph and physical owners cover their applicable paths. Fifteen factories include four additional concrete graph examples. |
+| `identity_map` | Test-only identity oracle, represented by existing full coherent operator and exact inverse assertions. |
+| `test_less_than_gate`, `test_decompose_less_than_gate`, `test_less_than_consistent_protocols` | Constant comparison component/emitter, all original thresholds including out-of-range constants, dirty target XOR, inverse, legacy model and diagram/register interface evidence. |
+| `test_bi_qubits_mixer_t_complexity`, `test_single_qubit_compare_t_complexity` | Existing tree primitive/component and historical cost owners preserve forward and measured-adjoint resources independently of actual primitive inventories. |
+| `test_multi_in_less_equal_than_gate`, `_less_than_equal_expected_t_complexity`, `test_less_than_equal_consistent_protocols` | All original 1..4 operand-width pairs, two dirty target values, self-inverse full operators, unequal-width tree models and context-independent decomposition. Existing owned register/drawing adapters replace source SDK interface forms. |
+| `test_greater_than_manual` | Typed GreaterThan root retains LessThanEqual then X with original port order; source model and wire glyphs checked independently. |
+| `test_linear_depth_greater_than_decomp`, `test_classical_linear_depth_greater_than` | Signed/unsigned root graphs and all original value cases; Simulation preserves source callback semantics while physical signed-overflow counterexamples remain explicit. |
+| `test_greater_than_constant` | Existing signature/drawing/model and declared atomic constructor. The original class has no decomposition; no successful source primitive body is invented. |
+| `test_classical_equals`, `test_equals_call_graph`, `test_equals_a_constant` | Existing equality component/constant emitter and callback owners cover bit, unsigned, signed and Montgomery words, all original domains, original graph generalization, symbol and cost assertions. |
+| `test_t_complexity_of_comparison_gates_notebook`, `test_comparison_notebook` | Complete accepted notebook assets and original/native kernel evidence under Q-0179, reused without rerunning unchanged notebooks. |
+| `test_decomposition_frees_ancilla` | Existing source allocation/return traces and native ownership events; every small measured history restores private work. |
+| `test_clineardepthgreaterthan_classical_action_unsigned`, `test_clineardepthgreaterthan_classical_action_signed`, `test_clineardepthgreaterthan_decomposition`, `test_clineardepthgreaterthan_bloq_counts`, `test_clineardepthgreaterthan_tcomplexity` | Both control polarities, full original unsigned/Montgomery/signed widths, target values, exact root calls and generalized counts. Original symbolic T=4(n+2) declaration is separate from physical emission. |
+| `test_linear_half_comparison_decomposition`, `test_linear_half_comparison_bloq_counts`, `test_linear_half_comparison_classical_action`, `test_linear_half_comparison_symbolic_complexity` | All four relations, three integer encodings, original 2..4 widths and both directions; existing typed/native callback owners retain RIGHT output versus LEFT erasure and source alias permutations. Declared forward n-Toffoli and zero-cost erasure remain separate from actual feedback gates. |
+
+The test-only `source_example_protocols` observer records all 75 raw modes:
+50 PASS, ten FAIL, five NA, nine UNVERIFIED and one MISSING decomposition.
+All ten count failures remain failures. SingleQubitCompare loses a control value
+in its declaration, in addition to other missing nodes; it is not classified as
+only a zero-cost view mismatch. Six strict dtype failures preserve their actual
+incompatible source edges. Symbolic counts are unverified; GreaterThanConstant's
+missing decomposition is retained. All fifteen source serializers pass.
+
+Existing ten concrete physical factory replacements, tree mixer/comparator,
+symbolic catalogs and source-only atomic declaration complete the factory map.
+Full complex amplitudes, coherent spectators, all applicable small measurement
+histories, exact output ownership, clean work and ordinary append are reused
+from their accepted component/consumer tests. Primitive gate totals, binding
+overhead and original historical/modern model counts keep their distinct scopes.
+This test-file acceptance does not repair source signed-overflow or half-inverse
+alias defects, broaden unresolved physical admission or close Q-0180.
+
+The concentrated comparison/component/constructor/resource regression passes
+433 cases. The independent Cirq 1.6 raw-protocol and concrete-factory selection
+passes 29. Strict typing of the complete audit test, Black, Ruff, Integration
+scope, language, links, architecture, IR and protected API checks pass.
+Receipts use `g2-comparison-source-closure-*20261125`. Existing original protocol
+deprecation warnings remain separate from acceptance failures.
