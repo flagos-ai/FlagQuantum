@@ -2,7 +2,7 @@
 
 from cmath import exp
 from collections import defaultdict
-from math import sqrt, tau
+from math import cos, sin, sqrt, tau
 from random import Random
 
 import pytest
@@ -26,12 +26,25 @@ def execute_sparse_register(
             continue
         masks = tuple(1 << (ir.n_wires - q - 1) for q in op.wires)
         name = op.name
+        if name == "i":
+            continue
         if name == "h":
             (mask,) = masks
             updated: defaultdict[int, complex] = defaultdict(complex)
             for basis, value in state.items():
                 updated[basis & ~mask] += value / sqrt(2)
                 updated[basis | mask] += (-value if basis & mask else value) / sqrt(2)
+            state = {
+                basis: value for basis, value in updated.items() if abs(value) > 1e-16
+            }
+        elif name == "ry":
+            (mask,) = masks
+            cosine = cos(op.params["theta"] / 2)
+            sine = sin(op.params["theta"] / 2)
+            updated = defaultdict(complex)
+            for basis, value in state.items():
+                updated[basis] += cosine * value
+                updated[basis ^ mask] += (-sine if basis & mask else sine) * value
             state = {
                 basis: value for basis, value in updated.items() if abs(value) > 1e-16
             }
