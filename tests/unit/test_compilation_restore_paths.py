@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from flagquantum.compiler.topology import sabre
+from flagquantum.compiler.topology import layout_restore, sabre
 from flagquantum.compiler.topology.coupling import CouplingMap
 
 pytestmark = pytest.mark.unit
@@ -87,7 +87,9 @@ def test_long_line_walk_searches_once_per_displaced_leaf() -> None:
     width = 64
     layout = tuple(reversed(range(width)))
     graph = CouplingMap.line(width)
-    with patch.object(sabre, "_restore_path", wraps=sabre._restore_path) as search:
+    with patch.object(
+        layout_restore, "_restore_path", wraps=layout_restore._restore_path
+    ) as search:
         swaps = sabre.restore_swaps(layout, graph)
     _assert_restored(layout, graph, swaps)
     # Reversal requires this many adjacent transpositions, but only one path
@@ -97,7 +99,9 @@ def test_long_line_walk_searches_once_per_displaced_leaf() -> None:
 
 
 def test_identity_and_padding_need_no_extra_swaps() -> None:
-    with patch.object(sabre, "_restore_path", wraps=sabre._restore_path) as search:
+    with patch.object(
+        layout_restore, "_restore_path", wraps=layout_restore._restore_path
+    ) as search:
         assert sabre.restore_swaps((0, 1, 2), CouplingMap.line(5)) == ()
     assert search.call_count == 0
     layout = (2, 0, 1)
@@ -114,3 +118,16 @@ def test_disconnected_component_exchange_remains_rejected() -> None:
 def test_invalid_permutation_remains_rejected() -> None:
     with pytest.raises(ValueError, match="permutation"):
         sabre.restore_swaps((0, 0, 2), CouplingMap.line(3))
+
+
+@pytest.mark.parametrize(
+    "name", ("_restore_path", "restore_swaps", "plan_restore_swaps")
+)
+def test_restoration_helpers_keep_original_imports(name: str) -> None:
+    assert getattr(sabre, name) is getattr(layout_restore, name)
+
+
+def test_plan_restoration_keeps_root_routing_import() -> None:
+    from flagquantum.compiler import routing
+
+    assert routing.plan_restore_swaps is layout_restore.plan_restore_swaps

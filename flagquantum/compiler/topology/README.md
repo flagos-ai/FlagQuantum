@@ -12,7 +12,8 @@ inputs, dispatches strategies and passes the selected plan to emission during
 automatic compilation. `routing_emission.py` owns instruction emission for
 restore-after-each-gate, persistent-layout and SABRE routes, layout restoration,
 and routing evidence including post-optimization counts. `sabre.py` implements
-the search and `layout.py` assigns wires.
+the search. `layout_restore.py` plans legal SWAPs back to the identity layout,
+and `layout.py` assigns initial wires.
 These transforms preserve logical meaning and record layout changes.
 
 Allowed dependencies include Core IR, target and operator semantics, Compiler
@@ -72,3 +73,14 @@ helper alias under the same removal condition and target version described above
 Final-layout restoration walks each leaf's unique tree path once. See the
 [restoration traversal invariant](../../../docs/development/COMPILER_RESTORE_PATH_REUSE.md)
 before changing token movement or removing an active tree leaf.
+
+For layout restoration changes, edit `layout_restore.py` and run
+`tests/unit/test_compilation_restore_paths.py` together with the SABRE layout
+and routing tests. The module reads coupling maps and planned layouts, and
+returns ordered SWAPs with their source anchors. It must not select a routing
+strategy, search for the forward route or emit CircuitIR instructions. It uses
+Core-independent connectivity and standard-library traversal; its `SabrePlan`
+annotation is imported only for type checking to avoid a runtime import cycle.
+`restore_swaps`, `plan_restore_swaps` and `_restore_path` remain direct aliases
+in `sabre.py`. The root routing module also retains `plan_restore_swaps`. Compiler
+owns the private alias under the removal condition and version stated above.
