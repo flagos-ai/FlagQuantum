@@ -106,7 +106,7 @@ def test_original_hadamard_pennylane_and_cirq_round_trips() -> None:
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.cirq_interop import cirq_gate_to_bloq
 
-    from flagquantum.ecosystem.cirq import CirqConversionError, from_cirq, to_cirq
+    from flagquantum.ecosystem.cirq import from_cirq, to_cirq
     from flagquantum.ecosystem.pennylane import from_pennylane, to_pennylane
 
     qml = pytest.importorskip("pennylane")
@@ -124,8 +124,8 @@ def test_original_hadamard_pennylane_and_cirq_round_trips() -> None:
         atol=2e-12,
     )
     assert cirq_gate_to_bloq(cirq.H.controlled()) == source.controlled()
-    with pytest.raises(CirqConversionError):
-        to_cirq(CircuitIR(2, (Instruction("ch", (0, 1)),)))
+    controlled = CircuitIR(2, (Instruction("ch", (0, 1)),))
+    assert from_cirq(to_cirq(controlled)).instructions == controlled.instructions
 
 
 @pytest.mark.parametrize("controlled", (False, True))

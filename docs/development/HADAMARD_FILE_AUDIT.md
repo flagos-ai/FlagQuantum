@@ -6,8 +6,8 @@ The original files retain the Google LLC 2023 Apache-2.0 attribution.
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
 | Q-0239 `hadamard.ipynb` | `60247421ec3c158535e3ff467d7c78cc661dbb7a` | Closed by `register_hadamard.ipynb`, including both signatures, the controlled score and the exact specialty circuit. |
-| Q-0240 `hadamard.py` | `371672f6e39c8a5ee95e8ede95d6e3cb3c29b95c` | Atomic H/CH, measured control, actual named capture, full display and H adapters verified. Protected static CH round trip remains open. |
-| Q-0241 `hadamard_test.py` | `9af68dcaca8ef829fe4a65a6299cb4956294fb0c` | Original suite unchanged. Factories, H PennyLane and Cirq assertions covered natively. Protected static CH round trip remains open. |
+| Q-0240 `hadamard.py` | `371672f6e39c8a5ee95e8ede95d6e3cb3c29b95c` | Complete H/CH source disposition, measured control, capture, display and adapters, including approved static CH conversion. |
+| Q-0241 `hadamard_test.py` | `9af68dcaca8ef829fe4a65a6299cb4956294fb0c` | Original suite unchanged; native assertions and approved static CH round trip covered. |
 
 ## Operations and port ownership
 
@@ -37,7 +37,7 @@ states and work cleanup.
 | `test_unitary_vs_cirq` | Existing native H execution agrees with the locked tensor and binds to the same ordered Cirq operands. |
 | `test_not_classical` | The unchanged source raises the expected exception. Native H uses the quantum path. |
 | `test_chadamard_vs_cirq` | Native `ch` implements the full locked matrix. The separate specialty construction matches Cirq leaf by leaf. |
-| `test_cirq_interop` | The unchanged source CH round trip passes. The native Cirq converter has no direct CH round trip. |
+| `test_cirq_interop` | The unchanged source CH round trip passes. Proposal 122 adds the matching native static round trip with exact ordered operands and absolute phase. |
 | `test_pl_interop` | The unchanged source H operation and tensor match PennyLane. Native H operation, matrix and bidirectional adapter assertions now pass. |
 | `test_active_chadamard_is_hadamard` | The native exact specialty circuit restricted to the control-one block matches the entire source H matrix. |
 | `test_chadamard_adjoint` | Native CH twice yields identity; measured multi-control tests also verify all pairs of forward and inverse histories. |
@@ -95,9 +95,8 @@ and Ecosystem boundary.
 The original PennyLane H operation assertion now has a native adapter round
 trip and full complex matrix check using the already installed optional
 environment. The ordinary Cirq H round trip and source CH reverse conversion
-also pass. The protected static Cirq contract still excludes CH. Q-0240 and
-Q-0241 remain open for this exact adapter gap, with the factory and PennyLane
-gaps resolved.
+also pass. Proposal 122, explicitly approved on 2026-11-25, closes the remaining
+static CH adapter gap. Q-0240 and Q-0241 now have complete-file evidence.
 
 The focused run exposed a pre-existing importer regression in positive H
 front-end streams with a zero final control. Matrix-leaf recognition unwrapped
@@ -117,3 +116,32 @@ The batch regression passed 1589 cases with no skips, including existing native
 source-binding, controlled-H, explicit matrix and feedback import consumers.
 Strict typing of all four changed Python files, Black, Ruff, both owner scopes,
 architecture, multilevel IR and protected API checks passed.
+
+## Approved static CH closure
+
+The existing Cirq converter maps one canonical positive, binary controlled H
+to one existing `ch` instruction and back. It preserves control then target
+order, reversed placement, full complex operator columns, spectator phases and
+exact self-inverse behavior. Appending the imported native operation does not
+require the external SDK. No private wire, reset, measurement or feedback is
+introduced; the source model remains separately recorded above.
+
+The recognizer checks the original child exponent and global shift as well as
+the canonical gate equality. Cirq regards H exponent minus one as equal to H,
+but that noncanonical form remains outside the approved profile. Negative,
+multiple and nonbinary controls, symbolic or fractional H powers, shifted H,
+tags, CY and sparse static wire extents retain rejection. Existing multi-control
+Compiler operations are independent of this narrow static conversion profile.
+
+Final source-file disposition reuses all earlier source/tensor/model/display,
+notebook, PennyLane and measured-control evidence. This batch adds 220 passing
+regression cases on Cirq 1.7.0, 149 on 1.6.1 and 145 local integration cases.
+The unchanged original suite passes ten cases with three source atomic-mode
+skips. The additional 71-case controlled-H frontend fixture locks Cirq 1.7
+source hashes and runs on that lane; it is not relabeled as a 1.6 comparison.
+Six touched Python files pass strict typing, formatting and owner checks.
+Both SDK contract verifiers, language, architecture, IR and public API checks
+passed. External receipts are
+`g2-static-ch-cirq1.7-20261125.log`, `g2-static-ch-cirq1.6-20261125.log`,
+`g2-static-ch-original-20261125.log`, `g2-static-ch-quality-20261125.json`
+and `g2-static-ch-contract16-20261125.log`.
