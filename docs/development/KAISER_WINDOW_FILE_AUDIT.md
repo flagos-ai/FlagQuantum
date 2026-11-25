@@ -87,7 +87,7 @@ its declared rotation child raises AssertionError. Native physical binding fails
 with a domain ValueError requiring at least two phase bits. Zero-width and
 symbolic windows have no admitted physical child. Overflow produces the same
 NaNs as the original expression. The exact ideal tensor and the quantized child
-remain separate, and Q-0622 retains these physical and original-test boundaries.
+remain separate. Q-0622 was initially retained for these physical and original-test boundaries.
 The notebook is tracked separately by Q-0620. Q-0621 covers complete source
 responsibility mapping with these explicit source limitations.
 
@@ -100,3 +100,22 @@ multi-level IR and protected API checks pass. Replacing the numerical owner
 with the original coefficient expression preserves both appended instructions
 and the independent resource model. Logs use `g2-kaiser-` in the reference
 workspace. Simulation and Algorithms changes are committed independently.
+
+## Complete original test-file closure, November 25
+
+The full original test file has one autotester function covering numeric and
+symbolic examples in five modes. All ten raw example/mode pairs now run
+independently, so an early skip cannot hide the second example. Both construct;
+neither declares a decomposition. Count checks remain UNVERIFIED with only a
+manual model, and type checks remain NA. Numeric serialization passes; symbolic
+serialization fails on original HasLength(2**n). Unchanged source pytest reports
+one pass, three skips and one xfail.
+
+Existing native owners cover both exact constructors/signatures, concrete and
+symbolic model edges, coefficients, qualified wire transport and bodyless
+physical refusal. The quantized child retains its separate gate, full complex,
+every-branch, clean-work and resource certificates. Its ideal-tensor error,
+one-bit child failure, symbolic limits and source HasLength failure remain
+recorded. No exact physical Kaiser root or symbolic full-wire reconstruction is
+claimed. Q-0622 closes its complete actual test-file responsibility with these
+source failures explicitly disposed. See [the complete test matrix](WINDOW_SOURCE_TEST_ACCEPTANCE.md).
