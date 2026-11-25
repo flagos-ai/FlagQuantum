@@ -12,7 +12,9 @@ import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register, RegisterType
+from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
+from ..registers.component_builder import ComponentProgramBuilder
 from ..registers.phase.phase_addition import source_phase_add_signature
 from ..registers.phase.phase_gradient import (
     source_phase_gradient_state_signature,
@@ -104,17 +106,18 @@ def _phase_add_factory(
     )
     if registers is not None and registers != ports:
         raise SerializationError("Invalid phase addition register signature")
-    if any(type(v) is not int for v in (width, gradient, shift, sign)) or gradient == 0:
+    if any(type(v) is not int for v in (width, gradient, shift, sign)):
         return FunctionRecord(name, (), registers=ports)
     assert isinstance(width, int) and isinstance(gradient, int)
     assert isinstance(shift, int) and isinstance(sign, int)
-    if control is not None and control not in (0, 1):
-        # No binary ctrl value equals this source integer. Keep the existing
-        # binary control contract and emit its exact always-off identity.
-        return _rename_program(
-            phase_add_component_program(width, gradient, sign=0, controlled=True), name
-        )
-    if shift < 0:
+    if (control is not None and control not in (0, 1)) or (
+        gradient == 0 and shift >= 0
+    ):
+        # The source omits zero-width ports. An unreachable binary control or
+        # an empty destination has no action on the remaining caller storage.
+        builder = ComponentProgramBuilder(Signature(ports), name=name)
+        return builder.finalize(builder.inputs)
+    if shift < 0 or gradient == 0:
         return FunctionRecord(name, (), registers=ports)
     return _rename_program(
         phase_add_component_program(

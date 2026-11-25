@@ -576,3 +576,67 @@ def test_original_unreachable_binary_control_is_exact_identity(
         atol=0,
         rtol=0,
     )
+
+
+@pytest.mark.parametrize(
+    "width,control,sign", tuple(product((0, 2), (None, 0, 1, 2), (-3, 0, 3)))
+)
+def test_zero_gradient_original_identity_preserves_omitted_ports_and_spectator(
+    width: int, control: int | None, sign: int
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+
+    source = AddIntoPhaseGrad(width, 0, sign=sign, controlled_by=control)
+    record = resolve_component_program(
+        _library(source, 0), 0, phase_gradient_factories()
+    )
+    assert verify_program_record(record) == ()
+    for depth in (1, 2):
+        assert (
+            resolve_component_program(
+                _library(source, depth), 0, phase_gradient_factories()
+            )
+            == record
+        )
+    assert tuple(r.name for r in record.functions[0].registers or ()) == tuple(
+        r.name for r in source.signature
+    )
+    inputs = (((0,),) if control is not None else ()) + (
+        (tuple(range(int(control is not None), int(control is not None) + width)),)
+        if width
+        else ()
+    )
+    logical = width + int(control is not None)
+    # A genuine spectator supplies a physical circuit even for the empty root.
+    bound = bind_register_program(record, inputs, borrowed=(logical,))
+    assert bound.outputs == inputs and not bound.events
+    assert not bound.circuit.instructions
+    torch.testing.assert_close(
+        torch.as_tensor(cirq.unitary(source), dtype=torch.complex128),
+        torch.eye(1 << logical, dtype=torch.complex128),
+        atol=0,
+        rtol=0,
+    )
+    values = torch.arange(1, (1 << (logical + 1)) + 1, dtype=torch.float64)
+    state = torch.complex(values, values.flip(0))
+    state /= state.norm()
+    circuit = Circuit(logical + 1, inputs=state, dtype=torch.complex128)
+    before = circuit.state().clone()
+    circuit.append(FieldOperation(logical + 1, bound.circuit.instructions))
+    torch.testing.assert_close(circuit.state(), before, atol=0, rtol=0)
+
+
+def test_zero_gradient_preserves_original_reachable_negative_shift_failure() -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+
+    source = AddIntoPhaseGrad(2, 0, right_shift=-1, sign=0)
+    with pytest.raises(AssertionError):
+        cirq.unitary(source)
+    record = resolve_component_program(
+        _library(source, 0), 0, phase_gradient_factories()
+    )
+    assert not record.functions[0].blocks
+    with pytest.raises(ValueError, match="bodies"):
+        bind_register_program(record, ((0, 1),))
