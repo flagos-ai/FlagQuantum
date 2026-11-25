@@ -394,7 +394,7 @@ def test_lcu_source_root_and_complete_complex_operator(control: int | None) -> N
     "example",
     ("_select_block", "_black_box_select_block", "_lcu_block", "_black_box_lcu_block"),
 )
-def test_all_original_forward_examples_keep_declared_scalar_boundaries(
+def test_all_original_forward_examples_execute_complete_hubbard_dependencies(
     example: str,
 ) -> None:
     from qualtran.bloqs.block_encoding import lcu_block_encoding as module
@@ -418,10 +418,13 @@ def test_all_original_forward_examples_keep_declared_scalar_boundaries(
         width = int(port.total_bits())
         inputs.append(tuple(range(cursor, cursor + width)))
         cursor += width
-    with pytest.raises(ValueError, match="bodies"):
-        bind_register_program(
-            record, tuple(inputs), clean=tuple(range(cursor, cursor + 8))
-        )
+    bound = bind_register_program(
+        record, tuple(inputs), clean=tuple(range(cursor, cursor + 8))
+    )
+    assert bound.outputs == tuple(inputs)
+    assert all(gate.matrix is None for gate in bound.circuit.instructions)
+    assert sum(gate.name == "phase" for gate in bound.circuit.instructions) == 2
+    assert any(gate.name == "measure" for gate in bound.circuit.instructions)
 
 
 def test_single_bit_packed_properties_remain_opaque_across_lcu_calls() -> None:
@@ -449,7 +452,7 @@ def test_single_bit_packed_properties_remain_opaque_across_lcu_calls() -> None:
 
 
 @pytest.mark.parametrize("control", (0, 1))
-def test_original_hubbard_control_adders_match_source_root_and_keep_scalar_stub(
+def test_original_hubbard_control_adders_match_source_root_and_bind_all_dependencies(
     control: int,
 ) -> None:
     from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
@@ -478,10 +481,12 @@ def test_original_hubbard_control_adders_match_source_root_and_keep_scalar_stub(
         width = int(port.total_bits())
         inputs.append(tuple(range(cursor, cursor + width)))
         cursor += width
-    with pytest.raises(ValueError, match="bodies"):
-        bind_register_program(
-            record, tuple(inputs), clean=tuple(range(cursor, cursor + 8))
-        )
+    bound = bind_register_program(
+        record, tuple(inputs), clean=tuple(range(cursor, cursor + 8))
+    )
+    assert bound.outputs == tuple(inputs)
+    assert all(gate.matrix is None for gate in bound.circuit.instructions)
+    assert any(gate.name == "measure" for gate in bound.circuit.instructions)
 
 
 @pytest.mark.parametrize("control", (None, 0, 1))

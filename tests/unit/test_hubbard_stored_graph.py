@@ -62,7 +62,7 @@ def test_complete_hubbard_calls_views_and_exact_inverse(
 
 
 def original_hubbard_state(
-    dimension: int, initial: np.ndarray[Any, Any]
+    dimension: int, initial: np.ndarray[Any, Any], *, t: float = 1.0, u: float = 4.0
 ) -> np.ndarray[Any, Any]:
     """Run the untouched generator, using its exact atomic word permutation."""
     import cirq
@@ -75,7 +75,7 @@ def original_hubbard_state(
     wires = cirq.LineQubit.range(logical)
     context = cirq.DecompositionContext(cirq.GreedyQubitManager(prefix="reference"))
     operations = cirq.decompose_once(
-        Source(dimension, dimension, 1.0, 4.0).on(*wires), context=context
+        Source(dimension, dimension, t, u).on(*wires), context=context
     )
     replaced = []
     for operation in operations:

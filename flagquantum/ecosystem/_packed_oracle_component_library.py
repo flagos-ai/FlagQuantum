@@ -5,10 +5,13 @@
 """Supply packed source examples through existing native Hubbard graph owners."""
 
 from collections.abc import Mapping
+from math import isfinite
 from typing import Literal
 
-from ..algorithms.primitives.hubbard_prepare import PrepareHubbard
-from ..algorithms.primitives.hubbard_prepare_component import hubbard_prepare_program
+from ..algorithms.primitives.hubbard_prepare import (
+    PrepareHubbard,
+    _hubbard_preparation_angles,
+)
 from ..algorithms.primitives.hubbard_select import SelectHubbard
 from ..algorithms.primitives.hubbard_select_component import hubbard_select_program
 from ..compiler.formats.legacy_block_encoding_factories import ControlledSelect
@@ -21,12 +24,14 @@ from ..compiler.formats.legacy_controlled_factories import (
     PositiveControlProvider,
     controlled_via_and_factories,
 )
+from ..compiler.formats.legacy_hubbard_prepare_factories import (
+    hubbard_prepare_factories,
+)
 from ..compiler.formats.legacy_modular_addition_factories import _integer
 from ..compiler.formats.legacy_packed_oracle_factories import (
     OracleContext,
     packed_oracle_factories,
 )
-from ..compiler.formats.legacy_rotation_factories import _real_argument
 from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.registers.component_builder import (
     BindingCollection,
@@ -36,15 +41,12 @@ from ..compiler.registers.component_control import ControlAdder
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register
-from ..core.value_math import ssum
+from ..core.value_math import SymbolicReal, ssum
 from ..errors import SerializationError
 
 _Context = tuple[
     tuple[Register, ...], tuple[Register, ...], tuple[ProgramRecord, ProgramRecord]
 ]
-_PREPARE = (
-    "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard"
-)
 _SELECT = (
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard"
 )
@@ -57,9 +59,8 @@ def _packed_oracle_library_context(
 ) -> tuple[dict[str, ComponentFactory], OracleContext, OracleContext, ControlledSelect]:
     """Track complete example metadata, with explicit native owners for other oracles.
 
-    The uncontrolled Hubbard SELECT keeps its scalar-node declaration until
-    Proposal 119 is approved. Its packed wrapper may be resolved logically,
-    but physical execution still refuses the missing body. No phase is omitted.
+    Uncontrolled Hubbard SELECT uses the existing exact private scalar carrier.
+    Source coefficient conversion stays here; Compiler receives owned angles.
     """
     preparations: dict[FunctionRecord, _Context] = {}
     selections: dict[FunctionRecord, _Context] = {}
@@ -83,38 +84,23 @@ def _packed_oracle_library_context(
             raise SerializationError("Invalid Hubbard oracle register signature")
         return _rename_program(record, name)
 
-    def prepare(
-        name: str,
-        registers: tuple[Register, ...] | None,
-        arguments: Mapping[str, ResolvedArgument],
-    ) -> ProgramRecord:
-        if arguments.keys() != {"x_dim", "y_dim", "t", "u"}:
-            raise SerializationError(
-                "Hubbard preparation requires dimensions and weights"
-            )
-        t, u = _real_argument(arguments, "t"), _real_argument(arguments, "u")
+    def prepare_angles(
+        size: int, t: SymbolicReal, u: SymbolicReal
+    ) -> tuple[float, float] | None:
         if not isinstance(t, (int, float)) or not isinstance(u, (int, float)):
+            return None
+        values = _hubbard_preparation_angles(size, t, u)
+        if not all(isfinite(value) for value in values):
             raise SerializationError(
-                "Stored Hubbard preparation requires concrete weights"
+                "Hubbard preparation requires finite source angles"
             )
-        oracle = PrepareHubbard(dimension(arguments), float(t), float(u))
-        if oracle.dimension == 1:
-            forward = ProgramRecord(
-                (FunctionRecord("main", (), registers=tuple(oracle.signature)),)
-            )
-            inverse = forward
-        else:
-            forward, inverse = (
-                hubbard_prepare_program(oracle, adjoint=direction)
-                for direction in (False, True)
-            )
-        result = checked(name, registers, forward)
-        preparations[result.functions[0]] = (
-            oracle.selection_registers,
-            oracle.junk_registers,
-            (result, inverse),
-        )
-        return result
+        return values
+
+    def prepare_pair(
+        child: FunctionRecord, pair: tuple[ProgramRecord, ProgramRecord]
+    ) -> None:
+        ports = child.registers or ()
+        preparations[child] = ports[:-1], ports[-1:], pair
 
     def select(
         name: str,
@@ -147,11 +133,11 @@ def _packed_oracle_library_context(
             *selection,
             *target,
         )
-        if control is None or size == 1:
+        if size == 1:
             forward = ProgramRecord((FunctionRecord("main", (), registers=ports),))
             inverse = forward
         else:
-            oracle = SelectHubbard(size, controlled=True)
+            oracle = SelectHubbard(size, controlled=control is not None)
             forward, inverse = (
                 hubbard_select_program(oracle, adjoint=direction)
                 for direction in (False, True)
@@ -327,7 +313,14 @@ def _packed_oracle_library_context(
     )
     for kind, identifier in wrappers:
         factories[identifier] = track(kind, raw[identifier])
-    factories.update({_PREPARE: prepare, _SELECT: select})
+    factories.update(
+        hubbard_prepare_factories(
+            angles=prepare_angles,
+            adjoint_factory=raw["qualtran._infra.adjoint.Adjoint"],
+            on_pair=prepare_pair,
+        )
+    )
+    factories[_SELECT] = select
     return factories, prepare_owner, select_owner, control_owner
 
 

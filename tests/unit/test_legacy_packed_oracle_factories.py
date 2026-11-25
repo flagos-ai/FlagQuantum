@@ -73,10 +73,37 @@ def test_original_packed_examples_and_source_autopartition_boundary(
         assert a.circuit.to_json() == b.circuit.to_json()
         assert a.events == b.events
     else:
-        with pytest.raises(ValueError, match="bodies"):
-            bind_register_program(
-                record, (tuple(range(8)), tuple(range(8, 16))), clean=(16, 17, 18, 19)
-            )
+        from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
+        from flagquantum.algorithms.primitives.hubbard_select_component import (
+            hubbard_select_program,
+        )
+
+        compare_layers(
+            record,
+            source,
+            source_terminals(record)
+            | {f.name for f in record.functions if f.registers == ()},
+        )
+        select = SelectHubbard(2)
+        ports = []
+        cursor = 0
+        for _, width in select.layout:
+            ports.append(tuple(range(cursor, cursor + width)))
+            cursor += width
+        actual = bind_register_program(
+            record, (tuple(range(8)), tuple(range(8, 16))), clean=(16, 17, 18, 19)
+        )
+        expected = bind_register_program(
+            hubbard_select_program(select, adjoint=inverse),
+            tuple(ports),
+            clean=(16, 17, 18, 19),
+        )
+        assert actual.circuit == expected.circuit
+        # Packing adds logical view operations. Physical lease offsets and
+        # ownership remain identical beneath that explicit wrapper.
+        assert [
+            (e.kind, e.wires, e.dirty, e.instruction_offset) for e in actual.events
+        ] == [(e.kind, e.wires, e.dirty, e.instruction_offset) for e in expected.events]
     # Original max_depth=1 fails before native decoding. Preserve that cause.
     from qualtran.serialization.bloq import bloqs_to_proto
 
