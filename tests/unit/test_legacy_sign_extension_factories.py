@@ -182,7 +182,7 @@ def test_source_sympy_numeric_difference_remains_symbolic() -> None:
 @pytest.mark.parametrize(
     "signed,changed_sign", ((False, False), (True, False), (False, True))
 )
-def test_fixed_point_metadata_retains_graph_and_physical_storage_boundary(
+def test_fixed_point_metadata_retains_graph_and_approved_physical_storage(
     signed: bool, changed_sign: bool
 ) -> None:
     from qualtran import QFxp
@@ -204,14 +204,6 @@ def test_fixed_point_metadata_retains_graph_and_physical_storage_boundary(
         backward.functions[0].registers
         == _library(source.adjoint(), 0).entries[0].declaration.registers
     )
-    if signed or changed_sign:
-        with pytest.raises(
-            ValueError, match="unsupported executable register descriptor"
-        ):
-            bind_register_program(
-                forward, ((0, 1),), clean=(3, 4, 5), allow_workspace_outputs=True
-            )
-        return
     bound = bind_register_program(
         forward, ((0, 1),), clean=(3, 4, 5), allow_workspace_outputs=True
     )
