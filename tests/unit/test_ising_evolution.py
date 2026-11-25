@@ -1,6 +1,7 @@
 """Check the locked Ising leaf and ordered product connections and phases."""
 
 from math import pi
+from typing import Any
 
 import pytest
 import torch
@@ -20,7 +21,7 @@ from tests.unit.register_source_graph import walk_source_graph
 pytestmark = pytest.mark.unit
 
 
-def _source_instructions(source, wires):
+def _source_instructions(source: Any, wires: tuple[int, ...]) -> tuple[Instruction, ...]:
     from qualtran.bloqs.basic_gates import CNOT, Rx, Rz
 
     def leaf(bloq, inputs, desired):
