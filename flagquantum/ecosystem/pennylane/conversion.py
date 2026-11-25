@@ -25,7 +25,9 @@ _PENNYLANE_TO_FLAGQUANTUM = {
     "PauliZ": "z",
     "Hadamard": "h",
     "S": "s",
+    "Adjoint(S)": "sdg",
     "T": "t",
+    "Adjoint(T)": "tdg",
     "SX": "sx",
     "RX": "rx",
     "RY": "ry",
@@ -172,6 +174,13 @@ def import_pennylane(
     for index, operation in enumerate(quantum_script.operations):
         raw_name = str(operation.name)
         opcode = _PENNYLANE_TO_FLAGQUANTUM.get(raw_name)
+        if raw_name in {"Adjoint(S)", "Adjoint(T)"}:
+            base_type = qml.S if raw_name == "Adjoint(S)" else qml.T
+            if not (
+                isinstance(operation, qml.ops.op_math.Adjoint)
+                and type(operation.base) is base_type
+            ):
+                opcode = None
         if opcode is None:
             issues.append(
                 PennyLaneConversionIssue(
@@ -297,11 +306,15 @@ def export_pennylane(
             params.append(scalar)
         if blocked:
             continue
-        operation_type = getattr(qml, class_name)
         wire_value: Any = (
             instruction.wires[0] if len(instruction.wires) == 1 else instruction.wires
         )
-        operations.append(operation_type(*params, wires=wire_value))
+        if instruction.name in {"sdg", "tdg"}:
+            base_type = qml.S if instruction.name == "sdg" else qml.T
+            operations.append(qml.adjoint(base_type(wires=wire_value)))
+        else:
+            operation_type = getattr(qml, class_name)
+            operations.append(operation_type(*params, wires=wire_value))
     report = _report("to_pennylane", str(qml.__version__), issues)
     script = qml.tape.QuantumScript(operations, measurements=(), shots=None)
     _raise_if_lossy(report, allow_lossy=allow_lossy)
