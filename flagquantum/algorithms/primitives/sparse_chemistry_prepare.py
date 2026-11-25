@@ -25,6 +25,15 @@ from ...compiler.registers.layout.partition import RegisterLayout, unpartition_r
 from ...compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
 )
+from ...compiler.registers.preparation.sparse_chemistry_prepare_component import (
+    SPARSE_ALIAS_SWAPS,
+    SPARSE_SYMMETRY_SWAPS,
+)
+from ...compiler.registers.preparation.sparse_chemistry_prepare_metadata import (
+    sparse_prepare_retained_registers,
+    sparse_prepare_selection_registers,
+    sparse_prepare_target_registers,
+)
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -33,12 +42,9 @@ from ...compiler.registers.preparation.uniform_preparation import (
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import (
-    bounded_unsigned_register_type,
-    opaque_register_type,
     quantum_bit_type,
-    unsigned_register_type,
 )
-from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.registers import Register
 from .prepare_oracle import PrepareOracle
 from .sparse_chemistry_data import SparseChemistryData
 
@@ -52,55 +58,20 @@ class PrepareSparseChemistry(PrepareOracle):
     @cached_property
     def selection_registers(self) -> tuple[Register, ...]:
         """Preserve the bounded row index and source through selectors."""
-        data = self.data
-        bit = bounded_unsigned_register_type(1)
-        return (
-            Register(
-                "d",
-                bounded_unsigned_register_type(data.address_width, len(data.indices)),
-            ),
-            Register("sigma", bounded_unsigned_register_type(data.probability_bits)),
-            *(
-                Register(name, bit)
-                for name in (
-                    "alpha",
-                    "beta",
-                    "rot_aa",
-                    "swap_pq",
-                    "swap_rs",
-                    "swap_pqrs",
-                )
-            ),
+        return sparse_prepare_selection_registers(
+            len(self.data.indices), self.data.probability_bits, self.data.address_width
         )
 
     @cached_property
     def qroam_target_registers(self) -> tuple[Register, ...]:
         """Declare the selected cell of each dataset in source order."""
-        targets = []
-        for name, width in self.data.target_layout:
-            if name in ("p", "q", "r", "s"):
-                dtype = unsigned_register_type(width)
-            elif name in ("theta", "flag_1b", "alt_theta", "alt_flag_1b"):
-                dtype = quantum_bit_type()
-            else:
-                dtype = opaque_register_type(width)
-            targets.append(Register(name, dtype, side=RegisterSide.RIGHT))
-        return tuple(targets)
+        return sparse_prepare_target_registers(self.data.target_layout)
 
     @cached_property
     def qroam_extra_target_registers(self) -> tuple[Register, ...]:
         """Keep the retained cells grouped by dataset with the same dtype."""
-        extra_cells = (1 << self.data.log_block_size) - 1
-        if not extra_cells:
-            return ()
-        return tuple(
-            Register(
-                f"jnk_{reg.name}",
-                reg.dtype,
-                shape=(*reg.shape, extra_cells),
-                side=RegisterSide.RIGHT,
-            )
-            for reg in self.qroam_target_registers
+        return sparse_prepare_retained_registers(
+            self.qroam_target_registers, self.data.log_block_size
         )
 
     @cached_property
@@ -257,22 +228,16 @@ class PrepareSparseChemistry(PrepareOracle):
         sample = tuple(Instruction("h", (wire,)) for wire in sigma)
         alternate_sign = (Instruction("cz", (flag, *ports["alt_theta"])),)
         original_sign = (flip, Instruction("cz", (flag, *ports["theta"])), flip)
-        choose = (
-            *(
-                swap(flag, f"alt_{orbital}", orbital)
-                for orbital in ("p", "q", "r", "s")
-            ),
-            swap(flag, "flag_1b", "alt_flag_1b"),
-        )
+        choose = tuple(swap(flag, left, right) for left, right in SPARSE_ALIAS_SWAPS)
         symmetry = (
             *(
                 (Instruction("h", ports[name]),)
                 for name in ("swap_pq", "swap_rs", "swap_pqrs")
             ),
-            swap(ports["swap_pqrs"][0], "p", "r"),
-            swap(ports["swap_pqrs"][0], "q", "s"),
-            swap(ports["swap_pq"][0], "p", "q"),
-            swap(ports["swap_rs"][0], "r", "s"),
+            *(
+                swap(ports[control][0], left, right)
+                for control, left, right in SPARSE_SYMMETRY_SWAPS
+            ),
         )
         stages = (
             uniform,
