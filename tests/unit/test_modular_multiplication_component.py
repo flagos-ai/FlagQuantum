@@ -38,6 +38,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def source_stream(
     source: Any, bound: BoundRegisterProgram, ports: SourcePorts
 ) -> tuple[Instruction, ...]:
+    from qualtran import Side
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
     from qualtran.bloqs.bookkeeping import Allocate, Cast, Free, Join, Split
     from qualtran.bloqs.mcmt import And
     from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
@@ -48,7 +51,24 @@ def source_stream(
 
     def leaf(bloq: Any, old: SourcePorts, desired: SourcePorts) -> SourceResult | None:
         nonlocal cursor
-        if bloq is source or isinstance(bloq, (Join, Split, Cast, CtrlScaleModAdd)):
+        if (
+            bloq is source
+            or isinstance(
+                bloq,
+                (
+                    Join,
+                    Split,
+                    Cast,
+                    CtrlScaleModAdd,
+                    OutOfPlaceAdder,
+                ),
+            )
+            or isinstance(bloq, Adjoint)
+            and isinstance(
+                bloq.subbloq,
+                (CtrlScaleModAdd, OutOfPlaceAdder),
+            )
+        ):
             return None
         if isinstance(bloq, Free):
             return (), {}
@@ -62,6 +82,51 @@ def source_stream(
             )
             root_allocations.add(event.position)
             return (), {"reg": event.wires}
+        import numpy as np
+        from qualtran.bloqs.basic_gates import (
+            IntEffect,
+            IntState,
+            ZeroEffect,
+            ZeroState,
+        )
+
+        base = bloq.subbloq if isinstance(bloq, Adjoint) else bloq
+        if isinstance(base, (IntState, IntEffect, ZeroState, ZeroEffect)):
+            # Basis effects have no complete Cirq export. Verify the original
+            # unnormalized tensor, then bind its existing X loader and lifetime.
+            register = next(iter(bloq.signature))
+            bits = (
+                tuple(base.dtype.to_bits(base.val))
+                if isinstance(base, (IntState, IntEffect))
+                else (0,)
+            )
+            size = len(bits)
+            vector = np.zeros(1 << size, dtype=np.complex128)
+            vector[sum(bit << (size - 1 - i) for i, bit in enumerate(bits))] = 1
+            np.testing.assert_array_equal(bloq.tensor_contract().reshape(-1), vector)
+            state = register.side == Side.RIGHT
+            if state:
+                event = next(
+                    e
+                    for e in bound.events
+                    if e.kind == "allocate"
+                    and e.instruction_offset == cursor
+                    and e.position not in root_allocations
+                )
+                root_allocations.add(event.position)
+                wires = event.wires
+                returned = {register.name: wires}
+            else:
+                wires = old[register.name]
+                returned = {}
+            expected = tuple(
+                Instruction("x", (wire,))
+                for wire, bit in zip(wires, bits, strict=True)
+                if bit
+            )
+            assert all(returned[k] == v for k, v in desired.items())
+            cursor += len(expected)
+            return expected, returned
         atomic = bloq.as_composite_bloq()
         start = max(w for wires in old.values() for w in wires) + 100
         dummy = tuple(range(start, start + 1000))
