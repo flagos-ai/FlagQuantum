@@ -40,3 +40,93 @@ cleanup.
 
 Q-0424 closes the package's three export mappings. Q-0429 retains its
 source addition, angle, arbitrary coefficient and release boundaries.
+
+
+## Complete constructor follow-up: interface and ownership
+
+PairPotential owns two opaque three-axis THRU words. Its literal recipe keeps
+ordinary addition (not the native signed difference), the source square-sum,
+adjoint add, explicit bounded-selection Cast, four coefficient targets,
+polynomial/Newton declarations, unknown-angle QVR and all seven clean Frees.
+Total PotentialEnergy owns the shaped electron/axis system and visits strict
+upper-triangle pairs. Original labels are presentation metadata only.
+Compiler builds these typed source recipes through existing child owners.
+Ecosystem converts the original default coefficient metadata using the already
+verified optional real codec and passes owned integer banks into Compiler.
+No numerical execution or source framework enters Compiler. Algorithms keeps
+its independently specified pair/total numerical phase operations unchanged.
+Existing source-stored graph resolution and exact width scheduling are reused.
+
+
+## Source follow-up coverage and remaining full-file gap
+
+| Original definitions/assets | Current native disposition |
+|---|---|
+| PairPotential fields/converter and signature | Both opaque three-axis ports share the Compiler signature owner; concrete banks, defaults, widths and labels are preserved from source constructor metadata. |
+| PairPotential.wire_symbol | Existing complete source geometry, custom/default/empty labels, JSON and rendering evidence reused unchanged. |
+| PairPotential.build_composite_bloq | Concrete shallow construction preserves all 26 source calls and recursively owned helpers; symbol-only target width also retains the complete logical recipe. Dataset and clean-Free mutations change the graph fingerprint. |
+| PotentialEnergy fields/signature and wire_symbol | Existing shared grid sizing, ordered electron/axis shape and native source drawing retained. |
+| PotentialEnergy.build_composite_bloq | Upper-triangle pair traversal and returned system handles match actual original graphs; default data conversion occurs at Ecosystem before construction. Empty pair loops still perform source default conversion and retain its wide-codec failure. |
+| _pair_potential, _potential_energy and both DocSpecs | Both full original examples are checked without reduced data. Class/example associations and both source/test Git blobs are verified. |
+
+Both concrete factories now bind actual source libraries at depths0/1/2.
+Comparison recursively includes helper bodies, operands, result/return wiring,
+constant gates and measurement conditions. Only names, SSA numbering and the
+existing source logical schedule are normalized. Custom all-zero and nonzero
+banks, including a five-row prefix, retain original values and QEC/peak resource
+results in both source costing profiles. Existing default cost models compare
+identically to eight published 0af22e136 cases. Optional qrom_data in the model
+helper adds custom-bank estimates while preserving its previous defaults.
+
+Reference SDK imports can be blocked during native construction. Compiler
+receives integer banks; it imports neither the numerical codec nor Simulation.
+Ecosystem composes the canonical existing coefficient constants and optional
+real codec. Missing data ownership and invalid constructor metadata fail
+explicitly; a numerical phase is never invented for the source recipe.
+
+**Q0429 remains open.** Original width n or polynomial precision p can build a
+26-call in-memory source graph, although its deeper source serialization fails
+with the original object-array/pickle refusal. Native construction currently
+retains only the logical signature for these two symbolic cases. It does not
+yet preserve that complete symbolic lookup body and its coefficient data through
+later parameter binding. The source failure is retained but does not discharge
+the native logical-graph obligation. The remaining work is to carry static
+lookup data with the symbolic logical recipe through existing owned graph/input
+representations, or establish an explicitly approved contract if those cannot
+express it. Do not disguise this as a complete source-file closure or discard
+its data to manufacture an executable-looking declaration. Symbolic target
+width alone already has full source/native graph parity.
+
+## Complete admitted native numerical channels
+
+The independently specified numerical operator remains unchanged. Every one-bit
+coordinate basis word and a coherent spectator is covered for two electrons
+with zero/one C1 updates, three electrons with one update, and two-electron cubic
+interpolation. Both forward and adjoint are checked. Each full complex diagonal
+column agrees with the independent rational C1 or decimal cubic oracle, every
+private work bit is zero, and standalone pair/total instruction streams agree.
+The largest system has 512 basis words and 1024 spectator-extended columns.
+
+Actual literal And blocks and their erased conjunctions prove the same positive
+local branch scalar in both outcomes. Composition establishes every combined
+history, including all 2**2328 histories for the three-pair fixture, without
+claiming enumeration or dense simulation. Existing sparse trajectory and small
+forced-history evidence remain separate checks. There is no claim that native
+signed difference is the original pair's unsigned addition, or that its
+approximation is an unspecified original polynomial primitive.
+
+| Native numerical fixture | Measured primitives/storage | Separate original default model |
+|---|---|---|
+| Two electrons, C1 precision4/updates0 | 224 T + 224 Tdg, 1110 CX, 112 measurements, 16 CCX, 5 phase; 33 clean, 11 slots, 39 bound wires excluding spectator | 1975 Toffoli, 74 And, 683 Clifford, 24 rotations, 74 measurements, peak81 |
+| Two electrons, C1 precision4/updates1 | 1552 T + 1552 Tdg, 7824 CX, 776 measurements, 16 CCX, 5 phase; 177 clean, 13 slots, 183 bound wires | Same original default model; it is not a prediction of this independent implementation |
+| Three electrons, C1 precision4/updates1 | 4656 T + 4656 Tdg, 23472 CX, 2328 measurements, 48 CCX, 15 phase; 177 clean, 13 slots, 186 bound wires | 5925 Toffoli, 222 And, 2049 Clifford, 72 rotations, 222 measurements, peak84 |
+| Two electrons, cubic precision5 | 2068 T + 2068 Tdg, 10458 CX, 1034 measurements, 6 CCX, 6 phase; 212 clean, 13 slots, 218 bound wires | Original default polynomial15/target24 model remains separate |
+
+Concentrated regression:272 passes in each Cirq lane; local integration:145.
+Six changed Python files pass strict typing, formatting and lint. Three owner
+scopes, language, links, architecture, Program IR and public API checks pass.
+The original ten passes/three source skips and source drawing evidence are
+reused. Qualtran0.7.0, real Kickmix0.1 Simulator and frozen blobs are verified.
+Receipts use g2-grid-potential-source-*-20261126. These results complete concrete
+constructor/data/model and admitted numerical-channel work, while the exact
+symbolic width/precision logical-body gap above keeps the parent unaccepted.
