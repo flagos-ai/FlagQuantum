@@ -22,10 +22,11 @@ from ..registers.phase.hamming_phasing_component import (
 )
 from ..registers.phase.qvr_phase_gradient import (
     qvr_phase_format,
-    source_symbolic_qvr_gradient_cost,
+    source_qvr_gradient_bound,
 )
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
+from .legacy_qvr_factories import qvr_factories
 from .legacy_rotation_factories import _real_argument
 from .legacy_word_factories import _rename_program
 from .symbolic_parameters import symbolic_parameter_value
@@ -48,14 +49,15 @@ def _hamming_phase_factory(
         (Register("x", unsigned_register_type(width)),) if width != 0 else ()
     )
     if gradient:
-        if type(width) is not int or isinstance(epsilon, sympy.Expr):
+        if type(width) is not int or (
+            isinstance(epsilon, sympy.Expr) and not isinstance(exponent, sympy.Expr)
+        ):
             raise SerializationError(
                 "Gradient Hamming signature requires concrete width and precision"
             )
         count = width.bit_length()
         if isinstance(exponent, sympy.Expr):
-            sizing = source_symbolic_qvr_gradient_cost(count, 0, exponent / 2, epsilon)
-            phase_width = sizing.logical_qubits - count
+            _, phase_width = source_qvr_gradient_bound(epsilon)
         else:
             phase_width = qvr_phase_format(
                 count, 0, exponent / 2, epsilon
@@ -69,17 +71,21 @@ def _hamming_phase_factory(
     if type(width) is not int or width == 0:
         return FunctionRecord(name, (), registers=ports)
     if gradient and isinstance(exponent, sympy.Expr):
-        qvr = FunctionRecord(
+        qvr = qvr_factories()[
+            "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient"
+        ](
             "qvr",
-            (),
-            registers=(
-                Register("out", fixed_point_register_type(width.bit_length(), 0)),
-                phase,
-            ),
+            None,
+            {
+                "cost_reg": Register(
+                    "out", fixed_point_register_type(width.bit_length(), 0)
+                ),
+                "gamma": exponent / 2,
+                "eps": epsilon,
+            },
         )
-        return _rename_program(
-            hamming_gradient_phasing_program(width, ProgramRecord((qvr,))), name
-        )
+        assert isinstance(qvr, ProgramRecord)
+        return _rename_program(hamming_gradient_phasing_program(width, qvr), name)
     angle = (
         symbolic_parameter_value(exponent)
         if isinstance(exponent, sympy.Expr)

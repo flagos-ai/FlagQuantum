@@ -7,23 +7,34 @@
 
 from math import isfinite, pi
 
+from sympy import Expr
+
 from ....core.ir import Instruction
+from ....core.value_parameters import is_symbolic_value
 from ..._component_trace.resource_classification import classify_resource_gate
 from ..._component_trace.resource_generalization import RotationCall
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..._component_trace.symbolic_math import SymbolicReal, smax
 from ..bits.hamming_weight import hamming_weight_ir, hamming_weight_requirements
 from ..bits.hamming_weight_resource_model import source_hamming_weight_cost
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
 from .cost_function_phasing import BoundStage, RegisterPorts, cost_function_phasing_ir
-from .qvr_phase_gradient import qvr_phase_gradient_ir, source_qvr_phase_gradient_cost
+from .qvr_phase_gradient import (
+    qvr_phase_gradient_ir,
+    source_qvr_phase_gradient_cost,
+    source_symbolic_qvr_gradient_cost,
+)
 
 
-def source_hamming_weight_phasing_cost(width: int, exponent: float) -> ComponentCost:
+def source_hamming_weight_phasing_cost(
+    width: int, exponent: SymbolicReal, *, legacy_shims: bool = False
+) -> ComponentCost:
     """Model the source count, repeated Z power, and measured count adjoint.
 
     The declared Z power uses the same exponent for all calls. Physical
     emission weights the phases by the significance of each count bit.
     """
-    if not isfinite(exponent):
+    if not is_symbolic_value(exponent) and not isfinite(exponent):
         raise ValueError("Hamming phasing requires a finite exponent")
     junk, weight = hamming_weight_requirements(width)
     peak = width + junk + weight
@@ -41,16 +52,20 @@ def source_hamming_weight_phasing_cost(width: int, exponent: float) -> Component
         "HammingWeightPhasing",
         peak,
         calls=(
-            CostCall(source_hamming_weight_cost(width)),
+            CostCall(source_hamming_weight_cost(width, legacy_shims=legacy_shims)),
             CostCall(phase, weight, peak - 1),
-            CostCall(source_hamming_weight_cost(width, adjoint=True)),
+            CostCall(
+                source_hamming_weight_cost(
+                    width, adjoint=True, legacy_shims=legacy_shims
+                )
+            ),
         ),
         family="rotations",
     )
 
 
 def source_hamming_weight_gradient_phasing_cost(
-    width: int, exponent: float, epsilon: float
+    width: int, exponent: float, epsilon: float, *, legacy_shims: bool = False
 ) -> ComponentCost:
     """Compose the declared count, QVR and count adjoint costs.
 
@@ -64,14 +79,52 @@ def source_hamming_weight_gradient_phasing_cost(
         "HammingWeightPhasingViaPhaseGradient",
         width + junk + qvr.qubits,
         calls=(
-            CostCall(source_hamming_weight_cost(width), bystander_qubits=gradient),
+            CostCall(
+                source_hamming_weight_cost(width, legacy_shims=legacy_shims),
+                bystander_qubits=gradient,
+            ),
             CostCall(qvr, bystander_qubits=width + junk),
             CostCall(
-                source_hamming_weight_cost(width, adjoint=True),
+                source_hamming_weight_cost(
+                    width, adjoint=True, legacy_shims=legacy_shims
+                ),
                 bystander_qubits=gradient,
             ),
         ),
         family="rotations",
+    )
+
+
+def source_symbolic_hamming_weight_gradient_phasing_cost(
+    width: int, exponent: Expr, epsilon: SymbolicReal, *, legacy_shims: bool = False
+) -> SymbolicResourceFormula:
+    """Compose symbolic source QEC estimates with declared live storage.
+
+    Logical qubits compose the existing count/QVR/count-adjoint storage and
+    atomic-child width fallback. Original recursive query failures remain
+    independent diagnostics; symbolic-width source successes are comparable.
+    No numerical circuit or precision guarantee is inferred from this model.
+    """
+    if not isinstance(exponent, Expr):
+        raise ValueError("Symbolic Hamming gradient cost requires a SymPy exponent")
+    junk, count = hamming_weight_requirements(width)
+    qvr = source_symbolic_qvr_gradient_cost(count, 0, exponent / 2, epsilon)
+    forward = source_hamming_weight_cost(width, legacy_shims=legacy_shims).gates
+    inverse = source_hamming_weight_cost(
+        width, adjoint=True, legacy_shims=legacy_shims
+    ).gates
+    return SymbolicResourceFormula(
+        and_bloq=forward.and_bloq + inverse.and_bloq + qvr.and_bloq,
+        clifford=forward.clifford + inverse.clifford + qvr.clifford,
+        measurement=forward.measurement + inverse.measurement + qvr.measurement,
+        logical_qubits=smax(
+            width + junk + qvr.logical_qubits,
+            width + junk + smax(3, qvr.logical_qubits),
+        ),
+        t=forward.t + inverse.t + qvr.t,
+        toffoli=forward.toffoli + inverse.toffoli + qvr.toffoli,
+        cswap=forward.cswap + inverse.cswap + qvr.cswap,
+        rotation=forward.rotation + inverse.rotation + qvr.rotation,
     )
 
 

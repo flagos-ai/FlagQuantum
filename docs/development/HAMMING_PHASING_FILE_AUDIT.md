@@ -211,3 +211,57 @@ diagnostic is retained; the incompatible optional platformdirs pytest plugin
 is excluded as in the accepted SDK lane. Fourteen existing notebook syntax
 warnings remain. Strict mypy over eight files, Black, Ruff, Compiler/integration
 scope, architecture, multilevel IR, protected API and whitespace checks pass.
+
+## Symbolic model and logical dependency closure follow-up
+
+The existing direct cost helper now accepts source-valid symbolic exponents
+instead of rejecting them at isfinite. It still uses the original unweighted
+Z-power declaration, existing gate-family classification and source count plus
+exact-adjoint owners. Both original cost profiles are selectable. SymPy zero
+and rational constants retain parameterized classification; numerical zero
+and rational floats retain their own original classification. Symbols are
+not algebraically replaced with cheaper constants to change source estimates.
+
+The symbolic gradient helper composes the same count/erasure gates with the
+existing symbolic QVR resource formula. Shared QVR phase/gradient bound math
+now has one owner reused by both modeling and signature construction. Whole
+source gate expressions match at one, two and four data bits for symbolic,
+zero and rational SymPy exponents, concrete or symbolic precision and both
+cost profiles. When recursive source QubitCount succeeds at symbolic precision,
+the entire peak expression matches including the atomic three-wire fallback.
+Original empty-junk and symbolic-gamma recursive failures remain explicit;
+declared live storage is not relabeled as a successful source peak query.
+
+The source-positive symbolic-precision HWP constructor now retains its complete
+three-call logical root and reuses the existing QVR constructor for the
+one-call scaled-add dependency. Previously symbolic precision was refused
+before that root could be built, while a symbolic exponent stopped at an
+opaque QVR declaration. Exact source producer/operand/return traces now match
+both call layers at data widths one, two and four, with concrete, symbolic and
+composite precision expressions. Root and child typed signatures agree with
+the actual immutable source wire. The unresolved scaled-add child remains a
+declaration; physical binding still refuses it. No identity, substitute phase,
+backend selection or new Core representation is introduced.
+
+The original numeric-coefficient/symbolic-precision path fails constructing its
+fixed-point template. That source-negative profile keeps its native rejection;
+the successful symbolic-coefficient path does not justify broadening it.
+The source precision, coefficient and static field metadata remain in the
+existing input library and are reinterpreted by their existing constructor
+owners before physical execution. User operations still enter circuit.append(op).
+
+Final concentrated regression passes 685 cases in each Cirq lane; local
+integration passes 145. Strict typing covers five changed Python files; format,
+lint, Compiler scope, language/links, architecture, IR and public API checks pass.
+All 112 sampled published concrete cost trees remain equal to 63a27499b.
+The full vector, measurement-history, private-work, source blob and actual
+Kickmix reference checks are included in the affected source regression.
+Receipts use g2-phase-symbolic-resources-*-20261126.
+
+This follows the complete file and its count/QVR/scaled-add dependencies. It
+closes the identified source-positive resource and logical-call gaps, without
+accepting Q-0668 prematurely. The original one-bit physical refusal, mixed
+fixed-point child failures, recursive-query boundaries and the recorded
+negative-exponent precision violations remain open under its full-file audit.
+Native primitive tables and independent source model estimates above remain
+separate and unchanged.
