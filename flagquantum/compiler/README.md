@@ -1476,3 +1476,12 @@ it preserves a bodyless declaration instead of choosing a numerical phase.
 Algorithms keeps the separately selected absolute-phase emitter. Drawer retains
 the original root label. Run `python -m pytest tests/unit/test_grid_qvr_source.py`;
 see `docs/development/GRID_QVR_FILE_AUDIT.md` for the complete source disposition.
+
+
+`formats/legacy_grid_kinetic_factories.py` reconstructs the original per-electron
+SumOfSquares/QVR/Free chain from shallow metadata. Actual stored source graphs
+remain handled by the existing resolver. Both routes share typed signatures;
+the original bodyless leaves and clean Free semantics remain explicit.
+Algorithms retains its separately specified compute/phase/uncompute operation.
+Run `python -m pytest tests/unit/test_grid_kinetic_source.py tests/unit/test_grid_kinetic_branches.py`;
+see `docs/development/GRID_KINETIC_FILE_AUDIT.md` for whole-source and channel evidence.
