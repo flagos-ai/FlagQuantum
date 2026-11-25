@@ -53,12 +53,11 @@ bodyless declarations. Concrete Sympy Integer values normalize on the source
 wire. Symbolic phase exponents are executable through existing owned expressions.
 Source symbolic scaled coefficients retain a declaration and physical refusal.
 
-The scaled constructor retains the exact signed fixed-point x signature as a
-bodyless declaration. Physical signed fixed-point admission still requires the
-separately pending Proposal 116. Signed coefficient formats, unsupported
-fractional formats and permissive nonstandard AddIntoPhaseGrad sign/shift
-metadata remain explicit gaps. Three constructor identifiers close. The scaled
-identifier remains partial and is excluded from the complete-constructor count.
+The original 2026-11-23 batch retained signed x and signed coefficients as
+bodyless declarations. Approved Proposal 116 and the closure below supersede
+that specific signed-storage refusal. Unsupported fractional formats and
+permissive nonstandard AddIntoPhaseGrad sign/shift metadata remain separate
+gaps. The scaled identifier remains partial under those complete-file criteria.
 
 ## Acceptance receipts
 
@@ -81,3 +80,65 @@ control emits none. Its independent source model estimates two Toffoli and
 six qubits. The negative-half scaled case has eight T/T-dagger, twenty CX
 and two measurements/resets on seven wires, versus one modeled Toffoli
 and five qubits. Receipts use prefix g2-phase-constructor and date 20261123.
+
+
+## Signed coefficient and input storage dependency closure, 2026-11-25
+
+Compiler's existing scaled-phase scheduler now represents signed coefficient
+formats explicitly. It saturates the nonnegative magnitude at the signed
+positive maximum and preserves the original Fxp.bin()/Fxp.n_int loop literally:
+n_int excludes the sign bit, so each retained coefficient bit has one extra
+right shift compared with the same-width unsigned format. This source rule is
+not replaced by a mathematical signed-multiplication interpretation. The source
+input dtype's num_int still equals bitsize minus num_frac, including its sign
+position, and raw input slicing preserves that rule.
+
+The existing Program owner retains the input sign flag, calls existing unsigned
+fractional adders on the original ordered slices, and restores nominal storage
+through shared Split/Join and Cast views. The existing resolver passes both
+sign flags to this owner instead of returning a declaration for every signed
+case. Coefficient, Program and literal-IR scheduling share the same terms.
+Compiler owns no numerical execution or backend selection. Approved Proposal
+116 supplies positive-width signed quantum storage; classical casts, signed
+controls, signed-zero storage and numerical fixed-point arithmetic contracts
+are unchanged. User code retains circuit.append(op).
+
+Actual original serialized depths zero, one and two retain identical root
+calls, operands and nominal descriptors. Positive, negative, zero and saturated
+coefficients are covered with signed and unsigned input storage. Every complete
+small logical operator matches the unchanged source decomposed graph without
+phase alignment. Every small raw measurement history agrees on a complex
+input entangled with a spectator; every forward/inverse history pair restores
+all amplitudes and clean carry storage. Outputs alias caller data wires.
+A separate direct original-generator grid covers every signed coefficient
+width two through four, with the original one-bit signed constructor refusal, every nonnegative valid fractional width, and five
+coefficients, checking term order, operand slices, shifts and signs.
+
+Source model, original classical model and decomposed execution remain separate.
+The source signed-input scaled_val(0) raises AssertionError even when its graph
+successfully decomposes; this is reproduced, not corrected. Full-word
+QFxp(3,2) input with unsigned gamma still fails the original nominal child
+QFxp(3,3) binding; native resolution retains its corresponding dtype refusal.
+Symbolic coefficients remain bodyless. Negative coefficient fractional widths
+and other nonstandard metadata remain outside this closure. No locked source,
+protected opcode or serialization vocabulary changes.
+
+
+The batch passes the 204-case affected regression, 95 direct dependency cases,
+79 Cirq 1.6 cases and the final 80-case signed/scheduler scope after adding the
+small-format generator grid and explicit one-bit refusal. Local integration
+passes 145 cases. Strict typing covers four Python files; Black, Ruff, Compiler
+scope, language, links, architecture, IR and protected API checks pass. The
+source suite checks all four frozen phase-gradient assets and the real Kickmix
+reference. Original protobuf boolean deprecation warnings remain visible.
+Receipts use `g2-signed-scaled-*20261125` in the reference workspace.
+
+Ten independent resource rows retain the source declared full-width estimate:
+for coefficient 0.5 the native primitive stream has 8 T/Tdag, 20 CX, two
+measurement/CZ/reset events and peak eight, while the original model has one
+Toffoli, no measurements and peak six. For coefficient 0.75, actual counts are
+16 T/Tdag, 37 CX, four measurement/CZ/reset events and peak eight; the original
+model has two Toffoli, no measurements and peak six. Neither model is rewritten
+to match the native adders' measured decomposition. Source scaled model formulas
+use the same literal signed-coefficient bit schedule but retain full-width
+atomic leaf estimates.
