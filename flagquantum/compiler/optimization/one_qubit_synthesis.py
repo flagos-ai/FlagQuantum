@@ -426,8 +426,16 @@ def _euler_scalar_phase(opcode: str, params: Mapping[str, Any]) -> Any:
     return None
 
 
-def _synthesize_u3(instruction: Instruction) -> tuple[Instruction, ...] | None:
-    """Emit the tabulated U3 form, retaining its absolute scalar phase."""
+def _synthesize_u3(
+    instruction: Instruction,
+    *,
+    can_run: Callable[[Instruction], bool] | None = None,
+) -> tuple[Instruction, ...] | None:
+    """Emit the absolute-phase U3 form if every leaf meets the target predicate.
+
+    A rejected leading U3 needs no scalar-correction construction. Without a
+    predicate, target-independent optimization retains the same complete word.
+    """
     angles = canonical_euler_angles(instruction)
     if angles is None:
         return None
@@ -438,6 +446,8 @@ def _synthesize_u3(instruction: Instruction) -> tuple[Instruction, ...] | None:
         params={"theta": theta, "phi": phi, "lbd": lam},
         metadata=instruction.metadata,
     )
+    if can_run is not None and not can_run(result):
+        return None
     scalar = _euler_scalar_phase(instruction.name, instruction.params)
     if scalar is None:
         return (result,)
@@ -455,7 +465,10 @@ def _synthesize_u3(instruction: Instruction) -> tuple[Instruction, ...] | None:
         params={"theta": 0.0, "phi": 0.0, "lbd": scalar},
         metadata=instruction.metadata,
     )
-    return (result, x, phase, x, phase)
+    correction = (x, phase, x, phase)
+    if can_run is not None and not all(can_run(item) for item in correction):
+        return None
+    return (result, *correction)
 
 
 def is_diagonal_one_qubit(instruction: Instruction) -> bool:

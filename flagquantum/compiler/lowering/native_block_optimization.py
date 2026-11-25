@@ -87,9 +87,25 @@ def _identity(
     rewrites: tuple[BlockRewriteEvidence, ...],
     rejection_counts: Mapping[str, int],
 ) -> str:
+    return _identity_from_hashes(
+        source.content_hash,
+        program.content_hash,
+        target_snapshot_id,
+        rewrites,
+        rejection_counts,
+    )
+
+
+def _identity_from_hashes(
+    source_content_hash: str,
+    output_content_hash: str,
+    target_snapshot_id: str,
+    rewrites: tuple[BlockRewriteEvidence, ...],
+    rejection_counts: Mapping[str, int],
+) -> str:
     payload = {
-        "source_content_hash": source.content_hash,
-        "output_content_hash": program.content_hash,
+        "source_content_hash": source_content_hash,
+        "output_content_hash": output_content_hash,
         "target_snapshot_id": target_snapshot_id,
         "rewrites": [rewrite.to_dict() for rewrite in rewrites],
         "rejection_counts": dict(rejection_counts),
@@ -268,6 +284,7 @@ def optimize_native_blocks(
         lambda index, pair: source.instructions[index].name in {"rx", "rz", "cz"}
         and matrix_reader(source.instructions[index], pair) is not None,
         barrier=lambda instruction: not _safe_spectator(instruction, matrix_reader),
+        identity_reader=matrix_reader,
     ):
         block = [source.instructions[index] for index in positions]
         candidate = _candidate(
@@ -326,15 +343,25 @@ def optimize_native_blocks(
         for positions, pair, phase, residual in sorted(accepted)
     )
     program = replace(source, instructions=tuple(output)) if rewrites else source
+    # Share only this construction's hashes; the constructor and later verifier
+    # still read the source again to detect mutable circuit data.
+    source_content_hash = source.content_hash
+    output_content_hash = (
+        source_content_hash if program is source else program.content_hash
+    )
     return NativeBlockOptimizationResult(
         source_program=source,
         program=program,
-        source_content_hash=source.content_hash,
+        source_content_hash=source_content_hash,
         target_snapshot_id=snapshot.snapshot_id,
         rewrites=rewrites,
         rejection_counts=counts,
-        optimization_identity=_identity(
-            source, program, snapshot.snapshot_id, rewrites, counts
+        optimization_identity=_identity_from_hashes(
+            source_content_hash,
+            output_content_hash,
+            snapshot.snapshot_id,
+            rewrites,
+            counts,
         ),
     )
 

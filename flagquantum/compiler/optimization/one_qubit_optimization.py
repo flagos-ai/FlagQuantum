@@ -411,15 +411,21 @@ def _declines_vocabulary(
 
 
 def _fold_run(
-    instructions: list[Instruction], *, preserve_u3: bool = False
+    instructions: list[Instruction],
+    *,
+    preserve_u3: bool = False,
+    product: Matrix | None = None,
 ) -> tuple[Instruction, ...] | None:
     """The exact replacement of one same-qubit run, or None to leave it.
 
     Decline a replacement that is not shorter, changes its permitted vocabulary,
-    or loses a resolvable component during Euler extraction.
+    or loses a resolvable component during Euler extraction. The traversal may
+    supply the product it already accumulated with the same matrix reader and
+    multiplication order; reconstruction still validates every replacement.
     """
 
-    product = _run_product(instructions)
+    if product is None:
+        product = _run_product(instructions)
     if product is None:
         return None
     replacement = _emit(
@@ -472,41 +478,70 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
 
     preserve_u3 = all(instruction.name in {"u3", "cx"} for instruction in ir)
     output: list[Instruction | None] = []
-    open_runs: dict[int, list[int]] = {}
-    closed_runs: list[list[int]] = []
+    # Only open runs retain a product. Completed runs are written back at their
+    # original positions, so spectator qubits and entanglers keep their order.
+    open_runs: dict[int, tuple[list[int], Matrix | None]] = {}
 
     def close(qubits: Iterable[int]) -> None:
         for touched in qubits:
-            run = open_runs.pop(touched, None)
-            if run is not None:
-                closed_runs.append(run)
+            pending = open_runs.pop(touched, None)
+            if pending is None:
+                continue
+            positions, product = pending
+            if len(positions) < 2:
+                continue
+            assert product is not None
+            replacement = _fold_run(
+                [ir.instructions[position] for position in positions],
+                preserve_u3=preserve_u3,
+                product=product,
+            )
+            if replacement is None:
+                continue
+            for offset, instruction in enumerate(replacement):
+                output[positions[offset]] = instruction
+            for position in positions[len(replacement) :]:
+                output[position] = None
 
     for instruction in ir:
-        readable = (
-            _is_foldable(instruction) and _instruction_matrix(instruction) is not None
-        )
-        if not readable:
+        if not _is_foldable(instruction):
             close(instruction.wires)
             output.append(instruction)
             continue
-        open_runs.setdefault(instruction.wires[0], []).append(len(output))
+        wire = instruction.wires[0]
+        pending = open_runs.get(wire)
+        if (
+            pending is None
+            and instruction.matrix is None
+            and not instruction.params
+            and canonical_opcode(instruction.name) in _FIXED_EULER_ANGLES
+        ):
+            # A fixed singleton cannot shorten. Parameterized and supplied-matrix
+            # inputs still take their existing numerical validation path.
+            open_runs[wire] = [len(output)], None
+            output.append(instruction)
+            continue
+        matrix = _instruction_matrix(instruction)
+        if matrix is None:
+            close(instruction.wires)
+            output.append(instruction)
+            continue
+        if pending is None:
+            open_runs[wire] = [len(output)], matrix
+        else:
+            positions, product = pending
+            if product is None:
+                product = _instruction_matrix(ir.instructions[positions[0]])
+                assert product is not None
+            if len(positions) == 1:
+                # A singleton never needs a product. On its second member,
+                # recover _run_product's exact left-associated arithmetic.
+                product = _matmul(product, _IDENTITY)
+            positions.append(len(output))
+            open_runs[wire] = positions, _matmul(matrix, product)
         output.append(instruction)
-    closed_runs.extend(open_runs.values())
-
-    replaced: list[Instruction | None] = list(output)
-    for run in closed_runs:
-        if len(run) < 2:
-            continue
-        replacement = _fold_run(
-            [output[position] for position in run], preserve_u3=preserve_u3  # type: ignore[misc]
-        )
-        if replacement is None:
-            continue
-        for offset, instruction in enumerate(replacement):
-            replaced[run[offset]] = instruction
-        for position in run[len(replacement) :]:
-            replaced[position] = None
+    close(tuple(open_runs))
     return replace(
         ir,
-        instructions=tuple(item for item in replaced if item is not None),
+        instructions=tuple(item for item in output if item is not None),
     )

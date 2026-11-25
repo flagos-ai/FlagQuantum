@@ -74,6 +74,11 @@ def restore_swaps(
         if left < n_wires and right < n_wires:
             adjacency[left].append(right)
             adjacency[right].append(left)
+    # A layout already at home needs no spanning-forest traversal. Keep input
+    # validation and edge accounting above this fast path unchanged.
+    if placement == tuple(range(n_wires)):
+        return ()
+
     parent = [-1] * n_wires
     for root in range(n_wires):
         if parent[root] != -1:

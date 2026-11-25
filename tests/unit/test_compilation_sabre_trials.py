@@ -10,6 +10,7 @@ import pytest
 from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.compiler.topology import routing, routing_strategy, sabre
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
+from flagquantum.compiler.topology.routing_cost import _topology_cost_model
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit
@@ -26,9 +27,14 @@ def _program(width: int, seed: int) -> CircuitIR:
     )
 
 
-def _linear_operator(program: CircuitIR) -> tuple[int, ...]:
+def _linear_operator(
+    program: CircuitIR, initial_layout: tuple[int, ...] | None = None
+) -> tuple[int, ...]:
     # Each output bit is an exact GF(2) linear combination of all input bits.
     rows = [1 << q for q in range(program.n_wires)]
+    if initial_layout is not None:
+        for logical, physical in enumerate(initial_layout):
+            rows[physical] = 1 << logical
     for instruction in program:
         left, right = instruction.wires
         if instruction.name == "cx":
@@ -101,7 +107,7 @@ def test_ordered_device_ranks_trials_with_orientation_and_restoration(
 ) -> None:
     source = _program(6, seed)
     device = DirectedCouplingMap(6, [(q, q + 1) for q in range(5)])
-    topology = routing._topology_cost_model(device, 6, "routing trial test")
+    topology = _topology_cost_model(device, 6, "routing trial test")
     coupling = topology.weak_coupling
 
     def cost(plan: sabre.SabrePlan) -> int:
@@ -128,11 +134,12 @@ def test_ordered_device_ranks_trials_with_orientation_and_restoration(
     assert _linear_operator(routed) == _linear_operator(source)
 
 
-def test_materialization_reuses_the_selected_layout_search() -> None:
-    source = _program(8, 3)
-    topology = routing._topology_cost_model(CouplingMap.grid(2, 4), 8, "trial reuse")
+@pytest.mark.parametrize("seed", (0, 3))
+def test_materialization_reuses_the_selected_layout_search(seed: int) -> None:
+    source = _program(8, seed)
+    topology = _topology_cost_model(CouplingMap.grid(2, 4), 8, "trial reuse")
     with patch.object(
-        routing_strategy, "plan_sabre_layout", wraps=routing_strategy.plan_sabre_layout
+        routing_strategy, "plan_sabre_layout", wraps=sabre.plan_sabre_layout
     ) as search:
         estimate, plan = routing._estimate_routing_cost(
             source, topology, strategy="sabre_layout"
@@ -150,4 +157,53 @@ def test_materialization_reuses_the_selected_layout_search() -> None:
         routed.metadata["routing"]["inserted_swap_count"]
         == estimate.planned_inserted_swap_count
     )
-    assert _linear_operator(routed) == _linear_operator(source)
+    # This caller-selected strategy expects its declared physical input layout.
+    assert _linear_operator(
+        routed, plan.initial_logical_to_physical
+    ) == _linear_operator(source)
+    if seed == 0:
+        assert plan.initial_logical_to_physical != tuple(range(source.n_wires))
+        assert _linear_operator(routed) != _linear_operator(source)
+    else:
+        assert plan.initial_logical_to_physical == tuple(range(source.n_wires))
+
+
+def test_completed_trial_stream_scores_each_plan_once_and_preserves_ties() -> None:
+    source = _program(6, 3)
+    coupling = CouplingMap.line(6)
+    baseline = sabre._plan_sabre_trial(source, coupling)
+    assert baseline is not None
+    scored: list[sabre.SabrePlan] = []
+
+    def score(plan: sabre.SabrePlan) -> int:
+        scored.append(plan)
+        return sabre._restored_swap_count(plan, coupling)
+
+    trials = list(sabre._sabre_trial_costs(source, coupling, baseline, cost=score))
+    assert scored == [plan for plan, _ in trials]
+    assert trials[0][0] == baseline
+    expected = min(trials, key=lambda item: item[1])[0]
+    assert sabre._select_sabre_trials(source, coupling, baseline) == expected
+    # Equal-cost alternatives must not displace the earlier incumbent.
+    assert (
+        sabre._select_sabre_trials(source, coupling, baseline, cost=lambda plan: 10000)
+        == baseline
+    )
+
+
+def test_local_selection_does_not_call_a_custom_cost_or_create_a_stream() -> None:
+    source = CircuitIR(6, (Instruction("cx", (0, 1)),))
+    coupling = CouplingMap.line(6)
+    baseline = sabre._plan_sabre_trial(source, coupling)
+    assert baseline is not None
+    with patch.object(sabre, "_sabre_trial_costs") as stream:
+        assert (
+            sabre._select_sabre_trials(
+                source,
+                coupling,
+                baseline,
+                cost=lambda plan: pytest.fail("Local fast path must not score trials"),
+            )
+            == baseline
+        )
+    stream.assert_not_called()

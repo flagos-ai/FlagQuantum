@@ -5,7 +5,9 @@ from __future__ import annotations
 import base64
 import re
 import subprocess
+from http.client import IncompleteRead
 from pathlib import Path
+from threading import Barrier
 
 import pytest
 
@@ -46,6 +48,13 @@ def test_graphql_restores_large_source_with_few_requests_and_refuses_tampering(
     binary = b"\x00\xff\x01"
     (directory / "binary.dat").write_bytes(binary)
     contents[_git(directory, "hash-object", "--stdin", data=binary)] = binary
+    large_blobs: set[str] = set()
+    for index in range(4):
+        raw = (f"retained observation {index}\n" * 30000).encode()
+        (directory / f"large-{index}.json").write_bytes(raw)
+        oid = _git(directory, "hash-object", "--stdin", data=raw)
+        contents[oid] = raw
+        large_blobs.add(oid)
     executable = b"#!/bin/sh\nexit 0\n"
     (directory / "run.sh").write_bytes(executable)
     (directory / "run.sh").chmod(0o755)
@@ -83,6 +92,11 @@ def test_graphql_restores_large_source_with_few_requests_and_refuses_tampering(
         assert payload is not None
         query = str(payload["query"])
         queries.append(query)
+        includes_text = " text}" in query
+        if includes_text and not tamper:
+            requested = re.findall(r'object\(oid:"([a-f0-9]{40})"\)', query)
+            assert not large_blobs.intersection(requested)
+            assert sum(len(contents[oid]) for oid in requested) <= 262144
         result: dict[str, object] = {}
         for alias, oid in re.findall(
             r'(commit|o\d+):object\(oid:"([a-f0-9]{40})"\)', query
@@ -109,7 +123,7 @@ def test_graphql_restores_large_source_with_few_requests_and_refuses_tampering(
                 result[alias] = {"oid": tree, "entries": entries}
             else:
                 content = contents[oid]
-                result[alias] = {
+                blob: dict[str, object] = {
                     "oid": oid,
                     "isBinary": content == binary,
                     "isTruncated": False,
@@ -124,16 +138,19 @@ def test_graphql_restores_large_source_with_few_requests_and_refuses_tampering(
                         else len(content)
                     ),
                 }
+                if not includes_text:
+                    blob.pop("text")
+                result[alias] = blob
         return {"data": {"repository": result}}
 
     def rest(path: str) -> object:
         rest_calls.append(path)
         oid = path.rsplit("/", 1)[1]
-        assert contents[oid] == binary
+        assert contents[oid] == binary or oid in large_blobs
         return {
             "sha": oid,
             "encoding": "base64",
-            "content": base64.b64encode(binary).decode(),
+            "content": base64.b64encode(contents[oid]).decode(),
         }
 
     monkeypatch.setattr(source, "_get_json", request)
@@ -157,14 +174,20 @@ def test_graphql_restores_large_source_with_few_requests_and_refuses_tampering(
         rest,
         get_objects=lambda missing: client.objects(missing, rest),
     )
-    assert len(queries) <= 15
-    assert len(rest_calls) == 1
+    # Metadata precedes bounded text: at most two queries per eight-object batch,
+    # plus the commit query and the tree-only batch. No large text enters GraphQL.
+    assert len(queries) <= 28
+    assert len(rest_calls) == 5
     source._checkout(workspace, commit, None)
     assert _git(workspace, "status", "--porcelain") == ""
     assert (workspace / "binary.dat").read_bytes() == binary
     assert (workspace / "run.sh").stat().st_mode & 0o111
     assert (workspace / "link").is_symlink()
     assert (workspace / "example-095.txt").read_bytes() == b"source 95\r\n"
+    for index in range(4):
+        assert (workspace / f"large-{index}.json").read_bytes() == (
+            directory / f"large-{index}.json"
+        ).read_bytes()
     queries.clear()
     assert source._materialize_api(
         workspace,
@@ -198,6 +221,7 @@ def test_graphql_errors_and_missing_objects_are_visible(
         ("isBinary", None),
         ("isTruncated", None),
         ("byteSize", True),
+        ("byteSize", -1),
         ("byteSize", 4),
         ("text", None),
         ("oid", "b" * 40),
@@ -233,6 +257,74 @@ def test_graphql_object_batches_are_bounded_before_network(
     client = source._GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
     with pytest.raises(ValueError):
         client.objects(missing, lambda _: pytest.fail("REST fallback"))
+
+
+@pytest.mark.parametrize("transport_failure", [False, True])
+def test_large_and_failed_batches_fetch_independent_objects_concurrently(
+    monkeypatch: pytest.MonkeyPatch, transport_failure: bool
+) -> None:
+    missing = [(character * 40, "blob") for character in ("a", "b")]
+    contents = {sha: (sha * 1000).encode() for sha, _ in missing}
+    ready = Barrier(2, timeout=2)
+    queries: list[str] = []
+
+    def query(self: source._GraphQLSource, fields: str) -> dict[str, object]:
+        queries.append(fields)
+        if transport_failure:
+            raise IncompleteRead(b"partial batch")
+        assert " text" not in fields
+        return {
+            f"o{index}": {
+                "oid": sha,
+                "byteSize": len(contents[sha]),
+                "isBinary": False,
+                "isTruncated": False,
+            }
+            for index, (sha, _) in enumerate(missing)
+        }
+
+    def get_json(path: str) -> object:
+        sha = path.rsplit("/", 1)[1]
+        ready.wait()
+        return {
+            "sha": sha,
+            "encoding": "base64",
+            "content": base64.b64encode(contents[sha]).decode(),
+        }
+
+    monkeypatch.setattr(source._GraphQLSource, "_query", query)
+    client = source._GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
+    result = client.objects(missing, get_json)
+    assert len(queries) == 1
+    for (sha, _), row in zip(missing, result, strict=True):
+        assert isinstance(row, dict)
+        assert row["sha"] == sha
+        assert base64.b64decode(row["content"]) == contents[sha]
+
+
+def test_metadata_changes_between_size_and_text_requests_are_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def query(self: source._GraphQLSource, fields: str) -> dict[str, object]:
+        nonlocal calls
+        calls += 1
+        return {
+            "o0": {
+                "oid": "a" * 40,
+                "byteSize": 3 if calls == 1 else 40000,
+                "isBinary": False,
+                "isTruncated": False,
+                "text": "abc",
+            }
+        }
+
+    monkeypatch.setattr(source._GraphQLSource, "_query", query)
+    client = source._GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
+    with pytest.raises(ValueError, match="changed source blob metadata"):
+        client.objects([("a" * 40, "blob")], lambda _: pytest.fail("REST fallback"))
+    assert calls == 2
 
 
 @pytest.mark.parametrize("workflow", ["ci.yml", "local-gpu.yml"])
@@ -285,7 +377,7 @@ def test_workflow_bootstrap_checks_graphql_bytes_before_execution(
         assert request.full_url == "https://api.github.com/graphql"
         assert request.get_header("Authorization") == "Bearer fixture"
         assert request.get_method() == "POST"
-        assert request.data is not None
+        assert isinstance(request.data, bytes)
         payload = json.loads(request.data)
         assert payload["variables"] == {
             "owner": "owner",

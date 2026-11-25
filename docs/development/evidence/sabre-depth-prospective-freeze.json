@@ -1,0 +1,14 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "61d957a6ec9310f2aa105d94190bdc5e6d5e8ea5",
+  "base_commit": "553054f4206ff80c9f4d3005556dd2b3329dd567",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "runner_sha256": "966325853b7b6f98270bcfd586fe28761e435a88e73235094795b48212767260",
+  "protocol_sha256": "2c5100f9f2c27ddc7a41ffd91b174c01ea131a86761fd4b3782d043ffeb60f3d",
+  "selector_ast_sha256": "31f45fd381dc8aeb9198ca8a03dae4feb587a1f36250296b73c0c5ffcaf8ac5b",
+  "input_nonce": "61357a88d4608fa7ca10295537fee2aeeb3e88cf1a2d2e4825fe094335d17f8b",
+  "draws": 1,
+  "production_candidate_enabled": false,
+  "formal_campaign": "user_deferred",
+  "expected_pairs": 120
+}

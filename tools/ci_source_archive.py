@@ -462,26 +462,88 @@ class _GraphQLSource:
             raise ValueError("GraphQL source batches require at most eight Git objects")
         fields = " ".join(
             f'o{index}:object(oid:"{sha}"){{oid '
-            "... on Blob{byteSize isBinary isTruncated text} "
+            "... on Blob{byteSize isBinary isTruncated} "
             "... on Tree{entries{mode name type oid}}}"
             for index, (sha, _) in enumerate(missing)
         )
         try:
             response = self._query(fields)
+            small: list[int] = []
+            for index, (sha, kind) in enumerate(missing):
+                row = response.get(f"o{index}")
+                if not isinstance(row, dict) or row.get("oid") != sha:
+                    raise ValueError("GitHub returned a different Git object")
+                if kind != "blob":
+                    continue
+                size = row.get("byteSize")
+                binary = row.get("isBinary")
+                truncated = row.get("isTruncated")
+                if (
+                    type(size) is not int
+                    or size < 0
+                    or "isBinary" not in row
+                    or (
+                        type(binary) is not bool
+                        and not (binary is None and truncated is True)
+                    )
+                    or type(truncated) is not bool
+                ):
+                    raise ValueError("GitHub returned incomplete source blob metadata")
+                # Eight small blobs contribute at most 256 KiB of UTF-8 text.
+                # Large evidence must not turn one batch into a multi-MB response.
+                # Large blobs can have null binary classification. They must
+                # use REST bytes, still checked against their Git object SHA.
+                if binary is False and truncated is False and size <= 32768:
+                    small.append(index)
+            if small:
+                contents = self._query(
+                    " ".join(
+                        f'o{index}:object(oid:"{missing[index][0]}"){{oid '
+                        "... on Blob{byteSize isBinary isTruncated text}}"
+                        for index in small
+                    )
+                )
+                for index in small:
+                    alias = f"o{index}"
+                    row = contents.get(alias)
+                    metadata = response[alias]
+                    if (
+                        not isinstance(row, dict)
+                        or not isinstance(metadata, dict)
+                        or any(
+                            row.get(key) != metadata[key]
+                            for key in ("oid", "byteSize", "isBinary", "isTruncated")
+                        )
+                    ):
+                        raise ValueError("GitHub changed source blob metadata")
+                    response[alias] = row
         except (URLError, RemoteDisconnected, IncompleteRead, TimeoutError):
             # A large batched response can be truncated repeatedly by a proxy.
             # Use bounded individual requests; _materialize_api still verifies
             # every returned object against the requested Git SHA.
             print("Batch transport failed; fetching individual Git objects", flush=True)
-            return [get_json(f"/git/{kind}s/{sha}") for sha, kind in missing]
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                return list(
+                    executor.map(
+                        get_json, (f"/git/{kind}s/{sha}" for sha, kind in missing)
+                    )
+                )
+        individual = [
+            index
+            for index, (_, kind) in enumerate(missing)
+            if kind == "blob" and index not in small
+        ]
+        paths = [f"/git/blobs/{missing[index][0]}" for index in individual]
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            fetched = dict(zip(individual, executor.map(get_json, paths), strict=True))
         result: list[object] = []
         for index, (sha, kind) in enumerate(missing):
             row = response.get(f"o{index}")
             if not isinstance(row, dict) or row.get("oid") != sha:
                 raise ValueError("GitHub returned a different Git object")
             if kind == "blob":
-                if row.get("isBinary") is True or row.get("isTruncated") is True:
-                    result.append(get_json(f"/git/blobs/{sha}"))
+                if index in fetched:
+                    result.append(fetched[index])
                     continue
                 text = row.get("text")
                 if (

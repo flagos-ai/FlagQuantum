@@ -391,3 +391,63 @@ def test_existing_explicit_pass_extension_runs_end_to_end() -> None:
     assert "experiment.cz" in result.metadata["admitted_passes"]
     assert sum(item.name == "cz" for item in result.instructions) == 2
     _assert_equivalent(source, result)
+
+
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0), (0, 2), (2, 0)])
+def test_resynthesized_rotation_layers_merge_across_cz(
+    pair: tuple[int, int],
+) -> None:
+    # Alternating interaction and local layers occur in variational circuits.
+    # The old cleanup stopped at each CZ, leaving 18 gates in this proposal.
+    source = CircuitIR(
+        max(pair) + 1,
+        tuple(
+            instruction
+            for x_angle, z_angle in (
+                (0.17, 0.23),
+                (-0.31, 0.41),
+                (0.53, -0.61),
+                (-0.71, 0.83),
+            )
+            for instruction in (
+                Instruction("cz", pair),
+                Instruction("rx", (pair[0],), {"theta": x_angle}),
+                Instruction("rz", (pair[1],), {"theta": z_angle}),
+            )
+        ),
+    )
+    result = resynthesize_cz_blocks(source)
+    assert len(result.instructions) <= 16
+    assert sum(item.name == "cz" for item in result.instructions) == 2
+    _assert_equivalent(source, result)
+
+
+def test_corrupt_commuting_merge_is_rejected_by_complete_operator() -> None:
+    source = (Instruction("swap", (0, 1)), Instruction("cx", (1, 0)))
+    rejected: list[str] = []
+    with patch.object(
+        _cz_blocks,
+        "merge_commuting_rotations",
+        return_value=CircuitIR(2, (Instruction("cz", (0, 1)),)),
+    ):
+        assert (
+            _cz_blocks._candidate(source, (0, 1), on_rejection=rejected.append) is None
+        )
+    assert rejected == ["residual_rejected"]
+
+
+def test_commuting_merge_does_not_bypass_raw_proposal_budget() -> None:
+    source = (Instruction("swap", (0, 1)), Instruction("cx", (1, 0)))
+    rejected: list[str] = []
+    with patch.object(_cz_blocks, "merge_commuting_rotations") as merge:
+        assert (
+            _cz_blocks._candidate(
+                source,
+                (0, 1),
+                max_output_operations=1,
+                on_rejection=rejected.append,
+            )
+            is None
+        )
+    merge.assert_not_called()
+    assert rejected == ["instruction_growth_rejected"]

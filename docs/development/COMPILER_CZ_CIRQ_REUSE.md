@@ -40,8 +40,11 @@ exact zero rotations; no new approximation threshold is introduced.
 
 The enclosing stage still independently recomputes the complete two-qubit
 operator and requires residual at most `1e-11` up to a recorded global phase.
-CZ operations and their operand order are retained. No rotation passes through
-CZ, no final permutation is absorbed, and no global phase is written to IR.
+The local-run helper retains CZ operations and their operand order and does
+not move rotations through CZ. The subsequent
+[commuting-rotation stage](COMPILER_CZ_COMMUTING_ROTATIONS.md) may combine
+generated RZ rotations across CZ before the same whole-block verifier runs.
+No final permutation is absorbed and no global phase is written to IR.
 Annotated, custom-matrix, symbolic, trainable, batched, out-of-pair and unsupported
 instructions remain unchanged. Generic fixed-pulse synthesis is unchanged.
 

@@ -1,0 +1,4817 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "61d957a6ec9310f2aa105d94190bdc5e6d5e8ea5",
+  "suite": "applications",
+  "input_nonce": "61357a88d4608fa7ca10295537fee2aeeb3e88cf1a2d2e4825fe094335d17f8b",
+  "completed": true,
+  "failures": [],
+  "compiler_sha256": "d26f1736a99cb635366f092af87c2fadd88ea41800516064f442d6def8e9966b",
+  "runner_sha256": "966325853b7b6f98270bcfd586fe28761e435a88e73235094795b48212767260",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "limits": "Local development inputs; a new nonce alone does not establish unseen programs or qualify resources. No qualified timing, memory, held-out generalization or ranking claim. Baseline-first order. Generic depth counts CX/SWAP equally. Applications at n=8,12 verify only three probes.",
+  "rows": [
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.2909701622771292e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 43,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 2.2909701622771292e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 43,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.024266953226993e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 41,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 2.024266953226993e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 41,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 15224
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 15224
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.0624951171486535e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.0624951171486535e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.660836858741622e-16,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 9.660836858741622e-16,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 20,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 8435
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 8435
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.2658490090568385e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.2658490090568385e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.24794034363832e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 22,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.24794034363832e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 22,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 9186
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 9186
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.0225396651513478e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 26,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.0225396651513478e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 26,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.507044350905964e-16,
+          "full_cz_count": 34,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 9.507044350905964e-16,
+          "full_cz_count": 34,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 8193
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 8193
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.083844138359801e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 39,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 4.083844138359801e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 39,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.803457202880391e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 37,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 6.803457202880391e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 37,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 14736
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 72,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 14736
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.8149684782055937e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.8149684782055937e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.830524433501838e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 2.830524433501838e-15,
+          "full_cz_count": 36,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 8167
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 36,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 8167
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.159947382989604e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 2.159947382989604e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.2001807449902775e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 4.2001807449902775e-15,
+          "full_cz_count": 42,
+          "two_body_dependency_depth": 24,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 9343
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 42,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 9343
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.1816171654835078e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 33,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 3.1816171654835078e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 33,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.764613224877722e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 33,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 5.764613224877722e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 33,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 12871
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 12871
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 8.43769498715119e-15,
+          "full_cz_count": 52,
+          "two_body_dependency_depth": 42,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 8.43769498715119e-15,
+          "full_cz_count": 52,
+          "two_body_dependency_depth": 42,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.1239190715567665e-15,
+          "full_cz_count": 44,
+          "two_body_dependency_depth": 35,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 5.1239190715567665e-15,
+          "full_cz_count": 44,
+          "two_body_dependency_depth": 35,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 52,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 13987
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 52,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 13987
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 7.370811628671188e-15,
+          "full_cz_count": 40,
+          "two_body_dependency_depth": 32,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 5.863531178143274e-15,
+          "full_cz_count": 32,
+          "two_body_dependency_depth": 28,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 40,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 11637
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.5303663964168044e-15,
+          "full_cz_count": 117,
+          "two_body_dependency_depth": 74,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 2.5303663964168044e-15,
+          "full_cz_count": 117,
+          "two_body_dependency_depth": 74,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.987626749397768e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.987626749397768e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 111,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 15883
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 111,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 15883
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9481438940179264e-15,
+          "full_cz_count": 93,
+          "two_body_dependency_depth": 60,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9481438940179264e-15,
+          "full_cz_count": 93,
+          "two_body_dependency_depth": 60,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.5798750608595155e-15,
+          "full_cz_count": 79,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.5798750608595155e-15,
+          "full_cz_count": 79,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 93,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 16780
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 93,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 16780
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.6172982426630268e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.5404520892706449e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 42,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.3536401981886357e-15,
+          "full_cz_count": 65,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3530843112619093e-15,
+          "full_cz_count": 63,
+          "two_body_dependency_depth": 38,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 87,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 14099
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 87,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 13593
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.5565409952966682e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 49,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.5565409952966682e-15,
+          "full_cz_count": 75,
+          "two_body_dependency_depth": 49,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.526805265887088e-15,
+          "full_cz_count": 61,
+          "two_body_dependency_depth": 46,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.526805265887088e-15,
+          "full_cz_count": 61,
+          "two_body_dependency_depth": 46,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 75,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 13452
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 75,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 13452
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.7529222701969082e-14,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 72,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.7529222701969082e-14,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 72,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.3500056333561794e-14,
+          "full_cz_count": 94,
+          "two_body_dependency_depth": 64,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3500056333561794e-14,
+          "full_cz_count": 94,
+          "two_body_dependency_depth": 64,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 22235
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 22235
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.3925334924250511e-14,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 65,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3925334924250511e-14,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 65,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.2415649449821115e-14,
+          "full_cz_count": 74,
+          "two_body_dependency_depth": 61,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.2415649449821115e-14,
+          "full_cz_count": 74,
+          "two_body_dependency_depth": 61,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 78,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 18336
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 78,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 18336
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.0948088201824487e-14,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 1.0948088201824487e-14,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 52,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 8.333331360430665e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 8.333331360430665e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 48,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 14635
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 14635
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 8.54006181933195e-15,
+          "full_cz_count": 48,
+          "two_body_dependency_depth": 42,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 8.54006181933195e-15,
+          "full_cz_count": 48,
+          "two_body_dependency_depth": 42,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.354754052983605e-15,
+          "full_cz_count": 46,
+          "two_body_dependency_depth": 40,
+          "verification": "full-operator"
+        },
+        "candidate": {
+          "max_semantic_error": 6.354754052983605e-15,
+          "full_cz_count": 46,
+          "two_body_dependency_depth": 40,
+          "verification": "full-operator"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 48,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 12852
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 48,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 12852
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.971580687697629e-15,
+          "full_cz_count": 128,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.971580687697629e-15,
+          "full_cz_count": 128,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.958010289948917e-15,
+          "full_cz_count": 128,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.958010289948917e-15,
+          "full_cz_count": 128,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 128,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 26177
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 128,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 26177
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.943881310905518e-15,
+          "full_cz_count": 62,
+          "two_body_dependency_depth": 24,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.943881310905518e-15,
+          "full_cz_count": 62,
+          "two_body_dependency_depth": 24,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.327682229021408e-16,
+          "full_cz_count": 58,
+          "two_body_dependency_depth": 22,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.327682229021408e-16,
+          "full_cz_count": 58,
+          "two_body_dependency_depth": 22,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 62,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 12783
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 62,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 12783
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.79383492860469e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 31,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9450822427349686e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 27,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.219451441763395e-16,
+          "full_cz_count": 52,
+          "two_body_dependency_depth": 27,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 8.145445757240072e-16,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 27,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 56,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 11363
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 56,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 12065
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.8224341384795743e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 26,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.8224341384795743e-15,
+          "full_cz_count": 56,
+          "two_body_dependency_depth": 26,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.80577807179407e-16,
+          "full_cz_count": 52,
+          "two_body_dependency_depth": 24,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.80577807179407e-16,
+          "full_cz_count": 52,
+          "two_body_dependency_depth": 24,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 56,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 11607
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 56,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 11607
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.107630023162989e-15,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.107630023162989e-15,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.0408326028854473e-15,
+          "full_cz_count": 118,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.0408326028854473e-15,
+          "full_cz_count": 118,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 120,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 23794
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 120,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 23794
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.53055394988784e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 38,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.53055394988784e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 38,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.0007415106216803e-15,
+          "full_cz_count": 76,
+          "two_body_dependency_depth": 38,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.0007415106216803e-15,
+          "full_cz_count": 76,
+          "two_body_dependency_depth": 38,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 78,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 15524
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 78,
+          "accepted_block_rewrites": 1,
+          "serialized_artifact_bytes": 15524
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.628586363139634e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 30,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.628586363139634e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 30,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 8.747410856390872e-16,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 30,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 8.747410856390872e-16,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 30,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 12362
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 12362
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.5045681600880824e-15,
+          "full_cz_count": 108,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 5.5045681600880824e-15,
+          "full_cz_count": 108,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.979859898025954e-15,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 74,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.979859898025954e-15,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 74,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 114,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 20834
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 114,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 20834
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.180104732617934e-15,
+          "full_cz_count": 110,
+          "two_body_dependency_depth": 85,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.180104732617934e-15,
+          "full_cz_count": 110,
+          "two_body_dependency_depth": 85,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.155323237359182e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.155323237359182e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 110,
+          "accepted_block_rewrites": 8,
+          "serialized_artifact_bytes": 24445
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 110,
+          "accepted_block_rewrites": 8,
+          "serialized_artifact_bytes": 24445
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.449232622979406e-15,
+          "full_cz_count": 80,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9326314378870946e-15,
+          "full_cz_count": 68,
+          "two_body_dependency_depth": 63,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 80,
+          "accepted_block_rewrites": 7,
+          "serialized_artifact_bytes": 18932
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.329878931822148e-15,
+          "full_cz_count": 224,
+          "two_body_dependency_depth": 120,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.329878931822148e-15,
+          "full_cz_count": 224,
+          "two_body_dependency_depth": 120,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.0245584642661925e-15,
+          "full_cz_count": 156,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.0245584642661925e-15,
+          "full_cz_count": 156,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 218,
+          "accepted_block_rewrites": 27,
+          "serialized_artifact_bytes": 30700
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 218,
+          "accepted_block_rewrites": 27,
+          "serialized_artifact_bytes": 30700
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.66063943293328e-15,
+          "full_cz_count": 188,
+          "two_body_dependency_depth": 95,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.66063943293328e-15,
+          "full_cz_count": 188,
+          "two_body_dependency_depth": 95,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.8795553768946005e-15,
+          "full_cz_count": 142,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.8795553768946005e-15,
+          "full_cz_count": 142,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 194,
+          "accepted_block_rewrites": 22,
+          "serialized_artifact_bytes": 28138
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 194,
+          "accepted_block_rewrites": 22,
+          "serialized_artifact_bytes": 28138
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.031534223219646e-15,
+          "full_cz_count": 176,
+          "two_body_dependency_depth": 110,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.070756721337337e-15,
+          "full_cz_count": 176,
+          "two_body_dependency_depth": 107,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.238758604064615e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 97,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.238758604064615e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 97,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 170,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 32097
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 170,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 32097
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.658157061823144e-15,
+          "full_cz_count": 164,
+          "two_body_dependency_depth": 96,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.658157061823144e-15,
+          "full_cz_count": 164,
+          "two_body_dependency_depth": 96,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.0196548348613238e-15,
+          "full_cz_count": 130,
+          "two_body_dependency_depth": 74,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.0196548348613238e-15,
+          "full_cz_count": 130,
+          "two_body_dependency_depth": 74,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 164,
+          "accepted_block_rewrites": 13,
+          "serialized_artifact_bytes": 26061
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 164,
+          "accepted_block_rewrites": 13,
+          "serialized_artifact_bytes": 26061
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.188059795750804e-15,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.188059795750804e-15,
+          "full_cz_count": 102,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9137263080824195e-15,
+          "full_cz_count": 94,
+          "two_body_dependency_depth": 72,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9137263080824195e-15,
+          "full_cz_count": 94,
+          "two_body_dependency_depth": 72,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 22346
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 22346
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.031103035004427e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 72,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.031103035004427e-15,
+          "full_cz_count": 96,
+          "two_body_dependency_depth": 72,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.7487830685268716e-15,
+          "full_cz_count": 88,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.7487830685268716e-15,
+          "full_cz_count": 88,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 96,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 20956
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 96,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 20956
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.473657049138937e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 51,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.473657049138937e-15,
+          "full_cz_count": 72,
+          "two_body_dependency_depth": 51,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.575741344239586e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 49,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.575741344239586e-15,
+          "full_cz_count": 70,
+          "two_body_dependency_depth": 49,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 17888
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 84,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 17888
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.11026247635183e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 48,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.11026247635183e-15,
+          "full_cz_count": 60,
+          "two_body_dependency_depth": 48,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.943336313649526e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 42,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.943336313649526e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 42,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 14479
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 60,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 14479
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.329761571216765e-15,
+          "full_cz_count": 270,
+          "two_body_dependency_depth": 106,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.397160322446354e-15,
+          "full_cz_count": 270,
+          "two_body_dependency_depth": 95,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.1593705160111104e-15,
+          "full_cz_count": 264,
+          "two_body_dependency_depth": 103,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.270747066519727e-15,
+          "full_cz_count": 264,
+          "two_body_dependency_depth": 94,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 270,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 52534
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 270,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 52442
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.122240299317528e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 83,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.122240299317528e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 83,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.1673851243905792e-15,
+          "full_cz_count": 152,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1673851243905792e-15,
+          "full_cz_count": 152,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 162,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 31070
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 162,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 31070
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.137960960644478e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.137960960644478e-15,
+          "full_cz_count": 162,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.257453173816791e-15,
+          "full_cz_count": 154,
+          "two_body_dependency_depth": 62,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.257453173816791e-15,
+          "full_cz_count": 154,
+          "two_body_dependency_depth": 62,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 174,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 31302
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 174,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 31302
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.7822573404209446e-15,
+          "full_cz_count": 144,
+          "two_body_dependency_depth": 75,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.7822573404209446e-15,
+          "full_cz_count": 144,
+          "two_body_dependency_depth": 75,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.2880388978380174e-15,
+          "full_cz_count": 138,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.2880388978380174e-15,
+          "full_cz_count": 138,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 150,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 28034
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 150,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 28034
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.203223210714798e-15,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 143,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.203223210714798e-15,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 143,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.664002139699053e-15,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 143,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.664002139699053e-15,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 143,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 330,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 64432
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 330,
+          "accepted_block_rewrites": 0,
+          "serialized_artifact_bytes": 64432
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 5.181453794521194e-15,
+          "full_cz_count": 198,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 5.181453794521194e-15,
+          "full_cz_count": 198,
+          "two_body_dependency_depth": 71,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.1576306214537695e-15,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 118,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.1576306214537695e-15,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 118,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 246,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 47355
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 246,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 47355
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.289763166612535e-15,
+          "full_cz_count": 174,
+          "two_body_dependency_depth": 78,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.0265917643615105e-15,
+          "full_cz_count": 168,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.1675964834636397e-15,
+          "full_cz_count": 166,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1675964834636397e-15,
+          "full_cz_count": 166,
+          "two_body_dependency_depth": 69,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 180,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 32325
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 180,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 32325
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.4597745288321243e-15,
+          "full_cz_count": 144,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.4597745288321243e-15,
+          "full_cz_count": 144,
+          "two_body_dependency_depth": 67,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.1764699705458018e-15,
+          "full_cz_count": 142,
+          "two_body_dependency_depth": 65,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1764699705458018e-15,
+          "full_cz_count": 142,
+          "two_body_dependency_depth": 65,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 150,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 27563
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 150,
+          "accepted_block_rewrites": 2,
+          "serialized_artifact_bytes": 27563
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9982722996269243e-14,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 258,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.9982722996269243e-14,
+          "full_cz_count": 330,
+          "two_body_dependency_depth": 258,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 6.424441538390417e-15,
+          "full_cz_count": 314,
+          "two_body_dependency_depth": 244,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 6.424441538390417e-15,
+          "full_cz_count": 314,
+          "two_body_dependency_depth": 244,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 330,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 71936
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 330,
+          "accepted_block_rewrites": 14,
+          "serialized_artifact_bytes": 71936
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.466425196590471e-14,
+          "full_cz_count": 240,
+          "two_body_dependency_depth": 211,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.708149057271984e-15,
+          "full_cz_count": 228,
+          "two_body_dependency_depth": 201,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 240,
+          "accepted_block_rewrites": 12,
+          "serialized_artifact_bytes": 55136
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.4058083698508018e-14,
+          "full_cz_count": 534,
+          "two_body_dependency_depth": 206,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.3919173088869033e-14,
+          "full_cz_count": 534,
+          "two_body_dependency_depth": 200,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.938744535707957e-14,
+          "full_cz_count": 396,
+          "two_body_dependency_depth": 137,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.938744535707957e-14,
+          "full_cz_count": 396,
+          "two_body_dependency_depth": 137,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 528,
+          "accepted_block_rewrites": 62,
+          "serialized_artifact_bytes": 75725
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 528,
+          "accepted_block_rewrites": 62,
+          "serialized_artifact_bytes": 75725
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.1057545459863077e-14,
+          "full_cz_count": 438,
+          "two_body_dependency_depth": 165,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1252027988071961e-14,
+          "full_cz_count": 438,
+          "two_body_dependency_depth": 162,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.956510152190599e-14,
+          "full_cz_count": 322,
+          "two_body_dependency_depth": 131,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.956510152190599e-14,
+          "full_cz_count": 322,
+          "two_body_dependency_depth": 131,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 444,
+          "accepted_block_rewrites": 59,
+          "serialized_artifact_bytes": 61535
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 444,
+          "accepted_block_rewrites": 59,
+          "serialized_artifact_bytes": 61535
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.0307420495845049e-14,
+          "full_cz_count": 408,
+          "two_body_dependency_depth": 191,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.0307420495845049e-14,
+          "full_cz_count": 408,
+          "two_body_dependency_depth": 191,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.8782510456422433e-14,
+          "full_cz_count": 352,
+          "two_body_dependency_depth": 150,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.8782510456422433e-14,
+          "full_cz_count": 352,
+          "two_body_dependency_depth": 150,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 432,
+          "accepted_block_rewrites": 38,
+          "serialized_artifact_bytes": 67040
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 432,
+          "accepted_block_rewrites": 38,
+          "serialized_artifact_bytes": 67040
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.696206143881351e-15,
+          "full_cz_count": 390,
+          "two_body_dependency_depth": 202,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.696206143881351e-15,
+          "full_cz_count": 390,
+          "two_body_dependency_depth": 202,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.885611258774886e-14,
+          "full_cz_count": 334,
+          "two_body_dependency_depth": 172,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.8589590210388515e-14,
+          "full_cz_count": 334,
+          "two_body_dependency_depth": 169,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 396,
+          "accepted_block_rewrites": 27,
+          "serialized_artifact_bytes": 63100
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 396,
+          "accepted_block_rewrites": 27,
+          "serialized_artifact_bytes": 63100
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 7.69505501592758e-15,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 7.69505501592758e-15,
+          "full_cz_count": 120,
+          "two_body_dependency_depth": 80,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 2.2377260456559052e-15,
+          "full_cz_count": 114,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.2377260456559052e-15,
+          "full_cz_count": 114,
+          "two_body_dependency_depth": 77,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 120,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 26166
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 120,
+          "accepted_block_rewrites": 3,
+          "serialized_artifact_bytes": 26166
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 8.676980703559351e-15,
+          "full_cz_count": 156,
+          "two_body_dependency_depth": 106,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.188059795750804e-15,
+          "full_cz_count": 144,
+          "two_body_dependency_depth": 90,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.9612412612756718e-15,
+          "full_cz_count": 148,
+          "two_body_dependency_depth": 100,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 2.7871905251848776e-15,
+          "full_cz_count": 138,
+          "two_body_dependency_depth": 84,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 156,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 32851
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 156,
+          "accepted_block_rewrites": 5,
+          "serialized_artifact_bytes": 31310
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 3.101181028300686e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 48,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 3.101181028300686e-15,
+          "full_cz_count": 54,
+          "two_body_dependency_depth": 48,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 9.856160834467555e-16,
+          "full_cz_count": 50,
+          "two_body_dependency_depth": 44,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 9.856160834467555e-16,
+          "full_cz_count": 50,
+          "two_body_dependency_depth": 44,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 66,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 14056
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 66,
+          "accepted_block_rewrites": 4,
+          "serialized_artifact_bytes": 14056
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse",
+        "flagquantum-ordinary-restored"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 4.829470157119431e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 4.829470157119431e-15,
+          "full_cz_count": 84,
+          "two_body_dependency_depth": 66,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "restoration_swaps": 0,
+          "restoration_cz_count": 0,
+          "restoration_operations": 0
+        }
+      }
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse",
+        "flagquantum-target-artifact"
+      ],
+      "result": {
+        "baseline": {
+          "max_semantic_error": 1.1775693440128313e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 60,
+          "verification": "three-probes-only"
+        },
+        "candidate": {
+          "max_semantic_error": 1.1775693440128313e-15,
+          "full_cz_count": 78,
+          "two_body_dependency_depth": 60,
+          "verification": "three-probes-only"
+        },
+        "baseline_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 19765
+        },
+        "candidate_audit": {
+          "native_program_builds": 1,
+          "native_executions": 0,
+          "native_compilations": 1,
+          "compiler_seed_supported": 0,
+          "native_baseline_cz_count": 102,
+          "accepted_block_rewrites": 6,
+          "serialized_artifact_bytes": 19765
+        }
+      }
+    }
+  ],
+  "failure": null
+}

@@ -1,0 +1,246 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "836e1f86e2bedf5757fdd6b9c4ee0c80acd1790b",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "input_nonce": "61357a88d4608fa7ca10295537fee2aeeb3e88cf1a2d2e4825fe094335d17f8b",
+  "case": [
+    8,
+    "qaoa",
+    "grid",
+    "flagquantum-target-artifact"
+  ],
+  "scope": "Post-draw inspected counterexample replay. Existing complete target compilation and unchanged independent acceptance. Captured returned stage evidence only; no selector, policy or threshold changes.",
+  "capture_script_sha256": "8ea13b84ad0f4e6acae619f7138b1a16d1ca83850ebf83a624620ec0ffadfd13",
+  "metrics": {
+    "baseline": {
+      "max_semantic_error": 7.219451441763395e-16,
+      "full_cz_count": 52,
+      "two_body_dependency_depth": 27,
+      "verification": "three-probes-only"
+    },
+    "candidate": {
+      "max_semantic_error": 8.145445757240072e-16,
+      "full_cz_count": 56,
+      "two_body_dependency_depth": 27,
+      "verification": "three-probes-only"
+    },
+    "baseline_audit": {
+      "native_program_builds": 1,
+      "native_executions": 0,
+      "native_compilations": 1,
+      "compiler_seed_supported": 0,
+      "native_baseline_cz_count": 56,
+      "accepted_block_rewrites": 2,
+      "serialized_artifact_bytes": 11363
+    },
+    "candidate_audit": {
+      "native_program_builds": 1,
+      "native_executions": 0,
+      "native_compilations": 1,
+      "compiler_seed_supported": 0,
+      "native_baseline_cz_count": 56,
+      "accepted_block_rewrites": 0,
+      "serialized_artifact_bytes": 12065
+    }
+  },
+  "observations": {
+    "baseline": {
+      "native_input_cz": 56,
+      "native_output_cz": 52,
+      "native_rewrites": [
+        {
+          "input_instruction_indices": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ],
+          "output_instruction_indices": [
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40
+          ],
+          "physical_qubits": [
+            1,
+            2
+          ],
+          "baseline_cz_count": 5,
+          "replacement_cz_count": 3,
+          "equivalence": "unitary_up_to_global_phase",
+          "phase_real": -0.9999999999999996,
+          "phase_imag": -1.6737342059336484e-15,
+          "max_abs_residual": 1.3877787807814457e-15
+        },
+        {
+          "input_instruction_indices": [
+            245,
+            246,
+            247,
+            248,
+            249,
+            250,
+            251,
+            252,
+            253,
+            264,
+            265,
+            268,
+            269,
+            270,
+            271,
+            272,
+            273,
+            274,
+            275,
+            276,
+            277,
+            278,
+            279,
+            280,
+            281,
+            282,
+            283,
+            284,
+            285,
+            286,
+            287,
+            288
+          ],
+          "output_instruction_indices": [
+            232,
+            233,
+            234,
+            235,
+            236,
+            237,
+            238,
+            239,
+            240,
+            241,
+            242,
+            243,
+            244,
+            245,
+            246,
+            247,
+            248,
+            249,
+            250,
+            251
+          ],
+          "physical_qubits": [
+            0,
+            4
+          ],
+          "baseline_cz_count": 5,
+          "replacement_cz_count": 3,
+          "equivalence": "unitary_up_to_global_phase",
+          "phase_real": 0.9999999999999996,
+          "phase_imag": 6.352544144390004e-16,
+          "max_abs_residual": 9.020562075079397e-16
+        }
+      ],
+      "rejection_counts": {
+        "not_lower_cz_cost": 20,
+        "synthesis_unavailable": 0,
+        "residual_rejected": 0,
+        "instruction_growth_rejected": 0
+      },
+      "route_strategy": "sabre",
+      "reported_inserted_swap_count": 8,
+      "initial_layout": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "final_layout": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "candidate": {
+      "native_input_cz": 56,
+      "native_output_cz": 56,
+      "native_rewrites": [],
+      "rejection_counts": {
+        "not_lower_cz_cost": 24,
+        "synthesis_unavailable": 0,
+        "residual_rejected": 0,
+        "instruction_growth_rejected": 0
+      },
+      "route_strategy": "sabre",
+      "reported_inserted_swap_count": 8,
+      "initial_layout": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "final_layout": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  }
+}
