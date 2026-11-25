@@ -85,9 +85,9 @@ GreaterThanConstant has no numerical body. Signed linear overflow, strict dtype
 mismatches, ge/lt aliases, source HasLength wire failure and model granularity stay
 visible. SignExtend/SignTruncate now preserve representable same-class non-signed
 constructor inputs through their existing prefix owner. Signed fixed-point
-execution remains governed by pending Proposal 116, and source empty-word and
-foreign-codec failures remain explicit. Pending Proposals 116-119 and
-whole-repository/GPU/performance acceptance remain open. This batch changes no
+execution now uses approved Proposal 116; the current acceptance is recorded below, and source empty-word and
+foreign-codec failures remain explicit. The independent pending classical-view and scalar-phase contracts, and
+whole-repository/GPU/performance acceptance, remain open. This batch changes no
 protected storage or numerical admission contract.
 
 Batch receipts use `ftqc-reference-env/g2-comparison-constructor-*`.
@@ -108,3 +108,43 @@ verified. The accepted 673-case comparison notebook lane and full component
 source evidence are reused. The concentrated comparison/dependency/arithmetic
 regression passes 2432 cases. These bounded local checks
 leave whole-repository and accelerator acceptance open.
+
+
+## Approved fixed-point prefix storage, 2026-11-25
+
+The complete SignExtend/SignTruncate constructor pair and direct prefix/fanout
+owners are unchanged. Proposal 116 already enabled canonical positive-width
+signed fixed-point storage. Two old tests still expected that storage admission
+to fail, so they failed before reaching their source-stream and complex-state
+checks. Those obsolete refusal branches have been removed. Signed input/output
+and unsigned-to-signed nominal metadata now execute the same full checks as the
+existing unsigned case. No assertion is replaced by an unconditional pass.
+
+The actual source pair QFxp(2,-1) to QFxp(5,3), including a changed sign flag,
+retains both sided declarations and MSB-first operand order. The source accepts
+these same-class descriptors without requiring equal fractional widths or sign
+flags; the native path preserves raw storage semantics. The shared fanout emits
+five CX, zero measurements and zero classical feedback. The three prefix bits
+are live logical output storage until exact truncation clears and frees them.
+They are not falsely reported as clean after extension. A complex input
+entangled with a spectator is restored after the actual append/inverse pair.
+The source primitive streams and physical output aliases agree in both directions.
+
+This changes tests and their current contract evidence only. It introduces no
+new production arithmetic, control, API or source-reference change. Original
+unsigned classical-callback/graph disagreement, untyped Join view, empty-word
+source failure and symbolic/codec boundaries retain their existing dispositions.
+Q-0195's previously accepted complete source file is not counted again, and
+Q-0876's broader resolver obligations remain open.
+
+
+The storage-consumer regression passes 135 cases, with 20 additional complete
+sign-extension source/decomposition/component cases and 62 Cirq 1.6 cases.
+The actual many-register companion admission regression is reconciled in the
+same batch; its full-file acceptance is documented in
+LARGE_MULTI_REGISTER_FIXTURE_AUDIT.md. Signed-prefix actual resource rows record
+five CX per direction versus the original one-Clifford, peak-five model.
+Prior 145 local integration cases from the identical published production tree
+are reused. Receipts use `g2-sign-fixed-storage-*20261125` in the reference
+workspace; strict typing, format, scope, language, links, architecture and IR/API
+checks cover the changed test/document files. No parent is counted twice.

@@ -203,3 +203,17 @@ pass, with the identical 720 dependency findings. The initial ENOSPC interruptio
 is recorded separately. Only rebuildable mypy cache was removed, and the final
 strict check disables caching. Full constructor catalogue completion stays
 94 of 303 because the explicit storage and original codec boundaries remain.
+
+
+## Current approved fixed-point storage consumers, 2026-11-25
+
+The existing complete source-file acceptance now also runs the actual stored
+forward/truncate consumer for signed QFxp(2,-1) to QFxp(5,3) and the source's
+permissive changed-sign target profile under approved Proposal 116. The old
+constructor test expected a now-obsolete physical admission failure and returned
+before its source-stream and complex inverse checks. Both signed profiles now
+execute those checks, preserving five CX, prefix-output lifetime, caller
+aliases, absolute complex phase and exact cleanup. No source or production owner
+was changed. This reuses the original full-file evidence and is not another
+parent acceptance. See RESOLVER_COMPARISON_AUDIT.md for current stored-consumer
+scope and retained source/classical/Join exceptions.

@@ -5,6 +5,10 @@ commit `bcb17bb25360ed68ce3bc084645db3e929799389`. The original
 many-register test passed unchanged. Native fixture code lives under
 tests and uses the existing primitive and typed Program owners.
 
+Current status, 2026-11-25: approved Proposal 116 closes the typed companion
+storage dependency. The final section records the complete Q-0496 acceptance;
+earlier pending-116 statements are historical.
+
 ## Repeated AND ladder
 
 The literal first control value of each source AND is applied to the
@@ -101,3 +105,59 @@ certificate, branch, work-zero and exact primitive comparisons. It records 268
 concentrated and 17 local integration passes, strict checks for three changed
 files, formatting, team scope, architecture, IR and public API checks. The
 independent resource evidence remains separate from primitive measurements.
+
+
+## Complete many-register source closure under approved storage, 2026-11-25
+
+Q-0496's outstanding signed-storage dependency is now closed under the already
+approved and implemented Proposal 116. Its inherited metadata test still
+expected signed QFxp(8,6) storage to refuse. That failure was reproduced before
+editing the test. All declared source descriptors now execute the same exact
+width/admission assertion; the earlier signed-only refusal is removed without
+changing any source or production implementation.
+
+The complete 114-line source has four classes and eight methods, all reviewed:
+
+| Definition | Complete native disposition |
+| --- | --- |
+| TestMultiRegister signature and composite | Existing row-major shaped Program, all original Split/Join and ordered X/CX calls, exact physical aliases, full complex tensor and ordinary append |
+| TestBoundedQUInt signature | Actual source library bytes and canonical bounded/signed-fixed descriptors; original no-decomposition failure retained as a bodyless terminal |
+| TestQFxp signature | Actual source library bytes and canonical signed/unsigned fixed descriptors; original no-decomposition failure retained as a bodyless terminal |
+| TestMultiTypedRegister signature and composite | All four nominal descriptors admitted as storage; original invalid QUInt-to-QFxp child wiring and depth-one/two serialization failure retained, with no invented executable body |
+| Source presentation labels | Foreign roundtrip objects retain the original source labels; native fixture function naming remains owned by FlagQuantum |
+
+Actual source libraries cover all four classes at depths zero, one and two,
+with the two original typed-composite failures asserted separately. The runnable
+shaped Program emits one X and four CX in the exact source order on 12 physical
+wires, with no workspace or measurements. Its nonconsecutive row-major bindings
+and all 4,096 complex output amplitudes match the original tensor. Source atomic
+QEC-model failure remains an unavailable source estimate, not a fabricated gate
+count. Three typed companion declarations retain the same bounded, fractional
+and signed metadata; no numerical behavior is asserted for undefined terminals.
+
+The unchanged original many_registers_test.py passes. Native fixture and actual
+foreign-consumer tests pass, and the earlier complete-source/primitive/channel
+receipts remain reusable because frozen blobs and production owners are
+unchanged. Seven relevant source/dependency blobs and real Kickmix 0.1 Simulator
+are reverified. This closes the sole remaining admission requirement recorded
+at d9c469b78; original source resource, terminal and invalid-wiring dispositions
+are preserved under the same prior full-file criteria. Q-0496 is accepted.
+
+The same approved-storage batch removes two obsolete SignExtend refusal branches.
+Its actual fanout stream is five CX for three live prefix output bits, in each
+direction, while the independent source model reports one Clifford and peak
+five. Caller width six includes the external spectator. No measurements or
+feedback occur, and the exact inverse clears/releases the prefix. These
+resources remain separate from the shaped fixture's one-X/four-CX stream.
+
+
+Current closure verification: 17 native fixture/actual-foreign-consumer cases,
+17 independent Cirq 1.6 cases and the unchanged original source test pass.
+The shared signed-storage/prefix regression passes 135 cases plus 20 complete
+component/source cases, with 62 Cirq 1.6 prefix/foreign cases. Strict typing
+covers both changed test files; Black/Ruff, Compiler scope, language, links,
+architecture and IR/API checks pass. Seven frozen blobs and the real Kickmix
+Simulator are checked. Prior 145 local integration cases are reused from the
+identical production tree. No production owner was edited in this batch.
+Receipts use `g2-sign-fixed-storage-*20261125` and
+`g2-multi-register-fixed-storage-*20261125` in the reference workspace.
