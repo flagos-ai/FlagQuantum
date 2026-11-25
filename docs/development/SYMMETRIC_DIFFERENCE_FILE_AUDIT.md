@@ -1,5 +1,25 @@
 # Symmetric difference complete source responsibility
 
+## Signed native execution interface
+
+The stored native oracle accepts an internal `signed` boolean, default false.
+Signed S and T are ascending distinct two's-complement QInt arrays; diff keeps
+the same nominal type and may contain arbitrary occupied raw bits. Flag is an
+occupied QBit. On a cardinality match, the sorted symmetric difference is XORed
+into diff and flag is toggled. Otherwise diff and flag are preserved under the
+existing native oracle contract. Every input is THRU and MSB first. Source
+default constructor declarations remain bodyless; the frozen root has no gate
+decomposition or numerical callback from which to claim root-stream parity.
+
+Private copied keys receive a sign-bit XOR before merge and its inverse before
+copy cleanup. Shared unsigned merge, equality, Hamming count, compaction and
+their exact adjoints retain scratch and feedback ownership. While the private
+success predicate is live, one controlled X per output corrects the biased
+payload sign. This correction must be conditional: conjugating an occupied
+output by an unconditional sign flip would change mismatch behavior. Nominal
+Split/Join views connect signed inputs to the existing raw-word XOR owner.
+No new primitive, protected API, numerical kernel or measurement is introduced.
+
 Q-0205 and Q-0206 cover the exact frozen implementation and original tests.
 The new file audit checks both blobs, all three actual factories, the concrete
 DocSpec subset and every ordered signature port, dtype, shape and side.
@@ -107,8 +127,9 @@ one and two. Concrete source reconstruction is equal. Both symbolic original
 reconstructions lose positive/integer symbol assumptions themselves, including
 the dtype width expression. The native transport preserves those original wire
 bytes. Concrete unsigned roots resolve through an explicitly supplied native
-factory. Signed/opaque variants retain metadata only. Symbolic array resolution
-retains the existing rejection.
+factory. At that publication, signed/opaque variants retained metadata only.
+The signed continuation below adds explicit QInt execution; approved symbolic
+logical declarations are covered in the later constructor section.
 
 Thirteen finite shapes have exhaustive valid sorted-set basis-channel cleanup
 certificates, including occupied outputs and self-inverse recovery. One-bit
@@ -173,8 +194,9 @@ decomposition to compare against. The independent native set oracle retains its
 existing sorted-set input contract, complete small complex histories, arbitrary
 occupied outputs, inverse and zero-work evidence. Its compaction/parity gates and
 physical inventories are not substituted for the original analytical model.
-Root prose/cardinality, degenerate Hamming peak, signed/general dtype and source
-constructor/physical boundaries remain explicitly open under Q-0205.
+Root prose/cardinality, degenerate Hamming peak, general dtype and source
+constructor/physical boundaries remain explicitly open under Q-0205. The signed
+integer execution gap is closed by the continuation below.
 
 The combined list assertion/component/model/constructor regression passes 673
 cases; the independent Cirq 1.6 file/factory selection passes 55. Both complete
@@ -182,3 +204,41 @@ changed test files pass strict typing, Black and Ruff. Integration scope,
 language, links, architecture, IR and protected API checks pass. Four frozen
 source/test blobs and native Kickmix 0.1 Simulator are verified. Receipts use
 `g2-list-source-closure-*20261125`; no source body was modified.
+
+## Signed stored-oracle acceptance
+
+All thirteen finite unsigned Programs remain exactly equal to published
+f873ea242. Signed execution reuses the unchanged shared child implementations;
+source-comparable merge, equality, Hamming and MCX primitive/operand/feedback
+certificates remain at those owners. The root source has no physical stream.
+No whole-network flat temporary-wire equivalence is inferred from gate counts.
+
+Actual QInt source libraries retain exact bytes at depths 0/1/2 and resolve
+through the existing explicit native factory with the same bound circuit as
+direct construction. The default constructor still supplies only a declaration.
+Independently generated signed sets cover every small valid pair, cardinality
+matches and mismatches, occupied outputs, both initial flag values and erasure
+by reapplication. The smallest complete complex vectors include every occupied
+target and flag encoding, an entangled spectator and every raw measurement
+history. Padded/compacted coherent larger profiles retain three seeded
+trajectories and exhaustive valid-basis cleanup certificates, rather than an
+unfounded claim of enumerating all exponential histories.
+
+For a feasible nonempty two-set shape, the extension adds two X per input word
+and one CX per output word. It adds no T-family gates, measurements or private
+work. Empty-second-set and impossible-cardinality paths retain the original
+native primitive inventory. Thirteen measured resource rows compare the exact
+unsigned baseline and independent original QInt models. For 2+2 two-bit inputs
+and two outputs, signed emission is 288 X, 1835 CX, 752 T/T-dagger and 97
+measurement/reset pairs, with 37 peak clean bits. The independent original
+model remains 16 CSwap, 33 And, 348 Clifford, 33 measurements and seventeen
+logical bits. Original one-adjacency Hamming peak queries still fail explicitly;
+they are not replaced by the measured native peak.
+
+The concentrated set/list/Hamming/sorting regression passes 286 cases, the full
+source/interface lane passes 73 cases under Cirq 1.6, and local integration
+passes 145. All three changed Python modules pass strict typing, Black and Ruff;
+scope, language, links, architecture, IR and protected API checks pass. Frozen
+source/test blobs and the real Kickmix 0.1 Simulator are verified. Receipts use
+`g2-signed-set-*-20261125`. Q-0205 retains its separately recorded source/model,
+general nominal-type, symbolic physical and whole-network comparison limits.
