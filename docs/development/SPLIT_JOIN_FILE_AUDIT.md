@@ -6,10 +6,10 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Open for complete physical dtype admission, including pending signed/empty fixed-point storage. |
+| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Approved Proposals 116/125 storage paths verified; signed-zero Proposal 124 remains separate. |
 | Q-0326 | `join_test.py` | `8cd06b0d322692c18bd66b659bf85b9b76ddb3cf` | Closed for the runnable original scenarios. |
 | Q-0330 | `split.ipynb` | `f7150b192af058a668f5efb0d599fdbe03f658bd` | Closed by the complete native Split and Join tutorial. |
-| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Open for complete physical dtype admission, including pending signed/empty fixed-point storage. |
+| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Approved Proposals 116/125 storage paths verified; signed-zero Proposal 124 remains separate. |
 | Q-0333 | `split_test.py` | `8efb0a620f8939ee3c4d494f519afdd2a707e284` | Closed for the runnable original scenarios and notebook. |
 
 The Compiler's existing typed rebinding consumes each owned input exactly
@@ -95,3 +95,14 @@ formatting, scope, architecture, IR and API checks. Full-source parents Q-0325
 and Q-0331 remain open for unapproved signed/empty fixed storage under Proposal
 116 and any additional unadmitted full dtype families. Concrete foreign examples
 do not establish unrestricted dtype support.
+
+## Approved storage dependency closure — 2026-11-25
+
+Both original classes now resolve signed positive-width and unsigned empty fixed-point source libraries at depths zero/one/two. Empty Split -> Join executes in an actual H/T spectator context with exact aliases and full complex operator comparison. Nonbinary field and polynomial direct SDK views also pass, preserving the original codec refusal. Signed-zero storage remains rejected under pending Proposal 124.
+
+Earlier pending-Proposal-116 refusals above are historical and superseded. See
+[the shared implementation audit](NONBINARY_QUANTUM_FIELD_STORAGE.md) for the
+approved scope, exact original failure dispositions, regression and resource
+evidence. Existing owners and circuit.append(op) are reused. This closes the
+approved storage dependency; it does not infer unrestricted dtype or symbolic
+physical support or close the remaining whole-file parent boundaries.

@@ -46,6 +46,10 @@ def original_dtype(kind: str) -> Any:
         "unsigned": QUInt(4),
         "signed": QInt(3),
         "fixed": QFxp(3, -2),
+        "signed_fixed": QFxp(3, 1, signed=True),
+        "signed_fixed_negative": QFxp(3, -2, signed=True),
+        "empty_fixed": QFxp(0, 0),
+        "empty_fixed_negative": QFxp(0, -2),
         "ones_complement": QIntOnesComp(3),
         "bounded": BQUInt(3, 5),
         "montgomery": QMontgomeryUInt(3),
@@ -110,6 +114,10 @@ def assert_source_binding(source: Any, program: ProgramRecord, reverse: bool) ->
         "unsigned",
         "signed",
         "fixed",
+        "signed_fixed",
+        "signed_fixed_negative",
+        "empty_fixed",
+        "empty_fixed_negative",
         "ones_complement",
         "bounded",
         "montgomery",
@@ -156,6 +164,88 @@ def test_actual_foreign_dtype_libraries_and_original_factory_use_native_rebindin
     )
     assert program.functions[0].registers == tuple(native_signature(source.signature))
     assert_source_binding(source, program, reverse)
+
+
+@pytest.mark.parametrize("fraction", (0, -2))
+def test_empty_fixed_split_join_in_an_actual_foreign_phase_context(
+    fraction: int,
+) -> None:
+    import numpy as np
+    from qualtran import BloqBuilder, QBit, QFxp
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.serialization.bloq import bloqs_to_proto
+
+    from flagquantum.compiler.formats.legacy_bookkeeping_factories import (
+        bookkeeping_factories,
+    )
+    from flagquantum.compiler.formats.legacy_fixed_gate_factories import (
+        fixed_gate_factories,
+    )
+    from flagquantum.simulation.unitary import get_unitary
+
+    dtype = QFxp(0, fraction)
+    builder, inputs = BloqBuilder.from_signature(
+        SourceSignature((SourceRegister("reg", dtype), SourceRegister("s", QBit())))
+    )
+    bits = builder.add(Split(dtype), reg=inputs["reg"])
+    word = builder.add(Join(dtype), reg=bits)
+    spectator = builder.add(Hadamard(), q=inputs["s"])
+    spectator = builder.add(TGate(), q=spectator)
+    source = builder.finalize(reg=word, s=spectator)
+    wire = bloqs_to_proto(source, max_depth=1).SerializeToString(deterministic=True)
+    library = deserialize_component_library(wire)
+    assert serialize_component_library(library) == wire
+    program = resolve_component_program(
+        library, 0, bookkeeping_factories() | fixed_gate_factories()
+    )
+    bound = bind_register_program(program, ((), (0,)))
+    assert bound.outputs == ((), (0,)) and bound.events == ()
+    assert [(g.name, g.wires) for g in bound.circuit.instructions] == [
+        ("h", (0,)),
+        ("t", (0,)),
+    ]
+    actual = get_unitary(
+        Circuit(1, dtype=torch.complex128).append(
+            FieldOperation(1, bound.circuit.instructions)
+        )
+    )
+    expected = torch.as_tensor(
+        np.asarray(source.tensor_contract()), dtype=torch.complex128
+    )
+    torch.testing.assert_close(
+        actual.to(torch.complex128), expected, atol=2e-15, rtol=0
+    )
+    model = get_cost_value(source, QECGatesCost())
+    assert model.clifford == model.t == 1 and model.measurement == 0
+
+
+@pytest.mark.parametrize("reverse", (False, True))
+def test_signed_zero_fixed_storage_keeps_separate_pending_admission(
+    reverse: bool,
+) -> None:
+    import numpy as np
+    from qualtran import QFxp
+    from qualtran.bloqs.bookkeeping import Join, Split
+
+    source = (Join if reverse else Split)(QFxp(0, -2, signed=True))
+    signature = native_signature(source.signature)
+    dtype = next(reg.dtype for reg in signature if reg.dtype.encoding == "fixed_point")
+    function = (join_word_function if reverse else split_word_function)("view", dtype)
+    operation, ports = source.as_cirq_op(
+        None, reg=np.empty((0, 1) if reverse else (0,), dtype=object)
+    )
+    assert operation is None and ports["reg"].size == 0
+    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
+        bind_register_program(
+            ProgramRecord((function,)),
+            () if reverse else ((),),
+            borrowed=(0,),
+            entry="view",
+        )
 
 
 @pytest.mark.parametrize("polynomial", (False, True))
