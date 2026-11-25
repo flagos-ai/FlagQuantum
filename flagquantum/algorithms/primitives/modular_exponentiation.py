@@ -17,10 +17,14 @@ from ...compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from ...compiler.registers.layout.classical_storage import bind_classical_scratch
+from ...compiler.registers.modular.modular_exponentiation_component import (
+    modular_exponentiation_program,
+)
 from ...compiler.registers.modular.modular_multiplication import (
-    controlled_modular_multiply_constant_ir,
     modular_multiplication_requirements,
 )
+from ...compiler.registers.register_binding import bind_register_program
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import unsigned_register_type
 from ...core.ir.program.registers import Register, RegisterSide
@@ -174,16 +178,15 @@ class ModularExponentiation:
                     "Modular exponentiation requires distinct nonnegative wires and slots"
                 )
         e, n = len(exponent), len(target)
-        result = tuple(range(e, e + n))
-        scratch = tuple(range(e + n, len(wires)))
-        modulus = int(self.modulus)
-        multiplier = int(self.base) % modulus
-        instructions = [Instruction("x", (result[-1],))]
-        for control in reversed(range(e)):
-            instructions.extend(
-                controlled_modular_multiply_constant_ir(
-                    control, result, multiplier, modulus, scratch, classical_bits
-                )
-            )
-            multiplier = multiplier * multiplier % modulus
-        return _BoundModularExponentiation(wires, tuple(instructions))
+        record = modular_exponentiation_program(int(self.base), int(self.modulus), e, n)
+        bound = bind_register_program(
+            record,
+            (tuple(range(e)),),
+            entry="ModExp",
+            clean=tuple(range(e, len(wires))),
+            allow_workspace_outputs=True,
+        )
+        if bound.outputs != (tuple(range(e)), tuple(range(e, e + n))):
+            raise ValueError("Modular exponentiation changed its operand binding")
+        bound = bind_classical_scratch(bound, tuple(classical_bits))
+        return _BoundModularExponentiation(wires, bound.circuit.instructions)

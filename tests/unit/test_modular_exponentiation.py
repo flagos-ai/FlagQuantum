@@ -9,15 +9,19 @@ import pytest
 from flagquantum.algorithms.primitives.modular_exponentiation import (
     ModularExponentiation,
 )
+from flagquantum.compiler.registers.layout.classical_storage import (
+    bind_classical_scratch,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_elliptic_curve_addition_slope import pack
-from tests.unit.test_modular_constant_addition import (
-    reference_binding as constant_binding,
+from tests.unit.test_legacy_modular_exponentiation_factories import (
+    _resolve,
+    original_modexp_stream,
 )
-from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -123,27 +127,16 @@ def test_original_order_operands_and_full_emitted_channels(
         exponent=exponent, target=target, workspace=work, classical_bits=bits
     )
     ir = DynamicCircuit(width).append(bound).to_ir()
-    scratch, inner = work[:n], work[n:]
-    first, measured = constant_binding(scratch, inner[1:], bits, p)
-    second, other = constant_binding(target, inner[1:], bits, p)
-    assert measured == other
-    measured[inner[0]] = bits[0]
-    alloc = (*scratch, *(inner[0],) * n, *(first * n), *(inner[0],) * n, *(second * n))
-    expected = (
-        Instruction("x", (target[-1],)),
-        *(
-            gate
-            for child, ports, _ in body
-            for gate in reference_arithmetic_gates(
-                child,
-                {"ctrl": (exponent[ports["ctrl"].idx[0]],), "x": target},
-                alloc,
-                measured,
-                reuse_allocations=False,
-                preserve_components=True,
-            )
-        ),
+    record = _resolve(source)
+    reference = bind_register_program(
+        record,
+        (exponent,),
+        clean=(*target, *work),
+        allow_workspace_outputs=True,
     )
+    reference = bind_classical_scratch(reference, bits)
+    assert reference.outputs == (exponent, target)
+    expected = original_modexp_stream(record, source, reference)
     assert_source(ir.instructions, expected)
     counts = Counter(g.name for g in ir.instructions)
     cost = get_cost_value(source, QECGatesCost())

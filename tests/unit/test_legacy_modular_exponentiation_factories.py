@@ -19,7 +19,10 @@ from flagquantum.compiler.formats.legacy_component_resolution import (
 from flagquantum.compiler.formats.legacy_modular_exponentiation_factories import (
     modular_exponentiation_factories,
 )
-from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.compiler.registers.register_binding import (
+    BoundRegisterProgram,
+    bind_register_program,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.errors import SerializationError
@@ -43,29 +46,14 @@ def _resolve(source: Any, depth: int = 0) -> ProgramRecord:
     return result
 
 
-@pytest.mark.parametrize(
-    "base,modulus,e,n",
-    [(2, 3, 1, 2), (2, 3, 3, 2), (5, 6, 2, 3), (4, 15, 2, 4), (2, 3, 0, 2)],
-)
-@pytest.mark.parametrize("depth", [0, 1, 2])
-def test_original_constructor_calls_full_primitives_feedback_and_resources(
-    base: int, modulus: int, e: int, n: int, depth: int
-) -> None:
-    from qualtran.bloqs.cryptography.rsa.rsa_mod_exp import ModExp
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
-
-    source = ModExp(base, modulus, e, n)
-    record = _resolve(source, depth)
-    assert record == _resolve(source)
+def original_modexp_stream(
+    record: ProgramRecord, source: Any, bound: BoundRegisterProgram
+) -> tuple[Instruction, ...]:
+    """Walk untouched source children using the actual bound allocation events."""
     pairs = compare_layers(
         record, source, {f.name for f in record.functions if f.name != "main"}
     )
-    bound = bind_register_program(
-        record,
-        (tuple(range(e)),),
-        clean=tuple(range(e, e + n + 30)),
-        allow_workspace_outputs=True,
-    )
+    e, n = len(bound.outputs[0]), len(bound.outputs[1])
     target = bound.outputs[1]
     # Compare each original root child with its own explicit allocation lifetime.
     # A single Cirq export hoists allocations across stages and aliases work.
@@ -79,12 +67,12 @@ def test_original_constructor_calls_full_primitives_feedback_and_resources(
     ]
     for index, callee in enumerate(children):
         assert callee is not None
-        control = (e - 1 - index,)
+        control = (bound.outputs[0][e - 1 - index],)
         child_bound = bind_register_program(
             record,
-            (control, target),
+            ((0,), tuple(range(1, n + 1))),
             entry=callee,
-            clean=tuple(range(e + n, e + n + 30)),
+            clean=tuple(range(n + 1, n + 31)),
         )
         size = len(child_bound.circuit.instructions)
         sliced = replace(
@@ -105,7 +93,32 @@ def test_original_constructor_calls_full_primitives_feedback_and_resources(
         )
         cursor += size
     assert cursor == len(bound.circuit.instructions)
-    assert_source(bound.circuit.instructions, tuple(expected))
+    return tuple(expected)
+
+
+@pytest.mark.parametrize(
+    "base,modulus,e,n",
+    [(2, 3, 1, 2), (2, 3, 3, 2), (5, 6, 2, 3), (4, 15, 2, 4), (2, 3, 0, 2)],
+)
+@pytest.mark.parametrize("depth", [0, 1, 2])
+def test_original_constructor_calls_full_primitives_feedback_and_resources(
+    base: int, modulus: int, e: int, n: int, depth: int
+) -> None:
+    from qualtran.bloqs.cryptography.rsa.rsa_mod_exp import ModExp
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = ModExp(base, modulus, e, n)
+    record = _resolve(source, depth)
+    assert record == _resolve(source)
+    bound = bind_register_program(
+        record,
+        (tuple(range(e)),),
+        clean=tuple(range(e, e + n + 30)),
+        allow_workspace_outputs=True,
+    )
+    assert_source(
+        bound.circuit.instructions, original_modexp_stream(record, source, bound)
+    )
     counts = Counter(g.name for g in bound.circuit.instructions)
     model = get_cost_value(source, QECGatesCost())
     assert counts["t"] + counts["tdg"] == model.total_t_count(ts_per_cswap=7)
@@ -118,7 +131,7 @@ def test_original_constructor_calls_full_primitives_feedback_and_resources(
         else:
             active.difference_update(event.wires)
         peak = max(peak, len(active))
-    assert active == set(target)
+    assert active == set(bound.outputs[1])
     assert e + peak == get_cost_value(source, QubitCount())
 
 
