@@ -40,8 +40,9 @@ are compared independently.
 ## Explicit boundaries
 
 Signed direct QVR with positive rotation count raises the original indexing
-error. A negative rotation count can produce a logical root, while physical
-signed storage remains pending Proposal 116. Symbolic direct coefficient or
+error. A negative rotation count can produce a logical root. Approved Proposal
+116 now admits its positive-width signed physical storage, as verified below.
+Symbolic direct coefficient or
 precision also reaches an original indexing refusal. Such constructors retain
 typed declarations. Zero rotation count retains the original division refusal.
 Gradient signed input rejects at construction. Concrete gamma with symbolic
@@ -89,4 +90,45 @@ It is an upstream model boundary. Neither its gate count nor its logical-wire
 estimate is substituted for the executed primitive inventory. Resource receipt
 `g2-qvr-constructor-resources-20261124.json` retains both columns separately.
 Both constructor identifiers are resolved within their original successful
-logical domains. Signed physical storage remains pending Proposal 116.
+logical domains. The historical signed-storage refusal is superseded by the
+approved Proposal 116 follow-up below.
+
+## Approved signed-storage dependency closure (2026-11-25)
+
+The old signed-QVR test still expected physical binding to fail after Proposal
+116 was implemented. The original tiny-coefficient path succeeds, and the same
+native constructor now executes; that stale negative assertion failed before
+this correction. Production QVR algorithms and frozen source remain unchanged.
+
+Actual source QFxp profiles `(width,fraction)` of `(2,0)`, `(2,1)`, `(3,2)` and
+`(4,-2)` with gamma `1e-5` and epsilon `0.2` all emit Split, one sign Z and Join.
+Source libraries at depths zero, one and two resolve identically. Typed nominal
+metadata, exact root call order, reversed physical aliases and source tensor
+operators match. Full complex states retain an entangled spectator, ordinary
+`circuit.append(op)` and exact adjoint restoration. No private work, measurement,
+feedback, release or binding swap is needed.
+
+| Signed format | Actual body | Original analytical QEC declaration | Source logical qubits |
+| --- | --- | --- | --- |
+| 2 bits, fraction 0 | 1 phase(pi) | -8 rotations, 0 Clifford | 2 |
+| 2 bits, fraction 1 | 1 phase(pi) | -9 rotations, 0 Clifford | 2 |
+| 3 bits, fraction 2 | 1 phase(pi) | -9 rotations, 0 Clifford | 3 |
+| 4 bits, fraction -2 | 1 phase(pi) | -4 rotations, 0 Clifford | 4 |
+
+Negative original synthesis tolerances and counts remain in reference metadata.
+They are upstream model defects, not negative measured gate inventories. The
+sign operation preserves the original phase exactly; no ideal mathematical QVR
+is substituted. The gamma `0.375` positive-count paths still raise the source
+IndexError and retain nonexecutable native declarations. Signed gradient QVR
+still rejects at construction. Original signed one-bit QFxp also rejects before
+QVR construction. Symbolic and malformed cases retain their earlier scope.
+
+The existing implementation parent stays open for its broader precision/model
+and source boundaries. No constructor or parent denominator changes here.
+
+The concentrated constructor/rotation/gradient/decomposition/storage/cost-phase
+regression passes 173 cases; the independent Cirq 1.6 constructor and direct
+rotation selection passes 58. Strict typing of the complete changed test file,
+Black, Ruff, scope, language, links, architecture, IR and API checks pass.
+Receipts use `g2-signed-qvr-storage-closure-*20261125`; the earlier stale-test
+failure and source one-bit constructor refusal remain diagnostic history.
