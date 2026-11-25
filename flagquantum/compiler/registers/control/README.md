@@ -2,6 +2,13 @@
 
 This package owns control predicates, multi-control, indexed and controlled component composition.
 
+`thc_selection_component.py` composes the original fifteen THC SELECT calls from
+explicit directional rotation declarations, word swaps and phase wrappers.
+It owns one shared angle-word allocation/free. The original optional control
+passes through; model-only rotations refuse physical binding. The Formats
+adapter supplies constructor data, and shared layout/primitives own the ports
+and gates. Run `tests/unit/test_thc_selection_source_constructors.py`.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow

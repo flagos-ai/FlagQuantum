@@ -2,6 +2,13 @@
 
 This package owns partition, cast and bit views, clean and borrowed workspace ownership.
 
+`thc_signatures.py` owns literal THC rotation/selection ports. Formats uses the
+original constructor metadata, while Algorithms retains its stricter numerical
+validators before delegating to these layouts. Source THRU words remain
+MSB-first; the selection component owns its single private angle-word lifetime.
+Run `tests/unit/test_thc_selection_source_constructors.py` for complete source
+call wiring, symbolic declarations and unchanged native validation boundaries.
+
 `fermionic_signatures.py` owns the shared source layouts for the ordered x/y
 Fourier pair, four-mode plaquette array and two opaque spin words. The latter
 contains two L-bit words in source metadata; it is distinct from Algorithms'

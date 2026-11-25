@@ -2,6 +2,13 @@
 
 This package owns boolean/classical/quantum gate dispatch, temporary AND, controlled swaps, measurement cleanup.
 
+`controlled_z_word_component.py` owns the shaped-control/opaque-word signature
+and exact Split/MultiControlZ/Join wrapper that phases the first system bit.
+Formats and Algorithms share this signature; the existing multi-control owner
+supplies clean predicate work and measured erasure. Run
+`tests/unit/test_thc_selection_source_constructors.py` for primitive source
+comparison, all small complex branches, spectator preservation and normal append.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow
