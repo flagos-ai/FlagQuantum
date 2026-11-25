@@ -1467,3 +1467,12 @@ cannot silently select independent polynomial/Newton execution. Focused checks:
 `python -m pytest tests/unit/test_legacy_grid_inverse_sqrt_factories.py`.
 See `docs/development/GRID_INVERSE_SQRT_SOURCE_BINDING.md` for complete source,
 complex branch, work ownership and separate measured/model evidence.
+
+
+`registers/phase/grid_qvr_declaration.py` retains the original grid QVR opaque
+word and fresh Rz(theta) resource child using the existing allocator and rotation
+record. `formats/legacy_grid_qvr_factories.py` binds its original source wire;
+it preserves a bodyless declaration instead of choosing a numerical phase.
+Algorithms keeps the separately selected absolute-phase emitter. Drawer retains
+the original root label. Run `python -m pytest tests/unit/test_grid_qvr_source.py`;
+see `docs/development/GRID_QVR_FILE_AUDIT.md` for the complete source disposition.
