@@ -1,6 +1,7 @@
 """Whole duplicate source/test inventory and factory signature responsibility."""
 
 from hashlib import sha1
+from itertools import combinations_with_replacement
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,59 @@ from flagquantum.core.ir.program.register_types import (
     signed_register_type,
     unsigned_register_type,
 )
+from flagquantum.simulation.classical_sorted_duplicates import (
+    sorted_duplicates_classical_values,
+)
+from tests.unit.source_example_protocols import source_example_protocols
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.mark.parametrize(
+    "name,symbolic_length",
+    (
+        ("_has_duplicates", False),
+        ("_has_duplicates_symb", False),
+        ("_has_duplicates_symb_len", True),
+    ),
+)
+def test_actual_factory_raw_protocols(name: str, symbolic_length: bool) -> None:
+    from qualtran.bloqs.arithmetic.lists import has_duplicates
+
+    observed = source_example_protocols(getattr(has_duplicates, name))
+    assert {mode: status for mode, (status, _) in observed.items()} == {
+        "make": "PASS",
+        "decompose": "NA" if symbolic_length else "PASS",
+        "counts": "UNVERIFIED" if symbolic_length else "PASS",
+        "serialize": "FAIL" if symbolic_length else "PASS",
+        "qtyping": "NA" if symbolic_length else "PASS",
+    }
+
+
+@pytest.mark.parametrize("length", (2, 3, 4))
+@pytest.mark.parametrize("width,signed", ((2, False), (2, True), (3, False)))
+def test_all_original_sorted_classical_domains(
+    length: int, width: int, signed: bool
+) -> None:
+    from qualtran import QInt, QUInt
+    from qualtran.bloqs.arithmetic.lists.has_duplicates import HasDuplicates
+
+    np = pytest.importorskip("numpy")
+    dtype = QInt(width) if signed else QUInt(width)
+    source = HasDuplicates(length, dtype)
+    body = source.decompose_bloq()
+    # The original sorts every Cartesian tuple before checking it. Each unique
+    # sorted tuple below has precisely the same assertion inputs, without
+    # redundantly repeating its permutations.
+    for word in combinations_with_replacement(dtype.get_classical_domain(), length):
+        values = np.asarray(word)
+        for flag in (0, 1):
+            expected = body.call_classically(xs=values.copy(), flag=flag)
+            actual = sorted_duplicates_classical_values(
+                {"xs": values.copy(), "flag": flag}
+            )
+            np.testing.assert_array_equal(actual["xs"], expected[0])
+            assert actual["flag"] == expected[1]
 
 
 def test_frozen_source_and_original_test_files() -> None:

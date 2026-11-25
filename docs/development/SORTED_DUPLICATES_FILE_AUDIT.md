@@ -257,3 +257,32 @@ source graph peak of two logical qubits for controlled empty lists. Negative
 model estimates are diagnostic data and are never substituted for measured
 primitive inventories. Existing source three-word invalid And erasure and
 deeper HasLength serialization failures retain their separate witnesses.
+
+## Complete original test-file acceptance (2026-11-25)
+
+Q-0202 now has a complete mapping for its three original functions. The full
+unchanged original suite, including every slow case, reported 22 passes, three
+skips and one xfail. The locked implementation and test blobs remain checked by
+the existing native file fixture. Q-0201's implementation boundaries remain open.
+
+| Original function | Complete native assertion mapping |
+| --- | --- |
+| `test_examples` | All three actual source factories and all fifteen raw protocol outcomes are observed before skip policy. Existing signature, model, library, native graph and SDK consumers retain their separate admission scopes. |
+| `test_counts` | Both concrete and symbolic-width source count protocols pass; existing full direct child graph/model tests and actual factory resolutions retain operand and count identities. Symbolic-length counts remain unverified rather than a fabricated decomposition. |
+| `test_classical_action` | Every original length 2/3/4 and QUInt(2), QInt(2), QUInt(3) domain, with both flag values, is compared through the actual original composite and native numerical callback. Enumerating each unique sorted tuple covers precisely the original sorted Cartesian inputs without repeating their permutations. |
+
+The three factories produce eleven PASS, two NA, one UNVERIFIED and one FAIL
+across fifteen modes. Symbolic-length serialization retains its source failure.
+The original classical composite tests dispatch child callbacks; they are not
+proof of coherent physical execution. Existing exact primitive/alias/feedback,
+complete valid small complex-channel, measured-history and zero-work evidence
+remains authoritative for its explicitly bounded scopes. Source three-word
+invalid And erasure, swapped aliases, signed SDK failure, empty/singleton
+behaviors and callback/control disagreement are unchanged under Q-0201.
+
+The combined list assertion/component/model/constructor regression passes 673
+cases; the independent Cirq 1.6 file/factory selection passes 55. Both complete
+changed test files pass strict typing, Black and Ruff. Integration scope,
+language, links, architecture, IR and protected API checks pass. Four frozen
+source/test blobs and native Kickmix 0.1 Simulator are verified. Receipts use
+`g2-list-source-closure-*20261125`; no source body was modified.
