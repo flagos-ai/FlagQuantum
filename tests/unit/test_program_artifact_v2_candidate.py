@@ -166,6 +166,13 @@ def test_candidate_sets_explicit_bounded_closed_data_limits() -> None:
         "maximum_envelope_utf8_bytes": 18 * 1024 * 1024,
         "maximum_nesting_depth": 8,
         "maximum_total_entries": 4096,
+        "maximum_total_entries_scope": (
+            "structured_envelope_including_payload_field_excluding_payload_descendants"
+        ),
+        "circuit-ir-1.0": {
+            "maximum_payload_entries": 65536,
+            "maximum_aggregate_entries": 69632,
+        },
         "maximum_non_payload_string_utf8_bytes": 4096,
     }
 

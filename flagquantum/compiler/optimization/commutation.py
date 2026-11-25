@@ -379,6 +379,10 @@ class CommutationAnalysis:
         }
 
 
+_CommutationKey = tuple[tuple[str, tuple[int, ...], bool, bool], ...]
+_COMMUTATION_PAIR_CACHE_LIMIT = 512
+
+
 def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
     """Partition ``ir`` into commuting blocks, one ordered partition per qubit.
 
@@ -399,6 +403,18 @@ def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
             positions_by_qubit.setdefault(qubit, []).append(position)
 
     instructions = tuple(ir)
+    keys = tuple(
+        (
+            canonical_opcode(gate.name),
+            gate.wires,
+            gate.matrix is not None,
+            bool(gate.params),
+        )
+        for gate in instructions
+    )
+    # The structural predicate reads no angle values or matrix contents. Retain
+    # only bounded boolean facts during this sweep, never caller-owned operands.
+    verdicts: dict[_CommutationKey, bool] = {}
     blocks_by_qubit: dict[int, tuple[tuple[int, ...], ...]] = {}
     block_index: dict[tuple[int, int], int] = {}
     queried = 0
@@ -415,8 +431,15 @@ def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
             compared = len(open_block)
             # commute is parameter-value blind. These classes preserve every rule,
             # including matrix overrides and the empty-parameter fixed-gate check.
-            for offset, member in representatives.values():
-                if not commute(member, candidate):
+            key = keys[position]
+            for member_key, (offset, member) in representatives.items():
+                pair = (member_key, key)
+                verdict = verdicts.get(pair)
+                if verdict is None:
+                    verdict = commute(member, candidate)
+                    if len(verdicts) < _COMMUTATION_PAIR_CACHE_LIMIT:
+                        verdicts[pair] = verdict
+                if not verdict:
                     accepted = False
                     compared = offset + 1
                     break
@@ -426,12 +449,6 @@ def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
                 blocks.append(tuple(open_block))
                 open_block = []
                 representatives.clear()
-            key = (
-                canonical_opcode(candidate.name),
-                candidate.wires,
-                candidate.matrix is not None,
-                bool(candidate.params),
-            )
             representatives.setdefault(key, (len(open_block), candidate))
             open_block.append(position)
             block_index[(position, qubit)] = len(blocks)
@@ -444,9 +461,6 @@ def _sweep_commutation(ir: CircuitIR) -> CommutationAnalysis:
         queried_pairs=queried,
         commuting_pairs=commuting,
     )
-
-
-_CommutationKey = tuple[tuple[str, tuple[int, ...], bool, bool], ...]
 
 
 @dataclass
