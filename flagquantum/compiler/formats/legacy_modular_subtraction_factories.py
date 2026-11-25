@@ -78,9 +78,15 @@ def _modular_factory(
 def modular_subtraction_factories() -> dict[str, ComponentFactory]:
     """Supply all four source constructors with exact dependency ownership."""
     kinds: tuple[_Kind, ...] = ("ModNeg", "CModNeg", "ModSub", "CModSub")
-    return {
+    factories: dict[str, ComponentFactory] = {
         f"qualtran.bloqs.mod_arithmetic.mod_subtraction.{kind}": partial(
             _modular_factory, kind
         )
         for kind in kinds
     }
+    # These exact package aliases are present in the frozen source resolver.
+    for kind in ("ModSub", "CModSub"):
+        factories[f"qualtran.bloqs.mod_arithmetic.{kind}"] = factories[
+            f"qualtran.bloqs.mod_arithmetic.mod_subtraction.{kind}"
+        ]
+    return factories
