@@ -47,9 +47,10 @@ Emitted primitive counts and physical peak-work requirements remain open.
 ## Source failures and physical admission
 
 The untouched packed column-wrapper decomposition raises IndexError when it
-indexes a zero-dimensional scalar as an array. Native literal composition
-currently fails earlier because Core does not admit the bounded unsigned
-register descriptor as an executable word. Both boundaries are retained.
+indexes a zero-dimensional scalar as an array. Native literal composition now
+passes bounded unsigned storage admission and raises the same zero-dimensional
+IndexError at the scalar-to-array binding. The earlier storage rejection is
+obsolete; the actual packing failure is retained.
 A physical packing contract and admitted query bodies are still needed.
 The root and entry wrapper have valid one-child source composite graphs, but
 their descendants retain the query/RHS physical gaps in the preceding audits.
@@ -60,11 +61,20 @@ and fails in the source. Native model admission reports that unsupported path.
 The Hamiltonian's positive-control expansion bypasses control on its entry
 pair, matching the source, and its resource query passes.
 
-Q-0608/0609 remain active. Full complex-amplitude, measurement-branch and
+Q-0608 remains active. Full complex-amplitude, measurement-branch and
 work-zero acceptance awaits actual physical query bodies, correct source root
 return/free semantics and packed-array admission. Existing executable shared
 components retain their circuit.append(op) entry points. No new physical root
 execution claim is made. Q-0607 separately tracks the complete notebook.
+
+Q-0609 covers the original test file rather than a nonexistent physical query
+body. Its complete assertion and raw protocol mapping is recorded in
+[the four-file acceptance audit](KIKUCHI_KXOR_SOURCE_TEST_ACCEPTANCE.md).
+The native source_sparse_calls inventory retains both swap widths, forward and
+inverse query identities, and the original Always control bypass. Resource
+pricing consumes that inventory. Concrete and symbolic controlled comparisons
+now check all eight calls before folding; equal one-bit swaps combine with
+multiplicity two. No primitive execution is inferred from this model graph.
 
 ## Verification
 
