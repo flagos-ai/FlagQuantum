@@ -3,9 +3,10 @@
 G2-FILE-FIELD-SQUARE audits Q-0521, Q-0522 and Q-0523 against Qualtran v0.7.0
 commit `bcb17bb25360ed68ce3bc084645db3e929799389`. All three selected assets and
 the direct `gf2_multiplication.py`/`gf_utils.py` dependencies match their frozen
-Git blobs. The entire notebook Q-0521 closes. Implementation Q-0522 and original
-test Q-0523 remain open for the source matrix/adjoint, bookkeeping counts and
-generic admission/autotester/serialization boundaries listed below.
+Git blobs. The entire notebook Q-0521 closes. Implementation Q-0522 remains open
+for the source matrix/adjoint, bookkeeping and generic admission boundaries.
+Original test Q-0523 closes after the actual-factory protocol mapping below;
+this does not claim full unchanged-source mathematical gate equivalence.
 
 ## Ownership, interfaces and work
 
@@ -127,9 +128,9 @@ free-permutation PLU count. Runtime statistics are a separate account.
 | Parents | Existing or reproduced boundary | Owner and resolution condition |
 |---|---|---|
 | Q-0522, Q-0523 and Q-0519 | G2-GF06 already records k=0 as square instead of identity, k=3 matching k=2, and the linear adjoint emitting its forward stream. Native mathematical powers and exact inverse differ intentionally. | Compiler linear-map and Simulation numerical owners. Preserve immutable original witnesses and the full affected definition mapping. An explicit disposition under the original closure criteria is required before closing the source parents. |
-| Q-0522 and Q-0523 | Concrete original count assertion omits QGF Split/Join nodes from its annotation. The linear child and physical CX counts agree. The full unfiltered source diagnostic is retained. | Compiler resource and test owners. Resolve bookkeeping assertion coverage under the original criteria without presenting filtered counts as the original check. |
+| Q-0522 | Concrete original count assertion omits QGF Split/Join nodes from its annotation. The linear child and physical CX counts agree. The full unfiltered source diagnostic is retained. | Compiler resource owner. The complete original test responsibility is disposed below; the implementation's source defects remain open. No filtered count is presented as the original check. |
 | Q-0522 and Q-0519 | Native descriptor/word/matrix admission replaces foreign attrs/QGF/NumPy-array object construction. Standalone linear classical callback/serialization and arbitrary foreign shape identity retain their existing parent boundary. | Existing metadata, Simulation and Ecosystem owners. Complete native admission and exact failure/identity mapping while preserving protected schemas. |
-| Q-0523 | Three original fixture skips cover symbolic decomposition, count applicability and dtype checks. Two serialization xfails explicitly exclude QGF. The third xfail is the count mismatch above. | Generic autotester and serialization owners. Complete the two factories' exact native assertion mappings and preserve source failure dispositions. |
+| Q-0523, closed | Three original fixture skips cover symbolic decomposition, count applicability and dtype checks. Two serialization xfails explicitly exclude QGF. The third xfail is the count mismatch above. | Both actual factories now have independent raw protocol checks, actual native signature/owner/verification mapping and explicit logical-versus-physical serialization boundaries. The original failure diagnostic still names Split and Join. |
 
 ## Batch validation
 
@@ -283,3 +284,52 @@ consolidation. Combined catalog inventory is 4104 JSON files, 4103 diagrams,
 interfaces and 427 qualified descendants. Three qualified descendants across
 all field groups are explicitly labeled native exact linear inverses.
 Receipts use `g2-field-power-ui-*-20261122` in the reference evidence directory.
+
+## Complete original test closure — 2026-11-25
+
+Every original top-level test and parameter is retained in the whole-file
+inventory. The unchanged complete square and inverse suites, including all slow
+cases and inverse degrees 1–16, report 36 passes, six source skips and five
+source xfails. Their twenty raw factory protocols are also invoked independently
+before pytest policy. The square portion has these ten actual observations:
+
+| Factory | Make | Decompose | Counts | Serialize | Strict types |
+|---|---|---|---|---|---|
+| gf16_square | PASS | PASS | FAIL | FAIL | PASS |
+| gf2_square_symbolic | PASS | NA | UNVERIFIED | FAIL | NA |
+
+The source concrete count diagnostic must retain both missing Split and Join.
+Both source codec failures must identify QGF. Native actual catalog signatures
+match widths, shapes, sides and degree parameters. The concrete stored root
+equals the existing field_frobenius_program with the original polynomial and
+passes the shared verifier. The symbolic root has no executable body, matching
+the original rejection. Its unresolved degree and signature-width expression
+remain distinct; no new symbolic assumptions are imposed.
+
+The existing physical-context Program encoder rejects the logical concrete
+root. Bound CircuitIR JSON and full complex-vector execution remain separate
+accepted representations. This is not a successful original QGF codec. Existing
+GF16 original forward stream, aliases, zero work, coherent spectator and exact
+source-direction witnesses are reused. General k=0/non-power-of-two matrix and
+ignored-adjoint source defects remain unchanged under Q-0522 and Q-0519.
+The native exact inverse is not relabeled as the original defective inverse.
+
+The protocol observer is shared with addition and inverse tests. It returns raw
+status and diagnostic, catching only original BloqCheckException; unexpected
+errors fail the test. Both audit fixtures retain exactly their original five
+blob values using English paths instead of repository strings naming Chinese
+CSV columns. No source, blob identity, model, numerical kernel or public
+contract changes. Q-0523 closes its complete original assertion and protocol
+scope; implementation Q-0522 remains open. Receipts use
+`g2-square-inverse-test-closure-*-20261125` and
+`g2-field-square-inverse-original-protocol-matrix-20261125.json`.
+
+The final concentrated regression passes 315 cases, including the refactored
+addition consumer, all complete square/inverse owner tests, actual foreign
+capture, stored graphs, numerical execution and catalog export. Independent
+Cirq 1.6 passes 172 cases. Strict mypy passes all four touched Python files;
+Black, Ruff, Integration scope, language, local links, architecture, multi-level
+IR and protected API checks pass. Production owners are unchanged, so the
+accepted 145 local integration cases and unchanged 720 dependency baseline from
+the preceding production batch are explicitly reused. Primitive counts remain
+separate from the source resource model. All batch jobs are terminal.

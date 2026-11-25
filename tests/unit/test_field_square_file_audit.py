@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import ast
-import csv
 import hashlib
 from importlib.metadata import version
 from pathlib import Path
@@ -37,6 +36,7 @@ from flagquantum.simulation.finite_field_frobenius import (
     field_frobenius_classical_value,
     field_frobenius_matrix,
 )
+from tests.unit.source_example_protocols import source_example_protocols
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -48,20 +48,18 @@ def complete_locked_assets() -> None:
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as handle:
-        rows = [
-            row
-            for row in csv.DictReader(handle)
-            if row["编号"] in {"Q-0519", "Q-0521", "Q-0522", "Q-0523", "Q-0524"}
-        ]
-    assert len(rows) == 5
-    for row in rows:
-        data = (REFERENCE / row["源文件"]).read_bytes()
+    blobs = {
+        "gf2_multiplication.py": "1338bb4b9f09a0a4b813a1124481e26ee3446cd8",
+        "gf2_square.ipynb": "a4ac4a941162404d76173f7f8fad5c3a6a2be1f0",
+        "gf2_square.py": "5dae828b6d880ee45354d0c1173eb7a275f0fdee",
+        "gf2_square_test.py": "f192f8c16110a32a7b9907939bd165df222ab356",
+        "gf_utils.py": "3ecc74fb2657ff92c19ca0097ddf2c3d73720c5d",
+    }
+    for filename, blob in blobs.items():
+        data = (REFERENCE / "qualtran/bloqs/gf_arithmetic" / filename).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == row["源对象"]
+            == blob
         )
 
 
@@ -75,6 +73,50 @@ def test_whole_original_function_inventory() -> None:
         "test_gf2_square_resource",
         "test_gf2_square_classical_sim",
     }
+
+
+@pytest.mark.parametrize("symbolic", (False, True))
+def test_actual_square_factory_protocols_and_native_root(symbolic: bool) -> None:
+    from qualtran.bloqs.gf_arithmetic.gf2_square import (
+        _gf2_square_symbolic,
+        _gf16_square,
+    )
+
+    from examples.algorithms import field_ui_export as native
+    from flagquantum.compiler.registers.finite_field.frobenius_component import (
+        field_frobenius_program,
+    )
+    from flagquantum.core.ir.program import verify_program_record
+    from flagquantum.core.ir.program.physical_codec import native_program_to_dict
+    from flagquantum.errors import SerializationError
+
+    factory = _gf2_square_symbolic if symbolic else _gf16_square
+    original = factory.make()
+    observed = source_example_protocols(factory)
+    assert {mode: status for mode, (status, _) in observed.items()} == {
+        "make": "PASS",
+        "decompose": "NA" if symbolic else "PASS",
+        "counts": "UNVERIFIED" if symbolic else "FAIL",
+        "serialize": "FAIL",
+        "qtyping": "NA" if symbolic else "PASS",
+    }
+    assert "QGF" in observed["serialize"][1]
+    signature = native.signature(factory.name)
+    assert [(r.name, r.bitsize, r.shape_symbolic, r.side.name) for r in signature] == [
+        (r.name, r.bitsize, r.shape_symbolic, r.side.name) for r in original.signature
+    ]
+    assert dict(signature[0].dtype.parameters)["degree"] == original.bitsize
+    record = native.decomposition(factory.name)
+    if symbolic:
+        assert record is None
+    else:
+        assert "Split" in observed["counts"][1] and "Join" in observed["counts"][1]
+        assert record == field_frobenius_program(
+            signature[0].dtype, modulus=int(original.qgf.irreducible_poly)
+        )
+        assert record is not None and verify_program_record(record) == ()
+        with pytest.raises(SerializationError, match="requires a physical context"):
+            native_program_to_dict(record)
 
 
 @pytest.mark.parametrize("width", [1, 2, 3, 4, 5, 8])
