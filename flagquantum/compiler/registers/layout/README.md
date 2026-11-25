@@ -2,6 +2,13 @@
 
 This package owns partition, cast and bit views, clean and borrowed workspace ownership.
 
+`hubbard_signatures.py` owns source Hubbard SELECT, Majorana and spin-up word
+declarations, including bounded coordinate order and symbolic widths. Typed
+execution belongs to the corresponding lookup/control modules; numerical
+operations and models stay in Algorithms. Run
+`tests/unit/test_hubbard_selection_source_constructors.py` for actual original
+factories, wire depths and unchanged output ownership.
+
 `thc_signatures.py` owns literal THC rotation/selection ports. Formats uses the
 original constructor metadata, while Algorithms retains its stricter numerical
 validators before delegating to these layouts. Source THRU words remain

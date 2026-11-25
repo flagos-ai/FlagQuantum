@@ -9,9 +9,9 @@ source ownership from a package alias. Factory providers requiring context are
 queried with nonexecuting callbacks; no constructor or dependency callback is
 executed by this registration inventory.
 
-There are 174 exact factory registrations, four additional aliases whose
-canonical class has a factory, and 125 keys without an exact factory. Those
-125 include the CompositeBloq graph special case, the CtrlSpec argument
+There are 177 exact factory registrations, four additional aliases whose
+canonical class has a factory, and 122 keys without an exact factory. Those
+122 include the CompositeBloq graph special case, the CtrlSpec argument
 descriptor, abstract interfaces and one original module-valued entry. They
 are not all missing executable constructors. Generic connected graph resolution
 is separate from shallow named-constructor reconstruction.
@@ -22,7 +22,9 @@ been reconciled into a current global complete total. Rows marked pending must
 be reconciled against those receipts before either acceptance or missing
 implementation is asserted. No parent checklist item closes from this table.
 
-The two Ising constructor rows have current full-file evidence in
+The three Hubbard rows have current scoped constructor and exact scalar evidence
+in [the Hubbard audit](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md). The two Ising
+constructor rows have current full-file evidence in
 [the Ising audit](ISING_TROTTER_FILE_AUDIT.md). Its original one-site ZZ failure,
 zero/symbolic dimensions and native validation boundary remain explicit.
 
@@ -162,9 +164,9 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 | `qualtran.bloqs.chemistry.df.prepare.OutputIndexedData` | `qualtran/bloqs/chemistry/df/prepare.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.df.select_bloq.ProgRotGateArray` | `qualtran/bloqs/chemistry/df/select_bloq.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/prepare_hubbard.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Unregistered | Published module receipts pending reconciliation |
-| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Unregistered | Published module receipts pending reconciliation |
+| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |
+| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |
+| `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | Registered: `legacy_hubbard_selection_factories.py` | [Hubbard scoped closure](HUBBARD_SELECT_STORED_GRAPH_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare.UniformSuperpostionIJFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu.FlagZeroAsFailure` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py` | Unregistered | Published module receipts pending reconciliation |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu.PrepareMuUnaryEncodedOneHot` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py` | Unregistered | Published module receipts pending reconciliation |

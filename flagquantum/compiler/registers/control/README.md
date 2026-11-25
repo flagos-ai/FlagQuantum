@@ -2,6 +2,13 @@
 
 This package owns control predicates, multi-control, indexed and controlled component composition.
 
+`hubbard_select_component.py` owns literal controlled/uncontrolled Hubbard SELECT
+calls and explicit inverse dependencies. The zero-port scalar delegates to
+the existing private-carrier owner; no Core effect or backend selection is
+introduced. Algorithms and source constructors share this same program. Run
+`tests/unit/test_hubbard_select_component.py` for source call comparison,
+complex branch amplitudes, clean-work restoration and normal append execution.
+
 `thc_selection_component.py` composes the original fifteen THC SELECT calls from
 explicit directional rotation declarations, word swaps and phase wrappers.
 It owns one shared angle-word allocation/free. The original optional control

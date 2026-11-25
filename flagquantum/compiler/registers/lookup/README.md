@@ -1,5 +1,15 @@
 # Table lookup and selection
 
+`hubbard_majorana_component.py` and `hubbard_spin_up_component.py` own typed
+Hubbard coordinate traversal and target partitioning, reusing existing Majorana
+and selected-Pauli components. Algorithms preserves numerical validation and
+resource ownership while delegating stored calls here. Source constructors
+use the same owners without importing Algorithms or an external SDK. Run
+`tests/unit/test_hubbard_selection_source_constructors.py` for the complete
+source factory group and exact generic inverses. The
+[Hubbard audit](../../../../docs/development/HUBBARD_SELECT_STORED_GRAPH_AUDIT.md)
+records source failures and primitive/model distinctions.
+
 `matrix_entry_component.py` owns uniform and QROM-driven entry call graphs.
 Numerical table conversion is supplied through the Ecosystem boundary and the
 existing Algorithms table owner. QROM owns predicate work; the entry graph
