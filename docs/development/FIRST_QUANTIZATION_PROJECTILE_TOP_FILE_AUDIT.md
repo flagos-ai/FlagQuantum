@@ -77,3 +77,10 @@ locked source behavior.
 End-to-end physical leaves and the locked recursive adjoint failure
 remain open under Q-0382. Q-0381 and
 Q-0383 close the complete tutorial and original test coverage.
+
+The subsequent [constructor dependency audit](RESOLVER_PROJECTILE_ROOT_AUDIT.md)
+binds the complete finite root file and its direct identifiers to typed Programs.
+It retains PREPARE's four calls, SELECT's 26 allocation/child/free calls and the
+source-exact reshape wrappers. All-one activation despite cvs labels and the
+source empty-control conversion failure remain explicit. Whole-root primitive
+execution is still unavailable because its opaque leaves have no source body.
