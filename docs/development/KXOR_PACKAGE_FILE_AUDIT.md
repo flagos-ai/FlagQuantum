@@ -55,3 +55,10 @@ is retained. Scope preparation and sorting are the bodyless prefixes.
 Q-0613 remains open for the remaining complete-cell and resource-graph
 verification, not a register admission blocker. Its working source run is
 reused and will not be rerun to manufacture progress.
+
+The complete follow-up now closes Q-0613 and its Q-0612 test mapping, with all
+seventeen source cell roles, six native figures, exact resource graph edges,
+cost expressions and original protocol dispositions. See
+[the tutorial audit](KIKUCHI_GUIDING_TUTORIAL_AUDIT.md). Q-0611 retains the
+original physical and serialization gaps; no package-level execution claim is
+added.

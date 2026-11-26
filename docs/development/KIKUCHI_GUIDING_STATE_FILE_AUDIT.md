@@ -153,12 +153,14 @@ outputs and workspace lifetimes relative to f9dce871d. Structural operation
 positions differ because the source word views are now explicit. Identity
 prefixes remain compatibility evidence only.
 
-Q-0613 remains open until its standalone signature, both resource call graphs,
-all seventeen native cell roles and all six rendered figures are verified.
-Three root/expansion figures have been rendered; the symbolic figure still
-needs label-spacing refinement before notebook acceptance. No graph receipt
+At the word-root publication, Q-0613 still needed its standalone signature,
+both resource call graphs, complete native cells and final six-figure review.
+That follow-up is now complete; see
+[the tutorial and test audit](KIKUCHI_GUIDING_TUTORIAL_AUDIT.md). Nonfloating
+edge labels resolve the symbolic spacing issue. No graph receipt
 certifies full-state preparation, primitive totals or work cleanup across the
-bodyless source prefixes. Q-0612 also remains open.
+bodyless source prefixes. Q-0611 remains open; the complete Q-0612 test mapping
+retains every original protocol failure.
 
 This follow-up passes 247 concentrated cases in each actual Cirq 1.7.0 /
 Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile, with ten visible reference

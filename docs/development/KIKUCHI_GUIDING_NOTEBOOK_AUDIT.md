@@ -49,3 +49,9 @@ Concrete duplicate detection supplies its existing source-faithful body;
 only preparation and sorting lack original physical bodies. This does not
 close the separate tutorial: both resource graph views, complete native cell
 execution and final six-figure inspection remain required.
+
+The subsequent complete tutorial batch supplies those remaining roles.
+[The dedicated audit](KIKUCHI_GUIDING_TUTORIAL_AUDIT.md) records every original
+cell, exact depth-three model graph, all six reviewed figures and the original
+test protocol outcomes. Q-0613 and the Q-0612 test mapping now close; Q-0611
+physical preparation and instance serialization remain open.
