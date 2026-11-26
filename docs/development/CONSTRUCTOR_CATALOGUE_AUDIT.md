@@ -17,10 +17,10 @@ source registry, rather than inferred from package aliases.
 | Verified fact | Count |
 | --- | ---: |
 | Frozen source keys | 303 |
-| Exact Compiler format registrations | 198 |
+| Exact Compiler format registrations | 200 |
 | Keys reachable through Ecosystem providers | 39 |
-| Union of exact native registrations | 199 |
-| Keys without an exact factory in these providers | 104 |
+| Union of exact native registrations | 201 |
+| Keys without an exact factory in these providers | 102 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
 The Ecosystem count overlaps Compiler for 38 keys; CirqGateAsBloq is the
@@ -30,14 +30,14 @@ reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 104 keys without exact factories have these distinct source roles:
+The 102 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 96 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 94 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -182,7 +182,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle` | `qualtran/bloqs/block_encoding/sparse_matrix.py` | `compiler/formats/legacy_sparse_matrix_factories.py:sparse_matrix_factories`, `ecosystem/_sparse_matrix_component_library.py:sparse_matrix_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle` | `qualtran/bloqs/block_encoding/sparse_matrix.py` | `compiler/formats/legacy_sparse_matrix_factories.py:sparse_matrix_factories`, `ecosystem/_sparse_matrix_component_library.py:sparse_matrix_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.bookkeeping.allocate.Allocate` | `qualtran/bloqs/bookkeeping/allocate.py` | `compiler/formats/legacy_bookkeeping_factories.py:bookkeeping_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
-| `qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford` | `qualtran/bloqs/bookkeeping/arbitrary_clifford.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford` | `qualtran/bloqs/bookkeeping/arbitrary_clifford.py` | `compiler/formats/legacy_bookkeeping_factories.py:bookkeeping_factories` | Explicit matrix execution or opaque Clifford declaration, respectively; [constructor audit](RESOLVER_EXPLICIT_LEAF_AUDIT.md); protected/source boundaries retained |
 | `qualtran.bloqs.bookkeeping.auto_partition.AutoPartition` | `qualtran/bloqs/bookkeeping/auto_partition.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.bookkeeping.cast.Cast` | `qualtran/bloqs/bookkeeping/cast.py` | `compiler/formats/legacy_bookkeeping_factories.py:bookkeeping_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.bookkeeping.free.Free` | `qualtran/bloqs/bookkeeping/free.py` | `compiler/formats/legacy_bookkeeping_factories.py:bookkeeping_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
@@ -298,7 +298,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.for_testing.many_registers.TestMultiRegister` | `qualtran/bloqs/for_testing/many_registers.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.for_testing.many_registers.TestMultiTypedRegister` | `qualtran/bloqs/for_testing/many_registers.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.for_testing.many_registers.TestQFxp` | `qualtran/bloqs/for_testing/many_registers.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.for_testing.matrix_gate.MatrixGate` | `qualtran/bloqs/for_testing/matrix_gate.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.for_testing.matrix_gate.MatrixGate` | `qualtran/bloqs/for_testing/matrix_gate.py` | `compiler/formats/legacy_matrix_factories.py:matrix_factories` | Explicit matrix execution or opaque Clifford declaration, respectively; [constructor audit](RESOLVER_EXPLICIT_LEAF_AUDIT.md); protected/source boundaries retained |
 | `qualtran.bloqs.for_testing.with_call_graph.TestBloqWithCallGraph` | `qualtran/bloqs/for_testing/with_call_graph.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo` | `qualtran/bloqs/for_testing/with_decomposition.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo` | `qualtran/bloqs/for_testing/with_decomposition.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
