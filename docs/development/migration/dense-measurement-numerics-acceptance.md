@@ -73,3 +73,25 @@ existing cumulative-ledger audit separately retains 15 gated old-import
 obligations. Scoped success does not close those integration obligations.
 Construction/IR, native build/development distribution and Rust keep their
 existing gates. The new PR requires its own exact pushed-head CI qualification.
+
+
+## CI source-bootstrap cleanup correction
+
+The complete product regressions above ran on migration commit `2470aa044`.
+Its first CI run failed before coverage67 could check out or test source:
+`docker rm --force` exceeded the existing 20-second command budget while
+removing the exclusive runner's previous CI container. A timeout escaped the
+existing postcondition check and bounded removal retry.
+
+Cleanup now checks actual container absence after a removal-client timeout,
+using the original verified runner/workspace ownership, 20-second commands
+and at most two removal attempts. Persistent or unobservable leftovers still
+refuse checkout. The standalone source-bootstrap path remains unchanged.
+
+Six new timeout scenarios fail on the old implementation and pass after the
+fix. All five source-bootstrap regression suites pass **146 tests**, including
+the existing source identity, archive, GraphQL, network and ownership checks.
+Formatting preserves both changed file ASTs. This CI-only correction adds six
+tests to the previous complete-regression surface and leaves all 1262 product
+Python files and qualified wheel bytes unchanged. Its exact pushed head still
+requires full CI qualification.

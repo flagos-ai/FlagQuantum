@@ -295,7 +295,17 @@ def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) ->
     )
 
 
-@pytest.mark.parametrize("removal", ["success", "auto-removal", "persistent"])
+@pytest.mark.parametrize(
+    "removal",
+    [
+        "success",
+        "auto-removal",
+        "persistent",
+        "timeout-auto-removal",
+        "timeout-then-success",
+        "timeout-persistent",
+    ],
+)
 @pytest.mark.parametrize("imported_image", [False, True])
 def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
     tmp_path, monkeypatch, removal, imported_image
@@ -339,8 +349,16 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
             return subprocess.CompletedProcess(arguments, 0, json.dumps(metadata), "")
         if arguments[1] == "rm":
             assert arguments[2:] == ["--force", ids[0]]
+            removal_count = sum(command[1] == "rm" for command in calls)
+            if removal.startswith("timeout") and (
+                removal != "timeout-then-success" or removal_count == 1
+            ):
+                raise subprocess.TimeoutExpired(arguments, kwargs["timeout"])
             return subprocess.CompletedProcess(
-                arguments, int(removal != "success"), "", "removal already in progress"
+                arguments,
+                int(removal not in {"success", "timeout-then-success"}),
+                "",
+                "removal already in progress",
             )
         if "{{.ID}} {{.Image}}" in arguments:
             return subprocess.CompletedProcess(
@@ -350,21 +368,33 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
                 "",
             )
         return subprocess.CompletedProcess(
-            arguments, 0, ids[0] if removal == "persistent" else "", ""
+            arguments,
+            0,
+            (
+                ids[0]
+                if removal
+                in {"persistent", "timeout-persistent", "timeout-then-success"}
+                else ""
+            ),
+            "",
         )
 
     monkeypatch.setattr(archive.subprocess, "run", command)
     monkeypatch.setattr(archive.time, "sleep", lambda _: None)
-    if removal == "persistent":
+    if removal in {"persistent", "timeout-persistent"}:
         with pytest.raises(
             RuntimeError, match="Could not remove previous CI containers"
-        ):
+        ) as failure:
             archive.cleanup_runner_containers()
+        if removal == "timeout-persistent":
+            assert "timed out" in str(failure.value)
     else:
         archive.cleanup_runner_containers()
     assert not any(ids[3] in command for command in calls)
     assert sum(command[1] == "rm" for command in calls) == (
-        2 if removal == "persistent" else 1
+        2
+        if removal in {"persistent", "timeout-persistent", "timeout-then-success"}
+        else 1
     )
 
 

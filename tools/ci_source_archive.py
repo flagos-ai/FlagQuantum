@@ -646,10 +646,19 @@ def cleanup_runner_containers() -> None:
         f"Removing {len(owned)} previous CI containers for exclusive runner {runner}",
         flush=True,
     )
+    failure_detail = ""
     for delay in (0.5, 2.0):
-        result = docker("rm", "--force", *owned, check=False)
-        if not result.returncode:
-            return
+        try:
+            result = docker("rm", "--force", *owned, check=False)
+        except subprocess.TimeoutExpired:
+            # The daemon can finish deletion after the client stops waiting.
+            # Confirm absence before checkout, using the same bounded retry.
+            failure_detail = "Docker removal timed out after 20 seconds"
+            print(f"{failure_detail}; checking remaining containers", flush=True)
+        else:
+            if not result.returncode:
+                return
+            failure_detail = result.stderr.strip()[:500]
         # Docker's --rm cleanup can already be removing the same container.
         # Give that removal time to finish before retrying or refusing checkout.
         time.sleep(delay)
@@ -659,9 +668,7 @@ def cleanup_runner_containers() -> None:
         if not owned:
             print("Previous CI containers were removed by Docker", flush=True)
             return
-    raise RuntimeError(
-        f"Could not remove previous CI containers: {result.stderr.strip()[:500]}"
-    )
+    raise RuntimeError(f"Could not remove previous CI containers: {failure_detail}")
 
 
 def _main() -> None:
