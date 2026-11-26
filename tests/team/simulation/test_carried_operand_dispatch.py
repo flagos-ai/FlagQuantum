@@ -284,16 +284,18 @@ def test_the_product_state_fast_paths_are_guarded_not_deleted(name: str) -> None
 def test_the_diagonal_kernel_is_still_used_without_a_matrix() -> None:
     """The dynamic executor keeps its diagonal kernel for a plain `z`."""
 
-    from flagquantum.runtime.dynamic import execution as dynamic_execution
+    from flagquantum.simulation.statevector import (
+        instruction as statevector_instruction,
+    )
 
     selected: list[str] = []
-    original = dynamic_execution._apply_diagonal_matrix
+    original = statevector_instruction._apply_diagonal_matrix
 
     def counted(*args, **kwargs):
         selected.append("diagonal")
         return original(*args, **kwargs)
 
-    dynamic_execution._apply_diagonal_matrix = counted
+    statevector_instruction._apply_diagonal_matrix = counted
     try:
         plain = DynamicCircuit(1)
         plain.z(0)
@@ -311,4 +313,4 @@ def test_the_diagonal_kernel_is_still_used_without_a_matrix() -> None:
             "only the diagonal entries of the operand"
         )
     finally:
-        dynamic_execution._apply_diagonal_matrix = original
+        statevector_instruction._apply_diagonal_matrix = original

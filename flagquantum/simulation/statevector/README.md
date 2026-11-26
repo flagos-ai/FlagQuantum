@@ -6,7 +6,7 @@ evidence.
 
 - Start in `local.py` for initial-state construction, the local execution loop,
   dense observables, and sampling.
-- Start in `operations.py` for gate application, layout, matrix composition,
+- Start in `instruction.py` for gate application, layout, matrix composition,
   fusion, and rank-local tensor operations.
 - Start in `batching.py` for parameter windows and rotation-region angle packing.
   Compiled real scalar slots with matching dtype/device are packed together;
@@ -36,3 +36,11 @@ plus vector/cast/constant handling and malformed batch refusal. Use the existing
 `python -m benchmarks.module_execution_matrix --output /tmp/fq-module-matrix`
 for public-entry timing; an internal packing microbenchmark alone does not
 establish ordinary training performance.
+
+Dynamic trajectory collapse is implemented in `measurement_ops.py`; one static
+Instruction acts through `instruction.py`. Runtime supplies its generator and
+coordinates feedback/shot lifecycles. Simulation does not choose seeds or
+controllers. Forward/reverse local block composition shares the numerical tensor
+product in `simulation/gate_matrix.py`; admissibility and scratch evidence stay
+with their Runtime sweeps. Start with `tests/test_dynamic_circuit.py` and
+`tests/test_dynamic_conformance.py` for the trajectory path.

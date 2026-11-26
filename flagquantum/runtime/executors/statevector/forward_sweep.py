@@ -28,6 +28,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     _vectorized_subgroup_exchange_gate,
     communication_aware_qubit_layout,
 )
+from flagquantum.simulation.gate_matrix import _tensor_product_matrices
 from flagquantum.simulation.statevector.adjoint import _is_diagonal_instruction
 
 from ....core.ir import Instruction, ensure_circuit_ir
@@ -685,9 +686,7 @@ class _ShardedForwardSweep:
                 block_wires.append(candidate_wire)
                 block_cursor += 1
             if len(block_instructions) > 1:
-                combined = block_matrices[0]
-                for candidate_matrix in block_matrices[1:]:
-                    combined = torch.kron(combined, candidate_matrix)
+                combined = _tensor_product_matrices(block_matrices)
                 self.shard_state, scratch = _vectorized_local_gate(
                     self.shard_state,
                     combined,
