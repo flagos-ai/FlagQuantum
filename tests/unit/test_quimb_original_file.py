@@ -11,7 +11,6 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -39,13 +38,14 @@ from flagquantum.simulation.tensor_network.register_tensor_indices import (
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 Bindings = Mapping[str, tuple[tuple[int, ...], ...]]
+np = pytest.importorskip("numpy")
 
 
 @pytest.fixture(scope="module")
 def source() -> ModuleType:
     pytest.importorskip("qualtran")
     pytest.importorskip("quimb")
-    import cirq
+    cirq = pytest.importorskip("cirq")
     import kickmix
 
     assert version("qualtran") == "0.7.0"

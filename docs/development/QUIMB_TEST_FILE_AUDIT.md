@@ -72,3 +72,11 @@ reused rather than rerun. An initial pytest plugin-autoload environment error
 was resolved with the established disabled-autoload profile. Initial strict
 source reexport errors were corrected by importing actual defining SDK modules;
 no suppression or source edit was introduced.
+
+Dependency follow-up: the initial acceptance reused the production dependency
+receipt too broadly. The new test file also requires its own optional NumPy
+and Cirq collection guards. They are now explicit `pytest.importorskip` checks;
+locked reference execution still verifies real versions and records no skips.
+This fixes two new collection-policy findings without changing source scenarios
+or weakening the mandatory reference lane. The subsequent external-adjoint
+batch records the full dependency-policy comparison and this correction.
