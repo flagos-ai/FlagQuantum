@@ -6,7 +6,6 @@
 
 from collections.abc import Mapping
 
-from ..algorithms.primitives.measure_qft import source_measure_qft_signature
 from ..algorithms.primitives.rsa_phase_estimation import RSAPhaseEstimation
 from ..compiler.formats.legacy_basis_vector_factories import (
     basis_vector_factories,
@@ -27,22 +26,9 @@ from ..core.ir.program.register_types import unsigned_register_type
 from ..core.ir.program.registers import Register
 from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
+from ._fourier_measurement_library import _measure, fourier_measurement_factories
 
-_MEASURE = "qualtran.bloqs.cryptography._factoring_shims.MeasureQFT"
 _RSA = "qualtran.bloqs.cryptography.rsa.rsa_phase_estimate.RSAPhaseEstimate"
-
-
-def _measure(
-    name: str,
-    registers: tuple[Register, ...] | None,
-    arguments: Mapping[str, ResolvedArgument],
-) -> FunctionRecord:
-    if set(arguments) != {"n"}:
-        raise SerializationError("MeasureQFT requires its original n field")
-    ports = tuple(source_measure_qft_signature(_integer(arguments, "n")))
-    if registers is not None and registers != ports:
-        raise SerializationError("Invalid original MeasureQFT register signature")
-    return FunctionRecord(name, (), registers=ports)
 
 
 def _as_program(record: FunctionRecord | ProgramRecord) -> ProgramRecord:
@@ -107,4 +93,4 @@ def _rsa(
 
 def rsa_component_factories() -> dict[str, ComponentFactory]:
     """Resolve both original identifiers with source-success graph boundaries."""
-    return {_RSA: _rsa, _MEASURE: _measure}
+    return {_RSA: _rsa, **fourier_measurement_factories()}
