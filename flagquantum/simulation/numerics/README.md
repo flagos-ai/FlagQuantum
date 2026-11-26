@@ -99,3 +99,14 @@ existing `GeneralizedQSP` append operation. Read the
 and [FFT source mapping and approximation boundary](../../../docs/development/QSP_FFT_COMPLEMENT_FILE_AUDIT.md).
 Run `python -m pytest tests/unit/test_qsp_optimization.py tests/unit/test_qsp_fft_complement.py -q`
 in the pinned reference environment.
+
+## Hubbard preparation coefficients
+
+`hubbard_coefficients` owns the original normalization and two preparation
+angles, including floor division, integer-before-float evaluation and the
+source's distinct math/NumPy square roots. It owns no circuit, allocation,
+resource model or backend selection. Algorithms and Ecosystem retain their
+separate validators and pass resulting angles to Compiler. See
+[the source and replacement evidence](../../../docs/development/HUBBARD_COEFFICIENT_OWNER.md).
+Run `python -m pytest tests/unit/test_hubbard_coefficients.py -q` with the pinned
+reference dependencies for literal source rotation and numerical failure checks.

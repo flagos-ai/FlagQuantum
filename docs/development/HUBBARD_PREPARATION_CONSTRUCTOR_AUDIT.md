@@ -12,7 +12,7 @@ Implementation/test/notebook blobs are
 The existing Ecosystem packed-oracle provider already supported the ordinary
 PREPARE constructor. This delivery replaces its direct Algorithms construction
 with an authoritative Compiler factory; it does not claim that the prior
-constructor was absent. Coefficient conversion uses the shared Algorithms
+constructor was absent. Coefficient conversion uses the shared Simulation numerical
 formula and hands two owned angles to Compiler. The native numerical operation
 retains its existing finite nonnegative-weight validator. The literal source
 constructor can also execute the original negative-coefficient examples whose
@@ -137,3 +137,12 @@ python -m examples.algorithms.hubbard_lcu_catalog
 It appends the packed two-by-two preparation and reports 47 literal T-family
 gates, three measurements and twelve declared wires. The model and supplied
 work pool are not substituted for those executed primitive counts.
+
+## Shared coefficient numerical owner
+
+Normalization and angle evaluation now belong to Simulation
+numerics/hubbard_coefficients.py. Existing Algorithms helper signatures
+delegate unchanged; Ecosystem coefficient conversion imports the numerical
+owner directly. See [exact arithmetic and replacement evidence](HUBBARD_COEFFICIENT_OWNER.md).
+The 70 numerical/warning/refusal/stream/model and prior 22 constructor records
+remain identical. No source formula, validator or atomic decomposition changes.
