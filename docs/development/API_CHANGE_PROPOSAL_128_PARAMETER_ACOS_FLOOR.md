@@ -93,3 +93,25 @@ order, logical temp ownership and exact erasure stay with their existing owners.
 Contract, Core, adapters and source consumer changes are independent commits
 within integration PR #1084 after approval. Pending Proposals 118, 119, 124, 126
 and 127 remain outside this scope. No G3 work or automatic merge is authorized.
+
+
+## Implementation and retained boundaries
+
+The approved contract and frozen pre-change expression fixture precede Core,
+shared symbolic conversion, SDK transport, coefficient ownership and Hubbard
+consumer changes in independent commits. No public method or quantum opcode
+is added. Existing fixture bytes, old expression diagnostics and prior native
+Program records remain covered by compatibility checks.
+
+Core uses math/torch acos and floor, preserving finite real scalar admission,
+principal acos domain, exact Python floor integers and native tensor promotion
+and gradients. Acyclic immutable expression validation remains authoritative.
+The new symbolic converter preserves integer coefficients inside the new trees
+without changing old expression leaves. Qiskit's absent public symbolic floor
+operation retains a diagnostic; native binding before export remains available.
+
+See [the complete Hubbard constructor audit](HUBBARD_PREPARATION_CONSTRUCTOR_AUDIT.md)
+for source-call, branch, gradient, work and resource evidence. The unchanged
+source protobuf codec cannot serialize deeper acos children; shallow original
+constructors remain executable and deeper failures are recorded. Source
+singleton and unrelated pending contracts are not repaired or waived here.

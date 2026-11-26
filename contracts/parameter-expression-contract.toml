@@ -2,7 +2,7 @@ schema = "flagquantum.parameter_expression_contract"
 version = "1.1"
 proposal = "docs/development/API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR.md"
 approval = "explicit_user_approval_2026-11-26"
-implementation_status = "approved_contract_pending_implementation"
+implementation_status = "implemented_supported_real_expressions"
 owner = "core"
 public_methods_added = []
 

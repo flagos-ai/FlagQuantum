@@ -114,10 +114,10 @@ private allocation events and simultaneous live peak remain distinct.
 - Singleton source decomposition and resource failures remain explicit. The
   independent existing native singleton operation stays available; the literal
   stored source constructor does not acquire an identity body.
-- Symbolic weights retain their constructor metadata and logical declaration.
-  Physical acos/floor expressions are outside Proposal 107's approved
-  sin/cos/exp/log/pow/div vocabulary and remain refused. No new Core opcode or
-  parameter operator is introduced.
+- Proposal 128 was explicitly approved on 2026-11-26. Symbolic weights now
+  materialize the same typed source body and exact adjoint using owned acos/floor
+  expressions. Physical binding still requires valid concrete coefficient
+  values. Original deeper protobuf encoding of acos remains unavailable.
 - Zero normalization reproduces the original division failure. Non-square
   dimensions and malformed metadata retain their admission diagnostics.
 - Deeper packed AutoPartition tuple serialization and original LCU specialized
@@ -146,3 +146,57 @@ delegate unchanged; Ecosystem coefficient conversion imports the numerical
 owner directly. See [exact arithmetic and replacement evidence](HUBBARD_COEFFICIENT_OWNER.md).
 The 70 numerical/warning/refusal/stream/model and prior 22 constructor records
 remain identical. No source formula, validator or atomic decomposition changes.
+
+
+## Approved symbolic weights and parameter transport
+
+Proposal128 extends existing parameter expressions, not the quantum instruction
+set. Core owns unary arity, finite real domains, Python/Torch evaluation and
+native gradients. Compiler's shared symbolic converter keeps exact integer
+coefficients inside new acos/floor trees while retaining old float leaves for
+previously supported expressions. Cirq transports both operations. Qiskit
+uses its public arccos method; symbolic floor export retains an explicit
+unsupported-expression diagnostic and works after numerical binding.
+
+Simulation still owns `2*N*t + (N*u)//2` normalization and numerical angles.
+The fixed conditional angle is shared by numerical and symbolic coefficient
+paths. Ecosystem builds the original symbolic first-angle expression from that
+normalization, immediately converts it to owned nodes, and injects those two
+angles into the existing Compiler factory. Compiler performs no coefficient
+evaluation and reuses the complete source-ordered preparation/erasure graph.
+Caller temp remains a two-bit THRU word; the private clean pool is separate.
+
+The source symbolic factory now resolves at concrete dimensions two and three,
+including exact inverse contexts. Child calls, register roles and angle values
+match the actual unmodified source. The original deep protobuf encoder cannot
+serialize its acos leaf; affected deeper requests explicitly retain that
+NotImplementedError and use the actual supported shallow constructor for
+native execution checks. No reference patch or deeper-codec equality is claimed.
+
+At dimension two, default, fractional, endpoint, negative source-success and
+three weights around the floor threshold compare every named instruction,
+operand and feedback edge to the numerical typed path. An arbitrary complex
+logical state includes dirty caller temp. Both directions and all eight raw
+measurement histories restore private work and preserve absolute amplitudes.
+Ordinary append/bind executes with source SDKs blocked; full branch gradients
+at an interior point match finite differences of the original numerical source
+with source SDKs and SymPy blocked during native execution. Invalid zero
+normalization, nonreal angles and missing values fail before execution.
+
+Forty complete preexisting numerical Programs and bound records at dimensions
+2/3/4/5, five coefficient pairs and both directions equal published9b1a8cd19.
+Actual symbolic-bound two-by-two execution retains170named primitives,
+47T-family instructions, three measurements and live peak12. Independent
+original/native numerical-binding models remain separate: generic weights
+have5CSwap,2And,11Clifford,4rotations,2measurements and peak12; endpoint or
+floor-zero first angles have12Clifford/3rotations. Native numerical-operation
+nonnegative validation remains unchanged; source-success negative constructor
+execution does not broaden that public operation's admission.
+
+Reproduce the symbolic source and native checks with
+`tests/unit/test_hubbard_symbolic_weights.py`; reuse
+`tests/unit/test_hubbard_prepare_source_constructors.py` for numerical and
+factory boundaries. Parameter compatibility and SDK cases are recorded in
+`test_parameter_expression_contract.py`, `test_nonlinear_parameter_binding.py`
+and `test_nonlinear_sdk_parameters.py`. Original singleton, tuple/enum codecs,
+atomic ModAddK pricing and unrelated pending contracts remain explicit.
