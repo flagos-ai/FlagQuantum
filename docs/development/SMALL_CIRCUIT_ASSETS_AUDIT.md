@@ -15,7 +15,8 @@ The classical-add asset has eight data wires, two cleared wires and six dirty
 borrowed wires. The increment-eight asset has five clean work wires q12..q16
 and four idle spectators q8..q11. Measurement Fourier owns five cleared targets
 and five classical outputs. Full variable modular multiplication retains its
-source work/condition behavior until independently verified.
+source work/condition behavior; its complete conditional channel is verified
+in the follow-up below.
 
 Verify source Git blobs before copying the assets. Canonical text and full KMB
 bytes come from the unchanged compiled reference. Packed branch observations
@@ -33,7 +34,7 @@ no independent analytical model.
 | K-0331 | iadd8_qc_2clean_6dirty.kmx | Complete 8-bit classical-add asset accepted. All 256 addends, 256 target values, 64 dirty words and 64 erasure histories have the exact permutation, positive branch phase, clean q8/q9 and restored dirty q10..q15. |
 | K-0332 | inc3.kmx | All eight operator columns and a complex superposition match little-endian increment. No work or measurements. Accepted. |
 | K-0333 | inc8.kmx | All 32 erasure branches match increment on an arbitrary complex input including four entangled idle spectators. All five clean work wires return to zero. Accepted. |
-| K-0334 | mul16_mod_21.kmx | Exact source storage/record/phase observations, 256 branch families and four full complex branches verify controlled multiplication by 16 on residues 0..20 and clean work q0..q7. Complete conditional-measurement branch coverage remains open. |
+| K-0334 | mul16_mod_21.kmx | Complete conditional-channel proof verifies all 42 valid logical columns, every allowed instrument history, absolute complex phase and clean work q0..q7. Existing exact source storage/record/phase observations, 256 packed families and four dense branches are reused. Accepted. |
 | K-0335 | qft_measurement.kmx | All 32 complex branches match the independent dense Fourier projection, including output bit order, phases and all targets cleared. Accepted. |
 
 The six raw files preserve their original bytes and frozen Git blobs. The
@@ -72,9 +73,85 @@ The larger modular asset has 46 reset and 46 measurement sites with conditional
 activity. Its four dense checks retain activity-dependent unnormalized factors,
 including inactive-outcome zero branches and all work wires. The 256 packed
 branch families cover all 32 values and both controls, with clean-work and
-positive-phase assertions scoped to valid residues 0..20. Exhaustive coverage of
-all conditional histories is unproven and K-0334 remains open. Invalid-residue
+positive-phase assertions scoped to valid residues 0..20. The original batch
+did not prove every conditional history; the follow-up below closes that gap.
+Invalid-residue
 storage/source replay is retained separately without an arithmetic promise.
+
+## Complete conditional modular channel (2026-11-27)
+
+The complete unchanged asset has fourteen quantum wires: little-endian data
+q8..q12, control q13 and clean work q0..q7. Valid inputs are all residues 0..20
+under both control values. Its 46 resets and 46 HMR operations expose 92
+instrument sites, of which 32 are conditional. This is 46 physical measurement
+instructions plus 46 unfolded reset effects, not 92 emitted measurements.
+
+The shared verification certificate consumes the actual bound primitive IR.
+It reuses the existing reduced Boolean support owner, tracks quantum basis
+functions, sign phase, classical XOR assignments and guards, and checks the
+literal owned CCZ expansion. That expansion has unconditional H gates around
+a guarded CCX; it must not be replaced by a different assumed guard pattern.
+Each recognized H/measure/X-clear block is checked with its actual target,
+result slot and clearing condition. Inactive result slots are proved initially
+zero. Unknown atoms, matrix overrides and failed obligations refuse proof.
+
+An active X-basis effect on a basis bit x contributes
+`(-1)^(h*x) / sqrt(2)` and clears that bit. An inactive effect has only canonical
+identity label zero; label one has zero operator. The certificate proves that
+activity depends only on earlier outcomes, never logical input. Thus for every
+allowed complete instrument history h, the Kraus operator on the valid input
+subspace is `K_h = 2^(-A(h)/2) U`, where A(h) counts active effects and U is
+identity for control zero and multiplication by sixteen modulo twenty-one for
+control one. It proves the exact returned basis map, zero total sign phase and
+zero work for every allowed history. Linearity includes arbitrary complex
+superpositions of all 42 columns and external entanglement. Causal activity and
+the independently checked complete local Kraus pairs establish total probability
+one. A single common factor across different histories is not assumed.
+
+There are exactly 623824686318171615643303936 allowed canonical histories. The
+proof uses 3761 Boolean nodes rather than enumerating those histories. This
+count is not a claim of exhaustive RNG-seed coverage: the original simulator
+consumes RNG draws even when masked, while these ignored draws are summed into
+the inactive identity channel. Original packed RNG/transcript observations
+remain separately retained and unchanged.
+
+An independent scan of the raw source effects finds sixty unconditional sites,
+eight controlled by b27, sixteen by b28 and eight by b29. Each selector is sampled
+once unconditionally; temporary inversions are proved restored before every
+effect reads it. Consequently `A(h) = 60 + 8*b27 + 16*b28 + 8*b29`, and the
+history count is `2^57 * (1 + 2^8)^2 * (1 + 2^16)`, equal to the Boolean graph's
+count. Each of the eight selector choices has total probability exactly 1/8;
+exact rational arithmetic independently verifies their sum is one.
+
+Independent local checks use the locked Kickmix 0.1 native Simulator for both
+R and HMR, with both input bits, active/inactive guards and both observed active
+outcomes. Identical seeds expose R's hidden first draw through HMR instead of
+inferring it from R's phase. Direct dense projection additionally checks every
+local Kraus column and a complex superposition. A two-effect conditional example
+has three allowed histories with factors 1/sqrt(2), 1/2 and 1/2; all columns,
+an entangled spectator and total probability are checked. Full complex CCZ
+columns check both guard polarities. Removing phase feedback from the small
+example or the actual modular asset fails the certificate; stale inactive
+result slots also fail.
+
+The whole unexpanded fourteen-wire asset also runs through normal
+`DynamicCircuit.append(op)` and native trajectory execution with foreign SDK
+imports blocked. Its full complex state and clean work agree with the same
+controlled modular permutation. This runtime sample checks execution-path
+integration; exhaustive history coverage comes from the algebraic proof.
+
+K-0334 now closes without changing source bytes, gates, compiler/runtime code,
+reference observations or the established valid-input promise. K-0330 remains
+open for its separate original filename/multiplier discrepancy. No source
+defect waiver or invalid-residue arithmetic guarantee is inferred.
+
+The follow-up passes 325 concentrated cases and 145 local integration cases.
+All three changed Python files pass strict typing, Black and Ruff; Verification
+scope, English, links, architecture, internal IR and protected API checks pass.
+The asset, source simulator and source RNG blobs match the frozen CSV. The
+673 source records and 920 ordinary bound instructions retain the prior exact
+inventories. Exposing reset outcomes produces 982 verification instructions;
+this is proof instrumentation, not a change to the emitted user circuit.
 
 ## Actual records and bound primitives
 
@@ -98,7 +175,7 @@ No decomposition gate-count parity is inferred from an analytical model.
 
 ## Acceptance evidence and reproduction
 
-The 285-test concentrated batch and 55 local register integration tests pass.
+The original 285-test concentrated batch and 55 local register integration tests pass.
 Strict mypy passes the complete three-file changed Python surface. Black, Ruff,
 Verification scope, architecture, internal IR and protected API baseline pass.
 Native code and documentation pass whitespace checks. The two original modular
@@ -114,6 +191,7 @@ python tests/unit/fixtures/generate_small_circuit_assets.py \
   --output /tmp/small_circuit_assets.json
 cmp tests/unit/fixtures/small_circuit_assets.json /tmp/small_circuit_assets.json
 python -m pytest tests/unit/test_small_circuit_assets.py \
+  tests/unit/test_conditional_erasure_certificate.py \
   tests/unit/test_kickmix_qft_measurement.py \
   tests/unit/test_kmx_generation_command.py -q
 ```

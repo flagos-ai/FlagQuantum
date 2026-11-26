@@ -2,7 +2,9 @@
 
 import hashlib
 import json
+import sys
 from collections import Counter, defaultdict
+from fractions import Fraction
 from itertools import product
 from pathlib import Path
 
@@ -12,11 +14,14 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.formats.kmb import decode_kmb, encode_kmb
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.runtime.dynamic.execution import run_dynamic
 from flagquantum.simulation.physical_basis_shots import (
     PackedBasisState,
     apply_packed_basis_records,
 )
 from tests.unit.circuit_asset_fixtures import ASSETS, asset, instructions
+from tests.unit.conditional_erasure_certificate import certify_conditional_erasure_map
 from tests.unit.measurement_checks import forced_branch
 
 pytestmark = pytest.mark.unit
@@ -369,6 +374,108 @@ def test_modular_asset_exact_complex_branches(mode: int) -> None:
         expected[destination] = state[label] * amplitudes[value + 32 * control]
     actual = forced_branch(state.clone(), gates, outcomes)
     torch.testing.assert_close(actual, expected, atol=1e-20, rtol=1e-11)
+
+
+def test_modular_asset_entire_conditional_channel_all_valid_columns_and_histories() -> (
+    None
+):
+    from tests.unit.measurement_checks import expand_reset_branches
+
+    circuit = asset("mul16_mod_21.kmx")
+    gates = expand_reset_branches(instructions(circuit), first_slot=circuit.bits)
+    mapping = {}
+    for control, value in product(range(2), range(21)):
+        result = (16 * value) % 21 if control else value
+        before = tuple((value >> wire) & 1 for wire in range(5)) + (control,)
+        after = tuple((result >> wire) & 1 for wire in range(5)) + (control,)
+        mapping[before] = after
+    proof = certify_conditional_erasure_map(
+        gates,
+        n_wires=circuit.qubits,
+        logical_wires=tuple(range(8, 14)),
+        mapping=mapping,
+    )
+    assert proof["effects"] == 92 and proof["conditional_effects"] == 32
+    assert proof["logical_columns"] == 42
+    # Independently derive the history count and normalization from the raw
+    # source effect guards, without using the Boolean graph's counting routine.
+    effects = {"R", "HMR"}
+    activity = Counter(
+        record.condition_bit for record in circuit if record.opcode in effects
+    )
+    assert activity == {None: 60, 27: 8, 28: 16, 29: 8}
+    inverted: dict[int, bool | None] = {27: None, 28: None, 29: None}
+    for record in circuit:
+        assert record.opcode not in {"PUSH_CONDITION", "POP_CONDITION"}
+        slot = record.result_bit
+        if slot is not None and slot in inverted:
+            if record.opcode == "HMR":
+                assert record.condition_bit is None and inverted[slot] is None
+                inverted[slot] = False
+            elif record.opcode == "BIT_INVERT":
+                assert record.condition_bit is None and inverted[slot] is not None
+                inverted[slot] = not inverted[slot]
+            else:
+                raise AssertionError("Unexpected source selector overwrite")
+        condition = record.condition_bit
+        if record.opcode in effects and condition is not None:
+            assert inverted[condition] is False
+    groups = tuple(activity[slot] for slot in inverted)
+    histories = 1 << (activity[None] - len(groups))
+    for size in groups:
+        histories *= 1 + (1 << size)
+    assert proof["allowed_histories"] == histories
+    probability = Fraction(0)
+    for choices in product((0, 1), repeat=len(groups)):
+        selected = sum(size * bit for size, bit in zip(groups, choices, strict=True))
+        probability += Fraction(
+            1 << (activity[None] - len(groups) + selected),
+            1 << (activity[None] + selected),
+        )
+    assert probability == 1
+    # The proof must detect a genuinely wrong complex channel, rather than
+    # deriving cleanup from the assumed arithmetic mapping.
+    missing = next(index for index, gate in enumerate(gates) if gate.name == "cz")
+    with pytest.raises(AssertionError, match="complex branch phase"):
+        certify_conditional_erasure_map(
+            (*gates[:missing], *gates[missing + 1 :]),
+            n_wires=circuit.qubits,
+            logical_wires=tuple(range(8, 14)),
+            mapping=mapping,
+        )
+
+
+def test_complete_modular_asset_native_append_trajectory_has_the_same_complex_map(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    circuit = asset("mul16_mod_21.kmx")
+    state = torch.zeros(1 << circuit.qubits, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    coefficients = coherent_state(6)
+    for control, value in product(range(2), range(21)):
+        before = control | sum(((value >> wire) & 1) << (5 - wire) for wire in range(5))
+        result = 16 * value % 21 if control else value
+        after = control | sum(((result >> wire) & 1) << (5 - wire) for wire in range(5))
+        state[before] = coefficients[before]
+        expected[after] = coefficients[before]
+    scale = state.norm()
+    state /= scale
+    expected /= scale
+    # The algebraic certificate supplies exhaustive history coverage. This
+    # verifies the unchanged whole-program append/runtime path independently.
+    with monkeypatch.context() as patch:
+        for sdk in ("qualtran", "cirq", "qiskit", "kickmix"):
+            patch.setitem(sys.modules, sdk, None)
+        executable = DynamicCircuit(circuit.qubits, inputs=state, dtype=state.dtype)
+        executable.append(FieldOperation(circuit.qubits, instructions(circuit)))
+        execution = run_dynamic(executable, shots=3, seed=67, strategy="trajectory")
+    torch.testing.assert_close(
+        execution.final_states.reshape(3, -1),
+        expected.expand(3, -1),
+        atol=1e-11,
+        rtol=0,
+    )
+    assert torch.count_nonzero(execution.final_states.reshape(3, -1)[:, 64:]) == 0
 
 
 def test_source_records_and_bound_primitive_counts_are_separate() -> None:
