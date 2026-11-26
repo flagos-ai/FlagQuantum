@@ -71,7 +71,12 @@ def source_chemistry_qroam_cost(
         block = 1 << exponent
         cost = (rows + block - 1) // block + (block if adjoint else width * (block - 1))
     signature = chemistry_qroam_signature(rows, width)
-    return ComponentCost("QROAM", int(signature.n_qubits()), GateCost(toffoli=cost))
+    # Original QubitCount falls back to max(signature, Toffoli arity), even
+    # when the declared Toffoli multiplicity is zero. This is a model peak,
+    # not a private workspace allocation or an executable lookup width.
+    return ComponentCost(
+        "QROAM", max(3, int(signature.n_qubits())), GateCost(toffoli=cost)
+    )
 
 
 def source_chemistry_qroam_two_axis_cost(
@@ -96,5 +101,5 @@ def source_chemistry_qroam_two_axis_cost(
     cost = blocks + (bank if adjoint else width * (bank - 1))
     signature = chemistry_qroam_signature(first, width)
     return ComponentCost(
-        "QROAMTwoRegs", int(signature.n_qubits()), GateCost(toffoli=cost)
+        "QROAMTwoRegs", max(3, int(signature.n_qubits())), GateCost(toffoli=cost)
     )
