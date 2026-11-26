@@ -18,27 +18,28 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 76 |
-| Union of exact native registrations | 238 |
-| Keys without an exact factory in these providers | 65 |
+| Keys reachable through Ecosystem providers | 82 |
+| Union of exact native registrations | 244 |
+| Keys without an exact factory in these providers | 59 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
 The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq, twenty-nine finite first-quantization constructors and five
-finite single-factorization constructors add thirty-five keys. These are
+finite single-factorization and six finite double-factorization constructors
+add forty-one keys. These are
 registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 65 keys without exact factories have these distinct source roles:
+The 59 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 57 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 51 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -196,12 +197,12 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs` | `qualtran/bloqs/chemistry/black_boxes.py` | `compiler/formats/legacy_thc_selection_factories.py:thc_selection_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.black_boxes.QROAM` | `qualtran/bloqs/chemistry/black_boxes.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs` | `qualtran/bloqs/chemistry/black_boxes.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationBlockEncoding` | `qualtran/bloqs/chemistry/df/double_factorization.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationOneBody` | `qualtran/bloqs/chemistry/df/double_factorization.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.prepare.InnerPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.prepare.OuterPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.prepare.OutputIndexedData` | `qualtran/bloqs/chemistry/df/prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.df.select_bloq.ProgRotGateArray` | `qualtran/bloqs/chemistry/df/select_bloq.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationBlockEncoding` | `qualtran/bloqs/chemistry/df/double_factorization.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationOneBody` | `qualtran/bloqs/chemistry/df/double_factorization.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.df.prepare.InnerPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.df.prepare.OuterPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.df.prepare.OutputIndexedData` | `qualtran/bloqs/chemistry/df/prepare.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.df.select_bloq.ProgRotGateArray` | `qualtran/bloqs/chemistry/df/select_bloq.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare.UniformSuperpostionIJFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare.py` | `ecosystem/_first_quantization_component_library.py:first_quantization_component_factories` | Original finite metadata and literal root connections; opaque physical leaves retained; [audit](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu.FlagZeroAsFailure` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py` | `ecosystem/_nu_preparation_library.py:nu_preparation_factories` | Finite literal signatures and six-call root; opaque leaves and original RIGHT inverse-flag failure retained; [audit](RESOLVER_PROJECTILE_NU_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu.PrepareMuUnaryEncodedOneHot` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py` | `ecosystem/_nu_preparation_library.py:nu_preparation_factories` | Finite literal signatures and six-call root; opaque leaves and original RIGHT inverse-flag failure retained; [audit](RESOLVER_PROJECTILE_NU_AUDIT.md) |
