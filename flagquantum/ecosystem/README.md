@@ -1,7 +1,7 @@
 # Ecosystem interoperability
 
 The packed-oracle component-library adapter converts Hubbard coefficients to
-owned angles with the shared Algorithms formula, then delegates call construction
+owned angles with the shared Simulation coefficient owner, then delegates call construction
 and scoped exact inverses to Compiler. It records explicit selection/junk/system
 roles and reuses the existing scalar carrier for uncontrolled SELECT. It neither
 executes numerical states nor infers missing child semantics from resource counts.
@@ -255,3 +255,15 @@ consumer replacement. The complete main-registration disposition is recorded in
 `_component_library.arithmetic_library_factories` binds arithmetic constants
 through the same Simulation stored-value codec as bitwise constructors. Compiler
 owns construction and Simulation owns numerical encoding.
+
+The Cirq external-gate library factory owns JSON payload conversion and scoped
+explicit adjoints in `cirq/_component_library.py`. Exact inversion stays in
+Compiler's component-call owner. Feedback replacement replay remains local to
+already converted bodies. Start with
+`tests/unit/test_cirq_gate_library_factories.py` and the
+[external-gate audit](../../docs/development/EXTERNAL_GATE_LIBRARY_AUDIT.md).
+For cost-only inspection, `cirq.resource_keys.cirq_mapped_gate_resource_key`
+returns native model data with the original opaque-atom precedence; pass that
+key to the existing `query_qec_gate_cost`. A missing model stays unavailable.
+The existing recursive decomposition resource entry has a different grain and
+is unchanged. Neither model query emits gates or makes a body executable.

@@ -350,4 +350,4 @@ provider mapping, not proof that the connected graph or algorithm is absent.
 | `qualtran.bloqs.swap_network.cswap_approx.CSwapApprox` | `qualtran/bloqs/swap_network/cswap_approx.py` | Registered: `legacy_relative_swap_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap` | `qualtran/bloqs/swap_network/multiplexed_cswap.py` | Registered: `legacy_swap_network_factories.py` | Published module receipts pending reconciliation |
 | `qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero` | `qualtran/bloqs/swap_network/swap_with_zero.py` | Registered: `legacy_swap_network_factories.py` | Published module receipts pending reconciliation |
-| `qualtran.cirq_interop._cirq_to_bloq.CirqGateAsBloq` | `qualtran/cirq_interop/_cirq_to_bloq.py` | Unregistered | Published module receipts pending reconciliation |
+| `qualtran.cirq_interop._cirq_to_bloq.CirqGateAsBloq` | `qualtran/cirq_interop/_cirq_to_bloq.py` | Unregistered | Ecosystem scoped payload, exact-adjoint, feedback-replay and model-atom evidence: EXTERNAL_GATE_LIBRARY_AUDIT.md; generic outer-control exact-owner gaps retained |

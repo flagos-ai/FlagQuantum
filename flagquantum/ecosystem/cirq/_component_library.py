@@ -33,6 +33,7 @@ from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
 from ._gate_metadata import cirq_gate_signature
 from ._named_gate_definitions import _NamedGateDefinitions
+from ._named_gate_inverse import named_inverse_program
 from ._register_import import (
     _operation_ports,
     import_cirq_register_gate,
@@ -65,13 +66,16 @@ def _gate_program(
 
 
 def cirq_gate_library_factories(
-    *, controlled_factory: ComponentFactory | None = None
+    *,
+    controlled_factory: ComponentFactory | None = None,
+    adjoint_factory: ComponentFactory | None = None,
 ) -> dict[str, ComponentFactory]:
     """Resolve gate JSON through existing decomposition and explicit-leaf owners.
 
     SDK objects end at this boundary. Returned Programs own their parameters,
     matrices and workspace. No source-framework constructor is imported. A
-    per-compilation catalogue retains the SDK recipes for their generic controls.
+    per-compilation catalogue retains SDK recipes for generic controls and
+    explicit adjoints.
     Other child controls may delegate to an independently supplied owner.
     """
     recipes: dict[FunctionRecord, Any] = {}
@@ -138,6 +142,47 @@ def cirq_gate_library_factories(
         gate = recipes[child].controlled(num_controls=len(bits), control_values=bits)
         return remember(gate, signature, name)
 
+    def adjoint(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        if set(arguments) != {"subbloq"}:
+            raise SerializationError("Adjoint gate requires exactly one subbloq")
+        child = arguments["subbloq"]
+        if not isinstance(child, FunctionRecord) or child not in recipes:
+            if adjoint_factory is not None:
+                return adjoint_factory(name, registers, arguments)
+            raise SerializationError(
+                "Missing external adjoint-gate constructor context"
+            )
+        assert child.registers is not None
+        signature = Signature(child.registers).adjoint()
+        if registers is not None and tuple(signature) != registers:
+            raise SerializationError("External adjoint-gate signature differs")
+        definitions = _NamedGateDefinitions()
+        program = (
+            named_inverse_program(
+                recipes[child],
+                definitions,
+                definitions._exact_pairs,
+                lambda: name,
+                signature=Signature(child.registers),
+            )
+            if child.blocks
+            else None
+        )
+        # The explicit source Adjoint requires a child decomposition even
+        # when the ordinary Cirq gate has an atomic unitary tensor.
+        result: FunctionRecord | ProgramRecord = (
+            FunctionRecord(name, (), registers=tuple(signature))
+            if program is None
+            else program
+        )
+        root = result.functions[0] if isinstance(result, ProgramRecord) else result
+        recipes[root] = _cirq().ops.raw_types._InverseCompositeGate(recipes[child])
+        return result
+
     def positive_control(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:
         if child not in recipes:
             return _fixed_positive_control(child)
@@ -168,4 +213,5 @@ def cirq_gate_library_factories(
         **controlled_via_and_factories(control_system=positive_control),
         "qualtran.cirq_interop._cirq_to_bloq.CirqGateAsBloq": gate_factory,
         "qualtran._infra.controlled.Controlled": controlled,
+        "qualtran._infra.adjoint.Adjoint": adjoint,
     }
