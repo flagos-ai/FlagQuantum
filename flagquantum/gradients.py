@@ -16,12 +16,12 @@ from .core._parameter_occurrence import (
     _circuit_profile_of,
     _occurrence_shift_rule,
 )
-from .core.finite_differences import (
+from .core.ir import ensure_circuit_ir
+from .errors import CapabilityError, ValidationError
+from .simulation.numerics.finite_differences import (
     central_difference_gradient,
     default_difference_step,
 )
-from .core.ir import ensure_circuit_ir
-from .errors import CapabilityError, ValidationError
 
 CircuitBuilder = Callable[[torch.Tensor], Any]
 LossFunction = Callable[[Any], torch.Tensor]

@@ -14,8 +14,8 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
+from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
-from ..kernel_dispatch import _require_cataloged_kernel
 from . import two_qubit_cpu
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-009-A"

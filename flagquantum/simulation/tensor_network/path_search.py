@@ -10,12 +10,13 @@ from typing import Any, Literal, SupportsInt, overload
 
 import torch
 
-from ...core.ir import CircuitIR, ensure_circuit_ir
-from ..complex_bmm_dispatch import (
+from flagquantum.simulation.kernels.complex_bmm import (
     _layout_complex_bmm_declared,
     _layout_complex_bmm_declared_for,
 )
-from ..real_imag_kernels import complex_einsum_pair
+from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
+
+from ...core.ir import CircuitIR, ensure_circuit_ir
 from .models import (
     CompiledTNStagePlan,
     PairContractionStep,

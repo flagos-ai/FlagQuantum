@@ -7,10 +7,11 @@ from typing import Any
 
 import torch
 
+from flagquantum.simulation.kernels.dispatch import _opt_in_environment_flag
+
 from ...core.ir import Instruction
 from ...core.runtime_config import get_runtime_config
 from ..gate_matrix import gate_matrix, parameter_tensor
-from ..kernel_dispatch import _opt_in_environment_flag
 from ..matrices import GATE_MAT_DICT
 from ..statevector.operations import _apply_matrix
 from .canonical import move_orthogonality_center as _move_orthogonality_center

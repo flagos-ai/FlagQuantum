@@ -16,7 +16,7 @@ from typing import Any, TypeAlias, TypedDict
 import torch
 
 from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
-from flagquantum.simulation.real_imag_kernels import (
+from flagquantum.simulation.kernels.real_imag import (
     _FUSED_LAYOUT_BMM_SHAPES,
     complex_einsum_pair,
 )
@@ -130,7 +130,7 @@ def _public(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
 
 
 def _public_route(left: torch.Tensor, right: torch.Tensor) -> str:
-    from flagquantum.simulation.real_imag_kernels import (
+    from flagquantum.simulation.kernels.real_imag import (
         _canonical_bmm_layout,
         _layout_bmm_dispatch_supported,
     )

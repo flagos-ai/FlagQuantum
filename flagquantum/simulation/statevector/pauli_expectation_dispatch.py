@@ -14,8 +14,7 @@ from flagquantum.simulation.kernels.catalog import (
     match_kernel_implementations,
 )
 from flagquantum.simulation.kernels.catalog.schema import KernelDirection
-
-from ..kernel_dispatch import _require_cataloged_kernel
+from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MEAS-002-A"
 _DISPATCH_AMPLITUDES_PER_STATE = 1 << 24

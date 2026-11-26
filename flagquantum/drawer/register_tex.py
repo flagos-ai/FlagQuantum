@@ -3,7 +3,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from ..experimental.controlled_pauli import decode_controlled_pauli
+from ..core.operators.pauli import decode_controlled_pauli
 from .latex_drawer import _as_ir
 from .paper_tex import source_link
 

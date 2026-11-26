@@ -156,3 +156,19 @@ Integration owns these three files. No other internal forwarding module is retai
 The compatibility tests read real pre-retirement pickle bytes and execute the restored plan. Separate negative tests load canonical modules first and prove retired internal imports still fail. Installed-wheel validation checks both archive member absence and runtime imports, preventing stale build output or another editable checkout from masking deletion.
 
 The implementation map now has 456 rows; alias-only retirement rows cover the two former compiler interfaces and pre-existing private compiler aliases; they claim no moved implementation definitions. See [the path map](independent-structure-path-map.md), [the machine-readable inventory](internal-forwarder-retirement.json), and [the execution ledger](../INDEPENDENT_STRUCTURE_MIGRATION.md).
+
+
+## Experimental workflow entry points
+
+Two existing direct experimental modules remain as domain facades, with no
+implementation functions or private-helper forwarding. Their advertised status
+is unchanged: experimental APIs have no compatibility guarantee. Preserving
+these shipped entry points during relocation does not promote their stability.
+
+| Existing entry | Unique implementation owners | Concrete basis |
+| --- | --- | --- |
+| `experimental/controlled_pauli.py` | Core Pauli name decoding; Simulation Pauli matrix construction | The shipped catalytic-controlled-Hadamard plot-gallery example imports these two names. Drawer now imports the Core decoder directly. |
+| `experimental/qec.py` | QEC decoder and experiment execution | Experimental README and executable public docstring publish both existing names. No names are added to the root experimental discovery contract. |
+
+The machine inventory has 102 entries after this batch, including these two
+explicitly unstable facades; this count is not a count of stable guarantees.

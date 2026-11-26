@@ -325,7 +325,9 @@ def _fused_layout_bmm(
     right: torch.Tensor,
     layout: _CanonicalBMMLayout,
 ) -> torch.Tensor:
-    from .complex_bmm_dispatch import _apply_cataloged_layout_complex_bmm
+    from flagquantum.simulation.kernels.complex_bmm import (
+        _apply_cataloged_layout_complex_bmm,
+    )
 
     (
         left_permutation,

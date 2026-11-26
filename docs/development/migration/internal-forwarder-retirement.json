@@ -3538,6 +3538,54 @@
       "owner": "Integration + Simulation",
       "removal_condition": "An API-owner-approved versioned transition of serialized public plans with migration of historical artifacts; no automatic cleanup of a currently supported locator.",
       "retained_private_globals": []
+    },
+    {
+      "path": "flagquantum/experimental/controlled_pauli.py",
+      "owners": [
+        "flagquantum/core/operators/pauli.py",
+        "flagquantum/simulation/pauli.py"
+      ],
+      "classification": "published experimental facade",
+      "basis": "The shipped plot-gallery example explicitly imports both helper names.",
+      "policy_or_fixture": "flagquantum/experimental/README.md",
+      "published_namespace_exports": [],
+      "module_exports": [
+        "decode_controlled_pauli",
+        "controlled_pauli"
+      ],
+      "documentation_references": [
+        {
+          "path": "examples/plot_gallery/quantum_circuits/catalytic-controlled-hadamard.py"
+        }
+      ],
+      "baseline_export_evidence": "PR1332 head 85e8e32d42c8ace381348a28e7cac3c852385a94; no new exported workflow",
+      "owner": "Integration + Core/Simulation",
+      "removal_condition": "This remains an explicitly unstable experimental entry with no compatibility guarantee. Its existing shipped workflow is preserved for this structural relocation; it is not promoted into the Stable Core API.",
+      "retained_private_globals": []
+    },
+    {
+      "path": "flagquantum/experimental/qec.py",
+      "owners": [
+        "flagquantum/qec/decoders/sparse_blossom.py",
+        "flagquantum/qec/execution/experiments.py"
+      ],
+      "classification": "published experimental facade",
+      "basis": "The shipped Experimental README and public docstring example publish this direct QEC workflow namespace.",
+      "policy_or_fixture": "flagquantum/experimental/README.md",
+      "published_namespace_exports": [],
+      "module_exports": [
+        "SparseBlossomDecoder",
+        "run_stim_matching_experiment"
+      ],
+      "documentation_references": [
+        {
+          "path": "flagquantum/experimental/README.md"
+        }
+      ],
+      "baseline_export_evidence": "PR1332 head 85e8e32d42c8ace381348a28e7cac3c852385a94; no new exported workflow",
+      "owner": "Integration + QEC",
+      "removal_condition": "This remains an explicitly unstable experimental entry with no compatibility guarantee. Its existing shipped workflow is preserved for this structural relocation; it is not promoted into the Stable Core API.",
+      "retained_private_globals": []
     }
   ],
   "pr1084_internal_dependencies": [

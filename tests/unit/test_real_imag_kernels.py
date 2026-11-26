@@ -3,9 +3,9 @@ import importlib.util
 import pytest
 import torch
 
-import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
-import flagquantum.simulation.real_imag_kernels as kernels_runtime
-from flagquantum.simulation.real_imag_kernels import (
+import flagquantum.simulation.kernels.complex_bmm as complex_bmm_dispatch
+import flagquantum.simulation.kernels.real_imag as kernels_runtime
+from flagquantum.simulation.kernels.real_imag import (
     _CANONICAL_LAYOUT_CACHE,
     _LAYOUT_MATERIALIZATION_CACHE,
     _bmm_real_imag_eager,

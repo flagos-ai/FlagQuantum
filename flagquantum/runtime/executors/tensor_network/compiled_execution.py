@@ -8,7 +8,8 @@ from typing import Any
 
 import torch
 
-from ....simulation.real_imag_kernels import complex_einsum_pair
+from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
+
 from ....simulation.tensor_network.stages import (
     batched_pair_equation,
     einsum_pair_pullback_by_equations,

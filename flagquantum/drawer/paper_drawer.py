@@ -174,8 +174,8 @@ def draw_paper_circuit(
 
 def _circuit_columns(operations: Sequence[dict[str, Any]]) -> list[CircuitGate]:
     """Resolve classical bit IDs to the qubits measured to obtain their values."""
+    from flagquantum.core.operators.pauli import decode_controlled_pauli
     from flagquantum.errors import ValidationError
-    from flagquantum.experimental.controlled_pauli import decode_controlled_pauli
 
     columns: list[CircuitGate] = []
     measured_bits: dict[int, int] = {}

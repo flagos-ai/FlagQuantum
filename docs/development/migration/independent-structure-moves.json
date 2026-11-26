@@ -9215,6 +9215,132 @@
       ],
       "same_import_path": false,
       "compatibility": "none"
+    },
+    {
+      "group": "shared-kernel-primitives",
+      "old": "flagquantum/simulation/kernel_dispatch.py",
+      "new": "flagquantum/simulation/kernels/dispatch.py",
+      "symbols": [
+        "_opt_in_environment_flag",
+        "_require_cataloged_kernel",
+        "_operand_kernel_axis",
+        "_catalog_declares_kernel"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "shared-kernel-primitives",
+      "old": "flagquantum/simulation/complex_bmm_dispatch.py",
+      "new": "flagquantum/simulation/kernels/complex_bmm.py",
+      "symbols": [
+        "_layout_complex_bmm_kernel_match",
+        "_require_layout_complex_bmm_kernel",
+        "_layout_complex_bmm_declared",
+        "_layout_complex_bmm_declared_for",
+        "_apply_cataloged_layout_complex_bmm"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "shared-kernel-primitives",
+      "old": "flagquantum/simulation/real_imag_kernels.py",
+      "new": "flagquantum/simulation/kernels/real_imag.py",
+      "symbols": [
+        "_bmm_real_imag_eager",
+        "_canonical_bmm_layout",
+        "_group_axes",
+        "_canonical_bmm_inputs",
+        "_canonical_layout_requires_materialization",
+        "_canonical_layout_pair",
+        "_pair_contraction",
+        "_layout_bmm_signature_supported",
+        "_layout_bmm_dispatch_supported",
+        "_real_imag_eager",
+        "_fused_layout_bmm",
+        "_compiled_real_imag_einsum",
+        "complex_einsum_pair",
+        "kernel_cache_summary",
+        "clear_kernel_caches"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "experimental-owner-closure",
+      "old": "flagquantum/experimental/controlled_pauli.py",
+      "new": "flagquantum/core/operators/pauli.py",
+      "symbols": [
+        "decode_controlled_pauli"
+      ],
+      "split_symbols": [
+        "decode_controlled_pauli"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "decode_controlled_pauli"
+      ],
+      "compatibility": "published experimental entry retained without promoting stability",
+      "retired_private_members": [
+        "re",
+        "torch"
+      ]
+    },
+    {
+      "group": "experimental-owner-closure",
+      "old": "flagquantum/experimental/controlled_pauli.py",
+      "new": "flagquantum/simulation/pauli.py",
+      "symbols": [
+        "controlled_pauli"
+      ],
+      "split_symbols": [
+        "controlled_pauli"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "controlled_pauli"
+      ],
+      "compatibility": "published experimental entry retained without promoting stability"
+    },
+    {
+      "group": "experimental-owner-closure",
+      "old": "flagquantum/experimental/qec.py",
+      "new": "flagquantum/qec/execution/experiments.py",
+      "symbols": [
+        "run_stim_matching_experiment"
+      ],
+      "split_symbols": [
+        "run_stim_matching_experiment"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "run_stim_matching_experiment"
+      ],
+      "compatibility": "published experimental entry retained without promoting stability",
+      "retired_private_members": [
+        "compile_stim_sampler",
+        "StimExperimentResult",
+        "_collect_fixed_shots",
+        "_wilson_interval",
+        "_checked_seed",
+        "_checked_shots"
+      ]
+    },
+    {
+      "group": "shared-gradient-numerics",
+      "old": "flagquantum/core/finite_differences.py",
+      "new": "flagquantum/simulation/numerics/finite_differences.py",
+      "symbols": [
+        "default_difference_step",
+        "central_difference_gradient"
+      ],
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "FQ-GRADIENT-API-20261002 explicitly identifies both helpers as nonpublic; all consumers use the Simulation numerical owner."
     }
   ],
   "retired_namespace_parents": [

@@ -7,7 +7,8 @@ from typing import Any
 
 import torch
 
-from ..real_imag_kernels import complex_einsum_pair
+from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
+
 from .models import (
     CompiledTNContractionBucket,
     CompiledTNContractionStage,

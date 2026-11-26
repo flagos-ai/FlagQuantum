@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import operator
+import re
 from dataclasses import dataclass
 from numbers import Complex
 
@@ -147,3 +148,16 @@ class PauliOperator:
 def pauli(coefficient: complex = 1.0, factors: Factors = ()) -> PauliOperator:
     """Construct a single word; ``pauli()`` is the identity."""
     return PauliOperator((PauliTerm(coefficient, factors),))
+
+
+def decode_controlled_pauli(name: str) -> tuple[str, str] | None:
+    """Read the control pattern and Pauli from the canonical operation name."""
+    match = re.fullmatch(r"c([01]+)([xz])", name)
+    return (match[1], match[2].upper()) if match else None
+
+
+# Preserve the published helper's eager callable annotations after relocation.
+decode_controlled_pauli.__annotations__ = {
+    "name": str,
+    "return": tuple[str, str] | None,
+}

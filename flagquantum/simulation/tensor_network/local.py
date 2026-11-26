@@ -7,7 +7,8 @@ from typing import Any
 
 import torch
 
-from ..complex_bmm_dispatch import _layout_complex_bmm_declared_for
+from flagquantum.simulation.kernels.complex_bmm import _layout_complex_bmm_declared_for
+
 from ..gate_matrix import gate_matrix
 from .models import (
     CompiledTNProgram,

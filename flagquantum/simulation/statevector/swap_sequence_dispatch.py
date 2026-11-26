@@ -14,8 +14,8 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
+from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
-from ..kernel_dispatch import _require_cataloged_kernel
 from .dense_fusion_cpu import (
     _apply_swap_sequence,
     _cpu_swap_sequence_fusion_enabled,

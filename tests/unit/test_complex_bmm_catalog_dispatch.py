@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-import flagquantum.simulation.complex_bmm_dispatch as complex_bmm_dispatch
-from flagquantum.simulation.complex_bmm_dispatch import (
+import flagquantum.simulation.kernels.complex_bmm as complex_bmm_dispatch
+from flagquantum.simulation.kernels.complex_bmm import (
     _layout_complex_bmm_kernel_match,
     _require_layout_complex_bmm_kernel,
 )

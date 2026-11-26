@@ -12,8 +12,7 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-
-from ..kernel_dispatch import _require_cataloged_kernel
+from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
 _TRANSFER_IMPLEMENTATION_ID = "FQKI-TRITON-MPS-004-A"
 _CHANNELS_IMPLEMENTATION_ID = "FQKI-TRITON-MPS-005-A"

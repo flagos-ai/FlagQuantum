@@ -141,3 +141,14 @@ result = run_stim_matching_experiment(
 )
 assert result.logical_failures == 0
 ```
+
+
+### Direct experimental submodules
+
+`controlled_pauli.py` and `qec.py` are existing direct imports used by shipped
+examples. They remain outside the nine root-discoverable namespaces; this
+relocation does not add names to `experimental.__all__` or its machine contract.
+Controlled-operation name decoding belongs to Core Operators, dense Pauli matrix
+construction to Simulation, and fixed-shot matching execution to QEC Execution.
+Only these existing experimental entry points stay here. They remain unstable
+and carry no compatibility guarantee.

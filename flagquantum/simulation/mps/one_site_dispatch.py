@@ -10,9 +10,11 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-
-from ..kernel_dispatch import _opt_in_environment_flag, _require_cataloged_kernel
-from ..real_imag_kernels import complex_einsum_pair
+from flagquantum.simulation.kernels.dispatch import (
+    _opt_in_environment_flag,
+    _require_cataloged_kernel,
+)
+from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MPS-003-A"
 

@@ -534,3 +534,10 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | physical-dynamics | `flagquantum/simulation/rydberg_model.py` | `flagquantum/simulation/dynamics/rydberg.py` | entry removed; callers updated |
 | physical-dynamics | `flagquantum/simulation/rydberg_presence.py` | `flagquantum/simulation/dynamics/rydberg_presence.py` | entry removed; callers updated |
 | physical-dynamics | `flagquantum/simulation/ising_braid.py` | `flagquantum/simulation/dynamics/ising_braid.py` | entry removed; callers updated |
+| shared-kernel-primitives | `flagquantum/simulation/kernel_dispatch.py` | `flagquantum/simulation/kernels/dispatch.py` | entry removed; callers updated |
+| shared-kernel-primitives | `flagquantum/simulation/complex_bmm_dispatch.py` | `flagquantum/simulation/kernels/complex_bmm.py` | entry removed; callers updated |
+| shared-kernel-primitives | `flagquantum/simulation/real_imag_kernels.py` | `flagquantum/simulation/kernels/real_imag.py` | entry removed; callers updated |
+| experimental-owner-closure | `flagquantum/experimental/controlled_pauli.py` | `flagquantum/core/operators/pauli.py` | `decode_controlled_pauli`; public experimental facade only |
+| experimental-owner-closure | `flagquantum/experimental/controlled_pauli.py` | `flagquantum/simulation/pauli.py` | `controlled_pauli`; public experimental facade only |
+| experimental-owner-closure | `flagquantum/experimental/qec.py` | `flagquantum/qec/execution/experiments.py` | `run_stim_matching_experiment`; public experimental facade only |
+| shared-gradient-numerics | `flagquantum/core/finite_differences.py` | `flagquantum/simulation/numerics/finite_differences.py` | internal file removed; no compatibility |
