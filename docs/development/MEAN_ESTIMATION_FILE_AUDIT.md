@@ -63,6 +63,12 @@ construction, and the native implementation also rejects zero power.
 
 Q-0563 and Q-0567 are accepted. Q-0566 remains open for multiple external
 controls and source resource estimates of controlled or powered forms.
-The current phase dependency uses exact bounded integer encoding and
-coherent children on the declared ports. Encoders with private work and
-synthesizers with extra garbage ports require separate binding contracts.
+The existing flat operation uses exact bounded integer encoding and coherent
+children on the declared ports. The additional
+[typed dependency context](MEAN_ESTIMATION_COMPONENT_AUDIT.md) owns explicit
+encoder/PREPARE pairs, including measured encoder work and demonstrated clean
+synthesizer junk. Explicit caller-owned signal junk preserves the full source
+physical action when private cleanup is not valid; this is an expanded native
+signature, not the smaller source ABI. The same audit retains a default-32
+source SDK phase-decomposition accuracy failure. None of these context checks
+closes the outstanding parent scope or fabricates source code serialization.

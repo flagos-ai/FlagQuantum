@@ -59,6 +59,7 @@ path are exercised separately from the original broken controlled ExampleSelect.
 Every actual phase gate agrees with the original literal generator. Independent
 source SDK snapshots compare both control polarities at bit powers0/1/2/7/31:
 operands, classical feedback, angles, instruction counts and per-wire order match.
+The follow-up mean-estimation batch checks every matrix payload exactly as well.
 Single S/T phase aliases are normalized for comparison; no gate is removed,
 fused or resynthesized. Raw controlled phases retain their source-selected SDK
 recipe rather than an equal-unitary named CZPow substitute.
@@ -101,10 +102,10 @@ parents Q-0866/Q-0876 remain open; no new upstream-defect waiver is inferred.
 Six rows captured in the actual Cirq1.7.0 profile in
 g2-complex-phase-constructor-resources-20261126.json separate actual
 IR inventories and event-derived live work from declared source costs. Actual
-instruction totals below include the listed classical OR instructions. Counts
+instruction totals below include the listed explicit quantum matrix primitives. Counts
 are neither T-equivalent estimates nor a synthesis model for opaque ArcTan.
 
-| Fixture | Encoding / precision | Actual instructions | Classical OR | Actual measurements | Actual private peak | Source model peak |
+| Fixture | Encoding / precision | Actual instructions | Matrix primitives | Actual measurements | Actual private peak | Source model peak |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | Copy | 1 / 0 | 8 | 0 | 0 | 2 | Existing model rejects zero precision |
 | Copy | 1 / 1 | 36 | 3 | 1 | 4 | 5 |
@@ -134,3 +135,16 @@ asserted. Existing original13-case and full-file numerical/model receipts are
 reused after identity checks. Registration union204/303 is not an acceptance
 counter. Pending118/119/124/126/127 and the unrelated127 file are preserved.
 No scientific installation, ReadTheDocs, CI wait, G3 transition or merge occurs.
+
+2026-11-26 resource-label correction: any is an explicit quantum matrix
+primitive, not a classical OR. Original total inventories are unchanged; the
+table heading and prose have been corrected. No raw numerical receipt changed.
+
+The subsequent [mean-estimation dependency audit](MEAN_ESTIMATION_COMPONENT_AUDIT.md)
+independently checks the default-32 literal SDK stream against exact gate
+matrices. Original tiny zero-control phase decompositions lose phase: a retained
+Bernoulli witness differs from the ideal complex operator by approximately
+`1.1572070829341236e-5`. Per-wire source stream equality through bit 31 therefore
+does not establish exact default-precision mathematics. This source accuracy
+gap remains open; no source change, global-phase alignment or defect waiver is
+part of the constructor delivery.
