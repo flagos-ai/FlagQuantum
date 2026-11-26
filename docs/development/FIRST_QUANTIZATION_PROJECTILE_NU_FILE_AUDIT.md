@@ -56,3 +56,10 @@ The untouched original test file reported seven passes, three
 skips and one expected failure. Q-0376 closes the original test
 coverage. Q-0375 stays open for the unfixed locked-source adjoint
 and the physical projectile μ and related ν leaves.
+
+The subsequent [finite constructor dependency audit](RESOLVER_PROJECTILE_NU_AUDIT.md)
+connects original serialized depths 0/1/2 to the source-exact declarations and
+six-call forward graph. Its mu inverse declaration retains the original RIGHT
+flag, separately from the corrected native model above. The actual uniform-m
+child reuses the accepted executable Program; opaque siblings still refuse
+physical binding. Constructor registration does not close Q-0375.
