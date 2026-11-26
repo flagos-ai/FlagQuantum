@@ -31,6 +31,14 @@ ordinary `circuit.append(op)` construction.
 
 ## Where to start
 
+The private `_fourier_measurement_library` owns the original MeasureQFT
+declaration shared by RSA and ECC constructor adapters. It retains the source
+unused-CBit failure; explicit numerical readout remains an Algorithms workflow.
+The `_elliptic_curve_phase_library` translates point/window fields and delegates
+ordered composition to Compiler. Use
+`tests/unit/test_elliptic_curve_phase_components.py` for source-library round trips,
+point-power operands, dirty exits and SDK-free selected-child execution.
+
 - `contracts.py`: framework-neutral adapter and conversion-report protocol.
 - `registry.py`: immutable, lazy adapter discovery.
 - `conformance.py`: common round-trip and rejection checks.

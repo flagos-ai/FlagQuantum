@@ -33,8 +33,10 @@ ownership and separate measured/model inventories. Its upstream release,
 coordinate and model-only lookup boundaries remain open; see
 [ECC_ADDITION_FILE_AUDIT.md](ECC_ADDITION_FILE_AUDIT.md).
 The point-window root retains the original model-only erasure; explicit native
-measured replacement is verified separately. Scalar ECAddR is also declared but
-is absent from the frozen 303-key registry. See
+measured replacement is verified separately. Scalar ECAddR and the two complete phase-root constructors ECPhaseEstimateR and
+FindECCPrivateKey are also registered, but all three are absent from the frozen
+303-key registry. Their new source bindings do not increase this registry
+coverage counter or close an unresolved parent file. See
 [ECC_FIXED_WINDOW_FILE_AUDIT.md](ECC_FIXED_WINDOW_FILE_AUDIT.md).
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including

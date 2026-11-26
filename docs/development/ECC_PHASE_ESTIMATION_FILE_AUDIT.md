@@ -1,5 +1,62 @@
 # Elliptic-curve phase estimation
 
+## Original constructor and direct dependency closure
+
+The complete `ec_phase_estimate_r.py` constructor now resolves through owned
+phase signatures, point arithmetic, PlusState, fixed/windowed point addition
+and the shared original MeasureQFT declaration. Compiler owns only ordered
+register composition; Ecosystem translates foreign fields. Scalar controls are
+passed individually; window controls retain MSB-first grouping, ascending
+`2**(window*i)` point powers and the original concatenation at the terminal.
+The scalar branch ignores multiplication-window fields as the source does.
+
+Original shallow libraries at depths zero and one round-trip and resolve with
+SDK imports blocked. Concrete three-bit scalar and window-three roots have
+seven and five calls respectively. The original symbolic-width example remains
+a declaration because the source refuses decomposition. Empty or unknown-size
+control paths remain declarations rather than claimed finite execution.
+Nondividing three-bit/window-two source decomposition raises IndexError;
+the native finite builder rejects that domain with ValueError. Neither path
+silently partitions, pads or truncates controls.
+
+The original concrete depth-two library fails during MeasureQFT finalization
+because measurement CBits are unused. Native resolution retains a bodyless
+terminal and the scalar ECAddR declarations. Whole physical lowering, primitive
+counts and complex channel are unavailable, not zero. A windowed root also
+retains the original model-only QROAM erase leaf. The existing Algorithms
+readout workflow and its previously verified 24 terminal branches remain
+separate from this source-shaped root.
+
+An actual stored window child is extracted without changing consumers and
+explicitly supplied with certified native measurement erasure. All 32 small
+address/curve columns, absolute complex amplitudes, applicable raw histories,
+returned layouts and private work zero are checked, with two independent sparse
+executions and SDKs blocked. The complete window proofs and original gate stream
+receipts are reused; no original erase body is invented.
+
+The directly shared MeasureQFT constructor was moved out of the RSA-specific
+adapter into `_fourier_measurement_library.py`. Three complete old declarations
+(empty, concrete and symbolic width) and one entire RSA Program compare equal
+to published `dec49fcad`. The default source identifiers remain unchanged.
+The window's earlier supplemental Cast wrapper was removed: existing source
+type compatibility already admits all five direct connections. Entire physical
+IR, outputs and pools compare equal at address widths one and five.
+
+Q-0461 remains open for scalar, terminal, symbolic and inherited curve boundaries.
+No source file, source callback, protected contract or readout API was changed.
+
+| Scope, n=3, modulus=3, window=3 | Actual instructions | Actual T/T-dagger / CCX / measurements | Physical pool | Source default T estimate / measurements / qubits |
+|---|---:|---|---:|---|
+| Selected stored window child with explicit native erasure | 36,607 | 7,688 / 19 / 1,463 | 61 | 6,740 / 1,328 / 61 |
+| Whole source-shaped single phase | Unavailable | Unavailable | Unavailable | 6,753 / 1,334 / source unused-CBit failure |
+| Whole source-shaped double phase | Unavailable | Unavailable | Unavailable | Source generic-point integer-conversion failure; qubit query also fails |
+
+The selected child's source model contains 21 Toffoli, 336 CSwap and 1,328 AND
+calls; these are model categories, not emitted CCX/T counts. The full phase
+model additionally prices its Fourier terminal. The two scopes and both count
+conventions remain separate. Scalar phase gate cost also retains the original
+ECAddR decomposition failure. Complete records are in the phase resource receipt.
+
 The frozen reference is Qualtran v0.7.0, commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`, files
 `qualtran/bloqs/cryptography/ecc/ec_phase_estimate_r.py` and its test file.

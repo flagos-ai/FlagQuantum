@@ -1,5 +1,38 @@
 # Elliptic-curve double phase estimation
 
+## Original constructor and direct dependency closure
+
+The complete `find_ecc_private_key.py` constructor now binds through the shared
+typed phase roots. Its exact six calls are two raw base-coordinate IntStates,
+base-point phase estimation, public-key phase estimation, and two dirty Frees.
+The original symbolic example retains this graph, with symbolic initialization
+and phase children declared rather than assigned numerical bodies. The source
+point fields survive the owned source library; no automatic Montgomery
+conversion or classical output was added.
+
+Source shallow libraries and the complete call graph round-trip with optional
+SDKs blocked. Original modulus and curve consistency checks remain properties
+used by the grouped model. They are not silently promoted into constructor or
+graph guards: a mismatched-modulus direct graph still has the source six-call
+shape, while the source model property rejects it. The existing numerical
+Algorithms operation keeps its separate admission rules.
+
+The root inherits scalar ECAddR opacity, model-only QROAM erasure and the original
+MeasureQFT unused-CBit failure. Whole physical primitive counts, all-branch
+execution and private-state cleanup are unavailable, not zero. Concrete grouped
+windowed source QEC cost additionally fails when the generic point requires an
+integer conversion. These failures are retained alongside the existing explicit
+readout workflow and its independently verified joint terminal projections.
+
+The source-shaped roots share MeasureQFT through an independent Ecosystem owner,
+not the RSA adapter. Whole old RSA and three shim records remain exactly equal
+after that move. Selected actual window-child conformance checks all 32 small
+complex columns, every applicable erasure history, returned layouts and clean
+private work. This does not certify the unavailable whole double-phase root.
+See [the phase audit](ECC_PHASE_ESTIMATION_FILE_AUDIT.md) for the shared boundary.
+Q-0466 remains open; the original dirty coordinate exits are never reported as
+zero-work promises.
+
 The locked reference is Qualtran v0.7.0,
 `bcb17bb25360ed68ce3bc084645db3e929799389`. This batch covers
 `qualtran/bloqs/cryptography/ecc/ecc.ipynb`, `find_ecc_private_key.py`

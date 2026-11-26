@@ -22,16 +22,26 @@ remain documented in `docs/development/ECC_ADDITION_FILE_AUDIT.md`.
 
 `window_addition_component.py` composes the original five-call point-window
 root: Join, clean lookup, curve addition, matching bank erasure and Split.
-Its five-word view wrapper preserves source port order and raw Montgomery bits
-across nominal lookup/coordinate types, using ten zero-gate Casts. Three optional
+Existing source-compatible word typing admits the five direct ECAdd connections
+without supplemental Cast wrappers or numerical conversion. Three optional
 junk banks bypass arithmetic and remain owned until erasure consumes them.
 Ecosystem supplies the Algorithms-owned table and signatures. The default source
 erase leaf remains bodyless; callers may explicitly supply the separately
 certified native measured erasure. See
 `docs/development/ECC_FIXED_WINDOW_FILE_AUDIT.md` for this distinction.
 
+`phase_estimation_component.py` owns ordered phase-bit preparation, scalar or
+shaped window calls, and the original terminal MeasureQFT call.
+`double_phase_component.py` owns the two raw coordinate initializations, two
+phase calls and two explicitly dirty coordinate frees. Algorithms owns point
+powers and numerical readout workflows; Ecosystem supplies the constructor
+metadata and typed children. The original terminal has no classical output
+and no admitted physical body. These source-shaped roots do not invent a
+readout result or silently select the separate executable Algorithms workflow.
+
 For a typical change, edit the owning stage and run
 `tests/unit/test_elliptic_curve_addition_components.py` with the locked reference
 environment. Check typed outputs, recursive primitive operands and feedback,
 complex amplitudes, private cleanup and actual versus modeled resources.
 For the window root, use `tests/unit/test_elliptic_curve_window_components.py`.
+For the phase roots, use `tests/unit/test_elliptic_curve_phase_components.py`.
