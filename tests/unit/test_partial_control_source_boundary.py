@@ -63,3 +63,45 @@ def test_erasing_controlled_and_respects_explicit_nonunitary_source(
     source = child.controlled(CtrlSpec(cvs=(value,) * controls))
     with pytest.raises(ValueError, match="Source leaf explicitly declares no unitary"):
         import_cirq_register_optree(source.on(*cirq.LineQubit.range(3 + controls)))
+
+
+@pytest.mark.parametrize("kind", ("majorana", "spin_up"))
+@pytest.mark.parametrize("existing", (False, True))
+@pytest.mark.parametrize("activation", (0, 1, (1, 0)))
+def test_complete_hubbard_generic_controls_reach_original_erasure_boundary(
+    kind: str, existing: bool, activation: int | tuple[int, ...]
+) -> None:
+    import cirq
+    from qualtran import CtrlSpec, DecomposeTypeError
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+        HubbardMajorannaOperator,
+        HubbardSpinUpZ,
+    )
+
+    child = (
+        HubbardMajorannaOperator(2, 2, control_val=1 if existing else None)
+        if kind == "majorana"
+        else HubbardSpinUpZ(2, 2, control_val=1 if existing else None)
+    )
+    positive = child.controlled()
+    # A successful root graph contains an unavailable non-through child.
+    erasures = [
+        instance.bloq
+        for instance, _, _ in positive.decompose_bloq().iter_bloqsoqs()
+        if type(instance.bloq).__name__ == "Controlled"
+        and getattr(instance.bloq.subbloq, "uncompute", False)
+    ]
+    assert erasures
+    for erasure in erasures:
+        assert erasure.subbloq._has_unitary_() is False
+        with pytest.raises(DecomposeTypeError, match="non-thru registers"):
+            erasure.decompose_bloq()
+    controlled = child.controlled(CtrlSpec(cvs=activation))
+    operation = controlled.on(
+        *cirq.LineQubit.range(int(controlled.signature.n_qubits()))
+    )
+    with pytest.raises(
+        ValueError,
+        match="Source leaf explicitly declares no unitary.*C\\[And†\\]",
+    ):
+        import_cirq_register_optree(operation)

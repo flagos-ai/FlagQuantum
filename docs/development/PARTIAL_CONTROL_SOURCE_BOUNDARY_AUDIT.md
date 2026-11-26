@@ -29,3 +29,26 @@ erasure and now reports `C[And†]` in about 1.91 seconds. The source QROAM and
 uncontrolled first-stage children import before that error. The whole ECC parent
 remains open. Evidence is in `g2-partial-control-ecc-followup-20261121.json` and
 `g2-partial-control-unitary-baseline-20261121.log` in the reference directory.
+
+## Complete Hubbard generic-control consumers
+
+The actual dimension-two Hubbard Majorana and spin-up sources reach the same
+existing erasure boundary. All twelve combinations of child kind, absent or
+existing positive control, and new zero/one/grouped controls serialize and
+generate their root graph. A successful root graph is not a complete executable
+decomposition: the positive generic body contains Controlled(And(uncompute=True)).
+The original child rejects decomposition because its target is LEFT and declares
+no unitary. Actual SDK capture of each complete root reaches the existing
+explicit C[And†] refusal. It does not hang or substitute an optimized child.
+
+The complete-root regression reuses the accepted computed-And full complex
+operator and erasure-boundary evidence above. It adds no numerical execution
+fallback, physical primitive, workspace or cost estimate. No complete controlled
+Hubbard amplitude or gate-count equivalence is claimed for these unavailable
+source execution paths. The specialized SELECT constructor closure remains
+separate and executable within its documented scope.
+
+This is an upstream execution obstruction, not justification to implement a
+different controlled algorithm under the original constructor. Generic stored
+constructor registration and wider capture remain separate native scope. Future
+work on them must not equate a root-only graph check with physical acceptance.
