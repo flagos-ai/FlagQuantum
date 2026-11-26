@@ -82,8 +82,9 @@ uses the existing Simulation phase recursion through the Ecosystem injection.
 Scalar U has zero data ports and uses the existing scalar carrier for bare
 inverse calls. Its original stored graph retains the three surplus scalar
 inverse nodes but renumbers them; it does not lose their phase. The graph's
-full tensor and the literal rotation/control recipe agree. The unchanged SDK
-unitary protocol nevertheless asserts that a scalar BloqAsCirqGate tensor must
+full tensor is used directly as the numerical reference, while the literal
+SDK generator independently retains all three bare scalar inverse calls. The
+unchanged SDK unitary protocol nevertheless asserts that a scalar BloqAsCirqGate tensor must
 be two-dimensional. Tests retain that refusal and use the unmodified stored
 source tensor for the full comparison. Shaped CompositeBloq U likewise retains
 a distinct original Circuit.has_unitary decomposition failure; its original

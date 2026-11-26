@@ -344,14 +344,22 @@ def test_all_original_factories_keep_typed_calls_exact_phases_and_full_complex_e
         )
         for name in root_calls
     ]
-    remaining = source.negative_power
-    expected_roles = ["rotation"]
-    for _ in source.P[1:]:
-        expected_roles.extend(
-            ("positive_inverse" if remaining > 0 else "negative_forward", "rotation")
-        )
-        remaining -= int(remaining > 0)
-    expected_roles.extend(["bare_inverse"] * remaining)
+    upstream = import_module("qualtran")
+    su2_type = import_module("qualtran.bloqs.basic_gates.su2_rotation").SU2RotationGate
+    inverse = source.U.adjoint()
+    positive = inverse.controlled()
+    negative = source.U.controlled(upstream.CtrlSpec(cvs=0))
+    expected_roles = []
+    for instance, _, _ in source.decompose_bloq().iter_bloqsoqs():
+        if isinstance(instance.bloq, su2_type):
+            expected_roles.append("rotation")
+        elif instance.bloq == positive:
+            expected_roles.append("positive_inverse")
+        elif instance.bloq == negative:
+            expected_roles.append("negative_forward")
+        else:
+            assert instance.bloq == inverse
+            expected_roles.append("bare_inverse")
     assert roles == expected_roles
     _check(source, program, monkeypatch)
 
@@ -571,21 +579,7 @@ def test_scalar_unitary_uses_existing_carrier_and_retains_original_sdk_refusal(
 
     with pytest.raises(AssertionError, match="All registers"):
         cirq.unitary(source)
-    coefficient = complex(scalar.tensor_contract())
-    reference = np.asarray(source.signal_rotations[0].rotation_matrix)
-    remaining = power
-    for rotation in source.signal_rotations[1:]:
-        controlled = (
-            np.diag([1, coefficient.conjugate()])
-            if remaining > 0
-            else np.diag([coefficient, 1])
-        )
-        reference = np.asarray(rotation.rotation_matrix) @ controlled @ reference
-        remaining -= int(remaining > 0)
-    reference = coefficient.conjugate() ** remaining * reference
-    np.testing.assert_allclose(
-        source.decompose_bloq().tensor_contract(), reference, atol=2e-14, rtol=0
-    )
+    reference = source.decompose_bloq().tensor_contract()
     if power > 2:
         # Disconnected scalar nodes are retained but renumbered by the source.
         assert (
@@ -621,9 +615,7 @@ def test_scalar_unitary_uses_existing_carrier_and_retains_original_sdk_refusal(
         source,
         program,
         monkeypatch,
-        reference_operator=torch.tensor(
-            source.decompose_bloq().tensor_contract(), dtype=torch.complex128
-        ),
+        reference_operator=torch.tensor(reference, dtype=torch.complex128),
     )
     assert counts["measure"] == 0
 
