@@ -3,6 +3,7 @@
 import csv
 import hashlib
 from dataclasses import asdict
+from importlib import import_module
 from pathlib import Path
 from typing import Any, get_args
 from xml.etree import ElementTree
@@ -69,8 +70,10 @@ def frozen_source() -> None:
 def test_complete_rows_match_source(
     gates: GateCost | QECGateCost, aggregation: GateAggregation, width_first: bool
 ) -> None:
-    from qualtran.drawing import GraphvizCallGraph
-    from qualtran.resource_counting import GateCounts, QECGatesCost, QubitCount
+    # Probe source runtime acceptance beyond its Bloq/CostKey annotations.
+    source_graph = import_module("qualtran.drawing.bloq_counts_graph").GraphvizCallGraph
+    from qualtran.resource_counting._bloq_counts import GateCounts, QECGatesCost
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     width = Symbol("n", integer=True, positive=True)
     entries = [(PEAK_LOGICAL_QUBITS, width), (GATE_COST, gates)]
@@ -83,7 +86,7 @@ def test_complete_rows_match_source(
         source_entries.reverse()
     data = {"root": dict(entries), "empty": {}}
     before = {node: dict(row) for node, row in data.items()}
-    expected = GraphvizCallGraph.format_cost_data(
+    expected = source_graph.format_cost_data(
         {"root": dict(source_entries), "empty": {}}, agg_gate_counts=aggregation
     )
     actual = format_call_graph_cost_data(data, aggregation=aggregation)
@@ -94,8 +97,9 @@ def test_complete_rows_match_source(
 
 
 def test_unknown_metrics_warn_and_preserve_colliding_key_order() -> None:
-    from qualtran.drawing import GraphvizCallGraph
-    from qualtran.resource_counting import QubitCount
+    # Probe source runtime acceptance beyond its Bloq/CostKey annotations.
+    source_graph = import_module("qualtran.drawing.bloq_counts_graph").GraphvizCallGraph
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     class Label:
         def __str__(self) -> str:
@@ -110,7 +114,7 @@ def test_unknown_metrics_warn_and_preserve_colliding_key_order() -> None:
             }
         )
     with pytest.warns(UserWarning, match="Unknown cost key") as source_warnings:
-        expected = GraphvizCallGraph.format_cost_data(
+        expected = source_graph.format_cost_data(
             {
                 "first": {QubitCount(): 3, metric: "custom"},
                 "second": {metric: "before", QubitCount(): 4},
@@ -135,8 +139,9 @@ def test_invalid_gate_values_fail_without_mutating_input(value: Any) -> None:
 
 
 def test_invalid_aggregation_and_empty_rows_follow_source_dispatch() -> None:
-    from qualtran.drawing import GraphvizCallGraph
-    from qualtran.resource_counting import GateCounts, QECGatesCost
+    # Probe source runtime acceptance beyond its Bloq/CostKey annotations.
+    source_graph = import_module("qualtran.drawing.bloq_counts_graph").GraphvizCallGraph
+    from qualtran.resource_counting._bloq_counts import GateCounts, QECGatesCost
 
     invalid: Any = "unsupported"
     with pytest.raises(ValueError, match="Unknown gate aggregation"):
@@ -144,7 +149,7 @@ def test_invalid_aggregation_and_empty_rows_follow_source_dispatch() -> None:
             {"root": {GATE_COST: GateCost()}}, aggregation=invalid
         )
     with pytest.raises(ValueError, match="Unknown aggregation mode"):
-        GraphvizCallGraph.format_cost_data(
+        source_graph.format_cost_data(
             {"root": {QECGatesCost(): GateCounts()}}, agg_gate_counts=invalid
         )
     assert format_call_graph_cost_data({}, aggregation=invalid) == {}

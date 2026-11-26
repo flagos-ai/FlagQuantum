@@ -56,9 +56,14 @@ def frozen_source() -> None:
 
 def source_key(source: Any) -> ResourceCall:
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TGate
-    from qualtran.bloqs.bookkeeping import ArbitraryClifford, Join, Split
-    from qualtran.bloqs.mcmt import MultiTargetCNOT
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
 
     if isinstance(source, Adjoint):
@@ -97,9 +102,10 @@ def source_key(source: Any) -> ResourceCall:
 def test_complete_width_cache_matches_source(
     width: SymbolicInt, adjoint: bool, approximate: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiTargetCNOT
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source: Any = CSwapApprox(width) if approximate else MultiTargetCNOT(width)
     if adjoint:
@@ -126,7 +132,8 @@ def test_factory_dot_matches_unmodified_source_width_table(
     width: SymbolicInt, adjoint: bool, depth: int | None, aggregation: GateAggregation
 ) -> None:
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source: Any = CSwapApprox(width)
     if adjoint:
@@ -149,12 +156,16 @@ def test_factory_dot_matches_unmodified_source_width_table(
 def test_hidden_local_peaks_and_bystanders_match_source(
     seed_name: str, adjoint: bool
 ) -> None:
-    from qualtran import QAny
-    from qualtran.bloqs.basic_gates import CNOT, SGate, TGate
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.bloqs.mcmt import MultiTargetCNOT
+    from qualtran._infra.data_types import QAny
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source: Any = CSwapApprox(3)
     fanout: Any = MultiTargetCNOT(3)
@@ -182,8 +193,9 @@ def test_hidden_local_peaks_and_bystanders_match_source(
 def test_fanout_adjoint_costs_match_source_and_keep_identity(
     adjoint: bool, legacy: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiTargetCNOT
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     source: Any = MultiTargetCNOT(5)
     if adjoint:
@@ -202,9 +214,10 @@ def test_fanout_adjoint_costs_match_source_and_keep_identity(
 def test_zero_width_failure_and_retry_match_source(
     approximate: bool, adjoint: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiTargetCNOT
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source: Any = CSwapApprox(0) if approximate else MultiTargetCNOT(0)
     if adjoint:

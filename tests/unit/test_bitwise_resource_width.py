@@ -81,7 +81,7 @@ def frozen_source() -> None:
 
 
 def source_for(root: ArithmeticCall) -> Any:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
     from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 
     dtype = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}[
@@ -96,8 +96,11 @@ def source_for(root: ArithmeticCall) -> Any:
 
 
 def source_key(source: Any, root: ArithmeticCall) -> ResourceCall:
-    from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     if source == source_for(root):
         return root
@@ -114,7 +117,8 @@ def source_key(source: Any, root: ArithmeticCall) -> ResourceCall:
 
 
 def compare(root: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected_cache: dict[Any, SymbolicInt] = {} if seed is None else {seed: 12}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -144,7 +148,8 @@ def test_complete_source_caches_and_order(
         and root.widths == (1,)
         and root.constant == 1
     ):
-        from qualtran.resource_counting import QubitCount, get_cost_value
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
 
         with pytest.raises(RuntimeError):
             get_cost_value(source_for(root), QubitCount())
@@ -169,9 +174,11 @@ def test_signed_negative_patterns(width: int, adjoint: bool) -> None:
 def test_child_local_peaks_preserve_bystanders(
     root: ArithmeticCall, seed_name: str
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.basic_gates import CNOT, XGate
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     seeds = {
         "split": Split(QUInt(3)),
@@ -192,7 +199,8 @@ def test_factory_uses_source_width_rows(
     depth: int | None,
     aggregation: GateAggregation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     root = ArithmeticCall(
         operation, (width,), constant=0 if operation == "xor_constant" else None
@@ -217,7 +225,8 @@ def test_factory_uses_source_width_rows(
 def test_zero_width_failure_and_retry(
     operation: ArithmeticOperation, width: SymbolicInt
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     root = ArithmeticCall(
         operation, (width,), constant=0 if operation == "xor_constant" else None
@@ -247,7 +256,8 @@ def test_zero_width_failure_and_retry(
 def test_invalid_constant_rejected_before_cache_mutation(
     encoding: ArithmeticEncoding, constant: int
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     root = ArithmeticCall("xor_constant", (3,), (encoding,), constant=constant)
     with pytest.raises(RuntimeError):

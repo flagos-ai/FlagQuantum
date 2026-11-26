@@ -79,7 +79,7 @@ def test_entire_original_and_native_notebooks(
 ) -> None:
     import IPython.display
     import qualtran.drawing
-    from qualtran.drawing import GraphvizCallGraph
+    from qualtran.drawing.bloq_counts_graph import GraphvizCallGraph
 
     source = json.loads(
         (REFERENCE / "qualtran/drawing/drawing_call_graph.ipynb").read_text()
@@ -148,7 +148,8 @@ def test_complete_graph_and_leaf_counts_match_source(depth: int | None) -> None:
 
     source, leaves = TestBloqWithCallGraph().call_graph(max_depth=depth)
     root, declarations = declared_example()
-    graph = symbolic_call_graph(root, declarations, max_depth=depth)
+    graph_root: ResourceCall = root
+    graph = symbolic_call_graph(graph_root, declarations, max_depth=depth)
     names = source_names()
     assert [
         (native_name(a), native_name(b), count)
@@ -195,7 +196,7 @@ def test_full_recursive_costs_and_annotations_match_source(repetitions: int) -> 
 def test_dot_tables_edges_and_customization_match_source() -> None:
     import pydot
     from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
-    from qualtran.drawing import GraphvizCallGraph
+    from qualtran.drawing.bloq_counts_graph import GraphvizCallGraph
 
     graph, annotations = annotated_example()
     source, _ = TestBloqWithCallGraph().call_graph()

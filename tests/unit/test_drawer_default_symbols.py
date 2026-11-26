@@ -51,9 +51,11 @@ def default_fixture(
     shape: tuple[int, ...], title: str, classical: bool
 ) -> tuple[RegisterScore, Any]:
     from attrs import frozen
-    from qualtran import Bloq, BloqBuilder, CBit, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
 
     dtype = RegisterType("bit", 0, 1) if classical else RegisterType("bit", 1)
     # Long identity prefixes and array brackets must not leak into local labels.
@@ -91,7 +93,7 @@ def default_fixture(
 def test_default_component_symbols_match_unmodified_source_method(
     shape: tuple[int, ...], title: str, classical: bool
 ) -> None:
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     score, original = default_fixture(shape, title, classical)
     before = hash(score)
@@ -109,10 +111,13 @@ def test_default_component_symbols_match_unmodified_source_method(
 def test_default_directional_ports_use_declarations_not_lifetime_keys(
     shape: tuple[int, ...],
 ) -> None:
-    from qualtran import Bloq, BloqBuilder, QBit, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.drawing import get_musical_score_data
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     registers = tuple(
         Register("shared", RegisterType("bit", 1), shape, side)
@@ -178,12 +183,18 @@ def test_default_component_pixels_only_adapt_boundary_names(
     actual = register_score_data(score)
     expected = get_musical_score_data(original)
     ports = {(port["seq_x"], port["y"]): port for port in actual["soqs"]}
+
+    def text_at(x: int, y: int) -> str:
+        text = ports[(x, y)]["symb_attributes"]["text"]
+        assert isinstance(text, str)
+        return text
+
     expected.soqs = [
         (
             attrs.evolve(
                 port,
                 symb=Text(
-                    ports[(port.rpos.seq_x, port.rpos.y)]["symb_attributes"]["text"],
+                    text_at(port.rpos.seq_x, port.rpos.y),
                     fontsize=8,
                 ),
             )

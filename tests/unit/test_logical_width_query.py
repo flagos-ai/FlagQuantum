@@ -251,10 +251,11 @@ def test_unexpected_decomposition_error_propagates_without_fallback() -> None:
     ],
 )
 def test_full_recursive_cache_matches_unmodified_source(case: str) -> None:
-    from qualtran import DecomposeNotImplementedError, DecomposeTypeError
     from qualtran._infra.binst_graph_iterators_test import MultiAlloc
+    from qualtran._infra.bloq import DecomposeNotImplementedError, DecomposeTypeError
     from qualtran._infra.quantum_graph import LeftDangle, RightDangle
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
     from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
     from qualtran.bloqs.for_testing.qubit_count_many_alloc import (
         TestManyAllocAbstracted,
@@ -265,10 +266,11 @@ def test_full_recursive_cache_matches_unmodified_source(case: str) -> None:
         TestIndependentParallelCombo,
         TestSerialCombo,
     )
-    from qualtran.bloqs.mcmt import MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import MultiAnd
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.resource_counting import QubitCount, get_cost_value
     from qualtran.resource_counting._call_graph import get_bloq_callee_counts
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
     with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:

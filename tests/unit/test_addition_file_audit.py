@@ -195,8 +195,8 @@ def test_complete_frozen_and_native_notebooks(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_all_64_original_five_bit_tensor_assertions() -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
 
     graph = addition_component_program(5)
     like = torch.empty((), dtype=torch.complex128)
@@ -218,8 +218,8 @@ def test_all_64_original_five_bit_tensor_assertions() -> None:
 def test_original_four_bit_mixed_classical_assertions(
     signed_left: bool, signed_right: bool
 ) -> None:
-    from qualtran import QInt, QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.data_types import QInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
 
     from flagquantum.simulation.classical_addition import register_add_classical_values
 
@@ -235,8 +235,9 @@ def test_original_four_bit_mixed_classical_assertions(
 
 
 def test_original_32_bit_classical_and_control_conversion_assertions() -> None:
-    from qualtran import CtrlSpec, QInt, QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
 
     from flagquantum.simulation.classical_addition import register_add_classical_values
     from flagquantum.simulation.classical_controlled_addition import (
@@ -257,7 +258,7 @@ def test_original_32_bit_classical_and_control_conversion_assertions() -> None:
 
 @pytest.mark.parametrize("width", [1, 2, 3, 4])
 def test_original_out_of_place_classical_assertions(width: int) -> None:
-    from qualtran.bloqs.arithmetic import OutOfPlaceAdder
+    from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
 
     from flagquantum.simulation.classical_addition import (
         out_of_place_sum_classical_values,

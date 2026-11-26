@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal, get_args
 
 import pytest
+from qualtran._infra.bloq import Bloq
 from sympy import Integer, Symbol
 
 from flagquantum.compiler._component_trace.arithmetic_call import (
@@ -82,27 +83,33 @@ def frozen_source() -> None:
 
 
 def source_for(call: ArithmeticCall) -> Any:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic import AddK
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import AddK
 
-    types = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}
+    types: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "twos_complement": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
     source = AddK(types[call.encodings[0]](call.widths[0]), call.constant)
     return source.adjoint() if call.adjoint else source
 
 
 def source_key(source: Any) -> ResourceCall:
-    from qualtran import QInt, QMontgomeryUInt
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.arithmetic import AddK
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import AddK
     from qualtran.bloqs.arithmetic.bitwise import XorK
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
 
     if isinstance(source, Adjoint) and isinstance(source.subbloq, AddK):
         call = source_key(source.subbloq)
         assert isinstance(call, ArithmeticCall)
         return replace(call, adjoint=True)
     if isinstance(source, (AddK, XorK)):
+        assert isinstance(source.dtype, (QInt, QMontgomeryUInt, QUInt))
         encoding: ArithmeticEncoding = (
             "twos_complement"
             if isinstance(source.dtype, QInt)
@@ -130,7 +137,8 @@ def source_key(source: Any) -> ResourceCall:
 
 
 def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = {} if seed is None else {seed: 20}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -150,7 +158,8 @@ def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, Symbol
 def test_full_cache_and_order(
     width: SymbolicInt, value: SymbolicInt, encoding: ArithmeticEncoding, adjoint: bool
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall(
         "constant_add", (width,), (encoding,), constant=value, adjoint=adjoint
@@ -178,17 +187,23 @@ def test_full_cache_and_order(
 def test_child_peaks_preserve_allocated_and_idle_words(
     seed_name: str, encoding: ArithmeticEncoding, adjoint: bool
 ) -> None:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
     from qualtran.bloqs.arithmetic.bitwise import XorK
-    from qualtran.bloqs.basic_gates import CNOT, XGate
-    from qualtran.bloqs.bookkeeping import Allocate, Always, Free
-    from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.always import Always
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.mcmt.and_bloq import And
 
-    dtype = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}[
-        encoding
-    ](3)
-    add = Add(dtype, dtype)
+    types: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "twos_complement": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
+    dtype = types[encoding](3)
+    add: Bloq = Add(dtype, dtype)
     add = add.adjoint() if adjoint else add
     seeds = {
         "allocate": Allocate(dtype),
@@ -218,7 +233,8 @@ def test_automatic_dot_matches_source_widths(
     depth: int | None,
     aggregation: GateAggregation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("constant_add", (width,), constant=value, adjoint=adjoint)
     cache: dict[Any, SymbolicInt] = {}
@@ -241,7 +257,8 @@ def test_automatic_dot_matches_source_widths(
 def test_zero_width_rejects_before_child_query(
     width: SymbolicInt, adjoint: bool
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("constant_add", (width,), constant=0, adjoint=adjoint)
     with pytest.raises(RuntimeError):
@@ -255,7 +272,8 @@ def test_zero_width_rejects_before_child_query(
 
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_invalid_constant_preserves_partial_cache_and_retry(adjoint: bool) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("constant_add", (3,), constant=8, adjoint=adjoint)
     source_cache: dict[Any, SymbolicInt] = {}
@@ -274,9 +292,11 @@ def test_invalid_constant_preserves_partial_cache_and_retry(adjoint: bool) -> No
 def test_clean_scalar_allocation_atoms(
     opcode: Literal["allocate", "free"], width: int
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.bookkeeping import Allocate, Free
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = (Allocate if opcode == "allocate" else Free)(QUInt(width))
     assert query_resource_logical_width(

@@ -59,7 +59,12 @@ upload or G3 gate is run by source preparation.
 
 The CSV migration changes only equivalent provenance inputs. Original reference
 bytes, mathematical test bodies, gate/operand/feedback assertions and stored
-numerical corpora remain unchanged. Tests exercise snapshot verification,
+numerical corpora remain unchanged. Source comparison imports use each object's
+defining module with runtime identity checks against the original reexports.
+Tests that intentionally exercise runtime acceptance beyond external annotations
+retain those original inputs at an explicit dynamic SDK boundary. Concrete
+constructor unions and shape/type assertions preserve exact oracle calls.
+Tests exercise snapshot verification,
 unchanged existing trees, late corruption, refusal/rollback, exclusive ownership,
 download limits and low-space refusal. Source bytes and operational environment
 qualification remain distinct evidence.

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from qualtran._infra.bloq import Bloq
 
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.cost_query import (
@@ -43,7 +44,7 @@ def frozen_source() -> None:
 
 def native_reference_data(bloq: Any, **kwargs: Any) -> list[str]:
     """Translate source-only graph fixtures to owned integer keys at the boundary."""
-    from qualtran.bloqs.basic_gates import TGate
+    from qualtran.bloqs.basic_gates.t_gate import TGate
     from qualtran.drawing.flame_graph import (
         _keep_if_small,
         _pretty_name,
@@ -91,10 +92,10 @@ def test_cswap_full_costs_survive_visible_depth_cutoff(
 def test_multiand_both_directions_and_t_leaf_collapse(
     controls: int, uncompute: bool, cutoff: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import MultiAnd
     from qualtran.drawing.flame_graph import get_flame_graph_data
 
-    bloq = MultiAnd(tuple(i % 2 for i in range(controls)))
+    bloq: Bloq = MultiAnd(tuple(i % 2 for i in range(controls)))
     if uncompute:
         bloq = bloq.adjoint()
     kwargs = {} if cutoff else {"keep": None}
@@ -105,7 +106,9 @@ def test_multiand_both_directions_and_t_leaf_collapse(
 def test_rotation_synthesis_costs_are_supplied_from_full_reference_graph(
     size: int,
 ) -> None:
-    from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
     from qualtran.drawing.flame_graph import get_flame_graph_data
 
     bloq = PrepareUniformSuperposition(size)
@@ -138,8 +141,8 @@ def test_original_source_assertions_execute_unchanged(
 
 def test_shared_dag_repeats_whole_subtrees_in_edge_order() -> None:
     import networkx as nx
-    from qualtran.bloqs.basic_gates import TGate
-    from qualtran.bloqs.mcmt import And, MultiAnd
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
     from qualtran.drawing.flame_graph import _populate_flame_graph_data
 
     root, left, right, leaf = MultiAnd((1,) * 5), MultiAnd((1,) * 3), And(), TGate()
@@ -280,7 +283,9 @@ def test_title_error_propagates_and_retry_preserves_inputs() -> None:
 
 def test_native_precision_sensitive_terminal_owner_supplies_counts() -> None:
     import networkx as nx
-    from qualtran.bloqs.basic_gates import Rz, TGate, TwoBitCSwap
+    from qualtran.bloqs.basic_gates.rotation import Rz
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+    from qualtran.bloqs.basic_gates.t_gate import TGate
     from qualtran.drawing.flame_graph import _populate_flame_graph_data
 
     from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
@@ -295,7 +300,7 @@ def test_native_precision_sensitive_terminal_owner_supplies_counts() -> None:
         estimate_terminal_t_cost,
     )
 
-    root = ComponentCost("Root", 3)
+    root: ResourceCall = ComponentCost("Root", 3)
     swap, rotation, adjoint_t = (
         FixedTCall("fredkin"),
         RotationCall("rz", 0.25, 1e-4),
@@ -329,7 +334,8 @@ def test_native_precision_sensitive_terminal_owner_supplies_counts() -> None:
         # A distinct root avoids a self-cycle while preserving the declared mixture.
         source.add_edge("root", terminal, n=count)
     from attrs import frozen
-    from qualtran import Bloq, Signature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Signature
 
     source_root = frozen(
         type("Root", (Bloq,), {"signature": property(lambda self: Signature(()))})
@@ -343,8 +349,9 @@ def test_native_precision_sensitive_terminal_owner_supplies_counts() -> None:
 @pytest.mark.parametrize("collapse", [False, True])
 def test_source_retains_unequal_parent_and_child_totals(collapse: bool) -> None:
     import networkx as nx
-    from qualtran.bloqs.basic_gates import TGate, TwoBitCSwap
-    from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.mcmt.and_bloq import And
     from qualtran.drawing import flame_graph
 
     root, child = And(), TGate() if collapse else TwoBitCSwap()

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, get_args
 
 import pytest
+from qualtran._infra.bloq import Bloq
 from sympy import Integer, Symbol
 
 from flagquantum.compiler._component_trace.arithmetic_call import (
@@ -72,26 +73,33 @@ def frozen_source() -> None:
 
 
 def source_for(call: ArithmeticCall) -> Any:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.bookkeeping import Always
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.bookkeeping.always import Always
 
-    types = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}
-    source = Add(
-        *(types[e](w) for e, w in zip(call.encodings, call.widths, strict=True))
+    types: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "twos_complement": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
+    left, right = (
+        types[e](w) for e, w in zip(call.encodings, call.widths, strict=True)
     )
+    source: Bloq = Add(left, right)
     if call.adjoint:
         source = source.adjoint()
     return Always(source) if call.always else source
 
 
 def source_key(source: Any) -> ResourceCall:
-    from qualtran import QInt, QMontgomeryUInt
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Always, Join, Split
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.always import Always
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     if isinstance(source, (Always, Adjoint)):
         call = source_key(source.subbloq)
@@ -123,7 +131,8 @@ def source_key(source: Any) -> ResourceCall:
 
 
 def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = {} if seed is None else {seed: 12}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -170,10 +179,11 @@ def test_mixed_word_encodings_keep_width_identity(
 def test_carry_local_peaks_and_idle_words_match_source(
     seed_name: str, adjoint: bool
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     seeds = {
         "split-a": Split(QUInt(2)),
@@ -201,7 +211,8 @@ def test_full_dot_uses_original_width_cache(
     depth: int | None,
     aggregation: GateAggregation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("add", widths, adjoint=adjoint)
     cache: dict[Any, SymbolicInt] = {}
@@ -222,7 +233,8 @@ def test_full_dot_uses_original_width_cache(
 @pytest.mark.parametrize("widths", [(0, 0), (0, 1), (0, 3)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_zero_input_failure_and_retry(widths: tuple[int, int], adjoint: bool) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("add", widths, adjoint=adjoint)
     with pytest.raises(RuntimeError):
@@ -235,8 +247,8 @@ def test_zero_input_failure_and_retry(widths: tuple[int, int], adjoint: bool) ->
 
 
 def test_reversed_widths_reject_before_child_query() -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
 
     with pytest.raises(ValueError):
         Add(QUInt(3), QUInt(2))

@@ -129,10 +129,16 @@ def load_reference(name: str) -> types.ModuleType:
     return module
 
 
-def test_complete_original_library_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_complete_original_library_graph(
+    monkeypatch: pytest.MonkeyPatch, pytestconfig: pytest.Config
+) -> None:
     import networkx as nx
-    from qualtran import DecomposeNotImplementedError, DecomposeTypeError
+    from qualtran._infra.bloq import DecomposeNotImplementedError, DecomposeTypeError
 
+    # Unmodified source modules declare this marker during library discovery.
+    pytestconfig.addinivalue_line(
+        "markers", "notebook: unit tests that execute a notebook."
+    )
     monkeypatch.syspath_prepend(str(REFERENCE / "openfermion-reference"))
     package = types.ModuleType("_library_reference")
     package.__path__ = [str(REFERENCE / "dev_tools" / "qualtran_dev_tools")]

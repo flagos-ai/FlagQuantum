@@ -8,7 +8,9 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Literal, get_args
 
+import numpy as np
 import pytest
+from qualtran._infra.bloq import Bloq
 from sympy import Integer
 
 from flagquantum.compiler._component_trace.arithmetic_call import (
@@ -68,14 +70,18 @@ def frozen_source() -> None:
 
 
 def source_for(call: ArithmeticCall) -> Any:
-    from qualtran import CtrlSpec, QInt, QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic import AddK
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import AddK
     from qualtran.bloqs.arithmetic.bitwise import XorK
 
-    dtype = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}[
-        call.encodings[0]
-    ](call.widths[0])
-    source = (AddK if call.operation == "controlled_constant_add" else XorK)(
+    types: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "twos_complement": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
+    dtype = types[call.encodings[0]](call.widths[0])
+    source: Bloq = (AddK if call.operation == "controlled_constant_add" else XorK)(
         dtype, call.constant
     )
     source = source.controlled(CtrlSpec(cvs=call.control_value))
@@ -83,12 +89,13 @@ def source_for(call: ArithmeticCall) -> Any:
 
 
 def source_key(source: Any, root: ArithmeticCall | None = None) -> ResourceCall:
-    from qualtran import Controlled
-    from qualtran.bloqs.mcmt import ControlledViaAnd
+    from qualtran._infra.controlled import Controlled
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 
     if root is not None and source == source_for(root):
         return root
     if isinstance(source, (Controlled, ControlledViaAnd)):
+        assert isinstance(source.ctrl_spec.cvs[0], np.ndarray)
         call = plain_source_key(source.subbloq)
         assert isinstance(call, ArithmeticCall)
         assert call.operation in {"constant_add", "xor_constant"}
@@ -99,13 +106,14 @@ def source_key(source: Any, root: ArithmeticCall | None = None) -> ResourceCall:
                 if call.operation == "constant_add"
                 else "controlled_xor_constant"
             ),
-            control_value=int(source.ctrl_spec.cvs[0]),
+            control_value=int(source.ctrl_spec.cvs[0].item()),
         )
     return plain_source_key(source)
 
 
 def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = {} if seed is None else {seed: 20}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -134,7 +142,8 @@ def test_full_cache_and_order(
     adjoint: bool,
     operation: Operation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall(
         operation,
@@ -175,9 +184,11 @@ def test_full_cache_and_order(
 def test_caller_words_and_controls_survive_child_peaks(
     operation: Operation, cv: int, adjoint: bool, seed_name: str
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.basic_gates import CNOT, XGate
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     call = ArithmeticCall(
         operation, (3,), constant=2, control_value=cv, adjoint=adjoint
@@ -205,12 +216,14 @@ def test_caller_words_and_controls_survive_child_peaks(
 def test_controlled_add_allocation_and_carry_peaks(
     cv: int, adjoint: bool, seed_name: str
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.bookkeeping import Allocate, Always, Free
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.always import Always
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.mcmt.and_bloq import And
 
-    add = Add(QUInt(3), QUInt(3))
+    add: Bloq = Add(QUInt(3), QUInt(3))
     add = add.adjoint() if adjoint else add
     load = source_for(ArithmeticCall("controlled_xor_constant", (3,), constant=2))
     seeds = {
@@ -245,7 +258,8 @@ def test_automatic_dot_matches_source_widths(
     depth: int | None,
     aggregation: GateAggregation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall(
         operation, (width,), constant=value, control_value=cv, adjoint=adjoint
@@ -270,7 +284,8 @@ def test_automatic_dot_matches_source_widths(
 )
 @pytest.mark.parametrize("cv", [0, 1])
 def test_zero_width_partial_cache_and_retry(operation: Operation, cv: int) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall(operation, (0,), constant=0, control_value=cv)
     source_cache: dict[Any, SymbolicInt] = {}

@@ -75,7 +75,8 @@ def source_for(call: ArithmeticCall) -> Any:
 
 def source_key(source: Any) -> ResourceCall:
     from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
 
     if isinstance(source, OutOfPlaceAdder):
         return ArithmeticCall(
@@ -93,7 +94,8 @@ def source_key(source: Any) -> ResourceCall:
 
 
 def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = {} if seed is None else {seed: 20}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -142,10 +144,13 @@ def test_full_cache_and_order(width: SymbolicInt, msb: bool, adjoint: bool) -> N
 def test_created_and_consumed_outputs_survive_local_peaks(
     width: int, msb: bool, adjoint: bool, seed_name: str
 ) -> None:
-    from qualtran import QAny, QBit, QUInt
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QAny, QBit, QUInt
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     seeds = {
         "cx": CNOT(),
@@ -200,7 +205,8 @@ def test_full_dot_uses_source_width_cache(
 @pytest.mark.parametrize("msb", [False, True])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_zero_failure_and_cache_retry(msb: bool, adjoint: bool) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall(
         "out_of_place_add", (0,), adjoint=adjoint, include_most_significant_bit=msb

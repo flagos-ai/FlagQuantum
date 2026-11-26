@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, get_args
 
 import pytest
+from qualtran._infra.bloq import Bloq
 from sympy import Integer, Symbol
 
 from flagquantum.compiler._component_trace.resource_generalization import (
@@ -49,10 +50,11 @@ def frozen_sources() -> None:
 
 def native_source_key(source: Any) -> ResourceCall:
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.bloqs.mcmt import And, MultiAnd
-    from qualtran.symbolics import HasLength
+    from qualtran.bloqs.basic_gates.swap import CSwap, TwoBitCSwap
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+    from qualtran.symbolics.types import HasLength
 
     if isinstance(source, Adjoint):
         key = native_source_key(source.subbloq)
@@ -82,11 +84,12 @@ def native_source_key(source: Any) -> ResourceCall:
 def test_all_small_polarities_have_exact_source_width_caches(
     count: int, adjoint: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import And, MultiAnd
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     for values in product((0, 1), repeat=count):
-        source: Any = And(*values) if count == 2 else MultiAnd(cvs=values)
+        source: Any = And(values[0], values[1]) if count == 2 else MultiAnd(cvs=values)
         if adjoint:
             source = source.adjoint()
         expected_cache: dict[Any, SymbolicInt] = {}
@@ -109,10 +112,11 @@ def test_all_small_polarities_have_exact_source_width_caches(
 def test_exact_swap_complete_width_cache_matches_source(
     width: SymbolicInt, adjoint: bool
 ) -> None:
-    from qualtran.bloqs.basic_gates import CSwap
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.swap import CSwap
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
-    source = CSwap(width)
+    source: Bloq = CSwap(width)
     if adjoint:
         source = source.adjoint()
     expected_cache: dict[Any, SymbolicInt] = {}
@@ -132,9 +136,10 @@ def test_exact_swap_complete_width_cache_matches_source(
 def test_unspecified_control_count_preserves_source_fallback(
     count: SymbolicInt, adjoint: bool
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiAnd
-    from qualtran.resource_counting import QubitCount, get_cost_value
-    from qualtran.symbolics import HasLength
+    from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
+    from qualtran.symbolics.types import HasLength
 
     source: Any = MultiAnd(cvs=HasLength(count))
     if adjoint:
@@ -169,10 +174,11 @@ def test_unspecified_control_count_preserves_source_fallback(
 def test_automatic_factory_full_dot_matches_source_width_rows(
     family: str, depth: int | None, aggregation: GateAggregation
 ) -> None:
-    from qualtran.bloqs.basic_gates import CSwap
-    from qualtran.bloqs.mcmt import MultiAnd
-    from qualtran.resource_counting import QubitCount, get_cost_value
-    from qualtran.symbolics import HasLength
+    from qualtran.bloqs.basic_gates.swap import CSwap
+    from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
+    from qualtran.symbolics.types import HasLength
 
     n = Symbol("n", positive=True, integer=True)
     if "and" in family:
@@ -210,8 +216,9 @@ def test_decomposition_width_cache_is_independent_from_gate_rows() -> None:
 
 @pytest.mark.parametrize("width", [0, -1])
 def test_invalid_exact_swap_width_fails_without_cache_entry(width: int) -> None:
-    from qualtran.bloqs.basic_gates import CSwap
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.swap import CSwap
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     with pytest.raises((RuntimeError, ValueError)):
         get_cost_value(CSwap(width), QubitCount())
@@ -238,11 +245,12 @@ def test_approximate_swap_supports_automatic_and_explicit_provider() -> None:
 
 @pytest.mark.parametrize("family", ["ladder", "ladder-adjoint", "swap", "swap-split"])
 def test_seeded_child_peak_is_combined_with_actual_live_bystanders(family: str) -> None:
-    from qualtran import QAny
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-    from qualtran.bloqs.bookkeeping import Split
-    from qualtran.bloqs.mcmt import And, MultiAnd
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran._infra.data_types import QAny
+    from qualtran.bloqs.basic_gates.swap import CSwap, TwoBitCSwap
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     if family.startswith("ladder"):
         source: Any = MultiAnd(cvs=(0, 1, 0, 1))

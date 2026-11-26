@@ -45,7 +45,9 @@ REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
 
 @pytest.fixture(scope="module", autouse=True)
 def complete_locked_assets() -> None:
-    import kickmix
+    from importlib import import_module
+
+    kickmix = import_module("kickmix")
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
@@ -90,8 +92,8 @@ def test_package_register_addition_preserves_source_operands(
     degree: int, width: int
 ) -> None:
     import cirq
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAdd
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
 
     layout = FieldPolynomialLayout(degree, width)
     size = layout.logical_width
@@ -108,9 +110,13 @@ def test_package_register_addition_preserves_source_operands(
     )
     operations = tuple(reference.all_operations())
     assert all(op.gate == cirq.CNOT for op in operations)
+    assert all(isinstance(q, cirq.LineQubit) for op in operations for q in op.qubits)
     assert [
         (gate.name, gate.wires) for gate in gf2_polynomial_add_ir(f_x, g_x, layout)
-    ] == [("cx", tuple(q.x for q in op.qubits)) for op in operations]
+    ] == [
+        ("cx", tuple(q.x for q in op.qubits if isinstance(q, cirq.LineQubit)))
+        for op in operations
+    ]
     assert tuple(q.x for q in outputs["f_x"]) == f_x
     assert tuple(q.x for q in outputs["g_x"]) == g_x
 
@@ -148,8 +154,10 @@ def test_complete_original_test_inventory() -> None:
 
 def _source_key(node: Any, root: Any, name: str) -> Any:
     # External object normalization is test-only. Production has no foreign factory.
-    from qualtran.bloqs.basic_gates import CNOT, XGate
-    from qualtran.bloqs.gf_arithmetic import GF2Addition, GF2AddK
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.gf_arithmetic.gf2_add_k import GF2AddK
+    from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
     from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
         GFPolyJoin,
         GFPolySplit,
@@ -177,6 +185,7 @@ def _source_key(node: Any, root: Any, name: str) -> Any:
 def test_all_factories_full_signatures_graphs_and_costs(
     constant: bool, depth: int | None
 ) -> None:
+    from qualtran._infra.bloq_example import BloqExample
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import (
         _gf2_poly_4_8_add,
         _gf2_poly_add_symbolic,
@@ -185,7 +194,8 @@ def test_all_factories_full_signatures_graphs_and_costs(
         _gf2_poly_4_8_add_k,
         _gf2_poly_add_k_symbolic,
     )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.resource_counting.generalizers import ignore_split_join
 
     factories = (
@@ -196,6 +206,7 @@ def test_all_factories_full_signatures_graphs_and_costs(
     examples = polynomial_addition_examples(constant=constant)
     for example, factory in zip(examples, factories, strict=True):
         name, signature, _ = example
+        assert isinstance(factory, BloqExample)
         original = factory.make()
         assert [(r.name, r.bitsize, r.shape, r.side.value) for r in signature] == [
             (r.name, r.bitsize, r.shape, r.side.value) for r in original.signature
@@ -236,6 +247,7 @@ def test_all_factories_full_signatures_graphs_and_costs(
 
 def test_complete_split_join_factories_and_classical_assertions() -> None:
     import galois
+    from qualtran._infra.bloq_example import BloqExample
     from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
         _gf_poly_join,
         _gf_poly_split,
@@ -244,6 +256,7 @@ def test_complete_split_join_factories_and_classical_assertions() -> None:
     for (name, signature), factory in zip(
         polynomial_view_examples(), (_gf_poly_split, _gf_poly_join), strict=True
     ):
+        assert isinstance(factory, BloqExample)
         original = factory.make()
         assert [(r.name, r.bitsize, r.shape, r.side.value) for r in signature] == [
             (r.name, r.bitsize, r.shape, r.side.value) for r in original.signature
@@ -268,8 +281,11 @@ def test_complete_split_join_factories_and_classical_assertions() -> None:
 
 @pytest.mark.parametrize("join", [False, True])
 def test_original_full_view_tensor_and_native_identity(join: bool) -> None:
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic import GFPolyJoin, GFPolySplit
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
+        GFPolyJoin,
+        GFPolySplit,
+    )
 
     view = GFPolyJoin if join else GFPolySplit
     original = view(QGFPoly(2, QGF(2, 2)))

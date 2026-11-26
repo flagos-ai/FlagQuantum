@@ -212,7 +212,7 @@ def receive_report(run: Callable[[Connection], None]) -> dict[str, object]:
 def test_original_tensor_report_with_existing_graph_and_nodes(
     width: int, shape: tuple[int, ...], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from qualtran.simulation.tensor import cbloq_to_quimb
+    from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
     original = load_source("tensor_report_card")
     record, source = fixture(width, shape)

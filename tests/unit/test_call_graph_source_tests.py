@@ -275,8 +275,8 @@ def test_full_native_annotations_and_visibility(
 ) -> None:
     import networkx as nx
     import pydot
-    from qualtran.bloqs.for_testing import TestBloqWithCallGraph
-    from qualtran.drawing import GraphvizCallGraph
+    from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
+    from qualtran.drawing.bloq_counts_graph import GraphvizCallGraph
 
     graph, dot = native_annotated_dot(depth, aggregate=aggregate)
     source = GraphvizCallGraph.from_bloq(

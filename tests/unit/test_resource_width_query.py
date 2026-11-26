@@ -38,22 +38,17 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(scope="module")
 def source_atoms() -> dict[ResourceCall, Any]:
-    from qualtran.bloqs.basic_gates import (
-        CNOT,
-        CZ,
-        CYGate,
-        Hadamard,
-        Identity,
-        SGate,
-        TGate,
-        Toffoli,
-        TwoBitCSwap,
-        TwoBitSwap,
-        XGate,
-        YGate,
-        ZGate,
-    )
-    from qualtran.bloqs.bookkeeping import ArbitraryClifford
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.identity import Identity
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap, TwoBitSwap
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.y_gate import CYGate, YGate
+    from qualtran.bloqs.basic_gates.z_basis import CZ, ZGate
+    from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
 
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
     with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
@@ -105,7 +100,8 @@ def source_atoms() -> dict[ResourceCall, Any]:
 def test_all_atomic_widths_and_caches_match_source(
     source_atoms: dict[ResourceCall, Any],
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     for node, source in source_atoms.items():
         actual: dict[ResourceCall, SymbolicInt] = {}
@@ -130,10 +126,13 @@ def test_automatic_factory_matches_source_width_rows(
     aggregation: GateAggregation,
     source_atoms: dict[ResourceCall, Any],
 ) -> None:
-    from qualtran import QAny
-    from qualtran.bloqs.basic_gates import OnEach, Power
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran._infra.data_types import QAny
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.power import Power
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     n = Symbol("n", positive=True, integer=True)
     leaves: dict[str, ResourceCall] = {
@@ -217,9 +216,12 @@ def test_component_zero_calls_remain_inactive_and_cached_values_win() -> None:
 
 @pytest.mark.ftqc_reference
 def test_each_hidden_workspace_counts_all_bystanders() -> None:
-    from qualtran import Bloq, DecomposeNotImplementedError, Signature
-    from qualtran.bloqs.basic_gates import Identity, OnEach
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
+    from qualtran._infra.registers import Signature
+    from qualtran.bloqs.basic_gates.identity import Identity
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     def signature(self: Any) -> Any:
         return Signature.build(q=1)
@@ -250,8 +252,10 @@ def test_each_hidden_workspace_counts_all_bystanders() -> None:
 
 @pytest.mark.ftqc_reference
 def test_symbolic_power_failed_width_boundary_matches_source() -> None:
-    from qualtran.bloqs.basic_gates import Hadamard, Power
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.power import Power
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     n = Symbol("n", positive=True, integer=True)
     with pytest.raises((RuntimeError, ValueError)):
@@ -303,8 +307,11 @@ def test_fallback_gate_rows_visit_zero_multiplicity_children() -> None:
 
 @pytest.mark.ftqc_reference
 def test_each_of_power_preserves_nested_width_visitation() -> None:
-    from qualtran.bloqs.basic_gates import Hadamard, OnEach, Power
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.power import Power
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     leaf = CliffordCall("h", 1)
     power = PowerCall(leaf, 2)
@@ -331,8 +338,16 @@ def test_rotation_atoms_have_source_width_and_graph_annotations(
     opcode: Literal["rx", "ry", "rz", "xpow", "ypow", "zpow"],
 ) -> None:
 
-    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.rotation import (
+        Rx,
+        Ry,
+        Rz,
+        XPowGate,
+        YPowGate,
+        ZPowGate,
+    )
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     constructors = {
         "rx": Rx,

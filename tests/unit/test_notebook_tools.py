@@ -149,12 +149,12 @@ def test_all_unchanged_original_tests_use_native_consumer(
 def test_complete_cell_sequence_and_example_corpus(
     original: Any, examples: bool, graph: bool
 ) -> None:
-    from qualtran import BloqDocSpec
-    from qualtran.bloqs.for_testing import TestAtom
+    from qualtran._infra.bloq_example import BloqDocSpec
+    from qualtran.bloqs.for_testing.atom import TestAtom
 
     tests = load_source("jupyter_autogen_test")
     example = tests._my_bloq_example
-    kwargs = {} if graph else {"call_graph_example": None}
+    kwargs: dict[str, Any] = {} if graph else {"call_graph_example": None}
     documentation = BloqDocSpec(
         bloq_cls=TestAtom, examples=[example] if examples else [], **kwargs
     )

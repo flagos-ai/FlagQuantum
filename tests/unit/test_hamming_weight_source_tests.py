@@ -70,7 +70,7 @@ def test_all_unmodified_original_assertions(name: str, bitsize: int) -> None:
 
 @pytest.mark.parametrize("bitsize", [3, 4, 5])
 def test_original_t_complexity_assertion_with_native_budget(bitsize: int) -> None:
-    from qualtran.bloqs.arithmetic import HammingWeightCompute
+    from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
     from qualtran.bloqs.mcmt.and_bloq import And
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity, t_complexity
 

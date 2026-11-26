@@ -66,9 +66,12 @@ def source_for(call: ArithmeticCall) -> Any:
 
 
 def source_key(source: Any, root: ArithmeticCall) -> ResourceCall:
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
-    from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     if source == source_for(root):
         return root
@@ -90,7 +93,8 @@ def source_key(source: Any, root: ArithmeticCall) -> ResourceCall:
 def compare(
     call: ArithmeticCall, seeds: tuple[Any, ...] = ()
 ) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = dict.fromkeys(seeds, 30)
     actual = {source_key(key, call): value for key, value in expected.items()}
@@ -115,10 +119,13 @@ def test_full_cache_and_order(width: SymbolicInt, adjoint: bool) -> None:
     "seed_name", ["cx", "and", "split", "join", "allocate", "free"]
 )
 def test_seeded_child_peaks(width: SymbolicInt, adjoint: bool, seed_name: str) -> None:
-    from qualtran import QAny, QUInt
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QAny, QUInt
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     call = ArithmeticCall("hamming_weight", (width,), adjoint=adjoint)
     seeds = {
@@ -156,7 +163,8 @@ def test_full_dot(
 @pytest.mark.parametrize("width", [0, 1])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_source_failure_empty_cache_and_retry(width: int, adjoint: bool) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("hamming_weight", (width,), adjoint=adjoint)
     source_cache: dict[Any, SymbolicInt] = {}
@@ -186,7 +194,7 @@ def test_complete_connection_graph(
     width: int, adjoint: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import networkx as nx
-    from qualtran import LeftDangle, RightDangle
+    from qualtran._infra.quantum_graph import LeftDangle, RightDangle
 
     from flagquantum.compiler._component_trace.width_schedule import (
         WidthConnection,

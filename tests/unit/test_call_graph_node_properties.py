@@ -126,7 +126,7 @@ def test_complete_properties_replace_source_labels_without_mutation(
     properties: dict[str, str],
 ) -> None:
     import networkx as nx
-    from qualtran.drawing import GraphvizCallGraph
+    from qualtran.drawing.bloq_counts_graph import GraphvizCallGraph
 
     def source_properties(self: Any, node: object) -> dict[str, str]:
         return properties

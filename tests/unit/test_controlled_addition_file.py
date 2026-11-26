@@ -1,5 +1,6 @@
 """Complete controlled-adder source captures, factories and native score."""
 
+import sys
 from collections import Counter
 from dataclasses import replace
 from hashlib import sha1
@@ -47,9 +48,11 @@ def frozen_complete_source() -> None:
 
 
 def test_complete_small_factory_capture_binding_json_and_resource() -> None:
-    from qualtran import QUInt
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic import controlled_addition as source
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     root = source._cadd_small.make()
     assert source._CADD_DOC.examples == (source._cadd_small, source._cadd_large)
@@ -80,20 +83,31 @@ def test_complete_small_factory_capture_binding_json_and_resource() -> None:
 
 
 def test_large_factory_and_symbolic_boundary_keep_distinct_admission() -> None:
-    from qualtran import DecomposeTypeError, QUInt
+    from qualtran._infra.bloq import DecomposeTypeError
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd, _cadd_large
-    from qualtran.bloqs.mcmt import And
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.mcmt.and_bloq import And
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from sympy import Symbol
 
     source = _cadd_large.make()
     assert source.a_dtype == source.b_dtype == QUInt(1000)
     assert get_cost_value(source, QECGatesCost()).total_toffoli_only() == 1999
-    with pytest.raises(RuntimeError, match="maximum recursion depth") as failure:
-        get_cost_value(source, QubitCount())
-    cause = failure.value.__cause__
-    assert isinstance(cause, RuntimeError)
-    assert isinstance(cause.__cause__, RecursionError)
+    previous_limit = sys.getrecursionlimit()
+    try:
+        # Recursion exhaustion is an environment boundary, not a universal source result.
+        sys.setrecursionlimit(1000)
+        with pytest.raises(RuntimeError, match="maximum recursion depth") as failure:
+            get_cost_value(source, QubitCount())
+        cause = failure.value.__cause__
+        assert isinstance(cause, RuntimeError)
+        assert isinstance(cause.__cause__, RecursionError)
+        sys.setrecursionlimit(3000)
+        assert get_cost_value(source, QubitCount()) == 4000
+    finally:
+        sys.setrecursionlimit(previous_limit)
     from flagquantum.compiler.registers.arithmetic.controlled_add_resource_model import (
         source_controlled_add_resource_formula,
     )
@@ -123,10 +137,15 @@ def test_large_factory_and_symbolic_boundary_keep_distinct_admission() -> None:
 def test_actual_capture_complete_amplitudes_and_all_inverse_branches(
     dtype: str, cv: int
 ) -> None:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 
-    kind = {"unsigned": QUInt, "signed": QInt, "montgomery": QMontgomeryUInt}[dtype]
+    kinds: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "signed": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
+    kind = kinds[dtype]
     root = CAdd(kind(1), kind(2), cv=cv)
     emitter = import_register_emitter(root)
     ports = {"ctrl": (0,), "a": (1,), "b": (2, 3)}
@@ -168,9 +187,10 @@ def test_actual_capture_complete_amplitudes_and_all_inverse_branches(
 def test_native_score_retains_direct_source_labels_and_broken_drawer_boundary(
     cv: int,
 ) -> None:
-    from qualtran import BloqBuilder, QUInt
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     source = CAdd(QUInt(3), cv=cv)
     signature = native_signature(source.signature)
@@ -190,7 +210,7 @@ def test_native_score_retains_direct_source_labels_and_broken_drawer_boundary(
     data = register_score_data(score, wire_symbol=addition_wire_symbol)
     assert len(data["hlines"]) == 3 and len(data["vlines"]) == 1
     for reg in source.signature:
-        symbol = source.wire_symbol(SimpleNamespace(reg=reg))
+        symbol = getattr(source, "wire_symbol")(SimpleNamespace(reg=reg))
         assert addition_wire_symbol(step, reg.name, "THRU") == (
             type(symbol).__name__,
             {"text": symbol.text},

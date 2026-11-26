@@ -8,13 +8,15 @@ import hashlib
 import json
 import re
 import subprocess
+from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TypedDict
 
-import kickmix as km
-
 from tests.unit.fixtures.generate_physical_circuit_binding import observe
+
+# The pybind oracle has no Python attribute stubs.
+km = import_module("kickmix")
 
 FTQC_SOURCE_INVENTORY = (
     Path(__file__).resolve().parents[3] / "docs/development/ftqc_source_inventory.csv"
@@ -58,7 +60,9 @@ def verify_sources(source: Path) -> None:
 
 def main() -> None:
     assert km.__version__ == "0.1" and hasattr(km, "Simulator")
-    assert hashlib.sha256(Path(km.__file__).read_bytes()).hexdigest() == (
+    module_file = km.__file__
+    assert module_file is not None
+    assert hashlib.sha256(Path(module_file).read_bytes()).hexdigest() == (
         "5e849075b49d895cca761fae864c8561b54362a6158fbfcabe7e9eb6e96d789e"
     )
     root = Path(__file__).resolve().parents[3]

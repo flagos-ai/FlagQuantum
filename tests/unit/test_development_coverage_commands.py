@@ -19,6 +19,7 @@ from tests.unit.test_development_pytest_commands import git
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import coverage_command as native
 from tools.development import process
+from tools.development.repository import merge_base_revision as coverage_revision
 from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -284,7 +285,7 @@ def test_merge_base_actual_divergence_and_invalid_revision(
     (checkout / "lib/a_test.py").write_text("# Current change\n")
     git(checkout, "add", "lib/a_test.py")
     git(checkout, "commit", "-m", "Current change")
-    assert native.coverage_revision(checkout, "comparison") == base
+    assert coverage_revision(checkout, "comparison") == base
     for changed in (False, True):
         expected, events, _ = run_original(checkout, ["comparison"], changed, (0, 0, 0))
         actual, native_events = run_native_recorded(
@@ -305,7 +306,7 @@ def test_missing_default_and_unrelated_history_source_boundaries(
     git(checkout, "restore", "lib/a.py")
     git(checkout, "checkout", "--orphan", "unrelated")
     git(checkout, "commit", "-m", "Unrelated root")
-    assert native.coverage_revision(checkout, "main") == ""
+    assert coverage_revision(checkout, "main") == ""
     for changed in (False, True):
         arguments = ["main", "--no-analyze"]
         expected, events, _ = run_original(checkout, arguments, changed, (0, 0, 0))

@@ -42,9 +42,12 @@ def root_fixture(
     order: tuple[int, ...], width: int, idle: bool, consume_roots: bool = True
 ) -> tuple[ProgramRecord, Any]:
     from attrs import frozen
-    from qualtran import Bloq, BloqBuilder, QAny, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
 
     dtype = RegisterType("uint", width)
     ports = tuple(Register(f"q{i}", dtype) for i in range(len(order)))
@@ -107,7 +110,7 @@ def root_fixture(
 def test_root_positions_lifetimes_and_default_records_match_source(
     order: tuple[int, ...], width: int, idle: bool, consume_roots: bool
 ) -> None:
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     record, source = root_fixture(order, width, idle, consume_roots)
     before = hash(record)
@@ -125,7 +128,7 @@ def test_root_positions_lifetimes_and_default_records_match_source(
 def test_root_typed_callbacks_preserve_source_events_and_stateful_glyphs(
     monkeypatch: pytest.MonkeyPatch, order: tuple[int, ...], idle: bool
 ) -> None:
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     from tests.unit.test_drawer_register_symbols import (
         Event,
@@ -166,12 +169,18 @@ def test_root_pixels_retain_source_record_order_with_boundary_text_adaptation(
     actual = register_score_data(component_register_score(record))
     expected = get_musical_score_data(source)
     ports = {(port["seq_x"], port["y"]): port for port in actual["soqs"]}
+
+    def text_at(x: int, y: int) -> str:
+        text = ports[(x, y)]["symb_attributes"]["text"]
+        assert isinstance(text, str)
+        return text
+
     expected.soqs = [
         (
             attrs.evolve(
                 port,
                 symb=Text(
-                    ports[(port.rpos.seq_x, port.rpos.y)]["symb_attributes"]["text"],
+                    text_at(port.rpos.seq_x, port.rpos.y),
                     fontsize=8,
                 ),
             )

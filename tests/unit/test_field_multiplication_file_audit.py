@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
+import numpy as np
 import pytest
 
 from examples.algorithms.field_addition_catalog import field_signature_svg
@@ -33,9 +34,10 @@ REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
 
 @pytest.fixture(scope="module", autouse=True)
 def frozen_assets() -> None:
+    from importlib import import_module
     from importlib.metadata import version
 
-    import kickmix
+    kickmix = import_module("kickmix")
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
@@ -56,8 +58,10 @@ def frozen_assets() -> None:
 
 def _source_key(node: Any) -> Any:
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.basic_gates import CNOT, Toffoli
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
         BinaryPolynomialMultiplication,
         GF2MulK,
@@ -76,6 +80,7 @@ def _source_key(node: Any) -> Any:
     if isinstance(node, MultiplyPolyByOnePlusXk):
         return ("one_plus", node.n, node.k)
     if isinstance(node, SynthesizeLRCircuit):
+        assert isinstance(node.matrix, np.ndarray)
         return ("linear", tuple(tuple(int(b) for b in row) for row in node.matrix))
     if isinstance(node, (GF2ShiftRight, GF2ShiftLeft)):
         q = node.qgf

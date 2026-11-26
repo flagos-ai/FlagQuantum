@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from qualtran._infra.bloq import Bloq
 
 from flagquantum.compiler._component_trace.call_graph import _build_call_graph
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
@@ -65,21 +66,17 @@ def frozen_source() -> None:
 
 def source_call(call: ResourceCall) -> Any:
     """Translate native identities only, never source costs or decomposition rows."""
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.basic_gates import (
-        CRz,
-        CSwap,
-        CZPowGate,
-        TGate,
-        Toffoli,
-        TwoBitCSwap,
-        ZPowGate,
-    )
-    from qualtran.bloqs.mcmt import And, MultiAnd
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran.bloqs.basic_gates.rotation import CRz, CZPowGate, ZPowGate
+    from qualtran.bloqs.basic_gates.swap import CSwap, TwoBitCSwap
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
     from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
-    from qualtran.bloqs.swap_network import CSwapApprox
-    from qualtran.symbolics import HasLength
+    from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
+    from qualtran.symbolics.types import HasLength
 
+    source: Bloq
     if isinstance(call, ControlledSwapCall):
         source = CSwapApprox(call.width) if call.approximate else CSwap(call.width)
         return source.adjoint() if call.adjoint else source

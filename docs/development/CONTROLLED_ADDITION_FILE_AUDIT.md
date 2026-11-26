@@ -17,7 +17,7 @@ test Git blobs are checked against the pinned ledger.
 | Call graph and peak width | Native ArithmeticCall and resource owners preserve original And(m), Add(m,n), And-adjoint(m) edges, category costs and concrete versus symbolic width dispatch. Existing replaceable-child consumers are reused. |
 | Specialized outer control | The source adds one conjunction/erase around a positive-controlled CAdd. Existing native predicate resources represent this model. General physical/static foreign controlled-component admission remains separate open work. |
 | Small three-bit factory | Both actual captured directions preserve every gate, operand and feedback dependency, reversed physical word binding and CircuitIR JSON through ordinary append. Source model peak is twelve and the stream has twenty T/TDG and five measurements/resets. |
-| Large thousand-bit factory | The original declares 1999 Toffoli equivalents. Native emission has 7996 T/TDG and 1999 measurements/resets, with composed peak 4000. Dense-state execution at this width is not claimed. The original peak query fails through the recursive Add decomposition, as recorded below. |
+| Large thousand-bit factory | The original declares 1999 Toffoli equivalents. Native emission has 7996 T/TDG and 1999 measurements/resets, with composed peak 4000. Dense-state execution at this width is not claimed. The original peak query returns 4000 at recursion limit 3000 and fails at limit 1000, as recorded below. |
 | Presentation | Existing addition drawer callback now accepts controlled_add and preserves ctrl/a/a+b port labels and short name. The original full drawing entry point fails because its callback signature predates the drawing API. Direct original glyph calls are compared independently and the native complete score renders normally. |
 
 All physical words are big-endian. Loaded work has m bits and carries have n-1
@@ -58,11 +58,13 @@ raises TypeError before a source score can be produced. Native glyphs are
 compared with the original method using its own declared Soquet-style input.
 A corrected source drawer is not used as an unmodified reference.
 
-QubitCount for the thousand-bit factory reaches Add's recursive decomposition
-and raises RuntimeError wrapping another RuntimeError and RecursionError at the
-normal Python recursion limit. The source Toffoli model still evaluates.
-The native composed peak is recorded separately, without altering that limit or
-claiming the failed source query returned a width.
+QubitCount for the thousand-bit factory is sensitive to the process recursion
+limit. With the unchanged locked source, limit 1000 raises RuntimeError wrapping
+another RuntimeError and RecursionError; limit 3000 returns 4000, matching the
+native composed peak. The source Toffoli model returns 1999 in both settings.
+The boundary test explicitly exercises both limits and restores the original
+process limit even on failure. No source is patched. Earlier failure evidence
+below applies to the recorded low-limit environment, not every Python process.
 
 Symbolic CAdd explicitly refuses decomposition while retaining 2n-1 CCZ model
 cost. Native physical capture rejects symbolic ports. Protected static
@@ -167,9 +169,10 @@ All 14 recursive definitions in the frozen source and all 11 original test
 functions, including the separately verified notebook, map to existing native
 owners. The two actual factories retain deterministic source library bytes at
 depths zero and one. The three-bit factory also retains depth two. The
-thousand-bit source fails at depth two with RecursionError while recursively
-decomposing Add. This source failure is asserted without changing the source
-or raising its recursion limit. The original default factory serializer passes.
+thousand-bit source was observed to fail at depth two while recursively
+decomposing Add in the earlier low-limit environment. That historical result is
+not a universal source defect: the 2026-11-27 boundary probe below distinguishes
+limits 1000 and 3000 without modifying source bytes. The original default factory serializer passes.
 
 Both signed and unsigned symbolic declarations, with both activation values,
 resolve through the existing explicit native factory interface. Their unresolved
@@ -199,7 +202,7 @@ The source's narrow signed numerical callback still differs from its actual
 zero-extending gate chain. Q-0186.02 remains an explicit open semantic exception.
 The native numerical owner follows the callback, and the gate owner follows the
 source gates. The original drawer's Register-versus-Soquet interface failure and
-thousand-bit QubitCount recursion failure also remain recorded. Full-file
+thousand-bit QubitCount low-limit recursion failure also remain recorded. Full-file
 acceptance means all original definitions and supported consumers have a tested
 disposition, including these retained source defects. It does not certify those
 conflicting source semantics as equal.
@@ -229,3 +232,16 @@ policy retains its whole-repository baseline, with zero findings for this batch.
 The established default docstring-policy failure remains qualified by ten
 byte-identical baseline files. These results do not assert whole-repository
 acceptance.
+
+## Recursion environment correction (2026-11-27)
+
+The concentrated input-portability regression exposed an overly broad failure
+assertion. The actual loaded `qualtran` package, `_costing.py`, `_qubit_counts.py`,
+`addition.py` and `controlled_addition.py` all match their frozen inventory Git
+blobs. Importing the qualified scientific environment leaves recursion limit
+3000; the unchanged thousand-bit source QubitCount returns 4000. Explicit limit
+1000 reproduces the original two-wrapper RecursionError. Both outcomes are now
+asserted, with guaranteed restoration of the caller's limit. This corrects an
+environment claim; no upstream fix or defect waiver is introduced. Primitive
+7996 T/TDG and 1999 measurement/reset counts remain distinct from the model's
+1999 Toffoli equivalents and logical peak 4000.

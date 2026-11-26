@@ -116,9 +116,9 @@ def native_title(node: ResourceCall) -> str:
 def test_factory_matches_source_full_rows_edges_and_svg(
     family: str, depth: int | None, aggregation: GateAggregation
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import MultiAnd
     from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-    from qualtran.drawing import GraphvizCallGraph
+    from qualtran.drawing.bloq_counts_graph import GraphvizCallGraph
 
     root: ResourceCall
     source: Any

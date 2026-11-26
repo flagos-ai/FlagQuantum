@@ -8,12 +8,14 @@ import importlib.util
 import inspect
 import json
 import sys
+from importlib import import_module
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 from unittest.mock import patch
 
-import kickmix as km
+# The pybind oracle has no Python attribute stubs.
+km = import_module("kickmix")
 
 FTQC_SOURCE_INVENTORY = (
     Path(__file__).resolve().parents[3] / "docs/development/ftqc_source_inventory.csv"
@@ -45,8 +47,10 @@ def main() -> None:
         blobs[relative] = digest
     assert len(blobs) == 4
     assert km.__version__ == "0.1" and hasattr(km, "Simulator")
+    module_file = km.__file__
+    assert module_file is not None
     assert (
-        hashlib.sha256(Path(km.__file__).read_bytes()).hexdigest()
+        hashlib.sha256(Path(module_file).read_bytes()).hexdigest()
         == "5e849075b49d895cca761fae864c8561b54362a6158fbfcabe7e9eb6e96d789e"
     )
     suite = _load("benchmark_suite", source)

@@ -57,7 +57,7 @@ resource evidence in the component audit is reused.
 | Measurement and reset | m+n-1 of each | QEC measurements m+n-1 |
 | Negative-control X | 4m additional X | Source category model queried independently |
 | Clean private work | m+n-1 wires | QubitCount agrees for tested small widths |
-| Thousand-bit example | 7996 T/T-dagger and 1999 measurements/resets; peak 4000 | Original 1999 Toffoli equivalents; source peak recursion failure retained |
+| Thousand-bit example | 7996 T/T-dagger and 1999 measurements/resets; peak 4000 | Original 1999 Toffoli equivalents; source peak 4000 at recursion limit 3000; failure retained at limit 1000 |
 
 ## Preserved defects and remaining scope
 

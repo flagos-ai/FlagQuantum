@@ -65,22 +65,26 @@ def frozen_source() -> None:
 
 
 def source_for(call: ArithmeticCall) -> Any:
-    from qualtran import QInt, QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic import CAdd
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt, QUInt
+    from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 
-    types = {"unsigned": QUInt, "twos_complement": QInt, "montgomery": QMontgomeryUInt}
-    source = CAdd(
-        *(types[e](w) for e, w in zip(call.encodings, call.widths, strict=True)),
-        cv=call.control_value,
+    types: dict[str, type[QUInt] | type[QInt] | type[QMontgomeryUInt]] = {
+        "unsigned": QUInt,
+        "twos_complement": QInt,
+        "montgomery": QMontgomeryUInt,
+    }
+    left, right = (
+        types[e](w) for e, w in zip(call.encodings, call.widths, strict=True)
     )
+    source = CAdd(left, right, cv=call.control_value)
     return source.adjoint() if call.adjoint else source
 
 
 def source_key(source: Any) -> ResourceCall:
-    from qualtran import QInt, QMontgomeryUInt
     from qualtran._infra.adjoint import Adjoint
-    from qualtran.bloqs.arithmetic import CAdd
-    from qualtran.bloqs.bookkeeping import Cast
+    from qualtran._infra.data_types import QInt, QMontgomeryUInt
+    from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+    from qualtran.bloqs.bookkeeping.cast import Cast
 
     def encoding(dtype: Any) -> ArithmeticEncoding:
         return (
@@ -113,7 +117,8 @@ def source_key(source: Any) -> ResourceCall:
 
 
 def compare(call: ArithmeticCall, seed: Any = None) -> dict[ResourceCall, SymbolicInt]:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     expected: dict[Any, SymbolicInt] = {} if seed is None else {seed: 20}
     actual: dict[ResourceCall, SymbolicInt] = (
@@ -169,11 +174,11 @@ def test_mixed_encoding_words(
 def test_child_peaks_include_idle_caller_words(
     seed_name: str, cv: int, adjoint: bool
 ) -> None:
-    from qualtran import QInt, QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.bloqs.bookkeeping import Cast
-    from qualtran.bloqs.mcmt import And
+    from qualtran._infra.data_types import QInt, QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.bookkeeping.cast import Cast
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     cast = Cast(QUInt(2), QInt(2))
     add = Add(QInt(2), QUInt(3))
@@ -206,7 +211,8 @@ def test_automatic_dot_matches_source_widths(
     depth: int | None,
     aggregation: GateAggregation,
 ) -> None:
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     call = ArithmeticCall("controlled_add", widths, control_value=cv, adjoint=adjoint)
     cache: dict[Any, SymbolicInt] = {}
