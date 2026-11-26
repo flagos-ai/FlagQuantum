@@ -11,7 +11,7 @@ The shared Compiler phase owner composes an explicit preparation Program,
 one controlled-power Program per phase bit, and a supplied Fourier Program.
 It does not select a backend or execute quantum numerical kernels. The existing
 Algorithms `textbook_z_phase_estimation_program` delegates to this owner;
-Ecosystem tracks native constructor recipes for the four original examples.
+Compiler formats/legacy_textbook_qpe_factories.py tracks native constructor recipes for the four original examples.
 Unknown same-signature unitary, window and Fourier children are refused rather
 than assigned inferred semantics. No foreign SDK object enters Compiler.
 
@@ -72,9 +72,19 @@ Allocation lease release alone is not used as evidence of zero amplitude.
 Arbitrary unitary/window constructor contexts, unknown exact adjoints, Kaiser
 atomic preparation, LP consumers requiring pending Proposal 119, and symbolic
 physical execution remain open. No generic constructor catalogue increment is
-claimed for this supported original-example group. Pending Proposal 116, wider
-source/refusal boundaries, whole-repository, GPU and performance gates retain
-separate scope. Strict typing on all four changed Python files, Black/Ruff, Compiler/Algorithms/
+claimed for this supported original-example group. Proposal 116 storage is now approved and verified in its separate storage
+batch. Wider source/refusal boundaries, whole-repository, GPU and performance
+gates retain separate scope. Strict typing on all four changed Python files, Black/Ruff, Compiler/Algorithms/
 Ecosystem scopes, language, architecture, IR/API and diff checks pass. The
 dependency checker retains the identical 720-finding baseline. The reference
 source is unchanged.
+
+## Shared constructor owner continuation
+
+The obsolete private Ecosystem QPE resolver is removed and all consumers use
+Compiler formats/legacy_textbook_qpe_factories.py. See
+[shared-owner evidence](TEXTBOOK_QPE_SHARED_OWNER.md). All 32 complete baseline
+Program/bound-IR records remain identical; all 48 directional resource rows
+retain separate primitive/model accounts. Compilation context isolation and
+SDK/Algorithms/Simulation-blocked resolution are verified. Existing arbitrary
+unitary/window, symbolic physical and scalar boundaries are unchanged.
