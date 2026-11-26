@@ -1,5 +1,32 @@
 # First-quantization tutorial and particle-pair preparation audit
 
+## Standalone source constructor binding
+
+The complete `prepare.py` class now resolves under its original exact module
+identifier, using the already owned particle-pair declaration factory. The
+separate copy in `select_and_prepare.py` keeps its own source identity; their
+field sets, register declarations and source models are compared rather than
+assuming the two classes are aliases. No duplicate preparation implementation
+or quantum body was added.
+
+Actual source libraries at depths zero, one and two round-trip and resolve
+without Qualtran, Cirq or Qiskit imports. The one-particle declaration omits
+both zero-width ports. All declarations refuse physical binding, matching the
+source's absent decomposition; primitive counts, complex amplitudes and work
+cleanup are unavailable, not zero. Existing whole-file and original-test
+acceptance Q-0364/Q-0369 is reused, not counted again.
+
+| Particles, rotation precision | Source and native Toffoli model | Source and native peak model | Emitted primitives |
+|---|---:|---:|---|
+| 1, 8 | 14 | 3 | Unavailable |
+| 2, 1 | -7 | 3 | Unavailable |
+| 10, 8 | 42 | 8 | Unavailable |
+
+The negative source resource formula is retained, not repaired or interpreted
+as an executable negative gate count. This adds only the missing exact source
+constructor key; the existing field admission and all other ordinary root
+constructors remain with their original owners.
+
 The frozen Qualtran v0.7.0 reference is at
 `bcb17bb25360ed68ce3bc084645db3e929799389`, under
 `qualtran/bloqs/chemistry/pbc/first_quantization`.
