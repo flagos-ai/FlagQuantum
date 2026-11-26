@@ -25,9 +25,11 @@ from flagquantum.compiler.formats.legacy_component_library import (
 from flagquantum.compiler.formats.legacy_component_resolution import (
     resolve_component_program,
 )
+from flagquantum.compiler.formats.legacy_word_factories import _rename_program
 from flagquantum.compiler.registers.comparison.equality_component import (
     equality_program,
 )
+from flagquantum.compiler.registers.component_definition_match import _named_definitions
 from flagquantum.compiler.registers.control.multi_control_component import (
     multi_control_x_program,
 )
@@ -430,3 +432,478 @@ def test_typed_slope_replaces_flat_path_on_all_small_promised_inputs() -> None:
     delta = Counter(g.name for g in bound.circuit.instructions)
     delta.subtract(g.name for g in old.instructions)
     assert delta == Counter({"h": 24, "measure": 24, "x": 24, "z": 12, "cx": -12})
+
+
+@pytest.mark.parametrize("kind", ("Three", "Four"))
+@pytest.mark.parametrize(
+    "width,modulus,window,depth",
+    [(3, 3, 1, 0), (3, 3, 1, 1), (3, 3, 1, 2), (5, 13, 5, 0)],
+)
+def test_coordinate_and_product_original_libraries_calls_and_nominal_views(
+    kind: str,
+    width: int,
+    modulus: int,
+    window: int,
+    depth: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    source = getattr(module, "_ECAddStep" + kind)(width, modulus, window)
+    library = _library(source, depth)
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        graph = resolve_component_program(
+            library, 0, elliptic_curve_addition_factories()
+        )
+    assert verify_program_record(graph) == ()
+    assert len(graph.functions[0].blocks[0].operations) == (
+        2 * width + 18 if kind == "Three" else 3 * width + 19
+    )
+    assert _named_inputs(_native_trace(graph)) == _named_inputs(
+        _source_trace(SourceCalls, source.decompose_bloq())
+    )
+
+
+@pytest.mark.parametrize("kind", ("Three", "Four"))
+def test_coordinate_and_product_complex_columns_all_histories_and_private_work(
+    kind: str,
+) -> None:
+    from tests.unit.ec_stage_conformance import check_stage_channel
+    from tests.unit.test_elliptic_curve_addition_coordinates import (
+        layout as coordinates_layout,
+    )
+    from tests.unit.test_elliptic_curve_addition_products import (
+        layout as products_layout,
+    )
+
+    factory = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStep" + kind
+    ]
+    graph = factory("main", None, {"n": 3, "mod": 3, "window_size": 1})
+    assert isinstance(graph, ProgramRecord)
+    if kind == "Three":
+        original, ports, _, _ = coordinates_layout(3, 3)
+        rows = tuple(
+            dict(zip(("ctrl", "a", "b", "x", "y", "lam"), values, strict=True))
+            for values in product(
+                range(2), range(3), range(3), range(3), range(3), range(3)
+            )
+        )
+        count = 1
+    else:
+        original, ports, _, _ = products_layout(3, 3)
+        rows = tuple(
+            dict(zip(("x", "y", "lam"), values, strict=True))
+            for values in product(range(3), range(8), range(3))
+        )
+        count = 2
+    check_stage_channel(
+        graph,
+        original,
+        ports,
+        rows,
+        delta={
+            "h": 24 * count,
+            "measure": 24 * count,
+            "x": 24 * count,
+            "z": 12 * count,
+            "cx": -12 * count,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    "kind,calls", [("_ECAddStepFive", 16), ("_ECAddStepSix", 61), ("ECAdd", 6)]
+)
+@pytest.mark.parametrize("depth", (0, 1, 2))
+def test_cleanup_finish_and_root_actual_libraries_literal_ports_and_feedback(
+    kind: str, calls: int, depth: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    source = getattr(module, kind)(3, 3)
+    library = _library(source, depth)
+    encoded = serialize_component_library(library)
+    assert (
+        serialize_component_library(deserialize_component_library(encoded)) == encoded
+    )
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        graph = resolve_component_program(
+            library, 0, elliptic_curve_addition_factories()
+        )
+    assert verify_program_record(graph) == ()
+    assert len(graph.functions[0].blocks[0].operations) == calls
+    assert _named_inputs(_native_trace(graph)) == _named_inputs(
+        _source_trace(SourceCalls, source.decompose_bloq())
+    )
+
+
+@pytest.mark.parametrize("kind", ("clear", "zero_words"))
+def test_structured_ecc_control_leaf_exact_gates_all_dirty_inputs_and_histories(
+    kind: str,
+) -> None:
+    from math import prod
+
+    from flagquantum.core.ir.program.signatures import Signature
+    from flagquantum.ecosystem._elliptic_curve_addition_library import _clear_slope
+    from tests.unit.ec_stage_conformance import pack
+    from tests.unit.test_component_hierarchy_control import compare_layers
+
+    source_module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    if kind == "clear":
+        source = next(
+            node.bloq
+            for node, _, _ in source_module._ECAddStepFive(3, 3)
+            .decompose_bloq()
+            .iter_bloqsoqs()
+            if node.i == 9
+        )
+        graph = _clear_slope(montgomery_register_type(3))
+    else:
+        source = next(
+            node.bloq
+            for node, _, _ in source_module._ECAddStepSix(3, 3)
+            .decompose_bloq()
+            .iter_bloqsoqs()
+            if node.i == 1
+        )
+        record = elliptic_curve_addition_factories()[
+            "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepSix"
+        ]("finish", None, {"n": 3, "mod": 3})
+        assert isinstance(record, ProgramRecord)
+        entry = record.functions[0].blocks[0].operations[1].callee
+        assert entry is not None
+        graph = ProgramRecord(_named_definitions(record, entry))
+    graph = _rename_program(graph, "main")
+    signature = Signature(graph.functions[0].registers or ())
+    compare_layers(graph, source, {f.name for f in graph.functions[1:]})
+    inputs = []
+    ports = {}
+    offset = 0
+    for register in signature.lefts():
+        size = int(register.bitsize)
+        start = offset
+        for _ in range(prod(register.shape)):
+            inputs.append(tuple(range(offset, offset + size)))
+            offset += size
+        ports[register.name] = tuple(range(start, offset))
+    pool = tuple(range(offset, offset + (3 if kind == "clear" else 8)))
+    bound = bind_register_program(
+        graph, tuple(inputs), clean=pool, entry=graph.functions[0].name
+    )
+    expected_gates = reference_arithmetic_gates(
+        source,
+        ports,
+        pool,
+        MeasurementSlots(bound.circuit.instructions),
+        preserve_components=True,
+        keep_exchange_leaves=True,
+    )
+    assert_source(bound.circuit.instructions, expected_gates)
+    width = bound.circuit.n_wires
+    expected_words = []
+    before = []
+    for word in range(1 << offset):
+        values = {
+            name: sum(
+                (word >> (offset - i - 1) & 1) << (len(wires) - j - 1)
+                for j, i in enumerate(wires)
+            )
+            for name, wires in ports.items()
+        }
+        if kind == "clear":
+            values["y"] ^= (
+                values["x"] if values["ctrl1"] == 1 and values["ctrl2"] == 0 else 0
+            )
+        else:
+            values["q"] ^= int(values["ctrl"] == 0)
+        before.append(word << len(pool))
+        expected_words.append(pack(values, ports, width))
+    rows = tuple(
+        tuple(word >> (width - i - 1) & 1 for i in range(width)) for word in before
+    )
+    mapped, events = certified_and_channel_map(bound.circuit.instructions, rows)
+    assert events == len(pool)
+    assert [
+        sum(v << (width - i - 1) for i, v in enumerate(row)) for row in mapped
+    ] == expected_words
+    amplitudes = tuple(complex(i + 1, 7 - i) for i in range(len(before)))
+    norm = sum(abs(value) ** 2 for value in amplitudes) ** 0.5
+    initial = {
+        word: value / norm for word, value in zip(before, amplitudes, strict=True)
+    }
+    final = {
+        word: value / norm
+        for word, value in zip(expected_words, amplitudes, strict=True)
+    }
+    for seed in (0, 19):
+        assert execute_sparse_register(
+            bound.circuit, initial, seed=seed
+        ) == pytest.approx(final, abs=3e-12)
+
+
+def test_cleanup_complete_promised_domain_complex_histories_and_consumed_slope() -> (
+    None
+):
+    from tests.unit.ec_stage_conformance import check_stage_channel
+    from tests.unit.test_elliptic_curve_addition_cleanup import layout
+
+    graph = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFive"
+    ]("main", None, {"n": 3, "mod": 3, "window_size": 1})
+    assert isinstance(graph, ProgramRecord)
+    original, ports, _, _ = layout(3, 3)
+    rows = []
+    word = import_module("qualtran").QMontgomeryUInt(3, 3)
+    for ctrl, a, b, x, y, tangent in product(
+        range(2), range(3), range(3), range(3), range(3), range(3)
+    ):
+        inverse = word.montgomery_inverse(x) if x else 0
+        calculated = word.montgomery_product(inverse, y)
+        assert type(inverse) is int and type(calculated) is int
+        slope = (calculated if ctrl else 0) ^ (tangent if ctrl and inverse == 0 else 0)
+        rows.append(dict(ctrl=ctrl, a=a, b=b, x=x, y=y, lam_r=tangent, lam=slope))
+    check_stage_channel(
+        graph,
+        original,
+        ports,
+        rows,
+        delta={"h": 24, "measure": 24, "x": 24, "z": 12, "cx": -12},
+    )
+
+
+def _small_curve_rows() -> list[dict[str, int]]:
+    points = (
+        (0, 0),
+        *(
+            (x, y)
+            for x, y in product(range(3), repeat=2)
+            if (y * y - x**3 - x - 1) % 3 == 0
+        ),
+    )
+    rows = []
+    for (a, b), (x, y) in product(points, repeat=2):
+        tangent = (3 * a * a + 1) * pow(2 * b, -1, 3) % 3 if b else 0
+        rows.append(
+            {
+                name: value * 8 % 3
+                for name, value in zip(
+                    ("a", "b", "x", "y", "lam_r"), (a, b, x, y, tangent), strict=True
+                )
+            }
+        )
+    return rows
+
+
+@pytest.mark.parametrize("kind", ("finish", "root"))
+def test_full_curve_pairs_absolute_complex_branches_all_work_and_flags_clear(
+    kind: str,
+) -> None:
+    from flagquantum.algorithms.primitives.elliptic_curve_addition_finish import (
+        EllipticCurveAdditionFinish,
+    )
+    from tests.unit.ec_stage_conformance import check_stage_channel
+    from tests.unit.test_elliptic_curve_addition import layout
+
+    factories = elliptic_curve_addition_factories()
+    rows = _small_curve_rows()
+    ports: dict[str, tuple[int, ...]]
+    if kind == "finish":
+        module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+        stages = [
+            getattr(module, "_ECAddStep" + name)(3, 3).decompose_bloq()
+            for name in ("One", "Two", "Three", "Four", "Five")
+        ]
+        for row in rows:
+            for stage in stages:
+                values = stage.on_classical_vals(
+                    **{
+                        register.name: row[register.name]
+                        for register in stage.signature.lefts()
+                    }
+                )
+                row.update({name: int(value) for name, value in values.items()})
+        graph = factories["qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepSix"](
+            "main", None, {"n": 3, "mod": 3}
+        )
+        operation = EllipticCurveAdditionFinish(3, 3)
+        q, c = operation.workspace_requirements()
+        ports = {
+            name: (wire,) for wire, name in enumerate(("f1", "f2", "f3", "f4", "ctrl"))
+        }
+        ports.update(
+            {
+                name: tuple(range(5 + 3 * i, 8 + 3 * i))
+                for i, name in enumerate(("a", "b", "x", "y"))
+            }
+        )
+        original = (
+            DynamicCircuit(17 + q)
+            .append(
+                operation.make_on(
+                    a=ports["a"],
+                    b=ports["b"],
+                    x=ports["x"],
+                    y=ports["y"],
+                    flags=tuple(range(5)),
+                    workspace=tuple(range(17, 17 + q)),
+                    classical_bits=tuple(range(c)),
+                )
+            )
+            .to_ir()
+        )
+        delta = {}
+    else:
+        graph = factories["qualtran.bloqs.cryptography.ecc.ec_add.ECAdd"](
+            "main", None, {"n": 3, "mod": 3, "window_size": 1}
+        )
+        original, ports = layout(3, 3)
+        delta = {"h": 120, "measure": 120, "x": 120, "z": 60, "cx": -60}
+    assert isinstance(graph, ProgramRecord)
+    check_stage_channel(graph, original, ports, rows, delta=delta)
+
+
+def test_original_modulus_five_dirty_flag_release_is_not_repaired() -> None:
+    from tests.unit.ec_stage_conformance import pack
+
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    data = dict(a=0, b=0, x=2, y=1, lam_r=0)
+    for name in ("One", "Two", "Three", "Four", "Five"):
+        stage = getattr(module, "_ECAddStep" + name)(4, 5).decompose_bloq()
+        values = stage.on_classical_vals(
+            **{
+                register.name: data[register.name]
+                for register in stage.signature.lefts()
+            }
+        )
+        data.update({name: int(value) for name, value in values.items()})
+    finish = module._ECAddStepSix(4, 5).decompose_bloq()
+    with pytest.raises(ValueError, match="free a non-zero register"):
+        finish.on_classical_vals(
+            **{
+                register.name: data[register.name]
+                for register in finish.signature.lefts()
+            }
+        )
+    graph = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add.ECAdd"
+    ]("main", None, {"n": 4, "mod": 5, "window_size": 1})
+    assert isinstance(graph, ProgramRecord)
+    names = ("a", "b", "x", "y", "lam_r")
+    inputs = tuple(tuple(range(4 * i, 4 * i + 4)) for i in range(5))
+    bound = bind_register_program(
+        graph,
+        inputs,
+        clean=tuple(range(20, 160)),
+        input_ownership=tuple((wire, False) for wire in range(20)),
+        allow_workspace_outputs=True,
+    )
+    width = bound.circuit.n_wires
+    flags = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepOne"
+    ]("main", None, {"n": 4, "mod": 5})
+    assert isinstance(flags, ProgramRecord)
+    prefix = bind_register_program(
+        flags,
+        inputs[:4],
+        clean=tuple(range(20, 160)),
+        input_ownership=tuple((wire, False) for wire in range(16)),
+        allow_workspace_outputs=True,
+    )
+    ghost = prefix.outputs[0][0]
+    assert any(
+        event.kind == "free" and not event.dirty and event.wires == (ghost,)
+        for event in bound.events
+    )
+    raw = dict(a=0, b=0, x=2, y=1, lam_r=0)
+    before = pack(raw, dict(zip(names, inputs, strict=True)), width)
+    expected = pack(raw, dict(zip(names, bound.outputs, strict=True)), width) | (
+        1 << (width - ghost - 1)
+    )
+    actual = execute_sparse_register(bound.circuit, {before: 1j}, seed=19)
+    target = {expected: 1j}
+    assert (
+        max(
+            abs(actual.get(key, 0) - target.get(key, 0))
+            for key in actual.keys() | target.keys()
+        )
+        < 4e-12
+    )
+
+
+@pytest.mark.parametrize("kind", ("One", "Two", "Three", "Four", "Five", "Six", "root"))
+def test_all_source_stage_symbolic_declarations_and_invalid_fields(kind: str) -> None:
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    source = (module.ECAdd if kind == "root" else getattr(module, "_ECAddStep" + kind))(
+        sympy.Symbol("n", integer=True, positive=True), 3
+    )
+    library = _library(source, 0)
+    factories = elliptic_curve_addition_factories()
+    graph = resolve_component_program(library, 0, factories)
+    assert verify_program_record(graph) == ()
+    assert not graph.functions[0].blocks
+    key = "qualtran.bloqs.cryptography.ecc.ec_add." + (
+        "ECAdd" if kind == "root" else "_ECAddStep" + kind
+    )
+    with pytest.raises(SerializationError, match="fields"):
+        factories[key]("bad", None, {"n": 3, "mod": 3, "unknown": 1})
+    with pytest.raises(SerializationError, match="signature"):
+        factories[key]("bad", (), {"n": 3, "mod": 3})
+
+
+@pytest.mark.parametrize("name", ("_ec_add", "_ec_add_small"))
+def test_unchanged_original_examples_declarations_or_complete_six_call_root(
+    name: str,
+) -> None:
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    source = getattr(module, name).make()
+    graph = resolve_component_program(
+        _library(source, 0), 0, elliptic_curve_addition_factories()
+    )
+    assert verify_program_record(graph) == ()
+    if name == "_ec_add":
+        assert not graph.functions[0].blocks
+    else:
+        assert (source.n, source.mod, source.window_size) == (5, 7, 1)
+        assert len(graph.functions[0].blocks[0].operations) == 6
+        assert _named_inputs(_native_trace(graph)) == _named_inputs(
+            _source_trace(SourceCalls, source.decompose_bloq())
+        )
+
+
+def test_wide_window_source_reduction_counterexample_remains_in_typed_path() -> None:
+    from tests.unit.ec_stage_conformance import pack
+
+    module = import_module("qualtran.bloqs.cryptography.ecc.ec_add")
+    source = module._ECAddStepFour(5, 13, 5)
+    values = dict(x=12, y=0, lam=9)
+    assert source.decompose_bloq().on_classical_vals(**values) == dict(x=5, y=1, lam=9)
+    graph = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFour"
+    ]("main", None, {"n": 5, "mod": 13, "window_size": 5})
+    assert isinstance(graph, ProgramRecord)
+    inputs = tuple(tuple(range(5 * i, 5 * i + 5)) for i in range(3))
+    bound = bind_register_program(
+        graph,
+        inputs,
+        clean=tuple(range(15, 265)),
+        input_ownership=tuple((wire, False) for wire in range(15)),
+        allow_workspace_outputs=True,
+    )
+    width = bound.circuit.n_wires
+    before = pack(values, dict(zip(values, inputs, strict=True)), width)
+    expected = pack(
+        dict(x=5, y=27, lam=9), dict(zip(values, bound.outputs, strict=True)), width
+    )
+    for seed in (0, 19):
+        actual = execute_sparse_register(bound.circuit, {before: 1j}, seed=seed)
+        target = {expected: 1j}
+        assert (
+            max(
+                abs(actual.get(key, 0) - target.get(key, 0))
+                for key in actual.keys() | target.keys()
+            )
+            < 4e-12
+        )
