@@ -42,3 +42,10 @@ bounded permutation array under the existing Core contract; see the later
 measured-child context in KIKUCHI_GUIDING_STATE_FILE_AUDIT.md. Full-root physical amplitudes and cleanup are unverified. Q-0612
 retains its original skips/count-consistency and serialization xfails. Q-0613,
 the separate tutorial notebook, is the next whole file.
+
+The tutorial follow-up now retains literal symbolic/concrete word roots and
+the original one-level expansion, with twelve/twenty-one calls respectively.
+Concrete duplicate detection supplies its existing source-faithful body;
+only preparation and sorting lack original physical bodies. This does not
+close the separate tutorial: both resource graph views, complete native cell
+execution and final six-figure inspection remain required.

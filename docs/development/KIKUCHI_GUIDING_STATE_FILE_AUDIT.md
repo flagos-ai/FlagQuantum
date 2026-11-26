@@ -21,7 +21,7 @@ marks its zero predicate coherently. Only predicate workspace must enter and
 leave zero. Caller-owned classical slots hold its And-erasure results.
 
 The root program accepts actual typed bodies for the six source roles. It uses
-shared split/join and component-call construction for scope tensor products,
+shared Partition/AutoPartition and component-call construction for scope tensor products,
 sorting, duplicates, coherent zero marking and final OR flag. An identity child
 fixture checks admission only and supplies no physical preparation evidence.
 
@@ -32,7 +32,8 @@ fixture checks admission only and supplies no physical preparation evidence.
   their distinct frozen-source counts, including symbolic width roundtripping.
 - Sorting uses the existing source signature and resource model. Its bounded
   permutation-register dtype is retained.
-- Duplicate detection reuses the existing source QEC query.
+- Concrete duplicate detection reuses the existing literal source Program and
+  QEC query. The source inverse half-comparison aliases remain unchanged.
 - Coherent probabilistic uncomputation emits H followed by the existing zero
   controlled X ladder. The user appends the bound operation directly.
 - Success-flag combination reuses the two-negative-control X source model.
@@ -91,8 +92,10 @@ case and its original protocol outcomes are completely mapped.
 ## Complete measured-child Program context (2026-11-27)
 
 The existing GuidingState.program now also accepts complete ProgramRecord
-children in each of its six source roles. Existing FunctionRecord callers
-produce entirely identical Programs at ell 2 and 4 relative to a4fcc9857.
+children in each of its six source roles. At publication f9dce871d,
+FunctionRecord callers produced identical Programs at ell 2 and 4 relative
+to a4fcc9857. The later literal word-level recipe below intentionally changes
+structural Programs while preserving their physical instruction streams.
 The same shared ComponentProgramBuilder imports and isolates complete child
 helpers; it owns no execution backend. Call order, packed MSB-first scope
 words, row-major bounded permutation words, flags and input/output directions
@@ -110,11 +113,60 @@ finite body or new instance serializer is invented.
 
 The full example root and ell-two root retain the source's actual bit
 predecessors and outputs after normalizing only zero-gate Split/Join/Partition
-views. Preparation, sorting and duplicate detection stay source declarations.
-Whole physical binding still refuses these three missing bodies. An identity
+views. That batch supplied three declaration fixtures. Concrete duplicate
+detection does have a source decomposition; describing it as bodyless was an
+audit error, corrected by the default dependency binding below. Preparation
+and sorting remain source declarations. An identity
 fixture only proves unchanged interface behavior; it never substitutes for
 physical state preparation. Current bounded pi admission is verified without
 changing Core, the existing API contract or serialized vocabulary.
+
+## Literal tutorial word graphs and default dependencies
+
+The root now follows the frozen Partition/AutoPartition recipe literally,
+including symbolic word widths when the number of scope preparations is
+concrete. Unknown child array sizes stay behind existing packed declarations;
+this does not admit finite execution on symbolic arrays. The concrete default
+duplicate dependency uses sorted_duplicates_program, which preserves the
+original inverse aliases and their known three-word erasure defect. It does
+not use the separately corrected physical duplicate emitter.
+
+The seeded tutorial instance n=20, m=100, k=4, ell=12 and symbolic c=3 root
+both match all source word predecessors and outputs, with twelve calls each.
+One concrete expansion matches all twenty-one original calls and connections.
+Upstream Partition remains atomic at this comparison level, even though the
+native owner also supplies zero-gate physical lowering. The controlled-X
+wrapper is retained at the exact source level. Concrete duplicate dependencies
+also match the recursively comparable source hierarchy.
+
+Packed control words use the same predicate owner as bit arrays. All thirty
+nonempty binary patterns at widths one through four match original primitive
+streams, operands, parameters, measurement feedback and the existing array
+stream. Exact hierarchy comparison covers widths two through four; width one
+has different zero-gate views, with exact emitted-stream comparison retained.
+The established uncompute and duplicate branch-amplitude/workspace receipts
+are reused; the complete preparation remains unavailable from the source.
+
+Four old identity-prefix bindings, with and without the real measured suffix
+at ell two/four, retain identical complete physical IR, quantum/classical
+outputs and workspace lifetimes relative to f9dce871d. Structural operation
+positions differ because the source word views are now explicit. Identity
+prefixes remain compatibility evidence only.
+
+Q-0613 remains open until its standalone signature, both resource call graphs,
+all seventeen native cell roles and all six rendered figures are verified.
+Three root/expansion figures have been rendered; the symbolic figure still
+needs label-spacing refinement before notebook acceptance. No graph receipt
+certifies full-state preparation, primitive totals or work cleanup across the
+bodyless source prefixes. Q-0612 also remains open.
+
+This follow-up passes 247 concentrated cases in each actual Cirq 1.7.0 /
+Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile, with ten visible reference
+warnings per profile. Qualtran 0.7.0 and Kickmix 0.1 Simulator are asserted.
+Six Python files pass strict typing, formatting and lint. Team scopes,
+architecture, internal IR and protected API checks pass. The unchanged
+seventeen-cell original tutorial receipt remains reused rather than claimed
+as new native tutorial acceptance.
 
 The complete known uncompute/OR/X suffix has an independent original composite
 tensor operator. At widths one through three, every logical column and every

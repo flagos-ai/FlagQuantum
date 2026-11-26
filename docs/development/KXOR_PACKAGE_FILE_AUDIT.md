@@ -32,8 +32,8 @@ sides. Existing complete-source evidence supplies primitive, amplitude, feedback
 work-zero and QEC comparisons for their supported paths.
 
 Q-0599 and Q-0600 close as complete package ownership mappings. Component parents
-retain their own concrete physical gaps, including bounded executable register
-admission, sorting decomposition, omitted phase-gradient ports and original
+retain their own concrete physical gaps, including sorting decomposition,
+omitted phase-gradient ports and original
 count/serialization failures. Package closure makes no additional execution or
 resource claim. Native consumers import each class from the domain owner listed above.
 
@@ -46,7 +46,12 @@ existing regression warnings remain visible.
 The untouched Q-0613 tutorial executes all 17 original cells successfully, as
 recorded in `g2-kikuchi-guiding-tutorial-original.log`. Four original cells require
 symbolic or concrete root component diagrams, including flattening. Native root
-Program construction currently fails bounded permutation-register admission and
-cannot represent symbolic sizes. Q-0613 remains open until these graph-only
-requirements have an admitted native representation. Its working source run is
+Program construction now admits bounded permutation registers and symbolic
+word widths with concrete scope count under the existing Core contract.
+Symbolic and concrete twelve-call roots and the twenty-one-call concrete
+expansion match the original connections. Concrete HasDuplicates has an
+original body and now reuses its literal native component; its alias defect
+is retained. Scope preparation and sorting are the bodyless prefixes.
+Q-0613 remains open for the remaining complete-cell and resource-graph
+verification, not a register admission blocker. Its working source run is
 reused and will not be rerun to manufacture progress.
