@@ -32,7 +32,7 @@ behavior and conformance rather than physical GPU/QPU or scalability capacity.
 
 | Check | Result |
 | --- | --- |
-| Full Unit / API / Team, four workers; exclude the existing live Kaiwu service smoke | 19,411 passed; 957 skipped; 386.92 seconds |
+| Full Unit / API / Team, four workers; exclude the existing live Kaiwu service smoke | 19,410 passed; 958 skipped; 389.18 seconds |
 | Full root tests and local training parameter lifecycle integration, four workers | 1,592 passed; 223 skipped; 91.02 seconds |
 | Reclassified example, dedicated VQE subprocess parity, documentation and training consumers | 85 passed; 2 skipped |
 | Frozen historical path/document generation regression suites | 76 passed |
@@ -48,8 +48,10 @@ ledger, and the generated parity document preserves the original contract's
 identifiers with an explicit current-location map. A subsequent root pass
 identified the training example's category mismatch; its classification and
 consumers were corrected without changing the Algorithms inventory invariant.
-Original numerical assertions, contract values and recorded evidence remain
-intact. The successful results above supersede those failed local attempts.
+The canonical entry-document test also follows the training example through
+its split path, and the complete Unit / API / Team run was repeated on that
+final layout. Original numerical assertions, contract values and recorded
+evidence remain intact. The successful results above supersede those failed local attempts.
 
 The extended examples/benchmarks lint surface has pre-existing debt and is not
 represented as passing. No ignore rule, test selection exception or threshold
