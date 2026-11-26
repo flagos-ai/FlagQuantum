@@ -12,6 +12,7 @@ from typing import Literal, cast
 from ...compiler._component_trace.compound_control_resource import (
     CONTROLLED_HADAMARD_COST,
     compound_control_key,
+    global_phase_cost_key,
 )
 from ...compiler._component_trace.resource_classification import classify_resource_gate
 from ...compiler._component_trace.resource_generalization import (
@@ -32,6 +33,7 @@ from ...compiler._component_trace.resource_generalization import (
 )
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...core.value_math import SymbolicComplex, pi, sarg
 from ._decompose import decompose_cirq_once
 from .conversion import _cirq
 
@@ -157,6 +159,15 @@ def _single_control_clause(control_values: object) -> tuple[int, ...] | None:
 def _controlled_key(
     key: ResourceCall | None, controls: tuple[int, ...]
 ) -> ResourceCall | None:
+    if (
+        isinstance(key, ZeroCostCall)
+        and key.opcode == "global_phase"
+        and len(key.parameters) == 1
+    ):
+        # This SDK key retains a coefficient, not the native exponent/precision
+        # pair. Preserve the source principal argument before adding controls.
+        coefficient = cast(SymbolicComplex, key.parameters[0])
+        return global_phase_cost_key(sarg(coefficient) / pi(coefficient), controls)
     if isinstance(key, ZeroCostCall) and key.opcode == "identity":
         return identity_cost_key(1, control_width=len(controls))
     if key is not None:

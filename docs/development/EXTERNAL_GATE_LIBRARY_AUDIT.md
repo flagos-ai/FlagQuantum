@@ -301,3 +301,44 @@ Source matrix and SwapPow paths at all three adjoint depths are delivered;
 whole-file serialization/resolver parents remain open for other named-control,
 allocation and source defect boundaries. This delivery does not increase the
 complete-parent count or silently authorize any pending contract.
+
+
+### Controlled scalar cost projection closure
+
+The SDK boundary now translates its global-phase coefficient key through the
+existing shared `sarg`/`pi` value mathematics and
+`compound_control_resource.global_phase_cost_key`. This preserves the original
+principal argument, including symbolic `arg(exp(i*pi*theta))`. No new resource
+call, cost formula, numerical execution path or public entry is introduced.
+An uncontrolled SDK scalar still retains its original free coefficient key.
+The native exponent/precision pair is not misread as an SDK coefficient.
+
+Positive scalar control becomes a ZPow model; negative/grouped control reuses
+the existing predicate call model. Source scalar identity, minus identity,
+S, T, general numeric and symbolic phases compare all seven QEC categories
+under positive/negative scalar and two-/three-control patterns. The native
+query executes with both source and SDK imports disabled after conversion.
+Existing opaque and unsupported gate rules remain unchanged outside this
+explicit scalar projection.
+
+Matrix seed17 now closes its independent declared-child QEC model at one,
+two and three explicit adjoint depths across four control patterns. All12
+category records match the unmodified source model. The original array and
+unsigned-word two-bit patterns also match in the separate24-record resource
+receipt. These are model comparisons, not new physical execution claims for
+three-control Programs. Reuse the previous immutable physical proofs only for
+unchanged complete Programs and bindings.
+
+| Matrix scalar and two-bit controls | Actual primitives / measurements / private peak | Matching original/native declared QEC model |
+| --- | --- | --- |
+| Positive scalar | 48 / 2 / 1 | And 2, Clifford 2, rotation 4, measurement 2 |
+| Negative scalar | 29 / 0 / 0 | And 2, Clifford 10, rotation 4, measurement 2 |
+| Array `[0, 1]` or unsigned word equal to 1 | 74 / 0 / 0 | And 6, Clifford 6, rotation 4, measurement 6 |
+
+Actual SDK histories and logical model histories differ by design. This
+closure removes the missing scalar child model without inferring costs from
+emitted instructions. Source peak3/3/5 remains separately recorded; no new
+independent generic composite peak estimator is claimed. Generic controlled
+SwapPow still has its original atomic C[And] model failure and remains
+unpriced. Named Rz/CRz, other exact owners and child-private allocation remain
+separate execution gaps; whole-file parent acceptance is unchanged.

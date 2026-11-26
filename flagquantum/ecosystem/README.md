@@ -270,4 +270,6 @@ For cost-only inspection, `cirq.resource_keys.cirq_mapped_gate_resource_key`
 returns native model data with the original opaque-atom precedence; pass that
 key to the existing `query_qec_gate_cost`. A missing model stays unavailable.
 The existing recursive decomposition resource entry has a different grain and
-is unchanged. Neither model query emits gates or makes a body executable.
+is unchanged. Controlled SDK scalar coefficients reuse the existing native global-phase cost
+owner, preserving the principal angle and predicate controls. Uncontrolled
+phase stays free. Neither model query emits gates or makes a body executable.

@@ -1,5 +1,6 @@
 """Check the resource-only Cirq boundary against the locked gate mapper."""
 
+import sys
 from dataclasses import asdict, fields
 
 import pytest
@@ -25,8 +26,120 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
 from flagquantum.ecosystem.cirq.resource_keys import cirq_gate_resource_key
+from tests.unit.test_cirq_decomposition_file import locked_source as locked_source
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (0, 1, 0)))
+@pytest.mark.parametrize(
+    "phase", ("identity", "minus", "s", "t", "general", "symbolic")
+)
+def test_controlled_scalar_uses_source_phase_model(
+    controls: tuple[int, ...],
+    phase: str,
+    locked_source: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cmath import exp
+    from math import pi
+
+    cirq = pytest.importorskip("cirq")
+    sympy = pytest.importorskip("sympy")
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.compiler._component_trace.compound_control_resource import (
+        global_phase_cost_key,
+    )
+    from flagquantum.core.value_math import pi as scalar_pi
+    from flagquantum.core.value_math import sarg
+    from flagquantum.ecosystem.cirq.resource_keys import (
+        CirqResourceCall,
+        _controlled_key,
+        cirq_mapped_gate_resource_key,
+        generalize_cirq_resource_call,
+    )
+
+    coefficient = {
+        "identity": 1,
+        "minus": -1,
+        "s": 1j,
+        "t": exp(1j * pi / 4),
+        "general": exp(-0.317j),
+        "symbolic": sympy.exp(sympy.I * sympy.pi * sympy.Symbol("theta", real=True)),
+    }[phase]
+    scalar = cirq.GlobalPhaseGate(coefficient)
+    gate = cirq.ControlledGate(scalar, control_values=controls)
+    source = cirq_gate_to_bloq(gate)
+    key = cirq_gate_resource_key(gate)
+    assert key == global_phase_cost_key(
+        sarg(coefficient) / scalar_pi(coefficient), controls
+    )
+    assert cirq_mapped_gate_resource_key(gate) == key
+    assert generalize_cirq_resource_call(CirqResourceCall(gate)) == key
+    assert key is not None
+    expected = get_cost_value(source, QECGatesCost())
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        actual = asdict(query_qec_gate_cost(key))
+    assert actual == {
+        field.name: getattr(expected, field.name) for field in fields(QECGateCost)
+    }
+    assert cirq_gate_resource_key(scalar) == ZeroCostCall(
+        "global_phase", (coefficient,)
+    )
+    # Native scalar keys use an exponent/precision pair, not this SDK coefficient.
+    assert _controlled_key(global_phase_cost_key(0.317), controls) is None
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (0, 1, 0)))
+@pytest.mark.parametrize("depth", (1, 2, 3))
+def test_controlled_matrix_declared_cost_closes_source_child_models(
+    controls: tuple[int, ...],
+    depth: int,
+    locked_source: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq._decompose import decompose_cirq_once
+    from flagquantum.ecosystem.cirq.resource_keys import _controlled_key
+
+    gate = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+    source: Bloq = Controlled(
+        CirqGateAsBloq(gate),
+        CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
+    )
+    for _ in range(depth):
+        source = Adjoint(source)
+    children = decompose_cirq_once(gate)
+    assert children is not None and len(children) == 4
+    keys = []
+    for child in children:
+        key = _controlled_key(cirq_gate_resource_key(child.gate), controls)
+        assert key is not None
+        keys.append(key)
+    expected = get_cost_value(source, QECGatesCost())
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        cost = QECGateCost()
+        for key in keys:
+            cost = cost.plus(query_qec_gate_cost(key), 1)
+    assert asdict(cost) == {
+        field.name: getattr(expected, field.name) for field in fields(QECGateCost)
+    }
 
 
 @pytest.mark.ftqc_reference
