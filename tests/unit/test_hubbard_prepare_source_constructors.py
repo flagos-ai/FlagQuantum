@@ -8,9 +8,7 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pytest
-import sympy
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -45,6 +43,8 @@ from tests.unit.test_hubbard_stored_graph import (
 from tests.unit.test_legacy_arithmetic_factories import _library
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+np = pytest.importorskip("numpy")
+sympy = pytest.importorskip("sympy")
 
 
 @pytest.fixture(scope="module")
@@ -53,7 +53,9 @@ def source_module() -> Any:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import prepare_hubbard
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__", None) == "0.1" and hasattr(
+        kickmix, "Simulator"
+    )
     for filename, digest in (
         ("prepare_hubbard.py", "cfdbf20b0baf5ef1f5fa5a7e21826d7f51f5aec5"),
         ("prepare_hubbard_test.py", "ef956c7d0b68de1a5805d76f2c6dd4144adc9485"),
@@ -100,7 +102,9 @@ def test_complete_constructor_metadata_calls_angles_and_exact_inverse(
 def test_floor_normalization_and_endpoint_resource_categories(
     source_module: Any, dimension: int, t: float, u: float
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = source_module.PrepareHubbard(dimension, dimension, t, u)
     operation = PrepareHubbard(dimension, t, u)
@@ -189,7 +193,9 @@ def test_source_free_constructor_and_normal_append(
         torch.testing.assert_close(result_state.flatten(), desired, atol=3e-11, rtol=0)
 
 
-def test_original_factory_and_nonexecutable_boundaries(source_module: Any) -> None:
+def test_original_factory_singleton_and_approved_symbolic_body(
+    source_module: Any,
+) -> None:
     source = source_module._prep_hubb.make()
     assert (source.x_dim, source.y_dim, source.t, source.u) == (4, 4, 1.0, 4.0)
     assert source_module._PREPARE_HUBBARD.examples == (source_module._prep_hubb,)
@@ -198,14 +204,19 @@ def test_original_factory_and_nonexecutable_boundaries(source_module: Any) -> No
     )
     compare_layers(record, source, source_terminals(record))
     symbol = sympy.Symbol("t")
-    for source in (
-        source_module.PrepareHubbard(1, 1, 1.0, 4.0),
-        source_module.PrepareHubbard(2, 2, symbol, 4.0),
-    ):
-        record = resolve_component_program(
-            _library(source, 0), 0, packed_oracle_library_factories()
+    singleton = source_module.PrepareHubbard(1, 1, 1.0, 4.0)
+    record = resolve_component_program(
+        _library(singleton, 0), 0, packed_oracle_library_factories()
+    )
+    assert not record.functions[0].blocks
+    symbolic = source_module.PrepareHubbard(2, 2, symbol, 4.0)
+    assert (
+        resolve_component_program(
+            _library(symbolic, 0), 0, packed_oracle_library_factories()
         )
-        assert not record.functions[0].blocks
+        .functions[0]
+        .blocks
+    )
     with pytest.raises(ValueError, match="nonnegative"):
         PrepareHubbard(2, -1.0, -4.0)
     invalid = source_module.PrepareHubbard(2, 2, 0.0, 0.0)

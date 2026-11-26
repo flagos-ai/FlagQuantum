@@ -12,16 +12,27 @@ from ..compiler.formats.legacy_hubbard_packed_context import (
     hubbard_packed_oracle_context,
 )
 from ..compiler.formats.legacy_packed_oracle_factories import OracleContext
+from ..compiler.formats.symbolic_parameters import symbolic_parameter_value
+from ..core.parameters import Parameter, ParameterExpression
 from ..core.value_math import SymbolicReal
 from ..errors import SerializationError
-from ..simulation.numerics.hubbard_coefficients import hubbard_preparation_angles
+from ..simulation.numerics.hubbard_coefficients import (
+    hubbard_conditional_preparation_angle,
+    hubbard_normalization,
+    hubbard_preparation_angles,
+)
 
 
 def _prepare_angles(
     size: int, t: SymbolicReal, u: SymbolicReal
-) -> tuple[float, float] | None:
+) -> tuple[float | Parameter | ParameterExpression, float] | None:
     if not isinstance(t, (int, float)) or not isinstance(u, (int, float)):
-        return None
+        import sympy
+
+        modes = 2 * size**2
+        normalization = hubbard_normalization(size, t, u)
+        first = 2 * sympy.acos(sympy.sqrt(t * modes / normalization))
+        return symbolic_parameter_value(first), hubbard_conditional_preparation_angle()
     values = hubbard_preparation_angles(size, t, u)
     if not all(isfinite(value) for value in values):
         raise SerializationError("Hubbard preparation requires finite source angles")
