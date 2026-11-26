@@ -18,6 +18,7 @@ import pytest
 from nbformat import NotebookNode
 
 from flagquantum.testing.notebook_execution import execute_notebook_node
+from tests.unit.notebook_data import installed_jupyter_data
 from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import notebook_execution as native
 from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
@@ -28,7 +29,7 @@ nbformat = import_module("nbformat")
 
 @pytest.fixture(autouse=True)
 def jupyter_templates(monkeypatch: pytest.MonkeyPatch) -> None:
-    location = REFERENCE / "notebook-deps" / "share" / "jupyter"
+    location = installed_jupyter_data()
     assert (location / "nbconvert" / "templates" / "markdown" / "conf.json").exists()
     monkeypatch.setenv("JUPYTER_PATH", str(location))
 

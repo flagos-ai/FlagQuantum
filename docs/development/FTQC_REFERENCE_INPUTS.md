@@ -72,3 +72,19 @@ qualification remain distinct evidence.
 The module has no quantum registers, bit order, complex amplitude, primitive
 stream, analytical gate model, measurement history or work-qubit ownership.
 Algorithm and runtime owners retain those responsibilities and their evidence.
+
+## Installed notebook template data
+
+`tests/unit/notebook_data.py` owns the three test consumers' template location.
+It reads the installed nbconvert distribution's RECORD and resolves its declared
+Markdown template root, covering both pip prefix and target layouts. Reading
+RECORD directly preserves evidence of missing declared files that
+`Distribution.files` can filter out. Missing, absent or ambiguous declarations
+refuse; templates are neither copied nor synthesized.
+
+Notebook execution, command-line export and widget conversion use this same
+installed data owner. Existing kernel isolation, cleanup, subprocess deadlines,
+complex-state/append checks and local documentation rebuild consumers remain
+unchanged. This establishes data location, not a substitute SDK version/profile
+qualification. No scientific packages, hosted job or ReadTheDocs build are
+installed or launched by this helper.

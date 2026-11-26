@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.notebook_data import installed_jupyter_data
 from tests.unit.test_development_tools import REFERENCE
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -66,7 +67,7 @@ def test_real_widget_state_and_notebook_export(monkeypatch: pytest.MonkeyPatch) 
     nbformat = importlib.import_module("nbformat")
     nbconvert = importlib.import_module("nbconvert")
 
-    monkeypatch.setenv("JUPYTER_PATH", str(REFERENCE / "notebook-deps/share/jupyter"))
+    monkeypatch.setenv("JUPYTER_PATH", str(installed_jupyter_data()))
     widget = ipywidgets.IntSlider(value=3, min=0, max=10)
     try:
         assert widget.get_state()["value"] == 3

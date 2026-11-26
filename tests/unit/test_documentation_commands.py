@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.notebook_data import installed_jupyter_data
 from tests.unit.test_development_tools import REFERENCE
 from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
@@ -267,7 +268,7 @@ def test_actual_execution_command_complex_state(
     # controlled interpreter and environment. The CLI adds no execution machinery.
     from tests.unit.test_notebook_execution import configure_kernel_environment
 
-    monkeypatch.setenv("JUPYTER_PATH", str(REFERENCE / "notebook-deps/share/jupyter"))
+    monkeypatch.setenv("JUPYTER_PATH", str(installed_jupyter_data()))
     kernel_root = configure_kernel_environment(tmp_path, monkeypatch)
     nbformat = importlib.import_module("nbformat")
     subprocess.run(
