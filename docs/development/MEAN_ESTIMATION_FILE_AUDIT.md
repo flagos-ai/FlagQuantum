@@ -61,8 +61,10 @@ denominations differ from native emission. The implemented source resource
 method prices one forward uncontrolled step. Source zero power refuses
 construction, and the native implementation also rejects zero power.
 
-Q-0563 and Q-0567 are accepted. Q-0566 remains open for multiple external
-controls and source resource estimates of controlled or powered forms.
+Q-0563 and Q-0567 are accepted. Q-0566 remains open for source resource estimates of controlled or powered
+forms and the retained accuracy/ABI boundaries. The live typed context now
+closes concrete multiple external controls through the actual positive source
+child and shared predicate owner; see the dependency audit below.
 The existing flat operation uses exact bounded integer encoding and coherent
 children on the declared ports. The additional
 [typed dependency context](MEAN_ESTIMATION_COMPONENT_AUDIT.md) owns explicit

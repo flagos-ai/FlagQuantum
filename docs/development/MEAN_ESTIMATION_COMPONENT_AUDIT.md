@@ -99,8 +99,9 @@ Original code-object serialization refuses at depths 0/1/2, so no exact shallow
 factory is registered. Source encoding controls are absent from the mean root
 signature and cannot be silently supplied. Nonclean private junk is not reset
 or discarded; callers must either demonstrate clean release or declare it as
-logical signal junk. Wide lookup, generic multiple controls, controlled/powered
-models and default-precision accuracy remain outside this batch's acceptance.
+logical signal junk. At that earlier batch, wide lookup, generic multiple controls, controlled/powered
+models and default-precision accuracy remained outside acceptance. The multiple-control
+closure below supersedes only the corresponding live-context execution gap.
 Q-0566, Q-0866 and Q-0876 remain open.
 
 ## Batch validation
@@ -120,3 +121,97 @@ component calls from explicitly supplied inverse owners; numerical execution
 and SDK selection remain outside Compiler. No shallow registration is added,
 so the constructor census stays 204/303. This batch does not add an accepted
 parent, waive another upstream defect, modify pending proposals or merge the PR.
+
+
+## Multiple-control dependency closure (2026-11-27)
+
+The existing live typed context now also accepts an explicit positive-controlled
+encoder pair and a ControlSpecification. The default scalar positive control uses
+the source two-stage positive mean root. Other admitted quantum control layouts
+reuse the existing ControlledViaAnd owner: CtrlSpecAnd, positive mean, exact
+predicate erasure. Controls and selection words are THRU, with MSB-first words
+and row-major shaped bits. The predicate and every child own their private work;
+no measurement instruction is reversed to construct an inverse.
+
+The positive phase now controls the encoder, bounded ArcTan, each signed phase,
+ArcTan erasure and encoder erasure individually, following the actual source
+positive child. It does not compute an unconditionally encoded word and only
+control its final phases. Source merged S/T/rotation controls and raw controlled
+CZPow children are retained. Shared typed views only split and repack MSB-first
+bits; normalized recursive comparison checks allocation, stage operands, output
+widths and frees after these zero-gate views. Source phase and reflection root
+calls also compare directly. Private encoder targets named ctrl are supported
+without colliding with the outer control.
+
+The controlled ArcTan is an explicit bounded native QROM replacement for the
+opaque source arithmetic leaf. Original Bloq tensor contraction still raises
+NotImplementedError, "ArcTan does not support tensor simulation." The independent
+full-operator reference is the successful original Cirq controlled-unitary
+protocol; these two upstream protocols are not conflated. Dirty controlled-ArcTan
+columns are checked separately at widths 0/1/2 and precisions 0/1/3.
+
+At precisions 1 and 3, two positive bits, mixed 0/1 bits, a QUInt(2) word plus
+QBit, scalar controls of both polarities and the private-target-name collision
+match the original full complex operators in both directions. Every small raw
+measurement history is checked on a coherent complex input; each basis column
+is checked at the all-zero and all-one histories. The exact erasure certificate
+also covers all histories and private work. SDK-blocked append and native
+trajectory execution preserve the same operator. Positive and negative integer
+squares reuse the same exact forward/inverse Programs, with full complex column
+and cleanup checks. Ordinary lookup and mean pairs remain entirely identical
+to published 13ebd7dcb at the twelve recorded fixtures.
+
+### Measured execution versus source model
+
+Counts below are actual native instructions, including measurement, reset and
+scalar phase instructions. Forward and inverse have equal totals in these
+fixtures. They are not a decomposition count for the opaque source ArcTan.
+
+| Precision | Control layout | Physical wires | Peak private bits | Instructions | Measurements |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | Two positive bits | 8 | 5 | 106 | 4 |
+| 1 | Mixed 0/1 bits | 8 | 5 | 110 | 4 |
+| 1 | Two-bit word plus bit | 10 | 6 | 131 | 5 |
+| 1 | Scalar positive / negative | 6 | 4 | 89 / 91 | 3 |
+| 3 | Two positive bits | 11 | 8 | 197 | 7 |
+| 3 | Mixed 0/1 bits | 11 | 8 | 201 | 7 |
+| 3 | Two-bit word plus bit | 13 | 9 | 222 | 8 |
+| 3 | Scalar positive / negative | 9 | 7 | 180 / 182 | 6 |
+
+The unchanged source QECGatesCost query for these controlled roots fails with
+DecomposeTypeError: "Could not build call graph for C[And]: And is atomic."
+Direct whole-gate Cirq capture is a different lowering protocol: the first
+positive S/T signed stages use 17 instructions without a measured predicate,
+whereas retaining the actual source ControlledViaAnd calls emits 22 native
+instructions; the later positive rotation emits 39. Direct capture of the
+negative signed stages refuses the atomic C[And-adjoint] body. Thus no equality
+of whole primitive streams across those protocols is claimed. Comparable typed
+calls and operands are checked, while the independent exact Cirq operators
+validate their complete complex action.
+
+There is no successful source estimate to relabel as a primitive count. Separate
+uncontrolled models and all prior model evidence remain valid in their original
+scope. The external resource receipt records the complete measured primitive
+histograms and the original exceptions separately.
+
+The live multiple-control execution gap is closed for the concrete fixtures;
+Q-0566 remains open for controlled/powered source models, wide/default-precision
+accuracy and the original smaller ABI when nonclean signal junk is needed.
+The new controlled fixtures do not claim arbitrary caller-junk coverage. Original
+code-object serialization still refuses; there is no fabricated shallow factory.
+The frozen constructor census stays 257/303 at this batch, and pending Proposal
+124 is untouched. Previous full original-source evidence is reused; the source
+and direct-dependency blob identities are checked again before publication.
+
+
+### Multiple-control batch verification
+
+The concentrated six-file regression passes 233 cases per actual Cirq 1.7.0 /
+Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile, without skips. Launchers assert
+Qualtran 0.7.0 and a real Kickmix 0.1 Simulator. Local integration passes 145
+cases. Five Python files pass strict typing, Black and Ruff. Compiler/Ecosystem
+scope, English/local links, architecture, multi-level IR and protected API
+snapshots pass. Seven frozen source/test/direct-dependency blobs match the
+locked manifest. Existing original twelve-test and ordinary default-32 evidence
+is reused within its documented scope; concentrated native regressions also
+retain the default-32 counterexample.
