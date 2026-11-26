@@ -13,6 +13,8 @@ from flagquantum.compiler.registers.primitives.controlled_rotation_component imp
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.core.ir.program.register_types import quantum_bit_type
+from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.ecosystem.cirq._named_gate_definitions import _NamedGateDefinitions
 from flagquantum.ecosystem.cirq._register_definition import _native_definition_module
@@ -111,7 +113,7 @@ def test_decomposition_child_retains_named_compute_phase_erasure() -> None:
         controlled_z_power_program(0.375), ((1,), (0,)), clean=(2,)
     )
     assert bound.circuit == expected.circuit
-    from qualtran.bloqs.basic_gates import CZPowGate
+    from qualtran.bloqs.basic_gates.rotation import CZPowGate
 
     from tests.unit.register_source_graph import assert_source_wire_streams
     from tests.unit.test_register_phase_gradient import source_gradient_gates
@@ -155,7 +157,8 @@ def test_named_predicate_controls_complex_branches_and_source(
     kind: str, values: tuple[int, ...]
 ) -> None:
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from tests.unit.test_legacy_controlled_factories import _check_state
     from tests.unit.test_multi_control_component import MeasurementSlots
@@ -237,6 +240,11 @@ def test_inverse_wrapper_uses_exact_measured_component_pairs() -> None:
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     source = cirq_gate_to_bloq(inverse)
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+
+    assert isinstance(source, Adjoint)
+    assert isinstance(source.subbloq, CirqGateAsBloq)
     assert source.subbloq.gate is original
     definitions = _NamedGateDefinitions()
     root = definitions[inverse]
@@ -301,7 +309,7 @@ def test_symbolic_scalar_coefficients_keep_complex_phase(controlled: bool) -> No
 
 
 def test_atomic_control_source_body_absence_stays_distinct_from_sdk_execution() -> None:
-    from qualtran import DecomposeTypeError
+    from qualtran._infra.bloq import DecomposeTypeError
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     gate = cirq.ControlledGate(cirq.XPowGate(exponent=0.37))
@@ -372,3 +380,46 @@ def test_inverse_wrapper_refuses_measurement_without_exact_component_pair() -> N
     unchecked = cirq.ops.raw_types._InverseCompositeGate(Measured())
     with pytest.raises(ValueError, match="Missing exact component adjoint"):
         _NamedGateDefinitions()[unchecked]
+
+
+def test_exported_source_graph_replay_keeps_replacement_bodies_local(
+    locked_source: Any,
+) -> None:
+    from flagquantum.ecosystem.cirq._register_import import import_cirq_register_optree
+
+    gate = cirq.CXPowGate(exponent=-0.375)
+    source = locked_source.CirqGateAsBloq(gate)
+    qubits = tuple(cirq.LineQubit.range(2))
+    incoming = {"q": np.asarray(qubits, dtype=object).reshape(2, 1)}
+    exported, returned = source.decompose_bloq().to_cirq_circuit_and_quregs(
+        qubit_manager=cirq.GreedyQubitManager("source"), **incoming
+    )
+    np.testing.assert_array_equal(returned["q"], incoming["q"])
+    signature = Signature([Register("q", quantum_bit_type(), shape=(2,))])
+    program = import_cirq_register_optree(
+        exported,
+        signature=signature,
+        in_quregs=incoming,
+        out_quregs=returned,
+        gate_definitions=_NamedGateDefinitions(),
+    )
+    bound = bind_register_program(program, ((0,), (1,)), clean=(2,))
+    assert sum(op.name == "measure" for op in bound.circuit.instructions) == 1
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, 2),
+        torch.tensor(cirq.unitary(gate), dtype=torch.complex128),
+        atol=1e-11,
+        rtol=0,
+    )
+    initial = torch.complex(
+        torch.arange(1, 9, dtype=torch.float64),
+        torch.arange(8, 0, -1, dtype=torch.float64),
+    )
+    initial[1::2] = 0
+    initial /= initial.norm()
+    expected = torch.zeros_like(initial)
+    expected[::2] = torch.tensor(cirq.unitary(gate)) @ initial[::2]
+    for outcome in (0, 1):
+        result = forced_branch(initial, bound.circuit.instructions, (outcome,))
+        torch.testing.assert_close(result, expected / sqrt(2), atol=1e-11, rtol=0)
+        assert torch.count_nonzero(result[1::2]) == 0

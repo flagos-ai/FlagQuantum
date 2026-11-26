@@ -67,14 +67,23 @@ def _register_operations(
     )
     context = cirq.DecompositionContext(manager)
 
-    def expand(operations: Iterable[Any], ancestors: tuple[Any, ...]) -> Iterator[Any]:
+    def expand(
+        operations: Iterable[Any],
+        ancestors: tuple[Any, ...],
+        *,
+        allow_definitions: bool = True,
+    ) -> Iterator[Any]:
         original = tuple(operations)
         _check_cirq_symbol_identity(cirq, original)
         frame = []
         for operation in original:
             gate = operation.without_classical_controls().gate
-            definition = declared.get(gate) if isinstance(gate, Hashable) else None
-            if (
+            definition = (
+                declared.get(gate)
+                if allow_definitions and isinstance(gate, Hashable)
+                else None
+            )
+            if allow_definitions and (
                 definition is not None
                 or getattr(gate, "flagquantum_register_definition", None) is not None
             ):
@@ -93,7 +102,9 @@ def _register_operations(
                     )
                 if operation.classical_controls:
                     for leaf in expand(
-                        (operation.without_classical_controls(),), ancestors
+                        (operation.without_classical_controls(),),
+                        ancestors,
+                        allow_definitions=allow_definitions,
                     ):
                         yield leaf.with_classical_controls(
                             *operation.classical_controls
@@ -110,17 +121,19 @@ def _register_operations(
                     )
                 definition = (
                     declared.get(gate)
-                    if declared and isinstance(gate, Hashable)
+                    if allow_definitions and isinstance(gate, Hashable)
                     else None
                 )
-                has_definition = (
+                has_definition = allow_definitions and (
                     definition is not None
                     or getattr(gate, "flagquantum_register_definition", None)
                     is not None
                 )
                 if has_definition and native_gates is not None:
                     yield from expand(
-                        (next(native_gates).on(*operation.qubits),), ancestors
+                        (next(native_gates).on(*operation.qubits),),
+                        ancestors,
+                        allow_definitions=False,
                     )
                     continue
                 if (
@@ -162,7 +175,11 @@ def _register_operations(
                     else:
                         yield cirq.MatrixGate(matrix).on(*operation.qubits)
                 else:
-                    yield from expand(cirq.flatten_to_ops(tree), (*ancestors, gate))
+                    yield from expand(
+                        cirq.flatten_to_ops(tree),
+                        (*ancestors, gate),
+                        allow_definitions=allow_definitions,
+                    )
 
     yield from expand(circuit.all_operations(), ())
 
