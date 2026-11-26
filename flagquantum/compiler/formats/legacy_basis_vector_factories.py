@@ -11,14 +11,18 @@ from typing import Literal
 
 import sympy
 
+from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
 from ..registers.component_basis_vectors import (
     integer_basis_function,
     integer_basis_program,
 )
+from ..registers.component_builder import ComponentProgramBuilder
+from ..registers.component_gate_function import bit_gate_function
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
 
@@ -88,4 +92,55 @@ def basis_vector_factories() -> dict[str, ComponentFactory]:
     return {
         "qualtran.bloqs.basic_gates.z_basis." + kind: partial(_basis_factory, kind)
         for kind in kinds
+    }
+
+
+def _x_basis_factory(
+    minus: bool,
+    state: bool,
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord | ProgramRecord:
+    if arguments.keys() - {"n"}:
+        raise SerializationError("X basis constructor only accepts n")
+    if _integer({"n": arguments.get("n", 1)}, "n") != 1:
+        raise NotImplementedError("Come back later.")
+    side = RegisterSide.RIGHT if state else RegisterSide.LEFT
+    signature = (Register("q", quantum_bit_type(), side=side),)
+    if registers is not None and registers != signature:
+        raise SerializationError("Invalid X basis register signature")
+    if not state:
+        # Original as_cirq_op refuses covectors. Tensor contraction has its own
+        # owner; a declaration must not invent a physical release or reset.
+        return FunctionRecord(name, (), registers=signature)
+    prepare = _basis_factory(
+        "OneState" if minus else "ZeroState", name + "_prepare", None, {}
+    )
+    assert isinstance(prepare, FunctionRecord)
+    hadamard = bit_gate_function(
+        name + "_h",
+        (Register("q", quantum_bit_type()),),
+        CircuitIR(1, (Instruction("h", (0,)),)),
+    )
+    builder = ComponentProgramBuilder(
+        Signature(signature), (prepare, hadamard), name=name
+    )
+    q = builder.call_dict(prepare.name, {})["q"]
+    q = builder.call_dict(hadamard.name, {"q": q})["q"]
+    return builder.finalize({"q": q})
+
+
+def x_basis_vector_factories() -> dict[str, ComponentFactory]:
+    """Resolve X kets in source X/H order and retain logical covectors.
+
+    Physical effects retain the original conversion refusal. Their numerical
+    covectors remain with the existing tensor owner, outside Compiler.
+    """
+    return {
+        "qualtran.bloqs.basic_gates.x_basis."
+        + sign
+        + direction: partial(_x_basis_factory, sign == "Minus", direction == "State")
+        for sign in ("Plus", "Minus")
+        for direction in ("State", "Effect")
     }
