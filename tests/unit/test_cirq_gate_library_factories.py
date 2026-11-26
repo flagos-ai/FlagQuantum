@@ -21,6 +21,7 @@ from flagquantum.core.ir.program import verify_program_record
 from flagquantum.ecosystem.cirq._component_library import cirq_gate_library_factories
 from flagquantum.errors import SerializationError
 from flagquantum.simulation.unitary import get_unitary
+from tests.unit.cirq_gate_cases import pauli_phasor_case
 from tests.unit.test_cirq_decomposition_file import locked_source as locked_source
 from tests.unit.test_legacy_arithmetic_factories import _library
 from tests.unit.test_multiplexed_source_binding import logical_operator
@@ -550,6 +551,13 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         "qft0",
         "qft1",
         "qft2_noreverse",
+        "phasor_xy",
+        "phasor_z",
+        "phasor_yz",
+        "phasor_xyz",
+        "phasor_negative",
+        "phasor_zero",
+        "phasor_empty",
     ),
 )
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
@@ -580,6 +588,7 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         "negative": CtrlSpec(cvs=0),
         "array": CtrlSpec(cvs=np.array([0, 1])),
         "word": CtrlSpec(qdtypes=QUInt(2), cvs=1),
+        "positive_array": CtrlSpec(cvs=np.array([1, 1])),
     }[control]
     if kind.startswith("diag"):
         raw = cirq.DiagonalGate(
@@ -611,6 +620,8 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         raw = cirq.QuantumFourierTransformGate(
             int(kind[3]), without_reverse=kind.endswith("_noreverse")
         )
+    elif kind.startswith("phasor"):
+        raw = pauli_phasor_case(cirq, kind)
     else:
         assert kind == "matrix1"
         raw = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
@@ -718,7 +729,13 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             assert seen.matrix is not None
             torch.testing.assert_close(seen.matrix, target.matrix, atol=2e-14, rtol=0)
     values = (
-        (1,) if control == "positive" else ((0,) if control == "negative" else (0, 1))
+        (1,)
+        if control == "positive"
+        else (
+            (0,)
+            if control == "negative"
+            else ((1, 1) if control == "positive_array" else (0, 1))
+        )
     )
     expected_operator = torch.tensor(
         cirq.unitary(
@@ -739,7 +756,12 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         count = sum(op.name == "measure" for op in bound.circuit.instructions)
         assert count == (
             2
-            if kind in ("matrix1", "iswap", "iswap_zero") and control == "positive"
+            if (
+                kind in ("matrix1", "iswap", "iswap_zero")
+                or kind.startswith("phasor")
+                and kind not in ("phasor_zero", "phasor_empty")
+            )
+            and control == "positive"
             else 0
         )
         restored = CircuitIR.from_json(appended.to_ir().to_json())
@@ -771,6 +793,15 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             atol=2e-12,
             rtol=0,
         )
+
+
+@pytest.mark.parametrize("depth", (1, 2, 3))
+def test_pauli_phasor_positive_control_pair_keeps_specialized_target_port(
+    depth: int, locked_source: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
+        depth, "phasor_xy", "positive_array", locked_source, monkeypatch
+    )
 
 
 def test_raw_controlled_gate_has_its_own_original_adjoint_decomposition(
@@ -813,8 +844,9 @@ def test_zero_target_diagonal_retains_original_gray_code_failure(
 
 
 @pytest.mark.parametrize("value", (0.375, 0.5, 0.0))
+@pytest.mark.parametrize("family", ("iswap", "phasor"))
 def test_symbolic_controlled_power_retains_the_unbound_source_graph(
-    value: float, locked_source: Any, monkeypatch: pytest.MonkeyPatch
+    value: float, family: str, locked_source: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from itertools import product
 
@@ -827,15 +859,24 @@ def test_symbolic_controlled_power_retains_the_unbound_source_graph(
     from tests.unit.register_source_graph import assert_source_wire_streams
 
     theta = sympy.Symbol("theta")
-    gate_type = cirq.ISwapPowGate
+
+    def gate_at(exponent: Any) -> Any:
+        if family == "iswap":
+            return cirq.ISwapPowGate(exponent=exponent)
+        return cirq.PauliStringPhasorGate(
+            cirq.DensePauliString("XY"),
+            exponent_neg=exponent,
+            exponent_pos=exponent / 2,
+        )
+
     logical = 3
     source = Adjoint(
-        Controlled(locked_source.CirqGateAsBloq(gate_type(exponent=theta)), CtrlSpec())
+        Controlled(locked_source.CirqGateAsBloq(gate_at(theta)), CtrlSpec())
     )
     library = _library(source, 0)
     reference = import_register_emitter(source).snapshots[0]
     expected = torch.tensor(
-        cirq.unitary(gate_type(exponent=-value).controlled()),
+        cirq.unitary(cirq.inverse(gate_at(value)).controlled()),
         dtype=torch.complex128,
     )
     with monkeypatch.context() as patch:
@@ -860,8 +901,8 @@ def test_symbolic_controlled_power_retains_the_unbound_source_graph(
             .to_ir()
         )
         assert_source_wire_streams(actual.instructions, captured.instructions)
-        # Binding does not rerun concrete constructor dispatch. The ISwap
-        # symbolic graph retains its two measured erasures.
+        # Binding does not rerun concrete constructor dispatch. Both symbolic
+        # graphs retain their two measured erasures, including at zero.
         count = 2
         assert sum(op.name == "measure" for op in actual.instructions) == count
         stride = 1 << (actual.n_wires - logical)

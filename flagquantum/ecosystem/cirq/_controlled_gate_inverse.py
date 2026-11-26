@@ -82,7 +82,14 @@ def controlled_inverse_program(
     nested_signatures = {}
     for child in children:
         if (
-            not isinstance(child, (cirq.GateOperation, cirq.ControlledOperation))
+            not isinstance(
+                child,
+                (
+                    cirq.GateOperation,
+                    cirq.ControlledOperation,
+                    cirq.SingleQubitPauliStringGateOperation,
+                ),
+            )
             or not isinstance(child.gate, cirq.Gate)
             or child.tags
             or not set(child.qubits) <= set(data)
@@ -105,12 +112,15 @@ def controlled_inverse_program(
             "s_gate.SGate",
             "t_gate.TGate",
             "swap.TwoBitSwap",
+            "x_basis.XGate",
             "global_phase.GlobalPhase",
         }:
             return None
     groups = control_registers_from_spec(spec.clauses)
     bits = tuple(bit for group in groups for bit in group.bits())
-    controls = tuple(cirq.NamedQubit(f"control_{i}") for i in range(len(bits)))
+    # SDK decompositions can order interchangeable controls by Qid. Keep the
+    # declared control-before-data order used by source physical capture.
+    controls = tuple(cirq.LineQid(i - len(bits), dimension=2) for i in range(len(bits)))
     default_control = (
         len(spec.clauses) == 1
         and spec.clauses[0][0] == quantum_bit_type()
@@ -151,7 +161,12 @@ def controlled_inverse_program(
         selected = declared._select(child.gate)
         # Named self-adjoint atoms return themselves. SDK negative powers
         # can have different decompositions despite the same unitary operator.
-        self_adjoint = {"hadamard.Hadamard": cirq.H, "swap.TwoBitSwap": cirq.SWAP}
+        self_adjoint = {
+            "cnot.CNOT": cirq.CNOT,
+            "hadamard.Hadamard": cirq.H,
+            "swap.TwoBitSwap": cirq.SWAP,
+            "x_basis.XGate": cirq.X,
+        }
         directed = (
             self_adjoint[selected[0]].on(*child.qubits)
             if selected is not None and selected[0] in self_adjoint
@@ -168,7 +183,15 @@ def controlled_inverse_program(
             child_signature,
             tuple((dtype, values.shape) for dtype, values in spec.clauses),
         )
-        native_control = (
+        positive_x_pair = (
+            selected is not None
+            and selected[0] == "x_basis.XGate"
+            and len(spec.clauses) == 1
+            and spec.clauses[0][0] == quantum_bit_type()
+            and spec.clauses[0][1].shape == (2,)
+            and bits == (1, 1)
+        )
+        native_control = positive_x_pair or (
             selected is not None
             and default_control
             and selected[0]
@@ -178,12 +201,14 @@ def controlled_inverse_program(
                 "global_phase.GlobalPhase",
                 "hadamard.Hadamard",
                 "swap.TwoBitSwap",
+                "x_basis.XGate",
             }
         )
-        if (
-            definition is not None
-            and default_control
-            and (native_control or selected is not None and selected[0] == "cnot.CNOT")
+        if definition is not None and (
+            native_control
+            or default_control
+            and selected is not None
+            and selected[0] == "cnot.CNOT"
         ):
             # Specialized positive controls own their port grouping: Toffoli
             # packs two controls, CZPow packs both bits, and scalar phase
