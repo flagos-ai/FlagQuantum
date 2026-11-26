@@ -24,6 +24,9 @@ def complex_phase_library_factories(
     *,
     encoder_owner: UnitaryPairOwner,
     target_names: Callable[[FunctionRecord], tuple[str, ...]],
+    on_pair: (
+        Callable[[FunctionRecord, tuple[ProgramRecord, ProgramRecord]], None] | None
+    ) = None,
 ) -> dict[str, ComponentFactory]:
     """Select native lookup explicitly; preserve source SDK phase constructors."""
 
@@ -41,6 +44,7 @@ def complex_phase_library_factories(
         lookup = arctan_lookup_program(width, precision)
         cirq = _cirq()
         phases = []
+        inverses = []
         for index in range(precision):
             for sign, value in ((0, 1), (1, -1)):
                 gate = (cirq.Z ** (value / 2 ** (1 + index))).controlled(
@@ -54,8 +58,24 @@ def complex_phase_library_factories(
                     if isinstance(record, ProgramRecord)
                     else ProgramRecord((record,))
                 )
+                if on_pair is not None:
+                    inverse_gate = cirq.inverse(gate)
+                    inverse = _gate_program(
+                        inverse_gate,
+                        cirq_gate_signature(inverse_gate),
+                        f"signed_phase_inverse_{index}_{sign}",
+                    )
+                    inverses.append(
+                        inverse
+                        if isinstance(inverse, ProgramRecord)
+                        else ProgramRecord((inverse,))
+                    )
         return ComplexPhaseContext(
-            encoder_owner(encoder), (lookup, lookup), tuple(phases), names
+            encoder_owner(encoder),
+            (lookup, lookup),
+            tuple(phases),
+            names,
+            tuple(inverses) if on_pair is not None else None,
         )
 
-    return complex_phase_factories(context)
+    return complex_phase_factories(context, on_pair=on_pair)
