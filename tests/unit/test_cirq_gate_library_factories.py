@@ -507,3 +507,42 @@ def test_external_adjoint_validation_and_independent_owner_delegation() -> None:
         mapping["qualtran._infra.adjoint.Adjoint"](
             "main", (Register("other", quantum_bit_type()),), {"subbloq": child}
         )
+
+
+@pytest.mark.parametrize("kind", ("cxpow", "swappow", "scalar"))
+def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
+    kind: str, locked_source: Any
+) -> None:
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+
+    gate = {
+        "cxpow": cirq.CXPowGate(exponent=-0.375),
+        "swappow": cirq.SwapPowGate(exponent=0.375),
+        "scalar": cirq.GlobalPhaseGate(1j),
+    }[kind]
+    source = Adjoint(Controlled(locked_source.CirqGateAsBloq(gate), CtrlSpec(cvs=0)))
+    with pytest.raises(
+        SerializationError, match="exact adjoint owner.*control-wrapper"
+    ):
+        resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())
+
+
+def test_raw_controlled_gate_has_its_own_original_adjoint_decomposition(
+    locked_source: Any,
+) -> None:
+    from qualtran._infra.adjoint import Adjoint
+
+    raw = cirq.ControlledGate(cirq.GlobalPhaseGate(1j), control_values=(0,))
+    source = Adjoint(locked_source.CirqGateAsBloq(raw))
+    assert tuple(source.decompose_bloq().iter_bloqnections())
+    record = resolve_component_program(
+        _library(source, 0), 0, cirq_gate_library_factories()
+    )
+    bound = bind_register_program(record, ((0,),), clean=(1, 2))
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, 1),
+        torch.tensor(cirq.unitary(cirq.inverse(raw)), dtype=torch.complex128),
+        atol=1e-12,
+        rtol=0,
+    )

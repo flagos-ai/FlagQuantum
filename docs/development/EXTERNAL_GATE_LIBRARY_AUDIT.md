@@ -192,3 +192,23 @@ Formatting, ownership, language, architecture, IR and stable API checks are
 recorded in the final batch receipt. The original reference checkout is
 unchanged; source graph capture, the bodyless atomic cases and the model-only
 T inverse refusal remain separate evidence.
+
+### Constructor identity follow-up
+
+Final intake found that the existing forward control context retains the same
+SDK gate for two distinct source constructors: `CirqGateAsBloq(controlled_gate)`
+and `Controlled(CirqGateAsBloq(gate))`. Only the former supplies that SDK gate's
+own decomposition as the explicit generic-adjoint source. A scoped native set
+now records this constructor origin. Generic control wrappers require their
+own exact-adjoint owner or explicit independent fallback; they no longer borrow
+the raw SDK recipe. The raw controlled scalar has its own actual original graph
+and complete complex operator witness. In contrast, the generic controlled
+scalar's source graph is absent. SwapPow's generic controlled graph exists but
+its exact chain is still queued; refusing an unowned chain is not acceptance of
+that remaining G2 scope. Ordinary forward/control Programs remain unchanged.
+This follow-up tightens only the newly introduced adjoint owner, not a Core API.
+
+Compatibility ownership is Ecosystem's locked Qualtran 0.7.0 input boundary.
+It can be removed when that serialized input is retired; existing native
+Programs, exact component owners, cost data and ordinary execution remain
+independent of it.

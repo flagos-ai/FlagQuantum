@@ -79,13 +79,20 @@ def cirq_gate_library_factories(
     Other child controls may delegate to an independently supplied owner.
     """
     recipes: dict[FunctionRecord, Any] = {}
+    adjoint_sources: set[FunctionRecord] = set()
 
     def remember(
-        gate: Any, signature: Signature, name: str
+        gate: Any,
+        signature: Signature,
+        name: str,
+        *,
+        adjoint_source: bool = True,
     ) -> FunctionRecord | ProgramRecord:
         program = _gate_program(gate, signature, name)
         root = program.functions[0] if isinstance(program, ProgramRecord) else program
         recipes[root] = gate
+        if adjoint_source:
+            adjoint_sources.add(root)
         return program
 
     def gate_factory(
@@ -140,7 +147,8 @@ def cirq_gate_library_factories(
         groups = control_registers_from_spec(spec.clauses)
         bits = tuple(bit for group in groups for bit in group.bits())
         gate = recipes[child].controlled(num_controls=len(bits), control_values=bits)
-        return remember(gate, signature, name)
+        # Source Controlled owns a graph distinct from the raw SDK gate body.
+        return remember(gate, signature, name, adjoint_source=False)
 
     def adjoint(
         name: str,
@@ -155,6 +163,12 @@ def cirq_gate_library_factories(
                 return adjoint_factory(name, registers, arguments)
             raise SerializationError(
                 "Missing external adjoint-gate constructor context"
+            )
+        if child not in adjoint_sources:
+            if adjoint_factory is not None:
+                return adjoint_factory(name, registers, arguments)
+            raise SerializationError(
+                "Missing exact adjoint owner for external control-wrapper"
             )
         assert child.registers is not None
         signature = Signature(child.registers).adjoint()
@@ -181,6 +195,7 @@ def cirq_gate_library_factories(
         )
         root = result.functions[0] if isinstance(result, ProgramRecord) else result
         recipes[root] = _cirq().ops.raw_types._InverseCompositeGate(recipes[child])
+        adjoint_sources.add(root)
         return result
 
     def positive_control(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:
