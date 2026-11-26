@@ -2,24 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 # Constructors adapted from locked Qualtran v0.7.0 phase_estimation windows.
 
-"""Convert stored phase-window declarations through existing algorithm owners."""
+"""Convert stored phase-window declarations through shared Compiler owners."""
 
 from collections.abc import Mapping
 from functools import partial
 from typing import Literal
 
-from ..algorithms.primitives.kaiser_window import KaiserWindowState
-from ..algorithms.primitives.phase_estimation_window import rectangular_window_program
-from ..compiler.formats.legacy_component_resolution import (
+from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_types import fixed_point_register_type
+from ...core.ir.program.registers import Register, RegisterSide
+from ...errors import SerializationError
+from ..registers.phase.window_component import rectangular_window_program
+from .legacy_component_resolution import (
     ComponentFactory,
     ResolvedArgument,
 )
-from ..compiler.formats.legacy_modular_addition_factories import _integer
-from ..compiler.formats.legacy_rotation_factories import _real_argument
-from ..compiler.formats.legacy_word_factories import _rename_program
-from ..core.ir.program import FunctionRecord, ProgramRecord
-from ..core.ir.program.registers import Register
-from ..errors import SerializationError
+from .legacy_modular_addition_factories import _integer
+from .legacy_rotation_factories import _real_argument
+from .legacy_word_factories import _rename_program
 
 
 def _window_factory(
@@ -35,8 +35,14 @@ def _window_factory(
         )
     width = _integer(arguments, "bitsize")
     if kind == "kaiser":
-        alpha = _real_argument(arguments, "alpha")
-        ports = tuple(KaiserWindowState(width, alpha).signature)
+        _real_argument(arguments, "alpha")
+        ports = (
+            Register(
+                "qpe_reg",
+                fixed_point_register_type(width, width),
+                side=RegisterSide.RIGHT,
+            ),
+        )
         if registers is not None and registers != ports:
             raise SerializationError("Invalid Kaiser window register signature")
         # The frozen source supplies a tensor and model, without a gate body.

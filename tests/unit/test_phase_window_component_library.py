@@ -12,12 +12,12 @@ from flagquantum.circuit import Circuit
 from flagquantum.compiler.formats.legacy_component_resolution import (
     resolve_component_program,
 )
+from flagquantum.compiler.formats.legacy_phase_window_factories import (
+    phase_window_library_factories,
+)
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program import verify_program_record
-from flagquantum.ecosystem._phase_window_component_library import (
-    phase_window_library_factories,
-)
 from flagquantum.errors import SerializationError
 from tests.unit.test_component_graph import _native_trace, _source_trace
 from tests.unit.test_legacy_arithmetic_factories import _library

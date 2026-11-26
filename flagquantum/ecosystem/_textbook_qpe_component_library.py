@@ -12,6 +12,9 @@ from ..compiler.formats.legacy_component_resolution import (
     ComponentFactory,
     ResolvedArgument,
 )
+from ..compiler.formats.legacy_phase_window_factories import (
+    phase_window_library_factories,
+)
 from ..compiler.formats.legacy_qft_factories import qft_factories
 from ..compiler.formats.legacy_rotation_factories import (
     _real_argument,
@@ -27,7 +30,6 @@ from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.registers import Register
 from ..core.value_math import SymbolicInt, SymbolicReal
 from ..errors import SerializationError
-from ._phase_window_component_library import phase_window_library_factories
 
 _Z = "qualtran.bloqs.basic_gates.rotation.ZPowGate"
 _WINDOW = "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState"
