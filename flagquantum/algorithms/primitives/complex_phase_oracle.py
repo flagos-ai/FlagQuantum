@@ -97,7 +97,8 @@ class ComplexPhaseOracle:
             SymbolicInt,
             smax(
                 encoder.logical_qubits,
-                encoder_adjoint.logical_qubits + phase_registers,
+                # Source scheduling frees phase outputs before the final decoder.
+                encoder_adjoint.logical_qubits,
                 public + 4 * precision,
                 public + encoded + phase_registers + 1,
             ),
