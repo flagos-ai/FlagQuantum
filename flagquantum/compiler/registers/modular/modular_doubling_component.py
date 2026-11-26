@@ -18,17 +18,23 @@ from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..arithmetic.constant_addition_component import constant_addition_program
 from ..comparison._component_gates import comparison_bit_functions
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 
 
-def modular_doubling_program(dtype: RegisterType, modulus: int) -> ProgramRecord:
+def modular_doubling_program(
+    dtype: RegisterType, modulus: int, *, adjoint: bool = False
+) -> ProgramRecord:
     """Double an MSB-first residue and return the source's new data binding.
 
     The lower work bit becomes the final data bit. The old high data bit and
     sign are released after the original parity cleanup. Internal views retain
     the source signed subtract and unsigned controlled correction. Work starts
     clean and returns clean on the promised residue domain.
+    The exact adjoint consumes the returned layout and reconstructs its predecessor.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Modular doubling direction must be Boolean")
     width = executable_register_width(dtype)
     if dtype.encoding not in {"uint", "montgomery"}:
         raise ValueError("Modular doubling requires unsigned or Montgomery words")
@@ -72,4 +78,37 @@ def modular_doubling_program(dtype: RegisterType, modulus: int) -> ProgramRecord
     assert isinstance(cleared_sign, RegisterBinding)
     builder.free(pieces[0])
     builder.free(cleared_sign)
-    return builder.finalize({"x": output})
+    record = builder.finalize({"x": output})
+    if not adjoint:
+        return record
+    x_gate, cx_gate = (
+        ProgramRecord((function,)) for function in comparison_bit_functions()
+    )
+    return adjoint_component_calls(
+        record,
+        (
+            (
+                constant_addition_program(
+                    signed_register_type(width + 2), (-modulus) % (1 << (width + 2))
+                ),
+                constant_addition_program(
+                    signed_register_type(width + 2),
+                    (-modulus) % (1 << (width + 2)),
+                    adjoint=True,
+                ),
+            ),
+            (
+                constant_addition_program(
+                    unsigned_register_type(width + 1), modulus, control_value=1
+                ),
+                constant_addition_program(
+                    unsigned_register_type(width + 1),
+                    modulus,
+                    control_value=1,
+                    adjoint=True,
+                ),
+            ),
+            (x_gate, x_gate),
+            (cx_gate, cx_gate),
+        ),
+    )
