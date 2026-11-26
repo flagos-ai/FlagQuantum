@@ -10,11 +10,11 @@ import torch
 from flagquantum.compiler.formats.legacy_component_resolution import (
     resolve_component_program,
 )
-from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir.program import verify_program_record
-from flagquantum.ecosystem._textbook_qpe_component_library import (
+from flagquantum.compiler.formats.legacy_textbook_qpe_factories import (
     textbook_qpe_library_factories,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.errors import SerializationError
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_graph import _native_trace, _source_trace
@@ -27,7 +27,7 @@ from tests.unit.test_register_component_calls import SourceCalls
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def _resolve(source: Any, depth: int = 0) -> Any:
+def _resolve(source: Any, depth: int = 0) -> ProgramRecord:
     return resolve_component_program(
         _library(source, depth), 0, textbook_qpe_library_factories()
     )
@@ -171,6 +171,9 @@ def test_qpe_source_free_resolution_and_sdk_free_append(
     library = _library(source)
     with monkeypatch.context() as patch:
         patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        patch.setitem(sys.modules, "flagquantum.algorithms", None)
+        patch.setitem(sys.modules, "flagquantum.simulation", None)
         record = resolve_component_program(library, 0, textbook_qpe_library_factories())
     with monkeypatch.context() as patch:
         patch.setitem(sys.modules, "qualtran", None)
@@ -188,3 +191,22 @@ def test_qpe_source_free_resolution_and_sdk_free_append(
         )
         actual = logical_operator(bound.circuit, 4)[:, :2]
     torch.testing.assert_close(actual, expected, atol=8e-12, rtol=0)
+
+
+def test_exact_constructor_context_is_local_to_one_compilation() -> None:
+    first = textbook_qpe_library_factories()
+    second = textbook_qpe_library_factories()
+    unitary = first["qualtran.bloqs.basic_gates.rotation.ZPowGate"](
+        "u", None, {"exponent": 0.468}
+    )
+    window = first[
+        "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState"
+    ]("window", None, {"bitsize": 2})
+    assert isinstance(window, ProgramRecord)
+    arguments = {"unitary": unitary, "ctrl_state_prep": window.functions[0]}
+    assert not isinstance(unitary, ProgramRecord)
+    # Same ports are insufficient: provenance belongs to this compilation.
+    identifier = "qualtran.bloqs.phase_estimation.text_book_qpe.TextbookQPE"
+    first[identifier]("qpe", None, arguments)
+    with pytest.raises(SerializationError, match="context"):
+        second[identifier]("qpe", None, arguments)

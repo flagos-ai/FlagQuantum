@@ -8,28 +8,28 @@ from collections.abc import Mapping
 
 import sympy
 
-from ..compiler.formats.legacy_component_resolution import (
+from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.registers import Register
+from ...core.value_math import SymbolicInt, SymbolicReal
+from ...errors import SerializationError
+from ..registers.phase.phase_estimation_component import (
+    rectangular_z_phase_estimation_program,
+)
+from ..registers.phase.textbook_qft_component import textbook_qft_program
+from .legacy_component_resolution import (
     ComponentFactory,
     ResolvedArgument,
 )
-from ..compiler.formats.legacy_phase_window_factories import (
+from .legacy_phase_window_factories import (
     phase_window_library_factories,
 )
-from ..compiler.formats.legacy_qft_factories import qft_factories
-from ..compiler.formats.legacy_rotation_factories import (
+from .legacy_qft_factories import qft_factories
+from .legacy_rotation_factories import (
     _real_argument,
     rotation_factories,
 )
-from ..compiler.formats.legacy_word_factories import _rename_program
-from ..compiler.formats.symbolic_parameters import symbolic_parameter_value
-from ..compiler.registers.phase.phase_estimation_component import (
-    rectangular_z_phase_estimation_program,
-)
-from ..compiler.registers.phase.textbook_qft_component import textbook_qft_program
-from ..core.ir.program import FunctionRecord, ProgramRecord
-from ..core.ir.program.registers import Register
-from ..core.value_math import SymbolicInt, SymbolicReal
-from ..errors import SerializationError
+from .legacy_word_factories import _rename_program
+from .symbolic_parameters import symbolic_parameter_value
 
 _Z = "qualtran.bloqs.basic_gates.rotation.ZPowGate"
 _WINDOW = "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState"
@@ -109,7 +109,7 @@ def textbook_qpe_library_factories() -> dict[str, ComponentFactory]:
         width = ports[0].bitsize
         if type(width) is not int:
             # The source carries symbolic widths without decomposing a circuit.
-            from ..core.ir.program.register_types import quantum_bit_type
+            from ...core.ir.program.register_types import quantum_bit_type
 
             target = Register("q", quantum_bit_type())
             signature = (ports[0].adjoint() if inverse else ports[0], target)
