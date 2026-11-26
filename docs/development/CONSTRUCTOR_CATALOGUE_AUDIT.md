@@ -17,27 +17,27 @@ source registry, rather than inferred from package aliases.
 | Verified fact | Count |
 | --- | ---: |
 | Frozen source keys | 303 |
-| Exact Compiler format registrations | 201 |
-| Keys reachable through Ecosystem providers | 40 |
-| Union of exact native registrations | 202 |
-| Keys without an exact factory in these providers | 101 |
+| Exact Compiler format registrations | 202 |
+| Keys reachable through Ecosystem providers | 41 |
+| Union of exact native registrations | 203 |
+| Keys without an exact factory in these providers | 100 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 39 keys; CirqGateAsBloq is the
+The Ecosystem count overlaps Compiler for 40 keys; CirqGateAsBloq is the
 additional key. These are registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 101 keys without exact factories have these distinct source roles:
+The 100 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 93 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 92 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -305,7 +305,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo` | `qualtran/bloqs/for_testing/with_decomposition.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian` | `qualtran/bloqs/hamiltonian_simulation/guided_hamiltonian.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation` | `qualtran/bloqs/hamiltonian_simulation/guided_hamiltonian.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP` | `qualtran/bloqs/hamiltonian_simulation/hamiltonian_simulation_by_gqsp.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP` | `qualtran/bloqs/hamiltonian_simulation/hamiltonian_simulation_by_gqsp.py` | `compiler/formats/legacy_hamiltonian_gqsp_factories.py:hamiltonian_gqsp_factories`, `ecosystem/_hamiltonian_gqsp_component_library.py:hamiltonian_gqsp_library_factories` | Finite typed PREPARE/GQSP/erasure root with existing native numerical model and explicit directional owners; [audit](HAMILTONIAN_GQSP_CONSTRUCTOR_AUDIT.md); symbolic, source codec and nonzero-junk release boundaries retained |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/prepare_hubbard.py` | `compiler/formats/legacy_hubbard_prepare_factories.py:hubbard_prepare_factories`, `ecosystem/_block_encoding_component_library.py:block_encoding_library_factories`, `ecosystem/_packed_oracle_component_library.py:packed_oracle_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | `compiler/formats/legacy_hubbard_selection_factories.py:hubbard_selection_factories`, `ecosystem/_block_encoding_component_library.py:block_encoding_library_factories`, `ecosystem/_packed_oracle_component_library.py:packed_oracle_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator` | `qualtran/bloqs/chemistry/hubbard_model/qubitization/select_hubbard.py` | `compiler/formats/legacy_hubbard_selection_factories.py:hubbard_selection_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
