@@ -18,13 +18,13 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 71 |
-| Union of exact native registrations | 233 |
-| Keys without an exact factory in these providers | 70 |
+| Keys reachable through Ecosystem providers | 76 |
+| Union of exact native registrations | 238 |
+| Keys without an exact factory in these providers | 65 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq and twenty-nine
-finite first-quantization constructors add thirty keys. These are
+The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq, twenty-nine finite first-quantization constructors and five
+finite single-factorization constructors add thirty-five keys. These are
 registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
@@ -232,11 +232,11 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.chemistry.pbc.first_quantization.select_t.SelectTFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/select_t.py` | `ecosystem/_first_quantization_component_library.py:first_quantization_component_factories` | Original finite metadata and literal root connections; opaque physical leaves retained; [audit](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.ApplyNuclearPhase` | `qualtran/bloqs/chemistry/pbc/first_quantization/select_uv.py` | `ecosystem/_first_quantization_component_library.py:first_quantization_component_factories` | Original finite metadata and literal root connections; opaque physical leaves retained; [audit](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.select_uv.SelectUVFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/select_uv.py` | `ecosystem/_first_quantization_component_library.py:first_quantization_component_factories` | Original finite metadata and literal root connections; opaque physical leaves retained; [audit](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md) |
-| `qualtran.bloqs.chemistry.sf.prepare.InnerPrepareSingleFactorization` | `qualtran/bloqs/chemistry/sf/prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.sf.prepare.OuterPrepareSingleFactorization` | `qualtran/bloqs/chemistry/sf/prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.sf.select_bloq.SelectSingleFactorization` | `qualtran/bloqs/chemistry/sf/select_bloq.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationBlockEncoding` | `qualtran/bloqs/chemistry/sf/single_factorization.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationOneBody` | `qualtran/bloqs/chemistry/sf/single_factorization.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.chemistry.sf.prepare.InnerPrepareSingleFactorization` | `qualtran/bloqs/chemistry/sf/prepare.py` | `ecosystem/_single_factorization_library.py:single_factorization_factories` | Original finite metadata and exact nine/five-call roots; selected reflection executable, whole opaque bodies retained; [audit](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.sf.prepare.OuterPrepareSingleFactorization` | `qualtran/bloqs/chemistry/sf/prepare.py` | `ecosystem/_single_factorization_library.py:single_factorization_factories` | Original finite metadata and exact nine/five-call roots; selected reflection executable, whole opaque bodies retained; [audit](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.sf.select_bloq.SelectSingleFactorization` | `qualtran/bloqs/chemistry/sf/select_bloq.py` | `ecosystem/_single_factorization_library.py:single_factorization_factories` | Original finite metadata and exact nine/five-call roots; selected reflection executable, whole opaque bodies retained; [audit](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationBlockEncoding` | `qualtran/bloqs/chemistry/sf/single_factorization.py` | `ecosystem/_single_factorization_library.py:single_factorization_factories` | Original finite metadata and exact nine/five-call roots; selected reflection executable, whole opaque bodies retained; [audit](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.sf.single_factorization.SingleFactorizationOneBody` | `qualtran/bloqs/chemistry/sf/single_factorization.py` | `ecosystem/_single_factorization_library.py:single_factorization_factories` | Original finite metadata and exact nine/five-call roots; selected reflection executable, whole opaque bodies retained; [audit](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.sparse.prepare.PrepareSparse` | `qualtran/bloqs/chemistry/sparse/prepare.py` | `compiler/formats/legacy_sparse_preparation_factories.py:native_sparse_preparation_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.sparse.select_bloq.SelectSparse` | `qualtran/bloqs/chemistry/sparse/select_bloq.py` | `compiler/formats/legacy_sparse_chemistry_factories.py:sparse_chemistry_factories`, `ecosystem/cirq/_sparse_chemistry_library.py:sparse_chemistry_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.thc.prepare.PrepareTHC` | `qualtran/bloqs/chemistry/thc/prepare.py` | `compiler/formats/legacy_thc_preparation_factories.py:thc_preparation_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
