@@ -379,7 +379,10 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
     assert "pull_request_target" not in document.get("on", document.get(True, {}))
     assert job["concurrency"]["queue"] == "max"
     assert not job.get("continue-on-error", False)
-    assert job["timeout-minutes"] <= 15
+    if name == "prepare-source":
+        assert job["timeout-minutes"] == 30
+    else:
+        assert job["timeout-minutes"] <= 15
     steps = job["steps"]
     checkout = next(
         index
@@ -420,7 +423,8 @@ def test_api_source_bootstrap_preserves_checkout_fallback(
     expected_guard = "runner.environment == 'self-hosted'"
     assert bootstrap["if"] == expected_guard
     assert bootstrap["continue-on-error"] is True
-    assert bootstrap["timeout-minutes"] == 10
+    assert bootstrap["timeout-minutes"] == 20
+    assert jobs[name]["timeout-minutes"] - bootstrap["timeout-minutes"] == 10
     checkout = next(
         step for step in steps if "actions/checkout@" in step.get("uses", "")
     )

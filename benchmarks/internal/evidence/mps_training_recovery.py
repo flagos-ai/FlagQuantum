@@ -217,7 +217,7 @@ def run(protocol_path: Path, output: Path) -> None:
     for path in (
         Path(__file__),
         ROOT / "benchmarks/internal/evidence/mps_training_acceptance.py",
-        ROOT / "tools/run_mps_capacity_series.py",
+        ROOT / "tools/validation/run_mps_capacity_series.py",
     ):
         source["producer_sha256"][str(path.relative_to(ROOT))] = hashlib.sha256(
             path.read_bytes()

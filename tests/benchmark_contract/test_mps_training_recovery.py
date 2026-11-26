@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import gzip
+import hashlib
 import json
 import os
 import subprocess
@@ -140,6 +141,11 @@ def test_two_rank_updates_checkpoint_and_owner_state_match(
 ) -> None:
     point = measured_recovery
     validate(point, 2)
+    producer = "tools/validation/run_mps_capacity_series.py"
+    assert (
+        point["source"]["producer_sha256"][producer]
+        == hashlib.sha256((ROOT / producer).read_bytes()).hexdigest()
+    )
     assert point["recovery_passed"]
     assert all(max(r["recovery_errors"].values()) <= 2e-5 for r in point["ranks"])
     assert all(r["full_state_gather_forbidden_during_training"] for r in point["ranks"])
@@ -198,3 +204,14 @@ def test_missing_outcome_is_not_treated_as_fast_scaling(
     point.unlink()
     compressed, _ = report(tmp_path, [1, 2])
     assert compressed["rows"] == payload["rows"]
+
+
+def test_critical_path_snapshot_hashes_current_profiling_owner() -> None:
+    from benchmarks.internal.evidence.mps_critical_path import _source_snapshot
+
+    snapshot = _source_snapshot()
+    profiling = "flagquantum/runtime/observability/mps.py"
+    assert (
+        snapshot["critical_file_sha256"][profiling]
+        == hashlib.sha256((ROOT / profiling).read_bytes()).hexdigest()
+    )

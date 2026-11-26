@@ -48,7 +48,9 @@ jobs:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    timeout-minutes: 15
+    # Cold migration trees can require up to 2,048 verified API objects.
+    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    timeout-minutes: 30
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
       GIT_CONFIG_COUNT: "1"
@@ -64,7 +66,7 @@ jobs:
         id: archive-source
         if: runner.environment == 'self-hosted'
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 20
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

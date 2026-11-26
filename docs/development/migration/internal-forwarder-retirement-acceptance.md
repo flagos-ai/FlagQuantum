@@ -108,3 +108,27 @@ Related package/QEC tests: 102 passed, 7 skipped. The existing installed macOS
 wheel also passes the full core QEC probe outside the checkout, with reused local
 dependency packages; this is not a fresh Linux installation claim. Ruff, Black
 and architecture checks pass. Linux package CI must qualify the pushed fix.
+
+## Cold source restoration budget
+
+The latest CPU source producer succeeded on retry. GPU source restoration
+continued making verified progress but was killed at the ten-minute step limit,
+after requesting 1,145 objects; checkout fallback then failed with a TLS reset.
+Both producers now bound the API step at 20 minutes and the job at 30 minutes,
+reserving ten minutes for fallback, packing and uploads. This accommodates the
+existing 2,048-object ceiling without increasing batch size, API concurrency or
+retries. Integrity validation, read-only permissions, fallback guards and all
+downstream test gates remain unchanged. Scheduling tests pin both budgets.
+
+The same remote run exposed two remaining source-hash readers in executable
+MPS evidence producers and one native-extension-only private mock target. The
+producers now hash the relocated capacity supervisor and profiling owner; raw
+results/manifests remain untouched. The native gather test patches the actual
+Simulation helper, preserving its call-count, value and gradient assertions.
+The native test passes against the previously built installed wheel (whose
+production implementation is unchanged). Source scheduling/integrity tests: 164
+passed; the critical-path source snapshot regression passes. Local recovery
+tests have ten passing non-collective cases; the seven two-rank cases cannot be
+claimed passed because macOS c10d rendezvous timed out, including after allowing
+loopback networking. No skip or tolerance relaxation was added. Linux CI must
+validate the two-rank recovery path and its new provenance assertion.

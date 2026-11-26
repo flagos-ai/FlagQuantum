@@ -49,6 +49,7 @@ from flagquantum.simulation.native_cpu import (
 from flagquantum.simulation.native_cpu.rotation import (
     native_cpu_forward_rotation_tile_qubits,
 )
+from flagquantum.simulation.statevector import cx_adjoint
 from flagquantum.simulation.statevector.cx_adjoint import (
     apply_cpu_cx_adjoint_index,
     cpu_cx_permutation_images,
@@ -1885,7 +1886,7 @@ def test_reverse_sweep_uses_native_dual_cx_gather(
     expected_gradient = theta.grad.detach().clone()
     theta.grad = None
     calls = 0
-    native = reverse_adjoint_cx.fused_cx_adjoint_gather
+    native = cx_adjoint.fused_cx_adjoint_gather
 
     def counted(
         ket: torch.Tensor,
@@ -1896,7 +1897,7 @@ def test_reverse_sweep_uses_native_dual_cx_gather(
         calls += 1
         return native(ket, adjoint, index)
 
-    monkeypatch.setattr(reverse_adjoint_cx, "fused_cx_adjoint_gather", counted)
+    monkeypatch.setattr(cx_adjoint, "fused_cx_adjoint_gather", counted)
     monkeypatch.setenv("FQ_NATIVE_CPU_CX_ADJOINT_GATHER", "1")
     actual = execute_torch_distributed_statevector_reverse(circuit)
     actual.backward()
