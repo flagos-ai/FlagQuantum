@@ -369,9 +369,13 @@ def test_exact_context_replacement_without_sdks_and_metadata_guards(
     module = import_module("flagquantum.ecosystem.cirq._complex_phase_library")
     original = module.complex_phase_factories
 
-    def observe(owner: Callable[[FunctionRecord, int], ComplexPhaseContext]) -> Any:
+    def observe(
+        owner: Callable[[FunctionRecord, int], ComplexPhaseContext],
+        *,
+        on_pair: Any = None,
+    ) -> Any:
         contexts.append(owner)
-        return original(owner)
+        return original(owner, on_pair=on_pair)
 
     with monkeypatch.context() as patch:
         patch.setattr(module, "complex_phase_factories", observe)
@@ -448,10 +452,11 @@ def _phase_aliases(instructions: Any) -> Any:
     )
 
 
-@pytest.mark.parametrize("power", [0, 1, 2, 7, 31])
+@pytest.mark.parametrize("power", range(32))
+@pytest.mark.parametrize("adjoint", [False, True])
 @pytest.mark.parametrize("sign,value", [(0, 1), (1, -1)])
 def test_each_literal_phase_recipe_matches_source_sdk_wires_feedback_and_angles(
-    power: int, sign: int, value: int
+    power: int, sign: int, value: int, adjoint: bool
 ) -> None:
     import cirq
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
@@ -463,6 +468,8 @@ def test_each_literal_phase_recipe_matches_source_sdk_wires_feedback_and_angles(
 
     gate = (cirq.Z ** (value / 2 ** (1 + power))).controlled(control_values=[sign])
     source = cirq_gate_to_bloq(gate)
+    if adjoint:
+        source, gate = source.adjoint(), cirq.inverse(gate)
     record = _gate_program(gate, cirq_gate_signature(gate), "main")
     program = record if isinstance(record, ProgramRecord) else ProgramRecord((record,))
     actual = bind_register_program(program, ((0,), (1,)), clean=(2, 3))
@@ -473,6 +480,15 @@ def test_each_literal_phase_recipe_matches_source_sdk_wires_feedback_and_angles(
         _phase_aliases(actual.circuit.instructions),
         _phase_aliases(expected.instructions),
     )
+    for wire in range(4):
+        actual_wire = [op for op in actual.circuit.instructions if wire in op.wires]
+        source_wire = [op for op in expected.instructions if wire in op.wires]
+        for observed, target in zip(actual_wire, source_wire, strict=True):
+            assert (observed.matrix is None) == (target.matrix is None)
+            if observed.matrix is not None:
+                torch.testing.assert_close(
+                    observed.matrix, target.matrix, atol=0, rtol=0
+                )
 
 
 def test_private_encoder_pair_matches_both_independent_source_snapshots() -> None:

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register
 from ...errors import SerializationError
+from ..registers.component_adjoint import adjoint_component_calls
 from ..registers.phase.complex_phase_component import complex_phase_oracle_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
@@ -24,10 +25,15 @@ class ComplexPhaseContext:
     arctan_pair: tuple[ProgramRecord, ProgramRecord]
     phases: tuple[ProgramRecord, ...]
     target_names: tuple[str, ...]
+    inverse_phases: tuple[ProgramRecord, ...] | None = None
 
 
 def complex_phase_factories(
     context_owner: Callable[[FunctionRecord, int], ComplexPhaseContext],
+    *,
+    on_pair: (
+        Callable[[FunctionRecord, tuple[ProgramRecord, ProgramRecord]], None] | None
+    ) = None,
 ) -> dict[str, ComponentFactory]:
     """Keep leaf implementation choices explicit instead of inferring an inverse."""
 
@@ -67,7 +73,28 @@ def complex_phase_factories(
         )
         if registers is not None and record.functions[0].registers != registers:
             raise SerializationError("Invalid complex phase register signature")
-        return _rename_program(record, name)
+        inverse = None
+        if on_pair is not None:
+            if context.inverse_phases is None or len(context.inverse_phases) != len(
+                context.phases
+            ):
+                raise SerializationError(
+                    "Complex phase requires exact inverse phase owners"
+                )
+            encoder_pair, angle_pair = context.encoder_pair, context.arctan_pair
+            components = (
+                encoder_pair,
+                (encoder_pair[1], encoder_pair[0]),
+                angle_pair,
+                (angle_pair[1], angle_pair[0]),
+                *tuple(zip(context.phases, context.inverse_phases, strict=True)),
+            )
+            inverse = adjoint_component_calls(record, components)
+        record = _rename_program(record, name)
+        if on_pair is not None:
+            assert inverse is not None
+            on_pair(record.functions[0], (record, _rename_program(inverse, name)))
+        return record
 
     return {
         "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": factory
