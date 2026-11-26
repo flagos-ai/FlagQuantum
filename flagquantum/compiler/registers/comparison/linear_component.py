@@ -11,6 +11,7 @@ from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..control.conjunction_program import and_component_program
 from ..control.multi_control_component import multi_control_x_program
@@ -18,13 +19,18 @@ from ._component_gates import comparison_bit_functions
 from .linear_comparison import linear_greater_requirements
 
 
-def linear_greater_program(width: int, *, signed: bool = False) -> ProgramRecord:
+def linear_greater_program(
+    width: int, *, signed: bool = False, adjoint: bool = False
+) -> ProgramRecord:
     """XOR the source finite-width difference sign into a dirty target.
 
     Inputs keep the source unsigned port types even in signed mode. Signed mode
     retains the original overflow behavior and the unsigned one-bit base case.
     All carry and unsigned sign work is owned and erased before return.
+    The adjoint reverses exact child calls before measurement lowering.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Linear comparison direction must be Boolean")
     linear_greater_requirements(width, signed=signed)
     word, bit = unsigned_register_type(width), quantum_bit_type()
     builder = ComponentProgramBuilder(
@@ -43,13 +49,15 @@ def linear_greater_program(width: int, *, signed: bool = False) -> ProgramRecord
             },
         )
         base_controls = np.asarray(result["controls"])
-        return builder.finalize(
+        record = builder.finalize(
             {
                 "a": base_controls[0],
                 "b": base_controls[1],
                 "target": result["target"],
             }
         )
+        copy = multi_control_x_program((1, 0))
+        return adjoint_component_calls(record, ((copy, copy),)) if adjoint else record
     true_width = width if signed else width + 1
     wide = unsigned_register_type(true_width)
     if not signed:
@@ -130,4 +138,13 @@ def linear_greater_program(width: int, *, signed: bool = False) -> ProgramRecord
         bs = builder.split(b)
         b = builder.join(bs[1:], word)
         builder.free(bs[0])
-    return builder.finalize({"a": a, "b": b, "target": target})
+    record = builder.finalize({"a": a, "b": b, "target": target})
+    if not adjoint:
+        return record
+    x_gate, cx_gate = (
+        ProgramRecord((function,)) for function in comparison_bit_functions()
+    )
+    return adjoint_component_calls(
+        record,
+        ((compute, erase), (erase, compute), (x_gate, x_gate), (cx_gate, cx_gate)),
+    )
