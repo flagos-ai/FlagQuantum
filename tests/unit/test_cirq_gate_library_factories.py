@@ -558,6 +558,8 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         "phasor_negative",
         "phasor_zero",
         "phasor_empty",
+        "cnot",
+        "cy",
     ),
 )
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
@@ -622,6 +624,8 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         )
     elif kind.startswith("phasor"):
         raw = pauli_phasor_case(cirq, kind)
+    elif kind in ("cnot", "cy"):
+        raw = cirq.CNOT if kind == "cnot" else cirq.Y.controlled()
     else:
         assert kind == "matrix1"
         raw = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
@@ -755,14 +759,23 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         )
         count = sum(op.name == "measure" for op in bound.circuit.instructions)
         assert count == (
-            2
+            1
             if (
-                kind in ("matrix1", "iswap", "iswap_zero")
-                or kind.startswith("phasor")
-                and kind not in ("phasor_zero", "phasor_empty")
+                kind == "cnot"
+                or kind == "cy"
+                and not isinstance(raw, cirq.ControlledGate)
             )
-            and control == "positive"
-            else 0
+            and control in ("positive", "negative")
+            else (
+                2
+                if (
+                    kind in ("matrix1", "iswap", "iswap_zero")
+                    or kind.startswith("phasor")
+                    and kind not in ("phasor_zero", "phasor_empty")
+                )
+                and control == "positive"
+                else 0
+            )
         )
         restored = CircuitIR.from_json(appended.to_ir().to_json())
         assert (

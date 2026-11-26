@@ -9,7 +9,11 @@ from typing import Any
 from ...compiler.formats.legacy_component_arguments import ControlSpecification
 from ...compiler.formats.legacy_control_specs import control_registers_from_spec
 from ...compiler.formats.legacy_word_factories import _rename_program
+from ...compiler.registers.component_builder import ComponentProgramBuilder
 from ...compiler.registers.component_control import quantum_control_signature
+from ...compiler.registers.control.specialized_component_control import (
+    multi_controlled_component_pair,
+)
 from ...compiler.registers.primitives.controlled_rotation_component import (
     controlled_rz_program,
 )
@@ -17,6 +21,7 @@ from ...compiler.registers.primitives.global_phase import scalar_phase_ir
 from ...core.ir import CircuitIR
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
+from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ._control_values import import_control_values
 from ._decompose import decompose_cirq_once
@@ -104,6 +109,7 @@ def controlled_inverse_program(
             nested_signatures[child.gate] = nested
         if selected is not None and selected[0] not in {
             "cnot.CNOT",
+            "z_basis.CZ",
             "rotation.XPowGate",
             "rotation.YPowGate",
             "rotation.ZPowGate",
@@ -163,6 +169,7 @@ def controlled_inverse_program(
         # can have different decompositions despite the same unitary operator.
         self_adjoint = {
             "cnot.CNOT": cirq.CNOT,
+            "z_basis.CZ": cirq.CZ,
             "hadamard.Hadamard": cirq.H,
             "swap.TwoBitSwap": cirq.SWAP,
             "x_basis.XGate": cirq.X,
@@ -183,6 +190,18 @@ def controlled_inverse_program(
             child_signature,
             tuple((dtype, values.shape) for dtype, values in spec.clauses),
         )
+        combined_cz = (
+            selected is not None and selected[0] == "z_basis.CZ" and len(bits) == 1
+        )
+        if combined_cz:
+            # CZ.get_ctrl_system combines the new bit with its existing q1
+            # through _MultiControlledFromSinglyControlled, in this order.
+            ports = Signature(
+                (
+                    Register("q1", quantum_bit_type(), (2,)),
+                    Register("q2", quantum_bit_type()),
+                )
+            )
         positive_x_pair = (
             selected is not None
             and selected[0] == "x_basis.XGate"
@@ -216,7 +235,18 @@ def controlled_inverse_program(
             controlled = declared[operation.gate]
             assert controlled.registers is not None
             ports = Signature(controlled.registers)
-        if native_control and selected is not None and selected[0] == "rotation.Rz":
+        if combined_cz:
+            assert definition is not None
+            builder = ComponentProgramBuilder(
+                child_signature, declared._module(definition).functions, name="main"
+            )
+            positive = builder.finalize(
+                builder.call_dict(definition.name, builder.inputs)
+            )
+            program = multi_controlled_component_pair(
+                positive, positive, "q1", (bits[0], 1)
+            )[int(inverse)]
+        elif native_control and selected is not None and selected[0] == "rotation.Rz":
             # Adjoint(CRz) reverses the four source calls; CRz(-angle)
             # has the same operator but a different literal call order.
             program = controlled_rz_program(
