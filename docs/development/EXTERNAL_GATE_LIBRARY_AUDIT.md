@@ -256,3 +256,48 @@ controls, nested explicit wrapper composition, missing model ownership and
 original unavailable graph boundaries are still separate gaps. No new parent
 is counted as accepted for this dependency delivery. The unrelated unapproved
 controlled-Y proposal remains untouched.
+
+
+### Named power children and nested explicit adjoints
+
+The same immediate-child owner now admits atomic XPow, YPow, ZPow and global
+phase. Positive ZPow retains the existing native measured CZPow component;
+positive global phase becomes a ZPow on the control. These use their actual
+specialized register signatures. Qualified generic SDK execution views keep
+their own decomposition, including exact eigen-phase atoms and every explicit
+local matrix payload. Rz/CRz and other unowned named controls remain refused.
+The SDK eigen-atom interception mirrors the existing source snapshot protocol;
+it does not replace unknown child owners with an algorithm matrix.
+
+The per-compilation factory retains each controlled child's original gate,
+control specification and explicit-adjoint direction. A second or third outer
+Adjoint rebuilds the directed source child graph. It never substitutes the
+ordinary forward SDK recipe for an even number of explicit adjoints. The
+returned Program and ordinary appended IR require no source or SDK execution.
+
+One-bit matrix seed17 and SwapPow(0.375) each cover positive/negative scalar,
+array `[0, 1]` and unsigned-word control, with one, two and three explicit outer
+adjoints. All24 actual source paths retain child port signatures, operation
+operands, per-wire ordering, measurement feedback, phase and matrix payloads.
+Each operator column is checked in every applicable small measurement history.
+Two measured erasures in the positive matrix case yield four histories; other
+cases have one. Supplied work slots restore to zero. CircuitIR encoding uses
+its real matrix-aware codec rather than tensor dataclass equality.
+
+| One-bit matrix control | Actual source/native instructions | Actual measurements/private peak | Original model, separate |
+| --- | --- | --- | --- |
+| Positive scalar | 48 | 2 / 1 | And 2, Clifford 2, rotation 4, measurement 2; logical peak 3 |
+| Negative scalar | 29, including 9 local matrix leaves | 0 / 0 | And 2, Clifford 10, rotation 4, measurement 2; logical peak 3 |
+| Bit array or unsigned word | 74, including 30 local matrix leaves | 0 / 0 | And 6, Clifford 6, rotation 4, measurement 6; logical peak 5 |
+
+The source logical cost graph and actual SDK execution view are different
+artifacts, notably for negative and grouped controls. Both are recorded; no
+estimate is inferred from primitive inventory. The existing native control-cost
+projection lacks controlled global phase, so the independent generic matrix
+estimate remains unavailable. SwapPow's original model still fails at atomic
+C[And]. Neither issue is hidden by matching complete operators.
+
+Source matrix and SwapPow paths at all three adjoint depths are delivered;
+whole-file serialization/resolver parents remain open for other named-control,
+allocation and source defect boundaries. This delivery does not increase the
+complete-parent count or silently authorize any pending contract.

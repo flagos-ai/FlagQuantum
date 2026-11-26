@@ -528,19 +528,28 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())
 
 
+@pytest.mark.parametrize("depth", (1, 2, 3))
+@pytest.mark.parametrize("kind", ("swap", "matrix1"))
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
-def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
-    control: str, locked_source: Any, monkeypatch: pytest.MonkeyPatch
+def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
+    depth: int,
+    kind: str,
+    control: str,
+    locked_source: Any,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from collections import Counter
     from dataclasses import replace
-    from math import pi
+    from itertools import product
+    from math import pi, sqrt
 
     from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.bloq import Bloq
     from qualtran._infra.controlled import Controlled, CtrlSpec
     from qualtran._infra.data_types import QUInt
 
     from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+    from tests.unit.measurement_checks import forced_branch
     from tests.unit.register_source_graph import assert_source_wire_streams
 
     np = pytest.importorskip("numpy")
@@ -550,18 +559,25 @@ def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
         "array": CtrlSpec(cvs=np.array([0, 1])),
         "word": CtrlSpec(qdtypes=QUInt(2), cvs=1),
     }[control]
-    raw = cirq.SwapPowGate(exponent=0.375)
-    source = Adjoint(Controlled(locked_source.CirqGateAsBloq(raw), spec))
+    raw = (
+        cirq.SwapPowGate(exponent=0.375)
+        if kind == "swap"
+        else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+    )
+    source: Bloq = Controlled(locked_source.CirqGateAsBloq(raw), spec)
+    for _ in range(depth):
+        source = Adjoint(source)
     graph = source.decompose_bloq()
     children = tuple(instance.bloq for instance in graph.bloq_instances)
-    assert len(children) == 3
-    if control == "positive":
+    child_count = 3 if kind == "swap" else 4
+    assert len(children) == child_count
+    if kind == "swap" and control == "positive":
         assert sorted(type(child).__name__ for child in children) == [
             "Controlled",
             "Toffoli",
             "Toffoli",
         ]
-    else:
+    elif control != "positive" and kind == "swap":
         from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 
         assert all(isinstance(child, ControlledViaAnd) for child in children)
@@ -587,7 +603,7 @@ def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
             for op in block.operations
             if op.callee and "_child_" in op.callee
         ]
-        assert len(calls) == 3
+        assert len(calls) == child_count
         functions = {function.name: function for function in record.functions}
         actual_ports = sorted(
             tuple(
@@ -614,7 +630,7 @@ def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
             for child in children
         )
         assert actual_ports == source_ports
-        n = reference.n_wires
+        n = sum(int(register.total_bits()) for register in source.signature)
         assert root.registers is not None
         ports = []
         offset = 0
@@ -648,9 +664,11 @@ def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
     )
     expected_operator = torch.tensor(
         cirq.unitary(
-            cirq.inverse(raw)
-            .on(*cirq.LineQubit.range(n - 2, n))
-            .controlled_by(*cirq.LineQubit.range(n - 2), control_values=values)
+            (cirq.inverse(raw) if depth % 2 else raw)
+            .on(*cirq.LineQubit.range(n - cirq.num_qubits(raw), n))
+            .controlled_by(
+                *cirq.LineQubit.range(n - cirq.num_qubits(raw)), control_values=values
+            )
         ),
         dtype=torch.complex128,
     )
@@ -660,15 +678,31 @@ def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
         appended = Circuit(bound.circuit.n_wires, dtype=torch.complex128).append(
             FieldOperation(bound.circuit.n_wires, bound.circuit.instructions)
         )
-        torch.testing.assert_close(
-            get_unitary(appended),
-            torch.kron(
-                expected_operator,
-                torch.eye(1 << (bound.circuit.n_wires - n), dtype=torch.complex128),
-            ),
-            atol=2e-12,
-            rtol=0,
+        count = sum(op.name == "measure" for op in bound.circuit.instructions)
+        assert count == (2 if kind == "matrix1" and control == "positive" else 0)
+        restored = CircuitIR.from_json(appended.to_ir().to_json())
+        assert (
+            restored.to_dict()["instructions"]
+            == bound.circuit.to_dict()["instructions"]
         )
+        stride = 1 << (bound.circuit.n_wires - n)
+        for column in range(1 << n):
+            initial = torch.zeros(1 << bound.circuit.n_wires, dtype=torch.complex128)
+            initial[column * stride] = 1
+            expected_state = torch.zeros_like(initial)
+            expected_state[::stride] = expected_operator[:, column] / sqrt(2**count)
+            for history in product((0, 1), repeat=count):
+                result = forced_branch(initial, restored.instructions, history)
+                torch.testing.assert_close(result, expected_state, atol=3e-12, rtol=0)
+        if count == 0:
+            torch.testing.assert_close(
+                get_unitary(appended),
+                torch.kron(
+                    expected_operator, torch.eye(stride, dtype=torch.complex128)
+                ),
+                atol=2e-12,
+                rtol=0,
+            )
         torch.testing.assert_close(
             logical_operator(bound.circuit, n),
             logical_operator(reference, n),

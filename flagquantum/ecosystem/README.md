@@ -260,7 +260,9 @@ The Cirq external-gate library factory owns JSON payload conversion and scoped
 explicit adjoints in `cirq/_component_library.py`. Exact inversion stays in
 Compiler's component-call owner. Generic external controlled adjoints retain
 their immediate child boundaries in `cirq/_controlled_gate_inverse.py`; its
-qualified SDK execution views do not replace named measured owners. Feedback replacement replay remains local to
+qualified SDK execution views do not replace named measured owners. Atomic
+power children reuse the measured positive CZPow owner; nested explicit
+adjoints rebuild directed child calls rather than borrowing a forward SDK recipe. Feedback replacement replay remains local to
 already converted bodies. Start with
 `tests/unit/test_cirq_gate_library_factories.py` and the
 [external-gate audit](../../docs/development/EXTERNAL_GATE_LIBRARY_AUDIT.md).

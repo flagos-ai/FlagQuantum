@@ -81,7 +81,9 @@ def cirq_gate_library_factories(
     """
     recipes: dict[FunctionRecord, Any] = {}
     adjoint_sources: set[FunctionRecord] = set()
-    controlled_sources: dict[FunctionRecord, tuple[Any, ControlSpecification]] = {}
+    controlled_sources: dict[FunctionRecord, tuple[Any, ControlSpecification, bool]] = (
+        {}
+    )
 
     def remember(
         gate: Any,
@@ -153,7 +155,7 @@ def cirq_gate_library_factories(
         result = remember(gate, signature, name, adjoint_source=False)
         root = result.functions[0] if isinstance(result, ProgramRecord) else result
         if child in adjoint_sources:
-            controlled_sources[root] = (recipes[child], spec)
+            controlled_sources[root] = (recipes[child], spec, False)
         return result
 
     def adjoint(
@@ -164,7 +166,9 @@ def cirq_gate_library_factories(
         if set(arguments) != {"subbloq"}:
             raise SerializationError("Adjoint gate requires exactly one subbloq")
         child = arguments["subbloq"]
-        if not isinstance(child, FunctionRecord) or child not in recipes:
+        if not isinstance(child, FunctionRecord) or (
+            child not in recipes and child not in controlled_sources
+        ):
             if adjoint_factory is not None:
                 return adjoint_factory(name, registers, arguments)
             raise SerializationError(
@@ -172,13 +176,20 @@ def cirq_gate_library_factories(
             )
         if child not in adjoint_sources:
             if child in controlled_sources:
-                original, spec = controlled_sources[child]
+                original, spec, was_inverse = controlled_sources[child]
                 assert child.registers is not None
                 signature = Signature(child.registers).adjoint()
                 if registers is not None and tuple(signature) != registers:
                     raise SerializationError("External adjoint-gate signature differs")
-                program = controlled_inverse_program(original, spec, signature, name)
+                program = controlled_inverse_program(
+                    original, spec, signature, name, inverse=not was_inverse
+                )
                 if program is not None:
+                    controlled_sources[program.functions[0]] = (
+                        original,
+                        spec,
+                        not was_inverse,
+                    )
                     return program
             if adjoint_factory is not None:
                 return adjoint_factory(name, registers, arguments)

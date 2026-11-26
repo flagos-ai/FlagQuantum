@@ -30,12 +30,15 @@ def controlled_inverse_program(
     spec: ControlSpecification,
     signature: Signature,
     name: str,
+    *,
+    inverse: bool = True,
 ) -> ProgramRecord | None:
-    """Reverse the source's immediate children, then control their adjoints.
+    """Keep the directed source child graph under each explicit outer adjoint.
 
-    Raw SDK children and CNOT have explicit execution views here. Other named
-    components require their own exact control/adjoint owner; an equal SDK
-    unitary is insufficient. No decomposition work may escape its child port.
+    Raw SDK children, CNOT and atomic power rotations have explicit execution
+    views here. Positive ZPow uses the native measured CZPow owner. Other named
+    components require their own exact control/adjoint owner. No decomposition
+    work may escape its child port.
     """
     cirq = _cirq()
     children = decompose_cirq_once(original)
@@ -55,7 +58,13 @@ def controlled_inverse_program(
         ):
             return None
         selected = declared._select(child.gate)
-        if selected is not None and selected[0] != "cnot.CNOT":
+        if selected is not None and selected[0] not in {
+            "cnot.CNOT",
+            "rotation.XPowGate",
+            "rotation.YPowGate",
+            "rotation.ZPowGate",
+            "global_phase.GlobalPhase",
+        }:
             return None
     groups = control_registers_from_spec(spec.clauses)
     bits = tuple(bit for group in groups for bit in group.bits())
@@ -71,7 +80,8 @@ def controlled_inverse_program(
 
     def admitted(op: Any) -> bool:
         return bool(
-            _has_explicit_matrix(cirq, op.gate)
+            isinstance(op.gate, cirq.GlobalPhaseGate)
+            or _has_explicit_matrix(cirq, op.gate)
             or _lower_feedback_gate(cirq, op.gate, [], 0) is not None
         )
 
@@ -81,8 +91,17 @@ def controlled_inverse_program(
         )
         return None if result == (op,) else result
 
-    for index, child in enumerate(reversed(children)):
-        operation = cirq.inverse(child).controlled_by(*controls, control_values=bits)
+    def eigen_atoms(op: Any) -> Any:
+        eigen = tuple(_eigen_phase_operations(cirq, (op,)))
+        normalized = tuple(_scalar_control_operations(cirq, eigen))
+        if eigen != (op,) and normalized == eigen and all(map(admitted, normalized)):
+            return normalized
+        return NotImplemented
+
+    ordered = tuple(reversed(children)) if inverse else tuple(children)
+    for index, child in enumerate(ordered):
+        directed = cirq.inverse(child) if inverse else child
+        operation = directed.controlled_by(*controls, control_values=bits)
         definition = declared.get(child.gate)
         child_signature = (
             cirq_gate_signature(child.gate)
@@ -93,27 +112,44 @@ def controlled_inverse_program(
             child_signature,
             tuple((dtype, values.shape) for dtype, values in spec.clauses),
         )
-        if definition is not None and default_control:
-            # CNOT's positive source control is Toffoli, including its packed
-            # two-element control port rather than three scalar ports.
+        selected = declared._select(child.gate)
+        native_control = (
+            selected is not None
+            and default_control
+            and selected[0] in {"rotation.ZPowGate", "global_phase.GlobalPhase"}
+        )
+        if (
+            definition is not None
+            and default_control
+            and (native_control or selected is not None and selected[0] == "cnot.CNOT")
+        ):
+            # Specialized positive controls own their port grouping: Toffoli
+            # packs two controls, CZPow packs both bits, and scalar phase
+            # becomes a ZPow on the control itself.
             controlled = declared[operation.gate]
             assert controlled.registers is not None
             ports = Signature(controlled.registers)
-        leaves = tuple(
-            cirq.decompose(operation, keep=admitted, fallback_decomposer=fallback)
-        )
-        if any(not set(leaf.qubits) <= set(operation.qubits) for leaf in leaves):
-            return None
-        incoming, outgoing = _operation_ports(ports, operation.qubits)
-        program = _rename_program(
-            import_cirq_register_optree(
+        if native_control:
+            program = declared._module(declared[operation.gate])
+        else:
+            leaves = tuple(
+                cirq.decompose(
+                    operation,
+                    keep=admitted,
+                    intercepting_decomposer=eigen_atoms,
+                    fallback_decomposer=fallback,
+                )
+            )
+            if any(not set(leaf.qubits) <= set(operation.qubits) for leaf in leaves):
+                return None
+            incoming, outgoing = _operation_ports(ports, operation.qubits)
+            program = import_cirq_register_optree(
                 cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW),
                 signature=ports,
                 in_quregs=incoming,
                 out_quregs=outgoing,
-            ),
-            f"{name}_child_{index}",
-        )
+            )
+        program = _rename_program(program, f"{name}_child_{index}")
         definitions[operation.gate] = program.functions[0]
         definitions.update((function.name, function) for function in program.functions)
         operations.append(operation)
