@@ -409,14 +409,12 @@ def _execute_pair_observation(
     record: ProgramRecord, *, seed: int, device: torch.device
 ) -> tuple[torch.Tensor, MeasurementResult]:
     """Compose existing probability/draw and Simulation authorities once."""
+    from flagquantum.simulation import density_matrix as _density_simulation
     from flagquantum.simulation.dynamics.ising_braid import (
         _charge_projectors,
         _continue_ising_sampled,
         _ising_sampled_prefix,
     )
-
-    from ._terminal_instruments import _instrument_probabilities
-    from .measurements import _draw_probability_indices
 
     before = _ising_sampled_prefix(record, device)
     branches: list[tuple[str, tuple[torch.Tensor, ...]]] = [
@@ -425,11 +423,13 @@ def _execute_pair_observation(
             ("1", "psi"), _charge_projectors(device), strict=True
         )
     ]
-    weights, probabilities = _instrument_probabilities(
+    weights, probabilities = _density_simulation._instrument_probabilities(
         before.unsqueeze(0), branches, 1e-10
     )
     generator = torch.Generator(device=device).manual_seed(seed)
-    selected = _draw_probability_indices(probabilities, 1, generator=generator)
+    selected = _density_simulation._draw_probability_indices(
+        probabilities, 1, generator=generator
+    )
     if (
         selected.shape != (1, 1)
         or selected.dtype != torch.int64

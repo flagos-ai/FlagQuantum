@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -15,6 +15,9 @@ from flagquantum.core.operators.embedding import (
 from flagquantum.core.operators.embedding import (
     expand_operator as expand_operator,
 )
+from flagquantum.core.operators.superoperator import SuperOperator
+from flagquantum.errors import ValidationError
+from flagquantum.simulation.dynamics.problem import _require_density_matrices
 from flagquantum.simulation.kernels.catalog import KERNEL_DEVICES
 
 from ..core.ir import CircuitIR, Instruction
@@ -504,3 +507,166 @@ __all__ = (
     "expand_operator",
     "reduced_density_matrix",
 )
+
+
+def _draw_probability_indices(
+    probabilities: torch.Tensor,
+    shots: int,
+    *,
+    generator: torch.Generator | None,
+) -> torch.Tensor:
+    """Draw checked probabilities without changing caller-owned RNG policy."""
+
+    return torch.multinomial(
+        probabilities, shots, replacement=True, generator=generator
+    )
+
+
+class _DensityMatrixTarget:
+    """Measurement adapter for an already-materialized density matrix."""
+
+    def __init__(self, density: torch.Tensor, noise_model: Any | None) -> None:
+        self.density = density
+        self.noise_model = noise_model
+        self.device = density.device
+        self.n_wires = int(round(math.log2(density.shape[-1])))
+        self.bsz = int(density.shape[0])
+
+    def sample(
+        self,
+        shots: int = 1,
+        *,
+        generator: torch.Generator | None = None,
+        format: str = "bits",
+    ) -> torch.Tensor:
+        if format not in {"bits", "index"}:
+            raise ValueError("sample format must be 'bits' or 'index'.")
+        if type(shots) is not int or shots <= 0:
+            raise ValueError("sample shots must be a positive integer")
+        probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
+        probabilities = torch.clamp(probabilities, min=0)
+        probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True)
+        indices = _draw_probability_indices(
+            probabilities,
+            shots,
+            generator=generator,
+        )
+        if format == "index":
+            return indices
+        shifts = torch.arange(self.n_wires - 1, -1, -1, device=self.device)
+        return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
+
+    def expectation_z(self, wires: Sequence[int] | int | None = None) -> torch.Tensor:
+        from flagquantum.simulation.density_matrix import expectation_z_density
+
+        values = expectation_z_density(self.density, wires)
+        if self.noise_model is not None:
+            all_values = expectation_z_density(self.density)
+            all_values = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_expectation_z(all_values),
+            )
+            if wires is None:
+                return all_values
+            selected = (wires,) if isinstance(wires, int) else tuple(wires)
+            return all_values[..., list(selected)]
+        return values
+
+    def expectation_ps(
+        self,
+        *,
+        z: Sequence[int] | None = None,
+        x: Sequence[int] | None = None,
+        y: Sequence[int] | None = None,
+    ) -> torch.Tensor:
+        if not x and not y and self.noise_model is not None:
+            probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
+            probabilities = cast(
+                torch.Tensor,
+                self.noise_model.apply_readout_probabilities(
+                    probabilities,
+                    n_qubits=self.n_wires,
+                ),
+            )
+            indices = torch.arange(
+                2**self.n_wires,
+                device=self.device,
+                dtype=torch.int64,
+            )
+            parity = torch.zeros_like(indices)
+            for wire in z or ():
+                parity ^= (indices >> (self.n_wires - int(wire) - 1)) & 1
+            eigenvalue = (1 - 2 * parity).to(probabilities.dtype)
+            return probabilities @ eigenvalue
+        axes = {
+            wire: axis
+            for axis, wires in (("x", x), ("y", y), ("z", z))
+            for wire in (wires or ())
+        }
+        matrices = {
+            "i": torch.eye(2, dtype=self.density.dtype, device=self.device),
+            "x": torch.tensor(
+                ((0, 1), (1, 0)), dtype=self.density.dtype, device=self.device
+            ),
+            "y": torch.tensor(
+                ((0, -1j), (1j, 0)), dtype=self.density.dtype, device=self.device
+            ),
+            "z": torch.tensor(
+                ((1, 0), (0, -1)), dtype=self.density.dtype, device=self.device
+            ),
+        }
+        operator = matrices[axes.get(0, "i")]
+        for wire in range(1, self.n_wires):
+            operator = torch.kron(operator, matrices[axes.get(wire, "i")])
+        return torch.real(torch.einsum("bij,ji->b", self.density, operator))
+
+
+def _instrument_probabilities(
+    density_matrix: torch.Tensor,
+    branches: list[tuple[str, tuple[torch.Tensor, ...]]],
+    tolerance: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Check physical inputs and retain original weights beside draw probabilities."""
+
+    matrices = (density_matrix, *(k for _, ops in branches for k in ops))
+    if any(not bool(torch.isfinite(matrix).all()) for matrix in matrices):
+        raise ValidationError("density_matrix and all Kraus matrices must be finite")
+    try:
+        _require_density_matrices(density_matrix, tolerance=tolerance)
+    except ValidationError as exc:
+        raise ValidationError(f"density_matrix: {exc}") from exc
+    identity = torch.eye(
+        density_matrix.shape[-1],
+        dtype=density_matrix.dtype,
+        device=density_matrix.device,
+    )
+    effect = torch.zeros_like(identity)
+    for _, operators in branches:
+        for matrix in operators:
+            effect = effect + matrix.mH @ matrix
+    if not torch.allclose(effect, identity, atol=tolerance, rtol=0):
+        raise ValidationError(
+            "instrument must be complete: sum K^dagger K must equal I"
+        )
+    weights = torch.stack(
+        [
+            torch.diagonal(
+                SuperOperator.from_kraus(ops).apply(density_matrix), dim1=-2, dim2=-1
+            )
+            .sum(-1)
+            .real
+            for _, ops in branches
+        ],
+        dim=-1,
+    )
+    if (
+        not bool(torch.isfinite(weights).all())
+        or bool((weights < -tolerance).any())
+        or bool((weights.sum(-1) - 1).abs().gt(tolerance).any())
+    ):
+        raise ValidationError(
+            "instrument branch probabilities must be nonnegative and sum to one"
+        )
+    probabilities = weights.clamp(min=0)
+    probabilities = probabilities / probabilities.sum(-1, keepdim=True)
+    return weights, probabilities

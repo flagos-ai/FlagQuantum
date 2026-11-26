@@ -11,8 +11,9 @@ import torch
 
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime import _terminal_instruments as terminal
-from flagquantum.runtime import measurements, sample_terminal
-from flagquantum.runtime.measurements import _DensityMatrixTarget
+from flagquantum.runtime import sample_terminal
+from flagquantum.simulation import density_matrix as _density_simulation
+from flagquantum.simulation.density_matrix import _DensityMatrixTarget
 from flagquantum.simulation.dynamics.problem import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
@@ -35,7 +36,7 @@ def forbidden(*args: Any, **kwargs: Any) -> NoReturn:
 @pytest.fixture
 def before_sampling(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(terminal, "_encode_value", forbidden)
-    monkeypatch.setattr(measurements, "_draw_probability_indices", forbidden)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", forbidden)
     monkeypatch.setattr(torch, "Generator", forbidden)
 
 
@@ -290,7 +291,7 @@ def test_lazy_import_does_not_retain_a_temporary_draw_override(
     probe = module_from_spec(spec)
     with monkeypatch.context() as injected:
         injected.setattr(
-            measurements,
+            _density_simulation,
             "_draw_probability_indices",
             lambda *args, **kwargs: torch.zeros(1, dtype=torch.int64),
         )

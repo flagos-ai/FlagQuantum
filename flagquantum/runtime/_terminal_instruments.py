@@ -9,12 +9,10 @@ import torch
 
 from flagquantum.core.operators.boson import DEFAULT_DENSE_MATRIX_BYTES
 from flagquantum.runtime.results import MeasurementResult
-from flagquantum.simulation.dynamics.problem import _require_density_matrices
+from flagquantum.simulation import density_matrix as _density_simulation
 
 from ..core.ir import _encode_value
 from ..errors import CapabilityError, ValidationError
-from ..operators import SuperOperator
-from . import measurements
 
 
 class _BranchRecord(TypedDict):
@@ -93,57 +91,6 @@ def _read_branches(
     return branches
 
 
-def _instrument_probabilities(
-    density_matrix: torch.Tensor,
-    branches: list[tuple[str, tuple[torch.Tensor, ...]]],
-    tolerance: float,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Check physical inputs and retain original weights beside draw probabilities."""
-
-    matrices = (density_matrix, *(k for _, ops in branches for k in ops))
-    if any(not bool(torch.isfinite(matrix).all()) for matrix in matrices):
-        raise ValidationError("density_matrix and all Kraus matrices must be finite")
-    try:
-        _require_density_matrices(density_matrix, tolerance=tolerance)
-    except ValidationError as exc:
-        raise ValidationError(f"density_matrix: {exc}") from exc
-    identity = torch.eye(
-        density_matrix.shape[-1],
-        dtype=density_matrix.dtype,
-        device=density_matrix.device,
-    )
-    effect = torch.zeros_like(identity)
-    for _, operators in branches:
-        for matrix in operators:
-            effect = effect + matrix.mH @ matrix
-    if not torch.allclose(effect, identity, atol=tolerance, rtol=0):
-        raise ValidationError(
-            "instrument must be complete: sum K^dagger K must equal I"
-        )
-    weights = torch.stack(
-        [
-            torch.diagonal(
-                SuperOperator.from_kraus(ops).apply(density_matrix), dim1=-2, dim2=-1
-            )
-            .sum(-1)
-            .real
-            for _, ops in branches
-        ],
-        dim=-1,
-    )
-    if (
-        not bool(torch.isfinite(weights).all())
-        or bool((weights < -tolerance).any())
-        or bool((weights.sum(-1) - 1).abs().gt(tolerance).any())
-    ):
-        raise ValidationError(
-            "instrument branch probabilities must be nonnegative and sum to one"
-        )
-    probabilities = weights.clamp(min=0)
-    probabilities = probabilities / probabilities.sum(-1, keepdim=True)
-    return weights, probabilities
-
-
 def sample_terminal(
     density_matrix: torch.Tensor,
     instrument: Mapping[str, Sequence[torch.Tensor]],
@@ -211,7 +158,7 @@ def sample_terminal(
             f"{DEFAULT_DENSE_MATRIX_BYTES}-byte ceiling; reduce dimensions or shots"
         )
     tolerance = 1e-5 if density_matrix.dtype == torch.complex64 else 1e-10
-    weights, probabilities = _instrument_probabilities(
+    weights, probabilities = _density_simulation._instrument_probabilities(
         density_matrix, branches, tolerance
     )
     records: list[_BranchRecord] = [
@@ -239,7 +186,7 @@ def sample_terminal(
     return MeasurementResult(
         kind="sample",
         qubits=(),
-        value=measurements._draw_probability_indices(
+        value=_density_simulation._draw_probability_indices(
             probabilities, shots, generator=generator
         ),
         shots=shots,

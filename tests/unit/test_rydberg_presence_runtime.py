@@ -129,7 +129,7 @@ def test_environment_refusal_precedes_capture_and_draw(
         "flagquantum.runtime.evolution._native_plan.native_request", forbidden
     )
     monkeypatch.setattr(
-        "flagquantum.runtime.measurements._draw_probability_indices", forbidden
+        "flagquantum.simulation.density_matrix._draw_probability_indices", forbidden
     )
     with pytest.raises(ExecutionPlanContractError) as error:
         fql.LindbladPlan.from_dict(payload)
@@ -196,7 +196,7 @@ def test_bad_draw_returns_no_partial_result(
 ) -> None:
     plan = _plan()
     monkeypatch.setattr(
-        "flagquantum.runtime.measurements._draw_probability_indices",
+        "flagquantum.simulation.density_matrix._draw_probability_indices",
         lambda *args, **kwargs: selected,
     )
     with pytest.raises(ExecutionError):

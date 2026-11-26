@@ -239,15 +239,14 @@ def build_presence_plan(
 
 def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     from flagquantum.runtime.evolution import LindbladPlan
+    from flagquantum.simulation import density_matrix as _density_simulation
     from flagquantum.simulation.dynamics.rydberg_presence import (
         _continue_rydberg_presence,
         _presence_operators,
         _rydberg_presence_prefix,
     )
 
-    from ._terminal_instruments import _instrument_probabilities
     from .distributed.backend_policy import resolve_distributed_backend_policy
-    from .measurements import _draw_probability_indices
 
     payload = plan.to_dict()
     if payload.get("version") != "1.8":
@@ -292,11 +291,11 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
             ("no_flag", "flag"), _presence_operators(record, prefix.device), strict=True
         )
     ]
-    weights, probabilities = _instrument_probabilities(
+    weights, probabilities = _density_simulation._instrument_probabilities(
         prefix[-1].unsqueeze(0), branches, 1e-10
     )
     seed = payload["options"]["seed"]
-    selected = _draw_probability_indices(
+    selected = _density_simulation._draw_probability_indices(
         probabilities,
         1,
         generator=torch.Generator(device=prefix.device).manual_seed(seed),

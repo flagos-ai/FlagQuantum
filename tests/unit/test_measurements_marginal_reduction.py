@@ -31,6 +31,7 @@ import flagquantum as fq
 import flagquantum.runtime.measurements as measurements
 from flagquantum.core.ir import MeasurementNode
 from flagquantum.runtime.execution import run as run_internal
+from flagquantum.simulation.numerics import probabilities as _probability_numerics
 
 pytestmark = pytest.mark.unit
 
@@ -233,11 +234,11 @@ def test_a_result_that_is_not_a_dense_distribution_is_not_reduced() -> None:
     )
     for candidate in declined:
         assert (
-            measurements._ideal_probabilities(candidate, 2) is None
+            _probability_numerics._ideal_probabilities(candidate, 2) is None
         ), f"{type(candidate).__name__} must not be read as a two-wire distribution"
 
     accepted = torch.ones(1, 4, dtype=torch.complex64)
-    assert measurements._ideal_probabilities(accepted, 2) is not None
+    assert _probability_numerics._ideal_probabilities(accepted, 2) is not None
 
 
 def test_the_reduction_normalises_a_dense_state_that_was_never_normalised() -> None:
@@ -342,14 +343,14 @@ def test_a_mixed_basis_pauli_sample_keeps_the_parity_reconstruction(
 
     circuit = _bell()
     calls: list[int] = []
-    original = measurements._probabilities_from_parity_expectations
+    original = _probability_numerics._probabilities_from_parity_expectations
 
     def recording(subset_expectations: object, *, n_wires: int) -> torch.Tensor:
         calls.append(n_wires)
         return original(subset_expectations, n_wires=n_wires)
 
     monkeypatch.setattr(
-        measurements, "_probabilities_from_parity_expectations", recording
+        _probability_numerics, "_probabilities_from_parity_expectations", recording
     )
     node = MeasurementNode(
         "sample_ps",

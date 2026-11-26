@@ -629,3 +629,10 @@ positive trace, and continue the existing numerical engine on the remaining
 bound intervals. Boundary rows are post-observation; earlier rows remain forward
 states. Runtime owns private draws and canonical result records. These seams do
 not enable unconditional `fql.plan` or the future native sampled plan reader.
+
+`density_matrix.py` also owns the internal dense readout adapter, instrument
+probability calculation and probability draws through caller-owned generators.
+Runtime supplies seeds/generators and assembles results/evidence. Reuse the
+existing physical density validator; do not create a second refusal policy.
+Start with `tests/unit/test_terminal_instruments.py` and
+`tests/unit/test_ising_sampled_runtime.py` for a small local change.

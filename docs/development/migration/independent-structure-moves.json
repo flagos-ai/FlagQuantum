@@ -9387,6 +9387,89 @@
         "_apply_instruction"
       ],
       "remaining_imports": "module owners called directly; old private attributes removed; no compatibility facade"
+    },
+    {
+      "group": "density-instrument-numerics",
+      "old": "flagquantum/runtime/measurements.py",
+      "new": "flagquantum/simulation/density_matrix.py",
+      "symbols": [
+        "_draw_probability_indices",
+        "_DensityMatrixTarget"
+      ],
+      "split_symbols": [
+        "_draw_probability_indices",
+        "_DensityMatrixTarget"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_draw_probability_indices",
+        "_DensityMatrixTarget"
+      ],
+      "retired_private_members": [
+        "_draw_probability_indices",
+        "_DensityMatrixTarget"
+      ],
+      "remaining_imports": "module owners called directly; numerical definitions and old private bindings removed",
+      "compatibility": "internal numerical definitions removed; Runtime keeps lifecycle and results"
+    },
+    {
+      "group": "density-instrument-numerics",
+      "old": "flagquantum/runtime/_terminal_instruments.py",
+      "new": "flagquantum/simulation/density_matrix.py",
+      "symbols": [
+        "_instrument_probabilities"
+      ],
+      "split_symbols": [
+        "_instrument_probabilities"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_instrument_probabilities"
+      ],
+      "retired_private_members": [
+        "_instrument_probabilities"
+      ],
+      "remaining_imports": "module owners called directly; numerical definitions and old private bindings removed",
+      "compatibility": "internal numerical definitions removed; Runtime keeps lifecycle and results"
+    },
+    {
+      "group": "dense-probability-numerics",
+      "old": "flagquantum/runtime/measurements.py",
+      "new": "flagquantum/simulation/numerics/probabilities.py",
+      "symbols": [
+        "_reduced_joint_marginal",
+        "_normalize_joint_marginal",
+        "_ideal_probabilities",
+        "_probabilities_from_parity_expectations"
+      ],
+      "split_symbols": [
+        "_reduced_joint_marginal",
+        "_normalize_joint_marginal",
+        "_ideal_probabilities",
+        "_probabilities_from_parity_expectations"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_reduced_joint_marginal",
+        "_normalize_joint_marginal",
+        "_ideal_probabilities",
+        "_probabilities_from_parity_expectations"
+      ],
+      "retired_private_members": [
+        "_reduced_joint_marginal",
+        "_normalize_joint_marginal",
+        "_ideal_probabilities",
+        "_probabilities_from_parity_expectations",
+        "_TRACE_TOLERANCE"
+      ],
+      "moved_constants": {
+        "_TRACE_TOLERANCE": 0.0001
+      },
+      "remaining_imports": "numerical owners called directly; no retained old helper or tolerance binding",
+      "compatibility": "internal tensor kernels and constant removed; dispatch and request admission remain Runtime"
     }
   ],
   "retired_namespace_parents": [

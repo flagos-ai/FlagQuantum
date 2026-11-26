@@ -15,8 +15,8 @@ from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.core.measurement import OutputRequest
 from flagquantum.errors import CapabilityError
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.runtime.measurements import _draw_probability_indices
 from flagquantum.runtime.results import ExecutionResult
+from flagquantum.simulation.density_matrix import _draw_probability_indices
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]

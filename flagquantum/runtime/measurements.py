@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Callable, Sequence
-from typing import Any, cast
+from typing import Any
 
 import torch
 
@@ -35,123 +35,6 @@ _DEFAULT_MAX_MARGINAL_WIRES = 8
 # density-mode run already holds the matrix, so reducing it is one pass over
 # memory the run has already paid for and is not bounded here.
 _DEFAULT_MAX_DENSITY_MATRIX_QUBITS = 10
-# How far a reduced total may sit from one before it is divided out. The gap is
-# wide on purpose: it has to absorb the rounding a normalised state accumulates
-# through many gates, which is orders of magnitude below this, while still
-# catching a state that was never normalised in the first place.
-_TRACE_TOLERANCE = 1e-4
-
-
-def _draw_probability_indices(
-    probabilities: torch.Tensor,
-    shots: int,
-    *,
-    generator: torch.Generator | None,
-) -> torch.Tensor:
-    """Draw checked probabilities without changing caller-owned RNG policy."""
-
-    return torch.multinomial(
-        probabilities, shots, replacement=True, generator=generator
-    )
-
-
-class _DensityMatrixTarget:
-    """Measurement adapter for an already-materialized density matrix."""
-
-    def __init__(self, density: torch.Tensor, noise_model: Any | None) -> None:
-        self.density = density
-        self.noise_model = noise_model
-        self.device = density.device
-        self.n_wires = int(round(math.log2(density.shape[-1])))
-        self.bsz = int(density.shape[0])
-
-    def sample(
-        self,
-        shots: int = 1,
-        *,
-        generator: torch.Generator | None = None,
-        format: str = "bits",
-    ) -> torch.Tensor:
-        if format not in {"bits", "index"}:
-            raise ValueError("sample format must be 'bits' or 'index'.")
-        if type(shots) is not int or shots <= 0:
-            raise ValueError("sample shots must be a positive integer")
-        probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
-        probabilities = torch.clamp(probabilities, min=0)
-        probabilities = probabilities / probabilities.sum(dim=-1, keepdim=True)
-        indices = _draw_probability_indices(
-            probabilities,
-            shots,
-            generator=generator,
-        )
-        if format == "index":
-            return indices
-        shifts = torch.arange(self.n_wires - 1, -1, -1, device=self.device)
-        return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
-
-    def expectation_z(self, wires: Sequence[int] | int | None = None) -> torch.Tensor:
-        from flagquantum.simulation.density_matrix import expectation_z_density
-
-        values = expectation_z_density(self.density, wires)
-        if self.noise_model is not None:
-            all_values = expectation_z_density(self.density)
-            all_values = cast(
-                torch.Tensor,
-                self.noise_model.apply_readout_expectation_z(all_values),
-            )
-            if wires is None:
-                return all_values
-            selected = (wires,) if isinstance(wires, int) else tuple(wires)
-            return all_values[..., list(selected)]
-        return values
-
-    def expectation_ps(
-        self,
-        *,
-        z: Sequence[int] | None = None,
-        x: Sequence[int] | None = None,
-        y: Sequence[int] | None = None,
-    ) -> torch.Tensor:
-        if not x and not y and self.noise_model is not None:
-            probabilities = torch.real(torch.diagonal(self.density, dim1=-2, dim2=-1))
-            probabilities = cast(
-                torch.Tensor,
-                self.noise_model.apply_readout_probabilities(
-                    probabilities,
-                    n_qubits=self.n_wires,
-                ),
-            )
-            indices = torch.arange(
-                2**self.n_wires,
-                device=self.device,
-                dtype=torch.int64,
-            )
-            parity = torch.zeros_like(indices)
-            for wire in z or ():
-                parity ^= (indices >> (self.n_wires - int(wire) - 1)) & 1
-            eigenvalue = (1 - 2 * parity).to(probabilities.dtype)
-            return probabilities @ eigenvalue
-        axes = {
-            wire: axis
-            for axis, wires in (("x", x), ("y", y), ("z", z))
-            for wire in (wires or ())
-        }
-        matrices = {
-            "i": torch.eye(2, dtype=self.density.dtype, device=self.device),
-            "x": torch.tensor(
-                ((0, 1), (1, 0)), dtype=self.density.dtype, device=self.device
-            ),
-            "y": torch.tensor(
-                ((0, -1j), (1j, 0)), dtype=self.density.dtype, device=self.device
-            ),
-            "z": torch.tensor(
-                ((1, 0), (0, -1)), dtype=self.density.dtype, device=self.device
-            ),
-        }
-        operator = matrices[axes.get(0, "i")]
-        for wire in range(1, self.n_wires):
-            operator = torch.kron(operator, matrices[axes.get(wire, "i")])
-        return torch.real(torch.einsum("bij,ji->b", self.density, operator))
 
 
 def _validate_wires(wires: Sequence[int], n_wires: int) -> tuple[int, ...]:
@@ -187,92 +70,13 @@ def _statevector_target(
         and output.ndim == 3
         and output.shape[-2:] == (2**n_wires, 2**n_wires)
     ):
-        return _DensityMatrixTarget(output, noise_model)
+        from flagquantum.simulation import density_matrix as _density_simulation
+
+        return _density_simulation._DensityMatrixTarget(output, noise_model)
     raise CapabilityError(
         "measurements for this tensor result are not implemented; "
         "request a statevector, MPS, or tensor-network execution mode"
     )
-
-
-def _reduced_joint_marginal(
-    probabilities: torch.Tensor,
-    wires: tuple[int, ...],
-    *,
-    n_wires: int,
-) -> torch.Tensor:
-    """Sum a full probability distribution down to the requested qubits.
-
-    ``probabilities`` is one value per basis state, ``(batch, 2 ** n_wires)`` and
-    big-endian per qubit, which is the convention a density matrix's diagonal and
-    a statevector's squared amplitudes already share. Reducing that tensor is a
-    reshape and a sum, so the cost is one pass over a distribution that is
-    already in memory rather than one full-state contraction per parity term.
-
-    The axes that survive come out in qubit order, so a request that named its
-    qubits out of order is permuted back before the reshape. Getting that wrong
-    would silently transpose the marginal rather than fail, which is why the
-    order is restored here, in the one place every caller goes through.
-
-    A total other than one is divided out. Every state the engine produces is
-    normalised, so this leaves those runs untouched -- the division is skipped
-    unless the total is off by more than ``_TRACE_TOLERANCE``, and dividing by an
-    exact one is the identity anyway. It is here because a caller can hand a raw
-    tensor to ``execute_measurements``, and the statevector arm used to reach
-    such a state through ``expectation_ps``, which normalises as a side effect;
-    without this the same call would return a scaled marginal instead of a
-    distribution. Keeping the two arms on one rule is the point of the helper.
-    """
-
-    shaped = probabilities.reshape((probabilities.shape[0],) + (2,) * n_wires)
-    unselected_axes = tuple(
-        wire + 1 for wire in range(n_wires) if wire not in set(wires)
-    )
-    marginal = shaped.sum(dim=unselected_axes) if unselected_axes else shaped
-    current_order = tuple(sorted(wires))
-    if wires != current_order:
-        permutation = (0,) + tuple(current_order.index(wire) + 1 for wire in wires)
-        marginal = marginal.permute(permutation)
-    marginal = marginal.reshape(probabilities.shape[0], 2 ** len(wires))
-
-    return _normalize_joint_marginal(marginal)
-
-
-def _normalize_joint_marginal(marginal: torch.Tensor) -> torch.Tensor:
-    """Preserve the dense-result normalization contract for either route."""
-
-    total = marginal.sum(dim=-1, keepdim=True)
-    if marginal.is_cuda:
-        normalize = ((total - 1).abs() > _TRACE_TOLERANCE).any() & (total > 0).all()
-        denominator = torch.where(normalize, total, torch.ones_like(total))
-        return marginal / denominator
-    if bool(((total - 1).abs() > _TRACE_TOLERANCE).any()) and bool((total > 0).all()):
-        marginal = marginal / total
-    return marginal
-
-
-def _ideal_probabilities(output: Any, n_wires: int) -> torch.Tensor | None:
-    """The distribution a dense result already carries, or ``None``.
-
-    A density matrix carries it on its diagonal and a statevector in its squared
-    amplitudes. Both are read here, and neither is reconstructed: the point of
-    the two tests is that the tensor in hand is already the distribution, so
-    reducing it costs one sum.
-
-    A target that is not a dense tensor -- an MPS or tensor-network result --
-    returns ``None`` and keeps the parity path. That is not a preference but a
-    boundary: those targets can answer ``probabilities()`` by materialising a
-    dense state of ``2 ** n_wires`` amplitudes, which is the cost they exist to
-    avoid, and at 24 qubits that made a 0.5 ms marginal take 330 ms.
-    """
-
-    if not isinstance(output, torch.Tensor) or not output.is_complex():
-        return None
-    dimension = 2**n_wires
-    if output.ndim == 3 and output.shape[-2:] == (dimension, dimension):
-        return torch.real(torch.diagonal(output, dim1=-2, dim2=-1))
-    if output.ndim == 2 and output.shape[-1] == dimension:
-        return torch.abs(output) ** 2
-    return None
 
 
 def _joint_marginal_probabilities(
@@ -283,6 +87,8 @@ def _joint_marginal_probabilities(
     noise_model: Any | None,
 ) -> torch.Tensor | None:
     """Reduce a dense result to one joint marginal, or ``None`` if it is not one."""
+
+    from flagquantum.simulation.numerics import probabilities as _probability_numerics
 
     if (
         noise_model is None
@@ -298,7 +104,7 @@ def _joint_marginal_probabilities(
 
             full = _try_apply_cataloged_statevector_probabilities(output)
             if full is not None:
-                return _normalize_joint_marginal(full)
+                return _probability_numerics._normalize_joint_marginal(full)
 
         from .statevector_measurement_dispatch import (
             _try_apply_cataloged_statevector_marginal,
@@ -306,9 +112,9 @@ def _joint_marginal_probabilities(
 
         direct = _try_apply_cataloged_statevector_marginal(output, wires)
         if direct is not None:
-            return _normalize_joint_marginal(direct)
+            return _probability_numerics._normalize_joint_marginal(direct)
 
-    probabilities = _ideal_probabilities(output, n_wires)
+    probabilities = _probability_numerics._ideal_probabilities(output, n_wires)
     if probabilities is None:
         return None
     if noise_model is not None:
@@ -316,7 +122,9 @@ def _joint_marginal_probabilities(
             probabilities,
             n_qubits=n_wires,
         )
-    return _reduced_joint_marginal(probabilities, wires, n_wires=n_wires)
+    return _probability_numerics._reduced_joint_marginal(
+        probabilities, wires, n_wires=n_wires
+    )
 
 
 def _generator(target: Any, metadata: dict[str, Any]) -> torch.Generator | None:
@@ -548,26 +356,6 @@ def _counts_from_samples(
     return outputs
 
 
-def _probabilities_from_parity_expectations(
-    expectations: Sequence[torch.Tensor],
-    *,
-    n_wires: int,
-) -> torch.Tensor:
-    template = expectations[0]
-    probabilities = []
-    for outcome in range(1 << n_wires):
-        value = torch.ones_like(template)
-        for mask, term in enumerate(expectations, start=1):
-            parity = sum(
-                (outcome >> (n_wires - index - 1)) & 1
-                for index in range(n_wires)
-                if mask & (1 << index)
-            )
-            value = value + (-term if parity % 2 else term)
-        probabilities.append(value / (1 << n_wires))
-    return torch.stack(probabilities, dim=-1)
-
-
 def _sample_pauli_product(
     target: Any,
     *,
@@ -620,6 +408,8 @@ def _pauli_basis_distribution(
     per non-empty subset of ``wires``.
     """
 
+    from flagquantum.simulation.numerics import probabilities as _probability_numerics
+
     if wires and all(axes_by_wire.get(wire) == "z" for wire in wires):
         reduced = _joint_marginal_probabilities(
             state_output,
@@ -645,7 +435,7 @@ def _pauli_basis_distribution(
             for axis in ("x", "y", "z")
         }
         subset_expectations.append(expectation(**axes))
-    return _probabilities_from_parity_expectations(
+    return _probability_numerics._probabilities_from_parity_expectations(
         subset_expectations,
         n_wires=len(wires),
     )
@@ -702,6 +492,8 @@ def _marginal_probabilities(
     the reduction is preferred where it is available.
     """
 
+    from flagquantum.simulation.numerics import probabilities as _probability_numerics
+
     expectation = getattr(target, "expectation_ps", None)
     if not callable(expectation):
         raise CapabilityError(
@@ -711,7 +503,7 @@ def _marginal_probabilities(
     for mask in range(1, 1 << len(wires)):
         subset = tuple(wire for index, wire in enumerate(wires) if mask & (1 << index))
         subset_expectations.append(expectation(z=subset))
-    return _probabilities_from_parity_expectations(
+    return _probability_numerics._probabilities_from_parity_expectations(
         subset_expectations,
         n_wires=len(wires),
     )
