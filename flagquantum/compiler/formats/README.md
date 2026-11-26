@@ -21,6 +21,12 @@ callback replaces numerical coefficient conversion. Ecosystem's existing packed
 entry supplies that callback. Shared signatures and literal SELECT Programs
 come from Compiler; no Algorithms object is constructed for parsing.
 
+The scoped Hubbard selection mapping also supplies shared external-control
+constructors and exact directional pairs. Negative, grouped, shaped and packed
+controls reuse the existing predicate owners; unknown children remain refused.
+See the [constructor audit](../../../docs/development/HUBBARD_EXTERNAL_CONTROL_CONSTRUCTORS.md)
+for source codec failures and the nested source control-adder exception.
+
 A short contributor path is tests/unit/test_hubbard_packed_context.py. The test
 serializes the actual frozen source example, replaces only the coefficient
 converter and verifies the entire resulting Program while source, Algorithms

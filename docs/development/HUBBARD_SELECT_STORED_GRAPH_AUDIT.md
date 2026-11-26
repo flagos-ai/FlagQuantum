@@ -179,3 +179,21 @@ alternate profile's literal signature coverage remains a registered boundary;
 the primary comparison is not weakened by renaming or flattening its operands.
 Existing 1.6 original count-suite acceptance remains distinct from these graph
 checks. Compiler never selects a representation by importing an SDK version.
+
+### External control constructor closure
+
+The scoped SELECT mapping now supplies negative, grouped, shaped, packed-word
+and nested control constructors through existing shared control and exact
+inverse owners. The [external-control audit](HUBBARD_EXTERNAL_CONTROL_CONSTRUCTORS.md)
+records recursive source calls, complete complex branch and work proofs, plus
+twenty-eight separate primitive/model rows. Both Cirq source port profiles use
+the accepted exact CY views; the historical 1.6 failures above are superseded
+for the covered graph consumers without changing source gates or operands.
+
+Source direct specialized-adjoint enum encoding and deeper NumPy scalar codec
+failures remain explicit. Nested control of an already-controlled SELECT hits
+an original concatenate-axis TypeError. Its executable specialized child is
+compared recursively, while native outer composition is independently verified;
+the failing source root and its two source peak queries are not counted as
+executable equivalence. Generic Majorana/spin-up controls and wider external
+capture remain outside this SELECT constructor closure.
