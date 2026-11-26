@@ -11,6 +11,23 @@ from flagquantum.simulation.numerics import hubbard_coefficients as numeric
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
+@pytest.mark.parametrize("dimension", (2, 3, 9))
+def test_symbolic_normalization_retains_exact_source_floor(dimension: int) -> None:
+    sympy = pytest.importorskip("sympy")
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import (
+        PrepareHubbard,
+    )
+
+    t, u = sympy.symbols("t u", real=True)
+    expression = numeric.hubbard_normalization(dimension, t, u)
+    assert expression == PrepareHubbard(dimension, dimension, t, u).l1_norm_of_coeffs
+    large = 2**60 + 1
+    assert expression.subs({t: large, u: large}) == numeric.hubbard_normalization(
+        dimension, large, large
+    )
+
+
 @pytest.mark.parametrize(
     "dimension,weights",
     tuple(

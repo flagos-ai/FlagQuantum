@@ -5,12 +5,34 @@
 """Evaluate Hubbard preparation coefficients without owning circuit construction."""
 
 from math import sqrt
+from typing import overload
+
+from ...core.value_math import SymbolicReal
 
 
-def hubbard_normalization(dimension: int, t: float, u: float) -> float:
+@overload
+def hubbard_normalization(dimension: int, t: float, u: float) -> float: ...
+
+
+@overload
+def hubbard_normalization(
+    dimension: int, t: SymbolicReal, u: SymbolicReal
+) -> SymbolicReal: ...
+
+
+def hubbard_normalization(
+    dimension: int, t: SymbolicReal, u: SymbolicReal
+) -> SymbolicReal:
     """Retain source integer arithmetic and the interaction contribution's floor."""
     modes = 2 * dimension**2
     return 2 * modes * t + (modes * u) // 2
+
+
+def hubbard_conditional_preparation_angle() -> float:
+    """Retain the fixed source NumPy angle shared by both coefficient paths."""
+    import numpy as np
+
+    return float(2 * np.arccos(np.sqrt(1 / 5)))
 
 
 def hubbard_preparation_angles(
@@ -26,5 +48,5 @@ def hubbard_preparation_angles(
     modes = 2 * dimension**2
     return (
         float(2 * np.arccos(sqrt(t * modes / hubbard_normalization(dimension, t, u)))),
-        float(2 * np.arccos(np.sqrt(1 / 5))),
+        hubbard_conditional_preparation_angle(),
     )
