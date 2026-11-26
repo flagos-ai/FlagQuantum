@@ -7,8 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip("Reference trace checks require NumPy", allow_module_level=True)
 import torch
 
 from flagquantum.compiler._component_trace.program_call_graph import (
@@ -24,11 +28,12 @@ from flagquantum.compiler.registers.component_control import (
     control_component_program,
 )
 from flagquantum.compiler.registers.component_expansion import expand_component_calls
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
 from flagquantum.compiler.registers.primitives.controlled_rotation import (
     controlled_z_power_ir,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
@@ -70,6 +75,35 @@ def hierarchy(
     return ProgramRecord(definitions), Controlled(source, CtrlSpec())
 
 
+def _cy_source_port_views(
+    record: ProgramRecord, entry: str, composite: Any
+) -> dict[int, tuple[str, ...]]:
+    """Prove the exact CY leaf before viewing scalar ports as a two-bit array.
+
+    Frozen source interop exposes CYGate in Cirq 1.6 and a q-array gate wrapper
+    in Cirq 1.7. This is a bijective trace view, not a source-object rewrite.
+    """
+    from qualtran.bloqs.basic_gates import CYGate
+
+    functions = {function.name: function for function in record.functions}
+    operations = functions[entry].blocks[0].operations
+    signature = (Register("q", quantum_bit_type(), (2,)),)
+    views: dict[int, tuple[str, ...]] = {}
+    for instance, _, _ in composite.iter_bloqsoqs():
+        if instance.bloq != CYGate():
+            continue
+        target = operations[instance.i].callee
+        assert target is not None
+        native = functions[target]
+        if native.registers != signature:
+            continue
+        assert native == bit_gate_function(
+            native.name, signature, CircuitIR(2, (Instruction("cy", (0, 1)),))
+        )
+        views[instance.i] = ("ctrl", "target")
+    return views
+
+
 def compare_layers(
     record: ProgramRecord, source: Any, terminals: set[str]
 ) -> dict[str, Any]:
@@ -86,7 +120,11 @@ def compare_layers(
             observer.signature(Signature(functions[name].registers or ()))
         ) == tuple(composite.signature)
         actual = _native_trace(record, name)
-        expected = _source_trace(observer, composite)
+        expected = _source_trace(
+            observer,
+            composite,
+            bit_port_views=_cy_source_port_views(record, name, composite),
+        )
         # Generic source adders insert the control key last in the input dict.
         # Ordered signatures above and named operands here preserve port order.
         for actual_row, expected_row in zip(actual, expected, strict=True):

@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
-import numpy as np
 import pytest
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip("Reference trace checks require NumPy", allow_module_level=True)
 
 from flagquantum.compiler.registers.component_builder import (
     BindingCollection,
@@ -57,23 +62,41 @@ def _native_trace(record: ProgramRecord, entry: str = "main") -> list[object]:
     ]
 
 
-def _source_trace(source: Any, composite: Any) -> list[object]:
+def _source_trace(
+    source: Any,
+    composite: Any,
+    *,
+    bit_port_views: Mapping[int, tuple[str, ...]] | None = None,
+) -> list[object]:
+    views = bit_port_views or {}
+
     def collection(value: Any) -> object:
         array = np.asarray(value)
         identities = []
         for binding in array.flat:
             producer, name, index = source.identity(binding)
+            if producer in views:
+                assert index == () and name in views[producer]
+                index = (views[producer].index(name),)
+                name = "q"
             identities.append((str(producer), name, index))
         return array.shape, tuple(identities)
 
-    return [
-        (
-            str(instance.i),
-            tuple((name, collection(value)) for name, value in inputs.items()),
-            tuple(map(collection, outputs)),
+    result: list[object] = []
+    for instance, inputs, outputs in composite.iter_bloqsoqs():
+        if instance.i in views:
+            ports = views[instance.i]
+            assert tuple(inputs) == ports and len(outputs) == len(ports)
+            inputs = {"q": np.array([inputs[port] for port in ports], dtype=object)}
+            outputs = (np.array(outputs, dtype=object),)
+        result.append(
+            (
+                str(instance.i),
+                tuple((name, collection(value)) for name, value in inputs.items()),
+                tuple(map(collection, outputs)),
+            )
         )
-        for instance, inputs, outputs in composite.iter_bloqsoqs()
-    ]
+    return result
 
 
 @pytest.mark.parametrize("width", [0, 1, 3])
