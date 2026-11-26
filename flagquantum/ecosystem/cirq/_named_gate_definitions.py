@@ -160,6 +160,8 @@ class _NamedGateDefinitions(Mapping[Hashable, FunctionRecord]):
                     return "rotation.CZPowGate", arguments
                 if source == "rotation.Rz":
                     return "rotation.CRz", arguments
+                if source == "swap.TwoBitSwap":
+                    return "swap.TwoBitCSwap", arguments
                 if source == "global_phase.GlobalPhase":
                     return "rotation.ZPowGate", arguments
             # General conjunctions use the predicate owner in __getitem__;

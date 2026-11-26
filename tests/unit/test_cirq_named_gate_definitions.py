@@ -49,6 +49,7 @@ def _gates() -> tuple[Any, ...]:
         cirq.Z,
         cirq.CZ,
         cirq.SWAP,
+        cirq.ControlledGate(cirq.SWAP),
         cirq.CSWAP,
         cirq.I,
         cirq.rx(0.37),
