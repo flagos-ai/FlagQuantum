@@ -2,13 +2,6 @@
 
 from __future__ import annotations
 
-import sys as _entry_sys
-from pathlib import Path as _EntryPath
-
-if __package__ in (None, ""):
-    _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
-
-
 import math
 from importlib.util import find_spec
 

@@ -737,3 +737,34 @@ def test_new_shot_reader_keeps_dependency_free_import() -> None:
         "iter_shot_data_file",
         "write_shot_data_file",
     )
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "release/qec_installed_smoke.py",
+        "release/check_main_smoke_qec_wheel.py",
+        "validation/verify_installed_sparse_blossom.py",
+    ],
+)
+def test_installed_probe_does_not_add_checkout_to_import_path(
+    tmp_path: Path, script: str
+) -> None:
+    probe = Path(__file__).resolve().parents[2] / "tools" / script
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            "import runpy, sys; from pathlib import Path; "
+            "probe = Path(sys.argv[1]); "
+            "before = list(sys.path); runpy.run_path(str(probe)); "
+            "assert sys.path == before, sys.path",
+            str(probe),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr

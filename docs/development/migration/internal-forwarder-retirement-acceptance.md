@@ -95,3 +95,16 @@ dependencies, build requirements and the build backend remain compared.
 All 25 offline-environment tests pass, including relocated lint paths and rejection
 of dependency/build changes. The normalized checkout manifest also matches the
 audited main baseline. Remote CI must validate the follow-up commit.
+
+## Installed QEC probe follow-up
+
+The next package job reached the real QEC wheel installation and correctly
+rejected an import from the checkout. Three standalone installed-artifact probes
+had acquired a source-root bootstrap during relocation; those probes must never
+prepend the checkout, so the bootstrap is removed. Their original installation
+assertions remain intact. A subprocess regression checks all three probes from
+outside the repository in isolated mode and rejects import-path mutation.
+Related package/QEC tests: 102 passed, 7 skipped. The existing installed macOS
+wheel also passes the full core QEC probe outside the checkout, with reused local
+dependency packages; this is not a fresh Linux installation claim. Ruff, Black
+and architecture checks pass. Linux package CI must qualify the pushed fix.
