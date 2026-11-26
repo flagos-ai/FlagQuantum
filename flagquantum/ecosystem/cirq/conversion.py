@@ -153,7 +153,9 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
     if isinstance(value, Parameter):
         return cache.setdefault(value.name, sympy.Symbol(value.name))
     if isinstance(value, ParameterExpression):
-        expected_operands = 1 if value.op in {"neg", "sin", "cos", "exp", "log"} else 2
+        expected_operands = (
+            1 if value.op in {"neg", "sin", "cos", "exp", "log", "acos", "floor"} else 2
+        )
         if value.op not in {
             "add",
             "sub",
@@ -163,6 +165,8 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
             "cos",
             "exp",
             "log",
+            "acos",
+            "floor",
             "pow",
             "div",
         }:

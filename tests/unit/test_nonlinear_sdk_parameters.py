@@ -2,7 +2,6 @@
 
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -13,7 +12,11 @@ from flagquantum.ecosystem.cirq import from_cirq, to_cirq
 from flagquantum.ecosystem.qiskit import from_qiskit, to_qiskit
 
 pytestmark = pytest.mark.unit
-OPERATIONS = ("sin", "cos", "exp", "log", "pow", "div")
+np = pytest.importorskip("numpy")
+OPERATIONS = ("sin", "cos", "exp", "log", "pow", "div", "acos")
+SDK_CASES = [
+    (operation, sdk) for operation in OPERATIONS for sdk in ("cirq", "qiskit")
+] + [("floor", "cirq")]
 
 
 def _owned(operation: str) -> ParameterExpression:
@@ -31,8 +34,7 @@ def _sympy(operation: str, theta: Any) -> Any:
     return getattr(sympy, operation)(theta)
 
 
-@pytest.mark.parametrize("operation", OPERATIONS)
-@pytest.mark.parametrize("sdk", ("cirq", "qiskit"))
+@pytest.mark.parametrize("operation,sdk", SDK_CASES)
 def test_nonlinear_sdk_round_trip_preserves_entangled_amplitudes_and_gradient(
     operation: str, sdk: str
 ) -> None:
@@ -57,7 +59,11 @@ def test_nonlinear_sdk_round_trip_preserves_entangled_amplitudes_and_gradient(
         angle = (
             theta**0.5
             if operation == "pow"
-            else (1 / theta if operation == "div" else getattr(theta, operation)())
+            else (
+                1 / theta
+                if operation == "div"
+                else getattr(theta, "arccos" if operation == "acos" else operation)()
+            )
         )
         source = qiskit.QuantumCircuit(2)
         source.h(0)
@@ -91,8 +97,7 @@ def test_nonlinear_sdk_round_trip_preserves_entangled_amplitudes_and_gradient(
     torch.testing.assert_close(gradient, expected_gradient, atol=2e-15, rtol=0)
 
 
-@pytest.mark.parametrize("operation", OPERATIONS)
-@pytest.mark.parametrize("sdk", ("cirq", "qiskit"))
+@pytest.mark.parametrize("operation,sdk", SDK_CASES)
 def test_owned_nonlinear_export_uses_existing_rotation_without_added_gates(
     operation: str, sdk: str
 ) -> None:
@@ -123,6 +128,23 @@ def test_owned_nonlinear_export_uses_existing_rotation_without_added_gates(
     assert restored.instructions[0].params["theta"].bind(
         {"theta": 0.37}
     ) == pytest.approx(expected, abs=2e-15)
+
+
+def test_qiskit_symbolic_floor_keeps_explicit_diagnostic_and_bound_export() -> None:
+    pytest.importorskip("qiskit")
+    from flagquantum.ecosystem.qiskit import QiskitConversionError
+
+    ir = CircuitIR(1, (Instruction("rz", (0,), {"theta": _owned("floor")}),))
+    with pytest.raises(QiskitConversionError) as raised:
+        to_qiskit(ir)
+    assert [issue.code for issue in raised.value.report.issues] == [
+        "unsupported_parameter_expression"
+    ]
+    assert "floor" in raised.value.report.issues[0].message
+    bound = Circuit.from_ir(ir).bind_parameters({"theta": -0.37})
+    exported = to_qiskit(bound)
+    assert len(exported.data) == 1
+    assert float(exported.data[0].operation.params[0]) == -1.0
 
 
 def test_distinct_assumption_symbols_in_separate_gates_remain_rejected() -> None:

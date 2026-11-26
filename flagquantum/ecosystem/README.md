@@ -129,10 +129,13 @@ zero-width and wider typed-control boundaries.
 ### Real parameter expressions and scalar phases
 
 Cirq and Qiskit conversion translate the approved sin/cos/exp/log/pow/div
-expressions directly into Core ParameterExpression values. SDK symbolic objects
-stop at this boundary. Circuit binding validates real domains and preserves
-Torch scalar gradients. Cirq symbol discovery preserves assumptions while
-rejecting distinct symbols with the same native name across supported gates.
+expressions through the shared Compiler symbolic-scalar converter into Core
+ParameterExpression values. Approved acos/floor expressions use the same path.
+Cirq supports both; Qiskit maps acos through its public arccos operation and
+explicitly refuses unbound floor, which can be numerically bound before export.
+SDK symbolic objects stop at this boundary. Circuit binding validates real
+domains and preserves native Torch scalar gradients. Symbol discovery rejects
+distinct symbolic identities with the same native name across supported gates.
 
 Cirq exp(i * real_angle) and Qiskit symbolic global phase use Compiler's existing
 scalar phase emitter. Static Cirq requires a declared wire; register conversion
