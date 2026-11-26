@@ -261,3 +261,82 @@ checks pass. The final focused materialization check passes after import-guard
 cleanup. Dependency policy retains 724 repository findings and none on the
 touched paths. Twelve old operations and twenty-four complete directional
 Programs still equal the published baseline.
+
+## Control wrapper interface and ownership
+
+The existing Ecosystem capture entry owns source wrappers as well as explicit
+Pauli SELECT objects. Specialized controls retain their source activation
+array order, with each newly added control preceding the old one. Structured
+control words retain original register names, shapes, dtypes and MSB bit order.
+All ports are THRU; targets and controls return to their caller. Compiler's
+existing specialized-control and predicate owners hold temporary conjunction
+bits through the positive Pauli child and measurement-erase them before return.
+No foreign object or source callback is retained by the returned Programs.
+
+An explicit generic Adjoint wrapper reverses actual typed calls. A child's own
+source adjoint specialization is honored separately: Pauli SELECT returns
+itself, which is not a request to reverse its measured primitive stream.
+Predicate compute and erasure use their explicit directional definitions.
+Original source callback failures and object-array codec failures remain
+separate from the native executable wrapper body.
+
+The capture now handles original specialized multi-control, structured
+ControlledViaAnd, nested wrappers, and explicit Adjoint objects using existing
+Compiler owners. Scalar, singleton, shaped and independent control registers
+and unsigned two-bit activation words are included. Fifty-four actual source
+table/control/target families compare both directional root graphs, named
+operands and feedback. The fully flattened original typed graph supplies the
+primitive reference, with each fixture's one measurement per private bit bound
+to the corresponding native SSA result slot. Per-wire gate dependency streams
+match without sorting away shared-wire order. Every operator column in every
+small raw branch matches source complex amplitudes, with private work clean.
+Source-free binding, normal append and branch execution also pass.
+
+This comparison exposed and fixed an existing native inverse leaf discrepancy.
+The source controlled dense Pauli adjoint is the same controlled Pauli leaf.
+The old native inverse instead reversed its primitive letters and sign gate.
+Both streams had the same operator, but differed in shared-control gate order.
+The Compiler now retains the original leaf order inside the reversed outer
+call graph. Twelve previous operation objects and complete forward Programs
+are identical; twelve inverse Program differences are confined to the Pauli
+inverse-leaf definitions. Their primitive inventories, output bindings and
+allocation lifetimes are unchanged. Earlier operator/call checks alone did
+not prove this primitive order; the new full-stream evidence supersedes that
+overly broad interpretation.
+
+The 108 separate directional resource inventories match shared native
+predicate/positive-child estimates, original QEC categories and original
+peak-width queries. No private lease remains at return.
+
+| Signed X / Y bank with existing positive control | Actual T-family / CX / measurements / private peak | Separate source And / Cliffords / measurements / logical peak |
+|---|---|---|
+| Add two-bit array activation (1, 0), either direction | 12 / 20 / 3 / 3 | 3 / 7 / 3 / 8 |
+| Add nested zero and two-bit array controls, either direction | 16 / 26 / 4 / 4 | 4 / 8 / 4 / 10 |
+| Extend specialized helper with a third control, either direction | 12 / 20 / 3 / 3 | 3 / 11 / 3 / 8 |
+
+The raw SDK wrapper's inherited decompose_from_registers is not a physical
+generator. Expanding deferred SDK children after graph export also allows the
+test manager to recycle an outer predicate too early. Those failed probes are
+retained separately; the accepted comparison uses the original fully flattened
+typed graph, which carries all lifetimes explicitly, without changing source.
+
+Original nonempty Pauli rows still fail object-array serialization. Empty
+targets serialize, but deserialization either misses the original private
+specialized-helper constructor or returns NumPy row arrays: equality then raises
+an ambiguous-empty-array ValueError and execution raises missing ndarray.on.
+All 27 empty-target encoding cases retain distinct serialize, deserialize,
+equality and tensor outcomes. A further wrapper around an already-specialized
+helper reaches the original np.concatenate callback TypeError; native capture
+retains explicit refusal rather than repairing the reference. These are
+source-file/dependency boundaries, not newly missing inverse bodies. Existing
+nonunitary coefficient and out-of-domain control boundaries remain recorded.
+Q-0592 stays open under the current whole-file acceptance rules; the approved
+three-parent defect disposition does not apply to it.
+
+The final affected regression passes 207 cases plus the separately verified
+callback counterexample on Cirq 1.7, and 208 cases on Cirq 1.6. Local integration
+passes 145 cases. Three Python files pass strict typing, formatting, lint and
+owner scopes; language/links, architecture, IR, API and diff checks pass.
+Dependency policy retains 724 repository findings with none on touched paths.
+Original logs include the failed setup/probe paths and the final accepted
+flattened reference; only final receipts support these acceptance statements.
