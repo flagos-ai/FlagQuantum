@@ -21,7 +21,11 @@ from flagquantum.core.ir.program import verify_program_record
 from flagquantum.ecosystem.cirq._component_library import cirq_gate_library_factories
 from flagquantum.errors import SerializationError
 from flagquantum.simulation.unitary import get_unitary
-from tests.unit.cirq_gate_cases import pauli_phasor_case
+from tests.unit.cirq_gate_cases import (
+    REMAINING_CONTROL_FAMILIES,
+    pauli_phasor_case,
+    remaining_control_case,
+)
 from tests.unit.test_cirq_decomposition_file import locked_source as locked_source
 from tests.unit.test_legacy_arithmetic_factories import _library
 from tests.unit.test_multiplexed_source_binding import logical_operator
@@ -560,6 +564,9 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         "phasor_empty",
         "cnot",
         "cy",
+        "phasor_ix",
+        "phasor_identity",
+        *REMAINING_CONTROL_FAMILIES,
     ),
 )
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
@@ -624,6 +631,8 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         )
     elif kind.startswith("phasor"):
         raw = pauli_phasor_case(cirq, kind)
+    elif kind in REMAINING_CONTROL_FAMILIES:
+        raw = remaining_control_case(cirq, kind)
     elif kind in ("cnot", "cy"):
         raw = cirq.CNOT if kind == "cnot" else cirq.Y.controlled()
     else:
@@ -758,25 +767,27 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             FieldOperation(bound.circuit.n_wires, bound.circuit.instructions)
         )
         count = sum(op.name == "measure" for op in bound.circuit.instructions)
-        assert count == (
-            1
-            if (
-                kind == "cnot"
-                or kind == "cy"
-                and not isinstance(raw, cirq.ControlledGate)
-            )
-            and control in ("positive", "negative")
-            else (
-                2
-                if (
-                    kind in ("matrix1", "iswap", "iswap_zero")
-                    or kind.startswith("phasor")
-                    and kind not in ("phasor_zero", "phasor_empty")
-                )
-                and control == "positive"
-                else 0
-            )
-        )
+        expected_count = 0
+        if control == "positive":
+            expected_count = {
+                "matrix1": 2,
+                "iswap": 2,
+                "iswap_zero": 2,
+                "cczpow": 7,
+                "phasedx": 2,
+                "phasedxz": 2,
+                "phasediswap": 4,
+            }.get(kind, 0)
+            if kind.startswith("phasor") and kind not in (
+                "phasor_zero",
+                "phasor_empty",
+            ):
+                expected_count = 2
+        if control in ("positive", "negative") and (
+            kind == "cnot" or kind == "cy" and not isinstance(raw, cirq.ControlledGate)
+        ):
+            expected_count = 1
+        assert count == expected_count
         restored = CircuitIR.from_json(appended.to_ir().to_json())
         assert (
             restored.to_dict()["instructions"]
@@ -815,6 +826,28 @@ def test_pauli_phasor_positive_control_pair_keeps_specialized_target_port(
     test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         depth, "phasor_xy", "positive_array", locked_source, monkeypatch
     )
+
+
+@pytest.mark.parametrize("kind,word", (("phasor_ix", "IX"), ("phasor_identity", "II")))
+def test_identity_letter_phasor_retains_source_spectral_counterexample(
+    kind: str, word: str, locked_source: Any
+) -> None:
+    from cmath import exp
+    from math import pi
+
+    gate = pauli_phasor_case(cirq, kind)
+    pauli = torch.tensor(
+        cirq.unitary(cirq.DensePauliString(word)), dtype=torch.complex128
+    )
+    identity = torch.eye(4, dtype=torch.complex128)
+    spectral = (
+        (exp(0.2j * pi) + exp(0.3j * pi)) * identity
+        + (exp(0.2j * pi) - exp(0.3j * pi)) * pauli
+    ) / 2
+    actual = torch.tensor(cirq.unitary(gate), dtype=torch.complex128)
+    # The fixed SDK recipe XORs all supplied wires, including identity letters.
+    # Execution parity with that recipe is distinct from this spectral law.
+    assert not torch.allclose(actual, spectral, atol=2e-14, rtol=0)
 
 
 def test_raw_controlled_gate_has_its_own_original_adjoint_decomposition(

@@ -11,6 +11,7 @@ from ...compiler.formats.legacy_control_specs import control_registers_from_spec
 from ...compiler.formats.legacy_word_factories import _rename_program
 from ...compiler.registers.component_builder import ComponentProgramBuilder
 from ...compiler.registers.component_control import quantum_control_signature
+from ...compiler.registers.component_gate_function import bit_gate_function
 from ...compiler.registers.control.specialized_component_control import (
     multi_controlled_component_pair,
 )
@@ -32,13 +33,13 @@ from ._feedback_import import (
 )
 from ._gate_metadata import cirq_gate_signature
 from ._named_gate_definitions import _NamedGateDefinitions
+from ._register_gate import RegisterCirqGate
 from ._register_import import _operation_ports, import_cirq_register_optree
 from .conversion import (
     _cirq,
     _cirq_parameter_value,
     _eigen_phase_operations,
     _global_phase_angle,
-    export_cirq,
 )
 
 
@@ -265,33 +266,36 @@ def controlled_inverse_program(
             )
             if any(not set(leaf.qubits) <= set(operation.qubits) for leaf in leaves):
                 return None
-            if selected is not None and selected[0] in {
-                "rotation.Rz",
-                "hadamard.Hadamard",
-            }:
-                # Source capture anchors wire-free SDK phases to its first
-                # declared input, before the typed importer rotates live words.
-                anchored = []
-                for leaf in leaves:
-                    if not isinstance(leaf.gate, cirq.GlobalPhaseGate):
-                        anchored.append(leaf)
-                        continue
-                    scalar = scalar_phase_ir(
+            # Source capture anchors wire-free SDK phases to its first
+            # declared input, before the typed importer rotates live words.
+            # Keep the owned scalar recipe directly, without a numeric SDK
+            # export/import round trip or a new public scalar instruction.
+            anchored = []
+            scalar_definitions: dict[Any, FunctionRecord] = {}
+            scalar_ports = Signature.build(bit0=1)
+            for leaf in leaves:
+                if not isinstance(leaf.gate, cirq.GlobalPhaseGate):
+                    anchored.append(leaf)
+                    continue
+                scalar = CircuitIR(
+                    1,
+                    scalar_phase_ir(
                         0, _global_phase_angle(cirq, leaf.gate.coefficient)
-                    )
-                    exported = export_cirq(CircuitIR(1, scalar)).circuit
-                    anchored.extend(
-                        exported.transform_qubits(
-                            lambda _: controls[0]
-                        ).all_operations()
-                    )
-                leaves = tuple(anchored)
+                    ),
+                )
+                carrier = RegisterCirqGate(scalar, scalar_ports)
+                scalar_definitions[carrier] = bit_gate_function(
+                    f"scalar_{len(scalar_definitions)}", tuple(scalar_ports), scalar
+                )
+                anchored.append(carrier.on(controls[0]))
+            leaves = tuple(anchored)
             incoming, outgoing = _operation_ports(ports, operation.qubits)
             program = import_cirq_register_optree(
                 cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW),
                 signature=ports,
                 in_quregs=incoming,
                 out_quregs=outgoing,
+                gate_definitions=scalar_definitions,
             )
         program = _rename_program(program, f"{name}_child_{index}")
         definitions[operation.gate] = program.functions[0]
