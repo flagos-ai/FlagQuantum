@@ -11,10 +11,15 @@ from functools import partial
 from typing import Literal
 
 import numpy as np
+import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register, RegisterType
 from ...errors import SerializationError
+from .._component_trace.resource_generalization import (
+    arbitrary_clifford_cost_key,
+    arbitrary_clifford_signature,
+)
 from ..registers.component_rebindings import join_word_function, split_word_function
 from ..registers.layout.component_cast import cast_word_function
 from ..registers.layout.component_workspace import (
@@ -26,6 +31,30 @@ from ..registers.primitives.always_component import always_component_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 
 _Kind = Literal["Allocate", "Free", "Split", "Join", "Cast"]
+
+
+def _arbitrary_clifford_factory(
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord:
+    if set(arguments) != {"n"}:
+        raise SerializationError("ArbitraryClifford requires only n")
+    width = arguments["n"]
+    if type(width) is not int and not isinstance(width, sympy.Expr):
+        raise SerializationError(
+            "ArbitraryClifford width requires integer or symbolic metadata"
+        )
+    assert isinstance(width, (int, sympy.Expr))
+    try:
+        signature = tuple(
+            arbitrary_clifford_signature(arbitrary_clifford_cost_key(width))
+        )
+    except ValueError as error:
+        raise SerializationError(str(error)) from error
+    if registers is not None and registers != signature:
+        raise SerializationError("Invalid register signature for ArbitraryClifford")
+    return FunctionRecord(name, (), registers=signature)
 
 
 def _always_factory(
@@ -134,4 +163,5 @@ def bookkeeping_factories() -> dict[str, ComponentFactory]:
             for kind in kinds
         },
         "qualtran.bloqs.bookkeeping.always.Always": _always_factory,
+        "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": _arbitrary_clifford_factory,
     }

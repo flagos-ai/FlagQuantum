@@ -247,7 +247,11 @@ def test_invalid_constructor_arguments_and_existing_cast_storage_boundary() -> N
                 "allow_quantum_to_classical": 1,
             },
         )
-    assert len(bookkeeping_factories()) == 6
+    assert set(bookkeeping_factories()) == {
+        *(f"qualtran.bloqs.bookkeeping.{kind.lower()}.{kind}" for kind in KINDS),
+        "qualtran.bloqs.bookkeeping.always.Always",
+        "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford",
+    }
 
 
 @pytest.mark.parametrize("shape", ((), (2,)))
