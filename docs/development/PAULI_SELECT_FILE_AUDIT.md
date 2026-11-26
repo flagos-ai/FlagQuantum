@@ -46,8 +46,8 @@ emitted CX and other physical instructions.
 
 Q-0591 and Q-0593 are accepted. Q-0592 now binds concrete foreign
 dense-Pauli rows and serializes the resulting native logical and primitive IR.
-Its source nonunitary coefficient domain and unsupported symbolic declarations
-remain explicitly outside the admitted unitary execution path. The locked source applies
+Its source nonunitary coefficient domain and unresolved symbolic dimensions
+remain explicitly outside the physical execution path. The locked source applies
 the sign of each coefficient's real part. Nonzero real parts of either
 sign map to signed unitary rows, regardless of coefficient magnitude
 or imaginary part. This includes infinite real parts and discarded nonfinite
@@ -133,7 +133,7 @@ findings, none on this batch.
 The complete constructor-domain intake additionally identifies distinct work:
 Boolean width/control metadata and an empty target execute in the original
 root graph and generator. The scalar metadata follow-up below admits the
-Boolean cases; empty target execution remains outside the Core contract.
+Boolean cases; empty target execution is covered by approved Proposal 129 below.
 Concrete SymPy integers execute in the source generator while its stored graph
 classifies them as parameterized. NumPy integer widths and floating widths fail
 in the original QAny validator. Empty selection fails in the original traversal.
@@ -210,3 +210,54 @@ identical. Original failure logs and proposal intake remain separate from
 successful final receipts. Contextless logical Programs still have no public
 native-physical codec; their internal object identity round trip and actual
 logical/primitive JSON round trips are recorded distinctly.
+
+## Owned symbolic declaration and concrete materialization
+
+The direct constructor boundary retains the complete signed row tuple and the
+original symbolic selection expression, including integer and positivity
+assumptions. Algorithms owns this immutable declaration; Ecosystem converts
+external rows immediately. The existing neutral `SymbolicInt` vocabulary is
+reused. No external Pauli object, source callback, declaration-only empty
+Program, new public entry or Core physical symbolic width is introduced.
+
+Selection remains MSB first, targets remain in Pauli-letter order, and controls
+retain their optional binary activation. Logical output registers are unchanged.
+The declaration owns no physical workspace. After an explicit immutable
+`dataclasses.replace(operation, selection_bitsize=width)`, existing bounded
+append and typed capture own unary private work and measured cleanup exactly
+as in concrete source calls. Unbound physical append and Program capture refuse
+execution. Ambiguous capacity comparisons retain the original constructor's
+symbol-assumption refusal instead of inferring a concrete dimension.
+
+Positive integer `n` with two rows and `n+1` with three rows construct original
+signatures while original stored decomposition refuses them as parameterized.
+Materialization covers each minimum width and one extra bit, no control and
+both control polarities. Both directional Programs retain complete source call
+layers, operands, feedback and output ownership. Every operator column in every
+small raw measurement history compares full complex amplitudes and clean work.
+Normal bounded append and numerical branch execution run with source SDK
+imports blocked. Resource measurements and independent source estimates remain
+separate. Internal declaration pickle identity does not claim a public Program
+codec; original object-array serialization and generic control remain distinct
+whole-file gaps. Q-0592 remains open until those dispositions are complete.
+
+| Materialized three-row -X / Y / -Z table, width 2 | Actual T-family / CX / measurements / private peak | Separate source And / Cliffords / measurements / logical peak |
+|---|---|---|
+| No external control, either direction | 4 / 8 / 1 / 1 | 1 / 9 / 1 / 4 |
+| Active on zero, either direction | 8 / 15 / 2 / 2 | 2 / 11 / 2 / 6 |
+| Active on one, either direction | 8 / 15 / 2 / 2 | 2 / 9 / 2 / 6 |
+
+All twenty-four materialized directional inventories match their independent
+source models and peaks; no private lease remains at return. This is concrete
+execution evidence, not an assertion that the original unresolved symbol has
+a successful physical graph or numerical resource query. The branch-operator
+checker now has one shared Pauli reference owner used by both empty-target
+and symbolic-materialization consumers; its assertions are preserved.
+
+Affected regression passes 150 cases in each Cirq 1.7/1.6 profile without
+skips, plus 145 local integration cases. Seven touched Python files pass strict
+typing, format, lint and owner scopes; language, links, architecture, IR and API
+checks pass. The final focused materialization check passes after import-guard
+cleanup. Dependency policy retains 724 repository findings and none on the
+touched paths. Twelve old operations and twenty-four complete directional
+Programs still equal the published baseline.
