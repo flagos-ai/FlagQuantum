@@ -13,6 +13,9 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .chemistry_number_phase import ChemistryNumberPhase
 from .double_factorization_prepare_model import (
     _auxiliary_width,
@@ -26,6 +29,60 @@ from .double_factorization_rotation_model import (
 )
 
 _HADAMARD = ComponentCost("Hadamard", 1, GateCost(clifford=1))
+
+
+def source_double_factorization_one_body_signature(
+    spin_orbitals: int,
+    eigenvalues: int,
+    basis_rotation_bits: int = 24,
+    inner_rotation_bits: int = 8,
+) -> Signature:
+    """Declare the original one-body selectors, retained junk and two spin banks."""
+    spatial, rank_width, offset_width = _df_address_widths(spin_orbitals, eigenvalues)
+    rank = opaque_register_type(rank_width)
+    bit = quantum_bit_type()
+    return Signature(
+        (
+            *(Register(name, bit) for name in ("succ_l", "l_ne_zero", "succ_p")),
+            Register("p", rank),
+            Register("rot_aa", bit),
+            Register("spin", bit),
+            Register("xi", rank),
+            Register("offset", opaque_register_type(offset_width)),
+            Register("rot", opaque_register_type(inner_rotation_bits)),
+            Register("rotations", opaque_register_type(spatial * basis_rotation_bits)),
+            Register("sys", opaque_register_type(spatial), shape=(2,)),
+        )
+    )
+
+
+def source_double_factorization_block_signature(
+    auxiliaries: int,
+    spin_orbitals: int,
+    eigenvalues: int,
+    basis_rotation_bits: int,
+    inner_rotation_bits: int,
+) -> Signature:
+    """Declare the full original block, including the unchanged theta control."""
+    spatial = spin_orbitals // 2
+    rank = opaque_register_type((spatial - 1).bit_length())
+    bit = quantum_bit_type()
+    return Signature(
+        (
+            Register("ctrl", bit, shape=(4,)),
+            Register("l", opaque_register_type(auxiliaries.bit_length())),
+            Register("p", rank),
+            Register("spin", bit),
+            Register("rot_aa", bit),
+            Register("xi", rank),
+            Register(
+                "offset", opaque_register_type((eigenvalues + spatial - 1).bit_length())
+            ),
+            Register("rot", opaque_register_type(inner_rotation_bits)),
+            Register("rotations", opaque_register_type(spatial * basis_rotation_bits)),
+            Register("sys", opaque_register_type(spatial), shape=(2,)),
+        )
+    )
 
 
 def source_double_factorization_one_body_cost(

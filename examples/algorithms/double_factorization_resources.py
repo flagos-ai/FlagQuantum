@@ -13,6 +13,10 @@ from dataclasses import asdict
 from flagquantum.algorithms.primitives.double_factorization_encoding_model import (
     source_double_factorization_block_encoding_cost,
     source_double_factorization_one_body_cost,
+    source_double_factorization_one_body_signature,
+)
+from flagquantum.algorithms.primitives.double_factorization_encoding_model import (
+    source_double_factorization_block_signature as double_factorization_block_signature,
 )
 from flagquantum.algorithms.primitives.double_factorization_prepare_model import (
     source_double_factorization_indexed_data_cost,
@@ -24,11 +28,6 @@ from flagquantum.algorithms.primitives.double_factorization_prepare_model import
 )
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
-from flagquantum.core.ir.program.register_types import (
-    opaque_register_type,
-    quantum_bit_type,
-)
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.register_score import (
     RegisterScore,
@@ -89,58 +88,11 @@ def prepare_examples() -> tuple[tuple[str, Signature, ComponentCost], ...]:
 
 def notebook_signatures() -> tuple[Signature, Signature]:
     """Declare the input and output words of both source notebook examples."""
-    spatial = _SPIN_ORBITALS // 2
-    rank = opaque_register_type((spatial - 1).bit_length())
-    offset = opaque_register_type((_EIGENVALUES + spatial - 1).bit_length())
-    bit = quantum_bit_type()
-    rotations = Register("rotations", opaque_register_type(spatial * 7))
-    system = Register("sys", opaque_register_type(spatial), shape=(2,))
-    common = (Register("xi", rank), Register("offset", offset))
-    one_body = Signature(
-        (
-            Register("succ_l", bit),
-            Register("l_ne_zero", bit),
-            Register("succ_p", bit),
-            Register("p", rank),
-            Register("rot_aa", bit),
-            Register("spin", bit),
-            *common,
-            Register("rot", opaque_register_type(8)),
-            rotations,
-            system,
-        )
+    one_body = source_double_factorization_one_body_signature(
+        _SPIN_ORBITALS, _EIGENVALUES, 7, 8
     )
     return one_body, double_factorization_block_signature(
         _AUXILIARIES, _SPIN_ORBITALS, _EIGENVALUES, 7, 7
-    )
-
-
-def double_factorization_block_signature(
-    auxiliaries: int,
-    spin_orbitals: int,
-    eigenvalues: int,
-    basis_rotation_bits: int,
-    inner_rotation_bits: int,
-) -> Signature:
-    """Return the full source block-encoding port metadata."""
-    spatial = spin_orbitals // 2
-    rank = opaque_register_type((spatial - 1).bit_length())
-    bit = quantum_bit_type()
-    return Signature(
-        (
-            Register("ctrl", bit, shape=(4,)),
-            Register("l", opaque_register_type(auxiliaries.bit_length())),
-            Register("p", rank),
-            Register("spin", bit),
-            Register("rot_aa", bit),
-            Register("xi", rank),
-            Register(
-                "offset", opaque_register_type((eigenvalues + spatial - 1).bit_length())
-            ),
-            Register("rot", opaque_register_type(inner_rotation_bits)),
-            Register("rotations", opaque_register_type(spatial * basis_rotation_bits)),
-            Register("sys", opaque_register_type(spatial), shape=(2,)),
-        )
     )
 
 
