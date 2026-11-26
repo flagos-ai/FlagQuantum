@@ -156,8 +156,13 @@ class MeanEstimationOperator:
         prepare: ComponentCost,
         unprepare: ComponentCost,
     ) -> SymbolicResourceFormula:
-        """Price the uncontrolled locked source calls, including signed scalar -1."""
-        if self.control_value is not None or self.repetitions != 1:
+        """Price uncontrolled signed powers from one step's explicit child models.
+
+        Both phase directions retain the same source peak after private phase
+        outputs are released. Sequential repetitions multiply gates while keeping
+        the step's peak width. Controlled source estimates remain unavailable.
+        """
+        if self.control_value is not None:
             raise ValueError(
                 "This source model describes one forward uncontrolled step"
             )
@@ -170,7 +175,8 @@ class MeanEstimationOperator:
                 unprepare,
             )
         )
-        costs = QECGateCost().plus(phase, 1).plus(reflection.gates, 1)
+        count = abs(self.repetitions)
+        costs = QECGateCost().plus(phase, count).plus(reflection.gates, count)
         peak = cast(
             SymbolicInt, smax(phase.logical_qubits, reflection.peak_logical_qubits)
         )
