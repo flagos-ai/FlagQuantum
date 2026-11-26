@@ -6,6 +6,7 @@
 
 """Four source half-comparison relations through input exchange and flag flips."""
 
+from collections.abc import Hashable
 from typing import Literal
 
 from ....core.ir import Instruction
@@ -17,6 +18,21 @@ from ..arithmetic.out_of_place_add_resource_model import (
 from ..bits.bitwise import bitwise_not_ir
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
 from .half_comparison import half_greater_ir
+
+
+def source_unsigned_half_less_than_calls(
+    width: SymbolicInt, *, adjoint: bool = False
+) -> dict[Hashable, SymbolicInt]:
+    """Retain the source unsigned half-LT model, including the no-MSB adder.
+
+    These are logical calls rather than emitted instructions. Inverse output
+    aliasing and physical erasure are governed by the existing component owner.
+    """
+    return {
+        ("bitwise_not", width + 1): 3,
+        ("cx",): 1,
+        ("out_of_place_add", width + 1, adjoint, False): 1,
+    }
 
 
 def _reverse_operands(relation: str) -> bool:

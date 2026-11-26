@@ -38,10 +38,14 @@ class ComparatorDeclaration:
             )
         )
 
-    def direct_calls(self) -> dict[Hashable, SymbolicInt]:
+    def direct_calls(self, *, adjoint: bool = False) -> dict[Hashable, SymbolicInt]:
         return {
-            ("allocate_bit",): 1,
-            ("greater_than", self.width, self.width): 1,
+            ("free_bit" if adjoint else "allocate_bit",): 1,
+            (
+                "greater_than_adjoint" if adjoint else "greater_than",
+                self.width,
+                self.width,
+            ): 1,
             ("controlled_swap", self.width): 1,
         }
 

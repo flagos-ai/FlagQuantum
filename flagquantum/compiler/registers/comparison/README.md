@@ -2,6 +2,11 @@
 
 This package owns equality and ordering with coherent, measured and mixed operands.
 
+Comparator declarations retain allocation/free and directional GreaterThan
+calls. The unsigned half-less-than declaration retains three bitwise NOTs,
+CNOT and the directional no-MSB out-of-place adder. These logical graph
+declarations do not alter emitted instructions, inverse port aliases or costs.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow
