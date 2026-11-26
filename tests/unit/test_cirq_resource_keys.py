@@ -26,7 +26,11 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
 from flagquantum.ecosystem.cirq.resource_keys import cirq_gate_resource_key
-from tests.unit.cirq_gate_cases import pauli_phasor_case
+from tests.unit.cirq_gate_cases import (
+    REMAINING_CONTROL_FAMILIES,
+    pauli_phasor_case,
+    remaining_control_case,
+)
 from tests.unit.test_cirq_decomposition_file import locked_source as locked_source
 
 pytestmark = pytest.mark.unit
@@ -125,6 +129,13 @@ def test_controlled_scalar_uses_source_phase_model(
         "phasor_empty",
         "cnot",
         "cy",
+        "phasor_ix",
+        "phasor_identity",
+        *(
+            kind
+            for kind in REMAINING_CONTROL_FAMILIES
+            if kind not in ("h", "xxpow", "yypow")
+        ),
     ),
 )
 def test_controlled_external_declared_cost_closes_source_child_models(
@@ -178,6 +189,8 @@ def test_controlled_external_declared_cost_closes_source_child_models(
         )
     elif kind.startswith("phasor"):
         gate = pauli_phasor_case(cirq, kind)
+    elif kind in REMAINING_CONTROL_FAMILIES:
+        gate = remaining_control_case(cirq, kind)
     elif kind in ("cnot", "cy"):
         gate = cirq.CNOT if kind == "cnot" else cirq.Y.controlled()
     else:
@@ -191,7 +204,7 @@ def test_controlled_external_declared_cost_closes_source_child_models(
         source = Adjoint(source)
     children = decompose_cirq_once(gate)
     assert children is not None
-    assert bool(children) == (kind != "phasor_empty")
+    assert bool(children) == (kind not in ("phasor_empty", "identity2"))
     if kind == "cy" and isinstance(gate, cirq.ControlledGate):
         # Cirq 1.6 uses raw MatrixGate children here. Each source adjoint
         # numerically inverts those matrices again; model classification is
@@ -206,7 +219,9 @@ def test_controlled_external_declared_cost_closes_source_child_models(
                     child.gate, num_controls=len(controls), control_values=controls
                 )
             )
-            if kind.startswith("phasor") or kind == "cy"
+            if kind.startswith("phasor")
+            or kind == "cy"
+            or kind in REMAINING_CONTROL_FAMILIES
             else _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
         )
         assert key is not None
@@ -396,6 +411,51 @@ def test_phasor_positive_pair_model_keeps_x_gate_specialization(
     test_controlled_external_declared_cost_closes_source_child_models(
         (1, 1), depth, "phasor_xy", locked_source, monkeypatch
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("kind", ("h", "xxpow", "yypow"))
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (0, 1, 0)))
+@pytest.mark.parametrize("depth", (1, 2, 3))
+def test_raw_control_models_retain_original_undeclared_atoms(
+    kind: str, controls: tuple[int, ...], depth: int, locked_source: object
+) -> None:
+    import cirq
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.bloq import (
+        Bloq,
+        DecomposeNotImplementedError,
+        DecomposeTypeError,
+    )
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq.resource_keys import cirq_mapped_gate_resource_key
+
+    gate = remaining_control_case(cirq, kind)
+    source: Bloq = Controlled(
+        CirqGateAsBloq(gate),
+        CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
+    )
+    for _ in range(depth):
+        source = Adjoint(source)
+    with pytest.raises(
+        (DecomposeNotImplementedError, DecomposeTypeError), match="call graph"
+    ):
+        get_cost_value(source, QECGatesCost())
+    # SDK positive H selects CHadamard before raw-wrapper decomposition. Its
+    # valid atom model is a different constructor from this explicit wrapper.
+    if kind != "h":
+        assert (
+            cirq_mapped_gate_resource_key(
+                cirq.ControlledGate(
+                    gate, num_controls=len(controls), control_values=controls
+                )
+            )
+            is None
+        )
 
 
 @pytest.mark.ftqc_reference

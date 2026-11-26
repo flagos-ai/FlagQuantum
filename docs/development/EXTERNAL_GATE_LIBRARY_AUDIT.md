@@ -689,3 +689,82 @@ The initial Cirq 1.6 assertions incorrectly assumed the Cirq 1.7 CY recipe
 and reused forward matrix models; both assumptions were corrected against
 unchanged source inputs before the final passing run. No source failure was
 removed or reclassified as success.
+
+### Remaining executable SDK families and exact scalar carrier closure
+
+The remaining source-executable intake families are verified together: HPow,
+CCZPow, XX/YY powers, PhasedX, PhasedXZ, PhasedISwap, Givens, raw H, multi-bit
+identity and identity-letter Pauli phasors. Their existing native constructors
+and direct dependencies are reused. The new implementation closes the scalar
+carrier dependency shared by negative PhasedISwap, Givens and raw H roots.
+A wire-free SDK phase must remain on the source child's first declared input
+before the typed importer rotates live register bindings. Equal global action
+on another wire does not satisfy the source's literal dependency ordering.
+
+Every fallback SDK phase now calls the existing `scalar_phase_ir` body through
+an explicitly anchored native register gate and `bit_gate_function` definition.
+The phase angle is retained directly. The former special-case SDK export and
+reimport for Rz/H is removed, avoiding numeric phase-unit conversion and
+using the same owned scalar boundary for all admitted SDK children. No Core
+instruction, public scalar operation, resource schema or numerical backend is
+introduced. The existing scalar owner still preserves arbitrary carrier state.
+
+| Source family | Actual positive / negative / two-bit-control primitives | Actual positive measurements / work bits | Original model |
+| --- | --- | --- | --- |
+| HPow | 17 / 23 / 63 | 0 / 0 | Available |
+| CCZPow | 134 / 232 / 442 | 7 / 1 | Available |
+| XXPow | 29 / 68 / 162 | 0 / 0 | Undeclared controlled And |
+| YYPow | 21 / 70 / 168 | 0 / 0 | Undeclared controlled And |
+| PhasedX | 47 / 24 / 66 | 2 / 1 | Available |
+| PhasedXZ | 47 / 24 / 66 | 2 / 1 | Available |
+| PhasedISwap | 80 / 178 / 378 | 4 / 1 | Available |
+| Givens | 12 / 178 / 378 | 0 / 0 | Available |
+| Raw H wrapper | 5 / 20 / 50 | 0 / 0 | Undeclared shifted XPow |
+| Two-bit identity | 0 / 0 / 0 | 0 / 0 | Zero |
+| Pauli IX | 46 / 91 / 201 | 2 / 1 | Available |
+| Pauli II | 40 / 76 / 160 | 2 / 1 | Available |
+
+The Cirq 1.7 inventory has 144 separate physical/model records at four
+control layouts and three explicit adjoint depths: 108 available seven-category
+model comparisons and 36 original model refusals. Physical primitive counts
+are independent of model estimates and retain named atoms/local matrices.
+Original unavailable model paths are tested separately. SDK automatic positive
+H selects CHadamard; its valid named model is a different constructor from
+an explicit Controlled(CirqGateAsBloq(H)) root. Nested controlled And is not
+priced from the physical SDK stream.
+
+Every added family compares the full source child-port collection, per-wire
+primitive ordering, operands, angles and matrices. Full complex basis columns,
+all applicable measurement histories (including all 128 CCZPow histories),
+clean workspace, source-free resolution and SDK-free normal append/IR round
+trips are verified. The identity source has a genuinely empty decomposition;
+it is not required to fabricate a child call.
+
+Identity-letter Pauli strings retain a separate source mathematical
+counterexample. The fixed SDK XOR recipe includes every supplied wire, even
+an identity letter. Its IX and II operators disagree with the spectral
+projectors of the stated dense Pauli word. Native execution matches that
+unchanged source recipe, and the counterexamples are checked against explicit
+complex spectral matrices. No mathematical correctness waiver, source repair
+or whole-file parent completion is inferred. The previously documented empty
+word issue remains separate.
+
+The actual Cirq 1.6 lane has another 144 independent records with the same
+108 available model comparisons and 36 original model refusals. Its positive
+HPow/XXPow/raw-H/IX physical counts are 15/25/4/44 instead of the Cirq 1.7
+17/29/5/46. Each lane matches its own unchanged upstream SDK recipe; the
+other table entries and measurement/work counts agree. These 288 records
+do not assert identical SDK decompositions across dependency versions.
+Seventeen complete locked source files covering serialization, control,
+adjoint, named gates and resource costing match the planning ledger's source
+blob hashes. All 24 prior ordinary Programs and bindings remain byte-equivalent
+to published `e9feba5fd`; explicit adjoint helper structure intentionally gains
+the owned scalar call, with source per-wire execution checked separately.
+
+The final concentrated regression passes 1170 cases without skips in each
+actual SDK profile; 145 local integration cases pass. Seven Python files pass
+strict typing, Black/Ruff, owner scopes, language/links, architecture, IR and
+API checks. Source mathematical counterexamples and original model refusals
+are positive diagnostic tests, not successful mathematical executions or
+estimated resources. Pending protected contracts and child-private allocation
+scope remain open. The whole-file parent checklist remains unchanged.
