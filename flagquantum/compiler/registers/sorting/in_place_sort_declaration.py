@@ -5,6 +5,7 @@
 
 """Original in-place sorting signature and model, independent of execution."""
 
+from collections.abc import Hashable
 from typing import cast
 
 from ....core.ir.program.register_types import bounded_unsigned_register_type
@@ -77,3 +78,13 @@ def source_in_place_sort_resource_formula(
         logical_qubits=cast(SymbolicInt, smax(ports, compare.logical_qubits)),
         cswap=2 * copies * width,
     )
+
+
+def source_in_place_sort_calls(length: int, width: int) -> dict[Hashable, SymbolicInt]:
+    """Expose the existing concrete model's three direct calls for diagrams."""
+    root = source_in_place_sort_cost(length, width)
+    return {
+        ("comparator", width): root.calls[0].repetitions,
+        ("comparator_adjoint", width): root.calls[1].repetitions,
+        ("xor", width): root.calls[2].repetitions,
+    }

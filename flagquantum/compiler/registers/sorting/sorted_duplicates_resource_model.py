@@ -5,6 +5,7 @@
 
 """Original duplicate-predicate counts and phase-specific logical lifetimes."""
 
+from collections.abc import Hashable
 from dataclasses import fields
 from typing import cast
 
@@ -131,3 +132,16 @@ def source_sorted_duplicates_cost(
     return ComponentCost(
         "HasDuplicates", cast(int, root.logical_qubits), calls=tuple(calls)
     )
+
+
+def source_unsigned_sorted_duplicates_calls(
+    length: int, width: int
+) -> dict[Hashable, SymbolicInt]:
+    """Expose the existing uncontrolled unsigned source model's four calls."""
+    root = source_sorted_duplicates_cost(length, width)
+    return {
+        ("half_less_than", width, False): root.calls[0].repetitions,
+        ("half_less_than", width, True): root.calls[1].repetitions,
+        ("multi_control_x", (1,) * (length - 1)): root.calls[2].repetitions,
+        ("x",): root.calls[3].repetitions,
+    }

@@ -2,6 +2,11 @@
 
 This package owns compare/exchange networks, permutations, duplicate detection and set combinations.
 
+The in-place-sort and sorted-duplicate resource modules also expose direct
+source-model call declarations for bounded dependency diagrams. Their counts
+come from the same existing model owners. These diagrams preserve original
+adjoint identities and do not supply missing physical sorting bodies.
+
 Core, shared Compiler facilities and the register components used by these
 implementations are allowed dependencies. Backend selection and numerical
 execution belong to Runtime and Simulation. Public APIs and IR schemas follow
