@@ -55,10 +55,12 @@ violation. The reference is unchanged, and no tolerance is used to classify
 that budget as satisfied.
 
 Q-0923 closes as a complete source migration with every definition and direct
-consumer replacement verified. Q-0924 retains the original floating-budget
-boundary. Its four unchanged original tests are run and their sampled
-inequalities retained. A stricter globally conservative budget policy requires
-a separately specified numerical change.
+consumer replacement verified. On 2026-11-26 the user explicitly accepted
+Q-0924's complete original-test responsibility under the
+[approved disposition](G2_UPSTREAM_DEFECT_DISPOSITION.md). Its four unchanged
+tests and recorded consumer evidence are reused. The floating-budget
+counterexample remains in regression; a stricter globally conservative policy
+requires a separately specified numerical change.
 
 ## Evidence
 
