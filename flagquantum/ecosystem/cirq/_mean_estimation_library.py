@@ -7,6 +7,8 @@
 from math import pi
 
 from ...algorithms.primitives.mean_estimation_operator import CodeForRandomVariable
+from ...compiler.formats.legacy_component_arguments import ControlSpecification
+from ...compiler.registers.component_control import ControlAdder
 from ...compiler.registers.preparation.prepared_reflection_component import (
     prepared_reflection_program,
 )
@@ -86,3 +88,96 @@ def mean_estimation_component_pair(
         phase_pair,
         (reflection, reflection),
     )
+
+
+def controlled_mean_estimation_component_pair(
+    code: CodeForRandomVariable,
+    prepare_pair: tuple[ProgramRecord, ProgramRecord],
+    encoder_pair: tuple[ProgramRecord, ProgramRecord],
+    positive_encoder_pair: tuple[ProgramRecord, ProgramRecord],
+    controls: ControlSpecification,
+    *,
+    arctan_bitsize: int = 32,
+    signal_junk_names: tuple[str, ...] | None = None,
+) -> tuple[ProgramRecord, ProgramRecord]:
+    """Reduce typed controls once around the actual source-positive mean calls.
+
+    All encoder inverses and the positive encoder are explicit owners. The
+    original smaller mean ABI is retained in private-junk mode; caller-owned
+    signal junk remains a separate expanded context. No control or inverse is
+    inferred from matrix equivalence, and no code-object codec is fabricated.
+    """
+    from ...compiler.formats.legacy_controlled_factories import (
+        controlled_via_and_factories,
+    )
+    from ...compiler.formats.legacy_word_factories import _rename_program
+    from ...compiler.registers.component_control import (
+        _stored_control_adder,
+        quantum_control_signature,
+    )
+    from ...core.ir.program.register_types import quantum_bit_type
+    from ._complex_phase_library import positive_complex_phase_pair
+
+    base = mean_estimation_component_pair(
+        code,
+        prepare_pair,
+        encoder_pair,
+        arctan_bitsize=arctan_bitsize,
+        signal_junk_names=signal_junk_names,
+    )
+    ports = positive_encoder_pair[0].functions[0].registers
+    if ports is None or ports[1:] != encoder_pair[0].functions[0].registers:
+        raise SerializationError(
+            "Positive mean encoder must retain original data ports"
+        )
+    phase_pair = positive_complex_phase_pair(
+        positive_encoder_pair,
+        tuple(r.name for r in code.encoder_target_registers),
+        arctan_bitsize,
+    )
+    selection_names = tuple(r.name for r in code.synthesizer_selection_registers)
+    reflection = prepared_reflection_program(
+        *prepare_pair,
+        selection_names,
+        control_value=1,
+        global_phase=-1,
+        signal_junk_names=signal_junk_names,
+    )
+    signature = quantum_control_signature(
+        Signature(base[0].functions[0].registers or ()), ((quantum_bit_type(), ()),)
+    )
+    positive = qubitization_walk_component_pair(
+        signature, phase_pair, (reflection, reflection), controlled=True
+    )
+    if (
+        len(controls.clauses) == 1
+        and controls.clauses[0][0] == quantum_bit_type()
+        and controls.clauses[0][1].shape == ()
+        and controls.clauses[0][1].item() == 1
+    ):
+        return positive
+    result = []
+    for child, controlled in zip(base, positive, strict=True):
+        module = _rename_program(controlled, "positive_mean")
+        root = child.functions[0]
+
+        def owner(
+            function: FunctionRecord,
+            *,
+            expected: FunctionRecord = root,
+            positive_program: ProgramRecord = module,
+        ) -> tuple[ProgramRecord, ControlAdder]:
+            if function != expected:
+                raise SerializationError("Unknown mean-estimation control child")
+            return positive_program, _stored_control_adder(
+                positive_program.functions[0]
+            )
+
+        factory = controlled_via_and_factories(control_system=owner)[
+            "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd"
+        ]
+        record = factory("main", None, {"subbloq": root, "ctrl_spec": controls})
+        result.append(
+            record if isinstance(record, ProgramRecord) else ProgramRecord((record,))
+        )
+    return result[0], result[1]
