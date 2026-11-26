@@ -4,7 +4,6 @@ from math import isclose
 from typing import Any
 
 import pytest
-import sympy
 import torch
 
 from flagquantum.compiler.formats.symbolic_parameters import symbolic_parameter_value
@@ -12,6 +11,7 @@ from flagquantum.core.parameters import Parameter, ParameterExpression
 from flagquantum.ecosystem.cirq.conversion import _flagquantum_parameter_value
 
 pytestmark = pytest.mark.unit
+sympy = pytest.importorskip("sympy")
 
 
 def test_shared_converter_preserves_all_supported_nodes_and_sdk_consumer() -> None:
@@ -31,6 +31,8 @@ def test_shared_converter_preserves_all_supported_nodes_and_sdk_consumer() -> No
         sympy.cos(t),
         sympy.exp(t),
         sympy.log(t),
+        sympy.acos(t),
+        sympy.floor(4 * t),
         sympy.sin(t) + sympy.log(t + 1) / 3,
     )
     for expression in expressions:
@@ -82,3 +84,19 @@ def test_symbol_identity_and_sdk_discovery_remain_checked() -> None:
 
     with pytest.raises(ValueError, match="symbol discovery disagree"):
         _flagquantum_parameter_value(MissingSymbols(), sympy.Symbol("t"))
+
+
+def test_new_integer_sensitive_trees_keep_exact_coefficients_without_changing_old_leaves() -> (
+    None
+):
+    t = sympy.Symbol("t")
+    large = 2**60 + 1
+    floor = symbolic_parameter_value(sympy.floor(4 * t))
+    assert isinstance(floor, ParameterExpression)
+    result = floor.bind({"t": large})
+    assert type(result) is int and result == 4 * large
+    old = symbolic_parameter_value(4 * t)
+    assert isinstance(old, ParameterExpression)
+    assert type(old.args[0]) is float and old.args[0] == 4.0
+    assert isinstance(floor.args[0], ParameterExpression)
+    assert type(floor.args[0].args[0]) is int
