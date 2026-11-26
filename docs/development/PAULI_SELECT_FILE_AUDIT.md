@@ -170,4 +170,43 @@ cases. Five touched Python files pass strict typing, format, lint and scope;
 English/links, architecture, IR and API checks pass. Repository dependency policy
 retains 724 findings, none on this batch. No frozen reference, primitive emitter,
 allocation lifetime or protected Core contract changes. Empty-target admission
-and wider constructor/capture scope remain separate work; Q-0592 stays open.
+was completed by the approved empty-target follow-up below. Wider symbolic
+declaration/control/capture scope remains separate work; Q-0592 stays open.
+
+## Approved empty-target execution and shared reference support
+
+[Proposal 129](API_CHANGE_PROPOSAL_129_EMPTY_PAULI_SELECT_TARGET.md) admits
+zero-target signed rows through existing Core instructions, ordinary append
+and typed Programs. Empty words retain their selected relative phase. The
+typed target handle returns unchanged with no physical carrier. Majorana
+positive-target and zero-wire rules retain explicit negative tests.
+
+Fifteen actual source table/control families cover two-bit mixed/padded tables
+and one-bit mixed, constant-positive and constant-negative tables. Both exact
+directions compare complete source call layers and every unnormalized operator
+column in every small raw measurement branch. Thirty independent source QEC
+and peak rows agree; private work returns clean with no live leases. The
+three-row table with a negative final row explicitly distinguishes original
+bounded padding from logical unused-address identity. Dense, dynamic unary
+and unitary-ladder logical paths retain their existing respective semantics.
+
+| Empty / negative-empty two-row table | Actual primitives | Separate source model |
+|---|---|---|
+| No external control | 2 X, 1 Z; no work or measurement | 3 Cliffords, logical peak 1 |
+| Positive control | 4 T-family, 7 CX, 1 measurement; one private bit | 1 And, 3 Cliffords, 1 measurement, peak 3 |
+| Negative control | Same inventory plus 2 X | 1 And, 5 Cliffords, 1 measurement, peak 3 |
+
+Source fixtures and generator comparisons now belong to
+tests/unit/pauli_select_reference.py. All four existing consumer test modules
+use that owner directly. Fixture and compiler function ASTs equal the published
+source bodies except for the descriptive compiler-helper name; no assertions
+or frozen source hashes were dropped. Other general test-harness dependencies
+remain outside this domain extraction.
+
+Affected regression passes 143 cases in each source profile and 145 local
+integration cases; 79 existing Core IR/operand checks pass. Strict typing
+covers nine Python files. Complete positive-target baseline Programs remain
+identical. Original failure logs and proposal intake remain separate from
+successful final receipts. Contextless logical Programs still have no public
+native-physical codec; their internal object identity round trip and actual
+logical/primitive JSON round trips are recorded distinctly.

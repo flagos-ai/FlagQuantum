@@ -1,6 +1,7 @@
 # Proposal 129: empty-target Pauli SELECT
 
-Status: explicitly approved by the user on 2026-11-26; implementation authorized.
+Status: explicitly approved by the user on 2026-11-26; implemented and locally
+verified as documented below.
 
 ## Verified source requirement
 
@@ -69,3 +70,30 @@ contract before protected IR changes. AGENTS.md rule 8 and the
 before implementing this accepted-value extension. Earlier scalar and empty
 storage proposals do not authorize this structured operation change.
 
+## Implemented evidence
+
+Core now permits the empty Pauli target while retaining positive Majorana
+targets and nonempty physical operands. Compiler retains its positive-width
+wire composer and carries the empty logical target through a typed wrapper,
+then inlines that wrapper with the existing call expander. It assigns no
+physical wire or substitute qubit to the empty word.
+
+Fifteen source table/control families, including constant positive/negative
+tables, pass both directional call comparisons and every logical operator
+column in every small measurement branch. Source peaks and independent QEC
+categories match thirty recorded directional primitive/model inventories.
+All three logical lowering paths and Boolean empty-target metadata pass.
+The original empty-selection source refusal is retained independently of the
+existing native logical controlled-constant path.
+
+Logical and primitive IR use their real JSON codecs. Internal ProgramRecord
+object round trips use Python pickle only as a test identity check; no new
+public Program serialization profile is introduced. The existing native
+physical-context codec continues refusing contextless logical Programs.
+
+The batch passes 143 affected cases in each Cirq 1.7/1.6 profile, 145 local
+integration cases and 79 existing Core IR/operand cases. Nine Python files
+pass strict typing, format and lint; ownership, language/links, architecture,
+IR and API checks pass. Twelve old operations and twenty-four complete
+positive-target Programs remain equal to the published baseline. The shared
+test fixture and source compiler retain identical AST bodies after extraction.
