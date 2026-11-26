@@ -300,100 +300,11 @@ def test_positive_mean_two_stage_calls_and_exact_integer_powers(precision: int) 
 def test_positive_phase_recursive_stage_operands_preserve_bit_views(
     precision: int,
 ) -> None:
-    from flagquantum.compiler.registers.component_graph import (
-        _elements,
-        iter_component_calls,
-    )
+    from tests.unit.bit_view_call_checks import assert_source_bit_view_calls
 
     source, pair, _ = context(precision, "single")
     graph = pair[0]
-    definitions = {f.name: f for f in graph.functions}
-    phase = definitions[graph.functions[0].blocks[0].operations[0].callee or ""]
+    phase_entry = graph.functions[0].blocks[0].operations[0].callee
+    assert phase_entry is not None
     source_phase = next(source.decompose_bloq().iter_bloqsoqs())[0].bloq
-    original = source_phase.decompose_bloq()
-    native_values: dict[Any, tuple[tuple[str, int], ...]] = {}
-    source_values: dict[Any, tuple[tuple[str, int], ...]] = {}
-
-    def assign(values: dict[Any, Any], keys: Any, kind: str) -> None:
-        offset = 0
-        for key, width in keys:
-            values[key] = tuple((kind, i) for i in range(offset, offset + width))
-            offset += width
-
-    ports = phase.registers or ()
-    assign(
-        native_values,
-        zip(
-            phase.blocks[0].arguments, (int(r.total_bits()) for r in ports), strict=True
-        ),
-        "entry",
-    )
-    from qualtran._infra.composite_bloq import BloqBuilder
-
-    _, source_inputs = BloqBuilder.from_signature(original.signature)
-    assign(
-        source_values,
-        (
-            (soq, int(soq.reg.bitsize))
-            for collection in source_inputs.values()
-            for soq in np.asarray(collection).flat
-        ),
-        "entry",
-    )
-    actual, expected = [], []
-    for index, inputs, outputs in iter_component_calls(graph, phase.name):
-        child = definitions[phase.blocks[0].operations[index].callee or ""]
-        opcodes = {op.opcode for block in child.blocks for op in block.operations}
-        tokens = tuple(
-            token
-            for value in _elements(inputs.values())
-            for token in native_values[value.value]
-        )
-        returned = tuple(_elements(outputs))
-        widths = tuple(int(value.register.bitsize) for value in returned)
-        if opcodes <= {"split_register", "join_register"}:
-            # These generated views only repack the same MSB-first bit stream.
-            offset = 0
-            for value, width in zip(returned, widths, strict=True):
-                native_values[value.value] = tokens[offset : offset + width]
-                offset += width
-            assert offset == len(tokens)
-            continue
-        kind = (
-            "allocate"
-            if "allocate_register" in opcodes
-            else "free" if "free_register" in opcodes else "stage"
-        )
-        actual.append((kind, tokens, sum(widths)))
-        assign(
-            native_values,
-            ((v.value, w) for v, w in zip(returned, widths, strict=True)),
-            str(len(actual)),
-        )
-    for instance, inputs, outputs in original.iter_bloqsoqs():
-        kind = type(instance.bloq).__name__
-        tokens = tuple(
-            token
-            for reg in instance.bloq.signature.lefts()
-            for soq in np.asarray(inputs[reg.name]).flat
-            for token in source_values[soq]
-        )
-        source_returned = tuple(
-            soq for collection in outputs for soq in np.asarray(collection).flat
-        )
-        widths = tuple(int(soq.reg.bitsize) for soq in source_returned)
-        if kind in ("Split", "Join"):
-            offset = 0
-            for soq, width in zip(source_returned, widths, strict=True):
-                source_values[soq] = tokens[offset : offset + width]
-                offset += width
-            assert offset == len(tokens)
-            continue
-        label = (
-            "allocate" if kind == "Allocate" else "free" if kind == "Free" else "stage"
-        )
-        expected.append((label, tokens, sum(widths)))
-        assign(
-            source_values, zip(source_returned, widths, strict=True), str(len(expected))
-        )
-    assert actual == expected
+    assert_source_bit_view_calls(source_phase.decompose_bloq(), graph, phase_entry)
