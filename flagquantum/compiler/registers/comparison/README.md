@@ -40,3 +40,12 @@ graph owners. The comparison bit and network histories are retained logical
 outputs, while comparison temporaries are cleaned internally. The shortest
 checks are `tests/unit/test_sorting_declaration.py` and
 `tests/unit/test_sorting_foreign_file.py`.
+
+`controlled_equality_component.py` owns both scalar control polarities of Equals.
+It composes controlled word XOR, the shared zero predicate and restoration;
+negative activation adds literal X/positive-body/X. Predicate scratch is private,
+while the control, words and dirty target remain caller-owned. Run
+`python -m pytest tests/unit/test_controlled_equality_component.py -q` for the
+original calls, primitive operands/feedback, all small complex columns and
+complete erasure histories. Model Toffoli-to-T conversion is reported separately
+from physical CCX and T-family inventories.

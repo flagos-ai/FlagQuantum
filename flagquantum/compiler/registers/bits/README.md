@@ -130,3 +130,9 @@ storage. Symbolic signatures and models remain available without physical bindin
 Source-admitted shaped or directional children retain metadata but fail finite
 construction. Run `python -m pytest tests/unit/test_on_each_foreign_file.py -q`
 for actual foreign-library resolution, typed SDK consumers and original failures.
+
+`bitwise_component_control.py` also propagates one positive control through
+two-word XOR: each CNOT becomes the existing typed Toffoli, while Split/Join
+retain the control unchanged. No work or measurement is introduced. Controlled
+equality reuses this owner; its source primitive checks are in
+`tests/unit/test_controlled_equality_component.py`.
