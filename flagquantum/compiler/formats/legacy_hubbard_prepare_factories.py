@@ -8,6 +8,7 @@ from collections.abc import Callable, Mapping
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register
+from ...core.parameters import Parameter, ParameterExpression
 from ...core.value_math import SymbolicReal
 from ...errors import SerializationError
 from ..registers.layout.hubbard_signatures import hubbard_preparation_signature
@@ -17,7 +18,8 @@ from .legacy_modular_addition_factories import _integer
 from .legacy_rotation_factories import _real_argument
 from .legacy_word_factories import _rename_program
 
-_Angles = tuple[float, float]
+_Angle = float | Parameter | ParameterExpression
+_Angles = tuple[_Angle, _Angle]
 PreparationAngles = Callable[[int, SymbolicReal, SymbolicReal], _Angles | None]
 _Recipe = tuple[int, _Angles | None, bool]
 PreparationPairObserver = Callable[
