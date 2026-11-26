@@ -6,7 +6,6 @@
 
 from math import isfinite
 
-from ..algorithms.primitives.hubbard_prepare import _hubbard_preparation_angles
 from ..compiler.formats.legacy_block_encoding_factories import ControlledSelect
 from ..compiler.formats.legacy_component_resolution import ComponentFactory
 from ..compiler.formats.legacy_hubbard_packed_context import (
@@ -15,6 +14,7 @@ from ..compiler.formats.legacy_hubbard_packed_context import (
 from ..compiler.formats.legacy_packed_oracle_factories import OracleContext
 from ..core.value_math import SymbolicReal
 from ..errors import SerializationError
+from ..simulation.numerics.hubbard_coefficients import hubbard_preparation_angles
 
 
 def _prepare_angles(
@@ -22,7 +22,7 @@ def _prepare_angles(
 ) -> tuple[float, float] | None:
     if not isinstance(t, (int, float)) or not isinstance(u, (int, float)):
         return None
-    values = _hubbard_preparation_angles(size, t, u)
+    values = hubbard_preparation_angles(size, t, u)
     if not all(isfinite(value) for value in values):
         raise SerializationError("Hubbard preparation requires finite source angles")
     return values
