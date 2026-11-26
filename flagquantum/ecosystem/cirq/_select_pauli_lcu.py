@@ -11,7 +11,11 @@ from collections.abc import Sequence
 from typing import Any, cast
 
 from ...algorithms.primitives.multiplexers.select_pauli_lcu import SelectPauliLCU
-from .._pauli_select_rows import sign_of_real_pauli_word
+from .._pauli_select_rows import (
+    pauli_select_control,
+    pauli_select_width,
+    sign_of_real_pauli_word,
+)
 
 
 def select_pauli_lcu_from_cirq(source: object) -> SelectPauliLCU:
@@ -32,14 +36,9 @@ def select_pauli_lcu_from_cirq(source: object) -> SelectPauliLCU:
     except AttributeError as exc:
         raise TypeError("Cirq Pauli SELECT source is missing required fields") from exc
 
-    if type(selection_bitsize) is not int or selection_bitsize < 0:
-        raise ValueError("Cirq Pauli SELECT requires a nonnegative selection width")
-    if type(target_bitsize) is not int or target_bitsize < 0:
-        raise ValueError("Cirq Pauli SELECT requires a nonnegative target width")
-    if control_val is not None and (
-        type(control_val) is not int or control_val not in (0, 1)
-    ):
-        raise ValueError("Cirq Pauli SELECT control value must be zero, one or None")
+    selection_bitsize = pauli_select_width(selection_bitsize, "selection")
+    target_bitsize = pauli_select_width(target_bitsize, "target")
+    control_val = pauli_select_control(control_val)
     if not isinstance(select_unitaries, Sequence) or not select_unitaries:
         raise ValueError("Cirq Pauli SELECT requires at least one Pauli row")
 

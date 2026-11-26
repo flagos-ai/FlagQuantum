@@ -11,7 +11,11 @@ from ..compiler.registers.lookup.pauli_select_component import (
 )
 from ..core.ir.program import ProgramRecord
 from ..errors import SerializationError
-from ._pauli_select_rows import sign_of_real_pauli_word
+from ._pauli_select_rows import (
+    pauli_select_control,
+    pauli_select_width,
+    sign_of_real_pauli_word,
+)
 
 
 def capture_pauli_select_pair(source: object) -> tuple[ProgramRecord, ProgramRecord]:
@@ -32,8 +36,8 @@ def capture_pauli_select_pair(source: object) -> tuple[ProgramRecord, ProgramRec
                 "Source sign-of-real Pauli leaf is not unitary"
             ) from error
     return pauli_select_component_pair(
-        foreign.selection_bitsize,
-        foreign.target_bitsize,
+        pauli_select_width(foreign.selection_bitsize, "selection"),
+        pauli_select_width(foreign.target_bitsize, "target"),
         tuple(words),
-        control_value=foreign.control_val,
+        control_value=pauli_select_control(foreign.control_val),
     )

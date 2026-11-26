@@ -376,7 +376,7 @@ def test_imported_signed_rows_all_operator_columns_and_measurement_branches(
 @pytest.mark.parametrize(
     "changes,error,message",
     [
-        ({"selection_bitsize": True}, ValueError, "selection width"),
+        ({"selection_bitsize": 1.0}, ValueError, "selection width"),
         ({"target_bitsize": -1}, ValueError, "target width"),
         ({"control_val": 2}, ValueError, "control value"),
         ({"select_unitaries": ()}, ValueError, "at least one"),
