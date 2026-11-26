@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import torch
 
-from .contracts import PlatformRuntime
-from .registry import get_platform_runtime
+from ..contracts import PlatformRuntime
+from ..registry import get_platform_runtime
 
 
 def _peak_allocated_memory(

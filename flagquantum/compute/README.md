@@ -11,6 +11,8 @@ Simulation owns numerical kernels; Core owns cross-domain contracts.
 
 ## Ten-minute change path
 
+- Change private allocator peak observation in `local/_memory.py`; follow
+  [the local contributor path](local/README.md).
 - Change portable CPU or CUDA lifecycle behavior in `pytorch.py`.
 - Change lazy FlagOS/Torch-FL adaptation in `flagos.py`.
 - Change optional FlagGems operator replacement and validation in `flaggems.py`.

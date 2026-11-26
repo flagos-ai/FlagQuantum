@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from flagquantum.compute import _memory
+from flagquantum.compute.local import _memory
 
 pytestmark = pytest.mark.unit
 
