@@ -89,13 +89,19 @@ def test_complete_program_context_preserves_source_root_bit_operands_and_missing
     native, source, children = context(length)
     graph = native.program(*children)
     assert not verify_program_record(graph)
-    assert_source_bit_view_calls(source.decompose_bloq(), graph)
+    from tests.unit.test_component_graph import _native_trace, _source_trace
+    from tests.unit.test_projectile_nu_library import _named_inputs
+    from tests.unit.test_register_component_calls import SourceCalls
+
+    assert _named_inputs(_native_trace(graph)) == _named_inputs(
+        _source_trace(SourceCalls, source.decompose_bloq())
+    )
     assert len(graph.functions) > 30
-    assert {f.name for f in graph.functions if not f.blocks} == {
-        "scope",
-        "sort",
-        "duplicates",
+    missing = {f.registers for f in graph.functions if not f.blocks}
+    expected = {
+        child.registers for child in children[:3] if isinstance(child, FunctionRecord)
     }
+    assert missing == expected
     with pytest.raises(ValueError, match="component bodies"):
         bind_register_program(graph, ())
 

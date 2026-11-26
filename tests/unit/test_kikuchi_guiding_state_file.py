@@ -2,13 +2,15 @@
 
 from collections import Counter
 from itertools import product
+from typing import Any
 
 import pytest
 import sympy
 import torch
-from qualtran import DecomposeNotImplementedError
+from qualtran._infra.bloq import DecomposeNotImplementedError
 from qualtran.bloqs.optimization.k_xor_sat import kikuchi_guiding_state as source
-from qualtran.resource_counting import QECGatesCost, get_cost_value
+from qualtran.resource_counting._bloq_counts import QECGatesCost
+from qualtran.resource_counting._costing import get_cost_value
 
 from flagquantum.algorithms import kikuchi_guiding_state as native
 from flagquantum.circuit import Circuit
@@ -46,6 +48,7 @@ def test_all_factories_signatures_properties_and_seven_resource_categories(
             for r in getattr(expected, name)
         ]
     if isinstance(actual, native.GuidingState):
+        assert isinstance(expected, source.GuidingState)
         for field in (
             "c",
             "sort_ancilla_bitsize",
@@ -72,6 +75,7 @@ def test_all_factories_signatures_properties_and_seven_resource_categories(
             "x": 1,
         }
     else:
+        assert isinstance(expected, source.SimpleGuidingState)
         assert actual.phasegrad_bitsize == expected.phasegrad_bitsize
         assert actual.source_graph(root="root", preparation="prep").leaf_counts == {
             "prep": 1
@@ -170,6 +174,8 @@ def test_symbolic_uncompute_and_explicit_source_physical_boundaries() -> None:
         native.symbolic_scope_guiding_state().state_preparation
     prep = native.example_scope_guiding_state().state_preparation
     source_prep = source._simple_guiding_state()._state_prep_bloq
+    assert isinstance(source_prep.sparse_indices, tuple)
+    assert isinstance(source_prep.nonzero_coeffs, tuple)
     assert prep.target_width == source_prep.target_bitsize
     assert prep.phase_width == source_prep.phase_bitsize
     assert dict(zip(prep.indices, prep.coefficients, strict=True)) == dict(
@@ -213,8 +219,8 @@ def test_complete_source_and_original_tests_keep_frozen_blob_identity() -> None:
 def test_full_root_original_child_operands_and_native_typed_admission_boundary() -> (
     None
 ):
-    from qualtran.bloqs.arithmetic.lists import SortInPlace
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.bloqs.arithmetic.lists.sort_in_place import SortInPlace
+    from qualtran.resource_counting._call_graph import SympySymbolAllocator
 
     from flagquantum.compiler.registers.sorting.in_place_sort_declaration import (
         in_place_sort_signature,
@@ -228,21 +234,25 @@ def test_full_root_original_child_operands_and_native_typed_admission_boundary()
     from tests.unit.test_kikuchi_adjacency_file import identity
 
     original = source._guiding_state()
-    calls = original.build_call_graph(SympySymbolAllocator())
+    allocator: Any = SympySymbolAllocator
+    calls = original.build_call_graph(allocator())
     assert len(calls) == 6
     for child, multiplicity in calls.items():
         name = type(child).__name__
         assert multiplicity == (original.c if name == "SimpleGuidingState" else 1)
-        if name in ("SortInPlace", "HasDuplicates"):
+        from qualtran.bloqs.arithmetic.lists.has_duplicates import HasDuplicates
+        from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlX
+
+        if isinstance(child, (SortInPlace, HasDuplicates)):
             assert (
                 child.l == original.ell
                 and child.dtype.num_qubits == original.inst.index_bitsize
             )
-        elif name == "SimpleGuidingState":
+        elif isinstance(child, source.SimpleGuidingState):
             assert child.eps == original.eps / original.c
-        elif name == "ProbabilisticUncompute":
+        elif isinstance(child, source.ProbabilisticUncompute):
             assert child.bitsize == original.sort_ancilla_bitsize
-        elif name == "MultiControlX":
+        elif isinstance(child, MultiControlX):
             assert child.cvs == (0, 0)
         else:
             assert name == "XGate"
@@ -280,10 +290,22 @@ def test_full_root_original_child_operands_and_native_typed_admission_boundary()
     assert verify_program_record(program) == ()
     root = next(function for function in program.functions if function.name == "main")
     assert root.registers == tuple(actual.signature)
+    from dataclasses import replace
+
+    # The literal source root invokes packed adapters. Their enclosed child
+    # bodies retain exact identity modulo deterministic namespace isolation.
+    aliases = {
+        function.name: body.name
+        for body in bodies
+        for function in program.functions
+        if replace(function, name=body.name) == body
+    }
     child_calls = Counter(
-        operation.callee
-        for operation in root.blocks[0].operations
-        if operation.callee in {body.name for body in bodies}
+        aliases[operation.callee]
+        for function in program.functions
+        for block in function.blocks
+        for operation in block.operations
+        if operation.callee in aliases
     )
     assert child_calls == {
         "child_0": 2,

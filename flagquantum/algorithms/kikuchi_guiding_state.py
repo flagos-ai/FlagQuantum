@@ -29,10 +29,25 @@ from ..compiler.registers.control.multi_control import (
     multi_control_x_ir,
     source_multi_control_x_resource_formula,
 )
-from ..compiler.registers.control.multi_control_component import multi_control_x_program
+from ..compiler.registers.control.multi_control_component import (
+    controlled_word_x_program,
+    multi_control_x_program,
+)
+from ..compiler.registers.layout.auto_partition import AutoPartition
+from ..compiler.registers.layout.component_auto_partition import (
+    auto_partition_component_program,
+    auto_partition_signature,
+)
+from ..compiler.registers.layout.component_partition import (
+    partition_component_program,
+    partition_signature,
+)
 from ..compiler.registers.sorting.in_place_sort_declaration import (
     in_place_sort_signature,
     source_in_place_sort_resource_formula,
+)
+from ..compiler.registers.sorting.sorted_duplicates_component import (
+    sorted_duplicates_program,
 )
 from ..compiler.registers.sorting.sorted_duplicates_resource_model import (
     source_sorted_duplicates_gate_cost,
@@ -48,6 +63,7 @@ from ..core.ir.program.register_types import (
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from ..core.value_math import SymbolicInt, SymbolicReal, ceil, log2, pi
+from ..core.value_parameters import is_symbolic_value
 from .kxor_instance import Constraint, KXorInstance
 from .primitives._block_binding import _BoundBlockOperation, _validate_block_work
 from .primitives.prepare_oracle import PrepareOracle
@@ -164,16 +180,13 @@ class ProbabilisticUncompute:
         )["q"]
         assert isinstance(prepared, RegisterBinding)
         result = builder.call_program(
-            multi_control_x_program((0,) * self.bitsize),
-            {
-                "controls": np.asarray(builder.split(prepared), dtype=object),
-                "target": builder.inputs["flag"],
-            },
+            controlled_word_x_program((0,) * self.bitsize),
+            {"ctrl": prepared, "q": builder.inputs["flag"]},
         )
         return builder.finalize(
             {
-                "q": builder.join(np.asarray(result["controls"]).flat),
-                "flag": result["target"],
+                "q": result["ctrl"],
+                "flag": result["q"],
             }
         )
 
@@ -308,29 +321,30 @@ class GuidingState(PrepareOracle):
 
     def program(
         self,
-        preparation: FunctionRecord | ProgramRecord,
-        sorting: FunctionRecord | ProgramRecord,
-        duplicates: FunctionRecord | ProgramRecord,
-        uncompute: FunctionRecord | ProgramRecord,
-        flag_predicate: FunctionRecord | ProgramRecord,
-        flag_x: FunctionRecord | ProgramRecord,
+        preparation: FunctionRecord | ProgramRecord | None = None,
+        sorting: FunctionRecord | ProgramRecord | None = None,
+        duplicates: FunctionRecord | ProgramRecord | None = None,
+        uncompute: FunctionRecord | ProgramRecord | None = None,
+        flag_predicate: FunctionRecord | ProgramRecord | None = None,
+        flag_x: FunctionRecord | ProgramRecord | None = None,
     ) -> ProgramRecord:
         """Bind all six original child roles through shared packed-word rebindings.
 
         Every child must carry its actual source signature, including the
-        bounded pi array. Complete Programs retain their helper definitions and
-        private work ownership. FunctionRecord callers preserve their existing
-        construction unchanged. Callers supply child bodies and their independent
-        physical evidence for source-declaration-only sorting and preparation.
+        bounded pi array. Complete Programs retain helper definitions and private
+        work. The literal Partition/AutoPartition source recipe also admits
+        symbolic word widths with a concrete scope count. Unknown child arrays
+        remain declarations behind packed interfaces; no finite body is invented.
+        Omitted preparation and sorting bodies remain declarations; concrete
+        duplicate detection, uncompute and flag defaults reuse their owners.
+        Duplicate detection retains the original inverse aliases. Callers supply
+        independent missing bodies for physical execution.
         """
         count, length, width = self.c, self.ell, self.inst.index_bitsize
         scratch_width = self.sort_ancilla_bitsize
-        if not all(
-            type(value) is int for value in (count, length, width, scratch_width)
-        ):
-            raise ValueError("Guiding-state program requires concrete partition sizes")
-        assert isinstance(count, int) and isinstance(length, int)
-        assert isinstance(width, int) and isinstance(scratch_width, int)
+        if type(count) is not int:
+            raise ValueError("Guiding-state program requires a concrete scope count")
+        assert isinstance(count, int)
         signatures = (
             self.scope_guiding_state.signature,
             in_place_sort_signature(length, unsigned_register_type(width)),
@@ -349,14 +363,53 @@ class GuidingState(PrepareOracle):
             ),
             Signature.build(q=1),
         )
-        children = (
-            preparation,
-            sorting,
-            duplicates,
-            uncompute,
-            flag_predicate,
-            flag_x,
+        supplied = (preparation, sorting, duplicates, uncompute, flag_predicate, flag_x)
+        names = (
+            "scope_guiding_state",
+            "sort_in_place",
+            "has_duplicates",
+            "probabilistic_uncompute",
+            "zero_flags",
+            "flag_x",
         )
+        children = tuple(
+            (
+                FunctionRecord(name, (), registers=tuple(signature))
+                if child is None
+                else child
+            )
+            for name, signature, child in zip(names, signatures, supplied, strict=True)
+        )
+        if (
+            duplicates is None
+            and type(length) is int
+            and length > 1
+            and type(width) is int
+            and width > 0
+        ):
+            children = (
+                *children[:2],
+                sorted_duplicates_program(length, unsigned_register_type(width)),
+                *children[3:],
+            )
+        if uncompute is None and type(scratch_width) is int and scratch_width > 0:
+            children = (
+                *children[:3],
+                ProbabilisticUncompute(scratch_width).program(),
+                *children[4:],
+            )
+        if flag_predicate is None:
+            children = (*children[:4], multi_control_x_program((0, 0)), children[5])
+        if flag_x is None:
+            children = (
+                *children[:5],
+                bit_gate_function(
+                    "flag_x",
+                    tuple(signatures[5]),
+                    CircuitIR(1, (Instruction("x", (0,)),)),
+                ),
+            )
+        preparation, sorting, duplicates, uncompute, flag_predicate, flag_x = children
         if any(
             isinstance(child, ProgramRecord) and not child.functions
             for child in children
@@ -385,78 +438,122 @@ class GuidingState(PrepareOracle):
                 )
             return builder.call_dict(child.name, bindings)
 
-        target, ancilla = builder.inputs["T"], builder.inputs["ancilla"]
-        assert isinstance(target, RegisterBinding) and isinstance(
-            ancilla, RegisterBinding
-        )
-        ancilla_bits = builder.split(ancilla)
-        flags = list(ancilla_bits[scratch_width:])
-        scratch = builder.join(ancilla_bits[:scratch_width])
-        scope_width = self.scope_guiding_state.target_bitsize
-        assert isinstance(scope_width, int)
-        target_bits = builder.split(target)
-        scope_bits: list[RegisterBinding] = []
-        for index in range(count):
-            scope = builder.join(
-                target_bits[index * scope_width : (index + 1) * scope_width]
+        def partition(
+            parts: tuple[Register, ...],
+            bindings: dict[str, object],
+            *,
+            reverse: bool = False,
+        ) -> dict[str, BindingCollection]:
+            if all(type(register.bitsize) is int for register in parts):
+                module = partition_component_program(parts, "partition", reverse)
+            else:
+                module = ProgramRecord(
+                    (
+                        FunctionRecord(
+                            "partition",
+                            (),
+                            registers=tuple(
+                                partition_signature(parts, reverse=reverse)
+                            ),
+                        ),
+                    )
+                )
+            return builder.call_program(module, bindings, entry="partition")
+
+        def packed(
+            child: FunctionRecord | ProgramRecord,
+            layout: AutoPartition,
+            ports: tuple[Register, ...],
+            bindings: dict[str, object],
+        ) -> dict[str, BindingCollection]:
+            module = (
+                child if isinstance(child, ProgramRecord) else ProgramRecord((child,))
             )
-            result = call(preparation, {"S": scope})["S"]
-            assert isinstance(result, RegisterBinding)
-            scope_bits.extend(builder.split(result))
-        target_bits = np.asarray(scope_bits, dtype=np.object_)
-        xs = np.asarray(
-            [
-                builder.join(
-                    target_bits[index * width : (index + 1) * width],
-                    unsigned_register_type(width),
+            root = module.functions[0]
+            assert root.registers is not None
+            name = root.name + "_packed"
+            while any(function.name == name for function in module.functions):
+                name += "_view"
+            if any(
+                is_symbolic_value(*register.shape_symbolic)
+                for register in root.registers
+            ):
+                # The original root exposes only packed words here. A symbolic
+                # child array cannot be materialized as a finite call body.
+                outer = auto_partition_signature(
+                    Signature(root.registers), layout, packed_ports=ports
                 )
-                for index in range(length)
-            ],
-            dtype=object,
-        )
-        scratch_bits = builder.split(scratch)
-        rank_type = signatures[1].get_left("pi").dtype
-        rank_width = rank_type.num_qubits
-        assert isinstance(rank_width, int)
-        pi_words = np.asarray(
-            [
-                builder.join(
-                    scratch_bits[index * rank_width : (index + 1) * rank_width],
-                    rank_type,
+                module = ProgramRecord(
+                    (
+                        FunctionRecord(name, (), registers=tuple(outer)),
+                        *module.functions,
+                    )
                 )
-                for index in range(length)
-            ],
-            dtype=object,
+            else:
+                module = auto_partition_component_program(
+                    module,
+                    layout,
+                    entry=root.name,
+                    name=name,
+                    packed_ports=ports,
+                )
+            return builder.call_program(module, bindings, entry=name)
+
+        ancilla_parts = (
+            Register("ancilla", opaque_register_type(scratch_width)),
+            Register("flags", quantum_bit_type(), shape=(3,)),
         )
-        sorted_outputs = call(sorting, {"xs": xs, "pi": pi_words})
-        checked = call(duplicates, {"xs": sorted_outputs["xs"], "flag": flags[0]})
+        unpacked = partition(ancilla_parts, {"x": builder.inputs["ancilla"]})
+        flags = np.asarray(unpacked["flags"], dtype=object).copy()
+        scratch = unpacked["ancilla"]
+        scope_parts = (
+            Register(
+                "S",
+                opaque_register_type(self.scope_guiding_state.target_bitsize),
+                shape=(count,),
+            ),
+        )
+        scopes = np.asarray(
+            partition(scope_parts, {"x": builder.inputs["T"]})["S"], dtype=object
+        ).copy()
+        for index in range(count):
+            scopes[index] = call(preparation, {"S": scopes[index]})["S"]
+        target = partition(scope_parts, {"S": scopes}, reverse=True)["x"]
+        sorted_outputs = packed(
+            sorting,
+            AutoPartition(
+                (
+                    ("T", (("xs", self.target_bitsize),)),
+                    ("ancilla", (("pi", scratch_width),)),
+                )
+            ),
+            (
+                Register("T", opaque_register_type(self.target_bitsize)),
+                Register("ancilla", opaque_register_type(scratch_width)),
+            ),
+            {"T": target, "ancilla": scratch},
+        )
+        checked = packed(
+            duplicates,
+            AutoPartition(
+                (("T", (("xs", self.target_bitsize),)), ("flag", (("flag", 1),)))
+            ),
+            (
+                Register("T", opaque_register_type(self.target_bitsize)),
+                Register("flag", quantum_bit_type()),
+            ),
+            {"T": sorted_outputs["T"], "flag": flags[0]},
+        )
         flags[0] = checked["flag"]
-        scratch = builder.join(
-            [
-                bit
-                for word in np.asarray(sorted_outputs["pi"]).flat
-                for bit in builder.split(word)
-            ]
-        )
-        erased = call(uncompute, {"q": scratch, "flag": flags[1]})
+        erased = call(uncompute, {"q": sorted_outputs["ancilla"], "flag": flags[1]})
         flags[1] = erased["flag"]
-        marked = call(
-            flag_predicate,
-            {"controls": np.asarray(flags[:2], dtype=object), "target": flags[2]},
-        )
-        flags[:2] = list(np.asarray(marked["controls"]).flat)
+        marked = call(flag_predicate, {"controls": flags[:2], "target": flags[2]})
+        flags[:2] = marked["controls"]
         flags[2] = call(flag_x, {"q": marked["target"]})["q"]
-        target = builder.join(
-            [
-                bit
-                for word in np.asarray(checked["xs"]).flat
-                for bit in builder.split(word)
-            ]
-        )
-        erased_scratch = erased["q"]
-        assert isinstance(erased_scratch, RegisterBinding)
-        ancilla = builder.join([*builder.split(erased_scratch), *flags])
-        return builder.finalize({"T": target, "ancilla": ancilla})
+        ancilla = partition(
+            ancilla_parts, {"ancilla": erased["q"], "flags": flags}, reverse=True
+        )["x"]
+        return builder.finalize({"T": checked["T"], "ancilla": ancilla})
 
 
 def example_scope_guiding_state() -> ScopeGuidingState:
