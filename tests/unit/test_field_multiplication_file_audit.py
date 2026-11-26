@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
-import numpy as np
 import pytest
 
 from examples.algorithms.field_addition_catalog import field_signature_svg
@@ -70,6 +69,7 @@ def _source_key(node: Any) -> Any:
         MultiplyPolyByOnePlusXk,
         SynthesizeLRCircuit,
     )
+    from qualtran.symbolics.types import Shaped
 
     if isinstance(node, CNOT):
         return CX
@@ -80,7 +80,7 @@ def _source_key(node: Any) -> Any:
     if isinstance(node, MultiplyPolyByOnePlusXk):
         return ("one_plus", node.n, node.k)
     if isinstance(node, SynthesizeLRCircuit):
-        assert isinstance(node.matrix, np.ndarray)
+        assert not isinstance(node.matrix, Shaped)
         return ("linear", tuple(tuple(int(b) for b in row) for row in node.matrix))
     if isinstance(node, (GF2ShiftRight, GF2ShiftLeft)):
         q = node.qgf

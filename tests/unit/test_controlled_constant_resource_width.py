@@ -8,7 +8,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Literal, get_args
 
-import numpy as np
 import pytest
 from qualtran._infra.bloq import Bloq
 from sympy import Integer
@@ -91,11 +90,12 @@ def source_for(call: ArithmeticCall) -> Any:
 def source_key(source: Any, root: ArithmeticCall | None = None) -> ResourceCall:
     from qualtran._infra.controlled import Controlled
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+    from qualtran.symbolics.types import Shaped
 
     if root is not None and source == source_for(root):
         return root
     if isinstance(source, (Controlled, ControlledViaAnd)):
-        assert isinstance(source.ctrl_spec.cvs[0], np.ndarray)
+        assert not isinstance(source.ctrl_spec.cvs[0], Shaped)
         call = plain_source_key(source.subbloq)
         assert isinstance(call, ArithmeticCall)
         assert call.operation in {"constant_add", "xor_constant"}

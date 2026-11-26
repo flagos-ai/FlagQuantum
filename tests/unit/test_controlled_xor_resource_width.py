@@ -8,7 +8,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, get_args
 
-import numpy as np
 import pytest
 from sympy import Integer, Symbol
 
@@ -85,11 +84,12 @@ def source_key(source: Any, root: ArithmeticCall) -> ResourceCall:
     from qualtran.bloqs.bookkeeping.join import Join
     from qualtran.bloqs.bookkeeping.split import Split
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+    from qualtran.symbolics.types import Shaped
 
     if source == source_for(root):
         return root
     if isinstance(source, (Controlled, ControlledViaAnd)):
-        assert isinstance(source.ctrl_spec.cvs[0], np.ndarray)
+        assert not isinstance(source.ctrl_spec.cvs[0], Shaped)
         return replace(
             root, control_value=int(source.ctrl_spec.cvs[0].item()), adjoint=False
         )
