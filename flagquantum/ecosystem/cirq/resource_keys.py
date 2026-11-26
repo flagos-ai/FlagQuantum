@@ -174,6 +174,21 @@ def _controlled_key(
         compound = compound_control_key(key, controls)
         if compound is not None:
             return compound
+    if isinstance(key, ResourceSequenceCall):
+        # The raw SDK wrapper's positive control distributes across declared
+        # calls. Nondefault activation reduces once around that positive body.
+        children = []
+        for child in key.calls:
+            controlled = _controlled_key(child, (1,))
+            if controlled is None:
+                return None
+            children.append(controlled)
+        positive_body = ResourceSequenceCall(tuple(children))
+        return (
+            positive_body
+            if controls == (1,)
+            else PredicateControlledCall(positive_body, controls)
+        )
     positive = _single_positive_key(key)
     if positive is None or controls == (1,):
         return positive

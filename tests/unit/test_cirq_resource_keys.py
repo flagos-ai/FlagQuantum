@@ -101,7 +101,21 @@ def test_controlled_scalar_uses_source_phase_model(
 @pytest.mark.parametrize("depth", (1, 2, 3))
 @pytest.mark.parametrize(
     "kind",
-    ("matrix", "diag1", "diag2", "diag3", "iswap", "iswap_t", "iswap_s", "iswap_zero"),
+    (
+        "matrix",
+        "diag1",
+        "diag2",
+        "diag3",
+        "iswap",
+        "iswap_t",
+        "iswap_s",
+        "iswap_zero",
+        "ccx",
+        "ccx_half",
+        "ccx_integer",
+        "ccx_zero",
+        "ccx_symbolic",
+    ),
 )
 def test_controlled_external_declared_cost_closes_source_child_models(
     controls: tuple[int, ...],
@@ -119,28 +133,42 @@ def test_controlled_external_declared_cost_closes_source_child_models(
     from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.ecosystem.cirq._decompose import decompose_cirq_once
-    from flagquantum.ecosystem.cirq.resource_keys import _controlled_key
+    from flagquantum.ecosystem.cirq.resource_keys import (
+        _controlled_key,
+        cirq_mapped_gate_resource_key,
+    )
 
-    gate = (
-        cirq.DiagonalGate(
+    if kind.startswith("diag"):
+        gate = cirq.DiagonalGate(
             tuple(
                 0.13 + 0.07 * i * i - 0.11 * (i % 3) for i in range(1 << int(kind[-1]))
             )
         )
-        if kind.startswith("diag")
-        else (
-            cirq.ISwapPowGate(
-                exponent={
-                    "iswap": 0.375,
-                    "iswap_t": 0.5,
-                    "iswap_s": 1.0,
-                    "iswap_zero": 0.0,
-                }[kind]
-            )
-            if kind.startswith("iswap")
-            else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+    elif kind.startswith("iswap"):
+        gate = cirq.ISwapPowGate(
+            exponent={
+                "iswap": 0.375,
+                "iswap_t": 0.5,
+                "iswap_s": 1.0,
+                "iswap_zero": 0.0,
+            }[kind]
         )
-    )
+    elif kind == "ccx_symbolic":
+        import sympy
+
+        gate = cirq.CCXPowGate(exponent=sympy.Symbol("theta"))
+    elif kind.startswith("ccx"):
+        gate = cirq.CCXPowGate(
+            exponent={
+                "ccx": 0.375,
+                "ccx_half": 0.5,
+                "ccx_integer": 1.0,
+                "ccx_zero": 0.0,
+            }[kind]
+        )
+    else:
+        assert kind == "matrix"
+        gate = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
     source: Bloq = Controlled(
         CirqGateAsBloq(gate),
         CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
@@ -151,7 +179,7 @@ def test_controlled_external_declared_cost_closes_source_child_models(
     assert children is not None and children
     keys = []
     for child in children:
-        key = _controlled_key(cirq_gate_resource_key(child.gate), controls)
+        key = _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
         assert key is not None
         keys.append(key)
     expected = get_cost_value(source, QECGatesCost())

@@ -541,6 +541,10 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         "iswap_t",
         "iswap_s",
         "iswap_zero",
+        "ccx",
+        "ccx_half",
+        "ccx_integer",
+        "ccx_zero",
     ),
 )
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
@@ -572,30 +576,35 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         "array": CtrlSpec(cvs=np.array([0, 1])),
         "word": CtrlSpec(qdtypes=QUInt(2), cvs=1),
     }[control]
-    raw = (
-        cirq.DiagonalGate(
+    if kind.startswith("diag"):
+        raw = cirq.DiagonalGate(
             tuple(
                 0.13 + 0.07 * i * i - 0.11 * (i % 3) for i in range(1 << int(kind[-1]))
             )
         )
-        if kind.startswith("diag")
-        else (
-            cirq.SwapPowGate(exponent=0.375)
-            if kind == "swap"
-            else (
-                cirq.ISwapPowGate(
-                    exponent={
-                        "iswap": 0.375,
-                        "iswap_t": 0.5,
-                        "iswap_s": 1.0,
-                        "iswap_zero": 0.0,
-                    }[kind]
-                )
-                if kind.startswith("iswap")
-                else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
-            )
+    elif kind == "swap":
+        raw = cirq.SwapPowGate(exponent=0.375)
+    elif kind.startswith("iswap"):
+        raw = cirq.ISwapPowGate(
+            exponent={
+                "iswap": 0.375,
+                "iswap_t": 0.5,
+                "iswap_s": 1.0,
+                "iswap_zero": 0.0,
+            }[kind]
         )
-    )
+    elif kind.startswith("ccx"):
+        raw = cirq.CCXPowGate(
+            exponent={
+                "ccx": 0.375,
+                "ccx_half": 0.5,
+                "ccx_integer": 1.0,
+                "ccx_zero": 0.0,
+            }[kind]
+        )
+    else:
+        assert kind == "matrix1"
+        raw = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
     source: Bloq = Controlled(locked_source.CirqGateAsBloq(raw), spec)
     for _ in range(depth):
         source = Adjoint(source)
@@ -612,7 +621,11 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             )
         )
         if kind.startswith("diag")
-        else (3 if kind == "swap" else (8 if kind.startswith("iswap") else 4))
+        else (
+            3
+            if kind == "swap" or kind.startswith("ccx")
+            else (8 if kind.startswith("iswap") else 4)
+        )
     )
     assert len(children) == child_count
     if kind == "swap" and control == "positive":
@@ -799,7 +812,7 @@ def test_zero_target_diagonal_retains_original_gray_code_failure(
 
 
 @pytest.mark.parametrize("value", (0.375, 0.5, 0.0))
-def test_symbolic_controlled_iswap_retains_the_unbound_source_graph(
+def test_symbolic_controlled_power_retains_the_unbound_source_graph(
     value: float, locked_source: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from itertools import product
@@ -813,21 +826,25 @@ def test_symbolic_controlled_iswap_retains_the_unbound_source_graph(
     from tests.unit.register_source_graph import assert_source_wire_streams
 
     theta = sympy.Symbol("theta")
+    gate_type = cirq.ISwapPowGate
+    logical = 3
     source = Adjoint(
-        Controlled(
-            locked_source.CirqGateAsBloq(cirq.ISwapPowGate(exponent=theta)), CtrlSpec()
-        )
+        Controlled(locked_source.CirqGateAsBloq(gate_type(exponent=theta)), CtrlSpec())
     )
     library = _library(source, 0)
     reference = import_register_emitter(source).snapshots[0]
     expected = torch.tensor(
-        cirq.unitary(cirq.ISwapPowGate(exponent=-value).controlled()),
+        cirq.unitary(gate_type(exponent=-value).controlled()),
         dtype=torch.complex128,
     )
     with monkeypatch.context() as patch:
         patch.setitem(sys.modules, "qualtran", None)
         program = resolve_component_program(library, 0, cirq_gate_library_factories())
-        bound = bind_register_program(program, ((0,), (1,), (2,)), clean=(3, 4))
+        bound = bind_register_program(
+            program,
+            tuple((i,) for i in range(logical)),
+            clean=(logical, logical + 1),
+        )
         patch.setitem(sys.modules, "cirq", None)
         actual = (
             Circuit(bound.circuit.n_wires, dtype=torch.complex128)
@@ -842,19 +859,44 @@ def test_symbolic_controlled_iswap_retains_the_unbound_source_graph(
             .to_ir()
         )
         assert_source_wire_streams(actual.instructions, captured.instructions)
-        # Binding does not rerun concrete S/T constructor dispatch. Both source
-        # and native symbolic graphs retain the original two measured erasures.
-        assert sum(op.name == "measure" for op in actual.instructions) == 2
-        stride = 1 << (actual.n_wires - 3)
-        for column in range(8):
+        # Binding does not rerun concrete constructor dispatch. The ISwap
+        # symbolic graph retains its two measured erasures.
+        count = 2
+        assert sum(op.name == "measure" for op in actual.instructions) == count
+        stride = 1 << (actual.n_wires - logical)
+        for column in range(1 << logical):
             initial = torch.zeros(1 << actual.n_wires, dtype=torch.complex128)
             initial[column * stride] = 1
             target = torch.zeros_like(initial)
-            target[::stride] = expected[:, column] / 2
-            for history in product((0, 1), repeat=2):
+            target[::stride] = expected[:, column] / (2 if count else 1)
+            for history in product((0, 1), repeat=count):
                 torch.testing.assert_close(
                     forced_branch(initial, actual.instructions, history),
                     target,
                     atol=3e-12,
                     rtol=0,
                 )
+
+
+def test_symbolic_controlled_ccx_retains_unavailable_source_execution(
+    locked_source: Any,
+) -> None:
+    import sympy
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+
+    source = Adjoint(
+        Controlled(
+            locked_source.CirqGateAsBloq(
+                cirq.CCXPowGate(exponent=sympy.Symbol("theta"))
+            ),
+            CtrlSpec(),
+        )
+    )
+    assert tuple(source.decompose_bloq().iter_bloqnections())
+    with pytest.raises(ValueError, match="primitive cannot be decomposed"):
+        import_register_emitter(source)
+    with pytest.raises(SerializationError, match="unsupported_operation"):
+        resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())

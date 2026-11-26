@@ -445,3 +445,51 @@ The batch passes 397 concentrated cases plus three symbolic cases in each
 actual SDK environment, and 145 local integration cases. Strict typing,
 formatting, scopes, language, links, architecture, IR and API checks pass.
 All 24 existing complete Programs and bindings match published `3fe0c1fe9`.
+
+### Controlled CCXPow root and nested declaration costs
+
+CCXPow numeric roots now have full execution and resource evidence across
+general 0.375, half, integer and zero exponents; positive, negative, array and
+word controls; and three explicit adjoint depths. They reuse the previous
+Hadamard owner and existing raw SDK CCZ execution view. Each root retains its
+three source children, their ports and literal primitive streams. Complete
+complex operators, restored work, source-free resolution and SDK-free append
+pass. These physical paths have no measurements or private work.
+
+The remaining model gap was the raw CCZ child's declared sequence. The SDK
+resource mapper now reuses the existing sequence and predicate call types:
+positive control distributes over that child's declared calls, while a
+nondefault activation is reduced once around the resulting positive body.
+Reducing a negative activation at every nested call would overcount Cliffords;
+it is not the original ControlledViaAnd call chain. Unknown child models still
+decline. Compiler remains the owner of all QEC arithmetic. No resource schema,
+public API or numerical execution path changes.
+
+| Exponent | Actual positive / negative / two-bit-control primitives | Independent positive QEC model |
+| --- | --- | --- |
+| 0.375 or 0.5 | 36 / 78 / 182 | Toffoli 8, And 7, Clifford 15, rotation 11, measurement 7 |
+| 1 | 36 / 78 / 182 | Toffoli 8, Clifford 8, rotation 11 |
+| 0 | 10 / 52 / 142 | Toffoli 8, And 7, Clifford 22, rotation 4, measurement 7 |
+
+All 48 physical/model receipts match the original inventories and seven QEC
+categories separately. The model may contain measured And cleanup while the
+actual SDK path has none. Three-control costs are model-only. No independent
+generic composite peak estimator or fully synthesized Clifford+T count is
+inferred from these results.
+
+The original symbolic CCXPow graph and QEC model are available, and all seven
+native model categories match under four activation patterns and three adjoint
+depths. The original symbolic multi-controlled phase cannot be captured into
+executable primitives. Native resolution retains an explicit unsupported
+operation error. This is recorded as unavailable source execution, not an
+accepted physical symbolic path or a waiver of the remaining parent scope.
+
+Existing 24 complete Programs and bindings match published `2841843b9`.
+QFT and PauliStringPhasor nested controlled children, other exact named controls
+and child-private allocations remain open, along with the previously recorded
+source failures. Whole-file serialization/resolver acceptance is unchanged.
+
+The concentrated batch passes 509 cases without skips in each actual
+Cirq 1.7.0/Qiskit 2.5.0 and Cirq 1.6.1/Qiskit 2.0.0 environment. Local
+integration passes 145 cases. Three Python files pass strict typing,
+Black/Ruff, owner scopes, language, links, architecture, IR and API checks.
