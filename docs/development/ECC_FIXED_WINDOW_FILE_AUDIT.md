@@ -63,3 +63,58 @@ tests plus both tests of the original call-graph parameter matrix.
 Q-0459 closes as a test file. Q-0458 retains executable boundaries for the
 opaque fixed-point operation and symbolic lookup metadata, and inherits
 the coordinate and release gaps from Q-0457.
+
+## Stored constructor and direct dependency closure
+
+The complete `ec_add_r.py` now has owned Ecosystem constructors for ECAddR and
+ECWindowAddR. Scalar ECAddR and symbolic windows retain typed declarations when
+the source provides no concrete body. Ordinary concrete windows compose the
+literal five calls, including three optional junk banks, through existing
+Compiler QROAM and six-stage ECAdd owners. Algorithms remains authoritative for
+point arithmetic, signatures and table generation; Compiler performs no numerical
+evaluation and imports no SDK or Algorithms implementation.
+
+The original source connects nominal QAny/unsigned lookup words to Montgomery
+ports without converting their bits. Native typing uses an explicit five-word
+wrapper with ten Casts and one ECAdd call. These casts preserve MSB order,
+source a/b/x/y/lam_r return order, leases and raw encodings, and emit no gates.
+The root still has five comparable source calls. Original serialized libraries
+at depths zero and two resolve without Qualtran, Cirq or Qiskit imports. The
+unchanged `_ec_window_add_r_small` example (16 bits, modulus 7, address width 4)
+constructs 8,507 definitions and the same root graph; no dense execution is
+claimed for that fixture.
+
+Default source resolution retains the original QROAMCleanAdjoint declaration,
+so whole physical binding refuses. The execution conformance test explicitly
+replaces its wrapper with `qroam_measurement_erasure_program`, leaving every
+consumer unchanged. It verifies all 136 address/point columns across address
+widths one and five, absolute complex amplitudes, every applicable raw erasure
+history, returned coordinate leases and zero private work. Independent sparse
+executions use coherent complex weights and two outcome seeds with SDKs blocked.
+The forward table child is definition-identical to the existing owned lookup,
+whose original gates, operands and feedback are compared on these exact tables.
+
+The shared history checker recognizes a relative-swap block only if every
+primitive matches the literal source sequence. It retains the minus sign on
+each dirty 111 triple. Complete small complex maps for widths one, two and three,
+both directions, and missing-rotation counterexamples ground this lemma.
+
+| Address width, n=3, modulus=3 | Explicit native instructions | T/T-dagger | CCX | Measurements | Live peak / pool | Source default T estimate | Source measurements / peak |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 36,351 | 7,640 | 19 | 1,451 | 59 / 59 | 6,708 | 1,322 / 59 |
+| 5 | 37,476 | 7,824 | 19 | 1,488 | 72 / 72 | 6,832 | 1,336 / 72 |
+
+The earlier table describes the existing flat operation. This table describes
+the typed root with explicitly selected native bank erasure and exact arithmetic
+adjoints. Five inner measured lookup cleanups add 120 H, 120 measurements,
+120 conditional X and 60 conditional Z, and remove 60 CX, compared with the
+old reverse-forward cleanup. The outer bank erasure is also explicitly native.
+Source CSwap/Toffoli model conventions remain distinct from actual T/CCX gates.
+No full original primitive stream exists through the model-only erase leaf.
+
+Previously accepted original test-file, 132 classical callback and 16 model-case
+receipts are reused. Q-0458 stays open: scalar opaque quantum execution, symbolic
+lookup execution, the generic controlled RIGHT-output QROAM refusal and the
+inherited mod-5 release, coordinate and wider-window defects are not waived.
+This batch does not repair or edit the frozen source and does not claim the
+small valid curve domain covers arbitrary coordinates or larger curves.

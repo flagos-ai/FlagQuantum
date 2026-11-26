@@ -18,33 +18,37 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 94 |
-| Union of exact native registrations | 255 |
-| Keys without an exact factory in these providers | 48 |
+| Keys reachable through Ecosystem providers | 95 |
+| Union of exact native registrations | 256 |
+| Keys without an exact factory in these providers | 47 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
 The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine
 finite first-quantization constructors, five single-factorization, six double-
 factorization, two chemistry lookup, two RSA/shim and seven ECC addition
-constructors add 52 unique Ecosystem keys. These are registration facts, not
+constructors and one ECC window root add 53 unique Ecosystem keys. These are registration facts, not
 accepted constructor totals. The ECC family includes all six literal stages and
 its root, with source-success libraries 0/1/2, complex channels, explicit work
 ownership and separate measured/model inventories. Its upstream release,
 coordinate and model-only lookup boundaries remain open; see
 [ECC_ADDITION_FILE_AUDIT.md](ECC_ADDITION_FILE_AUDIT.md).
+The point-window root retains the original model-only erasure; explicit native
+measured replacement is verified separately. Scalar ECAddR is also declared but
+is absent from the frozen 303-key registry. See
+[ECC_FIXED_WINDOW_FILE_AUDIT.md](ECC_FIXED_WINDOW_FILE_AUDIT.md).
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 48 keys without exact factories have these distinct source roles:
+The 47 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 40 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 39 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -286,7 +290,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse` | `qualtran/bloqs/mod_arithmetic/mod_division.py` | `compiler/formats/legacy_modular_inverse_factories.py:modular_inverse_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration` | `qualtran/bloqs/mod_arithmetic/mod_division.py` | `compiler/formats/legacy_modular_inverse_factories.py:modular_inverse_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.cryptography._factoring_shims.MeasureQFT` | `qualtran/bloqs/cryptography/_factoring_shims.py` | `ecosystem/_rsa_component_library.py:rsa_component_factories` | Literal finite root and symbolic metadata; original terminal CBit failure remains a bodyless declaration; [audit](RSA_PHASE_FILE_AUDIT.md) |
-| `qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR` | `qualtran/bloqs/cryptography/ecc/ec_add_r.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR` | `qualtran/bloqs/cryptography/ecc/ec_add_r.py` | `ecosystem/_elliptic_curve_window_library.py:elliptic_curve_window_factories` | Complete original five-call root and typed QROAM/ECAdd closure; explicit native measured erase; source opaque/symbolic and curve defects retained. See ECC_FIXED_WINDOW_FILE_AUDIT.md |
 | `qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepOne` | `qualtran/bloqs/cryptography/ecc/ec_add.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepTwo` | `qualtran/bloqs/cryptography/ecc/ec_add.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepThree` | `qualtran/bloqs/cryptography/ecc/ec_add.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |

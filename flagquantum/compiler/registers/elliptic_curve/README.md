@@ -20,7 +20,18 @@ explicitly transfer input ownership and use the returned layouts. The root
 exposes only a, b, x, y and lam_r, with zero private work on its source promise. Source defects and unsupported boundaries
 remain documented in `docs/development/ECC_ADDITION_FILE_AUDIT.md`.
 
+`window_addition_component.py` composes the original five-call point-window
+root: Join, clean lookup, curve addition, matching bank erasure and Split.
+Its five-word view wrapper preserves source port order and raw Montgomery bits
+across nominal lookup/coordinate types, using ten zero-gate Casts. Three optional
+junk banks bypass arithmetic and remain owned until erasure consumes them.
+Ecosystem supplies the Algorithms-owned table and signatures. The default source
+erase leaf remains bodyless; callers may explicitly supply the separately
+certified native measured erasure. See
+`docs/development/ECC_FIXED_WINDOW_FILE_AUDIT.md` for this distinction.
+
 For a typical change, edit the owning stage and run
 `tests/unit/test_elliptic_curve_addition_components.py` with the locked reference
 environment. Check typed outputs, recursive primitive operands and feedback,
 complex amplitudes, private cleanup and actual versus modeled resources.
+For the window root, use `tests/unit/test_elliptic_curve_window_components.py`.

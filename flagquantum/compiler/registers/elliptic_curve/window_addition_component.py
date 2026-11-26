@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Literal root calls from Qualtran v0.7.0 cryptography/ecc/ec_add_r.py.
 
