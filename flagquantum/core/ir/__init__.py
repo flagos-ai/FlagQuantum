@@ -410,7 +410,9 @@ class Instruction:
                 or type(target_width) is not int
                 or control_width < 0
                 or selection_width < 0
-                or target_width <= 0
+                or not self.wires
+                or target_width < 0
+                or (name == "selected_majorana_fermion" and target_width == 0)
                 or control_width + selection_width + target_width != len(self.wires)
                 or len(set(self.wires)) != len(self.wires)
                 or is_channel
