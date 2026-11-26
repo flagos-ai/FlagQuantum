@@ -1,6 +1,7 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Constructors follow locked Qualtran v0.7.0 ordinary select_and_prepare.py.
+# The standalone prepare.py particle-pair declaration has the same owned ports.
 
 """Bind ordinary first-quantization roots through shared typed dependency owners."""
 
@@ -181,6 +182,10 @@ def first_quantization_component_factories() -> dict[str, ComponentFactory]:
     """Bind the complete ordinary root file and its explicit direct declarations."""
     shared = projectile_component_factories()
     return {
+        _BASE
+        + "prepare.UniformSuperpostionIJFirstQuantization": shared[
+            _BASE + "select_and_prepare.UniformSuperpostionIJFirstQuantization"
+        ],
         _BASE
         + "select_and_prepare.UniformSuperpostionIJFirstQuantization": shared[
             _BASE + "select_and_prepare.UniformSuperpostionIJFirstQuantization"
