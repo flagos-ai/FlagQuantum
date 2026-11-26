@@ -4,7 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -14,6 +14,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
+
 from ..verification.profile import verify_construction
 
 

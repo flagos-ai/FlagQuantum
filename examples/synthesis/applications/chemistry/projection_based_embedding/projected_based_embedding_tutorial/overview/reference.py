@@ -6,7 +6,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.core.algebra.pauli import PauliOperator
+from flagquantum.core.operators.pauli import PauliOperator
 
 from . import model, variational
 

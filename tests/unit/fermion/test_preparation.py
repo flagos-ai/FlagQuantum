@@ -9,8 +9,8 @@ from flagquantum.algorithms.fermion.decomposition import decompose_orbital_rotat
 from flagquantum.algorithms.fermion.lowering import append_orbital_rotation
 from flagquantum.algorithms.fermion.preparation import prepare_gaussian, prepare_slater
 from flagquantum.circuit import Circuit
-from flagquantum.observables import annihilate, create, number
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.observable import annihilate, create, number
 from flagquantum.simulation.unitary import get_unitary
 
 from .oracles import fock_matrix

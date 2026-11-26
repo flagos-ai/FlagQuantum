@@ -32,10 +32,10 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_zne
-from flagquantum.algorithms.error_mitigation import scale_noise_model
-from flagquantum.noise import (
-    NoiseModel,
+from flagquantum.algorithms.error_mitigation import run_zne, scale_noise_model
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
     coherent_overrotation_channel,
     depolarizing_channel,
 )
@@ -255,7 +255,7 @@ def test_the_degree_is_a_property_of_the_circuit_and_channel_not_a_constant(
 ) -> None:
     """Amplitude damping needs a second degree where depolarizing needs one."""
 
-    from flagquantum.noise import amplitude_damping_channel
+    from flagquantum.core.operators.channels import amplitude_damping_channel
 
     model = NoiseModel().add(
         "cx", amplitude_damping_channel(0.02, dtype=torch.complex128)

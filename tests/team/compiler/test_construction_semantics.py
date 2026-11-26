@@ -9,7 +9,7 @@ from flagquantum.compiler._construction.verification.profile import (
     uint_type,
     verify_construction,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     Block,
     HybridProgram,
     IRType,
@@ -19,7 +19,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 

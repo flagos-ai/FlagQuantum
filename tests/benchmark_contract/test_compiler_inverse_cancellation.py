@@ -39,7 +39,7 @@ from benchmarks.compiler_inverse_cancellation import (
     run_benchmark,
 )
 from flagquantum.compiler.optimization.inverse_cancellation import inverse_pairs
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, inverse_operator
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, inverse_operator
 
 pytestmark = pytest.mark.benchmark_contract
 

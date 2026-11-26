@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ..core.ir import CircuitIR, Instruction
-from ..core.operator_schema import get_operator_schema
 from ..core.parameters import Parameter, ParameterExpression
 from .latex_figure import LatexFigure, _document
 

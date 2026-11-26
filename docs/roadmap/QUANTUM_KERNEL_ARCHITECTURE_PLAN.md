@@ -501,7 +501,7 @@ directory is introduced:
 - Review this document with Runtime, Simulation, Torch-FL, and FlagTree owners.
 - Confirm `flagquantum/kernels/` is internal in the first release.
 - Confirm no stable public API change is included.
-- Add the package and dependency direction to `architecture.toml`.
+- Add the package and dependency direction to `config/architecture.toml`.
 
 Exit criterion: ownership and import direction are agreed before code moves.
 

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from flagquantum.kernels.triton import repeated_rx_rz  # noqa: E402
+from flagquantum.simulation.kernels.triton import repeated_rx_rz  # noqa: E402
 
 
 def _torch_loop(state, rx_angles, rz_angles):
@@ -32,9 +32,7 @@ def _torch_loop(state, rx_angles, rz_angles):
             (cos_rx * zero - 1j * sin_rx * one, -1j * sin_rx * zero + cos_rx * one),
             dim=-1,
         )
-        output = output * torch.cat(
-            (torch.exp(-1j * rz), torch.exp(1j * rz)), dim=-1
-        )
+        output = output * torch.cat((torch.exp(-1j * rz), torch.exp(1j * rz)), dim=-1)
     return output
 
 
@@ -206,11 +204,11 @@ def main():
     }
     if gradient is not None:
         actual_gradients = torch.autograd.grad(actual, (state, rx, rz), gradient)
-        reference_gradients = torch.autograd.grad(
-            reference, (state, rx, rz), gradient
-        )
+        reference_gradients = torch.autograd.grad(reference, (state, rx, rz), gradient)
         payload["gradient_max_abs_error"] = {
-            name: float(torch.max(torch.abs(actual_gradient - reference_gradient)).item())
+            name: float(
+                torch.max(torch.abs(actual_gradient - reference_gradient)).item()
+            )
             for name, actual_gradient, reference_gradient in zip(
                 ("state", "rx", "rz"), actual_gradients, reference_gradients
             )

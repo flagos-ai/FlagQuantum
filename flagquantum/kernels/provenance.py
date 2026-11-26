@@ -1,35 +1,12 @@
-"""Kernel compiler provenance resolved from installed package metadata."""
+"""Historical import facade for the relocated implementation."""
 
-from __future__ import annotations
+import sys as _sys
+from importlib import import_module as _import_module
 
-from functools import lru_cache
-from importlib import metadata
+from flagquantum.simulation.kernels.provenance import __all__ as __all__
+from flagquantum.simulation.kernels.provenance import (
+    triton_compiler_provenance as triton_compiler_provenance,
+)
 
-
-@lru_cache(maxsize=1)
-def triton_compiler_provenance() -> tuple[str | None, str | None, str, str]:
-    """Resolve which distribution installed ``triton`` without importing it."""
-
-    module_owners = metadata.packages_distributions().get("triton", ())
-    owners = tuple(
-        sorted({owner.casefold().replace("_", "-") for owner in module_owners})
-    )
-    if not owners:
-        return None, None, "unknown", "missing"
-    if len(owners) != 1:
-        return None, None, "unknown", "ambiguous"
-
-    distribution = owners[0]
-    try:
-        version = metadata.version(distribution)
-    except metadata.PackageNotFoundError:
-        return distribution, None, "unknown", "missing_metadata"
-
-    if distribution == "triton":
-        return distribution, version, "direct", "resolved"
-    if distribution == "flagtree":
-        return distribution, version, "flagtree", "resolved"
-    return distribution, version, "unknown", "unsupported_distribution"
-
-
-__all__ = ("triton_compiler_provenance",)
+_implementation = _import_module("flagquantum.simulation.kernels.provenance")
+_sys.modules[__name__] = _implementation

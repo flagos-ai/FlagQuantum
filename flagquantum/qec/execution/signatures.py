@@ -12,7 +12,12 @@ from numbers import Integral
 from types import MappingProxyType
 from typing import Literal
 
-from ...compiler._hybrid import INDEX, capture_source, lower_dynamic_program
+from flagquantum.compiler.frontends._structured import (
+    INDEX,
+    capture_source,
+    lower_dynamic_program,
+)
+
 from ...core.ir import CircuitIR
 from ...runtime.dynamic.hybrid_session import (
     _validate_session_ir,

@@ -46,12 +46,14 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_pec
-from flagquantum.algorithms.pec import pauli_twirl_decomposition
+from flagquantum.algorithms.error_mitigation.pec import (
+    pauli_twirl_decomposition,
+    run_pec,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
-    NoiseModel,
-    ReadoutError,
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     amplitude_damping_channel,
     bit_flip_channel,
     coherent_overrotation_channel,

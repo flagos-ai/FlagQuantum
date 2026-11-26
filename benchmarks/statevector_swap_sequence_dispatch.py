@@ -119,7 +119,7 @@ def _shape_record(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-014 dispatch matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
     from flagquantum.simulation.statevector.swap_sequence_dispatch import (
         _swap_sequence_kernel_enabled,
         _try_apply_cataloged_swap_sequence,

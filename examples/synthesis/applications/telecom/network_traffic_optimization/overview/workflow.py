@@ -10,7 +10,7 @@ import flagquantum as fq
 from examples.synthesis.applications.telecom.network_traffic_optimization.main import (
     build_program,
 )
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from . import problem
 

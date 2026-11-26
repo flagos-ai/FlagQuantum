@@ -19,7 +19,7 @@ from flagquantum.algorithms.fermion.hubbard import (
     fermi_hubbard_ring,
 )
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import number
+from flagquantum.core.operators.observable import number
 
 pytestmark = pytest.mark.integration
 

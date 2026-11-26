@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum.training as fqt
-from flagquantum.models import HybridQuantumClassifier
+from flagquantum.algorithms.quantum_ml.models import HybridQuantumClassifier
 
 
 @pytest.mark.gpu

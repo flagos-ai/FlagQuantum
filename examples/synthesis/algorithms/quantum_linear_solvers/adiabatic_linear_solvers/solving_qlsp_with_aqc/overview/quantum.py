@@ -1,7 +1,7 @@
 """Prepare the linear-system input and lower the declared Pauli evolution."""
 
 from flagquantum import synth
-from flagquantum.observables import I, Observable, X, Y, Z
+from flagquantum.core.operators.observable import I, Observable, X, Y, Z
 from flagquantum.synth import Output, QArray, QBit, prepare_state, qfunc, suzuki_trotter
 
 from .model import LinearSystem, PauliCoefficient, decompose

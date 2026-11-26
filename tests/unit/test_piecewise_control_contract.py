@@ -17,7 +17,7 @@ import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.parameters import bind_parameter_value
-from flagquantum.simulation.lindblad_integrators import INTEGRATOR_NAMES
+from flagquantum.simulation.dynamics.integrators import INTEGRATOR_NAMES
 
 pytestmark = pytest.mark.unit
 

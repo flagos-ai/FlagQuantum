@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-005-A"
@@ -61,7 +62,7 @@ def _apply_cataloged_rx_rz_sequence(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton import repeated_rx_rz
+    from flagquantum.simulation.kernels.triton import repeated_rx_rz
 
     return repeated_rx_rz(state, rx_angles, rz_angles)
 

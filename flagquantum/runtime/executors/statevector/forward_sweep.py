@@ -11,7 +11,25 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+from flagquantum.runtime.executors.statevector.forward import (
+    StatevectorExchangeWorkspace,
+    TorchDistributedStatevectorResult,
+    _cross_shard_cx_packing_enabled,
+    _ket_checkpoint_mode,
+    _local_block_fusion_enabled,
+    _local_block_fusion_width,
+    _single_process_cpu_direct_enabled,
+    _vectorized_cross_shard_cx,
+    _vectorized_local_cx_gate,
+    _vectorized_local_diagonal_gate,
+    _vectorized_local_gate,
+    _vectorized_pair_exchange_gate,
+    _vectorized_subgroup_exchange_gate,
+    communication_aware_qubit_layout,
+)
+from flagquantum.simulation.statevector.adjoint import _is_diagonal_instruction
+
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.native_cpu import (
@@ -34,23 +52,6 @@ from ...distributed.context import resolve_local_world_size
 from ...distributed.flagos_runtime import current_flagos_device
 from ...distributed.identity import build_distributed_identity
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
-from .forward import (
-    StatevectorExchangeWorkspace,
-    TorchDistributedStatevectorResult,
-    _cross_shard_cx_packing_enabled,
-    _is_diagonal_instruction,
-    _ket_checkpoint_mode,
-    _local_block_fusion_enabled,
-    _local_block_fusion_width,
-    _single_process_cpu_direct_enabled,
-    _vectorized_cross_shard_cx,
-    _vectorized_local_cx_gate,
-    _vectorized_local_diagonal_gate,
-    _vectorized_local_gate,
-    _vectorized_pair_exchange_gate,
-    _vectorized_subgroup_exchange_gate,
-    communication_aware_qubit_layout,
-)
 from .forward_rzz_segment import apply_native_rzz_segment
 from .kernel_dispatch import KernelDispatchEvidence
 from .layout import (
@@ -484,7 +485,7 @@ class _ShardedForwardSweep:
                         gathered.numel() * gathered.element_size(),
                     )
                     return segment_cursor
-                from ....kernels.triton.statevector_gates import (
+                from flagquantum.simulation.kernels.triton.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
 

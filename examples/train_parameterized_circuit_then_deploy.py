@@ -16,7 +16,8 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
+from flagquantum.algorithms.optimization.vqe import run_vqe
 from flagquantum.compiler import CouplingMap
 from flagquantum.deployment import hamiltonian_expectation_from_counts
 from flagquantum.testing import InMemoryRemoteTarget

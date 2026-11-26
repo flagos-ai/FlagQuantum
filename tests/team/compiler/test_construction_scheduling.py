@@ -17,7 +17,7 @@ from flagquantum.compiler._construction.codegen.arithmetic import (
 )
 from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.verification.profile import uint_type
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     Block,
     HybridProgram,
     Operation,
@@ -25,7 +25,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 
@@ -427,7 +427,7 @@ def test_returned_input_and_unused_values_do_not_require_a_consuming_effect() ->
 
 def test_long_zero_chain_is_simplified_without_relaxing_original_depth_limit() -> None:
     x = Value(ValueId("chain", 0), uint_type(1))
-    from flagquantum.compiler._hybrid.model import INDEX
+    from flagquantum.compiler.frontends._structured.model import INDEX
 
     zero = Value(ValueId("chain", 1), INDEX)
     operations = [Operation("arith.constant", results=(zero,), attributes={"value": 0})]

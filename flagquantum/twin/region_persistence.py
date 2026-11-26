@@ -20,7 +20,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from ..noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
+
 from ._atomic import write_once
 from .candidate import _matches_canonical_payload
 from .model import QPUDigitalTwin

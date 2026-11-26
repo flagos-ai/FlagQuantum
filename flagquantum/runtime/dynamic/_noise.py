@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import torch
 
+from flagquantum.core.noise import CorrelatedReadoutError, NoiseModel
+
 from ...core.ir import Instruction
-from ...noise import CorrelatedReadoutError, NoiseModel
 from ...simulation.statevector.dynamic_noise import (
     apply_dynamic_bit_flip,
     sample_dynamic_readout,

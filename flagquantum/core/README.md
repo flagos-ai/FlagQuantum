@@ -1,5 +1,7 @@
 # Core
 
+Operator algebra, observables, channels and embedding share `operators/`. Measurement requests live in `measurement.py`; noise composition and device profiles in `noise.py` and `noise_profile.py`. Core does not import Simulation to validate measurement semantics.
+
 Core defines FlagQuantum's backend-neutral language: circuit IR, operator and
 parameter semantics, target capabilities, numerical requirements, and the
 versioned contracts exchanged across domain boundaries. These definitions are

@@ -1,0 +1,40 @@
+"""Source-located errors for restricted hybrid capture."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from flagquantum._import_compat import alias_module as _alias_module
+from flagquantum.compiler.frontends._structured.model import SourceLocation
+
+
+@dataclass(frozen=True)
+class CaptureDiagnostic:
+    """One source-located restricted-capture failure."""
+
+    code: str
+    message: str
+    location: SourceLocation
+
+
+class HybridCaptureError(ValueError):
+    """Raised when Python source exceeds the supported capture profile."""
+
+    def __init__(self, diagnostic: CaptureDiagnostic) -> None:
+        self.diagnostic = diagnostic
+        location = diagnostic.location
+        super().__init__(
+            f"{location.filename}:{location.line}:{location.column}: "
+            f"{diagnostic.code}: {diagnostic.message}"
+        )
+
+
+# Preserve historical import identities for pickles and public introspection.
+for _identity_export in (
+    CaptureDiagnostic,
+    HybridCaptureError,
+):
+    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.diagnostics"
+del _identity_export
+
+_alias_module("flagquantum.compiler._hybrid.frontend.diagnostics", __name__)

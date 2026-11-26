@@ -19,7 +19,7 @@ from examples.synthesis.applications.finance.autocallable_options.partial_expone
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem.contracts import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import (

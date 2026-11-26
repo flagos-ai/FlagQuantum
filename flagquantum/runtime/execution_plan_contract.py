@@ -235,7 +235,8 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
         None,
     )
     if noise_extension is not None:
-        from ..noise import NoiseModel
+        from flagquantum.core.noise import NoiseModel
+
         from .planner import lower_noise_model
 
         noise_model = NoiseModel.from_dict(noise_extension["payload"])
@@ -599,7 +600,7 @@ def _noise_model_from_payload(payload: Mapping[str, Any]) -> Any | None:
         )
     if not extensions:
         return None
-    from ..noise import NoiseModel
+    from flagquantum.core.noise import NoiseModel
 
     extension = _require_mapping("ExecutionPlan.extension", extensions[0])
     if extension["kind"] != NOISE_EXTENSION_KIND:
@@ -644,7 +645,7 @@ def _canonical_program(program: CircuitIR, plan: ExecutionPlan) -> CircuitIR:
 
 
 def _noise_extension(noise_model: Any) -> dict[str, object]:
-    from ..noise import NoiseModel
+    from flagquantum.core.noise import NoiseModel
 
     if not isinstance(noise_model, NoiseModel):
         raise TypeError("noise_model must be a flagquantum.noise.NoiseModel or None")
@@ -736,7 +737,7 @@ def _validate_extensions(extensions: Sequence[object]) -> None:
         raise ExecutionPlanContractError(
             "extension_incompatible", "unsupported executable plan extension"
         )
-    from ..noise import NoiseModel
+    from flagquantum.core.noise import NoiseModel
 
     try:
         noise_model = NoiseModel.from_dict(

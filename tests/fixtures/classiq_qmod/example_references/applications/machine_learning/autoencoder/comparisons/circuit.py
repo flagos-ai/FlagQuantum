@@ -11,7 +11,7 @@ from examples.synthesis.algorithms.machine_learning.quantum_autoencoder.main imp
     WEIGHTS,
     native_program,
 )
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 
 
 def circuit(case: int) -> fq.Circuit:

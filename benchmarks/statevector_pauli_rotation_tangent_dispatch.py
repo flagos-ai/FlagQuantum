@@ -16,7 +16,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = (
     "flagquantum.kernel_benchmark_run.statevector_pauli_rotation_tangent_dispatch.v1"
@@ -147,7 +147,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.two_qubit_pauli_tangent import (
+    from flagquantum.simulation.kernels.triton.two_qubit_pauli_tangent import (
         repeated_rxx_ryy_rzz_tangents,
     )
 

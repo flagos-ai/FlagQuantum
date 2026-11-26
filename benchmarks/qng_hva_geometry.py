@@ -203,7 +203,9 @@ class Geometry:
                     "the existing Triton HVA kernel requires CUDA complex64"
                 )
             try:
-                from flagquantum.kernels.triton import heisenberg_hva_forward_tangents
+                from flagquantum.simulation.kernels.triton import (
+                    heisenberg_hva_forward_tangents,
+                )
             except ImportError as exc:
                 raise UnsupportedRouteError(
                     f"optional Triton is unavailable: {exc}"

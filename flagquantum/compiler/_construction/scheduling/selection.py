@@ -6,12 +6,16 @@ from time import perf_counter
 from types import MappingProxyType
 from typing import Literal
 
+from flagquantum.compiler.frontends._structured.model import HybridProgram
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ....core.classical_control import is_classical_control_instruction
 from ....core.ir import CircuitIR, Instruction
-from ....core.operator_schema import get_operator_schema
 from ....core.parameters import parameter_names_in_value
-from ..._hybrid.model import HybridProgram
-from ..._hybrid.verifier import Diagnostic, HybridVerificationError
 from ...optimization.resource_estimation import ResourceEstimate, estimate_resources
 from ..codegen.arithmetic import ArithmeticCandidate, BoundArithmetic, Schedule
 from ..codegen.boolean import BooleanCandidateError

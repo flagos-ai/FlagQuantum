@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler._construction.semantics.unitary import unitary_instructions
-from flagquantum.compiler._hybrid.model import Operation
+from flagquantum.compiler.frontends._structured.model import Operation
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

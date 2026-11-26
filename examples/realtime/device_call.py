@@ -14,7 +14,7 @@ deliberately not part of this repository.
 
 from __future__ import annotations
 
-import flagquantum.realtime as rt
+import flagquantum.compute.realtime as rt
 
 
 def majority_decode(arguments: tuple[object, ...]) -> tuple[int]:

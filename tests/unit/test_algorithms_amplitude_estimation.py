@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from flagquantum.algorithms.amplitude_estimation import (
+from flagquantum.algorithms.estimation.amplitude_estimation import (
     AmplitudeEstimationResult,
     amplitude_estimation_circuit,
     amplitude_resolution,

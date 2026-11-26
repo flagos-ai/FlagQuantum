@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ..program_types import QArray, QBit, QNum
 from .ports import _annotation_node, _resolve, quantum_port
 from .python import _error

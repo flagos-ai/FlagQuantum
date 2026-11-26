@@ -4,7 +4,8 @@ Run with an installed package or PYTHONPATH=. No Stim or PyMatching extra is
 needed. This constructs a DEM; it does not execute a 49-qubit dense simulation.
 """
 
-from flagquantum.noise import NoiseModel, bit_flip_channel
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.qec import (
     DetectorErrorModel,
     RotatedSurfaceCode,

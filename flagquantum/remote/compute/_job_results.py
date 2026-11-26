@@ -1,25 +1,14 @@
-"""Shared receipt and result files for submitted Jiuding jobs."""
+"""Historical import facade for the relocated implementation."""
 
-from __future__ import annotations
+import sys as _sys
+from importlib import import_module as _import_module
 
-import json
-from collections.abc import Mapping
-from pathlib import Path
-from typing import Any
+from flagquantum.compute.remote.compute._job_results import (
+    read_job_result as read_job_result,
+)
+from flagquantum.compute.remote.compute._job_results import (
+    save_receipt as save_receipt,
+)
 
-
-def save_receipt(path: Path, receipt: Mapping[str, Any]) -> None:
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(path)
-
-
-def read_job_result(path: Path, run_id: str) -> object:
-    result = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(result, dict):
-        raise RuntimeError("Jiuding job result must be a JSON object")
-    if result.get("run_id") != run_id:
-        raise RuntimeError("Result does not belong to this submission")
-    if "value" not in result:
-        raise RuntimeError("Jiuding job result is missing its value")
-    return result["value"]
+_implementation = _import_module("flagquantum.compute.remote.compute._job_results")
+_sys.modules[__name__] = _implementation

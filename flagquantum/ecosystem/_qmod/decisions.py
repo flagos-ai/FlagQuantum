@@ -8,8 +8,9 @@ from dataclasses import dataclass
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import Value, ValueId
+
 from ...compiler._construction.verification.register_profile import register_type
-from ...compiler._hybrid.model import Value, ValueId
 from .phase import Location, expand_phase
 from .phase_factors import Cube
 from .syntax import Expression, Token, reject

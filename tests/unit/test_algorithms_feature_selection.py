@@ -27,15 +27,15 @@ import itertools
 import pytest
 import torch
 
-from flagquantum.algorithms.core import Hamiltonian
-from flagquantum.algorithms.feature_selection import (
-    FeatureSelectionProblem,
-    feature_selection_qubo,
-)
-from flagquantum.algorithms.qubo import (
+from flagquantum.algorithms.optimization.qubo import (
     QuboProblem,
     ising_to_qubo,
     qubo_energy,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
+from flagquantum.algorithms.quantum_ml.feature_selection import (
+    FeatureSelectionProblem,
+    feature_selection_qubo,
 )
 
 pytestmark = pytest.mark.unit

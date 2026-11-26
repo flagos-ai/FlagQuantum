@@ -16,7 +16,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_reversible_vjp_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.statevector_reversible_vjp_dispatch.v1"
@@ -126,7 +126,7 @@ def _case(
     warmup: int,
     repeats: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.statevector_adjoint import (
+    from flagquantum.simulation.kernels.triton.statevector_adjoint import (
         fused_complex64_local_1q_reversible_vjp,
     )
 
@@ -415,9 +415,11 @@ def validate_run(payload: Mapping[str, Any]) -> None:
             ),
             (
                 "gradient",
-                abs(case.get("gradient_reference"))
-                if isinstance(case.get("gradient_reference"), (int, float))
-                else None,
+                (
+                    abs(case.get("gradient_reference"))
+                    if isinstance(case.get("gradient_reference"), (int, float))
+                    else None
+                ),
                 case.get("gradient_absolute_error"),
                 GRADIENT_ATOL,
                 GRADIENT_RTOL,

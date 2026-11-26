@@ -19,7 +19,7 @@ from examples.synthesis.applications.finance.brownian_chebyshev_polynomials.main
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 from tests.integration.test_synthesis_qmod_brownian_quantized import _original

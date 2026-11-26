@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from math import ceil
 from typing import Any
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
 
 
 @dataclass(frozen=True)

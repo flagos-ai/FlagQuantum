@@ -1,27 +1,24 @@
-# Compute
+# Compute resources
 
-`flagquantum.compute` is the authoritative home for compute resources that the
-current process controls directly. It owns device discovery, activation,
-synchronization, memory, stream/event, RNG, runtime identity, and observed
-hardware capabilities. Vendor runtime objects stop at this boundary.
+Directly controlled devices live in `local/`, external task systems in `remote/`, and bounded realtime messaging in `realtime/`. Runtime chooses and schedules work; Compute adapts the chosen resource. The root retains the published device lookup and platform contract exports. Numerical algorithms belong to Simulation, and program transformation belongs to Compiler.
 
-It does not choose simulation algorithms, transform programs, schedule jobs,
-or promote unverified hardware claims. Runtime selects and orchestrates work;
-Simulation owns numerical kernels; Core owns cross-domain contracts.
+Allowed dependencies: Core contracts and optional vendor SDKs inside their owning adapters.
 
-## Ten-minute change path
+Published entry points: flagquantum.compute; fq.submit for remote jobs. Historical import paths are forwarding facades;
+the implementation in this directory is authoritative. See the
+[relocation ledger](../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md)
+for compatibility ownership and removal gates.
 
-- Change private allocator peak observation in `local/_memory.py`; follow
-  [the local contributor path](local/README.md).
-- Change portable CPU or CUDA lifecycle behavior in `pytorch.py`.
-- Change lazy FlagOS/Torch-FL adaptation in `flagos.py`.
-- Change optional FlagGems operator replacement and validation in `flaggems.py`.
-- Change compute lookup and device resolution in `registry.py`.
-- Change the existing compute-local value types only in `contracts.py`.
-- Change CPU-to-Core capability observation in `cpu_target_capabilities.py`.
-- Change the observed single-CUDA statevector projection in
-  `cuda_target_capabilities.py`; generate evidence with
-  `tools/probe_cuda_target_capabilities.py` under one-device visibility.
-Run the platform unit and team tests, followed by the CPU vertical-slice test.
-An ordinary compute-platform change should remain inside this directory unless an
-existing Core contract genuinely cannot express the required fact.
+## Ten-minute contributor path
+
+1. Read the implementation matching the behavior under change and its existing test.
+2. Make one focused change inside this domain, keeping published contracts unchanged.
+3. From the repository root, run:
+
+   ```sh
+   python -m pytest tests/team/compute -q
+   python tools/check_architecture.py
+   ```
+
+CPU tests establish behavior and fixture conformance; physical hardware and
+distributed capacity require their separate evidence gates.

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.unit
-WORKSHOP = Path(__file__).resolve().parents[2] / "workshops/flagos2026"
+WORKSHOP = Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026"
 MAIN = (
     "01_first_circuit.ipynb",
     "02_quantum_training.ipynb",

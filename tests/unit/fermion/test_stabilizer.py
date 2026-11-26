@@ -17,9 +17,9 @@ from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
 from flagquantum.algorithms.fermion.symmetry import reduce_z_parities
 from flagquantum.circuit import Circuit
-from flagquantum.core.algebra.pauli import PauliOperator, pauli
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.observables import annihilate, create, number
+from flagquantum.core.operators.observable import annihilate, create, number
+from flagquantum.core.operators.pauli import PauliOperator, pauli
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit

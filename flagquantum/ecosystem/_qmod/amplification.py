@@ -7,8 +7,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+
 from ...compiler._construction.verification.register_profile import register_type
-from ...compiler._hybrid.model import Operation, Value, ValueId
 from .angles import REAL_LITERAL
 from .phase import expand_phase
 from .predicates import expand_predicate_oracles

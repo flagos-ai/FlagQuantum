@@ -6,8 +6,8 @@ import time
 import torch
 
 import flagquantum as fq
+from flagquantum.compute.remote.compute import JiudingClient
 from flagquantum.gradients import batched_parameter_shift_gradient
-from flagquantum.remote.compute import JiudingClient
 
 
 def main() -> None:

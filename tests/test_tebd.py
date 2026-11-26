@@ -9,7 +9,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, pauli_term, transverse_field_ising
+from flagquantum.algorithms.many_body.spin import transverse_field_ising
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
 pytestmark = pytest.mark.integration
 

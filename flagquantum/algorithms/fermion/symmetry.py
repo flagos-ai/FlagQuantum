@@ -7,7 +7,8 @@ from dataclasses import dataclass
 
 import torch
 
-from ...core.algebra.pauli import PauliOperator, PauliTerm, count
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, count
+
 from ...core.ir import Instruction
 from .clifford import conjugate_pauli, symplectic_masks
 from .encoding import EncodedOperator

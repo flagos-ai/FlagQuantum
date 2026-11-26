@@ -11,7 +11,7 @@ from examples.synthesis.applications.chemistry.lih_chemistry.overview import (
     symmetry,
     variational,
 )
-from flagquantum.algorithms.molecular import (
+from flagquantum.algorithms.chemistry.molecular import (
     create_molecular_hamiltonian,
     second_quantized_hamiltonian,
 )

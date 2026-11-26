@@ -10,7 +10,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ....simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,

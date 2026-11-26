@@ -6,9 +6,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.compute.remote import jobs
+from flagquantum.compute.remote.qpu import execution
 from flagquantum.errors import CapabilityError
-from flagquantum.remote import jobs
-from flagquantum.remote.qpu import execution
 
 pytestmark = pytest.mark.unit
 

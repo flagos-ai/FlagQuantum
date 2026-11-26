@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 import torch
 
 from ...core.ir import CircuitIR
-from ...core.operator_schema import canonical_opcode
+from ...core.operators.schema import canonical_opcode
 from ...core.runtime_config import runtime_config
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..native_cpu.permutation import native_cpu_cx_rzz_swap_available

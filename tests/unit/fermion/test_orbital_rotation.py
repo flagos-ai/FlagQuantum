@@ -3,11 +3,11 @@
 import pytest
 import torch
 
-from flagquantum.algorithms.chemistry_domain.orbital_rotation import (
+from flagquantum.algorithms.chemistry.models.orbital_rotation import (
     closed_shell_determinant_energy,
     rotate_spatial_integrals,
 )
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
 )

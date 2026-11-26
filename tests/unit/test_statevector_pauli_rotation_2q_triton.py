@@ -7,7 +7,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.statevector_pauli_rotation import (
+from flagquantum.simulation.kernels.triton.statevector_pauli_rotation import (
     apply_complex64_local_pauli_rotation_2q,
 )
 

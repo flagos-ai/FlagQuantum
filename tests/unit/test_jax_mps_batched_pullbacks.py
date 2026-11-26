@@ -19,7 +19,7 @@ def test_jax_mps_apply_one_batched_matches_einsum():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.batched import jax_mps_apply_one_batched
+    from flagquantum.simulation.mps.jax.batched import jax_mps_apply_one_batched
 
     rng = np.random.default_rng(6)
     bsz, left_dim, right_dim = 3, 2, 4
@@ -40,7 +40,7 @@ def test_jax_mps_split_pair_batched_reconstructs():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.batched import jax_mps_split_pair_batched
+    from flagquantum.simulation.mps.jax.batched import jax_mps_split_pair_batched
 
     rng = np.random.default_rng(7)
     bsz, left_dim, right_dim = 2, 3, 2
@@ -66,7 +66,7 @@ def test_jax_mps_owner_local_vjp_matches_grad():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.pullbacks import jax_mps_owner_local_vjp
+    from flagquantum.simulation.mps.jax.pullbacks import jax_mps_owner_local_vjp
 
     parameter = jnp.asarray(0.3)
     got = jax_mps_owner_local_vjp(parameter, jnp.asarray(1.0), gate_kind="one_site_ry")
@@ -86,7 +86,7 @@ def test_jax_mps_canonicalization_pullback_matches_grad():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.pullbacks import (
+    from flagquantum.simulation.mps.jax.pullbacks import (
         jax_mps_canonicalization_pullback,
     )
 

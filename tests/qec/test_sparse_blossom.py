@@ -142,8 +142,8 @@ def test_public_memory_experiment_supports_uniform_gate_noise(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("stim")
-    from flagquantum.noise import (
-        NoiseModel,
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.core.operators.channels import (
         depolarizing_channel,
         two_qubit_depolarizing_channel,
     )

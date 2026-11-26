@@ -6,12 +6,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 _TWO_SITE_IMPLEMENTATION_ID = "FQKI-TRITON-MPS-001-A"
@@ -58,7 +59,7 @@ def _apply_cataloged_mps_two_site(
         device_type=left.device.type,
         dtype=str(left.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_two_site import fused_mps_two_site
+    from flagquantum.simulation.kernels.triton.mps_two_site import fused_mps_two_site
 
     return fused_mps_two_site(left, gate, right)
 
@@ -109,7 +110,9 @@ def _apply_cataloged_mps_projected_two_site(
         device_type=left.device.type,
         dtype=str(left.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_two_site import fused_mps_range_projection
+    from flagquantum.simulation.kernels.triton.mps_two_site import (
+        fused_mps_range_projection,
+    )
 
     return fused_mps_range_projection(left, gate, right, projection)
 

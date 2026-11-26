@@ -1,0 +1,162 @@
+# What has been checked
+
+The original course checks were run on September 9, 2026. This record concerns the learning materials,
+not event capacity or platform certification.
+
+## Deployment regression reported on October 10, 2026
+
+A workshop-only Jupyter deployment ran all 18 notebooks with every remote-submission switch set to `False`.
+Ten notebooks passed and eight failed. Seven failures shared a repository-root lookup that assumed the complete
+Git checkout was present; notebook 01 also contained deployment-side credential and shell-command edits that
+were not valid Python. The deployed environment imported FlagQuantum 0.2.0 from site-packages, and the Quafu
+exercise still selected the legacy QSteed/SQC path even though the platform supplied current Task API settings.
+
+This revision addresses those findings without changing the numerical lessons that passed:
+
+- The seven affected notebooks locate `flagos2026/notebooks` in either a full checkout or a workshop-only tree,
+  create `flagos2026/outputs`, and raise a clear error when the workshop cannot be located.
+- Notebook 01 reports the imported package version, path, and source commit. Notebook validation rejects saved
+  outputs, saved execution counts, in-cell FlagQuantum installation, shell credential exports, and literal
+  credential assignments.
+- Quafu labs 05 and 13 use the current Task API through `fq.run(..., compiler=None)`, read `QUAFU_API_KEY` and
+  the optional `QUAFU_TASK_SERVER_URL` only from the process environment, and preserve an error record when a
+  submission outcome needs reconciliation.
+- Automated layout tests cover all seven locators in both deployment structures and the missing-layout error.
+
+The 18 source notebooks pass JSON and Python syntax checks and contain no saved execution state. The 15 layout
+regression cases pass. On October 10, 2026, all 18 notebooks also completed in the deployed workshop kernel with
+remote switches disabled. Separately authorized live checks then completed on both providers: a 1024-shot Quafu
+Dongling task reached `completed`, and a two-CPU Jiuding task reached `Succeed` with Bell probabilities close to
+`[0.5, 0, 0, 0.5]`. The Jiuding rehearsal exposed stale workshop calls that omitted the required compute target
+and still passed the removed `gpus` keyword; labs 04 and 16 and the standalone helper now use the current
+`target="jiuding:..."` contract. Rotate any credential that appeared in an autosaved notebook or terminal output;
+deleting the visible cell does not revoke an exposed key.
+
+## Local execution
+
+- Python 3.12.14 and PyTorch 2.13.0.
+- Notebook tools: nbclient 0.10.4, nbformat 5.11.1, ipykernel 6.31.0, and matplotlib 3.11.1.
+- All six notebooks passed format checks and ran with their default settings in separate Jupyter kernels.
+- Notebooks 01, 03, and 06 produced the probability, training-loss, and hardware-comparison charts.
+- The CPU Bell result was approximately `[0.49999997, 0, 0, 0.49999997]`, with a maximum absolute state error of zero against the reference tensor.
+- The 80-step training run reduced squared error from `0.23878333` to about `0.00002105`.
+- The recorded Quafu counts sum to 1024. The task ID and replay label were preserved; the total variation distance was `217/1024`.
+
+The English revision was also checked: all six notebooks ran successfully with their default settings,
+local links resolved, and no Chinese text remained in the workshop materials.
+
+## What these checks do not cover
+
+The local machine had no CUDA GPU, so notebook 02 skipped that branch.
+The submission switches in notebooks 04 and 05 remained off. No participant credentials were used and no new cloud or hardware jobs were created.
+
+The event login flow, concurrent users, GPU images, current Quafu Task API configuration, and optional QSteed
+exercise must still be rehearsed using [the instructor guide](INSTRUCTOR.md).
+
+To repeat the local numerical checks from the repository root:
+
+```bash
+python examples/workshops/flagos2026/scripts/verify_local.py
+```
+
+The checked-in notebooks have no saved outputs. Personal results belong in the ignored `outputs/` directory.
+
+## Step-by-step teaching revision
+
+All six notebooks were rebuilt so participants can write and inspect the core calculations in their cells.
+The revised notebooks passed execution in separate local kernels: circuit construction, one manual gradient update followed by training, the locally written cloud-job program, and count normalization all ran successfully.
+No notebook imports the workshop bell, training, or comparison helpers. Notebook 05 shows the public hardware call directly instead of launching a wrapper script.
+GPU execution and remote submissions remained disabled or skipped during this local validation.
+
+## Expanded lab collection
+
+The collection now contains 17 independent notebooks. The default local paths of all 17 passed execution in separate Jupyter kernels.
+New checks include hybrid-model fitting, VQE against exact diagonalization, shot-count totals, an analytic amplitude-damping curve,
+MPS against a dense reference, compilation equivalence, analytic and parameter-shift gradients, and a small Max-Cut objective.
+The compiler-extension lab also passes the SDK conformance checks. Charts for the graph optimization and MPS approximation experiments were visually inspected.
+
+Validation caught and corrected result-access assumptions: counts are read from `result.counts[0]`, and remote task identity from `result.provenance["task_id"]`.
+The exact density-matrix lesson reads the matrix diagonal explicitly because the current generic Pauli-output path does not support that result.
+The extension lesson uses the scoped SDK registry; named `fq.compile` discovery requires an installed entry point.
+
+The enabled result-handling branches of labs 05 and 13 were additionally checked with mocked remote responses using the current ExecutionResult contract.
+These were offline interface tests, not new QPU executions. GPU branches, hardware calibration access, QPU submissions, and Jiuding submissions still need event rehearsal.
+The repository default smoke/unit regression passed: 1329 passed, 14 skipped, 1330 deselected.
+
+After following SETUP.md, repeat the notebook checks with:
+
+```bash
+python examples/workshops/flagos2026/scripts/verify_notebooks.py
+# Or check one edited lab:
+python examples/workshops/flagos2026/scripts/verify_notebooks.py --notebook 08_vqe.ipynb
+```
+
+The command starts a fresh kernel for each notebook, applies a per-cell timeout, and saves executed copies under `outputs/validation/`.
+It rejects enabled remote-action switches in the supplied labs. This is an accidental-submission check, not a sandbox for arbitrary notebook code.
+
+## Featured experiments refinement
+
+The collection now contains 18 labs. In this revision, labs 07 and 13 were expanded and lab 18 was added.
+All three passed execution in separate local Jupyter kernels with FlagQuantum 0.2.0 and PyTorch 2.13.0.
+The other 15 retain the execution evidence recorded above; they were not rerun in this revision.
+
+- Lab 07 checks gradients and parameter changes in both the classical encoder and quantum layer. Its 20 held-out interpolation points had an MSE of approximately `1.22e-8` after 150 updates. The lesson explains the model's parameter ambiguity and limits of this fitting example.
+- Lab 18 checks the same two-qubit objective across statevector, MPS, and tensor-network modes with fallback disabled. Initial gradients differed by at most `1.20e-7`; all three trained energies were within `2.15e-7` of the exact ground energy `-sqrt(2)` after 160 updates. These are CPU numerical checks, not scalability or performance evidence.
+- Lab 13 preserves the trained angle, circuit hash, ideal expectation, and measurement source. The ideal expectation was approximately `0.256696` for a training target of `0.25`. Its default local sample had 668 zero outcomes and 356 one outcomes, totaling 1024 shots. The report separates the learning gap from the measured deviation from the frozen circuit.
+
+The three main result charts were visually inspected. All 18 source notebooks have empty outputs and execution counts;
+Python cell syntax, English text, and local links were checked. The enabled hardware-result branch of lab 13 also passed an offline mocked-response check using the current result contract, including task ID and measurement-source preservation.
+No new QPU or Jiuding task was submitted.
+
+The README now highlights the three featured experiments, and FIELD_NOTES.md provides prediction and interpretation prompts.
+The instructor guide includes a first-time-reader pilot procedure. That human usability pilot and live event-resource rehearsal remain pending.
+# Current layout and historical numbering
+
+The main course now consists of six flat notebooks numbered 01–06. Earlier
+validation records below retain their original lab numbers: original 01, 03,
+07, 18, 04 and 05 correspond to current examples 01, 02, 03, 04, 05 and 06.
+The other twelve notebooks are preserved in reference_notebooks/. Moving files
+does not establish a new live execution pass or alter the recorded outcomes.
+
+## October 12: revised cloud examples, real submissions
+
+The personal copies of revision `5a2270e29` were opened and executed cell by
+cell with real submissions enabled, before the filename-only course reordering.
+One initial task per provider was submitted. After restarting each kernel,
+the notebook restored the same task ID. Repeating receipt preflight and the
+submission cell made zero new `fq.submit` calls, observed through a forwarding
+wrapper around the original API. Temporary diagnostics were removed afterward.
+
+Recovery and duplicate prevention passed; end-to-end execution did not:
+
+- Jiuding reported `Succeed`, but result collection timed out. Read-only Loki
+  queries returned zero result lines, including a query for the unique result
+  prefix without the job-label filter. The underlying cause is not established.
+- Quafu accepted the task, then returned `Failed` with
+  `precheck.edgeUnusable`, stage `precheck`, `retryable=False`, and no counts.
+  This does not establish which physical edge caused the precheck failure.
+
+No automatic retry task was created. Existing receipts/results were preserved.
+The immutable private image has not been rebuilt with the current source.
+Two-account storage authorization isolation remains unverified.
+
+## October 12: authorized-device Quafu follow-up
+
+The current task service rejected an explicit `all-redispatch` test with HTTP
+403, `backend_not_allowed`; that target was not permitted for the test key.
+This is not evidence that all hardware submissions are forbidden. Read-only
+inventory showed Baihua and Dongling online, with the other named hardware
+devices calibrating.
+
+A separate, explicit Baihua hardware submission returned task
+`ua7e5aa75-261012-191610` and counts
+`{'11': 481, '00': 507, '01': 23, '10': 13}`, totaling 1024 real shots.
+The original Dongling precheck failure is unchanged. Example 06 now defaults to
+Baihua and supports an instructor-provided `QUAFU_TARGET`; it does not silently
+retry or redirect a submitted task. Existing receipts must match the selected
+target, so changing configuration cannot rebind an old task.
+
+Jiuding remains unverified end to end. Its query matches the platform's own
+dashboard template, and adding cluster/project headers still returned no logs.
+A single-line-command diagnostic was rejected at experiment creation with HTTP
+403 and returned no job ID; the command hypothesis has not been validated.

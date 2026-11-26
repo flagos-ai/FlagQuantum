@@ -10,18 +10,18 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
-from flagquantum.deployment import CloudBackendProfile, DeploymentPackage
-from flagquantum.deployment.dynamic_sealing import (
-    _validate_dynamic_remote_package_seal,
-)
-from flagquantum.deployment.routing_evidence import stable_payload_sha256
-from flagquantum.dynamic import DynamicCircuit
-from flagquantum.remote.qpu._quafu_sdk import _QuafuSdkAdapter
-from flagquantum.remote.qpu.quafu_dynamic_submission import (
+from flagquantum.compiler.artifacts.routing_evidence import stable_payload_sha256
+from flagquantum.compute.remote.packages import CloudBackendProfile, DeploymentPackage
+from flagquantum.compute.remote.qpu._quafu_sdk import _QuafuSdkAdapter
+from flagquantum.compute.remote.qpu.quafu_dynamic_submission import (
     _normalize_quafu_dynamic_mock_result,
     _submit_quafu_dynamic_once,
 )
+from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
+from flagquantum.runtime.dynamic.remote_sealing import (
+    _validate_dynamic_remote_package_seal,
+)
 from flagquantum.runtime.dynamic.routing import route_dynamic_circuit
 
 pytestmark = pytest.mark.unit

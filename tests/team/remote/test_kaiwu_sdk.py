@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
-import flagquantum.remote.kaiwu.sdk as sdk_module
-from flagquantum.remote.kaiwu import (
+import flagquantum.compute.remote.kaiwu.sdk as sdk_module
+from flagquantum.compute.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuLicenseInitializationError,
     KaiwuSDKUnavailableError,

@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from flagquantum.algorithms.fermion.stabilizer import discover_pauli_symmetries
-from flagquantum.core.algebra.pauli import PauliOperator, pauli
+from flagquantum.core.operators.pauli import PauliOperator, pauli
 
 pytestmark = pytest.mark.unit
 

@@ -6,12 +6,13 @@ from functools import cache
 
 import torch
 
-from ..kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from .kernel_dispatch import (
     _catalog_declares_kernel,
     _operand_kernel_axis,
@@ -104,7 +105,9 @@ def _apply_cataloged_layout_complex_bmm(
         device_type=left.device.type,
         dtype=str(left.dtype).removeprefix("torch."),
     )
-    from ..kernels.triton.complex_bmm import fused_complex_layout_bmm
+    from flagquantum.simulation.kernels.triton.complex_bmm import (
+        fused_complex_layout_bmm,
+    )
 
     return fused_complex_layout_bmm(
         left,

@@ -13,11 +13,12 @@ from examples.algorithms.fermion_h2_sector_training import (
     build_ansatz,
     energy,
 )
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
     from_native_molecule,
 )
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
 from flagquantum.algorithms.fermion.observables import to_observable
@@ -26,11 +27,10 @@ from flagquantum.algorithms.fermion.stabilizer import (
     discover_pauli_symmetries,
     reduce_stabilizers,
 )
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
-from flagquantum.core.algebra.pauli import pauli
+from flagquantum.core.operators.fermion import FermionOperator, FermionTerm
+from flagquantum.core.operators.observable import number
+from flagquantum.core.operators.pauli import pauli
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
-from flagquantum.observables import number
-from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 pytestmark = pytest.mark.integration

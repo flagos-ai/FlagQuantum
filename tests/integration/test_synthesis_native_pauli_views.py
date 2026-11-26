@@ -14,7 +14,7 @@ from examples.synthesis.pauli_evolution import Term, reference_sequence
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python_program import program_definition
 from tools.synthesis_catalog import load_catalog
 

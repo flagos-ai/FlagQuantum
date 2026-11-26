@@ -28,7 +28,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
-from flagquantum.core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 from flagquantum.errors import CapabilityError, FlagQuantumError, ValidationError
 from flagquantum.runtime.dynamic import run_dynamic
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit

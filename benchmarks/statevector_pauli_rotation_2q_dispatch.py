@@ -154,7 +154,7 @@ def _apply_product_reference(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-011 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
     from flagquantum.simulation.statevector.pauli_rotation_dispatch import (
         _pauli_rotation_kernel_enabled,
         _try_apply_cataloged_pauli_rotation,

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.primitives.linear_combination import (
     LinearCombinationEncoding,
 )

@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 
 pytestmark = pytest.mark.unit
 

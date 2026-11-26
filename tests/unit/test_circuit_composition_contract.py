@@ -39,7 +39,7 @@ from flagquantum.core import (
     POWER_RULES,
 )
 from flagquantum.core.ir import IR_VERSION, Instruction, IRValidationError
-from flagquantum.core.operator_schema import MAX_POWER_REPEATS
+from flagquantum.core.operators.schema import MAX_POWER_REPEATS
 from flagquantum.ecosystem.conformance import semantic_fingerprint
 from flagquantum.errors import CapabilityError, ValidationError
 
@@ -1209,7 +1209,7 @@ def test_the_power_census_is_the_declared_rule_split() -> None:
 # `tools/pre_push.py` run, so a clause it stopped reading is a clause nobody checks. Each
 # mutation below patches one clause and requires the gate to name it.
 
-_GATE_PATH = ROOT / "tools" / "check_circuit_composition_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_circuit_composition_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_circuit_composition_contract", _GATE_PATH
 )
@@ -1227,7 +1227,7 @@ def test_the_composition_gate_runs_in_ci_and_before_push() -> None:
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_circuit_composition_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_circuit_composition_contract.py"' in pre_push
 
 

@@ -13,7 +13,7 @@ from typing import Any as Any
 
 import torch as torch
 
-from flagquantum.noise.model import NoiseModel as NoiseModel
+from flagquantum.core.noise import NoiseModel as NoiseModel
 from flagquantum.qec.circuits.memory import MemoryCircuit as MemoryCircuit
 from flagquantum.qec.codes.checks import StabilizerCode as StabilizerCode
 from flagquantum.qec.codes.matrices import CssCodeMatrices as CssCodeMatrices

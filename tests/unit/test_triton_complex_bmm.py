@@ -3,7 +3,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.complex_bmm import (
+from flagquantum.simulation.kernels.triton.complex_bmm import (
     fused_complex_bmm,
     fused_complex_layout_bmm,
 )

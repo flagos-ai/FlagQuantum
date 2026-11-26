@@ -31,7 +31,7 @@ from examples.qdiffusion_kaiwu.sdk_approval import (
     verify_approved_kaiwu_distribution,
     verify_approved_project_assignment,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuRemoteJob,
     KaiwuSDKClient,
@@ -40,7 +40,7 @@ from flagquantum.remote.kaiwu import (
     resolve_kaiwu_credentials,
     submit_kaiwu_task,
 )
-from flagquantum.remote.kaiwu.jobs import _freeze_matrix, _matrix_sha256
+from flagquantum.compute.remote.kaiwu.jobs import _freeze_matrix, _matrix_sha256
 
 from .verify_environment_lock import SHA256, verify_environment_lock
 

@@ -99,7 +99,7 @@ The private hybrid stages also have explicit implementation owners.
 | `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
 | `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
 
-The [hybrid contributor guide](_hybrid/README.md#input-validation-and-specialization-ownership)
+The [hybrid contributor guide](frontends/_structured/README.md#input-validation-and-specialization-ownership)
 describes the shared input boundary and its local accepted/rejected workflow.
 
 ## Reusable Module frontend

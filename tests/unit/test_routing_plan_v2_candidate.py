@@ -38,6 +38,11 @@ import pytest
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler import compile as compile_program
+from flagquantum.compiler.artifacts.routing_evidence import (
+    DeploymentRoutingEvidenceError,
+    same_undirected_device,
+    validate_deployment_routing_plan,
+)
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.layout_planning import plan_dense_layout
 from flagquantum.compiler.routing import (
@@ -49,17 +54,13 @@ from flagquantum.compiler.topology.directed_topology import (
     DirectedCouplingMap,
     route_to_directed_topology,
 )
-from flagquantum.deployment.cloud import CloudBackendProfile, create_deployment_package
-from flagquantum.deployment.routing_evidence import (
-    DeploymentRoutingEvidenceError,
-    same_undirected_device,
-    validate_deployment_routing_plan,
-)
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
     create_dynamic_deployment_package,
     route_dynamic_circuit,
 )
+from flagquantum.runtime.planner.deployment import create_deployment_package
 
 pytestmark = pytest.mark.unit
 

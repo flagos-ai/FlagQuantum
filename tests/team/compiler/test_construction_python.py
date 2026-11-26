@@ -7,8 +7,8 @@ from collections.abc import Callable
 import pytest
 
 from flagquantum.compiler._construction.frontend.python import capture, qfunc
-from flagquantum.compiler._hybrid.model import HybridProgram
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import HybridProgram
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 

@@ -103,8 +103,8 @@ def _shape_record(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-010 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_diagonal import (
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.statevector_diagonal import (
         apply_complex64_local_diagonal,
     )
     from flagquantum.simulation.statevector.operations import _apply_diagonal_matrix

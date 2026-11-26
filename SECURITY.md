@@ -107,5 +107,5 @@ A new dependency's security posture is reviewed with its supply chain under
 schedule in `dependency-policy.toml` rather than the monthly cadence, and it does not
 wait for a documentation or capability update.
 
-This file is a protected integration path (`team-ownership.toml`). Changing the reported
+This file is a protected integration path (`config/team-ownership.toml`). Changing the reported
 channel, the supported versions, or the scope above is an integration change.

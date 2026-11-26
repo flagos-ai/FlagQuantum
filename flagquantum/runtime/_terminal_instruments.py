@@ -7,13 +7,14 @@ from typing import TypedDict
 
 import torch
 
+from flagquantum.core.operators.boson import DEFAULT_DENSE_MATRIX_BYTES
+from flagquantum.runtime.results import MeasurementResult
+from flagquantum.simulation.dynamics.problem import _require_density_matrices
+
 from ..core.ir import _encode_value
 from ..errors import CapabilityError, ValidationError
-from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES
 from ..operators import SuperOperator
-from ..simulation.lindblad_request import _require_density_matrices
 from . import measurements
-from .result import MeasurementResult
 
 
 class _BranchRecord(TypedDict):

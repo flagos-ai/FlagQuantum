@@ -1,28 +1,24 @@
-# Local compute helpers
+# Local devices
 
-This directory owns private helpers for resources controlled directly by the
-current process. Its first migrated implementation observes allocator peaks
-through the existing Compute platform boundary.
+Owns platform contracts, device lookup, PyTorch/FlagOS/FlagGems adaptation, target capability observation and allocator peak observation. A local device is controlled by this process; external queues belong to the sibling Remote domain. Do not choose simulation algorithms or training policy here.
 
-It does not own training algorithms, execution policy, remote submission, or
-public contracts. Dependencies are Torch and the existing parent Compute
-contracts and registry. Runtime executors consume the private helper; user entry
-points remain the existing `flagquantum` APIs. This directory exports no public
-API. Other direct-device implementations remain in the parent package until
-their complete reference closures can migrate together.
+Allowed dependencies: Core contracts, Torch and lazy optional accelerator libraries.
+
+Published entry points: flagquantum.compute.get_platform_runtime. Historical import paths are forwarding facades;
+the implementation in this directory is authoritative. See the
+[relocation ledger](../../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md)
+for compatibility ownership and removal gates.
 
 ## Ten-minute contributor path
 
-1. Read `_memory.py` and the existing platform contract in `../contracts.py`.
-2. Run `python -m pytest tests/unit/test_training_peak_memory.py -q` from the
-   repository root. The tests demonstrate CPU behavior and substitute a FlagOS
-   platform without changing the consumers, checking synchronize/read/reset
-   ordering and the requested device index.
-3. Make a focused allocator-observation change and rerun those tests, then run:
+1. Read the implementation matching the behavior under change and its existing test.
+2. Make one focused change inside this domain, keeping published contracts unchanged.
+3. From the repository root, run:
 
    ```sh
-   python -m pytest tests/unit/test_statevector_training.py tests/unit/test_mps_training.py tests/integration/test_training_parameter_lifecycle.py -q
+   python -m pytest tests/unit/test_training_peak_memory.py -q
+   python tools/check_architecture.py
    ```
 
-A successful CPU test run provides no evidence of physical accelerator support
-or distributed scalability.
+CPU tests establish behavior and fixture conformance; physical hardware and
+distributed capacity require their separate evidence gates.

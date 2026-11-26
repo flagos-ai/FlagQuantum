@@ -11,7 +11,7 @@ import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import CapabilityError, ExecutionError, SerializationError
-from flagquantum.lindblad._plan import _identity
+from flagquantum.runtime.evolution._plan import _identity
 from flagquantum.runtime.execution_plan_contract import ExecutionPlanContractError
 from tests.unit.test_rydberg_presence_contract import _program
 
@@ -274,7 +274,7 @@ def test_world_size_refused_before_capture_and_execution(
 
 
 def test_native_source_stays_closed_at_circuit_and_deployment_frontdoors() -> None:
-    from flagquantum.deployment import create_deployment_package
+    from flagquantum.runtime.planner.deployment import create_deployment_package
 
     source = _program(RydbergProgram, False).measure_presence(
         "a", at=0.5, efficiency=0.8

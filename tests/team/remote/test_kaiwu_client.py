@@ -12,8 +12,8 @@ from unittest.mock import Mock
 
 import pytest
 
-import flagquantum.remote.kaiwu.client as client_module
-from flagquantum.remote.kaiwu import (
+import flagquantum.compute.remote.kaiwu.client as client_module
+from flagquantum.compute.remote.kaiwu import (
     KaiwuSDKClient,
     KaiwuSDKEnvironment,
     KaiwuSDKError,
@@ -21,7 +21,10 @@ from flagquantum.remote.kaiwu import (
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskReceipt
+from flagquantum.compute.remote.kaiwu.contracts import (
+    FrozenIsingMatrix,
+    KaiwuTaskReceipt,
+)
 
 np = pytest.importorskip("numpy")
 

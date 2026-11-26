@@ -17,7 +17,7 @@ else:
 
 import torch
 
-from flagquantum.kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
     validate_catalog,
@@ -46,7 +46,10 @@ def matrix(p):
 @pytest.mark.parametrize("w", [0, 3, 5])
 @pytest.mark.parametrize("batch,shared", [(1, True), (2, True), (2, False)])
 def test_fused_actions(w, batch, shared):
-    from flagquantum.kernels.triton.statevector_ry_fp64 import backward, forward
+    from flagquantum.simulation.kernels.triton.statevector_ry_fp64 import (
+        backward,
+        forward,
+    )
 
     torch.manual_seed(131)
     x = torch.randn(batch, 64, dtype=torch.complex128, device="cpu").to("flagos:0")

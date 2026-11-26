@@ -31,7 +31,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.optimizers.nelder_mead import (
     NELDER_MEAD_ASSUMPTIONS,
     NELDER_MEAD_LIMITATIONS,
     NelderMeadOptimizer,

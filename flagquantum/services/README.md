@@ -1,5 +1,7 @@
 # Services
 
+This directory maintains published service entry points. Workflows are implemented in Algorithms, Synth, Compiler, Runtime and Ecosystem according to their responsibility. See the [migration ledger](../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md) before adding an implementation here.
+
 ## Synthesis module ownership
 
 | Module | Responsibility |

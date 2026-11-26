@@ -6,8 +6,9 @@ import ast
 import math
 from typing import TYPE_CHECKING, NoReturn
 
-from ..._hybrid.model import Value
-from ..._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import Value
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
+
 from ..semantics._phase_factors import Cube
 from ..semantics._phase_polynomial import Location, Polynomial, expand_phase
 from .numeric import has_numeric_reads

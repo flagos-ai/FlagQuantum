@@ -5,8 +5,8 @@ import torch
 
 pytest.importorskip("triton")
 
-import flagquantum.kernels.triton.mps_observable_adjoint as mps_observable_adjoint
-from flagquantum.kernels.triton.mps_observable_adjoint import (
+import flagquantum.simulation.kernels.triton.mps_observable_adjoint as mps_observable_adjoint
+from flagquantum.simulation.kernels.triton.mps_observable_adjoint import (
     fused_mps_hermitian_observable_adjoint,
 )
 

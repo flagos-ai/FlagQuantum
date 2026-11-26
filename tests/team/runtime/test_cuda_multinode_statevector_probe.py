@@ -14,7 +14,7 @@ from tools.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
-_SCRIPT = _ROOT / "tools" / "probe_cuda_multinode_statevector.py"
+_SCRIPT = _ROOT / "tools" / "validation/probe_cuda_multinode_statevector.py"
 _A800_ARTIFACT = (
     _ROOT / "artifacts" / "cuda_multinode_statevector_a800_jp171_jp172_20260930.json"
 )

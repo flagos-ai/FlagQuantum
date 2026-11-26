@@ -12,6 +12,8 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from flagquantum.compute.remote.packages import CloudBackendProfile
+
 from ...core.target_capabilities import (
     CapabilityBlocker,
     CapabilityFact,
@@ -32,7 +34,6 @@ from ...core.target_capabilities import (
     TargetIdentity,
     match_target_capabilities,
 )
-from ...deployment.cloud import CloudBackendProfile
 from ._conditions import instruction_condition_clauses
 from .circuit import DynamicCircuit
 from .conformance import DynamicFeatureSet

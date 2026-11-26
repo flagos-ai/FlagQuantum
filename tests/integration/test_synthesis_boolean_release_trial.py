@@ -26,7 +26,7 @@ pytestmark = pytest.mark.integration
 def test_trial_improves_complete_domain_cases(case, frontend, monkeypatch) -> None:
     workload = Prepared(Workload(case, frontend))
     with monkeypatch.context() as legacy_policy:
-        from flagquantum.services import _synthesis_registers
+        from flagquantum.synth import _program as _synthesis_registers
 
         select = _synthesis_registers.select_register_program
 

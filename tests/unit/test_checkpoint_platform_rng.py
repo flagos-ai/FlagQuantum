@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from flagquantum.runtime import training_state
+from flagquantum.runtime import checkpointing as training_state
 
 pytestmark = pytest.mark.unit
 

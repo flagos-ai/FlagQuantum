@@ -449,7 +449,7 @@ def test_changed_identity_counters_and_process_failure_are_retained(
 
 
 def test_member_integrity_loop_cannot_replace_the_requested_case() -> None:
-    tree = ast.parse(Path("tools/observe_ftqc_phase_cost.py").read_text())
+    tree = ast.parse(Path("tools/validation/observe_ftqc_phase_cost.py").read_text())
     observe = next(
         node
         for node in tree.body

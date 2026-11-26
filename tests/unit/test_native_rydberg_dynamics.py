@@ -14,8 +14,8 @@ import flagquantum.lindblad as fql
 from examples.rydberg_native_dynamics import native_pair_plan
 from flagquantum.errors import CapabilityError, SerializationError
 from flagquantum.experimental.simulation import RydbergProgram
-from flagquantum.lindblad._plan import _identity
-from flagquantum.simulation.lindblad import EvolutionValidationError
+from flagquantum.runtime.evolution._plan import _identity
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -245,7 +245,7 @@ def test_sealed_live_and_json_execution_do_not_recompile_the_source(
 ) -> None:
     plan = native_pair_plan(intervals=4)
     restored = fql.LindbladPlan.from_json(plan.to_json())
-    from flagquantum.lindblad import _native_plan
+    from flagquantum.runtime.evolution import _native_plan
 
     def no_recompile(*args: object, **kwargs: object) -> None:
         raise AssertionError("source recompiled during sealed execution")
@@ -332,7 +332,7 @@ def test_float32_binding_capture_has_no_implicit_float64_contract() -> None:
 
 
 def test_low_level_mathematical_api_does_not_gain_native_dispatch() -> None:
-    from flagquantum.simulation.lindblad import evolve_density_matrix
+    from flagquantum.simulation.dynamics.lindblad import evolve_density_matrix
 
     p = pulse()
     with pytest.raises(EvolutionValidationError):

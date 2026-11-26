@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from flagquantum.core.ir import Instruction
-from flagquantum.kernels import triton as triton_kernels
+from flagquantum.simulation.kernels import triton as triton_kernels
 from flagquantum.simulation.statevector import rx_rz_dispatch
 from flagquantum.simulation.statevector.operations import (
     _apply_rx_rz_loop,

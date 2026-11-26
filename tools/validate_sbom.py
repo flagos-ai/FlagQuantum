@@ -1,45 +1,16 @@
-#!/usr/bin/env python
-"""Fail closed when a generated CycloneDX SBOM lacks release provenance."""
+"""Compatibility command; implementation lives in its owning tools domain."""
 
-from __future__ import annotations
+import runpy as _runpy
+import sys as _sys
+from importlib import import_module as _import_module
+from pathlib import Path as _Path
 
-import json
-import sys
-from pathlib import Path
-from typing import Any
-
-
-def sbom_errors(payload: dict[str, Any]) -> tuple[str, ...]:
-    errors: list[str] = []
-    if payload.get("bomFormat") != "CycloneDX":
-        errors.append("SBOM must use CycloneDX")
-    if not payload.get("specVersion"):
-        errors.append("SBOM must declare specVersion")
-    components = payload.get("components")
-    if not isinstance(components, list) or not components:
-        errors.append("SBOM must contain components")
-    elif not any(
-        isinstance(component, dict)
-        and str(component.get("name", "")).lower() == "flagquantum"
-        for component in components
-    ):
-        errors.append("SBOM must contain the flagquantum component")
-    return tuple(errors)
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        print("usage: validate_sbom.py SBOM.json", file=sys.stderr)
-        return 2
-    payload = json.loads(Path(args[0]).read_text(encoding="utf-8"))
-    errors = sbom_errors(payload)
-    if errors:
-        print("\n".join(errors), file=sys.stderr)
-        return 1
-    print("SBOM validation passed")
-    return 0
-
-
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _runpy.run_module("tools.release.validate_sbom", run_name="__main__")
+else:
+    _implementation = _import_module("tools.release.validate_sbom")
+    _sys.modules[__name__] = _implementation
+
+    def __getattr__(name):
+        return getattr(_implementation, name)

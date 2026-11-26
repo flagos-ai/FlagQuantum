@@ -17,9 +17,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.noise import NoiseModel
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.errors import CapabilityError, SerializationError, ValidationError
-from flagquantum.noise import NoiseModel
 from flagquantum.runtime import execution
 from flagquantum.runtime import execution_plan_contract as codec
 from flagquantum.runtime._runtime_inputs import bind_runtime_inputs

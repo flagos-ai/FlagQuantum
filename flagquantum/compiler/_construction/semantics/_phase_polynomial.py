@@ -12,7 +12,7 @@ from collections.abc import Callable
 from operator import and_, eq, ge, gt, le, lt, ne, or_, xor
 from typing import NoReturn, TypeVar
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
 
 Node = TypeVar("Node")
 Location = tuple[Value, int]

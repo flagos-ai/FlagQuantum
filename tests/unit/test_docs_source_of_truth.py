@@ -13,7 +13,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
-    "docs_source_of_truth", ROOT / "tools/docs_source_of_truth.py"
+    "docs_source_of_truth", ROOT / "tools/docs/docs_source_of_truth.py"
 )
 assert SPEC and SPEC.loader
 DOCS = importlib.util.module_from_spec(SPEC)

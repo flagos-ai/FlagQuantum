@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BOOL,
     Block,
     HybridProgram,

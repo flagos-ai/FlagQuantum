@@ -14,7 +14,7 @@ no capability level change, and no implementation authorization.
 Two machine-readable files disagree about what Compiler may depend on, and no
 check compares them. `contracts/long-horizon-architecture-v1.json` declares domain
 `compiler` with `may_depend_on = ["core"]`.
-`architecture.toml` gives Compiler a seven-entry deny list,
+`config/architecture.toml` gives Compiler a seven-entry deny list,
 `compiler_forbidden = ["_compiler", "compilation", "runtime", "deployment",
 "simulation", "compute", "remote"]`. The two rules agree on six entries and differ
 on everything else: the contract permits only `core`, while the policy permits
@@ -92,7 +92,7 @@ repository already committed to.
 ## Decision Candidates
 
 **Candidate 1 — Resolve the dependency disagreement in favor of Core-only, and
-replace W6-02 with a per-wire index.** Set `architecture.toml`'s
+replace W6-02 with a per-wire index.** Set `config/architecture.toml`'s
 `compiler_forbidden` to include `noise`, matching
 `contracts/long-horizon-architecture-v1.json`, and move `lower_noise_model` to the
 `noise` domain. Replace the "introduce the internal DAG" step with an internal
@@ -117,7 +117,7 @@ is needed and what it must express. Consequence: nothing improves in the meantim
 including the measured quadratic cost, which is independent of the pass manager.
 
 **Candidate 5 — Change nothing.** Consequence: two files keep disagreeing, and the
-next contributor who reads `architecture.toml` concludes Compiler may import
+next contributor who reads `config/architecture.toml` concludes Compiler may import
 `services` and `twin`.
 
 ## Prohibited Practices
@@ -128,7 +128,7 @@ next contributor who reads `architecture.toml` concludes Compiler may import
 2. **Do not port a pass without deleting the implementation it replaces in the
    same change.** A coexistence window for three private functions with one caller
    each is not a migration; it is two code paths.
-3. **Do not treat `architecture.toml` and
+3. **Do not treat `config/architecture.toml` and
    `contracts/long-horizon-architecture-v1.json` as independent.** Any change to
    one boundary rule must state its effect on the other, because no tool compares
    them.
@@ -154,7 +154,7 @@ next contributor who reads `architecture.toml` concludes Compiler may import
   Compiler-to-`noise` edge today is `flagquantum/compiler/noise.py:10`. The
   boundary rule must therefore be changed together with that file, not before it.
 - **`noise` gains Compiler-independent ownership of noise-model lowering.** Its own
-  boundary (`architecture.toml`, `noise_forbidden`) already forbids `circuit`,
+  boundary (`config/architecture.toml`, `noise_forbidden`) already forbids `circuit`,
   `compilation`, `deployment`, `runtime`, and `simulation`; adding the inverse edge
   makes the two rules symmetric rather than adding a new one.
 - **The per-wire index changes no observable behavior.**
@@ -177,7 +177,7 @@ next contributor who reads `architecture.toml` concludes Compiler may import
 
 1. **The two boundary declarations agree.** A check compares
    `contracts/long-horizon-architecture-v1.json`'s per-domain `may_depend_on`
-   against `architecture.toml`'s boundary lists and fails on any entry where
+   against `config/architecture.toml`'s boundary lists and fails on any entry where
    neither is implied by the other. Without it, this ADR's own premise can recur.
 2. **The dependency edge is gone, not waived.**
    `grep -rn "from ..noise import" flagquantum/compiler/` returns nothing, and

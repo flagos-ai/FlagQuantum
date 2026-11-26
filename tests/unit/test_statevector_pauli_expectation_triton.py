@@ -5,8 +5,8 @@ import torch
 
 pytest.importorskip("triton")
 
-import flagquantum.kernels.triton.statevector_measurement as statevector_measurement
-from flagquantum.kernels.triton.statevector_measurement import (
+import flagquantum.simulation.kernels.triton.statevector_measurement as statevector_measurement
+from flagquantum.simulation.kernels.triton.statevector_measurement import (
     statevector_pauli_expectation,
 )
 from flagquantum.simulation.pauli import pauli_product_statevector_expectation

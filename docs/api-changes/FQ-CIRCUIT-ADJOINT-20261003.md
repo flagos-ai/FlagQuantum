@@ -275,7 +275,7 @@ forbids.
 
 ## Owner and approvals
 
-Owner: FlagQuantum core maintainers (team `core` in `team-ownership.toml`).
+Owner: FlagQuantum core maintainers (team `core` in `config/team-ownership.toml`).
 
 Approval recorded by this document: the method name `Circuit.adjoint`, the four
 rule names in `ADJOINT_RULES`, the partner-opcode convention, and

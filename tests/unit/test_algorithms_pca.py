@@ -6,7 +6,7 @@ from collections.abc import Sequence
 import pytest
 import torch
 
-from flagquantum.algorithms.pca import (
+from flagquantum.algorithms.linear_algebra.pca import (
     PcaResult,
     _PhaseFromDensityMatrix,
     principal_components,

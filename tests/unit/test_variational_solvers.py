@@ -55,23 +55,24 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.optimization.qaoa import (
     QAOA_ASSUMPTIONS,
     QAOA_LIMITATIONS,
-    SPSA_ASSUMPTIONS,
-    SPSA_LIMITATIONS,
-    Hamiltonian,
-    NelderMeadOptimizer,
     QAOAResult,
-    SPSAOptimizer,
-    SPSAResult,
     maxcut_hamiltonian,
     maxcut_objective,
-    qaoa_circuit,
-    qaoa_loss,
     run_qaoa,
 )
-from flagquantum.algorithms.qubo import max_cut_qubo, qubo_to_ising
+from flagquantum.algorithms.optimization.qaoa_circuits import qaoa_circuit, qaoa_loss
+from flagquantum.algorithms.optimization.qubo import max_cut_qubo, qubo_to_ising
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.optimizers.spsa import (
+    SPSA_ASSUMPTIONS,
+    SPSA_LIMITATIONS,
+    SPSAOptimizer,
+    SPSAResult,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 from flagquantum.errors import ValidationError
 
 pytestmark = pytest.mark.unit

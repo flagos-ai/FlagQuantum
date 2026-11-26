@@ -16,12 +16,12 @@ from examples.qdiffusion_kaiwu.qboson_live_smoke import (
     _write_private_json,
     run_live_smoke,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
 pytestmark = pytest.mark.unit
 

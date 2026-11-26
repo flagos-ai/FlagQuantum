@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     DEFAULT_HYBRID_PASSES,
     HybridProgram,
     analysis,

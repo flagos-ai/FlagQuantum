@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compute import flaggems
+from flagquantum.compute.local import flaggems
 from flagquantum.core.runtime_config import get_runtime_config
 from flagquantum.runtime.execution import run_native
 

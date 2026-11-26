@@ -13,8 +13,9 @@ import pytest
 import torch
 
 import flagquantum.qec as qec
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import two_qubit_depolarizing_channel
 from flagquantum.errors import CapabilityError
-from flagquantum.noise import NoiseModel, two_qubit_depolarizing_channel
 from flagquantum.qec.adapters import stim as bridge
 from flagquantum.simulation.stabilizer import StabilizerDependencyError, engine
 

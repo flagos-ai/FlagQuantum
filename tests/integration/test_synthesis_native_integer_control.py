@@ -21,7 +21,7 @@ from examples.synthesis.community.paper_implementation_project.bb84.bb84_impleme
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition
 

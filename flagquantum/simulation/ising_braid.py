@@ -11,6 +11,8 @@ import math
 
 import torch
 
+from flagquantum.simulation.dynamics.problem import _require_density_matrices
+
 from ..core.ir import IRValidationError
 from ..core.ir.program.model import Operation, ProgramRecord
 from ..core.ir.program.physical import (
@@ -21,7 +23,6 @@ from ..core.ir.program.physical import (
 from ..core.ir.program.verifier import verify_program_record
 from ..errors import CapabilityError, ExecutionError, ValidationError
 from ..operators import SuperOperator
-from .lindblad_request import _require_density_matrices
 
 
 def _fusion_matrices(

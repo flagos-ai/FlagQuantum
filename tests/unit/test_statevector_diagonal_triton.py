@@ -7,7 +7,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.statevector_diagonal import (
+from flagquantum.simulation.kernels.triton.statevector_diagonal import (
     apply_complex64_local_diagonal,
 )
 

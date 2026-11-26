@@ -11,7 +11,8 @@ from typing import TypeAlias
 
 import torch
 
-from ...core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ..native_cpu.rotation import fused_hadamard_controlled_phase_graph_
 from .program import (
     _StatevectorControlledPhaseDecompositionStep,

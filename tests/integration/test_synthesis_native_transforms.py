@@ -15,7 +15,7 @@ from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._construction.frontend.program import capture_program
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition
 
@@ -209,7 +209,7 @@ def test_existing_resource_limits_and_public_exports(name: str) -> None:
                 max_depth=depth,
                 memory_limit_bytes=memory,
             )
-    from flagquantum.services import synthesis
+    from flagquantum.synth import _workflow as synthesis
 
     assert getattr(synth, name) is getattr(synthesis, name)
     contract = json.loads(

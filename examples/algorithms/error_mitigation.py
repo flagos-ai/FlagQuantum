@@ -44,11 +44,11 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_zne
+from flagquantum.algorithms.error_mitigation import run_zne
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
-    NoiseModel,
-    ReadoutError,
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     coherent_overrotation_channel,
     depolarizing_channel,
 )

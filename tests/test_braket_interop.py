@@ -8,7 +8,7 @@ import torch
 
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.core.parameters import Parameter
 from flagquantum.ecosystem import get_adapter
 from flagquantum.ecosystem.braket import (

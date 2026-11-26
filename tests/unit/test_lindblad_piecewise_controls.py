@@ -12,10 +12,10 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from flagquantum.core.operators import boson
 from flagquantum.errors import SerializationError
-from flagquantum.observables import boson
-from flagquantum.simulation import lindblad as dynamics
-from flagquantum.simulation.lindblad import EvolutionValidationError
+from flagquantum.simulation.dynamics import lindblad as dynamics
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -490,7 +490,7 @@ def test_finite_difference_and_complex64_have_independent_error_budgets():
 
 
 def test_unreachable_scheduled_residual_target_fails_closed(monkeypatch):
-    from flagquantum.simulation import lindblad_integrators as integrators
+    from flagquantum.simulation.dynamics import integrators as integrators
 
     monkeypatch.setattr(integrators, "SOLVE_RESTART", 1)
     monkeypatch.setattr(dynamics, "_solve_max_iterations", lambda dimension: 1)

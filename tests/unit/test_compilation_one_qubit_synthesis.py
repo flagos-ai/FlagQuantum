@@ -12,7 +12,7 @@ from flagquantum.compiler.optimization.one_qubit_synthesis import (
     synthesize_one_qubit_matrix,
 )
 from flagquantum.core.ir import Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit

@@ -8,15 +8,15 @@ from __future__ import annotations
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     fermion_hamiltonian,
     from_native_molecule,
 )
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.evolution import low_rank_evolution
 from flagquantum.algorithms.fermion.low_rank import decompose_two_body
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 
 
 def main() -> None:

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.observables import I, Observable, X, Y, Z
+from flagquantum.core.operators.observable import I, Observable, X, Y, Z
 
 WIDTH = 4
 OUTER_BUDGET = 10

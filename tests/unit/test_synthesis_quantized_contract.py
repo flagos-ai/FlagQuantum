@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum import synth
-from flagquantum.services import synthesis
+from flagquantum.synth import _workflow as synthesis
 from tools.public_api_snapshot import validate
 
 pytestmark = pytest.mark.unit

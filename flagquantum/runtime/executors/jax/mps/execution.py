@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from .....simulation.jax.mps.batched import (
+from flagquantum.simulation.mps.jax.batched import (
     jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,
 )
-from .....simulation.jax.mps.batched import (
+from flagquantum.simulation.mps.jax.batched import (
     jax_mps_apply_two_batched as _apply_two_jax_mps_tensors,
 )
+
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
     _gate_matrix_as_jax,

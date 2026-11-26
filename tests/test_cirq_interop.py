@@ -11,7 +11,7 @@ import torch
 import flagquantum as fq
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.core.parameters import Parameter, ParameterExpression
 from flagquantum.ecosystem import get_adapter
 from flagquantum.ecosystem.cirq import (

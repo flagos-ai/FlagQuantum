@@ -56,7 +56,7 @@ def test_extension_protocol_is_layered_and_does_not_expand_root_api() -> None:
 
 
 def test_execution_plan_and_deployment_package_have_distinct_owners() -> None:
-    from flagquantum.deployment import DeploymentPackage
+    from flagquantum.compute.remote.packages import DeploymentPackage
 
     plan = fq.plan(fq.Circuit(1).h(0))
 

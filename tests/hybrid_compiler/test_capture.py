@@ -4,7 +4,7 @@ from collections.abc import Callable, Iterator
 
 import pytest
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     HybridCaptureError,
     HybridProgram,
     Operation,
@@ -14,13 +14,13 @@ from flagquantum.compiler._hybrid import (
     tensor_type,
     verify_program,
 )
-from flagquantum.compiler._hybrid.capture import (
+from flagquantum.compiler.frontends._structured.capture import (
     HybridCaptureError as RetainedHybridCaptureError,
 )
-from flagquantum.compiler._hybrid.capture import (
+from flagquantum.compiler.frontends._structured.capture import (
     capture_function as retained_capture_function,
 )
-from flagquantum.compiler._hybrid.capture import (
+from flagquantum.compiler.frontends._structured.capture import (
     capture_source as retained_capture_source,
 )
 

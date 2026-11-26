@@ -61,7 +61,7 @@ Head-branch prefixes across the 271 merged pull requests:
 
 The prefixes are per-change descriptions, not per-team branches. `refactor/` appears 18
 times and `dev/` 4 times; neither is a team identity, and no prefix reproduces the 11
-team names in `team-ownership.toml`.
+team names in `config/team-ownership.toml`.
 
 ### Addendum, 2026-10-08: `main` now carries merge commits
 
@@ -132,9 +132,9 @@ Two things follow, and both belong to the same finding as
 
 | Document | What it declares | Line |
 | --- | --- | --- |
-| `AGENTS.md` | Sessions "must use the branch and linked worktree assigned in `team-ownership.toml`"; `refactor/flagquantum-vnext-architecture` is "the reserved name of the only authoritative integration branch", and the migration layout is optional | `244-287` |
+| `AGENTS.md` | Sessions "must use the branch and linked worktree assigned in `config/team-ownership.toml`"; `refactor/flagquantum-vnext-architecture` is "the reserved name of the only authoritative integration branch", and the migration layout is optional | `244-287` |
 | `docs/development/MULTI_TEAM_DEVELOPMENT.md` | 304 lines: linked worktrees, cross-team merges only through Integration, `git merge --no-ff` one team at a time, handoff records | full document |
-| `team-ownership.toml` | 11 teams, each with a `branch` and a `worktree`, all marked reserved | `77-190` |
+| `config/team-ownership.toml` | 11 teams, each with a `branch` and a `worktree`, all marked reserved | `77-190` |
 | `.github/workflows/ci.yml` | `push` triggered on `main`, `develop`, and `refactor/flagquantum-vnext-architecture` (corrected to `main` only by the change that edited this line) | `5` |
 | `.github/workflows/ci.yml` | `pull_request` triggers on `main` only | `7` |
 
@@ -223,7 +223,7 @@ unique `worktree`, and `ci.yml:76` runs that validation on every pull request. S
 repository has a machine-checked invariant over 22 values that no process consumes. The
 only reader of either field is the uniqueness check itself. The two fields are kept as a
 reserved record of the migration layout, now labelled as reserved in both
-`team-ownership.toml` and `AGENTS.md`, rather than removed.
+`config/team-ownership.toml` and `AGENTS.md`, rather than removed.
 
 ### Branch protection now supplies the control, and did not before
 
@@ -310,8 +310,8 @@ is what the eight checks make it mean.
 **Candidate A — Declare the observed pull-request flow authoritative.** Rewrite
 `AGENTS.md:247-274` and `docs/development/MULTI_TEAM_DEVELOPMENT.md` to describe branch
 off `main`, pull request, squash merge; remove the `branch` and `worktree` fields from
-`team-ownership.toml` and the uniqueness check with them; trim `ci.yml:5` to `main`.
-`team-ownership.toml` keeps its actual job — path ownership — and loses the two fields
+`config/team-ownership.toml` and the uniqueness check with them; trim `ci.yml:5` to `main`.
+`config/team-ownership.toml` keeps its actual job — path ownership — and loses the two fields
 that describe a process that is not running. Consequence: the machine-checked invariant
 matches the enforced reality, and the removal of the uniqueness check is a subtraction
 rather than a new rule.
@@ -324,7 +324,7 @@ owner merging one team at a time with `--no-ff` and per-team handoff records —
 
 **Candidate C — Declare the pull-request flow authoritative and keep the worktree
 workflow as an explicitly optional mode for a coordinated multi-team round.** This is
-Candidate A with `team-ownership.toml` retaining the `branch`/`worktree` fields marked
+Candidate A with `config/team-ownership.toml` retaining the `branch`/`worktree` fields marked
 as reserved, no longer required to be live. Consequence: the documents stop presenting
 an optional mode as mandatory, at the cost of keeping 22 values nothing reads.
 
@@ -343,7 +343,7 @@ a new rule before the subtraction review that Candidate A performs.
 Candidate C was chosen, with the `ci.yml:5` trim from Candidate A applied at the same
 time:
 
-- `team-ownership.toml` keeps `branch` and `worktree`, and the file now marks them as
+- `config/team-ownership.toml` keeps `branch` and `worktree`, and the file now marks them as
   reserved names rather than current instructions. `AGENTS.md` and
   `docs/development/MULTI_TEAM_DEVELOPMENT.md` say the same.
 - `ci.yml:5` no longer lists `develop` or `refactor/flagquantum-vnext-architecture`.
@@ -378,7 +378,7 @@ The following are recorded so that the declaration cannot decay while it is deci
 1. **Opening a pull request against a base other than `main`.** CI does not watch any
    other base, so such a pull request is unverified. If stacking is genuinely needed,
    the base-branch filter must be fixed first, as a separate change.
-2. **Treating a `branch` or `worktree` value in `team-ownership.toml` as a current
+2. **Treating a `branch` or `worktree` value in `config/team-ownership.toml` as a current
    instruction.** Those fields describe the v0.2.0 migration. A new value added today
    would be a new unread value.
 3. **Adding a third description of the integration flow.** Four sources already exist
@@ -393,13 +393,13 @@ The following are recorded so that the declaration cannot decay while it is deci
 
 - **`AGENTS.md` and `docs/development/MULTI_TEAM_DEVELOPMENT.md` are prose.** Correcting
   them changes no executable behavior. Both are protected/shared paths with different
-  owners: `AGENTS.md` is a protected integration path (`team-ownership.toml`), while
+  owners: `AGENTS.md` is a protected integration path (`config/team-ownership.toml`), while
   `docs/development/**` is shared, so any team may edit the second and only Integration
   may edit the first.
-- **Removing `branch` and `worktree` from `team-ownership.toml` is a policy change.**
+- **Removing `branch` and `worktree` from `config/team-ownership.toml` is a policy change.**
   `tools/check_team_scope.py:64-76` reads them and `ci.yml:76` runs the validation on
   every pull request, so the removal must land with the checker and be reflected in
-  `tests/unit/test_team_scope_policy.py`. `team-ownership.toml` and `tools/**` are both
+  `tests/unit/test_team_scope_policy.py`. `config/team-ownership.toml` and `tools/**` are both
   protected integration paths.
 - **`ci.yml:5` triggers.** Removing `develop` and `refactor/flagquantum-vnext-architecture`
   from the `push` trigger removes two events that can never fire. If Candidate B is
@@ -419,7 +419,7 @@ A declaration of the workflow is complete when:
 
 1. **One authority.** `AGENTS.md`, `docs/development/MULTI_TEAM_DEVELOPMENT.md`, and
    this document state the same steps, and a reader can find no conflicting instruction.
-2. **The branch fields have a reader or are gone.** Every field in `team-ownership.toml`
+2. **The branch fields have a reader or are gone.** Every field in `config/team-ownership.toml`
    is either read by a check or has been removed; there is no machine-checked invariant
    over values no process consumes.
 3. **The CI triggers match the flow.** Every branch named in `ci.yml`'s `push` and
@@ -467,12 +467,12 @@ control](#branch-protection-now-supplies-the-control-and-did-not-before).
 
 ## Owner and approvals
 
-- Owning domain: `integration`. This document, `AGENTS.md`, `team-ownership.toml`,
+- Owning domain: `integration`. This document, `AGENTS.md`, `config/team-ownership.toml`,
   `tools/check_team_scope.py`, and `.github/workflows/ci.yml` are all integration-owned
   protected paths, and Candidate A changes nothing outside them.
 - `docs/development/INTEGRATION_WORKFLOW.md` is a shared documentation path, so this
   file may be added by any team; the corrections it proposes to `AGENTS.md` and
-  `team-ownership.toml` may not.
+  `config/team-ownership.toml` may not.
 - Required approvals before implementing a candidate: **integration owner** for all of
   them, plus **the maintainer who owns CI** if `ci.yml` triggers change.
 - Sequencing: this declaration, then the candidate choice, then the prose corrections,
@@ -481,4 +481,4 @@ control](#branch-protection-now-supplies-the-control-and-did-not-before).
   disagree.
 - Smallest useful step: **Candidate A's prose corrections alone**. They change no
   executable behavior, they remove the instruction that produces unmergeable work, and
-  they leave the `team-ownership.toml` field removal to a separate review.
+  they leave the `config/team-ownership.toml` field removal to a separate review.

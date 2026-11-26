@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from ...core.algebra.pauli import PauliOperator, count
+from flagquantum.core.operators.pauli import PauliOperator, count
 
 
 def pauli_matrix(

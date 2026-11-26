@@ -11,7 +11,7 @@ from flagquantum.compiler._construction.scheduling.selection import (
     select_arithmetic,
 )
 from flagquantum.compiler._construction.verification.bindings import verify_bindings
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

@@ -6,12 +6,13 @@ import os
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MPS-006-A"
@@ -125,7 +126,7 @@ def _apply_cataloged_mps_observable_adjoint(
         device_type=tensor.device.type,
         dtype=str(tensor.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_observable_adjoint import (
+    from flagquantum.simulation.kernels.triton.mps_observable_adjoint import (
         fused_mps_hermitian_observable_adjoint,
     )
 

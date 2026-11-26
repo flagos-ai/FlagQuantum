@@ -7,13 +7,14 @@ from functools import lru_cache
 
 import torch
 
-from ..kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
-from ..kernels.catalog.schema import KernelDirection
+from flagquantum.simulation.kernels.catalog.schema import KernelDirection
+
 from ..simulation.kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MEAS-001-A"
@@ -96,7 +97,9 @@ def _apply_cataloged_statevector_probabilities(state: torch.Tensor) -> torch.Ten
         dtype=str(state.dtype).removeprefix("torch."),
         direction="backward" if state.requires_grad else "forward",
     )
-    from ..kernels.triton.statevector_measurement import statevector_probabilities
+    from flagquantum.simulation.kernels.triton.statevector_measurement import (
+        statevector_probabilities,
+    )
 
     return statevector_probabilities(state)
 

@@ -21,7 +21,7 @@ from flagquantum.simulation.real_imag_kernels import (
 pytestmark = pytest.mark.unit
 
 if importlib.util.find_spec("triton") is not None:
-    import flagquantum.kernels.triton.complex_bmm as triton_bmm_runtime
+    import flagquantum.simulation.kernels.triton.complex_bmm as triton_bmm_runtime
 else:
     triton_bmm_runtime = None
 

@@ -16,7 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.training as fqt  # noqa: E402
-from flagquantum.models import (  # noqa: E402
+from flagquantum.algorithms.quantum_ml.models import (  # noqa: E402
     HybridQuantumClassifier,
     VariationalEnergyModel,
 )

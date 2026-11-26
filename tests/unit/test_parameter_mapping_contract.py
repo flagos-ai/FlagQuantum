@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from flagquantum import Circuit
-from flagquantum.algorithms import pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import pauli_term
 from flagquantum.core.parameters import Parameter, bind_parameter_value
 from flagquantum.runtime.executors.statevector.split_real_imag import (
     _canonical_parameter_bindings,

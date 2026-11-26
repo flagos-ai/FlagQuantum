@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 pytestmark = pytest.mark.unit
-WORKSHOP = Path(__file__).resolve().parents[2] / "workshops/flagos2026"
+WORKSHOP = Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026"
 spec = importlib.util.spec_from_file_location(
     "paths", WORKSHOP / "scripts/jiuding_paths.py"
 )
@@ -187,7 +187,7 @@ def test_notebook_blocks_template_and_prepares_personal_results(
     monkeypatch.syspath_prepend(str(WORKSHOP / "scripts"))
     monkeypatch.setitem(
         sys.modules,
-        "flagquantum.remote.compute.jiuding",
+        "flagquantum.compute.remote.compute.jiuding",
         SimpleNamespace(JiudingClient=lambda: object()),
     )
     monkeypatch.setenv("JIUDING_AK", "test-presence")

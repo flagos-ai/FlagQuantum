@@ -14,9 +14,8 @@ from examples.synthesis.tutorials.basics.quantum_programming.execution_tutorial.
 from flagquantum import synth
 from flagquantum.compiler.basis_conversion import convert_basis
 from flagquantum.core.ir import CircuitIR
-from flagquantum.noise import (
-    NoiseModel,
-    ReadoutError,
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     depolarizing_channel,
     two_qubit_depolarizing_channel,
 )

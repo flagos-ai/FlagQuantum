@@ -9,15 +9,15 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
     restore_kaiwu_job,
     submit_kaiwu_task,
 )
-from flagquantum.remote.kaiwu import jobs as jobs_module
-from flagquantum.remote.kaiwu.contracts import (
+from flagquantum.compute.remote.kaiwu import jobs as jobs_module
+from flagquantum.compute.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
@@ -136,7 +136,9 @@ def test_wait_polls_to_completion_without_resubmission(
 ) -> None:
     client = _FakeClient(["Queued", "Running", "Completed"])
     job = submit_kaiwu_task(_MATRIX, client=client, task_name="wait-test")
-    monkeypatch.setattr("flagquantum.remote.kaiwu.jobs.time.sleep", lambda _: None)
+    monkeypatch.setattr(
+        "flagquantum.compute.remote.kaiwu.jobs.time.sleep", lambda _: None
+    )
 
     result = job.wait(timeout=10.0, poll_interval=0.1)
 
@@ -278,7 +280,7 @@ def test_save_syncs_file_and_parent_directory(
         synced_types.append(os.fstat(descriptor).st_mode)
         real_fsync(descriptor)
 
-    monkeypatch.setattr("flagquantum.remote.kaiwu.jobs.os.fsync", record_fsync)
+    monkeypatch.setattr("flagquantum.compute.remote.kaiwu.jobs.os.fsync", record_fsync)
 
     job.save(tmp_path / "receipt.json")
 

@@ -162,7 +162,7 @@ from flagquantum.compiler.pipeline import (
     remove_identity_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import (
+from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,

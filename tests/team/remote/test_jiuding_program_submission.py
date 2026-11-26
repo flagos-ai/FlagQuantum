@@ -8,17 +8,17 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.remote.compute._program_job import (
+from flagquantum.compute.remote.compute._program_job import (
     PROGRAM_JOB_SCHEMA,
     decode_program_result,
     execute_request,
 )
-from flagquantum.remote.compute._workspace_executor import (
+from flagquantum.compute.remote.compute._workspace_executor import (
     SCHEMA,
     VERSION,
     _encode_tensor,
 )
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
 
@@ -87,7 +87,7 @@ def test_submit_program_manages_artifacts_when_receipt_is_omitted(monkeypatch) -
     client = _client()
     submit = Mock(return_value={"jobId": "job-1"})
     monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program.submit_managed_program",
+        "flagquantum.compute.remote.compute._managed_program.submit_managed_program",
         submit,
     )
 
@@ -111,7 +111,7 @@ def test_cpu_program_keeps_cpu_runtime_on_accelerator_queue(monkeypatch) -> None
     client = _client()
     submit = Mock(return_value={"jobId": "job-1"})
     monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program.submit_managed_program",
+        "flagquantum.compute.remote.compute._managed_program.submit_managed_program",
         submit,
     )
 
@@ -150,7 +150,7 @@ def test_program_request_executes_through_standard_runtime(
     }
     execute = Mock(return_value=expected)
     monkeypatch.setattr(
-        "flagquantum.remote.compute._workspace_executor.execute", execute
+        "flagquantum.compute.remote.compute._workspace_executor.execute", execute
     )
 
     assert execute_request(request) == expected
@@ -281,7 +281,7 @@ def test_client_result_fetches_managed_artifact(monkeypatch) -> None:
     monkeypatch.setattr(client, "status", Mock(return_value=[{"status": "Succeed"}]))
     read = Mock(return_value=managed_value)
     monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program.read_managed_result", read
+        "flagquantum.compute.remote.compute._managed_program.read_managed_result", read
     )
 
     result = client.result(receipt)
@@ -301,7 +301,7 @@ def test_restore_receipt_recovers_one_managed_job(monkeypatch) -> None:
     }
     run = Mock(return_value=Mock(stdout=json.dumps(expected).encode("utf-8")))
     monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program._run_ssh",
+        "flagquantum.compute.remote.compute._managed_program._run_ssh",
         run,
     )
 
@@ -315,7 +315,7 @@ def test_restore_receipt_rejects_non_uuid_before_remote_access(monkeypatch) -> N
     client = _client()
     run = Mock()
     monkeypatch.setattr(
-        "flagquantum.remote.compute._managed_program._run_ssh",
+        "flagquantum.compute.remote.compute._managed_program._run_ssh",
         run,
     )
 

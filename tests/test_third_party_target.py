@@ -27,6 +27,14 @@ from flagquantum.compiler.lowering.target_legalization import (
     TargetLegalizationError,
     legalize_circuit_for_target,
 )
+from flagquantum.compute.remote.emulation import (
+    TargetEmulationError,
+    emulate_declared_target,
+)
+from flagquantum.core.measurement import expectation
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import depolarizing_channel
+from flagquantum.core.operators.observable import Z
 from flagquantum.ecosystem.extensions.admission import (
     admit_backend_extension,
     withdraw_backend,
@@ -37,9 +45,6 @@ from flagquantum.ecosystem.extensions.target_sdk import (
     check_target_description,
     target_capability_snapshot,
 )
-from flagquantum.noise import NoiseModel, depolarizing_channel
-from flagquantum.observables import Z, expectation
-from flagquantum.remote.emulation import TargetEmulationError, emulate_declared_target
 from flagquantum.runtime.backend_registry import list_backends
 from flagquantum.runtime.options import ExecutionOptions
 
@@ -525,8 +530,8 @@ def test_the_declared_target_entry_stays_out_of_the_stable_root():
 
 
 def test_the_declared_target_entry_is_the_emulation_modules_own():
-    from flagquantum import remote
-    from flagquantum.remote import emulation
+    from flagquantum.compute import remote
+    from flagquantum.compute.remote import emulation as emulation
 
     assert "emulate_declared_target" in emulation.__all__
     assert callable(emulation.emulate_declared_target)
@@ -561,7 +566,7 @@ def test_the_callers_dialect_is_honoured_name_for_name():
     assert padded.emission_profile == "openqasm-2.0"
     # And the profile the declaration became states exactly that dialect, because
     # it is the emulated target's own emission capability and not a preference.
-    from flagquantum.remote.emulation import _declared_target_profile
+    from flagquantum.compute.remote.emulation import _declared_target_profile
 
     (description,) = check_target_description(device)
     qcis_profile = _declared_target_profile(description, emission_profile="qcis-1.0")

@@ -13,8 +13,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum.circuit import Circuit
-from flagquantum.runtime import training_state
-from flagquantum.runtime.training_state import TrainingStateError
+from flagquantum.runtime import checkpointing as training_state
+from flagquantum.runtime.checkpointing import TrainingStateError
 from tests.unit.test_training_parameter_state_contract_fake import (
     _assert_module_state,
     _identity,

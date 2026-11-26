@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 import torch
 
 if TYPE_CHECKING:
-    from ...algorithms import Hamiltonian
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
 
 class KaiwuInteropError(ValueError):
@@ -239,7 +239,7 @@ def encode_hamiltonian_as_ising(
             non-constant coefficients.
     """
 
-    from ...algorithms import Hamiltonian
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
     if not isinstance(hamiltonian, Hamiltonian):
         raise KaiwuMatrixValidationError(

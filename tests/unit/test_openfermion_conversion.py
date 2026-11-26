@@ -18,7 +18,8 @@ from flagquantum.algorithms.fermion.encoding import Encoding, encode_fermion
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm
+from flagquantum.core.operators.fermion import FermionOperator, FermionTerm
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm
 from flagquantum.ecosystem.openfermion import (
     from_openfermion_fermion,
     from_openfermion_interaction,
@@ -26,7 +27,6 @@ from flagquantum.ecosystem.openfermion import (
     to_openfermion_fermion,
     to_openfermion_qubit,
 )
-from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 if typing.TYPE_CHECKING:
@@ -84,8 +84,8 @@ def test_all_short_ordered_words_and_complex_round_trips() -> None:
 
 @pytest.fixture
 def molecular_data_source(tmp_path: pathlib.Path) -> OpenMolecularData:
-    from flagquantum.algorithms.chemistry_domain.problem import from_native_molecule
-    from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+    from flagquantum.algorithms.chemistry.models.problem import from_native_molecule
+    from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 
     geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
     native = from_native_molecule(create_molecular_hamiltonian(geometry))
@@ -104,7 +104,7 @@ def molecular_data_source(tmp_path: pathlib.Path) -> OpenMolecularData:
 def test_molecular_data_matches_upstream_hamiltonian_and_file_input(
     molecular_data_source: OpenMolecularData,
 ) -> None:
-    from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+    from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
     from flagquantum.ecosystem.chemistry.molecular_data import (
         from_openfermion_molecular_data,
     )
@@ -286,15 +286,15 @@ def test_molecular_data_replacement_preserves_native_uccsd_training(
     molecular_data_source: OpenMolecularData,
 ) -> None:
     from flagquantum.algorithms.chemistry import uccsd_ansatz
-    from flagquantum.algorithms.chemistry_domain.problem import (
+    from flagquantum.algorithms.chemistry.models.problem import (
         fermion_hamiltonian,
         from_native_molecule,
     )
-    from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+    from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
+    from flagquantum.core.operators.observable import Observable
     from flagquantum.ecosystem.chemistry.molecular_data import (
         from_openfermion_molecular_data,
     )
-    from flagquantum.observables import Observable
 
     source = molecular_data_source
     imported = from_openfermion_molecular_data(source)

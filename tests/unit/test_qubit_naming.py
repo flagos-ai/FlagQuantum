@@ -163,7 +163,7 @@ def test_pauli_constructor_refusals_use_qubit_wording():
 def test_public_model_defaults_avoid_deprecated_keywords(model_name, expected_qubits):
     """A shipped default must not teach a keyword the release deprecates."""
 
-    from flagquantum import models
+    from flagquantum.algorithms.quantum_ml import models
 
     with warnings.catch_warnings():
         warnings.simplefilter("error", DeprecationWarning)

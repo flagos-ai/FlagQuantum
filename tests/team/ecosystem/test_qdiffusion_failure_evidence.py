@@ -6,7 +6,7 @@ from examples.qdiffusion_kaiwu.failure_evidence import (
     apply_artifact_postflight,
     redacted_failure_record,
 )
-from flagquantum.remote.kaiwu import KaiwuSDKError
+from flagquantum.compute.remote.kaiwu import KaiwuSDKError
 
 pytestmark = pytest.mark.unit
 

@@ -1,93 +1,65 @@
-"""Private Triton kernels used by FlagQuantum simulation backends.
+"""Historical import facade for the relocated implementation."""
 
-Backend routing and CPU fallbacks remain in :mod:`flagquantum.simulation`;
-this package owns CUDA kernel implementations and their launch wrappers.
+import sys as _alias_sys
+from importlib import import_module as _import_module
+from typing import Any as _Any
 
-Each kernel is loaded only when it is requested, so importing this package
-never imports Triton. The names are re-exported under ``TYPE_CHECKING`` so a
-checker sees each launch wrapper's real signature instead of ``Any``; that
-block is never executed, and the module-level ``__getattr__`` below still
-performs the lazy load at runtime.
-"""
+from flagquantum.simulation.kernels.triton import (
+    _EXPORT_MODULES as _EXPORT_MODULES,
+)
+from flagquantum.simulation.kernels.triton import (
+    FLAT_LOCAL_MAX_AMPLITUDES as FLAT_LOCAL_MAX_AMPLITUDES,
+)
+from flagquantum.simulation.kernels.triton import __all__ as __all__
+from flagquantum.simulation.kernels.triton import (
+    cx_sequence as cx_sequence,
+)
+from flagquantum.simulation.kernels.triton import (
+    fused_complex_bmm as fused_complex_bmm,
+)
+from flagquantum.simulation.kernels.triton import (
+    fused_complex_layout_bmm as fused_complex_layout_bmm,
+)
+from flagquantum.simulation.kernels.triton import (
+    fused_mps_one_site as fused_mps_one_site,
+)
+from flagquantum.simulation.kernels.triton import (
+    fused_mps_two_site as fused_mps_two_site,
+)
+from flagquantum.simulation.kernels.triton import (
+    heisenberg_hva_forward_tangents as heisenberg_hva_forward_tangents,
+)
+from flagquantum.simulation.kernels.triton import (
+    repeated_rx_rz as repeated_rx_rz,
+)
+from flagquantum.simulation.kernels.triton import (
+    repeated_rx_rz_tangents as repeated_rx_rz_tangents,
+)
+from flagquantum.simulation.kernels.triton import (
+    repeated_rxx_ryy_rzz_tangents as repeated_rxx_ryy_rzz_tangents,
+)
+from flagquantum.simulation.kernels.triton import (
+    ry_rz_pair as ry_rz_pair,
+)
+from flagquantum.simulation.kernels.triton import (
+    single_qubit_matrix as single_qubit_matrix,
+)
+from flagquantum.simulation.kernels.triton import (
+    statevector_marginal_probabilities as statevector_marginal_probabilities,
+)
+from flagquantum.simulation.kernels.triton import (
+    statevector_pauli_expectation as statevector_pauli_expectation,
+)
+from flagquantum.simulation.kernels.triton import (
+    statevector_probabilities as statevector_probabilities,
+)
 
-from __future__ import annotations
-
-from importlib import import_module
-from typing import TYPE_CHECKING, Any
-
-#: Largest amplitude count the flat local-gate kernels have been shown to address.
-#:
-#: The statevector gate kernels turn amplitude indices into one linear element
-#: offset and add it to a ``float32`` view of the state. Measured on an
-#: A800-SXM4-80GB, ``apply_complex64_local_cx_inplace`` returns the correct
-#: permutation at 2**31 and 2**32 amplitudes and dies with an illegal memory
-#: access at 2**33, which leaves the CUDA context unusable for the rest of the
-#: process. Launch wrappers refuse a larger state, and runtime dispatch keeps that
-#: shape on the index-based eager path, where the same run reports an ordinary
-#: out-of-memory error instead of an unrecoverable fault.
-FLAT_LOCAL_MAX_AMPLITUDES = 1 << 32
-
-_EXPORT_MODULES = {
-    "fused_complex_bmm": "complex_bmm",
-    "fused_complex_layout_bmm": "complex_bmm",
-    "fused_mps_one_site": "mps_one_site",
-    "fused_mps_two_site": "mps_two_site",
-    "heisenberg_hva_forward_tangents": "hva_forward_tangent",
-    "cx_sequence": "statevector_gates",
-    "repeated_rx_rz": "single_qubit_loop",
-    "repeated_rx_rz_tangents": "single_qubit_loop",
-    "ry_rz_pair": "statevector_gates",
-    "single_qubit_matrix": "statevector_gates",
-    "statevector_marginal_probabilities": "statevector_measurement",
-    "statevector_pauli_expectation": "statevector_measurement",
-    "statevector_probabilities": "statevector_measurement",
-    "repeated_rxx_ryy_rzz_tangents": "two_qubit_pauli_tangent",
-}
-
-if TYPE_CHECKING:
-    from .complex_bmm import fused_complex_bmm, fused_complex_layout_bmm
-    from .hva_forward_tangent import heisenberg_hva_forward_tangents
-    from .mps_one_site import fused_mps_one_site
-    from .mps_two_site import fused_mps_two_site
-    from .single_qubit_loop import repeated_rx_rz, repeated_rx_rz_tangents
-    from .statevector_gates import (
-        cx_sequence,
-        ry_rz_pair,
-        single_qubit_matrix,
-    )
-    from .statevector_measurement import (
-        statevector_marginal_probabilities,
-        statevector_pauli_expectation,
-        statevector_probabilities,
-    )
-    from .two_qubit_pauli_tangent import repeated_rxx_ryy_rzz_tangents
+_implementation = _import_module("flagquantum.simulation.kernels.triton")
+__doc__ = _implementation.__doc__ or ""
 
 
-def __getattr__(name: str) -> Any:
-    """Load an accelerator kernel only when that kernel is requested."""
-    try:
-        module_name = _EXPORT_MODULES[name]
-    except KeyError as exc:
-        raise AttributeError(name) from exc
-    value = getattr(import_module(f"{__name__}.{module_name}"), name)
-    globals()[name] = value
-    return value
-
-
-__all__ = [
-    "FLAT_LOCAL_MAX_AMPLITUDES",
-    "fused_complex_bmm",
-    "fused_complex_layout_bmm",
-    "fused_mps_one_site",
-    "fused_mps_two_site",
-    "heisenberg_hva_forward_tangents",
-    "cx_sequence",
-    "repeated_rx_rz",
-    "repeated_rx_rz_tangents",
-    "ry_rz_pair",
-    "single_qubit_matrix",
-    "statevector_marginal_probabilities",
-    "statevector_pauli_expectation",
-    "statevector_probabilities",
-    "repeated_rxx_ryy_rzz_tangents",
-]
+def __getattr__(name: str) -> _Any:
+    cached = _alias_sys.modules.get(f"{__name__}.{name}")
+    if cached is not None:
+        return cached
+    return getattr(_implementation, name)

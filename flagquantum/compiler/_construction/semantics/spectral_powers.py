@@ -4,8 +4,9 @@ from collections.abc import Mapping, Sequence
 
 import torch
 
+from flagquantum.compiler.frontends._structured.model import Operation, ValueId
+
 from ....core.ir import Instruction
-from ..._hybrid.model import Operation, ValueId
 from .unitary import unitary_instructions
 
 

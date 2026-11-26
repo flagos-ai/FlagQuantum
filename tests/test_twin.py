@@ -232,10 +232,10 @@ def test_twin_namespace_is_small_and_domain_named():
 
 
 def test_twin_builds_from_a_provider_neutral_device_noise_model():
-    from flagquantum.noise import (
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.core.noise_profile import (
         DeviceNoiseProfile,
         GateDuration,
-        NoiseModel,
         QubitNoiseCalibration,
     )
 
@@ -345,8 +345,8 @@ def test_twin_can_freeze_calibration_fetched_explicitly_from_provider():
 
 
 def test_twin_copies_and_guards_its_noise_model():
-    from flagquantum.noise import bit_flip_channel
-    from flagquantum.remote.qpu import quafu_noise_model_from_chip_info
+    from flagquantum.compute.remote.qpu import quafu_noise_model_from_chip_info
+    from flagquantum.core.operators.channels import bit_flip_channel
 
     source = quafu_noise_model_from_chip_info(_chip_info(), physical_qubits=(3, 4))
     twin = fq.twin.from_noise_model(

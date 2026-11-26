@@ -14,7 +14,7 @@ from flagquantum.algorithms.fermion.stabilizer import (
     reduce_stabilizers,
 )
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
-from flagquantum.core.algebra.pauli import pauli
+from flagquantum.core.operators.pauli import pauli
 
 
 def main() -> None:

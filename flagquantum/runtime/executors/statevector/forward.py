@@ -12,8 +12,11 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....core.ir import CircuitIR, Instruction
-from ....core.operator_schema import canonical_opcode
+from flagquantum.simulation.statevector.adjoint import (
+    _is_diagonal_instruction as _is_diagonal_instruction,
+)
+
+from ....core.ir import CircuitIR
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -21,7 +24,6 @@ from ....simulation.statevector.index_basis import (
     _zero_basis_local_indices,
 )
 from ....simulation.statevector.operations import (
-    _DIAGONAL_STATEVECTOR_GATES,
     _apply_diagonal_gate_eager,
     _apply_diagonal_matrix,
     _apply_local_gate_eager,
@@ -43,19 +45,6 @@ from .program_cache import remapped_program
 
 _COMMUNICATION_LAYOUT_CACHE: dict[tuple[Any, ...], tuple[int, ...]] = {}
 _COMMUNICATION_LAYOUT_CACHE_LIMIT = 128
-
-
-def _is_diagonal_instruction(instruction: Instruction) -> bool:
-    """Whether an instruction provably applies a diagonal matrix.
-
-    A carried matrix takes precedence over the operator the name denotes, so a
-    name from the diagonal table says nothing about an instruction carrying one.
-    """
-
-    return (
-        instruction.matrix is None
-        and canonical_opcode(instruction.name) in _DIAGONAL_STATEVECTOR_GATES
-    )
 
 
 def _runtime_index_validation_enabled() -> bool:
@@ -588,7 +577,9 @@ def _vectorized_local_gate(
             amplitudes.numel() * amplitudes.element_size(),
         )
     if triton_decision.accelerated:
-        from ....kernels.triton.statevector_gates import apply_complex64_local_1q
+        from flagquantum.simulation.kernels.triton.statevector_gates import (
+            apply_complex64_local_1q,
+        )
 
         bit_position = plan.n_qubits - qubits[0] - 1 - rank_bits
         amplitudes = apply_complex64_local_1q(
@@ -637,7 +628,7 @@ def _vectorized_local_cx_gate(
 ) -> tuple[StatevectorShardState, int]:
     """Apply a fully local CNOT with no basis-index or matrix temporaries."""
 
-    from ....kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         apply_complex64_local_cx_inplace,
     )
 
@@ -907,7 +898,7 @@ def _vectorized_cross_shard_cx(
         out,
     )
     if pack_decision.accelerated or unpack_decision.accelerated:
-        from ....kernels.triton.statevector_gates import (
+        from flagquantum.simulation.kernels.triton.statevector_gates import (
             pack_complex64_control_one,
             unpack_complex64_control_one,
         )

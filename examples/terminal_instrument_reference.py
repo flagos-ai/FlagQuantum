@@ -11,7 +11,7 @@ import math
 
 import torch
 
-from flagquantum.observables.boson import number
+from flagquantum.core.operators.boson import number
 from flagquantum.operators import SuperOperator
 
 

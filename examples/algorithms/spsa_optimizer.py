@@ -30,7 +30,7 @@ import math
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import SPSAOptimizer
+from flagquantum.algorithms.optimizers.spsa import SPSAOptimizer
 from flagquantum.errors import ValidationError
 
 SEED = 13

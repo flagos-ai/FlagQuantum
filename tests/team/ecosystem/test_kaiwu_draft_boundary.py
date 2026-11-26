@@ -14,14 +14,14 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 import flagquantum
+import flagquantum.compute.remote as remote
 import flagquantum.ecosystem as ecosystem
-import flagquantum.remote as remote
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[3]
 ECOSYSTEM_KAIWU = ROOT / "flagquantum/ecosystem/kaiwu"
-REMOTE_KAIWU = ROOT / "flagquantum/remote/kaiwu"
+REMOTE_KAIWU = ROOT / "flagquantum/compute/remote/kaiwu"
 
 
 def _imports(path: Path) -> tuple[str, ...]:
@@ -76,8 +76,8 @@ sys.meta_path.insert(0, RejectKaiwu())
 import flagquantum
 import flagquantum.ecosystem
 import flagquantum.ecosystem.kaiwu
-import flagquantum.remote
-import flagquantum.remote.kaiwu
+import flagquantum.compute.remote
+import flagquantum.compute.remote.kaiwu
 assert not any(name == "kaiwu" or name.startswith("kaiwu.") for name in sys.modules)
 """
     environment = {
@@ -129,4 +129,4 @@ def test_kaiwu_source_dependencies_preserve_ecosystem_remote_split() -> None:
 
     assert ecosystem_vendor_imports == []
     assert remote_layer_leaks == []
-    assert vendor_import_sites == ["flagquantum/remote/kaiwu/sdk.py -> kaiwu"]
+    assert vendor_import_sites == ["flagquantum/compute/remote/kaiwu/sdk.py -> kaiwu"]

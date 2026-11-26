@@ -34,7 +34,7 @@ from flagquantum.compiler.topology.topology_legalization import (
     legalize_circuit_topology,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.core.target_capabilities import (
     CapabilityScope,
     TargetCapabilitySnapshot,

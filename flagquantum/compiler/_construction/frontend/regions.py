@@ -7,8 +7,12 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation, Value, ValueId
-from ..._hybrid.unitary_effects import inverse_effects, unitary_regions
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.unitary_effects import (
+    inverse_effects,
+    unitary_regions,
+)
+
 from .evolution import flush_evolutions
 from .ports import program_ports
 from .python import _error, _QuantumFunction

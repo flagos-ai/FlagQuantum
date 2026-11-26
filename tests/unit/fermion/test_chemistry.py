@@ -3,15 +3,15 @@
 import pytest
 import torch
 
-from flagquantum.algorithms.chemistry_domain.active_space import select_active_space
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.active_space import select_active_space
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
     from_native_molecule,
 )
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 
 from .oracles import fock_matrix
 

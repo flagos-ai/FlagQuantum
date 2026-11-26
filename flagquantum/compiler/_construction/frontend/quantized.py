@@ -10,8 +10,9 @@ from fractions import Fraction
 from functools import partial
 from typing import NoReturn
 
-from ..._hybrid.model import HybridProgram, Value
-from ..._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import HybridProgram, Value
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
+
 from ..program_types import (
     QBit,
     QNum,

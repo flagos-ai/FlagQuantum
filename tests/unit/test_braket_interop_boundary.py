@@ -38,7 +38,7 @@ def test_missing_braket_fails_only_when_conversion_is_requested(monkeypatch) -> 
 def test_architecture_isolates_braket_imports() -> None:
     assert CONFIG["interop_boundaries"]["braket_import_allowed_prefixes"] == [
         "flagquantum/ecosystem/braket/",
-        "flagquantum/remote/qpu/",
+        "flagquantum/compute/remote/qpu/",
     ]
     assert architecture_errors() == ()
 

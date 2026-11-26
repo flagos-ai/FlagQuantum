@@ -7,7 +7,7 @@ from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, Generic, Literal, TypeAlias, TypeVar, overload
 
-from ...observables import Observable
+from flagquantum.core.operators.observable import Observable
 
 _Num = TypeVar("_Num", bound="_QuantumRegister")
 _Element = TypeVar("_Element", bound="QNum")

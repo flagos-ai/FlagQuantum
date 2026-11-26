@@ -139,7 +139,9 @@ def uninitialized_phase(
 
 
 def test_zero_angle_does_not_hide_uninitialized_reads() -> None:
-    from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+    from flagquantum.compiler.frontends._structured.verifier import (
+        HybridVerificationError,
+    )
 
     with pytest.raises(HybridVerificationError):
         synth.synthesize(uninitialized_phase)
@@ -217,7 +219,9 @@ def alias_main(x: Output[Annotated[QNum, 6]]) -> None:
 
 
 def test_repeated_mutable_helper_actual_refuses_before_lowering() -> None:
-    from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+    from flagquantum.compiler.frontends._structured.verifier import (
+        HybridVerificationError,
+    )
 
     with pytest.raises(HybridVerificationError, match="disjoint writable"):
         synth.synthesize(alias_main)

@@ -9,9 +9,9 @@ import pytest
 import torch
 
 import flagquantum.qec as qec
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
     KrausChannel,
-    NoiseModel,
     bit_flip_channel,
     phase_flip_channel,
     two_qubit_depolarizing_channel,

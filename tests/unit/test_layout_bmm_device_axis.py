@@ -33,7 +33,8 @@ import torch
 
 import flagquantum.simulation.kernel_dispatch as kernel_dispatch
 import flagquantum.simulation.real_imag_kernels as kernels_runtime
-from flagquantum.kernels.catalog import (
+from flagquantum.simulation.complex_bmm_dispatch import _layout_complex_bmm_declared
+from flagquantum.simulation.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
     SEMANTICS,
@@ -43,7 +44,6 @@ from flagquantum.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-from flagquantum.simulation.complex_bmm_dispatch import _layout_complex_bmm_declared
 from flagquantum.simulation.real_imag_kernels import complex_einsum_pair
 
 pytestmark = pytest.mark.unit
@@ -55,7 +55,7 @@ _CPU_IMPLEMENTATIONS = tuple(
         implementation_id=f"FQKI-PYTORCH-NUM-002-{suffix}",
         semantic_id="numerics.matmul.complex_batched_layout",
         provider="pytorch",
-        module="flagquantum.kernels.pytorch.complex_bmm",
+        module="flagquantum.simulation.kernels.pytorch.complex_bmm",
         symbol="fused_cpu_layout_bmm",
         devices=("cpu",),
         dtypes=(dtype,),

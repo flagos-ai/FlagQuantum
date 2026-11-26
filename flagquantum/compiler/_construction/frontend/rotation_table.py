@@ -6,7 +6,8 @@ import ast
 import math
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..semantics.rotation_table import emit_rotation_table
 from .ports import _resolve
 from .python import _error

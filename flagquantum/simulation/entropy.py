@@ -21,11 +21,12 @@ reference for that reason, and are not derived from ``torch.finfo(dtype).eps``.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Iterable
 from typing import Any
 
 import torch
+
+from flagquantum.core.measurement import log_base_divisor as log_base_divisor
 
 # A probability below this contributes less than 1e-27 nats at complex64, which is
 # below the rounding error of the sum it would be added to, so it is dropped rather
@@ -33,33 +34,6 @@ import torch
 # probability is zero: a state whose spectrum is this small is one whose entropy is
 # zero to the precision the dtype can represent either way.
 _PROBABILITY_FLOOR = 1e-30
-
-
-def log_base_divisor(log_base: float | None) -> float:
-    """Return the number to divide a natural-log entropy by.
-
-    ``None`` means nats and divides by one. PennyLane 0.45.1 divides by
-    ``log(log_base)`` and validates nothing, so ``log_base=1`` returns ``inf``,
-    ``log_base=-1`` returns ``nan`` and ``log_base=0`` returns the natural-log
-    answer by accident of a truthiness test. Zero, negative and one are refused
-    here instead: each of those is an answer the caller cannot have meant, and a
-    silent ``nan`` travelling out through a result field is exactly the failure
-    mode the package refuses elsewhere. The divergence from PennyLane is recorded
-    in ``docs/api-changes/FQ-VN-ENTROPY-OUTPUT-20261101.md``.
-    """
-
-    if log_base is None:
-        return 1.0
-    if isinstance(log_base, bool) or not isinstance(log_base, (int, float)):
-        raise TypeError(f"log_base must be a number, got {log_base!r}")
-    value = float(log_base)
-    if not math.isfinite(value):
-        raise ValueError("log_base must be finite")
-    if value <= 0.0:
-        raise ValueError("log_base must be positive")
-    if value == 1.0:
-        raise ValueError("log_base must not be 1, which has no logarithm")
-    return math.log(value)
 
 
 def _entropy_from_sorted_probabilities(

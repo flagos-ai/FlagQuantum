@@ -16,15 +16,14 @@ import torch
 
 import flagquantum as fq
 import flagquantum.algorithms as algorithms
-from flagquantum.algorithms import (
+from flagquantum.algorithms.many_body import trotter as trotter_module
+from flagquantum.algorithms.many_body.spin import transverse_field_ising
+from flagquantum.algorithms.many_body.trotter import (
     TROTTER_ORDERS,
-    Hamiltonian,
-    pauli_term,
-    transverse_field_ising,
+    pauli_exponential_circuit,
     trotter_circuit,
 )
-from flagquantum.algorithms import trotter as trotter_module
-from flagquantum.algorithms.trotter import pauli_exponential_circuit
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.simulation.pauli import (

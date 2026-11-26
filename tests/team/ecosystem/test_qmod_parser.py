@@ -7,7 +7,7 @@ import pytest
 from flagquantum.compiler._construction.scheduling.selection import (
     select_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,
     QmodImport,

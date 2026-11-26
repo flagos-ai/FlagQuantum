@@ -29,7 +29,7 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms.quantum_kernel import (
+from flagquantum.algorithms.quantum_ml.kernels import (
     kernel_ridge_classifier,
     quantum_kernel_matrix,
 )
@@ -56,9 +56,7 @@ def main() -> None:
     decisions = classifier.decision_function(
         HELD_OUT, shots=args.shots, seed=args.seed + 2
     )
-    diagonal_is_one = all(
-        row[index] == 1.0 for index, row in enumerate(matrix.matrix)
-    )
+    diagonal_is_one = all(row[index] == 1.0 for index, row in enumerate(matrix.matrix))
     symmetric = all(
         matrix.matrix[i][j] == matrix.matrix[j][i]
         for i in range(len(matrix.matrix))
@@ -68,7 +66,9 @@ def main() -> None:
     print("=" * 72)
     print("quantum kernel estimation -- flagquantum.algorithms.quantum_kernel")
     print("=" * 72)
-    print(f"  {'task':<18}: estimate a kernel matrix by swap test, then classify with it")
+    print(
+        f"  {'task':<18}: estimate a kernel matrix by swap test, then classify with it"
+    )
     print(f"  {'execution':<18}: local statevector sampling, CPU")
     print(f"  {'premise':<18}: each feature state is built gate by gate from its")
     print(f"  {'':<18}  classical feature vector, and every entry is a sample")
@@ -99,7 +99,9 @@ def main() -> None:
         print(f"  {row} -> {round(value, 3)}")
     print()
     print("take away")
-    print("  the quantum part is the kernel: one swap test per pair of feature vectors,")
+    print(
+        "  the quantum part is the kernel: one swap test per pair of feature vectors,"
+    )
     print("  each result mirrored across the diagonal, and the entry is the squared")
     print("  overlap read back out of the sample. The classifier over those entries is")
     print("  classical, its fit inherits the sampler's error, and no error bound,")

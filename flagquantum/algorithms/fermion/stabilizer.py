@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ...core.algebra.pauli import PauliOperator, PauliTerm, count, pauli
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, count, pauli
+
 from ...core.ir import Instruction
 from .clifford import conjugate_pauli, pauli_words_commute, symplectic_masks
 from .symmetry import ReductionMap, _binary_nullspace, _binary_rows

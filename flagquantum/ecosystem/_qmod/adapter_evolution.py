@@ -6,12 +6,13 @@ import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import (
+    Value,
+)
+
 from ...compiler._construction.verification.register_profile import (
     MAX_PREPARED_AMPLITUDES,
     register_width,
-)
-from ...compiler._hybrid.model import (
-    Value,
 )
 from ...compiler.lowering import _pauli_schedule
 from .adapter_model import (

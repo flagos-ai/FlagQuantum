@@ -11,15 +11,14 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
 
-from ..core.operator_schema import get_operator_schema
-from ..noise import (
-    DeviceNoiseProfile,
-    NoiseModel,
-    QubitNoiseCalibration,
-    ReadoutError,
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.noise_profile import DeviceNoiseProfile, QubitNoiseCalibration
+from flagquantum.core.operators.channels import (
     depolarizing_channel,
     two_qubit_depolarizing_channel,
 )
+from flagquantum.core.operators.schema import get_operator_schema
+
 from .model import QPUDigitalTwin, TwinSnapshot
 from .parameter_estimation import TwinParameterEstimate
 

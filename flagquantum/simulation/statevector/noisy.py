@@ -30,8 +30,9 @@ from __future__ import annotations
 
 import torch
 
+from flagquantum.core.operators.channels import KrausChannel, UnitaryMixture
+
 from ...core.ir import CircuitIR
-from ...noise import KrausChannel, UnitaryMixture
 from ..gate_matrix import gate_matrix
 from .operations import _environment_flag
 

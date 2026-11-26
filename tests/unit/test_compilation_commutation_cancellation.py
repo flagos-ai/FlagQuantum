@@ -608,7 +608,7 @@ def test_a_single_qubit_self_inverse_gate_gains_no_reach_from_this_pass(
     claim with a boundary instead of a hope.
     """
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     commuters = []
     for other in sorted(OPERATOR_SCHEMAS):

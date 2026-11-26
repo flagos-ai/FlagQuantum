@@ -1,25 +1,14 @@
-"""Adapt native MPS results for checked Runtime consumers."""
+"""Historical import facade for the relocated implementation."""
 
-from __future__ import annotations
+import sys as _sys
+from importlib import import_module as _import_module
 
-from typing import TYPE_CHECKING
+from flagquantum.runtime.results.mps import (
+    mps_marginal as mps_marginal,
+)
+from flagquantum.runtime.results.mps import (
+    native_mps as native_mps,
+)
 
-from .result import ExecutionResult
-
-if TYPE_CHECKING:
-    import torch
-
-    from ..simulation.mps.state import MPSState
-
-
-def native_mps(result: ExecutionResult) -> MPSState | None:
-    from ..simulation.mps.state import MPSState
-
-    state = result.native()
-    return state if isinstance(state, MPSState) else None
-
-
-def mps_marginal(state: MPSState, qubits: tuple[int, ...]) -> torch.Tensor:
-    from ..simulation.mps.marginal import marginal_probabilities
-
-    return marginal_probabilities(state, qubits)
+_implementation = _import_module("flagquantum.runtime.results.mps")
+_sys.modules[__name__] = _implementation

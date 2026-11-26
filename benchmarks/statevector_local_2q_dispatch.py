@@ -19,7 +19,7 @@ from typing import Any, TypedDict
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_local_2q_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.statevector_local_2q_dispatch.v1"

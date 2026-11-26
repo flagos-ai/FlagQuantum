@@ -9,8 +9,8 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.runtime.dynamic as dynamic_runtime
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.core.target_capabilities import TargetIdentity
-from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.conformance import DynamicFeatureSet
 from flagquantum.runtime.dynamic.post_routing import (

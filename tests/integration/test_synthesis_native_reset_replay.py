@@ -11,7 +11,7 @@ from flagquantum.compiler._construction.frontend.program import capture_program
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 from tests.team.compiler.test_construction_python_program import program_definition

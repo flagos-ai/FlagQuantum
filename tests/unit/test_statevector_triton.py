@@ -5,16 +5,16 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.statevector_adjoint import (
+from flagquantum.runtime.executors.statevector.layout import _local_bit_view
+from flagquantum.simulation.kernels.triton.statevector_adjoint import (
     fused_complex64_local_1q_reversible_vjp,
     fused_complex64_local_1q_vjp_adjoint,
     fused_complex64_sharded_1q_vjp_adjoint,
 )
-from flagquantum.kernels.triton.statevector_gates import (
+from flagquantum.simulation.kernels.triton.statevector_gates import (
     apply_complex64_local_1q,
     apply_complex64_transpose_1q_inplace,
 )
-from flagquantum.runtime.executors.statevector.layout import _local_bit_view
 
 pytestmark = [
     pytest.mark.unit,
@@ -198,8 +198,8 @@ def test_local_cx_reaches_the_flat_local_address_limit():
     instead of faulting the CUDA context.
     """
 
-    from flagquantum.kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
-    from flagquantum.kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         apply_complex64_local_cx_inplace,
     )
 

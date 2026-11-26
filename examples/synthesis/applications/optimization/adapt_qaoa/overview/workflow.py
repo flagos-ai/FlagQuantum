@@ -7,7 +7,7 @@ import torch
 import flagquantum as fq
 from examples.synthesis.graph_optimization import Evaluation
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .model import Mixer, costs, gradients, pool
 from .quantum import build_program

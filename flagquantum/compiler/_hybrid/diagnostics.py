@@ -1,17 +1,13 @@
-"""Shared diagnostics for static specialization and dynamic lowering."""
+"""Historical import facade for the relocated implementation."""
 
-from __future__ import annotations
+import sys as _sys
+from importlib import import_module as _import_module
 
-from .model import SourceLocation
+from flagquantum.compiler.frontends._structured.diagnostics import (
+    SpecializationError as SpecializationError,
+)
 
-
-class SpecializationError(ValueError):
-    """Raised when runtime values cannot specialize the accepted IR profile."""
-
-    def __init__(
-        self, code: str, message: str, location: SourceLocation | None = None
-    ) -> None:
-        self.code = code
-        self.location = location
-        prefix = "" if location is None else f"{location.filename}:{location.line}: "
-        super().__init__(f"{prefix}{code}: {message}")
+_implementation = _import_module(
+    "flagquantum.compiler.frontends._structured.diagnostics"
+)
+_sys.modules[__name__] = _implementation

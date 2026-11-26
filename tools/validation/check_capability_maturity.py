@@ -1,0 +1,449 @@
+#!/usr/bin/env python
+"""Validate the single source of truth for capability maturity claims."""
+
+from __future__ import annotations
+
+import sys as _entry_sys
+from pathlib import Path as _EntryPath
+
+if __package__ in (None, ""):
+    _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
+
+
+import hashlib
+import json
+import sys
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib
+
+try:
+    from tools.release.evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
+        SUPPORTED_REVISION_ORIGINS,
+        ProvenanceUnavailableError,
+        is_full_revision,
+        revision_is_published,
+        revision_resolves,
+    )
+except ModuleNotFoundError:  # direct script execution
+    from tools.release.evidence_provenance import (
+        ORIGIN_PRODUCING_HOST_HISTORY,
+        ORIGIN_REPOSITORY_HISTORY,
+        SUPPORTED_REVISION_ORIGINS,
+        ProvenanceUnavailableError,
+        is_full_revision,
+        revision_is_published,
+        revision_resolves,
+    )
+
+ROOT = Path(__file__).resolve().parents[2]
+MATRIX = ROOT / "capability-maturity.toml"
+EXPECTED_LEVELS = (
+    "experimental",
+    "development_evidence",
+    "production_supported",
+    "release_certified",
+)
+REQUIRED_USER_FIELDS = (
+    "title",
+    "summary",
+    "category",
+    "user_goals",
+    "public_apis",
+    "runtime_modes",
+    "hardware",
+    "gradient_support",
+    "distribution_semantics",
+    "quick_start",
+    "documentation",
+)
+EXPECTED_CATEGORIES = (
+    "build_and_compile",
+    "simulation_and_training",
+    "distributed_execution",
+    "deployment_and_extension",
+)
+
+CLAIM_REQUIRED_FIELDS = (
+    "id",
+    "title",
+    "artifact",
+    "artifact_sha256",
+    "code_version",
+    "maturity",
+    "scope",
+    "environment_limitations",
+)
+CLAIM_VALUE_FORMATS = (
+    "integer",
+    "bytes",
+    "seconds",
+    "scientific",
+    "string",
+    "boolean",
+)
+CLAIM_AGGREGATES = ("single", "max", "min", "count", "unique")
+
+#: Why a claim's ``code_version`` may not resolve in this repository. The values
+#: and their meaning come from ``tools/evidence_provenance.py``, which records
+#: the same disclosure for the checked-in evidence artifacts under ``artifacts/``.
+CODE_VERSION_ORIGIN_FIELD = "code_version_origin"
+
+
+def _artifact_revision(payload: Any) -> Any:
+    """Return the revision a claim artifact records itself as produced from.
+
+    A claim artifact is either a plain benchmark document, which states its
+    revision at the top level, or a sealed runtime evidence artifact, which
+    states it in ``provenance`` because that is where ``RuntimeProvenance``
+    keeps it. Reading only the first shape would force a certified capability to
+    make its claim from a hand-written summary instead of from the signed
+    payload the release gate accepts, which is a second source of truth for one
+    run's identity.
+    """
+
+    if not isinstance(payload, Mapping):
+        return None
+    provenance = payload.get("provenance")
+    if isinstance(provenance, Mapping) and "commit" in provenance:
+        return provenance.get("commit")
+    return payload.get("commit")
+
+
+def claim_values(payload: Any, selector: str) -> list[Any]:
+    """Resolve a deliberately small JSON selector used by public claims."""
+    values = [payload]
+    for raw_part in selector.split("."):
+        expand = raw_part.endswith("[]")
+        part = raw_part[:-2] if expand else raw_part
+        next_values: list[Any] = []
+        for value in values:
+            if not isinstance(value, dict) or part not in value:
+                raise KeyError(selector)
+            selected = value[part]
+            if expand:
+                if not isinstance(selected, list):
+                    raise TypeError(selector)
+                next_values.extend(selected)
+            else:
+                next_values.append(selected)
+        values = next_values
+    return values
+
+
+def aggregate_claim_value(values: list[Any], aggregate: str) -> Any:
+    if aggregate == "count":
+        return len(values)
+    if not values:
+        raise ValueError("selector returned no values")
+    if aggregate == "single":
+        if len(values) != 1:
+            raise ValueError(f"single requires one value, received {len(values)}")
+        return values[0]
+    if aggregate == "max":
+        return max(values)
+    if aggregate == "min":
+        return min(values)
+    if aggregate == "unique":
+        unique = {json.dumps(value, sort_keys=True) for value in values}
+        if len(unique) != 1:
+            raise ValueError(
+                f"unique requires one distinct value, received {len(unique)}"
+            )
+        return values[0]
+    raise ValueError(f"unsupported aggregate {aggregate!r}")
+
+
+def validate_claim_measurements(
+    capability_name: str,
+    claim_id: str,
+    measurements: Any,
+    payload: Any,
+    field: str,
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(measurements, list) or not measurements:
+        return [f"{capability_name}/{claim_id}: missing {field}"]
+    for index, measurement in enumerate(measurements):
+        prefix = f"{capability_name}/{claim_id}: {field}[{index}]"
+        if not isinstance(measurement, dict):
+            errors.append(f"{prefix} must be a table")
+            continue
+        for required in ("label", "selector", "format"):
+            value = measurement.get(required)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"{prefix} missing {required}")
+        value_format = measurement.get("format")
+        if value_format not in CLAIM_VALUE_FORMATS:
+            errors.append(f"{prefix} has unsupported format {value_format!r}")
+        aggregate = measurement.get("aggregate", "single")
+        if aggregate not in CLAIM_AGGREGATES:
+            errors.append(f"{prefix} has unsupported aggregate {aggregate!r}")
+            continue
+        selector = measurement.get("selector")
+        if not isinstance(selector, str) or not selector:
+            continue
+        try:
+            aggregate_claim_value(claim_values(payload, selector), aggregate)
+        except (KeyError, TypeError, ValueError) as error:
+            errors.append(f"{prefix} cannot resolve {selector!r}: {error}")
+    return errors
+
+
+def code_version_errors(
+    code_version: Any,
+    origin: Any,
+    *,
+    label: str,
+    root: Path = ROOT,
+) -> tuple[str, ...]:
+    """Return why a claim's recorded code version is not traceable evidence.
+
+    A claim states the revision its artifact was produced from, and the artifact
+    states the same revision, so comparing the two only proves the transcription
+    is faithful. Both are values written at check-in time: a pin that names no
+    commit in this repository passed that comparison exactly like a revision a
+    reader can check out, and the documentation then rendered it as ``code
+    <revision>``.
+
+    Resolution has the three outcomes ``tools/evidence_provenance.py`` keeps
+    apart, and this function keeps them apart the same way. A pin that resolves
+    is traceable, a pin that names no commit here must disclose that with
+    ``code_version_origin = "producing_host_history"``, and a checkout that
+    cannot answer is reported as unchecked rather than as a bad pin.
+
+    Resolution is necessary and not sufficient. The producing checkout holds the
+    commits its own branches made, so a pin it resolves may still be one no ref
+    reaches -- typically the head of the branch that recorded the evidence, which
+    is deleted once the change lands. Readers fetch refs, so that pin is gone for
+    every one of them while looking traceable here. A pin no ref reaches is
+    therefore reported, and the fix is to record the evidence at a revision
+    published history reaches.
+
+    Args:
+        code_version: The claim's recorded revision.
+        origin: The claim's ``code_version_origin``, or the default when absent.
+        label: Claim name used to prefix the diagnostics.
+        root: Repository to resolve the revision against.
+
+    Returns:
+        One diagnostic per reason the pin is not traceable, and an empty tuple
+        when it resolves or the claim discloses why it cannot.
+    """
+
+    if origin not in SUPPORTED_REVISION_ORIGINS:
+        supported = ", ".join(repr(value) for value in SUPPORTED_REVISION_ORIGINS)
+        return (
+            f"{label} {CODE_VERSION_ORIGIN_FIELD} {origin!r} is not supported; use "
+            f"one of {supported}",
+        )
+    if not is_full_revision(code_version):
+        return (
+            f"{label} requires a full hexadecimal code_version, not {code_version!r}",
+        )
+    if origin == ORIGIN_PRODUCING_HOST_HISTORY:
+        return ()
+    try:
+        resolvable = revision_resolves(code_version, root)
+    except ProvenanceUnavailableError as error:
+        return (f"{label} code_version could not be checked: {error}",)
+    if not resolvable:
+        return (
+            f"{label} code_version {code_version} names no commit in this repository; "
+            f'record {CODE_VERSION_ORIGIN_FIELD} as "{ORIGIN_PRODUCING_HOST_HISTORY}" '
+            "if the pin comes from the producing host's history",
+        )
+    try:
+        published = revision_is_published(code_version, root)
+    except ProvenanceUnavailableError as error:
+        return (f"{label} code_version could not be checked: {error}",)
+    if published:
+        return ()
+    return (
+        f"{label} code_version {code_version} resolves here but no ref reaches it, so "
+        "a clone that fetches this repository does not obtain it; re-record the claim "
+        "at a revision published history reaches",
+    )
+
+
+def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
+    errors: list[str] = []
+    if data.get("schema") != "flagquantum_capability_maturity_v2":
+        errors.append("unsupported capability maturity schema")
+    levels = data.get("levels", {})
+    if tuple(levels) != EXPECTED_LEVELS:
+        errors.append(f"levels must be ordered as {EXPECTED_LEVELS!r}")
+    ranks = [levels.get(name, {}).get("rank") for name in EXPECTED_LEVELS]
+    if ranks != list(range(len(EXPECTED_LEVELS))):
+        errors.append("maturity ranks must be contiguous from zero")
+
+    capabilities = data.get("capabilities", {})
+    if not capabilities:
+        errors.append("at least one capability must be classified")
+    claim_ids: set[str] = set()
+    for name, capability in capabilities.items():
+        for field in REQUIRED_USER_FIELDS:
+            value = capability.get(field)
+            if isinstance(value, str):
+                valid = bool(value.strip())
+            elif isinstance(value, list):
+                valid = all(isinstance(item, str) and item.strip() for item in value)
+                if field != "public_apis":
+                    valid = bool(value) and valid
+            else:
+                valid = False
+            if not valid:
+                errors.append(f"{name}: missing or invalid user field {field}")
+        if not capability.get("public_apis") and capability.get("level") not in {
+            "experimental",
+            "development_evidence",
+        }:
+            errors.append(
+                f"{name}: supported or certified capability requires a public API"
+            )
+        if capability.get("category") not in EXPECTED_CATEGORIES:
+            errors.append(
+                f"{name}: unknown capability category {capability.get('category')!r}"
+            )
+        level = capability.get("level")
+        if level not in levels:
+            errors.append(f"{name}: unknown maturity level {level!r}")
+            continue
+        for field in levels[level].get("required_evidence", ()):
+            value = capability.get(field)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"{name}: {level} requires {field}")
+        if level != "release_certified" and capability.get("release_gate"):
+            errors.append(
+                f"{name}: non-certified capability cannot declare release_gate"
+            )
+        for field in (
+            "quick_start",
+            "documentation",
+            "focused_tests",
+            "integration_tests",
+            "hardware_evidence",
+            "development_artifact",
+            "operational_runbook",
+            "release_gate",
+            "release_artifact",
+        ):
+            value = capability.get(field)
+            if isinstance(value, str) and not value.startswith("not_applicable"):
+                if not (root / value).exists():
+                    errors.append(f"{name}: {field} path does not exist: {value}")
+        for claim in capability.get("performance_claims", ()):
+            claim_id = (
+                claim.get("id", "<missing>") if isinstance(claim, dict) else "<missing>"
+            )
+            if not isinstance(claim, dict):
+                errors.append(f"{name}: performance claim must be a table")
+                continue
+            for field in CLAIM_REQUIRED_FIELDS:
+                value = claim.get(field)
+                if not isinstance(value, str) or not value.strip():
+                    errors.append(f"{name}/{claim_id}: missing {field}")
+            if claim_id in claim_ids:
+                errors.append(f"{name}/{claim_id}: duplicate performance claim id")
+            elif isinstance(claim_id, str):
+                claim_ids.add(claim_id)
+            if claim.get("maturity") != level:
+                errors.append(
+                    f"{name}/{claim_id}: claim maturity must equal capability "
+                    f"level {level!r}"
+                )
+            artifact = claim.get("artifact")
+            if not isinstance(artifact, str) or not artifact:
+                continue
+            artifact_path = root / artifact
+            try:
+                artifact_path.resolve().relative_to(
+                    (root / "benchmarks/results").resolve()
+                )
+            except ValueError:
+                errors.append(
+                    f"{name}/{claim_id}: artifact must be under benchmarks/results"
+                )
+                continue
+            if not artifact_path.is_file():
+                errors.append(f"{name}/{claim_id}: artifact does not exist: {artifact}")
+                continue
+            digest = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+            if claim.get("artifact_sha256") != digest:
+                errors.append(f"{name}/{claim_id}: artifact_sha256 mismatch")
+            try:
+                payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                errors.append(f"{name}/{claim_id}: artifact is not valid JSON: {error}")
+                continue
+            if _artifact_revision(payload) != claim.get("code_version"):
+                errors.append(
+                    f"{name}/{claim_id}: code_version does not match artifact commit"
+                )
+            errors.extend(
+                code_version_errors(
+                    claim.get("code_version"),
+                    claim.get(CODE_VERSION_ORIGIN_FIELD, ORIGIN_REPOSITORY_HISTORY),
+                    label=f"{name}/{claim_id}",
+                    root=root,
+                )
+            )
+            checks = claim.get("evidence_checks")
+            if not isinstance(checks, dict) or not checks:
+                errors.append(f"{name}/{claim_id}: missing evidence_checks")
+            else:
+                for selector, expected in checks.items():
+                    try:
+                        actual = aggregate_claim_value(
+                            claim_values(payload, selector), "single"
+                        )
+                    except (KeyError, TypeError, ValueError) as error:
+                        errors.append(
+                            f"{name}/{claim_id}: evidence check cannot resolve "
+                            f"{selector!r}: {error}"
+                        )
+                        continue
+                    if actual != expected:
+                        errors.append(
+                            f"{name}/{claim_id}: evidence check failed for {selector!r}"
+                        )
+            errors.extend(
+                validate_claim_measurements(
+                    name,
+                    str(claim_id),
+                    claim.get("metrics"),
+                    payload,
+                    "metrics",
+                )
+            )
+            errors.extend(
+                validate_claim_measurements(
+                    name,
+                    str(claim_id),
+                    claim.get("environment"),
+                    payload,
+                    "environment",
+                )
+            )
+    return tuple(errors)
+
+
+def main() -> int:
+    data = tomllib.loads(MATRIX.read_text(encoding="utf-8"))
+    errors = maturity_errors(data)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    print("capability maturity matrix passed")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

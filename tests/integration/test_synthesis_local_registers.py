@@ -20,7 +20,7 @@ from flagquantum.compiler._construction.scheduling.selection import (
 )
 from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -31,8 +31,8 @@ from flagquantum.compiler._hybrid.model import (
 )
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
-from flagquantum.services._synthesis_registers import synthesize_registers
-from flagquantum.services.synthesis import SynthesisError
+from flagquantum.synth._program import synthesize_registers
+from flagquantum.synth._workflow import SynthesisError
 from tests.integration.test_construction_register_execution import _check
 from tests.register_program_cases import Registers
 from tests.synthesis_workflow_helpers import check_state

@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from flagquantum import Circuit
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.ecosystem._semantic_parity import (
     maximum_error_up_to_global_phase,
     reference_state,

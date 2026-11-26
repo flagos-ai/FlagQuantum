@@ -8,8 +8,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...core.parameters import is_parameterized_value, parameter_names_in_value
 from ..lowering.operator_lowering import require_static_gate_program, validate_lowering
 from .openqasm_gates import EMITTED_GATES as _DIRECT_GATES

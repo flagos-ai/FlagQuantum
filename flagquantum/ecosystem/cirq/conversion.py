@@ -7,8 +7,9 @@ from importlib import import_module
 from numbers import Number
 from typing import Any, Literal
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
 from .models import (
     CirqConversionError,

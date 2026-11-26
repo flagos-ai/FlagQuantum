@@ -19,7 +19,7 @@ Runtime currently performs three levels of work:
 3. Compilation, routing, noise lowering, mode selection, and plan construction
    that call Compiler implementations directly for historical entry-point compatibility.
 
-`architecture.toml` currently permits seven Runtime paths to depend directly on
+`config/architecture.toml` currently permits seven Runtime paths to depend directly on
 Compiler. There are two categories:
 
 - `runtime/execution.py` and `runtime/planner/__init__.py` are explicit
@@ -143,7 +143,7 @@ Categories:
 - **Historical noise/routing coupling**: old directories and compatibility entry
   points mix responsibilities in one file.
 
-| Registered `architecture.toml` path | Actual dependency | Primary category | Target replacement |
+| Registered `config/architecture.toml` path | Actual dependency | Primary category | Target replacement |
 | --- | --- | --- | --- |
 | `runtime/executors/statevector/noisy.py` | `lower_noise_model()` | Raw-program expert entry | Preserve entry behavior; main execution calls the already-lowered internal function |
 | `runtime/executors/statevector/planning.py` | `schedule_layers()` | Raw-program backend planning | Currently accepts Circuit/IR; no duplicate scheduling or new plan contract solely for this |

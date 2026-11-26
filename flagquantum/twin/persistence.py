@@ -9,7 +9,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from ..noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
+
 from ._atomic import write_once
 from .candidate_fit import TwinCandidateFit, TwinFittedCandidate
 from .model import QPUDigitalTwin, TwinSnapshot

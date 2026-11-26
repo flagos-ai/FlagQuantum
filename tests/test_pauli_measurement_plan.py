@@ -5,7 +5,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration

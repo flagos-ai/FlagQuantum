@@ -1,9 +1,17 @@
-"""Optional optimized kernels used by FlagQuantum runtimes.
+"""Historical import facade for the relocated implementation."""
 
-Importing this package does not import an optional kernel compiler. Runtime
-policy selects a concrete implementation before importing its launch wrapper.
-"""
+import sys as _alias_sys
+from importlib import import_module as _import_module
+from typing import Any as _Any
 
-from __future__ import annotations
+from flagquantum.simulation.kernels import __all__ as __all__
 
-__all__: list[str] = []
+_implementation = _import_module("flagquantum.simulation.kernels")
+__doc__ = _implementation.__doc__ or ""
+
+
+def __getattr__(name: str) -> _Any:
+    cached = _alias_sys.modules.get(f"{__name__}.{name}")
+    if cached is not None:
+        return cached
+    return getattr(_implementation, name)

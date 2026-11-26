@@ -8,7 +8,7 @@ import flagquantum as fq
 from examples.synthesis.tutorials.technology_demonstrations.oracle_generation.three_sat_oracles.main import (
     build_program,
 )
-from flagquantum.runtime.mps_result import native_mps
+from flagquantum.runtime.results.mps import native_mps
 
 CLAUSES = (
     (0, 29, 48),

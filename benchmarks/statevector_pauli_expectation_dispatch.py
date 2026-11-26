@@ -18,7 +18,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = (
     "flagquantum.kernel_benchmark_run.statevector_pauli_expectation_dispatch.v1"

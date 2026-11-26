@@ -495,7 +495,7 @@ instead of a persisted-format migration.
 ## Owner and approvals
 
 Owner: integration/API maintainers. Implementation owners by team, from
-`team-ownership.toml`:
+`config/team-ownership.toml`:
 
 | Surface | Team |
 |---|---|

@@ -1,17 +1,12 @@
-"""Numerical records used by JAX tensor-network simulation."""
+"""Historical numerical import facade."""
 
-from __future__ import annotations
+import sys as _sys
+from importlib import import_module as _import_module
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-from typing import Any
+from flagquantum.simulation.tensor_network.jax.models import (
+    JAXTensorNetworkNode as JAXTensorNetworkNode,
+)
 
-
-@dataclass(frozen=True)
-class JAXTensorNetworkNode:
-    """One JAX tensor and its integer contraction labels."""
-
-    tensor: Any
-    labels: tuple[int, ...]
-    name: str = ""
-    metadata: Mapping[str, Any] | None = None
+_sys.modules[__name__] = _import_module(
+    "flagquantum.simulation.tensor_network.jax.models"
+)

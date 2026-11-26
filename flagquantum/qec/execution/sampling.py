@@ -50,6 +50,13 @@ from typing import Literal, NoReturn, SupportsIndex
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
+    KrausChannel,
+    bit_flip_channel,
+    phase_flip_channel,
+    y_flip_channel,
+)
 from flagquantum.qec.dem.construction import (
     _check_rate_order,
     _data_family_rates,
@@ -59,13 +66,6 @@ from flagquantum.qec.execution.signatures import _MechanismKind
 
 from ...core.ir import CircuitIR, Instruction
 from ...core.runtime_config import get_runtime_config
-from ...noise import (
-    KrausChannel,
-    NoiseModel,
-    bit_flip_channel,
-    phase_flip_channel,
-    y_flip_channel,
-)
 from ...simulation.stabilizer import sample_noisy_measurements
 from ...simulation.stabilizer.engine import (
     _prepare_noisy_measurements,

@@ -1,77 +1,172 @@
 # Independent structure migration
 
-This ledger records small, complete migration work packages that can proceed
-while [PR #1084](https://github.com/flagos-ai/FlagQuantum/pull/1084) remains open.
-It does not certify completion of the repository-wide architecture migration.
-Rust implementation remains deferred until #1084 closes and the integrated
-architecture migration passes acceptance.
+The implementation now covers the independently auditable structure migration,
+including product modules, development tools and repository configuration. The
+allocator move in commit `08549f62` was the first package, not the scope limit.
+Final local acceptance is complete; results are recorded below. This is a
+structure change: it introduces no Rust implementation or performance claim.
 
-## Frozen review baseline
+## Frozen integration inputs
 
-- Main: `7278efd00f6768fbbacff6a41eb4dec57a59783e`.
-- Open, draft #1084 head: `e27f1096dff90586f125f5629f8f2dd401730f41`.
-- #1084 base: `03017ddf96dd2d9604f2dbc4d2cdfe2f3837f878`.
-- Audit date: 2026-11-26 (Asia/Shanghai).
-
-Independence requires auditing every implementation, importer, test, package
-reference, build reference, and new consumer in the PR snapshot. An empty
-changed-file intersection alone is insufficient. Repeat the audit if either
-head advances before integration.
-
-## Allocator peak observation: implemented, awaiting integration
-
-| Previous authoritative path | New authoritative path |
+| Input | Revision |
 | --- | --- |
-| `flagquantum/compute/_memory.py` | `flagquantum/compute/local/_memory.py` |
+| Main | `7278efd00f6768fbbacff6a41eb4dec57a59783e` |
+| PR #1084 base | `03017ddf96dd2d9604f2dbc4d2cdfe2f3837f878` |
+| Audited open, draft #1084 head | `8b1aca5be01cfd15ace0cb831221c8f03a48dbba` |
+| Migration branch | `refactor/compute-local-memory-owner` |
+| Review | [Draft PR #1331](https://github.com/flagos-ai/FlagQuantum/pull/1331) |
+| Audit date | 2026-11-26, Asia/Shanghai |
 
-The helper observes memory on directly controlled devices, so Local Compute owns
-it. The old private module is deleted. No compatibility shim, new public type,
-new dependency, API snapshot update, or second implementation is introduced.
-Only its relative imports and its consumers' imports change; the function's
-signature and body are AST-identical. Existing platform contracts and registry
-remain at their current locations.
+The actual PR diff is its base-to-head diff. A main-to-PR comparison alone also
+contains main changes absent from the feature branch and would overstate overlap.
+The audit additionally checks the complete PR tree for new target collisions and
+new consumers, including paths whose content is unchanged from the PR base.
+Git trees, not the capped GitHub changed-files API, provide the inventory.
+The final incremental check from `0a1f4cbe` to `8b1aca5b` covers twelve changed paths,
+with no relocated-source intersection or newly added target collision.
+Target emulation retains its extension SDK target-description adapter in
+`compute/remote/emulation.py` and delegates execution to the existing Runtime
+entry. Moving that adapter into Runtime would violate the Ecosystem boundary.
 
-The complete executable reference closure is:
+Repeat the overlap and consumer audit if either input advances before integration.
 
-- `flagquantum/compute/_memory.py` (implementation before the move);
-- `flagquantum/runtime/executors/statevector/training.py`;
-- `flagquantum/runtime/executors/mps/training_engine.py`;
-- `tests/unit/test_training_peak_memory.py`.
+## Authoritative implementation owners
 
-All four files are byte-identical between the frozen main and #1084 snapshots.
-A repository-wide search of each snapshot finds the same three consumers and
-no additional references to the old module. The package is discovered by the
-existing setuptools package discovery. Local contributor instructions are in
-[`compute/local/README.md`](../../flagquantum/compute/local/README.md).
+| Family | Result |
+| --- | --- |
+| Direct devices | Platform contracts, registry, PyTorch/FlagOS/FlagGems adapters, target observation and allocator observation live in `compute/local/`. |
+| External tasks | QPU, Jiuding and Kaiwu implementations live in `compute/remote/`. Remote owns extension-backed target emulation; Runtime owns deployment planning and execution. |
+| Realtime | Protocol, channels, payloads, session and service live in `compute/realtime/`, retaining their standard-library-only boundary. |
+| Kernels | Catalog, Triton and existing kernel adapters live in `simulation/kernels/`. Catalog imports remain metadata-only. |
+| Dynamics | Lindblad numerics, generators, problem validation, integrators and adjoint live in `simulation/dynamics/`; workflow composition lives in `runtime/evolution/`. |
+| Training | Module integration, training lifecycle and compilation orchestration live in `runtime/training/`; checkpoint persistence lives in `runtime/checkpointing.py`. |
+| Results and profiles | Execution, MPS, trajectory and count results live in `runtime/results/`. Training/scale/capacity definitions live in `runtime/profiles/`; measured MPS profiling lives in `runtime/observability/`. |
+| Operator semantics | Schema, algebra, observable models, channels, superoperators, registry data and embedding live in `core/operators/`. Measurement requests live in `core/measurement.py`, noise composition/profile in `core/noise.py` and `core/noise_profile.py`. |
+| Registration | Circuit spelling/method installation lives in `compiler/construction/operator_registration.py`; immutable registry semantics stay in Core. |
+| Algorithms | Existing main implementations are grouped into primitives, chemistry, many body, search, estimation, optimization, optimizers, linear algebra, quantum ML and error mitigation. Generic Hamiltonians belong to Primitives; spin models belong to Many Body; PCA and SVD belong to Linear Algebra. |
+| Frontends | Torch capture lives in `compiler/frontends/torch/`; structured Python capture lives in `compiler/frontends/_structured/`. Existing formats remain in their already authoritative owners. |
+| Services | The package maintains published entry points. Preparation belongs to Compiler; plan inspection/preflight to Runtime; ground-state/research workflows to Algorithms; Qmod adaptation to Ecosystem; synthesis composition/program/readout to Synth. The northbound capabilities aggregation belongs to `_api.py`. |
+| Deployment | Remote owns package models and submission validation; Compiler owns routing evidence; Runtime owns deployment planning, dynamic sealing/rematch and measured count extraction. The old package is a facade. |
+| JAX numerics | Statevector, MPS and tensor-network numerical modules live below their engines' `jax/` directories. Shared JAX primitives live in `simulation/numerics/jax.py`. |
+| CPU adjoint numerics | Pure CX permutation/adjoint and scalar rotation VJP/seed functions live in Simulation. Runtime retains policy, shard state, communication, deferred execution and lifecycle dispatch. |
+| Tools | 138 existing root tool implementations are grouped into `tools/ci`, `validation`, `architecture`, `docs` and `release`; old command paths forward to one implementation. |
+| Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
+| Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-Validation on Python 3.12.14 and Torch 2.14.1, using the isolated migration
-checkout as `PYTHONPATH`:
+The exhaustive [path map](migration/independent-structure-path-map.md) and
+[machine-readable symbol ledger](migration/independent-structure-moves.json)
+identify every relocated file and every partial extraction. An implementation
+has one owner even when more than one historical public module exports it.
+No empty directories are added for capabilities present only in #1084.
+
+The existing integrators remain a cohesive `dynamics/integrators.py` module.
+Splitting each function into a package would not improve this implementation's
+boundary. Per-trajectory stream ownership stays in `runtime/trajectories/rng.py`:
+choosing a deterministic stream by global trajectory ID is execution lifecycle.
+It does not justify a new Trajectory-to-Simulation dependency. Existing QEC,
+Fermion, Primitives, Twin and format families already in their intended owners
+are retained unless a concrete relocation is recorded in the map.
+
+## Independence and retained families
+
+Every wholly relocated implementation is unchanged by the audited PR. The one
+partially extracted PR-modified source is `simulation/density_matrix.py`: the
+five embedding helpers are individually AST-identical between the PR base and
+head. The rest of that file remains in place. No target in the migration map
+collides with a PR-added target. Other compatibility imports remain available to
+the frozen PR snapshot while its consumers are reconciled.
+
+| Retained family | Concrete reason and integration action |
+| --- | --- |
+| Core IR; static/dynamic construction; registers and lowering | #1084 directly changes IR, `_construction`, register/component and lowering families. Integrate their complete program/type/validation closure before moving these implementations. Published `fq.Circuit` and dynamic entry points remain unchanged. |
+| Rotation synthesis mathematics | #1084 directly changes/adds Synth rings, lattices, rotation protocols and Clifford+T implementations. Move this connected mathematical family to Compiler synthesis after integration; the independent public workflow move is already implemented. |
+| Density-matrix, classical/basis and new numerical families | #1084 changes density-matrix implementation and adds extensive classical, basis, encoding and numerical components. Migrate their complete integrated family. Do not create absent implementations or overwrite PR additions with main's smaller family. |
+| Drawer | #1084 substantially adds/changes diagrams, symbols, viewers and assets. Consolidate the integrated renderer family and asset paths together. |
+| Native CPU ABI and build closure | `setup.py` keeps the current native module name/source paths. #1084 changes `MANIFEST.in`, installation/source-manifest tests and distribution verification. Relocate native sources only with the integrated ABI, wheel, sdist and installed-artifact acceptance. |
+| Benchmarking and testing distribution | #1084 changes benchmarking implementations and introduces testing-tool consumers. The maintained benchmark console entry lives in `pyproject.toml`, which #1084 also changes. Move into the optional developer distribution together with metadata, installed entry points and independent-wheel tests. |
+| Root `ci/` data and remaining policies | #1084 consumers include `.github/workflows/local-gpu.yml`, lane-dependency tests, Compiler documentation, CI and evidence documentation. Dependency policy itself is modified. Move these JSON/TOML files with all integrated readers; no duplicate policy files are introduced. |
+| Compose and container closure | The PR tree's `.github/workflows/publish-dev-container.yml` refers to `compose.dev.yaml`. Its presence matters even if that file is unchanged from the PR base. Move Compose with workflow filters, project directory/name, build context, bind mounts and environment behavior verified. |
+| Standalone source bootstrap | CI downloads `tools/ci_source_archive.py` and executes it before the repository exists. Keep its standalone implementation until the #1084 CI download/filter closure moves atomically; an import facade cannot bootstrap an absent package. |
+| Existing root tools directly modified by #1084 | `check_cirq_interop_contract.py`, `check_dependency_policy.py`, `check_multi_level_ir_contract.py`, and `verify_distribution_artifacts.py` retain their current implementations. The PR additionally introduces `audit_register_component_scope.py` and `tools/development/`; place those against the integrated source. |
+| Rust | Implementation, dependencies and experiments wait for #1084 closeout and architecture acceptance. Existing Rust priorities, boundaries and numerical/performance acceptance remain unchanged. |
+
+A file retaining its current owner because it implements orchestration is not an
+unmigrated numerical engine. Runtime exchanges, gradient reduction, layout plans,
+provider submission lifecycle and training/checkpoint policy stay in Runtime.
+Pure mathematical helpers extracted from those files are individually recorded;
+partial rows never redirect the entire original module.
+
+## Compatibility and retirement
+
+Integration owns the migration map and historical forwarding layer. Core,
+Compiler, Compute Local, Remote, Runtime, Simulation, Algorithms and Ecosystem
+own their respective authoritative implementations and contributor guides.
+
+- Protected exports, signatures, class identity and serialized module names stay
+  unchanged. Their facades follow `PUBLIC_API_PROTECTION.md` and release policy;
+  a directory migration does not authorize deleting them in a later release.
+- Old non-package module paths share canonical module state. Old package
+  namespaces forward exports without loading duplicate child implementations.
+  Mixed namespaces forward each definition to its specific owner and preserve
+  the annotation globals needed by historical public classes.
+- Private aliases needed by #1084 and old tool command paths are transitional.
+  Integration must reconcile feature-branch imports, CI commands, hooks and
+  source inspectors, then remove the unprotected aliases as a dedicated cleanup.
+  The target is the #1084 integration/0.5.0 migration window; this is a review
+  gate, not permission to remove protected APIs automatically.
+- Internal code imports authoritative owners. Existing approved northbound
+  Compiler capture/training facades remain the named Runtime interfaces.
+  Existing program-to-plan and deployment composition receives exact
+  path entries in the architecture policy; other Runtime Compiler imports remain
+  forbidden. No contract, type or numerical algorithm is duplicated to evade a
+  boundary.
+- The private allocator source is removed. Module-to-package conversions remove
+  the old `.py` and keep the same Python import identity. Workshop/configuration
+  paths move with their readers rather than retaining duplicate contents.
+
+`_import_compat.py` performs the common module-state/parent binding operation.
+Realtime uses only standard-library code. Frozen source identifiers are resolved
+through explicit symbol ownership, not by regenerating contracts. The scanner
+still visits new definitions and new parameters. Missing targets, duplicate
+implementations, missing forwarding and ambiguous ownership fail validation.
+Unknown historical evidence paths do not acquire a fabricated successor.
+
+## Validation and evidence
+
+The environment is Python 3.12.14 and Torch 2.14.1. Use the repository as
+`PYTHONPATH`; CPU fixtures and fake providers do not establish physical GPU/QPU
+support, distributed capacity or a performance improvement.
 
 ```sh
-python -m pytest tests/unit/test_training_peak_memory.py tests/unit/test_statevector_training.py tests/unit/test_mps_training.py tests/integration/test_training_parameter_lifecycle.py -q -p no:cacheprovider
-python tools/public_api_snapshot.py
+python -m pytest tests/unit tests/api_contract tests/team -n 4 -q \
+  -p no:cacheprovider --ignore=tests/team/remote/test_kaiwu_live_smoke.py
+python -m ruff check flagquantum tests tools
+python -m black --check flagquantum tests tools
+python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
 python tools/check_architecture.py
+python tools/public_api_snapshot.py
+python tools/check_qubit_vocabulary.py
+python tools/check_team_scope.py --validate
+python tools/check_docs_links.py
 ```
 
-The same 70 tests pass before and after the move. API, architecture, and
-Integration ownership checks pass. The allocator function AST is unchanged, and
-setuptools discovers `flagquantum.compute.local`. These checks establish CPU
-regression coverage and fake-provider behavior, including FlagOS observation
-ordering; they do not certify physical accelerators, distributed execution,
-wheel installation, or the full #1084 integration.
+The worker compatibility scenario exports a real package source archive and runs
+both historical and canonical worker modules in isolated subprocesses. Additional
+fixtures cover shared provider registry state, historical pickles, class type
+hints, metadata-only imports, relocated Conda checkout resolution, forbidden
+Realtime/Kernel dependencies and relocation-scanner negative cases. Existing
+frozen realtime pickle bytes are retained. Ports/subprocess fixtures require an
+environment permitting local sockets; sandbox denial is not a behavioral failure.
 
-## Deferred work
+The [acceptance record](migration/independent-structure-acceptance.md) records
+19,269 passed / 957 skipped in Unit/API/Team and 1,591 passed / 193 skipped in
+root/local integration, eleven passing quality checks and installed-wheel verification.
+The expanded migration is reviewed through draft PR #1331; CI must qualify its
+new pushed head independently of the earlier allocator-only result. Frozen public API files, contracts and raw
+scientific evidence are not regenerated. Historical recorded failures remain
+failures. Native accelerator, distributed and #1084 integrated acceptance remain
+separate gates.
 
-- Root Compose relocation: #1084 adds `.github/workflows/publish-dev-container.yml`
-  references to `compose.dev.yaml`. Migrating only the file and current main's
-  README would leave future CI consumers stale. Reconcile the complete workflow
-  closure after #1084 closes. Preserve Compose project directory, build context,
-  bind mount, environment loading, and project identity during that migration.
-- Remaining direct-device modules, Remote/Realtime consolidation, compiler
-  construction, Core IR, Simulation engines, build metadata, and whole-tree
-  tooling: execute their complete work packages against the integrated baseline;
-  this allocator move does not establish their independence.
-- Rust optimization: retain the separately documented post-integration gate.
-
-Rollback of this work package is one commit revert. No persisted data, public
-schema, checkpoint, or deployment package requires conversion.
+Rollback is a normal commit revert of the atomic migration and its path-policy
+updates. No persisted public payload, checkpoint schema or provider receipt is
+rewritten by rollback.

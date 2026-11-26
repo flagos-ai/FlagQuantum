@@ -12,7 +12,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.training_state import TrainingStateError, _workload_signature
+from flagquantum.runtime.checkpointing import TrainingStateError, _workload_signature
 
 pytestmark = pytest.mark.unit
 

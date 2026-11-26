@@ -20,11 +20,6 @@ from flagquantum.runtime.executors.statevector.forward_executor import (
 from flagquantum.runtime.executors.statevector.reverse import (
     execute_torch_distributed_statevector_reverse,
 )
-from flagquantum.runtime.executors.statevector.reverse_adjoint_cx import (
-    apply_cpu_cx_adjoint_index,
-    cpu_cx_permutation_images,
-    cpu_cx_permutation_index,
-)
 from flagquantum.simulation.native_cpu import (
     compact_cpu_cx_adjoint_auxiliary_bytes,
     fused_compact_cx_adjoint_gather,
@@ -53,6 +48,11 @@ from flagquantum.simulation.native_cpu import (
 )
 from flagquantum.simulation.native_cpu.rotation import (
     native_cpu_forward_rotation_tile_qubits,
+)
+from flagquantum.simulation.statevector.cx_adjoint import (
+    apply_cpu_cx_adjoint_index,
+    cpu_cx_permutation_images,
+    cpu_cx_permutation_index,
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
 

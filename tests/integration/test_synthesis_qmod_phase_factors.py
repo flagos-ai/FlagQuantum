@@ -9,7 +9,7 @@ from flagquantum import synth
 from flagquantum.compiler._construction.codegen.boolean import lower_boolean_value
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 from tools.validate_qmod_phase_factors import FIXTURES, validate
 
 pytestmark = pytest.mark.integration

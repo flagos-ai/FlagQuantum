@@ -316,7 +316,7 @@ anywhere but on the type that owns the instruction list.
    **`N1-5` landed the Core half and not the replacement.** What shipped is
    `Circuit.power`, whose repeating path emits exactly the instruction sequence
    those three `for _ in range(power)` loops emit. The three call sites are in
-   `flagquantum/algorithms/**`, which `team-ownership.toml` assigns to a different
+   `flagquantum/algorithms/**`, which `config/team-ownership.toml` assigns to a different
    team, so they were not rewritten in the same change; `power` is also the floor
    rather than the whole operation those loops perform, because each one is
    *controlled* as well, which is `Circuit.control`'s half of the family. This is
@@ -544,7 +544,7 @@ change — and `IR_VERSION` stays `"1.0"`.
 and each has to answer the same question about every instruction it meets: is there a
 rewrite the IR can express? Three methods answering that separately is what put
 `flagquantum/circuit.py` over the `default_module_line_ceiling = 1250` in
-`architecture.toml` once `control` (1196 lines on `main`) and `power` (1156 on this
+`config/architecture.toml` once `control` (1196 lines on `main`) and `power` (1156 on this
 branch) shared a file that neither of them exceeded alone.
 
 The overage was resolved by moving the answer, not by raising the ceiling. The four
@@ -591,7 +591,7 @@ for the file that currently defines the composition family.
 
 ## 8. Owner and approvals
 
-Owner: FlagQuantum core maintainers (team `core` in `team-ownership.toml`) for
+Owner: FlagQuantum core maintainers (team `core` in `config/team-ownership.toml`) for
 `flagquantum/circuit.py` and `flagquantum/core/**`; `integration` for `docs/**`
 and `contracts/**`, which are shared paths.
 

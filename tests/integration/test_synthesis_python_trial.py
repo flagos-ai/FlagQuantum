@@ -11,10 +11,10 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
-from flagquantum.services import _synthesis_readout as readout
+from flagquantum.synth import _readout as readout
 
 pytestmark = pytest.mark.integration
 

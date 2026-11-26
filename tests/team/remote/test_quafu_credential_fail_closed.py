@@ -8,11 +8,11 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.deployment import CloudBackendProfile
+from flagquantum.compute.remote.packages import CloudBackendProfile
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.contracts import ProviderTaskHandle
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 from flagquantum.errors import ValidationError
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.contracts import ProviderTaskHandle
-from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 

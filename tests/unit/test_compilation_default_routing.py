@@ -13,6 +13,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, LinkErrorRates, compile, pipeline
+from flagquantum.compiler.artifacts.routing_evidence import (
+    validate_deployment_routing_plan,
+)
 from flagquantum.compiler.lowering import pipeline as lowering_pipeline
 from flagquantum.compiler.topology import routing_strategy
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
@@ -21,7 +24,6 @@ from flagquantum.compiler.topology.routing import (
     route_to_topology,
 )
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
-from flagquantum.deployment.routing_evidence import validate_deployment_routing_plan
 
 pytestmark = pytest.mark.unit
 

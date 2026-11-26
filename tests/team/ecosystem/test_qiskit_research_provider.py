@@ -5,6 +5,9 @@ from __future__ import annotations
 import pytest
 import torch
 
+from flagquantum.algorithms.optimization._research_providers import (
+    installed_vqe_providers,
+)
 from flagquantum.circuit import Circuit
 from flagquantum.ecosystem.qiskit.research_provider import (
     QiskitAerResearchVQEProvider,
@@ -15,7 +18,6 @@ from flagquantum.services import (
     PauliSum,
     PauliSumTerm,
 )
-from flagquantum.services.research_providers import installed_vqe_providers
 
 pytestmark = pytest.mark.unit
 

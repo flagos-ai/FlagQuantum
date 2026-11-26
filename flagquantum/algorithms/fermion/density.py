@@ -11,8 +11,9 @@ from itertools import combinations
 
 import torch
 
-from ...core.algebra.pauli import count
-from ...observables import Observable, annihilate, create, number
+from flagquantum.core.operators.observable import Observable, annihilate, create, number
+from flagquantum.core.operators.pauli import count
+
 from .encoding import ENCODINGS, Encoding, encode_fermion
 from .observables import to_observable
 

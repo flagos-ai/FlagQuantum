@@ -1,0 +1,1 @@
+"""Many body algorithm implementations."""

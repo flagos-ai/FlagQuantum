@@ -97,7 +97,7 @@ from flagquantum.compiler.optimization.one_qubit_optimization import (
 )
 from flagquantum.compiler.pipeline import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, get_operator_schema
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, get_operator_schema
 from flagquantum.simulation.statevector.local import run_local_statevector
 
 SCHEMA = "flagquantum_compiler_one_qubit_optimization_benchmark_v1"

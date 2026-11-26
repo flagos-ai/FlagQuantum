@@ -4,7 +4,7 @@ This is the shortest live path through the integration introduced by PR 598::
 
     FlagQuantum QuboProblem or Hamiltonian
         -> flagquantum.ecosystem.kaiwu.KaiwuSampler
-        -> flagquantum.remote.kaiwu.KaiwuSDKClient
+        -> flagquantum.compute.remote.kaiwu.KaiwuSDKClient
         -> Kaiwu SDK and the QBoson service
 
 The command consumes exactly ten sampling credits when the matrix is not
@@ -17,9 +17,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from flagquantum.algorithms.qubo import QuboProblem
+from flagquantum.algorithms.optimization.qubo import QuboProblem
+from flagquantum.compute.remote.kaiwu import KaiwuSDKClient, KaiwuTaskClient
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import KaiwuSDKClient, KaiwuTaskClient
 
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_TEN_QBOSON_SAMPLING_CREDITS"
 PROBLEM = QuboProblem(

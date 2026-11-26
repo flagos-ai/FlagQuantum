@@ -125,7 +125,7 @@ from flagquantum.compiler.pipeline import (  # noqa: E402
     remove_identity_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction  # noqa: E402
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS  # noqa: E402
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS  # noqa: E402
 
 SCHEMA = "flagquantum_compiler_identity_elimination_benchmark_v1"
 

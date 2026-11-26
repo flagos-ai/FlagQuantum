@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
 
 
 def fock_matrix(operator: FermionOperator, width: int) -> torch.Tensor:

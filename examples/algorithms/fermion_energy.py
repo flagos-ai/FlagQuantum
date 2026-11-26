@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import number
+from flagquantum.core.operators.observable import number
 
 
 def main() -> None:

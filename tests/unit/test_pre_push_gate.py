@@ -81,7 +81,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
 def test_pre_push_gate_checks_ownership_of_the_changed_paths() -> None:
     """The gate must classify changes, not only validate the policy file.
 
-    `--validate` reads `team-ownership.toml` and never resolves a path, so a
+    `--validate` reads `config/team-ownership.toml` and never resolves a path, so a
     branch that adds an unowned file passes it. The CI quality job runs the
     classification step as well; the local gate has to run both, or the failure
     is only discovered after the push.
@@ -271,7 +271,7 @@ def test_pre_push_lint_is_the_environments_ruff_and_not_a_pinned_second_copy() -
     second ruff that nothing keeps in step with the one CI's quality job
     installs from `.[dev]`, and the two disagree about which findings exist as
     soon as either moves. The retired `v0.12.7` pin reported RUF012 on
-    `flagquantum/compute/pytorch.py`, which the installed ruff does not report,
+    `flagquantum/compute/local/pytorch.py`, which the installed ruff does not report,
     so the gate blocked every push from the day that file landed while
     `main` stayed green. Lint therefore runs the installed tool, exactly as the
     black hook beside it does.

@@ -8,6 +8,11 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.measurement import OutputRequest
+from flagquantum.core.operators.boson import DEFAULT_DENSE_MATRIX_BYTES
+from flagquantum.runtime.results import ExecutionResult, MeasurementResult
+from flagquantum.simulation.dynamics.problem import _normalize_observables
+
 from ..core.ir import _decode_value, _encode_value
 from ..core.ir.program.model import ProgramRecord
 from ..core.ir.program.physical import IsingContext, IsingExchange
@@ -17,9 +22,6 @@ from ..core.ir.program.physical_codec import (
 )
 from ..core.ising import IsingBraidProgram
 from ..errors import CapabilityError, ExecutionError, ValidationError
-from ..observables import OutputRequest
-from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES
-from ..simulation.lindblad_request import _normalize_observables
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     EXECUTION_PLAN_SCHEMA,
@@ -36,7 +38,6 @@ from .execution_plan_contract import (
 )
 from .options import ExecutionOptions
 from .options_resolver import resolve_execution_options
-from .result import ExecutionResult, MeasurementResult
 
 _SAMPLED_NUMERIC_BYTES = 64 + 128 + 16 + 8
 
@@ -470,7 +471,7 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
 
     payload = plan.to_dict()
     record = native_program_from_dict(_require_mapping("program", payload["program"]))
-    from ..compute import resolve_platform_device
+    from flagquantum.compute.local import resolve_platform_device
 
     resolved = _require_mapping("resolved_options", payload["resolved_options"])
     device = resolve_platform_device(resolved["device"])

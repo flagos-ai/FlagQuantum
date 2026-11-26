@@ -13,7 +13,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.observables.boson import annihilate, create
+from flagquantum.core.operators.boson import annihilate, create
 
 
 def main() -> None:

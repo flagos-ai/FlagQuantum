@@ -13,7 +13,7 @@ from examples.synthesis.functions.linear_pauli_rotations.comparisons.circuit imp
 )
 from examples.synthesis.functions.linear_pauli_rotations.main import build_program
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_controlled_rotations import (
     controlled_reference,

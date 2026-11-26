@@ -13,7 +13,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.observables.boson import annihilate, create, number
+from flagquantum.core.operators.boson import annihilate, create, number
 
 # Frozen independent scalar E_ab reference: N=5, g=0.6, rates=(0.3,0.1), T=0.7.
 TARGET_EXCITED = 0.8022880147390464

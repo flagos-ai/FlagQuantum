@@ -8,12 +8,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 from . import two_qubit_cpu
 
@@ -147,7 +148,9 @@ def _apply_cataloged_two_qubit_matrix(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.statevector_gates import apply_complex64_local_2q
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
+        apply_complex64_local_2q,
+    )
 
     return apply_complex64_local_2q(
         state,

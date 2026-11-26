@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
 from flagquantum.compiler._construction.frontend.python import capture
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.registers._arithmetic_kernels import borrowed_less_xor
 from flagquantum.core.ir import Instruction
 

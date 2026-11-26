@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys as _alias_sys
 from importlib import import_module
 from typing import Any
 
@@ -58,6 +59,19 @@ __all__ = (
 
 def __getattr__(name: str) -> Any:
     if name in {"experimental", "twin"}:
+        return import_module(f".{name}", __name__)
+    if name in {
+        "remote",
+        "kernels",
+        "noise",
+        "operators",
+        "realtime",
+        "lindblad",
+        "services",
+        "deployment",
+    } and any(
+        module.startswith(f"{__name__}.{name}.") for module in tuple(_alias_sys.modules)
+    ):
         return import_module(f".{name}", __name__)
     if name in {"save", "load"}:
         return getattr(import_module(".runtime.experiment", __name__), name)

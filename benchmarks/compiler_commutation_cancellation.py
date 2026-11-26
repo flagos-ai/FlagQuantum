@@ -68,7 +68,7 @@ from flagquantum.compiler.pipeline import (
     remove_identity_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.local import run_local_statevector
 

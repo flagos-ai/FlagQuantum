@@ -6,14 +6,15 @@ import math
 from itertools import groupby
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.analysis.ranges import unsigned_width
-from ...compiler._construction.verification.register_profile import (
-    register_type,
-)
-from ...compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     Operation,
     Value,
     ValueId,
+)
+
+from ...compiler._construction.analysis.ranges import unsigned_width
+from ...compiler._construction.verification.register_profile import (
+    register_type,
 )
 from .adapter_model import (
     _INTRINSICS,

@@ -10,15 +10,15 @@ from unittest.mock import Mock
 import pytest
 import torch
 
-from flagquantum.compute import (
+from flagquantum.compute.local import (
     PlatformActivationError,
     discover_platform_devices,
     get_platform_runtime,
     list_platform_status,
 )
-from flagquantum.compute import flagos as flagos_module
-from flagquantum.compute.flagos import FlagOSPlatformRuntime
-from flagquantum.compute.pytorch import CUDAPlatformRuntime
+from flagquantum.compute.local import flagos as flagos_module
+from flagquantum.compute.local.flagos import FlagOSPlatformRuntime
+from flagquantum.compute.local.pytorch import CUDAPlatformRuntime
 from flagquantum.runtime import backend_registry
 
 pytestmark = pytest.mark.unit

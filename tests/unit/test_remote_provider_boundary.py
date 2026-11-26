@@ -8,12 +8,15 @@ from unittest.mock import Mock, patch
 import pytest
 
 import flagquantum as fq
-import flagquantum.remote as remote
-import flagquantum.remote.qpu as qpu
+import flagquantum.compute.remote as remote
+import flagquantum.compute.remote.qpu as qpu
+from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
+from flagquantum.compute.remote.compute.jiuding import (
+    JiudingClient,
+    _measurement_program,
+)
 from flagquantum.errors import CapabilityError
 from flagquantum.experimental.simulation import RydbergProgram
-from flagquantum.remote.compute._native_job import NativeJiudingJobClient
-from flagquantum.remote.compute.jiuding import JiudingClient, _measurement_program
 
 pytestmark = pytest.mark.unit
 
@@ -32,7 +35,9 @@ def pair() -> RydbergProgram:
 
 
 def test_retired_module_and_generic_exports_have_no_compatibility_shell() -> None:
-    assert importlib.util.find_spec("flagquantum.remote.qpu.neutral_atom") is None
+    assert (
+        importlib.util.find_spec("flagquantum.compute.remote.qpu.neutral_atom") is None
+    )
     for namespace in (remote, qpu):
         for name in (
             "NeutralAtomProvider",

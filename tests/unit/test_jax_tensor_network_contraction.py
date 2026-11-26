@@ -19,10 +19,10 @@ def test_contract_nodes_greedy_matches_einsum():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.tensor_network.contraction import (
+    from flagquantum.simulation.tensor_network.jax.contraction import (
         contract_nodes_greedy,
     )
-    from flagquantum.simulation.jax.tensor_network.models import JAXTensorNetworkNode
+    from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
 
     rng = np.random.default_rng(8)
     a = (rng.standard_normal((3, 4)) + 1j * rng.standard_normal((3, 4))).astype(
@@ -44,8 +44,8 @@ def test_contract_nodes_greedy_matches_einsum():
 def test_zero_for_output_shape_and_value():
     import jax.numpy as jnp
 
-    from flagquantum.simulation.jax.tensor_network.contraction import zero_for_output
-    from flagquantum.simulation.jax.tensor_network.models import JAXTensorNetworkNode
+    from flagquantum.simulation.tensor_network.jax.contraction import zero_for_output
+    from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
 
     tensor = jnp.zeros((2, 3), dtype=jnp.complex64)
     nodes = [JAXTensorNetworkNode(tensor=tensor, labels=(0, 1))]

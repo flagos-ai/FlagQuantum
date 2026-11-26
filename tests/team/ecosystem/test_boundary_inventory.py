@@ -63,13 +63,24 @@ def test_external_sdk_imports_do_not_enter_inner_layers() -> None:
 def test_jax_objects_are_confined_to_the_optional_kernel_boundary() -> None:
     leaks = []
     runtime_boundary = ROOT / "flagquantum/runtime/executors/jax"
-    simulation_boundary = ROOT / "flagquantum/simulation/jax"
+    simulation_boundaries = tuple(
+        ROOT / path
+        for path in (
+            "flagquantum/simulation/jax",
+            "flagquantum/simulation/statevector/jax",
+            "flagquantum/simulation/mps/jax",
+            "flagquantum/simulation/tensor_network/jax",
+        )
+    )
     for path in _python_files():
         for module in _imports(path):
             if (
                 module.split(".", 1)[0] in {"jax", "jaxlib"}
                 and runtime_boundary not in path.parents
-                and simulation_boundary not in path.parents
+                and not any(
+                    boundary in path.parents for boundary in simulation_boundaries
+                )
+                and path != ROOT / "flagquantum/simulation/numerics/jax.py"
             ):
                 leaks.append(f"{path.relative_to(ROOT)} -> {module}")
 
@@ -95,7 +106,7 @@ def test_external_framework_names_are_not_part_of_owned_ir_type_annotations() ->
         ROOT / "flagquantum/core",
         ROOT / "flagquantum/runtime/execution_plan.py",
         ROOT / "flagquantum/runtime/contracts.py",
-        ROOT / "flagquantum/runtime/result.py",
+        ROOT / "flagquantum/runtime/results/__init__.py",
     )
     offenders = []
     for candidate in owned_contracts:

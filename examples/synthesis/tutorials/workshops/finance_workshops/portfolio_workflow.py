@@ -17,7 +17,7 @@ from examples.synthesis.portfolio_reference import (
 )
 from examples.synthesis.quadratic_reference import order_register_factors
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate
 
 from .portfolio_programs import holdings_program, slack_program

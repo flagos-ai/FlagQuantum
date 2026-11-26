@@ -24,9 +24,9 @@ from common import (  # noqa: E402
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.simulation.mps as fqmps  # noqa: E402
-from flagquantum.algorithms import (  # noqa: E402
+from flagquantum.algorithms.many_body.spin import (zz_chain_hamiltonian)
+from flagquantum.algorithms.primitives.ansatz import (
     hardware_efficient_parameter_count,
-    zz_chain_hamiltonian,
 )
 
 

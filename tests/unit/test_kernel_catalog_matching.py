@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from flagquantum.kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
     KernelRequest,
@@ -204,7 +204,7 @@ def test_a_declared_cpu_provider_is_selectable_without_hardware() -> None:
         IMPLEMENTATIONS[0],
         implementation_id="FQKI-PYTORCH-SV-001-C",
         provider="pytorch",
-        module="flagquantum.kernels.pytorch.statevector_gates",
+        module="flagquantum.simulation.kernels.pytorch.statevector_gates",
         symbol="apply_cpu",
         devices=("cpu",),
     )

@@ -27,7 +27,7 @@ from examples.synthesis.community.paper_implementation_project.quantum_state_pre
     SUCCESS_AMPLITUDE,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem.contracts import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import (

@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     INDEX,
     SpecializationError,
     capture_source,

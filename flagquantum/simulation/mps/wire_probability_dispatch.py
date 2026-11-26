@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 from .site_kernels import (
     _record_mps_qubit_probability_fallback,
@@ -103,7 +104,7 @@ def _apply_cataloged_mps_wire_probabilities(tensor: torch.Tensor) -> torch.Tenso
         device_type=tensor.device.type,
         dtype=str(tensor.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_wire_probabilities import (
+    from flagquantum.simulation.kernels.triton.mps_wire_probabilities import (
         fused_mps_qubit_probabilities,
     )
 

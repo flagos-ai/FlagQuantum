@@ -7,8 +7,13 @@ from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import (
+    OPERATOR_SCHEMAS,
+    OperatorSchema,
+    canonical_opcode,
+)
+
 from ...core.ir import CircuitIR, ensure_circuit_ir
-from ...core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema, canonical_opcode
 
 BACKENDS = (
     "pytorch",

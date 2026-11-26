@@ -8,7 +8,7 @@ from typing import Any
 
 import torch
 
-from .result import TrajectoryStatistics
+from flagquantum.runtime.results.trajectories import TrajectoryStatistics
 
 
 class TensorWelford:

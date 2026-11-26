@@ -22,7 +22,7 @@ flowchart TD
 ```
 
 This is an ownership overview, not an exhaustive import graph. The exact forbidden
-imports and bounded exceptions are in `architecture.toml` and checked by
+imports and bounded exceptions are in `config/architecture.toml` and checked by
 `tools/check_architecture.py`.
 
 Reverse edges into IR/core are forbidden. Executors emit backend-neutral
@@ -30,7 +30,7 @@ records and cannot import audit/release classification. Importing the stable
 root API is lazy and does not load runtime, provider, drawing, distributed, or
 optional-kernel modules.
 
-`architecture.toml` owns module-size budgets, import allowlists, and bounded
+`config/architecture.toml` owns module-size budgets, import allowlists, and bounded
 accelerator-call exceptions. Compatibility exceptions, when introduced, must
 name an owner and removal version. Run
 `python tools/check_architecture.py` locally and in CI.

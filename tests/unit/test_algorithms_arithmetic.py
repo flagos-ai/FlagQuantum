@@ -35,12 +35,12 @@ from collections import Counter
 import pytest
 import torch
 
-from flagquantum.algorithms.arithmetic import (
+from flagquantum.algorithms.logical_resources import estimate_logical_resources
+from flagquantum.algorithms.primitives.arithmetic import (
     AdderQubits,
     adder_circuit,
     adder_qubits,
 )
-from flagquantum.algorithms.logical_resources import estimate_logical_resources
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.resource_estimation import estimate_resources
@@ -397,7 +397,7 @@ def test_the_default_operation_bound_is_reported_rather_than_hidden() -> None:
 def test_public_wrapper_uses_the_replaceable_shared_kernel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.algorithms import arithmetic
+    from flagquantum.algorithms.primitives import arithmetic
     from flagquantum.compiler.registers import _arithmetic_kernels
     from flagquantum.core.ir import Instruction
 

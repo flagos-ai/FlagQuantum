@@ -11,10 +11,6 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms.arithmetic import (
-    adder_circuit,
-    adder_qubits,
-)
 from flagquantum.algorithms.chemistry import (
     coupler_hardware_efficient_ansatz,
     double_excitation,
@@ -24,17 +20,17 @@ from flagquantum.algorithms.chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
-from flagquantum.algorithms.chemistry_integrals import (
+from flagquantum.algorithms.chemistry.molecular import (
+    HartreeFockSolution,
+    MolecularHamiltonian,
+    create_molecular_hamiltonian,
+)
+from flagquantum.algorithms.chemistry.molecular.integrals import (
     MolecularGeometry,
     MolecularIntegrals,
     molecular_integrals,
 )
-from flagquantum.algorithms.cobyla import CobylaOptimizer
-from flagquantum.algorithms.core import Hamiltonian
-from flagquantum.algorithms.data_encoding import (
-    amplitude_encode,
-    angular_encode,
-)
+from flagquantum.algorithms.error_mitigation.folding import fold_program
 from flagquantum.algorithms.fermion.density import (
     one_body_density_observables,
     two_body_density_observables,
@@ -47,26 +43,30 @@ from flagquantum.algorithms.fermion.stabilizer import (
     reduce_stabilizers,
 )
 from flagquantum.algorithms.fermion.symmetry import discover_z_parities
-from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
-from flagquantum.algorithms.molecular import (
-    HartreeFockSolution,
-    MolecularHamiltonian,
-    create_molecular_hamiltonian,
-)
-from flagquantum.algorithms.nelder_mead import NelderMeadOptimizer
-from flagquantum.algorithms.solvers import Ansatz, VQESolver, vqe_objective
-from flagquantum.algorithms.spsa import SPSAOptimizer
-from flagquantum.algorithms.trotter import (
+from flagquantum.algorithms.many_body.trotter import (
     pauli_exponential_circuit,
     trotter_circuit,
 )
-from flagquantum.algorithms.variational import (
+from flagquantum.algorithms.optimization.qaoa import (
     maxcut_hamiltonian,
     run_qaoa,
+)
+from flagquantum.algorithms.optimization.solvers import Ansatz, VQESolver, vqe_objective
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.optimizers.spsa import SPSAOptimizer
+from flagquantum.algorithms.primitives.arithmetic import (
+    adder_circuit,
+    adder_qubits,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
+from flagquantum.algorithms.quantum_ml.encoding import (
+    amplitude_encode,
+    angular_encode,
 )
 from flagquantum.compiler import Layout, LinkErrorRates, optimize
 from flagquantum.compiler.openqasm_import import (
@@ -76,6 +76,13 @@ from flagquantum.compiler.openqasm_import import (
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.compiler.translate import translate
 from flagquantum.core.ising import IsingBraidProgram
+from flagquantum.core.operators.boson import BosonOperator
+from flagquantum.core.operators.boson import position as boson_position
+from flagquantum.core.operators.fermion import (
+    FermionOperator,
+    jordan_wigner,
+    parity_encoding,
+)
 from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.ecosystem.cirq import run as run_cirq
@@ -85,14 +92,6 @@ from flagquantum.ecosystem.qcis import import_qcis
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
 from flagquantum.experimental.qec import run_stim_matching_experiment
-from flagquantum.lindblad import plan as plan_lindblad_evolution
-from flagquantum.observables.boson import BosonOperator
-from flagquantum.observables.boson import position as boson_position
-from flagquantum.observables.fermion import (
-    FermionOperator,
-    jordan_wigner,
-    parity_encoding,
-)
 from flagquantum.operators import SuperOperator, register_operator
 from flagquantum.qec import (
     BeliefPropagationOsdDecoder,
@@ -137,9 +136,10 @@ from flagquantum.qec.execution.shot_data import (
     write_shot_data_file,
 )
 from flagquantum.runtime import planner
+from flagquantum.runtime.evolution import plan as plan_lindblad_evolution
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
-from flagquantum.simulation.lindblad import evolve_density_matrix
-from flagquantum.simulation.lindblad_adjoint import adjoint_gradient
+from flagquantum.simulation.dynamics.adjoint import adjoint_gradient
+from flagquantum.simulation.dynamics.lindblad import evolve_density_matrix
 from flagquantum.simulation.pauli import exponential_pauli_operator
 from flagquantum.simulation.stabilizer import pauli_readout
 from flagquantum.simulation.unitary import get_unitary
@@ -471,6 +471,42 @@ def test_every_module_with_examples_is_covered() -> None:
         == Path(owner.__file__).resolve()
     )
     covered.add(owner.__name__)
+    import json
+
+    manifest = json.loads(
+        (
+            _REPOSITORY_ROOT
+            / "docs/development/migration/independent-structure-moves.json"
+        ).read_text()
+    )
+    for entry in ENTRIES:
+        for row in manifest["moves"]:
+            previous = Path(row["old"]).with_suffix("").parts
+            previous_module = ".".join(
+                previous[:-1] if previous[-1] == "__init__" else previous
+            )
+            if entry.__module__ != previous_module or entry.__name__ not in row.get(
+                "symbols", ()
+            ):
+                continue
+            current = Path(row["new"]).with_suffix("").parts
+            owner = importlib.import_module(
+                ".".join(current[:-1] if current[-1] == "__init__" else current)
+            )
+            assert getattr(owner, entry.__name__) is entry
+            assert owner.__file__ is not None
+            if inspect.isclass(entry):
+                tree = ast.parse(Path(owner.__file__).read_text())
+                assert any(
+                    isinstance(node, ast.ClassDef) and node.name == entry.__name__
+                    for node in tree.body
+                )
+            else:
+                assert (
+                    Path(entry.__code__.co_filename).resolve()
+                    == Path(owner.__file__).resolve()
+                )
+            covered.add(owner.__name__)
     uncovered = sorted(_modules_with_examples() - covered)
 
     assert (

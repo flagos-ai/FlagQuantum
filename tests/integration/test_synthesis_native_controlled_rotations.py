@@ -16,7 +16,7 @@ from examples.synthesis.tutorials.basics.quantum_programming.controlled_rotation
 )
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_polynomial_phase import definition

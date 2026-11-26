@@ -7,8 +7,9 @@ from dataclasses import dataclass
 
 import torch
 
+from flagquantum.core.operators.pauli import count
+
 from ...circuit import Circuit
-from ...core.algebra.pauli import count
 
 
 @dataclass(frozen=True, slots=True)

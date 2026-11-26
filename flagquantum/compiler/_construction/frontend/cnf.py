@@ -6,7 +6,8 @@ import ast
 import math
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+
 from ..semantics import cnf_phase
 from ..semantics.cnf_phase import Clause, Location
 from ..verification.register_profile import register_type

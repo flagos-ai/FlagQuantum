@@ -12,8 +12,9 @@ from typing import Any
 import pytest
 import torch
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.noise import NoiseModel, bit_flip_channel
 from flagquantum.qec import (
     DetectorErrorModel,
     Pauli,
@@ -598,7 +599,7 @@ def test_unsupported_channel_keeps_strict_refusal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("stim")
-    from flagquantum.noise import amplitude_damping_channel
+    from flagquantum.core.operators.channels import amplitude_damping_channel
 
     monkeypatch.setattr(
         ex, "compile_stim_sampler", lambda *a, **k: pytest.fail("compile after refusal")

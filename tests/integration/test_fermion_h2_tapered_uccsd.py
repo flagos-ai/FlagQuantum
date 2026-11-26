@@ -20,7 +20,7 @@ from examples.algorithms.fermion_h2_tapered_uccsd import (
     energy as reduced_energy,
 )
 from flagquantum.algorithms.chemistry import excitation_operator
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable

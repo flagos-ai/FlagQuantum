@@ -13,8 +13,12 @@ from flagquantum.algorithms.fermion.symmetry import (
     discover_z_parities,
     reduce_z_parities,
 )
-from flagquantum.observables import FermionOperator, FermionTerm, Observable
-from flagquantum.observables.fermion import annihilate, create, number
+from flagquantum.core.operators.fermion import annihilate, create, number
+from flagquantum.core.operators.observable import (
+    FermionOperator,
+    FermionTerm,
+    Observable,
+)
 
 
 def build_ansatz(angle: torch.Tensor) -> fq.Circuit:

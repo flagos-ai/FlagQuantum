@@ -22,7 +22,7 @@ from examples.synthesis.applications.chemistry.qpe_for_molecules.physics import 
     commute,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import (
     Output,

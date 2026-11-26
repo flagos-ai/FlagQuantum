@@ -5,14 +5,16 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ...compiler._construction.verification.register_profile import register_width
-from ...compiler._hybrid.model import Operation
 from .quantum_callbacks import MAX_CALLBACK_STATEMENTS, Lambda
 from .syntax import Expression, Function, Statement, Token, reject
 from .unitary_effects import PURE_EFFECTS
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Value
+    from flagquantum.compiler.frontends._structured.model import Value
+
     from .context import _Adapt
 
 MAX_CALLBACK_ARRAY_LENGTH = 64

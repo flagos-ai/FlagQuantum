@@ -11,7 +11,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.chemistry import uccsd_ansatz
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
 from flagquantum.algorithms.fermion.encoding import (
     ENCODINGS,
     Encoding,
@@ -20,9 +20,9 @@ from flagquantum.algorithms.fermion.encoding import (
 )
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
+from flagquantum.core.operators.fermion import FermionOperator, number
+from flagquantum.core.operators.observable import Observable
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
-from flagquantum.observables import Observable
-from flagquantum.observables.fermion import FermionOperator, number
 
 DEFAULT_FCIDUMP = Path(__file__).with_name("data") / "h2_sto3g.fcidump"
 

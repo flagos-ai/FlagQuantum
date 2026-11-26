@@ -19,8 +19,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.noise import (
-    NoiseModel,
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
     amplitude_damping_channel,
     depolarizing_channel,
 )

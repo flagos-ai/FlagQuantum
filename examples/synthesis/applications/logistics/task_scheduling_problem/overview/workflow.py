@@ -6,7 +6,7 @@ from typing import cast
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from . import problem, quantum
 

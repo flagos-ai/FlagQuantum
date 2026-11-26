@@ -5,12 +5,10 @@ from dataclasses import replace
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.deployment import (
-    create_pauli_measurement_plan,
-    hamiltonian_expectation_from_counts,
-)
+from flagquantum.runtime.planner.deployment import create_pauli_measurement_plan
+from flagquantum.runtime.results.counts import hamiltonian_expectation_from_counts
 
 pytestmark = pytest.mark.unit
 

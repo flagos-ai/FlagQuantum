@@ -17,11 +17,12 @@ from typing import Any, Protocol, runtime_checkable
 
 import torch
 
-from ..compute import (
+from flagquantum.compute.local import (
     discover_platform_devices,
     get_platform_runtime,
     resolve_platform_device,
 )
+
 from ..core.ir import CircuitIR
 from ..core.runtime_config import get_runtime_config
 from .audit.vocabulary import (

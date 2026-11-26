@@ -10,6 +10,15 @@ from typing import Any
 
 import torch
 
+from flagquantum.runtime.results.trajectories import (
+    MPSMonteCarloResult,
+    TrajectoryFailure,
+)
+from flagquantum.runtime.trajectories.rng import (
+    derive_trajectory_seed,
+    trajectory_generator,
+)
+
 from .checkpoint import (
     TrajectoryCheckpoint,
     load_trajectory_checkpoint,
@@ -17,8 +26,6 @@ from .checkpoint import (
 )
 from .distributed import merge_trajectory_statistics
 from .ownership import owned_trajectory_ids
-from .result import MPSMonteCarloResult, TrajectoryFailure
-from .rng import derive_trajectory_seed, trajectory_generator
 from .statistics import TensorWelford
 
 

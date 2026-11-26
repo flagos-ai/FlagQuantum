@@ -12,15 +12,15 @@ from flagquantum.compiler import (
     remove_layout_restore,
     route_to_topology,
 )
+from flagquantum.compiler.artifacts.routing_evidence import (
+    DeploymentRoutingEvidenceError,
+    validate_deployment_routing_plan,
+)
 from flagquantum.compiler.topology.directed_topology import (
     DirectedCouplingMap,
     route_to_directed_topology,
 )
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
-from flagquantum.deployment.routing_evidence import (
-    DeploymentRoutingEvidenceError,
-    validate_deployment_routing_plan,
-)
 
 pytestmark = pytest.mark.unit
 

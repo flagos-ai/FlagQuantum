@@ -10,7 +10,7 @@ import flagquantum as fq
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.scheduling.selection import select_arithmetic
-from flagquantum.services.synthesis import _complete
+from flagquantum.synth._workflow import _complete
 from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration

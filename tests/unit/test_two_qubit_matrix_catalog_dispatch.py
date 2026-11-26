@@ -109,14 +109,14 @@ def test_two_qubit_matrix_cpu_runtime_preserves_reference_and_lazy_import(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_TWO_QUBIT_MATRIX", "1")
-    sys.modules.pop("flagquantum.kernels.triton.statevector_gates", None)
+    sys.modules.pop("flagquantum.simulation.kernels.triton.statevector_gates", None)
     state = torch.randn(1, 1 << 4, dtype=torch.complex64)
     matrix = torch.randn(4, 4, dtype=torch.complex64)
 
     actual = _apply_matrix(state, matrix, (0, 3), 4)
 
     assert actual.shape == state.shape
-    assert "flagquantum.kernels.triton.statevector_gates" not in sys.modules
+    assert "flagquantum.simulation.kernels.triton.statevector_gates" not in sys.modules
 
 
 def test_two_qubit_matrix_runtime_falls_back_when_support_rejects(

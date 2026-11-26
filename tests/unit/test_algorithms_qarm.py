@@ -27,12 +27,12 @@ from dataclasses import FrozenInstanceError
 import pytest
 import torch
 
-from flagquantum.algorithms.amplitude_estimation import (
+from flagquantum.algorithms.estimation.amplitude_estimation import (
     amplitude_resolution,
     run_amplitude_estimation,
 )
 from flagquantum.algorithms.primitives.types import AmplitudeOperator
-from flagquantum.algorithms.qarm import (
+from flagquantum.algorithms.quantum_ml.qarm import (
     FrequentItemsetOperator,
     frequent_itemset_operator,
     run_frequent_itemset,

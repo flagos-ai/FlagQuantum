@@ -7,7 +7,7 @@ import torch.distributed as dist
 
 import flagquantum as fq
 import flagquantum.training as fqt
-from flagquantum.models import HybridQuantumClassifier
+from flagquantum.algorithms.quantum_ml.models import HybridQuantumClassifier
 from flagquantum.runtime.parallel import plan_hybrid_parallel
 
 INPUTS = torch.tensor([[-0.8, -0.2], [0.7, 0.4]])

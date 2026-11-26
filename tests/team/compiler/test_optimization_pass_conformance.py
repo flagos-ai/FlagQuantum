@@ -99,7 +99,7 @@ from flagquantum.compiler.optimization.two_qubit_optimization import (
 )
 from flagquantum.compiler.optimization.zero_state_reset import remove_zero_state_resets
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 from flagquantum.runtime.dynamic import DynamicCircuit, run_dynamic
 
 pytestmark = pytest.mark.unit

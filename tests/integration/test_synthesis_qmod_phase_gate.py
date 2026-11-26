@@ -11,7 +11,7 @@ import pytest
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 from tests.register_program_cases import Registers
 from tests.synthesis_workflow_helpers import check_state
 

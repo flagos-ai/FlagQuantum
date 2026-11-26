@@ -110,4 +110,4 @@ def test_the_contract_the_guide_names_is_the_one_that_exists() -> None:
     assert "contracts/circuit-composition-contract.toml" in text
     assert (ROOT / "contracts/circuit-composition-contract.toml").is_file()
     assert "tools/check_circuit_composition_contract.py" in text
-    assert (ROOT / "tools/check_circuit_composition_contract.py").is_file()
+    assert (ROOT / "tools/validation/check_circuit_composition_contract.py").is_file()

@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.observables import Y, Z
+from flagquantum.core.operators.observable import Y, Z
 from flagquantum.synth import (
     Output,
     QArray,

@@ -8,7 +8,8 @@ from typing import Any, Protocol
 
 import torch
 
-from ....compute import get_platform_runtime, resolve_platform_device
+from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
+
 from ....core.ir import ensure_circuit_ir
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import Parameter

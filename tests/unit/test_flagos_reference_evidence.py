@@ -9,8 +9,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / "tools" / "validate_flagos_reference_evidence.py"
-RUNTIME_VALIDATOR_PATH = ROOT / "tools" / "validate_flagos_cuda_reference.py"
+MODULE_PATH = ROOT / "tools" / "validation/validate_flagos_reference_evidence.py"
+RUNTIME_VALIDATOR_PATH = ROOT / "tools" / "validation/validate_flagos_cuda_reference.py"
 EVIDENCE_PATH = ROOT / "artifacts" / "flagos_cuda_reference_a800_20260824.json"
 SPEC = importlib.util.spec_from_file_location("flagos_reference_evidence", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None

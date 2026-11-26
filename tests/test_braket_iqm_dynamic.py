@@ -6,7 +6,7 @@ import pytest
 import flagquantum as fq
 import flagquantum.deployment as deployment
 import flagquantum.errors as fqe
-from flagquantum.deployment import CloudBackendProfile
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic import (
     create_dynamic_deployment_package,

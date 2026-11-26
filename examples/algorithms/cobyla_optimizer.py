@@ -34,7 +34,7 @@ import math
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.errors import ValidationError
 
 START = 0.2
@@ -216,7 +216,7 @@ def main() -> None:
     print(
         f"  and reports an energy {round(bounded.value, 6)}, which is the energy there"
     )
-    print(f"  rather than the -2.0 the same objective reaches with no constraint. That")
+    print("  rather than the -2.0 the same objective reaches with no constraint. That")
     print(
         f"  part is the method working. The part that is not: at a price of {CHEAP_PRICE} the"
     )
@@ -233,7 +233,7 @@ def main() -> None:
         f"  {round(exact.value, 6)}. Read `value` alone and that run looks like the better"
     )
     print(
-        f"  answer. Read `feasible` beside it and the report is complete: a local method,"
+        "  answer. Read `feasible` beside it and the report is complete: a local method,"
     )
     print("  a scheduled price, and a residual that says which one you got.")
 

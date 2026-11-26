@@ -22,7 +22,7 @@ from examples.synthesis.community.paper_implementation_project.quantum_algo_for_
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration

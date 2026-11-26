@@ -22,8 +22,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.simulation.density_matrix as density_matrix_module
-from flagquantum.kernels.catalog import KERNEL_DEVICES
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
+from flagquantum.simulation.kernels.catalog import KERNEL_DEVICES
 
 pytestmark = pytest.mark.unit
 
@@ -159,7 +159,8 @@ def test_the_runtime_entry_forwards_all_three_requests() -> None:
     what they say after the two branches were made to agree.
     """
 
-    from flagquantum.noise import NoiseModel, depolarizing_channel
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.core.operators.channels import depolarizing_channel
     from flagquantum.runtime.noise_registry import noisy_density_matrix
 
     circuit = _circuit()

@@ -5,7 +5,7 @@ import math
 import pytest
 import torch
 
-from flagquantum.algorithms.data_encoding import (
+from flagquantum.algorithms.quantum_ml.encoding import (
     amplitude_encode,
     angular_encode,
     append_angular_encode,

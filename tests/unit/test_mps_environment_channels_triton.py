@@ -5,8 +5,8 @@ import torch
 
 pytest.importorskip("triton")
 
-import flagquantum.kernels.triton.mps_environment as mps_environment
-from flagquantum.kernels.triton.mps_environment import (
+import flagquantum.simulation.kernels.triton.mps_environment as mps_environment
+from flagquantum.simulation.kernels.triton.mps_environment import (
     fused_mps_environment_channels,
 )
 

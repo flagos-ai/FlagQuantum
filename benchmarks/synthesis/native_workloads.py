@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import torch
 
-    from flagquantum.services.synthesis import Program
+    from flagquantum.synth._workflow import Program
 
 EXAMPLES = {
     "arithmetic": "tutorials.arithmetic.arithmetic_baseline",

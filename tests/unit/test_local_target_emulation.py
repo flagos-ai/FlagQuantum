@@ -15,16 +15,8 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.compiler.routing import CouplingMap
-from flagquantum.core.target_capabilities import (
-    CAPABILITY_NAMES,
-    EvidenceLevel,
-    FactExposure,
-    TargetCapabilitySnapshot,
-)
-from flagquantum.deployment.cloud import CloudBackendProfile
-from flagquantum.errors import CompilationError, ExecutionError
-from flagquantum.remote import emulation
-from flagquantum.remote.emulation import (
+from flagquantum.compute.remote import emulation as emulation
+from flagquantum.compute.remote.emulation import (
     EMULATED_TARGET_ADAPTER_VERSION,
     EMULATED_TARGET_CLASS,
     EMULATED_TARGET_DECLARATION_SOURCE_KIND,
@@ -33,6 +25,14 @@ from flagquantum.remote.emulation import (
     TargetEmulationError,
     emulate,
 )
+from flagquantum.compute.remote.packages import CloudBackendProfile
+from flagquantum.core.target_capabilities import (
+    CAPABILITY_NAMES,
+    EvidenceLevel,
+    FactExposure,
+    TargetCapabilitySnapshot,
+)
+from flagquantum.errors import CompilationError, ExecutionError
 
 pytestmark = pytest.mark.unit
 
@@ -87,7 +87,7 @@ def test_emulation_evidence_schema_is_versioned_and_stable() -> None:
 def test_emulation_entry_is_not_re_exported_from_the_remote_facade() -> None:
     # The facade stays the adapter roster; the emulation entry is reached by its
     # own module path, the same way the deployment dry run is.
-    import flagquantum.remote as remote
+    import flagquantum.compute.remote as remote
 
     assert not hasattr(remote, "emulate")
     assert "emulate" not in remote.__all__
@@ -268,7 +268,7 @@ def test_emulation_refuses_an_unknown_emission_profile() -> None:
 def test_emulation_refuses_a_request_the_static_text_profile_cannot_describe() -> None:
     from dataclasses import replace
 
-    from flagquantum.observables import expectation, lower_outputs
+    from flagquantum.core.measurement import expectation, lower_outputs
 
     partial = replace(
         _bell().to_ir(),

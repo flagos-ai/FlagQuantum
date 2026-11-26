@@ -16,9 +16,9 @@ record the approved outcome of this document rather than re-derive it.
 
 Two decision sets currently disagree about Compiler, and no machine gate notices.
 `contracts/long-horizon-architecture-v1.json` declares `compiler` may depend only
-on `core`, while `architecture.toml` permits Compiler to import anything not on a
+on `core`, while `config/architecture.toml` permits Compiler to import anything not on a
 seven-entry deny list — and `noise` is not on that list. The same pair of files
-declares `runtime` may depend only on `core`, while `architecture.toml` carries a
+declares `runtime` may depend only on `core`, while `config/architecture.toml` carries a
 self-cleaning eight-file allowance for Runtime importing Compiler. This document
 resolves both in one direction and states what may not change.
 
@@ -43,7 +43,7 @@ Measured by that boundary, the package contains six distinct responsibilities:
 | Noise lowering, operator-lowering registry, private hybrid slice | `_hybrid/` **4,361**, `operator_lowering.py` 242, `noise.py` 129 | 4,732 |
 
 `physical_plan.py` is 970 lines against a `default_module_line_ceiling` of 1250
-(`architecture.toml`), a 78% occupancy that makes it the largest module in the
+(`config/architecture.toml`), a 78% occupancy that makes it the largest module in the
 package and the one a contributor is least able to change safely. `_hybrid/` alone
 is 42% of the package.
 
@@ -99,13 +99,13 @@ definition lives in Compiler while Deployment and Remote construct it.
 `contracts/long-horizon-architecture-v1.json` states `compiler may_depend_on =
 ["core"]` and `noise may_depend_on = ["core"]`. Compiler importing Noise violates
 the first. No check reports it, because `[boundaries] compiler_forbidden` in
-`architecture.toml` is `["_compiler", "compilation", "runtime", "deployment",
+`config/architecture.toml` is `["_compiler", "compilation", "runtime", "deployment",
 "simulation", "compute", "remote"]` — `noise` is absent, and
 `tools/check_architecture.py:530-537` only enforces the listed entries.
 
 The omission is not cosmetic. It means the deny list is a record of what someone
 remembered to forbid, not of what the layer order implies, and the two lists have
-already diverged. A contributor reading `architecture.toml` cannot tell whether
+already diverged. A contributor reading `config/architecture.toml` cannot tell whether
 `compiler → noise` is permitted or an oversight, and today the answer is
 "permitted by accident".
 
@@ -129,7 +129,7 @@ contributor looks for the real compiler.
 
 ### The declared layer order is enforced by nothing
 
-`architecture.toml` has a `[layers] order` table listing nine layers. No tool
+`config/architecture.toml` has a `[layers] order` table listing nine layers. No tool
 reads it. `tools/check_architecture.py:269` reads only
 `package_layout.allowed_top_level_directories`; the strings `layers` and `order`
 appear nowhere else in the checker.
@@ -185,7 +185,7 @@ journeys rather than end-user paths:
 | --- | --- |
 | Compiler depends only on Core (contract) | `contracts/long-horizon-architecture-v1.json`, `domains.compiler.may_depend_on == ["core"]` |
 | Compiler imports Noise (reality) | `flagquantum/compiler/noise.py:10-15` |
-| The deny list omits `noise` | `architecture.toml`, `[boundaries] compiler_forbidden` (7 entries, no `noise`) |
+| The deny list omits `noise` | `config/architecture.toml`, `[boundaries] compiler_forbidden` (7 entries, no `noise`) |
 | The checker only enforces listed entries | `tools/check_architecture.py:530-537` |
 | `CouplingMap` is not a public API | absent from `docs/public_api_v1.json`; no `tests/api_contract/` coverage |
 | `CouplingMap` is cross-domain | `deployment/cloud.py:22`, `deployment/routing_evidence.py:10`, `remote/qpu/azure.py:11`, `remote/qpu/braket.py:70` |
@@ -193,10 +193,10 @@ journeys rather than end-user paths:
 | `_hybrid/` is private and migration-scoped | `flagquantum/compiler/IMPLEMENTATION.md`; `flagquantum/compiler/README.md` lists it under "Structured hybrid programs" |
 | QEC imports `_hybrid` | `flagquantum/qec/dem.py:34`, `flagquantum/qec/repetition.py:8` |
 | Layer order is unenforced | `tools/check_architecture.py:269` reads only `package_layout`; no `layers` reference exists in `tools/` |
-| 13 of 20 directories are unchecked | `architecture.toml` `allowed_top_level_directories` (20) versus the 7 prefixes tested at `tools/check_architecture.py:524-593` |
-| The Runtime allowance has 8 entries and no removal condition | `architecture.toml` `[long_horizon_boundaries] runtime_compiler_import_allowed`; `compiler_convergence` track `status == "complete"` |
+| 13 of 20 directories are unchecked | `config/architecture.toml` `allowed_top_level_directories` (20) versus the 7 prefixes tested at `tools/check_architecture.py:524-593` |
+| The Runtime allowance has 8 entries and no removal condition | `config/architecture.toml` `[long_horizon_boundaries] runtime_compiler_import_allowed`; `compiler_convergence` track `status == "complete"` |
 | Package size | `flagquantum/compiler/*.py` 6,019 lines; `flagquantum/compiler/_hybrid/*.py` 4,361 lines; 31 files, 10,380 total |
-| Module ceiling | `architecture.toml`, `default_module_line_ceiling = 1250`; `physical_plan.py` 970 |
+| Module ceiling | `config/architecture.toml`, `default_module_line_ceiling = 1250`; `physical_plan.py` 970 |
 
 ## Alternatives considered
 
@@ -251,7 +251,7 @@ an enforcement gap to close, and an approval path.
 | Physical plan, evidence, artifact compilation | Compiler | Compiler, unchanged in ownership; `physical_plan.py` split by responsibility without new public concepts |
 | Noise lowering | Compiler imports the Noise domain; the deny list omits `noise` | Decision required: either `noise` is added to `compiler_forbidden` and re-homed, or `compiler may_depend_on` is amended. The two records must agree |
 | `_hybrid/` | Private, migration-scoped, with two QEC dependents | Either QEC's exported need is promoted to a declared Compiler entry point, or the dependency is removed and `_hybrid`'s removal condition is recorded |
-| Layer order | Declared in `architecture.toml`, read by no tool | Enforced, with the 13 unchecked directories covered by an explicit rule each |
+| Layer order | Declared in `config/architecture.toml`, read by no tool | Enforced, with the 13 unchecked directories covered by an explicit rule each |
 | Runtime → Compiler | 8 allowed files, no removal condition, track marked complete | Each of the 8 classified as permanent composition boundary or removable; the removable ones get a removal condition |
 
 ## Source and behavioral compatibility impact
@@ -335,7 +335,7 @@ with the reason, not as an in-place string edit.
 - `docs/architecture/decisions/README.md` gains the ADR this document precedes, and
   the mapping-rules table gains a row for the layer-order check with its real
   coverage.
-- `architecture.toml` gains the missing boundary rules; `tools/check_architecture.py`
+- `config/architecture.toml` gains the missing boundary rules; `tools/check_architecture.py`
   gains the layer-order enforcement and the new directory coverage.
 - `tests/unit/test_architecture_boundaries.py` gains the cases that fail when a
   newly covered directory imports upward.
@@ -352,7 +352,7 @@ with the reason, not as an in-place string edit.
   `python tools/check_team_scope.py --team integration --files
   docs/api-changes/FQ-COMPILER-BOUNDARY-SPLIT-20260930.md` passes.
 - Required approvals before implementation: **integration owner** (architecture
-  policy and `architecture.toml`), **API owner** (`CouplingMap` ownership and the
+  policy and `config/architecture.toml`), **API owner** (`CouplingMap` ownership and the
   deprecation window), and **compiler domain owner** (which of the six
   responsibility groups stay).
 - Sequencing: this document, then the ADR, then the enforcement change, then the

@@ -127,8 +127,8 @@ def test_simulation_runtime_and_agent_boundaries_are_explicit() -> None:
 def test_adr_index_maps_rules_to_machine_and_ci_entry_points() -> None:
     text = _read("README.md")
     for value in (
-        "team-ownership.toml",
-        "architecture.toml",
+        "config/team-ownership.toml",
+        "config/architecture.toml",
         "capability-maturity.toml",
         "tools/check_team_scope.py",
         "tools/check_architecture.py",

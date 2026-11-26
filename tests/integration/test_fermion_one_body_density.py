@@ -23,7 +23,7 @@ from flagquantum.algorithms.fermion.density import (
 )
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import FermionOperator, annihilate, create
+from flagquantum.core.operators.observable import FermionOperator, annihilate, create
 
 pytestmark = pytest.mark.integration
 

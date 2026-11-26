@@ -7,8 +7,9 @@ from collections.abc import Callable, Sequence
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode
 from ..native_cpu.permutation import (
     compact_cx_permutation_images,
     fused_clifford_matching_out,

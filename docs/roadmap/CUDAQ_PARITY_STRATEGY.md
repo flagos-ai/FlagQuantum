@@ -167,7 +167,7 @@ Bravyi-Kitaev, parity, and ternary-tree encodings still absent;
 `boson_operator_algebra` now names
 [boson.py](../../flagquantum/observables/boson.py), whose dense value is a
 reference with no bosonic backend behind it; `chemistry_domain_library` now names
-[chemistry.py](../../flagquantum/algorithms/chemistry.py), which is the ansatz
+[chemistry.py](../../flagquantum/algorithms/chemistry/__init__.py), which is the ansatz
 half of the row and none of the integral driver; and `resource_estimation` now
 names
 [resource_estimation.py](../../flagquantum/compiler/resource_estimation.py),

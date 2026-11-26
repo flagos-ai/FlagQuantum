@@ -21,7 +21,7 @@ from examples.synthesis.algorithms.quantum_phase_estimation.qpe_with_qubitizatio
 )
 from flagquantum import synth
 from flagquantum.errors import PlanningError
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

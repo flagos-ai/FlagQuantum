@@ -44,7 +44,9 @@ def _reference_local_2q(
 
 def test_generic_local_2q_matches_layout_reference_and_exact_alias() -> None:
     _require_cuda()
-    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
+        apply_complex64_local_2q,
+    )
 
     torch.manual_seed(43)
     state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
@@ -85,7 +87,9 @@ def test_generic_local_2q_matches_layout_reference_and_exact_alias() -> None:
 
 def test_generic_local_2q_rejects_unsupported_contracts() -> None:
     _require_cuda()
-    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
+        apply_complex64_local_2q,
+    )
 
     state = torch.randn(2, 64, dtype=torch.complex64, device="cuda")
     matrix = torch.randn(4, 4, dtype=torch.complex64, device="cuda")
@@ -216,7 +220,7 @@ def test_public_local_2q_gradient_request_preserves_reference(monkeypatch) -> No
 
 def test_control_one_pack_unpack_matches_index_reference() -> None:
     _require_cuda()
-    from flagquantum.kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         pack_complex64_control_one,
         unpack_complex64_control_one,
     )
@@ -254,7 +258,7 @@ def test_control_one_pack_unpack_matches_index_reference() -> None:
 
 def test_local_cx_inplace_matches_index_reference() -> None:
     _require_cuda()
-    from flagquantum.kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         apply_complex64_local_cx_inplace,
     )
 
@@ -275,7 +279,7 @@ def test_local_cx_inplace_matches_index_reference() -> None:
 
 def test_local_cx_segment_matches_reverse_source_permutation() -> None:
     _require_cuda()
-    from flagquantum.kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         _local_cx_segment_positions,
         apply_complex64_local_cx_segment,
     )

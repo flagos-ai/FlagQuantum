@@ -9,8 +9,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.observables import boson
-from flagquantum.simulation.lindblad import (
+from flagquantum.core.operators import boson
+from flagquantum.simulation.dynamics.lindblad import (
     EvolutionValidationError,
     evolve_density_matrix,
     plan_density_matrix_evolution,

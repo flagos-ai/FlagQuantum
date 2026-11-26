@@ -79,13 +79,15 @@ from typing import Literal
 
 import torch
 
-from flagquantum.compiler._hybrid import INDEX as INDEX
-from flagquantum.compiler._hybrid import capture_source as capture_source
-from flagquantum.compiler._hybrid import lower_dynamic_program as lower_dynamic_program
+from flagquantum.compiler.frontends._structured import INDEX as INDEX
+from flagquantum.compiler.frontends._structured import capture_source as capture_source
+from flagquantum.compiler.frontends._structured import (
+    lower_dynamic_program as lower_dynamic_program,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import KrausChannel
 from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.noise import NoiseModel
-from flagquantum.noise.channels import KrausChannel
 from flagquantum.qec.circuits.memory import MeasurementRef as MeasurementRef
 from flagquantum.qec.circuits.memory import MemoryCircuit
 from flagquantum.qec.codes import CodeCheck

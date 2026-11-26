@@ -134,7 +134,7 @@ and superoperator forms agree.
 `flagquantum/core/` has no matrix-valued operator type: `OPERATOR_SCHEMAS`
 describes circuit opcodes, and the only matrix-free carrier in the repository is
 `flagquantum/simulation/matrix_free_hamiltonian.py`'s `PauliSum`, which Core may
-not import (`architecture.toml` `[boundaries] core_forbidden` contains
+not import (`config/architecture.toml` `[boundaries] core_forbidden` contains
 `"simulation"`).
 
 That constraint fixes the factor type of this algebra. A superoperator factor is
@@ -219,12 +219,12 @@ of `dir(flagquantum)`.
 
 ### 4. Two other integration surfaces change
 
-`architecture.toml` gains `"operators"` in
+`config/architecture.toml` gains `"operators"` in
 `[package_layout] allowed_top_level_directories`; the layout check enumerates the
 directories that actually contain Python files and rejects one that is not
 listed.
 
-`team-ownership.toml` replaces the dead-ended `flagquantum/operators.py` entry in
+`config/team-ownership.toml` replaces the dead-ended `flagquantum/operators.py` entry in
 `[teams.core].owns` with `flagquantum/operators/**`. Keeping both would leave the
 first entry matching no path, which `dead_owns_entries` reports and which
 `tests/unit/test_team_scope_policy.py` compares against a reviewed set.

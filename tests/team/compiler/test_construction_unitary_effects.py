@@ -7,8 +7,8 @@ import pytest
 from flagquantum.compiler._construction.verification.register_profile import (
     register_type,
 )
-from flagquantum.compiler._hybrid.model import Operation, Value, ValueId
-from flagquantum.compiler._hybrid.unitary_effects import (
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.unitary_effects import (
     inverse_effects,
     unitary_regions,
 )

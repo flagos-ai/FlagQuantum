@@ -8,7 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from tests.integration.test_synthesis_native_exact_numbers import definition
 

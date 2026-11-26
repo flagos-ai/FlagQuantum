@@ -22,7 +22,7 @@
 - Every command runs in Docker. The dev image has an editable install pointing at a stale `/opt/FlagQuantum` snapshot, so install the worktree before testing:
   `docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:local bash -lc "python -m pip install -e . --no-deps -q && <command>"`
 - Do not modify `flagquantum/qec/types.py`, `decoders.py`, `repetition.py`, `noise.py`, or `__init__.py`'s existing exports. The seven names pinned by `contracts/hybrid-compilation-private-v0-candidate.json` keep their signatures.
-- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, or `architecture.toml`.
+- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, or `config/architecture.toml`.
 - Do not touch `capability-maturity.toml`, the generated docs under `docs/generated/`, or any capability row. Staging a capability promotion is Stage 5 work.
 - All source, docstring, and comment text is English (`tools/check_repository_language.py` gates this).
 - Gates that must pass on every task that changes `flagquantum/`: `black --check`, `ruff check` (the repository's selected rule set requires `zip(..., strict=...)` in every `zip` call), `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`, and `python tools/check_architecture.py`.

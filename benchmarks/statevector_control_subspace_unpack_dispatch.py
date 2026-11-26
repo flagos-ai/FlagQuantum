@@ -16,7 +16,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = (
     "flagquantum.kernel_benchmark_run.statevector_control_subspace_unpack_dispatch.v1"
@@ -103,7 +103,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.statevector_gates import (
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
         unpack_complex64_control_one,
     )
 

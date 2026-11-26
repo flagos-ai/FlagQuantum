@@ -177,7 +177,7 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
 def test_wide_declared_return_preserves_all_256_nonzero_xor_targets() -> None:
     from benchmarks.synthesis.verification import classical_apply, encode
     from flagquantum.compiler._construction.verification.profile import uint_type
-    from flagquantum.compiler._hybrid.model import (
+    from flagquantum.compiler.frontends._structured.model import (
         INDEX,
         Block,
         HybridProgram,

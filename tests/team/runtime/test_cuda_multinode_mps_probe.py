@@ -14,7 +14,7 @@ from tools.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
-_SCRIPT = _ROOT / "tools" / "probe_cuda_multinode_mps.py"
+_SCRIPT = _ROOT / "tools" / "validation/probe_cuda_multinode_mps.py"
 _SPEC = importlib.util.spec_from_file_location("cuda_multinode_mps_probe", _SCRIPT)
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)

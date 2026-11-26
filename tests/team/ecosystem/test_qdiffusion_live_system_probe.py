@@ -19,12 +19,12 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_live import (
     _write_private_redacted_json,
     run_live_system_probe,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 from flagquantum.version import __version__ as flagquantum_version
 
 np = pytest.importorskip("numpy")

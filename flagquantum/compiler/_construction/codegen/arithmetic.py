@@ -12,9 +12,18 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+from flagquantum.compiler.frontends._structured.model import (
+    INDEX,
+    HybridProgram,
+    Operation,
+    ValueId,
+)
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+
 from ....core.ir import CircuitIR, Instruction
-from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
-from ..._hybrid.verifier import Diagnostic, HybridVerificationError
 from ...optimization.resource_estimation import estimate_resources
 from ...registers._arithmetic_kernels import (
     borrowed_less_xor,

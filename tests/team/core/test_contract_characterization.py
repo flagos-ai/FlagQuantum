@@ -21,7 +21,7 @@ from flagquantum.core.ir import (
 )
 from flagquantum.errors import ValidationError
 from flagquantum.runtime.options import ExecutionOptions
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.unit
 

@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.kernels.flagtree import (
+from flagquantum.simulation.kernels.flagtree import (
     apply_complex64_local_1q_tle,
     apply_complex64_transpose_1q_tle_inplace,
 )
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 pytestmark = [pytest.mark.gpu, pytest.mark.triton]
 

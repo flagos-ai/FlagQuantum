@@ -1,8 +1,8 @@
 import pytest
 
+import flagquantum.compute.remote as remote
 import flagquantum.deployment as deployment
-import flagquantum.remote as remote
-from flagquantum.remote.qpu import braket, calibration, http, quafu
+from flagquantum.compute.remote.qpu import braket, calibration, http, quafu
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.unit

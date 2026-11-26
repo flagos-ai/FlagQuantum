@@ -57,7 +57,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "metric-tensor-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum" / "gradients.py"
 
-_GATE_PATH = ROOT / "tools" / "check_metric_tensor_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_metric_tensor_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_metric_tensor_contract", _GATE_PATH
 )
@@ -220,8 +220,8 @@ def test_the_route_names_no_symbol_of_the_declaration() -> None:
 def test_every_forbidden_symbol_is_something_the_declaration_exposes() -> None:
     """A prohibition about a name that does not exist is not a prohibition."""
 
-    from flagquantum.core import operator_schema
-    from flagquantum.core.operator_schema import OperatorSchema
+    from flagquantum.core.operators import schema as operator_schema
+    from flagquantum.core.operators.schema import OperatorSchema
 
     for symbol in _contract()["unread"]["symbols"]:
         assert (
@@ -659,7 +659,7 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_metric_tensor_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_metric_tensor_contract.py"' in pre_push
 
 

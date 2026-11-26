@@ -39,5 +39,5 @@ would duplicate the owning validation APIs without adding orchestration value.
 
 `tests/team/services/` checks deterministic behavior and operation without MCP
 installed. `tests/test_service_preflight.py` covers the public workflows.
-`architecture.toml` prevents Services from importing numerical or backend
+`config/architecture.toml` prevents Services from importing numerical or backend
 implementation layers.

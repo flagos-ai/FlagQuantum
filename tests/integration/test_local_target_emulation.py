@@ -21,21 +21,21 @@ import pytest
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
-from flagquantum.deployment.cloud import CloudBackendProfile
-from flagquantum.errors import ExecutionError
-from flagquantum.noise import (
-    NoiseModel,
-    bit_flip_channel,
-    depolarizing_channel,
-    two_qubit_depolarizing_channel,
-)
-from flagquantum.noise.device_profile import (
+from flagquantum.compute.remote.emulation import emulate
+from flagquantum.compute.remote.packages import CloudBackendProfile
+from flagquantum.core.measurement import counts, lower_outputs
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
     QubitNoiseCalibration,
 )
-from flagquantum.observables import counts, lower_outputs
-from flagquantum.remote.emulation import emulate
+from flagquantum.core.operators.channels import (
+    bit_flip_channel,
+    depolarizing_channel,
+    two_qubit_depolarizing_channel,
+)
+from flagquantum.errors import ExecutionError
 
 pytestmark = pytest.mark.integration
 

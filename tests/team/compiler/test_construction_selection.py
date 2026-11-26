@@ -456,7 +456,7 @@ def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
 
 def test_internal_ssa_scopes_are_not_parameter_names() -> None:
     from flagquantum.compiler._construction.verification.profile import uint_type
-    from flagquantum.compiler._hybrid.model import (
+    from flagquantum.compiler.frontends._structured.model import (
         Block,
         HybridProgram,
         Operation,

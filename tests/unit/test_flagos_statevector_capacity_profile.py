@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from flagquantum.runtime.distributed.capacity_profile import (
+from flagquantum.runtime.profiles.capacity import (
     CAPACITY_RUN_SCHEMA,
     FlagOSCapacityProfileError,
     build_flagos_statevector_capacity_profile,

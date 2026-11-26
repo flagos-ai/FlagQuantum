@@ -13,7 +13,8 @@ from .syntax import _COMPARISONS, Expression, Statement, Token, reject
 from .unitary_effects import emit_inverse, inverse_effects, preserves_basis_labels
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Operation
+    from flagquantum.compiler.frontends._structured.model import Operation
+
     from .context import _Adapt
     from .phase import Location
 

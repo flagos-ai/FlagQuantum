@@ -12,7 +12,7 @@ single authoritative implementation rather than a copy.
 
 Two things set this package apart from the other target domains. First,
 `flagquantum/experimental/**` is not assigned to any team in
-`team-ownership.toml`, so `check_team_scope.py` rejects a domain team here;
+`config/team-ownership.toml`, so `check_team_scope.py` rejects a domain team here;
 treat changes as integration changes. Second, the three reserved modules
 (`planning`, `execution`, `mps`) are deliberate empty markers that reserve a
 namespace and record where the supported equivalent lives. They must not grow

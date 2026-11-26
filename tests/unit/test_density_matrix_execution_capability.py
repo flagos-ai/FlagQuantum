@@ -260,7 +260,7 @@ def test_a_channel_carrying_program_is_routed_rather_than_read_off_a_statevector
 def test_wire_zero_is_the_high_order_index() -> None:
     """The published convention, asserted against ``torch.kron`` and not itself."""
 
-    from flagquantum.simulation.density_matrix import expand_operator
+    from flagquantum.core.operators.embedding import expand_operator
 
     x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex64)
     eye = torch.eye(2, dtype=torch.complex64)
@@ -462,7 +462,7 @@ def test_a_declared_gradient_requirement_is_not_a_post_condition_here() -> None:
 def test_a_mid_circuit_measurement_is_not_expressible_on_this_route() -> None:
     """The entry names the absence, and the operator vocabulary is where it lives."""
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     opcodes = set(OPERATOR_SCHEMAS)
     assert "measure" not in opcodes
@@ -529,7 +529,8 @@ def test_the_limit_binds_a_scene_level_noise_model_too() -> None:
     the noise somewhere other than the program.
     """
 
-    from flagquantum.noise import NoiseModel, depolarizing_channel
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.core.operators.channels import depolarizing_channel
 
     program = fq.Circuit(4).h(0).cx(0, 1)
     model = NoiseModel().add("cx", depolarizing_channel(0.2))

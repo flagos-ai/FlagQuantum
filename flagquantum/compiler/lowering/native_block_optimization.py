@@ -14,10 +14,11 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from types import MappingProxyType
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ...core._compilation_evidence_v4 import BlockRewriteEvidence
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import MEASURE_OPCODE, RESET_OPCODE
-from ...core.operator_schema import get_operator_schema
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
 from ..optimization._cz_blocks import (

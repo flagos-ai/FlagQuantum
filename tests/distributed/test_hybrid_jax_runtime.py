@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.runtime.distributed import init_torch_distributed
 from flagquantum.runtime.executors.jax import compile_quantum_kernel
 

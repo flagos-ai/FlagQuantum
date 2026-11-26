@@ -93,8 +93,8 @@ for name in base["rows"]:
     )
     allowed = {
         "benchmarks/synthesis/performance.py",
-        "flagquantum/services/synthesis.py",
-        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/synth/_workflow.py",
+        "flagquantum/runtime/planner/synthesis.py",
     }
     assert set(changed) <= allowed, changed
     lt, rt = ([s for s in xs if s["mode"] == "timing"] for xs in (left, right))

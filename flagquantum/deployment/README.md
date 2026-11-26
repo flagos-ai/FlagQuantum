@@ -1,5 +1,7 @@
 # Deployment
 
+This directory maintains the published deployment facade. Remote package models and validation live in `../compute/remote/`; routing evidence lives in `../compiler/artifacts/`; planning, dynamic sealing/rematch and count extraction live in their Runtime owners. See the [migration ledger](../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md).
+
 Own target-neutral packaging: turn a compiled circuit into a validated
 deployment package, a Pauli measurement plan, or a routing-evidence artifact
 that a remote target can be handed. External submission, status polling, result

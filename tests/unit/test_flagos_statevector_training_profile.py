@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.runtime.distributed.training_profile import (
+from flagquantum.runtime.profiles.training import (
     FLAGOS_TRAINING_CASES,
     FLAGOS_TRAINING_DTYPES,
     FlagOSTrainingCase,

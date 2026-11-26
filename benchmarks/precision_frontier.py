@@ -32,7 +32,7 @@ from benchmarks.precision_workloads import (
 from benchmarks.qng_hva_ablation import run_worker
 from flagquantum import algorithms as fqa
 from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomic
-from flagquantum.compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
 from flagquantum.runtime.executors.statevector.split_real_imag import (
     parameter_shift_split_real_imag_gradient,
 )

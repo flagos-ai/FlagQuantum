@@ -26,7 +26,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, canonical_opcode
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, canonical_opcode
 from flagquantum.runtime.dynamic import run_dynamic
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
 

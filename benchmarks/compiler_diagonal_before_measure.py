@@ -94,7 +94,7 @@ from flagquantum.compiler.optimization.one_qubit_synthesis import (  # noqa: E40
     is_diagonal_one_qubit,
 )
 from flagquantum.core.ir import CircuitIR, Instruction  # noqa: E402
-from flagquantum.core.operator_schema import (  # noqa: E402
+from flagquantum.core.operators.schema import (  # noqa: E402
     OPERATOR_SCHEMAS,
     canonical_opcode,
 )

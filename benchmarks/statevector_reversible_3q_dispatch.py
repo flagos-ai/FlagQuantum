@@ -125,7 +125,7 @@ def _apply_product_reference(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-013 dispatch matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
     from flagquantum.simulation.statevector.reversible_3q_dispatch import (
         _reversible_3q_kernel_enabled,
         _try_apply_cataloged_reversible_3q,

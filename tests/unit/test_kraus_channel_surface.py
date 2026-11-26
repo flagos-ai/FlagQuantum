@@ -23,7 +23,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.noise import KrausChannel, NoiseModel
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import KrausChannel
 
 pytestmark = pytest.mark.unit
 

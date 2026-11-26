@@ -34,7 +34,7 @@ from typing import Any
 import torch
 
 import flagquantum as fq
-from flagquantum.runtime.module import Module
+from flagquantum.runtime.training.module import Module
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

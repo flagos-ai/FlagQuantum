@@ -1245,7 +1245,7 @@ in "Compatibility". The new public root name count is zero.
   `Circuit.adjoint` gains a parameter -- which is the second option above,
   confirming that the collision is enforced rather than merely documented. Both
   files are protected surfaces (`contracts/**` and `tools/**` in
-  `team-ownership.toml`), so an approved implementation must change the contract
+  `config/team-ownership.toml`), so an approved implementation must change the contract
   and the gate together, and `tools/check_team_scope.py` will report both as
   cross-team surfaces. Revision 1 did not record this and its acceptance path
   would have failed this gate on the first run.

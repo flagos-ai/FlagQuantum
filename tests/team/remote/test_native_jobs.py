@@ -12,12 +12,12 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
-from flagquantum.remote.compute._native_job import (
+from flagquantum.compute.remote.compute._native_job import (
     NativeJiudingJobClient,
     _command,
     _decode_lines,
 )
-from flagquantum.remote.compute._workspace_executor import SCHEMA, VERSION
+from flagquantum.compute.remote.compute._workspace_executor import SCHEMA, VERSION
 
 pytestmark = pytest.mark.unit
 
@@ -42,7 +42,7 @@ def test_inline_command_executes_circuit_and_decodes_result():
     )
     result = _decode_lines(output.stdout.splitlines(), "test-run")
     assert result["ok"] is True
-    from flagquantum.remote.compute._program_job import decode_program_result
+    from flagquantum.compute.remote.compute._program_job import decode_program_result
 
     decoded = decode_program_result(
         result, requested_target="jiuding:cpu", selected_target="jiuding:cpu"
@@ -77,7 +77,7 @@ def test_multi_device_command_uses_one_torchrun_rank_per_device():
     assert "--master-addr=127.0.0.1" in args
     assert "--master-port=29500" in args
     assert "--nproc-per-node=4" in args
-    assert args[-3] == "flagquantum.remote.compute._distributed_job"
+    assert args[-3] == "flagquantum.compute.remote.compute._distributed_job"
 
 
 def chunks(value):
@@ -264,7 +264,7 @@ def test_telemetry_pages_restore_old_receipt_and_decode_state(
 ) -> None:
     import torch
 
-    from flagquantum.remote.compute._workspace_executor import execute
+    from flagquantum.compute.remote.compute._workspace_executor import execute
 
     client, receipt = telemetry_job
     circuit = fq.Circuit(3).x(0)
@@ -287,7 +287,7 @@ def test_telemetry_pages_restore_old_receipt_and_decode_state(
     pages = [lines[::2], [*lines[1::2], lines[0]]]
     calls = []
     monkeypatch.setattr(
-        "flagquantum.remote.compute._native_job.time.time", lambda: 2000
+        "flagquantum.compute.remote.compute._native_job.time.time", lambda: 2000
     )
 
     def request(
@@ -357,7 +357,7 @@ def test_telemetry_clamps_old_window_and_stops_repeated_cursor(
     client, receipt = telemetry_job
     receipt["cluster_name"] = "submitted-cluster"
     monkeypatch.setattr(
-        "flagquantum.remote.compute._native_job.time.time", lambda: 4_000_000
+        "flagquantum.compute.remote.compute._native_job.time.time", lambda: 4_000_000
     )
     calls = []
 

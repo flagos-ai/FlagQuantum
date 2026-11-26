@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from flagquantum.services.synthesis import Program
+    from flagquantum.synth._workflow import Program
 
 from .performance_probe import Probe, process_rss
 from .performance_workloads import Prepared, Workload, workloads

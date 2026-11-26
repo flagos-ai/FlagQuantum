@@ -8,7 +8,8 @@ from dataclasses import replace
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .classical import bind_helper
 from .ports import _Port, _resolve
@@ -559,7 +560,10 @@ def inline_mutable(
             and 32 <= len(child.operations) <= 512
             and len(owner.owner.unitary_templates) < 32
         ):
-            from ..._hybrid.unitary_effects import unitary_regions
+            from flagquantum.compiler.frontends._structured.unitary_effects import (
+                unitary_regions,
+            )
+
             from ..verification.register_profile import _borrowed_program
 
             # Channel/ownership effects stay on the existing expanded path.

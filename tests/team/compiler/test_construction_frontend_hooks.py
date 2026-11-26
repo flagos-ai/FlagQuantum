@@ -9,7 +9,7 @@ import pytest
 from examples.synthesis_offline_deployment import bell
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.model import HybridProgram
+from flagquantum.compiler.frontends._structured.model import HybridProgram
 
 pytestmark = pytest.mark.unit
 CONSTRUCTION = "flagquantum.compiler._construction"

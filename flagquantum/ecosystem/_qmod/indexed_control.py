@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING
 from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Value
+    from flagquantum.compiler.frontends._structured.model import Value
+
     from .context import _Adapt
 
 

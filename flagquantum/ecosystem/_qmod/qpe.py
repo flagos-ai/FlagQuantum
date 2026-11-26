@@ -5,9 +5,10 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import Operation, Value
+
 from ...compiler._construction.semantics.qpe_control import emit_controlled_effect
 from ...compiler._construction.verification.register_profile import register_width
-from ...compiler._hybrid.model import Operation, Value
 from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Statement, Token, reject
 

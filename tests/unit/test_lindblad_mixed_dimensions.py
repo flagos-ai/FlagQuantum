@@ -12,9 +12,9 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from flagquantum.core.operators.boson import annihilate
 from flagquantum.errors import CapabilityError, SerializationError
-from flagquantum.observables.boson import annihilate
-from flagquantum.simulation.lindblad import (
+from flagquantum.simulation.dynamics.lindblad import (
     EvolutionResult,
     EvolutionValidationError,
     evolve_density_matrix,
@@ -302,7 +302,7 @@ def test_qutrit_dimensions_must_be_explicit_and_cannot_conflict_with_qubits():
 def test_four_level_system_refuses_qubit_forms_before_any_integration(
     form, monkeypatch
 ):
-    import flagquantum.simulation.lindblad as engine
+    import flagquantum.simulation.dynamics.lindblad as engine
 
     def forbidden(*args, **kwargs):
         pytest.fail("invalid request reached an integrator")

@@ -12,12 +12,12 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
+from flagquantum.compute.remote import _job_receipts, jobs
+from flagquantum.compute.remote.compute import JiudingCredentials
+from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 from flagquantum.errors import ExecutionError
-from flagquantum.remote import _job_receipts, jobs
-from flagquantum.remote.compute import JiudingCredentials
-from flagquantum.remote.compute._native_job import NativeJiudingJobClient
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 

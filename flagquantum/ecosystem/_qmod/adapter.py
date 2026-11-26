@@ -7,13 +7,17 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from types import MappingProxyType
 
+from flagquantum.compiler.frontends._structured.model import (
+    HybridProgram,
+)
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+
 from ...compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from ...compiler._hybrid.model import (
-    HybridProgram,
-)
-from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from .adapter_model import (
     _INTRINSICS,
     _STATIC_GATES,

@@ -30,7 +30,8 @@ from __future__ import annotations
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import NelderMeadOptimizer, SPSAOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.optimizers.spsa import SPSAOptimizer
 from flagquantum.errors import ValidationError
 
 START = 0.4

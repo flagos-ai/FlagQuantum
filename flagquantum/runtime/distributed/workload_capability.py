@@ -6,13 +6,14 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from flagquantum.runtime.profiles.scale import build_scale_profile
+from flagquantum.runtime.profiles.training import build_training_profile
+
 from .conformance import (
     REQUIRED_FLAGOS_COLLECTIVES,
     REQUIRED_FLAGOS_DTYPES,
     STATEVECTOR_REQUIRED_FLAGOS_COLLECTIVES,
 )
-from .scale_profile import build_scale_profile
-from .training_profile import build_training_profile
 
 WORKLOAD_CAPABILITY_SCHEMA = "flagquantum_flagos_workload_capability_v1"
 EXPECTED_WORLD_SIZES = (2, 4, 8)

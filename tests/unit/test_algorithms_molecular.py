@@ -81,12 +81,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.chemistry import uccsd_ansatz, uccsd_excitations
-from flagquantum.algorithms.chemistry_integrals import (
-    ATOMIC_NUMBERS,
-    MolecularGeometry,
-    molecular_integrals,
-)
-from flagquantum.algorithms.molecular import (
+from flagquantum.algorithms.chemistry.molecular import (
     MAX_FCI_DETERMINANTS,
     MOLECULAR_ASSUMPTIONS,
     MOLECULAR_LIMITATIONS,
@@ -98,6 +93,11 @@ from flagquantum.algorithms.molecular import (
     molecular_orbital_integrals,
     restricted_hartree_fock,
     second_quantized_hamiltonian,
+)
+from flagquantum.algorithms.chemistry.molecular.integrals import (
+    ATOMIC_NUMBERS,
+    MolecularGeometry,
+    molecular_integrals,
 )
 from flagquantum.errors import CapabilityError, ValidationError
 
@@ -596,7 +596,7 @@ def test_the_slater_energy_needs_its_exchange_term() -> None:
 def _jordan_wigner_number_convention() -> tuple[float, tuple[tuple[int, str], ...]]:
     """Return ``jordan_wigner(number(0), n_modes=2)``'s single Pauli term."""
 
-    from flagquantum.observables.fermion import jordan_wigner, number
+    from flagquantum.core.operators.fermion import jordan_wigner, number
 
     image = jordan_wigner(number(0), n_modes=2)
     assert len(image.terms) == 2

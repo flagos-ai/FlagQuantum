@@ -22,7 +22,10 @@ from common import (  # noqa: E402
 import flagquantum as fq  # noqa: E402
 import flagquantum.simulation.mps as fqmps  # noqa: E402
 import flagquantum.simulation.tensor_network as fqtn  # noqa: E402
-from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
+from flagquantum.algorithms.primitives.hamiltonian import (  # noqa: E402
+    Hamiltonian,
+    pauli_term,
+)
 
 
 def circuit_builder(theta: torch.Tensor) -> fq.Circuit:

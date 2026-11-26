@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.runtime.distributed.scale_profile import (
+from flagquantum.runtime.profiles.scale import (
     FLAGOS_SCALE_CASES,
     FLAGOS_SCALE_DTYPES,
     FLAGOS_SCALE_WORLD_SIZES,

@@ -61,7 +61,7 @@ import torch
 import flagquantum as fq
 from flagquantum.benchmarking.contract import runtime_metadata, write_json_atomic
 from flagquantum.benchmarking.statevector_local import sequential_reference
-from flagquantum.core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
 from flagquantum.simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,
 )

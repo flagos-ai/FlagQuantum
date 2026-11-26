@@ -20,7 +20,7 @@ from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition
 from tools.synthesis_catalog import load_catalog

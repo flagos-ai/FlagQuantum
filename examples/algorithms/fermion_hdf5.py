@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
 from flagquantum.algorithms.fermion.encoding import Encoding, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.ecosystem.chemistry.molecular_hdf5 import read_molecular_hdf5

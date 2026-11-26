@@ -8,7 +8,7 @@ import torch
 import flagquantum as fq
 from benchmarks.synthesis.native_workloads import NativeWorkload
 from flagquantum.core.ir import CircuitIR
-from flagquantum.services import _synthesis_execution as execution
+from flagquantum.runtime.planner import synthesis as execution
 
 pytestmark = pytest.mark.integration
 

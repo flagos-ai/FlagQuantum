@@ -96,7 +96,9 @@ def run(
             if backend == "reference_qng":
                 metric = reference_geometry(n_wires, depth, parameters, block)
             else:
-                from flagquantum.kernels.triton import heisenberg_hva_forward_tangents
+                from flagquantum.simulation.kernels.triton import (
+                    heisenberg_hva_forward_tangents,
+                )
 
                 state, tangents = heisenberg_hva_forward_tangents(
                     initial, parameters.detach(), n_qubits=n_wires, depth=depth

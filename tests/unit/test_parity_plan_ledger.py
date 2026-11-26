@@ -268,7 +268,7 @@ def test_a_duplicated_row_is_refused(document: dict) -> None:
 
 
 def test_the_ledger_records_no_second_copy_of_path_ownership(document: dict) -> None:
-    # `team-ownership.toml` owns path ownership. A team column here would be a
+    # `config/team-ownership.toml` owns path ownership. A team column here would be a
     # second authority and would preserve, rather than surface, the plan's
     # mentions of teams the roster does not declare.
     for row in document["rows"]:

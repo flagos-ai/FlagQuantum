@@ -4,18 +4,19 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from ...core.ir.levels import (
-    SUPPORTED_EXACT,
-    circuit_to_program,
-    program_to_circuit,
-)
-from ...deployment.cloud import DeploymentPackage
-from ...deployment.routing_evidence import (
+from flagquantum.compiler.artifacts.routing_evidence import (
     DEPLOYMENT_PACKAGE_SCHEMA,
     build_deployment_routing_evidence,
     deployment_artifact_sha256,
     same_undirected_device,
     stable_payload_sha256,
+)
+from flagquantum.compute.remote.packages import DeploymentPackage
+
+from ...core.ir.levels import (
+    SUPPORTED_EXACT,
+    circuit_to_program,
+    program_to_circuit,
 )
 from ...errors import CapabilityError
 from ._conditions import classical_width, instruction_condition_clauses

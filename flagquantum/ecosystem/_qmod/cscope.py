@@ -4,7 +4,8 @@ import ast
 import re
 from dataclasses import dataclass
 
-from ...compiler._hybrid.model import SourceLocation
+from flagquantum.compiler.frontends._structured.model import SourceLocation
+
 from .syntax import MAX_BYTES, Token, reject
 
 _CSCOPE = re.compile(r"^cscope[ \t]+```[ \t]*\r?\n([^`]*)\n[ \t]*```[ \t\r\n]*\Z", re.M)

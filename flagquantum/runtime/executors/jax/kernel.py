@@ -10,19 +10,19 @@ from typing import Any, Protocol
 import torch
 from torch.autograd.function import once_differentiable
 
-from ....simulation.jax.mps.kernels import (
+from flagquantum.simulation.mps.jax.kernels import (
     is_zz_z_chain_hamiltonian as _is_zz_z_chain_hamiltonian,
 )
-from ....simulation.jax.mps.kernels import (
+from flagquantum.simulation.mps.jax.kernels import (
     jax_mps_hamiltonian_expectation as _jax_mps_hamiltonian_expectation,
 )
-from ....simulation.jax.mps.kernels import (
+from flagquantum.simulation.mps.jax.kernels import (
     jax_mps_z_sum as _jax_mps_z_sum,
 )
-from ....simulation.jax.mps.kernels import (
+from flagquantum.simulation.mps.jax.kernels import (
     jax_mps_z_values as _jax_mps_z_values,
 )
-from ....simulation.jax.primitives import (
+from flagquantum.simulation.numerics.jax import (
     _jax_hamiltonian_expectation,
     _jax_real_dtype,
     _jax_z_sum,
@@ -30,16 +30,16 @@ from ....simulation.jax.primitives import (
     _set_active_jax_compute_dtype,
     jax_evaluate_declared_batch,
 )
-from ....simulation.jax.statevector.kernels import (
+from flagquantum.simulation.statevector.jax.kernels import (
     jax_statevector_from_circuit as _jax_statevector_from_circuit,
 )
-from ....simulation.jax.tensor_network.kernels import (
+from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_hamiltonian_expectation as _jax_tensor_network_hamiltonian_expectation,
 )
-from ....simulation.jax.tensor_network.kernels import (
+from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_z_sum as _jax_tensor_network_z_sum,
 )
-from ....simulation.jax.tensor_network.kernels import (
+from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_z_values as _jax_tensor_network_z_values,
 )
 

@@ -7,12 +7,12 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import CobylaOptimizer
 from flagquantum.algorithms.fermion.clifford import pauli_words_commute
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
-from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm
-from flagquantum.observables.fermion import FermionOperator, annihilate, create
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
+from flagquantum.core.operators.fermion import FermionOperator, annihilate, create
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm
 
 from .model import ACTIVE_ORBITALS, WIDTH
 from .symmetry import Sectors, trim

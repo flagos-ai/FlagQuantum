@@ -274,7 +274,8 @@ def test_a_noise_channel_is_counted_apart_from_algorithmic_operations() -> None:
     """A lowered noise model injects operations, and reading them as work misleads."""
 
     from flagquantum.compiler import lower_noise_model
-    from flagquantum.noise import NoiseModel, depolarizing_channel
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.core.operators.channels import depolarizing_channel
 
     model = NoiseModel().add("h", depolarizing_channel(0.01))
     noisy = lower_noise_model(fq.Circuit(2).h(0).cx(0, 1).to_ir(), model)

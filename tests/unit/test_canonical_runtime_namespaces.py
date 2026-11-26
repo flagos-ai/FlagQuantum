@@ -29,7 +29,8 @@ def test_public_circuit_uses_canonical_implementation() -> None:
 
 
 def test_canonical_runtime_namespaces_are_importable() -> None:
-    from flagquantum.runtime import audit, execution, training, training_state
+    from flagquantum.runtime import audit, execution, training
+    from flagquantum.runtime import checkpointing as training_state
     from flagquantum.runtime.distributed import protocols
     from flagquantum.runtime.executors import (
         jax,

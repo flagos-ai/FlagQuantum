@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
-from ..algorithms import HamiltonianTerm
+from flagquantum.algorithms.primitives.hamiltonian import HamiltonianTerm
 
 
 @dataclass(frozen=True)

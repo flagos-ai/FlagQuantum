@@ -3,7 +3,8 @@
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.model import Operation
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from .syntax import Token, reject
 
 if TYPE_CHECKING:

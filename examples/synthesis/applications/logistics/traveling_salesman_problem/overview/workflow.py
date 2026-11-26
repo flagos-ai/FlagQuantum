@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .model import RouteModel, exact_path, make_model, route
 from .quantum import LAYERS, build_program, probabilities

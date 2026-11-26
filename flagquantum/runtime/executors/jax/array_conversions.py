@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from ....simulation.jax.statevector.kernels import (
+from flagquantum.simulation.statevector.jax.kernels import (
     jax_basis_indices_for_qubits as _jax_basis_indices_for_qubits,
 )
-from ....simulation.jax.tensor_network.models import JAXTensorNetworkNode
+from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
+
 from ....simulation.statevector.index_basis import _basis_offset, _wire_mask
 from .runtime_environment import (
     _jax_complex_dtype,
@@ -43,7 +44,7 @@ def _gate_matrix_as_jax(
 def _parameterized_gate_matrix_as_jax(
     instruction: Any, *, complex_bytes: int
 ) -> tuple[Any, bool]:
-    from ....simulation.jax.primitives import _jax_instruction_matrix
+    from flagquantum.simulation.numerics.jax import _jax_instruction_matrix
 
     _, jnp = _require_jax()
     matrix = _jax_instruction_matrix(instruction).astype(

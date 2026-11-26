@@ -1,50 +1,16 @@
-#!/usr/bin/env python3
-"""Generate deterministic documentation for typed runtime contracts."""
+"""Compatibility command; implementation lives in its owning tools domain."""
 
-from __future__ import annotations
+import runpy as _runpy
+import sys as _sys
+from importlib import import_module as _import_module
+from pathlib import Path as _Path
 
-import argparse
-import json
-from dataclasses import fields
-from pathlib import Path
-
-from flagquantum.core.contracts import CONTRACT_TYPES, CONTRACT_VERSION
-
-ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "docs" / "runtime_contracts.schema.json"
-
-
-def build_schema() -> dict[str, object]:
-    return {
-        "schema": "flagquantum_runtime_contracts",
-        "version": CONTRACT_VERSION,
-        "unknown_production_fields": "reject",
-        "contracts": {
-            contract.KIND: {
-                "python_type": contract.__name__,
-                "fields": tuple(item.name for item in fields(contract)),
-            }
-            for contract in CONTRACT_TYPES
-        },
-    }
-
-
-def render_schema() -> str:
-    return json.dumps(build_schema(), indent=2, sort_keys=True) + "\n"
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--check", action="store_true")
-    args = parser.parse_args()
-    rendered = render_schema()
-    if args.check:
-        if not OUTPUT.exists() or OUTPUT.read_text() != rendered:
-            raise SystemExit("runtime contract schema is stale; run this tool")
-    else:
-        OUTPUT.write_text(rendered)
-    return 0
-
-
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _runpy.run_module("tools.release.runtime_contract_schema", run_name="__main__")
+else:
+    _implementation = _import_module("tools.release.runtime_contract_schema")
+    _sys.modules[__name__] = _implementation
+
+    def __getattr__(name):
+        return getattr(_implementation, name)

@@ -50,7 +50,8 @@ from numbers import Integral
 
 import torch
 
-from ...noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
+
 from ..circuits.memory import MeasurementRef, MemoryCircuit
 from ..codes import CodeCheck
 from ..dem import DetectorErrorModel

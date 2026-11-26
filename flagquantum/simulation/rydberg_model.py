@@ -10,6 +10,13 @@ from typing import Any, Literal
 
 import torch
 
+from flagquantum.simulation.dynamics.problem import (
+    EvolutionValidationError,
+    _error,
+    _normalize_parameter_mapping,
+    _normalize_times,
+)
+
 from ..core.geometry import same_time
 from ..core.ir import IRValidationError
 from ..core.ir.program.model import ProgramRecord
@@ -31,12 +38,6 @@ from ..core.parameters import (
 )
 from ..core.rydberg import RydbergProgram
 from ..errors import CapabilityError
-from .lindblad_request import (
-    EvolutionValidationError,
-    _error,
-    _normalize_parameter_mapping,
-    _normalize_times,
-)
 
 
 def native_record(value: object) -> ProgramRecord | None:

@@ -13,7 +13,11 @@ import time
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum.remote.qpu import DeploymentResult, ProviderTaskHandle, QuafuProvider
+from flagquantum.compute.remote.qpu import (
+    DeploymentResult,
+    ProviderTaskHandle,
+    QuafuProvider,
+)
 from flagquantum.twin import TwinHardwareReport
 
 TARGET = "quafu:Shenglian"

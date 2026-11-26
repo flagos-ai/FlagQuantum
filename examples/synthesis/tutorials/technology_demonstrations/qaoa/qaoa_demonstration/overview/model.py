@@ -5,7 +5,7 @@ from itertools import combinations
 from random import Random
 
 import flagquantum as fq
-from flagquantum.observables import Observable
+from flagquantum.core.operators.observable import Observable
 
 WIDTH = 7
 LAYERS = 10

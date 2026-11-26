@@ -96,8 +96,9 @@ from .tn_calibration import (
 from .training_preflight import collect_distributed_training_preflight
 
 if TYPE_CHECKING:
+    from flagquantum.core.noise import NoiseModel
+
     from ...circuit import Circuit
-    from ...noise import NoiseModel
     from ..options import ExecutionOptions
     from ..options_resolver import ResolvedExecutionOptions
 
@@ -813,7 +814,7 @@ def _validated_plan_program(
             requests = mark_dynamic_final_outputs(source_ir, requests)
         source_ir = replace(source_ir, measurements=requests)
     if noise_model is not None:
-        from ...noise import NoiseModel
+        from flagquantum.core.noise import NoiseModel
 
         if not isinstance(noise_model, NoiseModel):
             raise TypeError(

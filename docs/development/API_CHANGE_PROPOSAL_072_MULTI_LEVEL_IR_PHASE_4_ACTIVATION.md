@@ -63,7 +63,7 @@ CUDA-Q adapter is one-way by design.
 Two things currently block that work.
 
 **Authorization.** `flagquantum/core/ir/**` is listed as a protected path in
-`team-ownership.toml`, so the new internal level packages fall under integration
+`config/team-ownership.toml`, so the new internal level packages fall under integration
 control and cannot be created by the Core team alone. `IR-001` through `IR-006`
 cover the importer, linear values, identity layers, custom matrices, parameter
 binding, and the Phase 1 static scope — not the Phase 4 surface, which is what
@@ -92,7 +92,7 @@ The correction could not be applied ahead of the split, and that is a property o
 the validator rather than a preference: `protected_path_errors` rejects a
 protected entry that matches no file in the worktree, precisely so that an
 unprotected surface cannot look protected, so adding `flagquantum/core/ir/**`
-while the directory did not exist would fail `--validate`. `team-ownership.toml`
+while the directory did not exist would fail `--validate`. `config/team-ownership.toml`
 recorded the module alone and carried a comment explaining why the package
 pattern had been removed. The gate is therefore satisfied by **two coordinated
 edits at the moment the directory appears**: the first file under
@@ -112,10 +112,10 @@ candidate ways to make them agree failed measurement differently.
   creating `flagquantum/_compiler/__init__.py` makes `tools/check_architecture.py`
   fail with `flagquantum/_compiler: unreviewed top-level package directory is
   forbidden`, because the directory is absent from
-  `architecture.toml` `package_layout.allowed_top_level_directories`; adding a
+  `config/architecture.toml` `package_layout.allowed_top_level_directories`; adding a
   single `from .._compiler import ...` line under `flagquantum/compiler/` fails
   the same gate with `compiler imports forbidden layer _compiler`, because
-  `_compiler` is listed in `boundaries.compiler_forbidden`. `team-ownership.toml`
+  `_compiler` is listed in `boundaries.compiler_forbidden`. `config/team-ownership.toml`
   independently records `flagquantum/_compiler` as one of five patterns removed
   for matching no tracked path. § 19.13's layout is therefore a design sketch
   written against a tree that never had it, and correcting it is a policy change

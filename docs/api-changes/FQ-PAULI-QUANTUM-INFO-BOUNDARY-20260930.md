@@ -21,7 +21,7 @@ repository uses.
 
 ### `observables/` owns 29% of the stable public API while not being a domain
 
-`observables/` is one of the 20 entries in `architecture.toml`
+`observables/` is one of the 20 entries in `config/architecture.toml`
 `allowed_top_level_directories`, and 10 of the 34 names in
 `docs/public_api_v1.json` `stable_exports` come from it:
 
@@ -38,8 +38,8 @@ it an owner or a direction:
 
 | Record | Contains `observables`? |
 | --- | --- |
-| `architecture.toml` `allowed_top_level_directories` (20) | yes |
-| `architecture.toml` `[layers] order` (9 layers) | **no** |
+| `config/architecture.toml` `allowed_top_level_directories` (20) | yes |
+| `config/architecture.toml` `[layers] order` (9 layers) | **no** |
 | `contracts/long-horizon-architecture-v1.json` `domains` (11) | **no** |
 | `tools/check_architecture.py` boundary checks (7 prefixes) | **no** |
 
@@ -190,7 +190,7 @@ deciding it after W12-03 costs a rewrite of the container types.
 | `observables/` owns 10 of 34 Stable Core names | `docs/public_api_v1.json` `stable_exports`; definitions at `observables/__init__.py:25,88,182-206,212-277` |
 | `lower_outputs` is not Stable Core | absent from `docs/public_api_v1.json`; defined at `observables/__init__.py:297` |
 | `observables` is not a long-horizon domain | `contracts/long-horizon-architecture-v1.json` `domains`: 11 entries, none named `observables` |
-| `observables` is not in the layer order | `architecture.toml` `[layers] order` has 9 layers, none named `observables` |
+| `observables` is not in the layer order | `config/architecture.toml` `[layers] order` has 9 layers, none named `observables` |
 | `observables` has no boundary rule | `tools/check_architecture.py:524-593` tests 7 prefixes; `observables` is not one |
 | It is imported by 15 files | 17 static import sites plus 3 dynamic lookups, enumerated in the first section |
 | The algebra has one production consumer | `simulation/lindblad.py:12`, used at `lindblad.py:432` |

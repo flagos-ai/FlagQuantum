@@ -194,7 +194,7 @@ def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None
 
 
 def test_distribution_requires_research_service_modules() -> None:
-    required = "flagquantum/services/research_execution.py"
+    required = "flagquantum/algorithms/optimization/_research_execution.py"
     assert required in REQUIRED_MEMBER_SUFFIXES
     assert _missing_required_members(
         tuple(name for name in REQUIRED_MEMBER_SUFFIXES if name != required)

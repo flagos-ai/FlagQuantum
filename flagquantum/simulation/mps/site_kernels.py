@@ -12,7 +12,8 @@ from typing import Any
 import torch
 from torch.profiler import record_function
 
-from ...kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+
 from .environment_dispatch import (
     _try_apply_cataloged_mps_environment,
     _try_apply_cataloged_mps_environment_channels,

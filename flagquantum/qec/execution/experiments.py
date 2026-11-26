@@ -11,8 +11,9 @@ from typing import Literal
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+
 from ...errors import ValidationError
-from ...noise import NoiseModel
 from ...simulation.stabilizer._validation import _validate_seed
 from ..adapters.stim import (
     _stim_circuit_to_matching_dem_text,

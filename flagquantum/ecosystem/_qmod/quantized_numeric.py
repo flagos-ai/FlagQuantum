@@ -23,7 +23,8 @@ from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Value
+    from flagquantum.compiler.frontends._structured.model import Value
+
     from .context import _Adapt
 
 

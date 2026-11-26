@@ -106,13 +106,13 @@ def test_domain_owner_resolution() -> None:
     assert (
         owner_for("flagquantum/runtime/executors/mps/core.py", policy) == "simulation"
     )
-    assert owner_for("flagquantum/compute/flagos.py", policy) == "compute"
+    assert owner_for("flagquantum/compute/local/flagos.py", policy) == "compute"
     assert owner_for("flagquantum/ecosystem/extensions/sdk.py", policy) == "ecosystem"
-    assert owner_for("flagquantum/services/preflight.py", policy) == "services"
+    assert owner_for("flagquantum/runtime/planner/preflight.py", policy) == "runtime"
 
 
 def test_every_module_domain_has_a_team_owner() -> None:
-    """`architecture.toml` declares the allowed domains; all of them need an owner.
+    """`config/architecture.toml` declares the allowed domains; all of them need an owner.
 
     A domain listed as allowed but owned by no team resolves to `None`, which
     `scope_errors` reports as "unowned path". That silently makes every change in
@@ -253,7 +253,7 @@ def test_classification_accepts_protected_shared_and_owned_paths() -> None:
     assert (
         classification_errors(
             [
-                "team-ownership.toml",
+                "config/team-ownership.toml",
                 "tests/unit/test_team_scope_policy.py",
                 "tools/check_team_scope.py",
                 "flagquantum/compiler/pipeline.py",
@@ -314,7 +314,7 @@ def test_owner_summary_counts_teams_and_marks_shared_paths() -> None:
             "flagquantum/runtime/execution.py",
             "flagquantum/runtime/contracts.py",
             "tests/unit/test_team_scope_policy.py",
-            "team-ownership.toml",
+            "config/team-ownership.toml",
             "docs/development/MULTI_TEAM_DEVELOPMENT.md",
         ],
         policy,
@@ -331,7 +331,7 @@ def test_the_manual_does_not_require_a_team_branch_or_worktree() -> None:
 
     The manual is the highest-authority instruction a session receives. It said
     sessions "must use the branch and linked worktree assigned in
-    `team-ownership.toml`", while no branch with the `refactor/` prefix and no
+    `config/team-ownership.toml`", while no branch with the `refactor/` prefix and no
     `FlagQuantum-vNext*` worktree has ever existed here. A session that obeyed
     produced a branch and a handoff record that could not merge.
     """
@@ -366,7 +366,7 @@ def test_the_multi_team_document_marks_its_own_mode_optional() -> None:
     assert "In this optional mode, also verify that the current branch matches" in text
     assert (
         "2. Verify that the current branch matches the team's entry in "
-        "`team-ownership.toml`." not in text
+        "`config/team-ownership.toml`." not in text
     )
 
 

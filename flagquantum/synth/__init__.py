@@ -1,10 +1,10 @@
-"""High-level constrained synthesis, with Services as its implementation owner.
+"""High-level constrained synthesis, composing Compiler and checked Runtime entry points.
 
 The initial unreleased profile supports coherent unsigned arithmetic on exact
 CPU statevectors. See README.md for scope and the independent user-trial gate.
 """
 
-from ..services.synthesis import (
+from flagquantum.synth._workflow import (
     CRX,
     CX,
     PHASE,

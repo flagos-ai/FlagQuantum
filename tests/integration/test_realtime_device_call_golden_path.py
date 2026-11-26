@@ -40,7 +40,7 @@ def test_realtime_round_trip_is_independent_of_execution_and_qec() -> None:
         import sys
 
         forbidden = (
-            "flagquantum.remote", "flagquantum.compiler", "flagquantum.runtime",
+            "flagquantum.compute.remote", "flagquantum.compiler", "flagquantum.runtime",
             "flagquantum.simulation", "flagquantum.qec", "torch",
         )
 

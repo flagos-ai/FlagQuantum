@@ -27,7 +27,7 @@ def test_jax_basis_indices_for_wires_matches_reference():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_basis_indices_for_qubits,
     )
 
@@ -40,7 +40,7 @@ def test_jax_basis_indices_for_wires_matches_reference():
 
 
 def test_jax_rank_mask_for_touched_delta_matches_reference():
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_rank_mask_for_touched_delta,
     )
 
@@ -61,7 +61,7 @@ def test_jax_apply_matrix_to_batched_local_state_matches_einsum():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_matrix_to_batched_local_state,
     )
 
@@ -99,7 +99,7 @@ def test_jax_sharded_statevector_rank_loss_matches_reference():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_rank_loss,
     )
 
@@ -129,7 +129,7 @@ def test_jax_rank_loss_state_norm_sums_probabilities():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_rank_loss,
     )
 
@@ -151,7 +151,7 @@ def test_jax_apply_matrix_to_batched_local_state_accepts_a_batched_matrix():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_matrix_to_batched_local_state,
     )
 
@@ -172,7 +172,7 @@ def test_jax_apply_matrix_to_batched_local_state_accepts_a_batched_matrix():
 def test_jax_apply_matrix_to_batched_local_state_rejects_a_wrong_shape():
     import jax.numpy as jnp
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_matrix_to_batched_local_state,
     )
 

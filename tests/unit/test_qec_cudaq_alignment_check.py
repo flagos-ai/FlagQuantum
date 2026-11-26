@@ -39,7 +39,7 @@ import pytest
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-CHECKER = ROOT / "tools/check_qec_cudaq_alignment.py"
+CHECKER = ROOT / "tools/validation/check_qec_cudaq_alignment.py"
 CHECKLIST = ROOT / "contracts/qec-cudaq-alignment-checklist.toml"
 REPO_SOURCE = ROOT
 

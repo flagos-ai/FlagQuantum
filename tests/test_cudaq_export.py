@@ -8,7 +8,7 @@ import torch
 
 from flagquantum import Circuit
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.ecosystem.cudaq import to_cudaq
 
 cudaq = pytest.importorskip("cudaq")

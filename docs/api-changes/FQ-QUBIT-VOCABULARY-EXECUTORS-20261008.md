@@ -152,7 +152,7 @@ separate commit, with the test suite as the evidence:
    `jax/mps/shards.py` declare nothing WQ-4 owns, yet read a plan or a shard that
    WQ-4 renamed. `mypy --strict` cannot see these because the reference arrives
    through an `Any`; only a whole-directory `pytest` run finds them.
-3. **A module line ceiling.** `architecture.toml` sets
+3. **A module line ceiling.** `config/architecture.toml` sets
    `default_module_line_ceiling = 1250` with no exception in the tree.
    `statevector/reverse_adjoint_sweep.py` sat exactly at 1250 and the longer
    spelling pushed it to 1253. The name is not the problem, the duplication was:
@@ -207,7 +207,7 @@ every bind.
 8. `python tools/check_team_scope.py --require-classified --base d529e9753`
    classifies every changed path, and `contracts/qubit-vocabulary-contract.toml`
    declares WQ-4's owner as `simulation + runtime`: 29 of the slice's 32 files sit
-   under `flagquantum/runtime/executors/**`, which `team-ownership.toml` assigns
+   under `flagquantum/runtime/executors/**`, which `config/team-ownership.toml` assigns
    to `simulation`, while `flagquantum/runtime/distributed/**` and
    `flagquantum/runtime/trajectories/result.py` belong to `runtime`.
 

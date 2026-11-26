@@ -30,7 +30,7 @@ from flagquantum.compiler.optimization.commutation import (
     commute,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit
@@ -548,8 +548,8 @@ def test_the_rule_source_carries_no_import_of_the_simulation_layer() -> None:
         "dataclasses",
         "types",
         "typing",
+        "flagquantum.core.operators.schema",
         "...core.ir",
-        "...core.operator_schema",
     ]
     # The reach of the rule source, as a fact rather than as a guess.
     assert len(_RULE_OPCODES) == 30

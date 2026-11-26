@@ -6,7 +6,7 @@ import torch
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.symmetry import reduce_z_parities
-from flagquantum.observables import annihilate, create, number
+from flagquantum.core.operators.observable import annihilate, create, number
 
 pytestmark = pytest.mark.unit
 

@@ -40,7 +40,7 @@
   The image's own editable install points at a stale `/opt/FlagQuantum` snapshot, so the `pip install -e .` step is mandatory on every run; `-e PYTHONPATH=/w` makes submodule imports resolve to the mounted tree. `pytest-randomly` is not installed, so `-p no:randomly` is unnecessary. The image lacks `pennylane`, `hypothesis`, `datasets`, and `transformers`, so tests needing them skip.
 - Do not modify `flagquantum/qec/types.py`, `decoders.py`, `repetition.py`, `pauli.py`, `codes.py`, or `circuit.py`. The seven names pinned by `contracts/hybrid-compilation-private-v0-candidate.json` keep their signatures.
 - `flagquantum/qec/noise.py` **is** modified, but only additively: `RepetitionNoiseProfile` and `run_repetition_memory_noise_sweep` keep their current fields, signatures, and behavior.
-- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, `architecture.toml`, or `.github/`.
+- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, `config/architecture.toml`, or `.github/`.
 - Do not touch `capability-maturity.toml`, the generated docs under `docs/generated/`, or any capability row. Staging a capability promotion is Stage 5 work.
 - Do not update `flagquantum/qec/README.md`. Its module list is stale from Stage 1 and `docs/development/API_CHANGE_PROPOSAL_048_QEC_DETECTOR_ERROR_MODEL.md` assigns the QEC documentation sweep to Stage 5.
 - All source, docstring, and comment text is English (`tools/check_repository_language.py` gates this).

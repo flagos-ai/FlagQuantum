@@ -6,8 +6,12 @@ import pytest
 
 from examples.qdiffusion_kaiwu import qboson_sampling_probe as probe_module
 from examples.qdiffusion_kaiwu.qboson_sampling_probe import run_sampling_probe
-from flagquantum.remote.kaiwu import KaiwuTaskReceipt, KaiwuTaskResult, new_receipt
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu import (
+    KaiwuTaskReceipt,
+    KaiwuTaskResult,
+    new_receipt,
+)
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
 pytestmark = pytest.mark.unit
 

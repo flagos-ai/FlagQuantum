@@ -8,7 +8,9 @@ import torch
 from numpy.typing import NDArray
 
 import flagquantum as fq
-from flagquantum.noise import KrausChannel, NoiseModel, noisy_density_matrix
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import KrausChannel
+from flagquantum.noise import noisy_density_matrix
 
 from .noise import Parameters
 

@@ -118,7 +118,7 @@ JAX orchestration lives in `flagquantum.runtime.executors.jax`; numerical
 statevector, MPS, and tensor-network operations live in
 `flagquantum.simulation.jax`. Shared distributed protocols remain independent
 of those optional numerical implementations. Module budgets and dependency
-restrictions are enforced by `architecture.toml` and
+restrictions are enforced by `config/architecture.toml` and
 `tools/check_architecture.py`.
 
 Importing the PyTorch-native executor and backend-neutral protocols must not

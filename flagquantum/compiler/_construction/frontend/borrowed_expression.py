@@ -6,7 +6,8 @@ import ast
 from copy import deepcopy
 from typing import TYPE_CHECKING, cast
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..verification.register_profile import register_width
 from .python import _error
 from .views import locations

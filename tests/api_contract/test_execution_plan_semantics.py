@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
-from flagquantum.noise import bit_flip_channel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
 )

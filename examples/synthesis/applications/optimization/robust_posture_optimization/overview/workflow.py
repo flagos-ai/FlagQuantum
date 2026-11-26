@@ -6,7 +6,7 @@ from typing import Literal
 
 import torch
 
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .measurements import Estimate, Measurement, estimate, sample
 from .quantum import distribution

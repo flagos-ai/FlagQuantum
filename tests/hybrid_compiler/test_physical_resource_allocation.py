@@ -31,6 +31,7 @@ from flagquantum.compiler.topology.topology_legalization import (
     TopologyLegalizationError,
     legalize_circuit_topology,
 )
+from flagquantum.compute.remote.validation import prepare_artifact_deployment
 from flagquantum.core._artifacts import (
     ProgramArtifactV2,
     ProgramArtifactV3,
@@ -52,7 +53,6 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
-from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.artifact_preflight import preflight_executable_artifact
 from flagquantum.runtime.compilation_evidence import (

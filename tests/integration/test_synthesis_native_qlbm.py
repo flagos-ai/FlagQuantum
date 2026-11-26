@@ -15,7 +15,7 @@ from examples.synthesis.applications.cfd.qlbm.comparisons.circuit import (
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem.contracts import InteropConversionError
 from flagquantum.errors import PlanningError
 

@@ -40,7 +40,7 @@ def _load_gate() -> Any:
 
     spec = importlib.util.spec_from_file_location(
         "check_vn_entropy_output_contract",
-        ROOT / "tools" / "check_vn_entropy_output_contract.py",
+        ROOT / "tools" / "validation/check_vn_entropy_output_contract.py",
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

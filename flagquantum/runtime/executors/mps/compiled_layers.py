@@ -7,7 +7,8 @@ from typing import Any
 
 import torch
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ....core.ir import Instruction
 from ....simulation.mps.compiled_layers import (
     apply_compiled_mps_one_site_bucket,

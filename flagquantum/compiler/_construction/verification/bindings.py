@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Literal
 
-from ..._hybrid.model import HybridProgram, ValueId
+from flagquantum.compiler.frontends._structured.model import HybridProgram, ValueId
+
 from .profile import _fail, _positive_integer, _width, verify_construction
 
 OutputMode = Literal["value", "phase"]

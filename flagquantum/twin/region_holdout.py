@@ -11,7 +11,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from ..remote.qpu import DeploymentResult
+from flagquantum.compute.remote.qpu import DeploymentResult
+
 from ._atomic import write_once
 from .region_model import TwinRegionModel
 from .region_suite import (

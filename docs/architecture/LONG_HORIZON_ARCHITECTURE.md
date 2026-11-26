@@ -467,7 +467,7 @@ Mandatory rules:
 - Temporary exceptions have a registered owner and removal condition and are
   tracked by architecture checks.
 
-`architecture.toml` and `tools/check_architecture.py` enforce these rules.
+`config/architecture.toml` and `tools/check_architecture.py` enforce these rules.
 
 ## 12. Team Ownership
 

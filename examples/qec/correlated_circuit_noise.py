@@ -6,7 +6,8 @@ This samples a declared DEM. Circuit execution needs the optional Stim extra.
 
 import torch
 
-from flagquantum.noise import NoiseModel, two_qubit_depolarizing_channel
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import two_qubit_depolarizing_channel
 from flagquantum.qec import DetectorErrorModel, RepetitionCode, build_memory_circuit
 
 

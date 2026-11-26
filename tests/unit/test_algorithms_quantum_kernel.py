@@ -23,7 +23,7 @@ import pytest
 import torch
 
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
-from flagquantum.algorithms.quantum_kernel import (
+from flagquantum.algorithms.quantum_ml.kernels import (
     KernelMatrixResult,
     KernelRidgeClassifier,
     _append_feature_state,

@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from .....simulation.jax.mps.kernels import jax_sharded_mps_z_sum
+from flagquantum.simulation.mps.jax.kernels import jax_sharded_mps_z_sum
+
 from ..runtime_environment import (
     _jax_complex_dtype,
     _require_jax,

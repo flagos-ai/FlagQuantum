@@ -39,7 +39,7 @@ from flagquantum.compiler.optimization.optimization_levels import (
 )
 from flagquantum.compiler.pipeline import _SELF_INVERSE
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, inverse_operator
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, inverse_operator
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit
@@ -274,9 +274,9 @@ def test_the_module_takes_its_rule_from_the_operator_schema() -> None:
     """The dependency the previous test depends on, stated directly."""
 
     imports = _imports(ast.parse(_source()))
-    assert "core.operator_schema.OPERATOR_SCHEMAS" in imports
-    assert "core.operator_schema.get_operator_schema" in imports
-    assert "core.operator_schema.inverse_operator" in imports
+    assert "flagquantum.core.operators.schema.OPERATOR_SCHEMAS" in imports
+    assert "flagquantum.core.operators.schema.get_operator_schema" in imports
+    assert "flagquantum.core.operators.schema.inverse_operator" in imports
     # The wire index that `merge_self_inverse` also uses, rather than a second one.
     assert "canonicalization._WireLocalProgram" in imports
 

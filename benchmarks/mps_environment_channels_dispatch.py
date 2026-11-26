@@ -17,7 +17,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_environment_channels_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_environment_channels_dispatch.v1"
@@ -131,7 +131,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.mps_environment import (
+    from flagquantum.simulation.kernels.triton.mps_environment import (
         fused_mps_environment_channels,
     )
     from flagquantum.simulation.mps.site_kernels import (

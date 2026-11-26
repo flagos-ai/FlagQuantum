@@ -18,7 +18,7 @@ pytestmark = [
 def test_jax_mps_to_statevector_zero_state():
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.kernels import (
+    from flagquantum.simulation.mps.jax.kernels import (
         jax_mps_initial_open_boundary_tensors,
         jax_mps_to_statevector,
     )
@@ -34,7 +34,7 @@ def test_jax_mps_to_statevector_zero_state():
 def test_jax_mps_z_sum_zero_state_equals_n_wires():
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.kernels import (
+    from flagquantum.simulation.mps.jax.kernels import (
         jax_mps_initial_open_boundary_tensors,
         jax_mps_z_sum,
     )
@@ -49,7 +49,7 @@ def test_jax_mps_split_pair_reconstructs_exact():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.mps.kernels import jax_mps_split_pair
+    from flagquantum.simulation.mps.jax.kernels import jax_mps_split_pair
 
     rng = np.random.default_rng(3)
     left_dim, right_dim = 2, 3

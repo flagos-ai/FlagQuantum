@@ -8,7 +8,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
     "check_split_real_imag_contract",
-    ROOT / "tools/check_split_real_imag_contract.py",
+    ROOT / "tools/validation/check_split_real_imag_contract.py",
 )
 assert SPEC is not None and SPEC.loader is not None
 CHECKER = importlib.util.module_from_spec(SPEC)

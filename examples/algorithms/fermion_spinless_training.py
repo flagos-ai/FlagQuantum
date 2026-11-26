@@ -15,8 +15,8 @@ from flagquantum.algorithms.fermion.hubbard import (
     spinless_fermion_ring,
 )
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import Observable
-from flagquantum.observables.fermion import FermionOperator, number
+from flagquantum.core.operators.fermion import FermionOperator, number
+from flagquantum.core.operators.observable import Observable
 
 
 def build_ansatz(parameters: torch.Tensor) -> fq.Circuit:

@@ -18,7 +18,7 @@ from typing import Any, cast
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = (
     "flagquantum.kernel_benchmark_run.statevector_marginal_probability_dispatch.v1"

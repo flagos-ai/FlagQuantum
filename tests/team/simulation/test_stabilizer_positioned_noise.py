@@ -29,8 +29,7 @@ import pytest
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
-from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.noise import (
+from flagquantum.core.operators.channels import (
     KrausChannel,
     amplitude_damping_channel,
     bit_flip_channel,
@@ -42,6 +41,7 @@ from flagquantum.noise import (
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
 )
+from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.simulation.stabilizer import (
     StabilizerDependencyError,
     StabilizerSurvey,

@@ -16,8 +16,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from ...core.algebra.pauli import PauliOperator, count, pauli
-from ...observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.pauli import PauliOperator, count, pauli
 
 Encoding = Literal["jordan_wigner", "parity", "bravyi_kitaev"]
 ENCODINGS: tuple[Encoding, ...] = ("jordan_wigner", "parity", "bravyi_kitaev")

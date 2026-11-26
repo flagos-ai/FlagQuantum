@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from ..noise import ReadoutError
+from flagquantum.core.noise import ReadoutError
+
 from .model import QPUDigitalTwin
 
 _QUBIT_SCHEMA = "flagquantum.twin_qubit_calibration_drift.v1"

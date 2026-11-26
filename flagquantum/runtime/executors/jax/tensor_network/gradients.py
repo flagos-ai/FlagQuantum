@@ -5,11 +5,12 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from .....simulation.jax.primitives import _jax_pauli_matrix
-from .....simulation.jax.tensor_network.kernels import (
+from flagquantum.simulation.numerics.jax import _jax_pauli_matrix
+from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
-from .....simulation.jax.tensor_network.models import JAXTensorNetworkNode
+from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
+
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
     _jax_nodes_from_torch_nodes,
@@ -52,7 +53,7 @@ def _jax_parameterized_tn_state_nodes(
     conjugate: bool,
 ) -> tuple[list[JAXTensorNetworkNode], list[int], int]:
     _, jnp = _require_jax()
-    from .....simulation.jax.primitives import _jax_instruction_matrix
+    from flagquantum.simulation.numerics.jax import _jax_instruction_matrix
 
     next_label = int(start_label)
     current_labels: list[int] = []
@@ -528,7 +529,8 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
 
     def _loss(parameter_array: Any) -> Any:
-        from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+        from flagquantum.simulation.numerics.jax import _set_active_jax_compute_dtype
+
         from ..kernel import _JAXParameterProxy
 
         previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
@@ -569,7 +571,8 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         sliced_labels=slicing.sliced_labels,
         distributed_backend_policy=policy,
     )
-    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from flagquantum.simulation.numerics.jax import _set_active_jax_compute_dtype
+
     from ..kernel import _JAXParameterProxy
 
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)

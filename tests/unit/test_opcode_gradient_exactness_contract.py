@@ -51,7 +51,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "opcode-gradient-exactness-contract.toml"
 
-_GATE_PATH = ROOT / "tools" / "check_opcode_gradient_exactness.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_opcode_gradient_exactness.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_opcode_gradient_exactness", _GATE_PATH
 )
@@ -400,5 +400,5 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_opcode_gradient_exactness.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_opcode_gradient_exactness.py"' in pre_push

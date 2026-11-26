@@ -13,7 +13,9 @@ pytestmark = pytest.mark.integration
 
 
 def _module():
-    path = Path(__file__).parents[1] / "tools/convert_q_atlas_twin_evidence.py"
+    path = (
+        Path(__file__).parents[1] / "tools/validation/convert_q_atlas_twin_evidence.py"
+    )
     spec = importlib.util.spec_from_file_location("convert_q_atlas_evidence", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

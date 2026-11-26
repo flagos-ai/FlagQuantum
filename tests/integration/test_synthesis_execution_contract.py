@@ -22,7 +22,7 @@ from flagquantum.core.ir import CircuitIR, MeasurementNode
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
 from flagquantum.runtime.measurements import execute_measurements
-from flagquantum.services._synthesis_execution import (
+from flagquantum.runtime.planner.synthesis import (
     ExecutionContractError,
     inspect_execution,
 )

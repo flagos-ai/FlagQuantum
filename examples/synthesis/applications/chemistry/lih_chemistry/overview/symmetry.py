@@ -16,8 +16,8 @@ from flagquantum.algorithms.fermion.stabilizer import (
     StabilizerReduction,
     reduce_stabilizers,
 )
-from flagquantum.core.algebra.pauli import PauliOperator, pauli
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.pauli import PauliOperator, pauli
 
 from .model import WIDTH
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.kernels.catalog import EVIDENCE, IMPLEMENTATIONS
+from flagquantum.simulation.kernels.catalog import EVIDENCE, IMPLEMENTATIONS
 
 pytestmark = pytest.mark.unit
 

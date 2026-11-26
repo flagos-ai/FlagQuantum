@@ -333,7 +333,7 @@ that delegates to `power` is a candidate for a later slice if user evidence asks
 
 ## Owner and approvals
 
-Owner: FlagQuantum core maintainers (team `core` in `team-ownership.toml`).
+Owner: FlagQuantum core maintainers (team `core` in `config/team-ownership.toml`).
 
 Approval recorded by this document: the method name `Circuit.power`, its single argument
 `exponent`, the **wide** reading of `066` §6.2, the two rule names in `POWER_RULES`, the

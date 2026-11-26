@@ -37,7 +37,9 @@ def test_checks_filenames(tmp_path: Path) -> None:
 @pytest.fixture
 def localized_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(check_repository_language, "REPOSITORY_ROOT", tmp_path)
-    path = tmp_path / "workshops/flagos2026/notebooks_cn/01_first_circuit.ipynb"
+    path = (
+        tmp_path / "examples/workshops/flagos2026/notebooks_cn/01_first_circuit.ipynb"
+    )
     path.parent.mkdir(parents=True)
     return path
 
@@ -85,10 +87,10 @@ def test_localization_does_not_exempt_code_outputs_or_metadata(
 @pytest.mark.parametrize(
     "relative",
     (
-        "workshops/flagos2026/notebooks/01_first_circuit.ipynb",
-        "workshops/flagos2026/notebooks_cn/nested/01_first_circuit.ipynb",
-        "workshops/flagos2026/notebooks_cn/custom.ipynb",
-        "workshops/flagos2026/notebooks_cn/README.md",
+        "examples/workshops/flagos2026/notebooks/01_first_circuit.ipynb",
+        "examples/workshops/flagos2026/notebooks_cn/nested/01_first_circuit.ipynb",
+        "examples/workshops/flagos2026/notebooks_cn/custom.ipynb",
+        "examples/workshops/flagos2026/notebooks_cn/README.md",
         "another/notebooks_cn/01_first_circuit.ipynb",
     ),
 )

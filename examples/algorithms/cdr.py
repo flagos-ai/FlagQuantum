@@ -35,12 +35,15 @@ from __future__ import annotations
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm, run_cdr
-from flagquantum.algorithms.cdr import CDR_SNAP_OPCODES, clifford_variants
+from flagquantum.algorithms.error_mitigation.cdr import (
+    CDR_SNAP_OPCODES,
+    clifford_variants,
+    run_cdr,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
-    NoiseModel,
-    ReadoutError,
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     depolarizing_channel,
     two_qubit_depolarizing_channel,
 )

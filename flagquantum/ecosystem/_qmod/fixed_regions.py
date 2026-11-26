@@ -8,7 +8,8 @@ from dataclasses import dataclass, replace
 from operator import add, and_, or_, sub
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from .amplification import checked_probabilities
 from .basis_regions import (
     _COMPARISONS,

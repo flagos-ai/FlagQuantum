@@ -11,8 +11,8 @@ import pytest
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.noise import bit_flip_channel
 from flagquantum.qec.execution.experiments import run_stim_experiment
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine
 

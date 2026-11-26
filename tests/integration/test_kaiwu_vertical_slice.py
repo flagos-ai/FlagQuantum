@@ -8,9 +8,9 @@ from unittest.mock import Mock
 
 import pytest
 
-import flagquantum.remote.kaiwu.client as client_module
+import flagquantum.compute.remote.kaiwu.client as client_module
+from flagquantum.compute.remote.kaiwu import KaiwuSDKClient, KaiwuSDKEnvironment
 from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import KaiwuSDKClient, KaiwuSDKEnvironment
 
 np = pytest.importorskip("numpy")
 

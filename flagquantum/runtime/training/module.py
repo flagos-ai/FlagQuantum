@@ -1,0 +1,1250 @@
+"""Canonical PyTorch-native quantum module implementation."""
+
+from __future__ import annotations
+
+import hashlib
+import inspect
+import os
+from collections.abc import Callable, Mapping
+from dataclasses import replace
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+import torch
+from torch.utils.hooks import RemovableHandle
+
+from ..._import_compat import alias_module as _alias_module
+from ...circuit import Circuit
+from ...core.ir import CircuitIR, ensure_circuit_ir
+from ...errors import (
+    CapabilityError,
+    ExecutionError,
+    FlagQuantumError,
+    ValidationError,
+)
+from ..builder_compilation import (
+    BuilderBindings,
+    _bind_current_builder,
+    _bind_named_instructions,
+    _builder_tensor_inputs,
+    _install_captured_bindings,
+    _parameter_checkpoint_signature,
+    _remember_local_ir,
+    _reset_builder_capture,
+    _tensor_constant_key,
+    can_defer_ir_snapshot,
+    deferred_ir_snapshot,
+    detached_ir_snapshot,
+    ir_snapshot_input_budget,
+)
+from ..policy import RuntimePolicy
+from ..results import ExecutionResult, normalize_execution_result
+from ..results.adapters import LiveRuntimeSummary, _module_execution_result
+
+if TYPE_CHECKING:
+    from ...algorithms.primitives.hamiltonian import Hamiltonian
+    from ...compiler.module_builder import CapturedModuleBuilder
+    from ...simulation.mps.state import MPSState
+    from ...simulation.tensor_network.state import TensorNetworkState
+    from ..checkpointing import PrecisionPolicy, TrainingCheckpointRestore
+    from ..executors.jax.kernel import JAXQuantumKernel
+    from ..executors.mps.production import (
+        MPSAcceptanceGates,
+        MPSCrossoverMeasurement,
+        MPSProductionPlan,
+    )
+    from ..parallel import HybridParallelPlan
+    from .compilation import _TrainingProgram
+
+CircuitBuilder = Callable[..., Circuit | CircuitIR]
+
+
+class Module(torch.nn.Module):
+    """A normal ``torch.nn.Module`` whose quantum execution is policy-driven.
+
+    ``circuit`` receives the owned parameter tensor, and optionally the input
+    tensor when its signature accepts two positional arguments.
+
+    Examples:
+        Use a parameterized circuit like any other differentiable PyTorch layer:
+
+        >>> import flagquantum as fq
+        >>> import torch
+        >>> def build(parameters):
+        ...     return fq.Circuit(1).ry(0, theta=parameters[0])
+        >>> module = fq.Module(build, n_parameters=1, init=torch.tensor([0.25]))
+        >>> loss = module().mean()
+        >>> loss.backward()
+        >>> next(module.parameters()).grad is not None
+        True
+    """
+
+    def __init__(
+        self,
+        circuit: CircuitBuilder | Circuit,
+        n_parameters: int | tuple[int, ...] | None = None,
+        *,
+        parameters: Mapping[str, int | tuple[int, ...] | torch.Tensor] | None = None,
+        policy: RuntimePolicy | None = None,
+        init: torch.Tensor | Mapping[str, Any] | str | None = None,
+        seed: int | None = None,
+        dtype: torch.dtype = torch.float32,
+        device: torch.device | str | None = None,
+        hamiltonian: Hamiltonian | None = None,
+        precision: PrecisionPolicy | None = None,
+    ) -> None:
+        super().__init__()
+        if not callable(circuit) and not isinstance(circuit, Circuit):
+            raise TypeError("fq.Module circuit must be a callable builder or Circuit")
+        if parameters is not None and n_parameters is not None:
+            raise ValidationError("pass either n_parameters or parameters, not both")
+        if isinstance(circuit, Circuit) and parameters is None:
+            parameters = dict.fromkeys(circuit.parameter_names, ())
+        if parameters is None and n_parameters is None:
+            raise ValidationError(
+                "Module requires n_parameters, named parameters, or a "
+                "parameterized Circuit"
+            )
+
+        generator = None
+        if seed is not None:
+            generator = torch.Generator(device=device or "cpu")
+            generator.manual_seed(int(seed))
+
+        def initialize(shape: tuple[int, ...], value: Any) -> torch.Tensor:
+            if isinstance(value, str):
+                strategy = value.strip().lower()
+                target = torch.empty(shape, dtype=dtype, device=device)
+                if strategy == "zeros":
+                    return target.zero_()
+                if strategy == "uniform":
+                    return target.uniform_(0.0, 2.0 * torch.pi, generator=generator)
+                if strategy == "normal":
+                    return target.normal_(0.0, 0.01, generator=generator)
+                raise ValidationError(
+                    "init strategy must be 'zeros', 'uniform', or 'normal', "
+                    f"got {value!r}"
+                )
+            return torch.as_tensor(value, dtype=dtype, device=device).reshape(shape)
+
+        self.named_parameter_groups: torch.nn.ParameterDict | None = None
+        if parameters is not None:
+            if not parameters:
+                raise ValidationError("named parameters cannot be empty")
+            if init is not None and not isinstance(init, (Mapping, str)):
+                raise TypeError(
+                    "named parameters require a mapping or initialization strategy"
+                )
+            initial = dict(init) if isinstance(init, Mapping) else {}
+            unknown = sorted(set(initial) - set(parameters))
+            if unknown:
+                raise KeyError(
+                    "unknown named parameter initializer(s): " + ", ".join(unknown)
+                )
+            groups: dict[str, torch.nn.Parameter] = {}
+            for name, specification in parameters.items():
+                if not str(name):
+                    raise ValidationError("named parameter group names cannot be empty")
+                if isinstance(specification, torch.Tensor):
+                    default = specification.detach().to(device=device, dtype=dtype)
+                    shape = tuple(default.shape)
+                else:
+                    shape = (
+                        (int(specification),)
+                        if isinstance(specification, int)
+                        else tuple(int(item) for item in specification)
+                    )
+                    default = torch.zeros(shape, dtype=dtype, device=device)
+                value = initial.get(name, init if isinstance(init, str) else default)
+                tensor = initialize(shape, value)
+                groups[str(name)] = torch.nn.Parameter(tensor.clone())
+            self.named_parameter_groups = torch.nn.ParameterDict(groups)
+            self.parameters_tensor = None
+        else:
+            assert n_parameters is not None
+            shape = (
+                (int(n_parameters),)
+                if isinstance(n_parameters, int)
+                else tuple(int(item) for item in n_parameters)
+            )
+            if isinstance(init, Mapping):
+                raise TypeError("n_parameters requires tensor-like init or a strategy")
+            values = initialize(shape, "zeros" if init is None else init)
+            self.parameters_tensor = torch.nn.Parameter(values)
+        self.circuit_builder = circuit
+        self.policy = policy or RuntimePolicy()
+        self.hamiltonian = hamiltonian
+        self._state_process_group: Any | None = None
+        self._parallel_plan: HybridParallelPlan | None = None
+        self._last_ir_snapshot: CircuitIR | None = None
+        self._last_ir_factory: Callable[[], CircuitIR] | None = None
+        self._checkpoint_source: object | None = None
+        self._captured_checkpoint_digest: str | None = None
+        self._compiled_topology_signature: str | None = None
+        self._compile_count = 0
+        self._program_cache_hits = 0
+        self._builder_program: Any | None = None
+        self._builder_program_signature: tuple[Any, ...] | None = None
+        self._captured_builder: CapturedModuleBuilder | None = None
+        self._builder_bound_circuit: Circuit | None = None
+        self._builder_bindings = BuilderBindings()
+        self._builder_slots: tuple[tuple[int, str], ...] = ()
+        self._builder_compile_count = 0
+        self._builder_cache_hits = 0
+        self._training_program: _TrainingProgram | None = None
+        self._local_snapshot_eligibility: tuple[int, bool, int] = (-1, False, 0)
+        self._jax_kernel: JAXQuantumKernel | None = None
+        self._jax_kernel_build_count = 0
+        self._jax_kernel_signature: tuple[Any, ...] | None = None
+        self._jax_ir_template: CircuitIR | None = None
+        self._builder_lowering = "torch_fx_bindings"
+        self._builder_lowering_reason = ""
+        self._jax_constant_snapshots: dict[int, tuple[torch.Tensor, int]] = {}
+        self._jax_snapshot_replay_safe = False
+        self._jax_snapshot_budget = 512
+        self._correctness_debug_hook_handle: tuple[RemovableHandle, ...] | None = None
+        if precision is None:
+            from ..checkpointing import PrecisionPolicy
+
+            precision = PrecisionPolicy(
+                parameter_dtype=str(dtype).removeprefix("torch."),
+                complex_dtype=("complex128" if dtype == torch.float64 else "complex64"),
+            )
+        self._require_policy_precision(self.policy, precision.complex_dtype)
+        # Apply the requested parameter dtype before installing the policy.
+        # ``Module._apply`` synchronizes an already-installed policy during a
+        # later user-driven ``module.to(...)`` call; doing that here would
+        # overwrite an explicit accumulator dtype during construction.
+        precision.apply(self)
+        self.precision = precision
+        self._sync_correctness_debug_hook()
+
+    @property
+    def _last_ir(self) -> CircuitIR | None:
+        if self._last_ir_factory is not None:
+            self._last_ir_snapshot = self._last_ir_factory()
+            self._last_ir_factory = None
+        return self._last_ir_snapshot
+
+    @_last_ir.setter
+    def _last_ir(self, value: CircuitIR | None) -> None:
+        self._last_ir_snapshot = value
+        self._last_ir_factory = None
+        self._checkpoint_source = (
+            self.circuit_builder.to_ir()
+            if type(self.circuit_builder) is Circuit
+            else self._captured_builder
+        )
+
+    @staticmethod
+    def _require_policy_precision(policy: RuntimePolicy, complex_dtype: str) -> None:
+        requested = policy.execution_options.precision
+        if requested is not None and requested != complex_dtype:
+            from ..checkpointing import PrecisionPolicyError
+
+            raise PrecisionPolicyError(
+                "runtime policy precision conflicts with Module precision: "
+                f"{requested!r} != {complex_dtype!r}"
+            )
+
+    def _require_program_precision(self, program: Circuit | CircuitIR) -> None:
+        actual = str(program.dtype).removeprefix("torch.")
+        expected = self.precision.complex_dtype
+        if actual != expected:
+            from ..checkpointing import PrecisionPolicyError
+
+            raise PrecisionPolicyError(
+                "circuit precision conflicts with Module precision: "
+                f"{actual!r} != {expected!r}"
+            )
+
+    def _sync_correctness_debug_hook(self) -> None:
+        handle = self._correctness_debug_hook_handle
+        if self.policy.correctness_debug and handle is None:
+            self._correctness_debug_hook_handle = tuple(
+                self._register_finite_gradient_hook(parameter)
+                for parameter in self._parameter_tensors()
+            )
+        elif not self.policy.correctness_debug and handle is not None:
+            for item in handle:
+                item.remove()
+            self._correctness_debug_hook_handle = None
+
+    def _register_finite_gradient_hook(
+        self, parameter: torch.Tensor
+    ) -> RemovableHandle:
+        register: Callable[[Callable[[torch.Tensor], torch.Tensor]], object] = (
+            parameter.register_hook
+        )
+        # Register even for a frozen owned weight so later native PyTorch
+        # unfreezing retains the policy's gradient check.
+        was_trainable = parameter.requires_grad
+        try:
+            parameter.requires_grad_(True)
+            handle = register(self._finite_gradient_hook)
+        finally:
+            parameter.requires_grad_(was_trainable)
+        if not isinstance(handle, RemovableHandle):
+            raise TypeError(
+                "PyTorch gradient hook registration must return a removable handle"
+            )
+        return handle
+
+    def set_runtime_policy(self, policy: RuntimePolicy) -> None:
+        """Replace runtime policy and synchronize policy-dependent resources."""
+
+        if not isinstance(policy, RuntimePolicy):
+            raise TypeError("fq.Module runtime policy must be a RuntimePolicy")
+        self._require_policy_precision(policy, self.precision.complex_dtype)
+        self.policy = policy
+        self._training_program = None
+        self._jax_kernel = None
+        self._jax_kernel_signature = None
+        self._jax_ir_template = None
+        self._builder_lowering = "torch_fx_bindings"
+        self._builder_lowering_reason = ""
+        self._jax_constant_snapshots.clear()
+        self._sync_correctness_debug_hook()
+
+    def _apply(
+        self, fn: Callable[[torch.Tensor], torch.Tensor], recurse: bool = True
+    ) -> "Module":
+        if hasattr(self, "parameters_tensor"):
+            parameter = self._parameter_tensors()[0]
+            probe = fn(torch.empty(0, dtype=parameter.dtype, device=parameter.device))
+            if probe.dtype not in {torch.float32, torch.float64}:
+                raise TypeError(
+                    "fq.Module trainable parameters must use float32 or float64"
+                )
+            if hasattr(self, "precision"):
+                complex_dtype = (
+                    "complex128" if probe.dtype == torch.float64 else "complex64"
+                )
+                self._require_policy_precision(self.policy, complex_dtype)
+        apply_tensors: Callable[
+            [Callable[[torch.Tensor], torch.Tensor], bool], object
+        ] = super()._apply
+        apply_tensors(fn, recurse)
+        if hasattr(self, "precision"):
+            dtype = self._parameter_tensors()[0].dtype
+            if dtype not in {torch.float32, torch.float64}:
+                raise TypeError(
+                    "fq.Module trainable parameters must use float32 or float64"
+                )
+            name = str(dtype).removeprefix("torch.")
+            self.precision = replace(
+                self.precision,
+                parameter_dtype=name,
+                complex_dtype="complex128" if dtype == torch.float64 else "complex64",
+            )
+        self._jax_kernel = None
+        self._jax_kernel_signature = None
+        self._jax_ir_template = None
+        _reset_builder_capture(self)
+        return self
+
+    @staticmethod
+    def _finite_gradient_hook(gradient: torch.Tensor) -> torch.Tensor:
+        if not torch.isfinite(gradient).all():
+            from ..checkpointing import NonFiniteTrainingError
+
+            raise NonFiniteTrainingError("non-finite training values: gradient")
+        return gradient
+
+    def _build(
+        self, inputs: torch.Tensor | None, parameters: Any
+    ) -> Circuit | CircuitIR:
+        from ...core.runtime_config import runtime_config
+
+        program: Circuit | CircuitIR
+        with runtime_config(complex_dtype=self.precision.complex_dtype):
+            if isinstance(self.circuit_builder, Circuit):
+                if inputs is not None:
+                    raise TypeError(
+                        "a symbolic Circuit template does not accept inputs"
+                    )
+                if type(self.circuit_builder) is Circuit:
+                    program = Circuit(**self.circuit_builder.circuit_param)
+                    program._instructions.extend(
+                        _bind_named_instructions(
+                            self.circuit_builder._instructions, parameters
+                        )
+                    )
+                else:
+                    # Circuit subclasses retain their binding behavior.
+                    program = self.circuit_builder.bind_parameters(parameters)
+            else:
+                program = self._build_from_compiled_builder(inputs, parameters)
+        self._require_program_precision(program)
+        return program
+
+    def _build_from_compiled_builder(
+        self, inputs: torch.Tensor | None, parameters: Any
+    ) -> Circuit | CircuitIR:
+        tensor_inputs, names, has_inputs = _builder_tensor_inputs(parameters, inputs)
+        signature = tuple(
+            (tuple(tensor.shape), tensor.dtype, tensor.device)
+            for tensor in tensor_inputs
+        ) + (names, has_inputs, self._builder_context())
+        if (
+            self._builder_program is None
+            or self._builder_program_signature != signature
+        ):
+            self._compile_builder_program(
+                tensor_inputs, names=names, has_inputs=has_inputs, signature=signature
+            )
+        else:
+            self._builder_cache_hits += 1
+
+        return _bind_current_builder(self, tensor_inputs)
+
+    def _builder_context(self) -> tuple[Any, ...]:
+        return (
+            id(self.circuit_builder),
+            self.policy,
+            self.precision,
+            id(self.hamiltonian),
+            id(None if self.hamiltonian is None else self.hamiltonian.terms),
+        )
+
+    def _compile_builder_program(
+        self,
+        tensor_inputs: tuple[torch.Tensor, ...],
+        *,
+        names: tuple[str, ...],
+        has_inputs: bool,
+        signature: tuple[Any, ...],
+    ) -> None:
+        from ...compiler.module_builder import capture_module_builder
+
+        capture = capture_module_builder(
+            self._invoke_circuit_builder,
+            tensor_inputs,
+            names=names,
+            has_inputs=has_inputs,
+        )
+        template = capture.template
+        slots = capture.slots
+        bound = capture.circuit_type(**capture.constructor)
+        _install_captured_bindings(bound, template, slots, self._builder_bindings)
+        # Runtime compilation artifacts must not become checkpointed child
+        # modules; they are rebuilt after dtype/device/signature changes.
+        object.__setattr__(self, "_builder_program", capture.binding_graph)
+        self._builder_program_signature = signature
+        self._captured_builder = capture
+        self._captured_checkpoint_digest = capture.checkpoint_signature()
+        self._builder_bound_circuit = bound
+        self._builder_slots = slots
+        self._builder_compile_count += 1
+
+    def _checkpoint_signature(
+        self, *, prepare: bool = False, parameter_training: bool = False
+    ) -> str | None:
+        if parameter_training:
+            return _parameter_checkpoint_signature(self, prepare=prepare)
+        capture = self._captured_builder
+        signature = self._builder_program_signature
+        if (
+            capture is not None
+            and signature is not None
+            and signature[-1] == self._builder_context()
+        ):
+            return capture.checkpoint_signature()
+        if not prepare or isinstance(self.circuit_builder, Circuit):
+            return None
+        if capture is not None and capture.has_inputs:
+            return None
+        try:
+            self._build(None, self._owned_parameters())
+        finally:
+            self._builder_bindings.clear()
+        capture = self._captured_builder
+        return capture.checkpoint_signature() if capture is not None else None
+
+    def _training_template(self) -> tuple[CircuitIR, tuple[str, ...]] | None:
+        if self._captured_builder is None:
+            return None
+        return self._captured_builder.template, self._captured_builder.binding_names
+
+    @staticmethod
+    def _builder_accepts_inputs(builder: CircuitBuilder) -> bool:
+        return (
+            sum(
+                parameter.kind
+                in (
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                )
+                for parameter in inspect.signature(builder).parameters.values()
+            )
+            >= 2
+        )
+
+    def _invoke_circuit_builder(
+        self, parameters: Any, inputs: torch.Tensor | None
+    ) -> Circuit | CircuitIR:
+        builder = self.circuit_builder
+        if not callable(builder):
+            raise TypeError("module circuit builder must be callable")
+        if self._builder_accepts_inputs(builder):
+            return builder(parameters, inputs)
+        return builder(parameters)
+
+    def _parameter_tensors(self) -> tuple[torch.Tensor, ...]:
+        if self.named_parameter_groups is not None:
+            return tuple(self.named_parameter_groups.values())
+        assert self.parameters_tensor is not None
+        return (self.parameters_tensor,)
+
+    def _owned_parameters(self) -> Any:
+        return self.named_parameter_groups or self.parameters_tensor
+
+    def _observe_topology(self, ir: CircuitIR) -> dict[str, Any]:
+        """Track a value-independent circuit topology for backend program caches."""
+
+        structure = (
+            ir.n_wires,
+            tuple(
+                (
+                    instruction.name,
+                    instruction.wires,
+                    tuple(sorted(instruction.params)),
+                    instruction.matrix is not None,
+                    tuple(getattr(instruction.matrix, "shape", ())),
+                    bool(instruction.metadata.get("is_channel")),
+                )
+                for instruction in ir.instructions
+            ),
+            self.policy.mode,
+            self.policy.observable,
+            self.policy.observable_qubits,
+        )
+        signature = hashlib.sha256(repr(structure).encode("utf-8")).hexdigest()
+        if signature == self._compiled_topology_signature:
+            self._program_cache_hits += 1
+        else:
+            self._compiled_topology_signature = signature
+            self._compile_count += 1
+        return {
+            "compiled": True,
+            "topology_hash": signature,
+            "compile_count": self._compile_count,
+            "program_cache_hits": self._program_cache_hits,
+            "builder_compiled": self._builder_program is not None,
+            "builder_compile_count": self._builder_compile_count,
+            "builder_cache_hits": self._builder_cache_hits,
+            "builder_lowering": self._builder_lowering,
+            "builder_lowering_reason": self._builder_lowering_reason,
+            "jax_kernel_build_count": self._jax_kernel_build_count,
+            "static_program_reused": self._builder_bound_circuit is not None,
+        }
+
+    @property
+    def parameter_groups(self) -> Mapping[str, torch.Tensor] | torch.nn.ParameterDict:
+        """Return named trainable groups, or an empty mapping for flat modules."""
+
+        return self.named_parameter_groups or {}
+
+    def set_parallel_context(
+        self,
+        *,
+        state_process_group: Any | None,
+        plan: HybridParallelPlan,
+    ) -> None:
+        """Attach runtime-only process groups; they are not checkpoint state."""
+
+        import torch.distributed as dist
+
+        if not dist.is_initialized():
+            if plan.world_size != 1:
+                raise ExecutionError(
+                    "multi-rank parallel plan requires an initialized process group"
+                )
+        else:
+            global_world_size = dist.get_world_size()
+            if global_world_size != plan.world_size:
+                raise ValidationError(
+                    "global process-group size does not match plan.world_size: "
+                    f"{global_world_size} != {plan.world_size}"
+                )
+            group_size = dist.get_world_size(state_process_group)
+            if group_size != plan.state_parallel_size:
+                raise ValidationError(
+                    "state process-group size does not match "
+                    f"plan.state_parallel_size: {group_size} != "
+                    f"{plan.state_parallel_size}"
+                )
+            global_rank = dist.get_rank()
+            if state_process_group is None:
+                group_ranks = tuple(range(dist.get_world_size()))
+            else:
+                get_ranks = getattr(dist, "get_process_group_ranks", None)
+                if get_ranks is None:
+                    raise ExecutionError(
+                        "PyTorch must expose get_process_group_ranks to validate "
+                        "hybrid parallel topology"
+                    )
+                group_ranks = tuple(
+                    int(rank) for rank in get_ranks(state_process_group)
+                )
+            expected = next(
+                (group for group in plan.state_groups if global_rank in group), None
+            )
+            if expected is None or tuple(group_ranks) != tuple(expected):
+                raise ValidationError(
+                    "state process-group ranks do not match the plan topology: "
+                    f"actual={group_ranks}, expected={expected}"
+                )
+        self._state_process_group = state_process_group
+        self._parallel_plan = plan
+
+    def plan_production_mps(
+        self,
+        inputs: torch.Tensor | None = None,
+        *,
+        estimated_workload_bytes: int,
+        single_gpu_capacity_bytes: int,
+        gates: MPSAcceptanceGates | Mapping[str, Any],
+        crossover: tuple[MPSCrossoverMeasurement | Mapping[str, Any], ...] = (),
+        available_gpu_count: int = 0,
+    ) -> MPSProductionPlan:
+        """Plan the module's MPS workload from measured release evidence."""
+
+        from ..executors.mps.production import plan_production_mps
+
+        circuit = self._build(inputs, self._owned_parameters())
+        ir = ensure_circuit_ir(circuit)
+        self._last_ir = detached_ir_snapshot(ir)
+        return plan_production_mps(
+            ir,
+            estimated_workload_bytes=estimated_workload_bytes,
+            single_gpu_capacity_bytes=single_gpu_capacity_bytes,
+            gates=gates,
+            crossover=crossover,
+            available_gpu_count=available_gpu_count,
+        )
+
+    def execute_production_mps(
+        self,
+        inputs: torch.Tensor | None = None,
+        *,
+        estimated_workload_bytes: int,
+        single_gpu_capacity_bytes: int,
+        gates: MPSAcceptanceGates | Mapping[str, Any],
+        crossover: tuple[MPSCrossoverMeasurement | Mapping[str, Any], ...] = (),
+        available_gpu_count: int = 0,
+        max_bond: int | None = None,
+        cutoff: float = 0.0,
+    ) -> ExecutionResult:
+        """Execute exactly the local or distributed path selected by the planner."""
+
+        plan = self.plan_production_mps(
+            inputs,
+            estimated_workload_bytes=estimated_workload_bytes,
+            single_gpu_capacity_bytes=single_gpu_capacity_bytes,
+            gates=gates,
+            crossover=crossover,
+            available_gpu_count=available_gpu_count,
+        )
+        circuit = self._build(inputs, self._owned_parameters())
+        ir = ensure_circuit_ir(circuit)
+        qubits = self.policy.observable_qubits
+        if self.policy.observable != "z" or len(qubits) != 1:
+            raise CapabilityError(
+                "production MPS integration currently supports one Z observable"
+            )
+        if plan.world_size == 1:
+            from ...simulation.mps.entrypoints import run_mps
+
+            state = run_mps(
+                ir,
+                device=self._parameter_tensors()[0].device,
+                dtype=getattr(torch, self.precision.complex_dtype),
+                max_bond=max_bond,
+                cutoff=cutoff,
+            )
+            value = state.expectation_z(qubits)[..., 0]
+            runtime = {
+                **plan.summary(),
+                "executor": "pytorch_native_local_mps",
+                "full_mps_materialization": False,
+            }
+        else:
+            import torch.distributed as dist
+
+            from ..executors.mps.reverse import execute_torch_distributed_mps_reverse
+
+            if not dist.is_initialized():
+                raise ExecutionError(
+                    "measured distributed MPS plan requires an initialized process group"
+                )
+            if dist.get_world_size(self._state_process_group) != plan.world_size:
+                raise ExecutionError(
+                    "active MPS process-group size does not match measured plan"
+                )
+            reverse = execute_torch_distributed_mps_reverse(
+                ir,
+                observable={qubits[0]: "z"},
+                device=self._parameter_tensors()[0].device,
+                max_bond=max_bond,
+                cutoff=cutoff,
+            )
+            value = reverse.value.reshape(1)
+            runtime = {
+                **reverse.summary(),
+                "production_plan": plan.summary(),
+                "production_promotion_allowed": plan.production_promotion_allowed,
+            }
+        return ExecutionResult(
+            value=value,
+            plan=plan,
+            metrics={
+                "training": self.training,
+                "precision": self.precision.to_dict(),
+                "mps_acceptance_gates": plan.gates.to_dict(),
+            },
+            provenance={"ir_hash": ir.content_hash},
+            runtime=runtime,
+            compatibility={"fallback_used": False, "selected_backend": "pytorch"},
+        )
+
+    def execute(
+        self,
+        inputs: torch.Tensor | None = None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
+    ) -> ExecutionResult:
+        try:
+            try:
+                return self._execute_impl(inputs, parameters)
+            except (FlagQuantumError, TypeError):
+                raise
+            except Exception as error:
+                raise ExecutionError("module execution failed") from error
+        finally:
+            # Do not retain the current autograd graph between training steps.
+            self._builder_bindings.clear()
+
+    def _hamiltonian_signature(self) -> tuple[Any, ...]:
+        if self.hamiltonian is None:
+            return ()
+        return tuple(
+            (
+                term.ops,
+                (
+                    _tensor_constant_key(self, term.coefficient)
+                    if isinstance(term.coefficient, torch.Tensor)
+                    else term.coefficient
+                ),
+            )
+            for term in self.hamiltonian.terms
+        )
+
+    def _jax_signature(
+        self,
+        selected_parameters: torch.Tensor,
+        inputs: torch.Tensor | None,
+    ) -> tuple[Any, ...]:
+        constants = (
+            ()
+            if self._captured_builder is None
+            else self._captured_builder.tensor_constants
+        )
+        constant_keys = tuple(_tensor_constant_key(self, value) for value in constants)
+        hamiltonian = self._hamiltonian_signature()
+        if self._jax_constant_snapshots:
+            current = {id(value) for value in constants}
+            if self.hamiltonian is not None:
+                current.update(id(term.coefficient) for term in self.hamiltonian.terms)
+            self._jax_constant_snapshots = {
+                key: value
+                for key, value in self._jax_constant_snapshots.items()
+                if key in current
+            }
+        return (
+            tuple(selected_parameters.shape),
+            selected_parameters.dtype,
+            selected_parameters.device,
+            None if inputs is None else tuple(inputs.shape),
+            None if inputs is None else inputs.dtype,
+            None if inputs is None else inputs.device,
+            self.precision,
+            self.policy,
+            id(self.circuit_builder),
+            hamiltonian,
+            constant_keys,
+        )
+
+    def _jax_value(
+        self,
+        circuit: Circuit | CircuitIR,
+        selected_parameters: torch.Tensor | Mapping[str, torch.Tensor],
+        inputs: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Reuse the same validated JAX execution for tensor and result callers."""
+        qubits = self.policy.observable_qubits or (0,)
+        if self.policy.observable == "z" and len(qubits) > 1:
+            raise CapabilityError(
+                "JAX fq.Module does not yet support vector-valued Z "
+                "observables; use the PyTorch local fast path"
+            )
+        if isinstance(selected_parameters, Mapping):
+            raise CapabilityError(
+                "JAX execution of named parameter groups requires an "
+                "explicit flattening policy"
+            )
+        builder = self.circuit_builder
+        if not callable(builder):
+            raise TypeError("JAX module circuit builder must be callable")
+        constants = (
+            ()
+            if self._captured_builder is None
+            else self._captured_builder.tensor_constants
+        )
+        coefficients = (
+            ()
+            if self.hamiltonian is None or self.policy.observable != "hamiltonian"
+            else tuple(term.coefficient for term in self.hamiltonian.terms)
+        )
+        if any(
+            isinstance(value, torch.Tensor) and value.requires_grad
+            for value in (*constants, *coefficients)
+        ):
+            raise CapabilityError(
+                "JAX Module does not differentiate captured tensor constants or "
+                "Hamiltonian coefficients; use PyTorch or explicit parameters/inputs"
+            )
+        accepts_inputs = self._builder_accepts_inputs(builder)
+        kernel_signature = self._jax_signature(selected_parameters, inputs)
+        if self._jax_kernel is None or self._jax_kernel_signature != kernel_signature:
+            from ..executors.jax import compile_quantum_kernel
+
+            if not isinstance(circuit, Circuit):
+                raise TypeError("JAX module builder must return a Circuit")
+            lowered, reason = (
+                (None, "custom_builder_adapter")
+                if self._captured_builder is None
+                else self._captured_builder.jax_builder()
+            )
+            self._builder_lowering = (
+                "canonical_ir_fx_bindings"
+                if lowered is not None
+                else "python_builder_jax_compatibility"
+            )
+            self._builder_lowering_reason = reason
+            self._jax_kernel = compile_quantum_kernel(
+                builder if lowered is None else lowered,
+                selected_parameters.detach(),
+                backend="jax",
+                interface="torch",
+                mode=self.policy.mode,
+                n_qubits=circuit.n_qubits,
+                observable=self.policy.observable,
+                observable_qubits=qubits,
+                hamiltonian=self.hamiltonian,
+                compute_dtype=self.precision.complex_dtype,
+                accepts_inputs=accepts_inputs,
+            )
+            self._jax_kernel._declared_batch_size = circuit.bsz
+            self._jax_kernel_signature = kernel_signature
+            self._jax_kernel_build_count += 1
+        value = self._jax_kernel(selected_parameters, inputs)
+        if value.ndim == 0:
+            value = value.reshape(1)
+        return value
+
+    def _execute_impl(
+        self,
+        inputs: torch.Tensor | None = None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
+        *,
+        _program: Circuit | CircuitIR | None = None,
+    ) -> ExecutionResult:
+        selected_parameters = (
+            self._owned_parameters() if parameters is None else parameters
+        )
+        circuit = (
+            self._build(inputs, selected_parameters) if _program is None else _program
+        )
+        ir = ensure_circuit_ir(circuit)
+        self._last_ir = detached_ir_snapshot(ir)
+        program_runtime = self._observe_topology(ir)
+        requested_backend = self.policy.backend
+        if requested_backend not in {"pytorch", "jax"}:
+            raise ValidationError(
+                f"unsupported fq.Module backend {requested_backend!r}"
+            )
+        selected_backend = requested_backend
+        compatibility: dict[str, Any] = {"fallback_used": False}
+        qubits = self.policy.observable_qubits or (0,)
+        runtime: Mapping[str, Any]
+        if requested_backend == "jax":
+            try:
+                value = self._jax_value(circuit, selected_parameters, inputs)
+                assert self._jax_kernel is not None
+                runtime = {
+                    **self._jax_kernel.summary(),
+                    **program_runtime,
+                    "builder_lowering": self._builder_lowering,
+                    "builder_lowering_reason": self._builder_lowering_reason,
+                    "jax_kernel_build_count": self._jax_kernel_build_count,
+                }
+                return ExecutionResult(
+                    value=value,
+                    metrics={
+                        "training": self.training,
+                        "precision": self.precision.to_dict(),
+                    },
+                    provenance={"ir_hash": ir.content_hash},
+                    runtime=runtime,
+                    compatibility={
+                        "fallback_used": False,
+                        "requested_backend": "jax",
+                        "selected_backend": "jax",
+                    },
+                )
+            except Exception as error:
+                if not self.policy.allow_backend_fallback:
+                    if isinstance(error, FlagQuantumError):
+                        raise
+                    raise ExecutionError("JAX module execution failed") from error
+                selected_backend = "pytorch"
+                compatibility = {
+                    "fallback_used": True,
+                    "requested_backend": requested_backend,
+                    "selected_backend": selected_backend,
+                    "reason": f"jax_kernel_unavailable:{type(error).__name__}",
+                }
+        from ..distributed.backend_policy import resolve_distributed_backend_policy
+
+        distributed = (
+            self.policy.mode == "statevector"
+            and resolve_distributed_backend_policy().effective_world_size > 1
+        )
+        if distributed:
+            import torch.distributed as dist
+
+            from ..executors.statevector import (
+                execute_torch_distributed_statevector_reverse,
+            )
+
+            if self.policy.observable != "z" or len(qubits) != 1:
+                raise CapabilityError(
+                    "distributed_statevector currently supports one Z observable; "
+                    "observable batching must use explicit term groups"
+                )
+            if not dist.is_initialized() and int(os.getenv("WORLD_SIZE", "1")) > 1:
+                raise ExecutionError(
+                    "distributed_statevector requires an initialized process group"
+                )
+            reverse = execute_torch_distributed_statevector_reverse(
+                ir,
+                observable_qubit=qubits[0],
+                device=self._parameter_tensors()[0].device,
+                process_group=self._state_process_group,
+            )
+            value = reverse.value.reshape(1)
+            state = None
+            runtime = LiveRuntimeSummary(reverse)
+        else:
+            if not isinstance(circuit, Circuit):
+                raise TypeError(
+                    "local fq.Module execution requires a Circuit builder result"
+                )
+            if self.policy.mode == "statevector":
+                state = circuit.state(refresh=True)
+                program_runtime = {
+                    **program_runtime,
+                    **getattr(circuit, "_last_statevector_runtime", {}),
+                }
+                observed: Circuit | MPSState | TensorNetworkState = circuit
+                executor = "pytorch_native_module_v1"
+            elif self.policy.mode == "mps":
+                from ...simulation.mps.entrypoints import run_mps
+
+                state = None
+                backend_state = run_mps(
+                    circuit,
+                    max_bond=None,
+                    cutoff=0.0,
+                )
+                program_runtime = {**program_runtime, **backend_state.summary()}
+                observed = backend_state
+                executor = "pytorch_native_mps"
+            elif self.policy.mode == "tensor_network":
+                from ...simulation.tensor_network.entrypoints import (
+                    run_tensor_network,
+                )
+
+                state = None
+                tensor_network_state = run_tensor_network(
+                    circuit, dense_observable_qubits=12
+                )
+                observed = tensor_network_state
+                executor = "pytorch_native_tensor_network"
+            else:
+                raise ExecutionError(f"unhandled fq.Module mode {self.policy.mode!r}")
+            if self.policy.observable == "hamiltonian":
+                if self.hamiltonian is None:
+                    raise ValidationError(
+                        "hamiltonian observable requires a Hamiltonian"
+                    )
+                value = self.hamiltonian.expectation(observed)
+            else:
+                values = observed.expectation_z(qubits)
+                value = (
+                    values.sum(dim=-1)
+                    if self.policy.observable == "z_sum"
+                    else values if len(qubits) > 1 else values[..., 0]
+                )
+            if self.policy.mode == "tensor_network":
+                # Snapshot after the observable runs, so the recorded execution
+                # mode and materialization flag describe the contraction that
+                # actually answered this call.
+                program_runtime = {
+                    **program_runtime,
+                    **tensor_network_state.summary(),
+                }
+            runtime = {
+                "executor": executor,
+                "backend": selected_backend,
+                "mode": self.policy.mode,
+                "distribution_semantics": "single_device_fast_path",
+                "world_size": 1,
+                "local_world_size": 1,
+                "node_count": 1,
+                **program_runtime,
+                "builder_lowering": "torch_fx_bindings",
+                "builder_lowering_reason": "",
+            }
+        result = _module_execution_result(
+            self,
+            ir,
+            value=value,
+            state=state,
+            inputs=inputs,
+            parameters=selected_parameters,
+            qubits=qubits,
+            runtime=runtime,
+            compatibility=compatibility,
+            state_world_size=reverse.world_size if distributed else 1,
+        )
+        if self.policy.correctness_debug:
+            from ..checkpointing import assert_finite_training
+
+            assert_finite_training(self, value=result.value, include_gradients=False)
+        return result
+
+    def forward(
+        self,
+        inputs: torch.Tensor | None = None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None = None,
+    ) -> torch.Tensor:
+        try:
+            if self.policy.backend == "pytorch" and self.policy.mode in {
+                "statevector",
+                "mps",
+                "tensor_network",
+            }:
+                return self._forward_local_tensor(inputs, parameters)
+            if (
+                self.policy.backend == "jax"
+                and not self.policy.allow_backend_fallback
+                and not self.policy.correctness_debug
+            ):
+                return self._forward_jax_tensor(inputs, parameters)
+            result = self.execute(inputs, parameters)
+            return result.require_value()
+        except (FlagQuantumError, TypeError):
+            raise
+        except Exception as error:
+            raise ExecutionError("module forward execution failed") from error
+
+    def _forward_jax_tensor(
+        self,
+        inputs: torch.Tensor | None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None,
+    ) -> torch.Tensor:
+        """Preserve training state without assembling an unused ExecutionResult."""
+        selected = self._owned_parameters() if parameters is None else parameters
+        try:
+            if (
+                isinstance(selected, torch.Tensor)
+                and self._jax_kernel is not None
+                and self._jax_kernel_signature == self._jax_signature(selected, inputs)
+                and self._jax_ir_template is not None
+                and self._jax_snapshot_replay_safe
+                and self._builder_program is not None
+                # Bound diagnostic copies by the consumed parameter slots.
+                and selected.numel() * selected.element_size()
+                + (0 if inputs is None else inputs.numel() * inputs.element_size())
+                <= self._jax_snapshot_budget
+            ):
+                # Rebinding validates the current angles even when IR snapshots
+                # are deferred and the JAX kernel can reuse its compiled trace.
+                tensors, _, _ = _builder_tensor_inputs(selected, inputs)
+                if type(self) is Module:
+                    # The kernel signature already authenticated shape, dtype,
+                    # device, builder, policy, precision and static constants.
+                    self._builder_cache_hits += 1
+                    _bind_current_builder(self, tensors)
+                else:
+                    self._build(inputs, selected)
+                self._checkpoint_source = self._captured_builder
+                self._last_ir_snapshot = None
+                self._last_ir_factory = deferred_ir_snapshot(
+                    self._builder_program,
+                    self._jax_ir_template,
+                    tensors,
+                    len(self._builder_slots),
+                )
+                self._program_cache_hits += 1
+                try:
+                    value = self._jax_kernel(selected, inputs)
+                    return value.reshape(1) if value.ndim == 0 else value
+                except FlagQuantumError:
+                    raise
+                except Exception as error:
+                    raise ExecutionError("JAX module execution failed") from error
+            try:
+                circuit = self._build(inputs, selected)
+                ir = ensure_circuit_ir(circuit)
+                self._last_ir = detached_ir_snapshot(ir)
+                self._observe_topology(ir)
+                self._jax_ir_template = ir
+                self._jax_snapshot_replay_safe = can_defer_ir_snapshot(
+                    self._builder_program, ir
+                )
+                self._jax_snapshot_budget = ir_snapshot_input_budget(ir)
+            except (FlagQuantumError, TypeError):
+                raise
+            except Exception as error:
+                raise ExecutionError("module execution failed") from error
+            try:
+                return self._jax_value(circuit, selected, inputs)
+            except FlagQuantumError:
+                raise
+            except Exception as error:
+                raise ExecutionError("JAX module execution failed") from error
+        finally:
+            self._builder_bindings.clear()
+
+    def _forward_local_tensor(
+        self,
+        inputs: torch.Tensor | None,
+        parameters: torch.Tensor | Mapping[str, torch.Tensor] | None,
+    ) -> torch.Tensor:
+        """Execute the local training fast path without result metadata."""
+
+        selected_parameters = (
+            self._owned_parameters() if parameters is None else parameters
+        )
+        try:
+            circuit = self._build(inputs, selected_parameters)
+            if not isinstance(circuit, Circuit):
+                raise TypeError(
+                    "local fq.Module execution requires a Circuit builder result"
+                )
+            _remember_local_ir(self, circuit, selected_parameters, inputs)
+            qubits = self.policy.observable_qubits or (0,)
+            # A Hamiltonian energy is evaluated on the simulated object, so the
+            # Z readout only runs for the observables that are defined by it.
+            observed: Circuit | MPSState | TensorNetworkState
+            if self.policy.mode == "statevector":
+                circuit.state(refresh=True)
+                observed = circuit
+            elif self.policy.mode == "mps":
+                from ...simulation.mps.entrypoints import run_mps
+
+                observed = run_mps(
+                    circuit,
+                    max_bond=None,
+                    cutoff=0.0,
+                )
+            else:
+                from ...simulation.tensor_network.entrypoints import (
+                    run_tensor_network,
+                )
+
+                observed = run_tensor_network(circuit, dense_observable_qubits=12)
+
+            if self.policy.observable == "hamiltonian":
+                if self.hamiltonian is None:
+                    raise ValidationError(
+                        "hamiltonian observable requires a Hamiltonian"
+                    )
+                value = self.hamiltonian.expectation(observed)
+            else:
+                values = observed.expectation_z(qubits)
+                if self.policy.observable == "z_sum":
+                    value = values.sum(dim=-1)
+                else:
+                    value = values if len(qubits) > 1 else values[..., 0]
+
+            if self.policy.correctness_debug:
+                from ..checkpointing import assert_finite_training
+
+                assert_finite_training(self, value=value, include_gradients=False)
+            return value
+        finally:
+            self._builder_bindings.clear()
+
+    def get_extra_state(self) -> dict[str, Any]:
+        return {"policy": self.policy.to_dict()}
+
+    def set_extra_state(self, state: Mapping[str, Any]) -> None:
+        self.set_runtime_policy(RuntimePolicy.from_dict(state.get("policy", {})))
+
+    def save_checkpoint(
+        self,
+        path: str | os.PathLike[str],
+        *,
+        optimizer: torch.optim.Optimizer | None,
+        seed: int,
+        runtime_plan: object | None = None,
+        step: int = 0,
+    ) -> Path:
+        from ..checkpointing import SeedContract, save_training_checkpoint
+
+        if type(seed) is not int or seed < 0:
+            raise ValidationError("checkpoint seed must be a non-negative integer")
+        seed_contract = SeedContract(
+            seed=seed,
+            sampling_seed=(seed ^ 0x5A17) & 0x7FFF_FFFF,
+            trajectory_seed=(seed ^ 0x71EC70) & 0x7FFF_FFFF,
+            jax_key_words=(0, seed & 0xFFFF_FFFF),
+        )
+
+        return save_training_checkpoint(
+            Path(path),
+            module=self,
+            optimizer=optimizer,
+            seed=seed_contract,
+            precision=self.precision,
+            runtime_plan=runtime_plan,
+            step=step,
+        )
+
+    def load_checkpoint(
+        self,
+        path: str | os.PathLike[str],
+        *,
+        optimizer: torch.optim.Optimizer | None,
+    ) -> TrainingCheckpointRestore:
+        from ..checkpointing import load_training_checkpoint
+
+        return load_training_checkpoint(
+            Path(path),
+            module=self,
+            optimizer=optimizer,
+            precision=self.precision,
+        )
+
+
+__all__ = [
+    "ExecutionResult",
+    "Module",
+    "RuntimePolicy",
+    "normalize_execution_result",
+]
+
+_alias_module("flagquantum.runtime.module", __name__)

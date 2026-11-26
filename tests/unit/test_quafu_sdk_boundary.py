@@ -11,9 +11,10 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
-from flagquantum.deployment import CloudBackendProfile, create_deployment_package
+from flagquantum.compute.remote.packages import CloudBackendProfile
+from flagquantum.compute.remote.qpu import QuafuProvider, _quafu_sdk
 from flagquantum.errors import ExecutionError, ValidationError
-from flagquantum.remote.qpu import QuafuProvider, _quafu_sdk
+from flagquantum.runtime.planner.deployment import create_deployment_package
 
 pytestmark = pytest.mark.unit
 
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_quafu_sdk_is_optional_and_lazily_imported() -> None:
-    source = (ROOT / "flagquantum/remote/qpu/_quafu_sdk.py").read_text()
+    source = (ROOT / "flagquantum/compute/remote/qpu/_quafu_sdk.py").read_text()
     tree = ast.parse(source)
     imported = {
         alias.name

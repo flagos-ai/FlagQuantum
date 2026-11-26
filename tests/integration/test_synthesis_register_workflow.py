@@ -17,8 +17,8 @@ from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
-from flagquantum.services._synthesis_registers import synthesize_registers
-from flagquantum.services.synthesis import Program, SynthesisError
+from flagquantum.synth._program import synthesize_registers
+from flagquantum.synth._workflow import Program, SynthesisError
 from tests.integration.test_construction_register_execution import BASIS
 from tests.register_program_cases import tutorial_program
 from tests.synthesis_workflow_helpers import MEMORY, check_state, native

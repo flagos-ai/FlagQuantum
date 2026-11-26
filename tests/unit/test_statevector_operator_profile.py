@@ -141,7 +141,7 @@ def test_flagos_statevector_validation_uses_platform_provider(monkeypatch) -> No
         lambda **kwargs: numerical_report,
     )
     monkeypatch.setattr(
-        "flagquantum.compute.get_platform_runtime",
+        "flagquantum.compute.local.get_platform_runtime",
         lambda name: SimpleNamespace(
             identity=lambda: SimpleNamespace(provider="torch_fl")
         ),

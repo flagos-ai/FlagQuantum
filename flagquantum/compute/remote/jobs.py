@@ -1,0 +1,843 @@
+"""Detached remote jobs with explicit polling and credential-free receipts."""
+
+from __future__ import annotations
+
+import json
+import math
+import os
+import time
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Literal
+
+from flagquantum._import_compat import alias_module as _alias_module
+from flagquantum.errors import CapabilityError, ExecutionError
+from flagquantum.runtime.results import ExecutionResult
+
+from .compute import JiudingCredentials
+from .compute._native_job import NativeJiudingJobClient
+from .compute.jiuding import JiudingClient
+from .qpu.contracts import (
+    ProviderTaskHandle,
+    build_result_metadata,
+    validate_deployment_result,
+)
+from .qpu.quafu import QuafuProvider
+
+if TYPE_CHECKING:
+    from flagquantum.circuit import Circuit
+    from flagquantum.compute.remote.packages import DeploymentPackage
+    from flagquantum.core.ir import CircuitIR
+    from flagquantum.core.measurement import OutputRequest
+
+JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled", "unknown"]
+
+
+@dataclass(frozen=True)
+class _Receipt:
+    id: str
+    target: str
+    n_wires: int
+    compiler: str | None = None
+    target_qubits: tuple[int, ...] = ()
+    name: str | None = None
+    output_name: str | None = None
+    workspace: str | None = None
+    submission_identity: dict[str, str] = field(default_factory=dict)
+    native_receipt: dict[str, Any] | None = None
+    schema: str = "flagquantum.remote-job.v1"
+
+
+def _normalize(raw: str) -> JobStatus:
+    value = raw.lower()
+    if value in {"finished", "completed", "done", "succeed", "succeeded"}:
+        return "succeeded"
+    if value in {"failed", "error"}:
+        return "failed"
+    if value in {"cancelled", "canceled", "stopped"}:
+        return "cancelled"
+    if value in {
+        "queued",
+        "pending",
+        "scheduling",
+        "starting",
+        "transpiled",
+        "waiting",
+    }:
+        return "queued"
+    if value in {"running", "executing", "transpiling"}:
+        return "running"
+    return "unknown"
+
+
+class RemoteJob:
+    """One remotely submitted job; obtain through submit or restore_job.
+
+    No method resubmits a job. Status and result calls may wait for network I/O,
+    but only wait() polls for execution completion. raw_status holds the last
+    queried provider status, or None before the first query.
+    """
+
+    def __init__(
+        self,
+        receipt: _Receipt,
+        client: QuafuProvider | JiudingClient,
+        native_receipt: dict[str, Any] | None = None,
+    ) -> None:
+        self._receipt = receipt
+        self._client = client
+        self._native_receipt = native_receipt
+        self._raw_status: str | None = None
+
+    @property
+    def id(self) -> str:
+        return self._receipt.id
+
+    @property
+    def target(self) -> str:
+        return self._receipt.target
+
+    @property
+    def raw_status(self) -> str | None:
+        return self._raw_status
+
+    def _handle(self) -> ProviderTaskHandle:
+        return ProviderTaskHandle(
+            "quafu",
+            self.id,
+            self.target.partition(":")[2],
+            self._receipt.submission_identity,
+        )
+
+    def _jiuding_receipt(self) -> dict[str, Any]:
+        assert isinstance(self._client, JiudingClient)
+        if self._native_receipt is None:
+            self._native_receipt = self._client.restore_receipt(self.id)
+        return self._native_receipt
+
+    def status(self) -> JobStatus:
+        """Query once and normalize state; unrecognized states remain unknown."""
+        if isinstance(self._client, QuafuProvider):
+            self._raw_status = self._client.query_status(self._handle())
+            if (
+                self._receipt.native_receipt is not None
+                and self._raw_status.lower() == "partiallyfinished"
+            ):
+                return "failed"
+            return _normalize(self._raw_status)
+        jobs = self._client.status(self._jiuding_receipt())
+        # An experiment may have previous attempts: inspect the submitted job only.
+        states = [str(j.get("status", "")) for j in jobs if str(j.get("id")) == self.id]
+        self._raw_status = ", ".join(states) if states else "Missing"
+        return _normalize(states[0]) if len(states) == 1 else "unknown"
+
+    def result(self) -> ExecutionResult:
+        """Fetch a finished result once; raise ExecutionError when not successful."""
+        state = self.status()
+        if state != "succeeded":
+            raise ExecutionError(
+                f"Job {self.id} is {state} ({self.raw_status}); no result fetched"
+            )
+        if isinstance(self._client, QuafuProvider):
+            if self._receipt.native_receipt is not None:
+                from ._quafu_collection import (
+                    collection_result,
+                )
+
+                return collection_result(
+                    self._client,
+                    self._handle(),
+                    self._receipt.native_receipt,
+                    width=self._receipt.n_wires,
+                    output_name=self._receipt.output_name,
+                    target=self.target,
+                    name=self._receipt.name,
+                )
+            from .qpu.execution import counts_result
+
+            native = validate_deployment_result(
+                self._client.fetch_result(self._handle())
+            )
+            r = self._receipt
+            if any(len(str(key)) != r.n_wires for key in native.counts):
+                raise ExecutionError(
+                    "Returned count width differs from the submitted circuit"
+                )
+            return counts_result(
+                native,
+                n_qubits=r.n_wires,
+                output_name=r.output_name,
+                compiler=r.compiler,
+                target=r.target,
+                target_qubits=r.target_qubits,
+                name=r.name,
+            )
+        if isinstance(self._client, NativeJiudingJobClient):
+            return self._client.read_result(self._jiuding_receipt())
+
+        from .compute._managed_program import (
+            read_managed_result,
+        )
+        from .compute._program_submission import (
+            decode_job_result,
+        )
+
+        receipt = self._jiuding_receipt()
+        value = decode_job_result(read_managed_result(self._client, receipt), receipt)
+        if not isinstance(value, ExecutionResult):
+            raise ExecutionError("Jiuding program did not return an ExecutionResult")
+        return value
+
+    def wait(
+        self, timeout: float = 300.0, poll_interval: float = 3.0
+    ) -> ExecutionResult:
+        """Poll until completion; timeout leaves the remote job running.
+
+        The deadline bounds polling; an in-flight network request is additionally
+        bounded by its provider timeout. No background thread is started.
+        """
+        if not math.isfinite(timeout) or timeout < 0:
+            raise ValueError("timeout must be finite and nonnegative")
+        if not math.isfinite(poll_interval) or poll_interval <= 0:
+            raise ValueError("poll_interval must be finite and positive")
+        deadline = time.monotonic() + timeout
+        while True:
+            state = self.status()
+            if state == "succeeded":
+                try:
+                    return self.result()
+                except RuntimeError as exc:
+                    # Providers may report completion before results become readable.
+                    if "has no result yet" not in str(exc):
+                        raise
+            if state in {"failed", "cancelled"}:
+                raise ExecutionError(f"Job {self.id} is {state} ({self.raw_status})")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Job {self.id} is not complete; no cancellation or resubmission"
+                )
+            time.sleep(min(poll_interval, remaining))
+
+    def cancel(self) -> None:
+        """Request cancellation; query status to confirm the remote outcome."""
+        if isinstance(self._client, QuafuProvider):
+            self._client.cancel(self._handle())
+        else:
+            receipt = self._jiuding_receipt()
+            attempts = self._client.status(receipt)
+            if any(
+                str(attempt.get("id")) != self.id
+                and _normalize(str(attempt.get("status", "")))
+                not in {"succeeded", "failed", "cancelled"}
+                for attempt in attempts
+            ):
+                raise CapabilityError(
+                    "Jiuding experiment has other active attempts; cancel through the provider"
+                )
+            self._client.cancel(receipt)
+
+    def save(self, path: str | Path) -> None:
+        """Save a private JSON receipt without credentials; never overwrite a file."""
+        encoded = json.dumps(asdict(self._receipt), indent=2) + "\n"
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(encoded)
+
+
+def submit(
+    program: Circuit | CircuitIR | Sequence[Circuit | CircuitIR],
+    *,
+    target: str,
+    devices: int | None = None,
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    shots: int | None = None,
+    compiler: str | None = None,
+    target_qubits: Sequence[int] | None = None,
+    name: str | None = None,
+    image: str | None = None,
+    workspace: str | None = None,
+    project: str | None = None,
+    queue: str | None = None,
+    credentials: JiudingCredentials | None = None,
+    receipt: str | Path | None = None,
+) -> RemoteJob:
+    """Submit once and return without waiting for remote execution.
+
+    Quafu supports full-register counts. Jiuding uses native HTTP batch execution and
+    requires an image. Explicit Jiuding credentials remain in the client session;
+    otherwise the existing provider configuration is used.
+    Submission includes preparation and network I/O. Unsupported output requests
+    fail before a task is submitted. Save the returned job for later restoration.
+
+    A Quafu sequence submits one collection of same-width logical circuits.
+    Shots apply per circuit; result().counts preserves the input order.
+
+    With receipt=path, restore a matching prior request or submit once and save.
+    A changed request, damaged record or uncertain prior attempt raises instead
+    of resubmitting. Keep the receipt and its SDK-owned request journal together
+    in a personal persistent directory. Credentials are not stored.
+
+    Examples:
+        Requires provider credentials and quota; this explicitly submits real work::
+
+            job = fq.submit(circuits, target="quafu:Baihua", shots=1024,
+                            outputs=fq.counts(), receipt="experiment.receipt.json")
+            result = job.wait(timeout=300)
+    """
+    from flagquantum.core.ir import ensure_circuit_ir
+
+    if receipt is not None:
+        from ._job_receipts import (
+            request_digest,
+            resume_or_submit,
+        )
+
+        if isinstance(program, Sequence) and not isinstance(program, (str, bytes)):
+            program = tuple(ensure_circuit_ir(item) for item in program)
+        else:
+            program = ensure_circuit_ir(program)
+        if isinstance(target, str) and target.startswith("jiuding:"):
+            project = project or os.environ.get("JIUDING_PROJECT")
+            devices = 1 if devices is None else devices
+        identity = request_digest(
+            program,
+            outputs=outputs,
+            shots=shots,
+            settings={
+                "target": target,
+                "shots": shots,
+                "devices": devices,
+                "compiler": compiler,
+                "target_qubits": target_qubits,
+                "name": name,
+                "image": image,
+                "workspace": workspace,
+                "project": project,
+                "queue": queue,
+            },
+        )
+        return resume_or_submit(
+            receipt,
+            identity=identity,
+            target=target,
+            submitter=lambda: submit(
+                program,
+                target=target,
+                devices=devices,
+                outputs=outputs,
+                shots=shots,
+                compiler=compiler,
+                target_qubits=target_qubits,
+                name=name,
+                image=image,
+                workspace=workspace,
+                project=project,
+                queue=queue,
+                credentials=credentials,
+            ),
+            restore=lambda path: restore_job(path, credentials=credentials),
+        )
+
+    if isinstance(program, Sequence) and not isinstance(program, (str, bytes)):
+        if not program:
+            raise ValueError("program collection must not be empty")
+        if not isinstance(target, str) or not target.startswith("quafu:"):
+            raise CapabilityError("Circuit collections currently support Quafu only")
+        if compiler is not None or target_qubits is not None:
+            raise CapabilityError(
+                "Quafu collections require logical service compilation"
+            )
+        if any(
+            value is not None
+            for value in (
+                image,
+                workspace,
+                project,
+                queue,
+                credentials,
+                devices,
+            )
+        ):
+            raise TypeError("Jiuding options do not apply to Quafu collections")
+        circuits = tuple(ensure_circuit_ir(item) for item in program)
+        if len({item.n_wires for item in circuits}) != 1:
+            raise CapabilityError(
+                "Quafu collections currently require same-width circuits"
+            )
+        if not target.partition(":")[2].strip():
+            raise ValueError("target must name a Quafu backend")
+        from ._quafu_collection import submit_collection
+
+        prepared = [
+            _prepare_quafu_package(
+                item,
+                target=target,
+                outputs=outputs,
+                shots=shots,
+                compiler=None,
+                target_qubits=None,
+                name=name,
+                collection=True,
+            )
+            for item in circuits
+        ]
+        quafu_client = QuafuProvider(reverse_result_bits=True)
+        handle, context = submit_collection(
+            quafu_client, [item[0] for item in prepared]
+        )
+        return RemoteJob(
+            _Receipt(
+                handle.task_id,
+                target,
+                circuits[0].n_wires,
+                name=name,
+                output_name=prepared[0][2],
+                submission_identity=dict(handle.payload),
+                native_receipt=dict(context),
+            ),
+            quafu_client,
+        )
+    ir = ensure_circuit_ir(program)
+    provider, separator, backend = target.partition(":")
+    if not separator or not backend.strip() or provider not in {"quafu", "jiuding"}:
+        raise ValueError("target must name a quafu or jiuding backend")
+    if provider == "jiuding":
+        if compiler is not None or target_qubits is not None or name is not None:
+            raise TypeError(
+                "Jiuding submission does not accept compiler, target_qubits or name"
+            )
+        if not isinstance(image, str) or not image.strip():
+            raise ValueError("Jiuding batch submission requires image")
+        if workspace is not None:
+            raise TypeError("Native jobs use project and queue, not workspace")
+        selected_project = project or os.environ.get("JIUDING_PROJECT")
+        if not selected_project:
+            raise ValueError(
+                "Jiuding submission requires project='project-set.project'"
+            )
+        client = NativeJiudingJobClient(
+            project=selected_project, queue=queue, credentials=credentials
+        )
+        selected_devices = 1 if devices is None else devices
+        if type(selected_devices) is not int or selected_devices < 1:
+            raise ValueError("devices must be a positive integer")
+        native = client.submit_program(
+            ir,
+            target=target,
+            image=image,
+            outputs=outputs,
+            shots=shots,
+            devices=selected_devices,
+        )
+        return RemoteJob(
+            _Receipt(str(native["jobId"]), target, ir.n_wires, native_receipt=native),
+            client,
+            native,
+        )
+    if any(
+        value is not None
+        for value in (image, workspace, project, queue, credentials, devices)
+    ):
+        raise TypeError(
+            "image, project, queue, workspace, credentials and devices apply only to "
+            "Jiuding submission"
+        )
+    return _submit_quafu(
+        ir,
+        target=target,
+        outputs=outputs,
+        shots=shots,
+        compiler=compiler,
+        target_qubits=target_qubits,
+        name=name,
+    )
+
+
+def _prepare_quafu_package(
+    ir: CircuitIR,
+    *,
+    target: str,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+    shots: int | None,
+    compiler: str | None,
+    target_qubits: Sequence[int] | None,
+    name: str | None,
+    collection: bool = False,
+) -> tuple[DeploymentPackage, tuple[int, ...], str | None]:
+    from flagquantum.compute.remote.packages import CloudBackendProfile
+    from flagquantum.runtime.planner.deployment import create_deployment_package
+
+    from .qpu.execution import validate_quafu_output
+    from .qpu.quafu import (
+        _service_options,
+        _validate_quafu_shots,
+    )
+
+    output = validate_quafu_output(ir, outputs)
+    if output.kind != "counts":
+        raise CapabilityError(
+            "Detached Quafu jobs support full-register counts; use fq.run for expectations"
+        )
+    _validate_quafu_shots(target, shots)
+    assert isinstance(shots, int)
+    if name is not None and (not isinstance(name, str) or not name.strip()):
+        raise ValueError("name must be a non-empty string")
+    package_options: dict[str, Any] = {}
+    if compiler is None:
+        if ir.metadata.get("execution_target"):
+            raise ValueError("service compilation requires an unbound logical circuit")
+        options = _service_options(
+            ir.n_wires, () if target_qubits is None else target_qubits
+        )
+        package_options = {
+            "backend": CloudBackendProfile(
+                provider="quafu",
+                name=target.partition(":")[2].strip(),
+                n_qubits=ir.n_wires,
+            ),
+            "optimize": False,
+            "metadata": {
+                "provider_options": options,
+                "compilation_location": "service",
+                "service_compiler": "qiskit",
+            },
+        }
+        mapping = tuple(options["target_qubits"])
+    else:
+        from flagquantum._api import compile
+
+        ir = compile(ir, compiler=compiler, target=target, target_qubits=target_qubits)
+        mapping = tuple(
+            ir.metadata.get("execution_target", {}).get("target_qubits", ())
+        )
+    package = create_deployment_package(
+        ir,
+        shots=shots,
+        name=name.strip() if name else "flagquantum_job",
+        **package_options,
+    )
+    return package, mapping, output.name
+
+
+def _submit_quafu(
+    ir: CircuitIR,
+    *,
+    target: str,
+    outputs: OutputRequest | Sequence[OutputRequest] | None,
+    shots: int | None,
+    compiler: str | None,
+    target_qubits: Sequence[int] | None,
+    name: str | None,
+) -> RemoteJob:
+    package, mapping, output_name = _prepare_quafu_package(
+        ir,
+        target=target,
+        outputs=outputs,
+        shots=shots,
+        compiler=compiler,
+        target_qubits=target_qubits,
+        name=name,
+    )
+    client = QuafuProvider(reverse_result_bits=compiler is None)
+    handle = client.submit(package)
+    submission_identity = build_result_metadata(handle)
+    protocol = handle.payload.get("quafu_protocol")
+    if isinstance(protocol, str):
+        submission_identity["quafu_protocol"] = protocol
+    return RemoteJob(
+        _Receipt(
+            handle.task_id,
+            target,
+            package.n_qubits,
+            compiler,
+            mapping,
+            name,
+            output_name,
+            submission_identity=submission_identity,
+        ),
+        client,
+    )
+
+
+@dataclass(frozen=True)
+class TargetSubmission:
+    """One target's outcome of a multi-target submission.
+
+    ``job`` is set exactly when the target accepted the program, and
+    ``error_kind`` exactly when it did not, so a caller cannot reach a handle
+    that was never obtained. The error is recorded rather than raised because a
+    target that fails belongs to the caller of this target, not to the call.
+    """
+
+    target: str
+    job: RemoteJob | None = None
+    error_kind: str | None = None
+    error_message: str | None = None
+
+    @property
+    def submitted(self) -> bool:
+        return self.job is not None
+
+
+@dataclass(frozen=True)
+class MultiTargetSubmission:
+    """One program handed to several targets, each with its own result stream.
+
+    The premise is the one CUDA-Q's asynchronous multi-QPU option states: one
+    program, several execution targets, streams that progress independently.
+    What it is *not* is a distributed execution. No rank exists, no amplitude,
+    shot, or sample is partitioned, and nothing here combines the streams into
+    one estimate -- so the record carries the two fields the evidence rules
+    exist to protect, an explicit distribution semantics and a
+    ``scalability_claim_allowed`` of ``False`` with its blockers, and carries no
+    ``world_size``, rank ownership, or communication figures, because there is
+    no rank to attribute anything to.
+
+    ``submissions`` is in the order the caller named the targets, and
+    ``jobs`` holds only the targets that accepted the program. Each job is the
+    same object ``submit`` returns: an independent stream with its own
+    ``status``, ``wait``, ``result``, ``cancel``, and ``save``.
+    """
+
+    submissions: tuple[TargetSubmission, ...]
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        return tuple(item.target for item in self.submissions)
+
+    @property
+    def jobs(self) -> Mapping[str, RemoteJob]:
+        return MappingProxyType(
+            {item.target: item.job for item in self.submissions if item.job is not None}
+        )
+
+    @property
+    def failed_targets(self) -> tuple[str, ...]:
+        return tuple(item.target for item in self.submissions if item.job is None)
+
+    @property
+    def submitted_count(self) -> int:
+        return len(self.submissions) - len(self.failed_targets)
+
+    def evidence(self) -> dict[str, Any]:
+        """Describe what was submitted and what may not be claimed for it."""
+
+        return {
+            "targets": self.targets,
+            "submitted": self.submitted_count,
+            "failed_targets": self.failed_targets,
+            "distribution_semantics": "replicated_independent_targets",
+            "scalability_claim_allowed": False,
+            "blockers": (
+                "each target executes a full copy of the program",
+                "no state, shot, or sample is partitioned across targets",
+                "the per-target results are independent streams and are not combined",
+            ),
+        }
+
+
+def submit_to_targets(
+    program: Circuit | CircuitIR,
+    *,
+    targets: Sequence[str],
+    outputs: OutputRequest | Sequence[OutputRequest] | None = None,
+    shots: int | None = None,
+    compiler: str | None = None,
+    target_qubits: Sequence[int] | None = None,
+    name: str | None = None,
+    image: str | None = None,
+    workspace: str | None = None,
+    project: str | None = None,
+    queue: str | None = None,
+    credentials: JiudingCredentials | None = None,
+) -> MultiTargetSubmission:
+    """Submit one program to several targets and return without waiting.
+
+    Submissions run concurrently, so this returns in about the time one target
+    takes rather than the sum of them, and the report is ordered as the caller
+    named the targets rather than as the network answered. Every target is
+    contacted exactly once: a target whose submission raises is recorded with
+    its error and is never retried, because an ambiguous submission may already
+    have reached the provider.
+
+    The program is materialized to an IR once, before any target is contacted, so
+    a program that cannot be read fails before a paid job exists. The remaining
+    options are shared, so they must suit every target named: the Quafu-only and
+    Jiuding-only options cannot be combined, and one target's refusal is
+    recorded against that target rather than aborting the rest. A ``name`` is
+    refused for more than one target, because a single job name cannot name
+    several submissions.
+
+    This is fan-out, not one partitioned workload. See
+    :class:`MultiTargetSubmission` for what may not be claimed about it, and
+    reach for it by module path: it is not re-exported from
+    ``flagquantum.remote``.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from flagquantum.core.ir import ensure_circuit_ir
+
+    if isinstance(targets, str) or not isinstance(targets, Sequence):
+        raise ValueError("targets must be a non-empty sequence of target strings")
+    named = tuple(targets)
+    if not named or any(not isinstance(target, str) for target in named):
+        raise ValueError("targets must be a non-empty sequence of target strings")
+    repeated = sorted({target for target in named if named.count(target) > 1})
+    if repeated:
+        raise ValueError(f"targets must be distinct; repeated: {', '.join(repeated)}")
+    if name is not None and len(named) > 1:
+        raise ValueError("name applies to one submission, not to several targets")
+    ir = ensure_circuit_ir(program)
+
+    def one(target: str) -> TargetSubmission:
+        try:
+            job = submit(
+                ir,
+                target=target,
+                outputs=outputs,
+                shots=shots,
+                compiler=compiler,
+                target_qubits=target_qubits,
+                name=name,
+                image=image,
+                workspace=workspace,
+                project=project,
+                queue=queue,
+                credentials=credentials,
+            )
+        except Exception as exc:
+            return TargetSubmission(target, None, type(exc).__name__, str(exc))
+        return TargetSubmission(target, job)
+
+    with ThreadPoolExecutor() as pool:
+        futures = [pool.submit(one, target) for target in named]
+        submissions = tuple(future.result() for future in futures)
+    return MultiTargetSubmission(submissions)
+
+
+def restore_job(
+    path: str | Path, *, credentials: JiudingCredentials | None = None
+) -> RemoteJob:
+    """Reconnect using a receipt and optional in-memory Jiuding credentials."""
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or raw.get("schema") != "flagquantum.remote-job.v1":
+        raise ValueError("Unsupported remote job receipt schema")
+    try:
+        receipt = _Receipt(**raw)
+    except TypeError as exc:
+        raise ValueError("Invalid remote job receipt fields") from exc
+    if not isinstance(receipt.id, str) or not receipt.id.strip():
+        raise ValueError("Receipt must contain a job ID")
+    if type(receipt.n_wires) is not int or receipt.n_wires <= 0:
+        raise ValueError("Receipt must contain a positive circuit width")
+    if not isinstance(receipt.target, str):
+        raise ValueError("Invalid receipt target")
+    for value in (
+        receipt.compiler,
+        receipt.name,
+        receipt.output_name,
+        receipt.workspace,
+    ):
+        if value is not None and not isinstance(value, str):
+            raise ValueError("Invalid receipt text field")
+    from .qpu.quafu import _service_options
+
+    _service_options(receipt.n_wires, receipt.target_qubits)
+    provider, separator, backend = receipt.target.partition(":")
+    if not separator or not backend.strip():
+        raise ValueError("Invalid receipt target")
+    if provider == "quafu":
+        if credentials is not None:
+            raise TypeError("credentials apply only to Jiuding jobs")
+        if not isinstance(receipt.submission_identity, dict) or any(
+            not isinstance(k, str) or not isinstance(v, str)
+            for k, v in receipt.submission_identity.items()
+        ):
+            raise ValueError("Invalid submission identity")
+        build_result_metadata(
+            ProviderTaskHandle(
+                "quafu", receipt.id, backend, receipt.submission_identity
+            )
+        )
+        if (receipt.native_receipt is not None) != (
+            "collection_sha256" in receipt.submission_identity
+        ):
+            raise ValueError(
+                "Quafu collection receipt context is missing or unexpected"
+            )
+        if receipt.native_receipt is not None:
+            from ._quafu_collection import validate_context
+
+            if receipt.compiler is not None or receipt.target_qubits:
+                raise ValueError(
+                    "Quafu collection receipt must use logical compilation"
+                )
+            validate_context(
+                receipt.native_receipt,
+                width=receipt.n_wires,
+                identity=receipt.submission_identity,
+            )
+        return RemoteJob(
+            receipt, QuafuProvider(reverse_result_bits=receipt.compiler is None)
+        )
+    if provider == "jiuding":
+        native = receipt.native_receipt
+        if native is not None:
+            if (
+                not isinstance(native, dict)
+                or native.get("jobId") != receipt.id
+                or native.get("artifact_transport") != "job_logs"
+                or not isinstance(native.get("project"), str)
+                or not isinstance(native.get("queue"), str)
+            ):
+                raise ValueError("Invalid native job receipt")
+            return RemoteJob(
+                receipt,
+                NativeJiudingJobClient(
+                    project=native["project"],
+                    queue=native["queue"],
+                    credentials=credentials,
+                ),
+                native,
+            )
+        return RemoteJob(
+            receipt,
+            JiudingClient(
+                workspace=receipt.workspace,
+                credentials=credentials,
+            ),
+        )
+    raise ValueError("Unsupported receipt provider")
+
+
+__all__ = (
+    "JobStatus",
+    "MultiTargetSubmission",
+    "RemoteJob",
+    "TargetSubmission",
+    "restore_job",
+    "submit",
+    "submit_to_targets",
+)
+
+
+# Preserve historical import identities for pickles and public introspection.
+for _identity_export in (
+    _Receipt,
+    _normalize,
+    RemoteJob,
+    submit,
+    _prepare_quafu_package,
+    _submit_quafu,
+    TargetSubmission,
+    MultiTargetSubmission,
+    submit_to_targets,
+    restore_job,
+):
+    _identity_export.__module__ = "flagquantum.remote.jobs"
+del _identity_export
+
+_alias_module("flagquantum.remote.jobs", __name__)

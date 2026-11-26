@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.observables import I, Z
+from flagquantum.core.operators.observable import I, Z
 from flagquantum.synth import (
     RX,
     Output,

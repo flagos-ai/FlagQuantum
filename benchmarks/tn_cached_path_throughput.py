@@ -33,7 +33,7 @@ from typing import Any
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.simulation.tensor_network.entrypoints import run_tensor_network
 from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_hamiltonian_expectation,

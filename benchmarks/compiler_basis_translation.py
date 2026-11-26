@@ -88,7 +88,7 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, get_operator_schema
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, get_operator_schema
 from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
 from flagquantum.simulation.statevector.local import run_local_statevector
 

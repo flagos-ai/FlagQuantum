@@ -1,44 +1,16 @@
-#!/usr/bin/env python3
-"""Generate the executable operator and backend capability manifest."""
+"""Compatibility command; implementation lives in its owning tools domain."""
 
-from __future__ import annotations
+import runpy as _runpy
+import sys as _sys
+from importlib import import_module as _import_module
+from pathlib import Path as _Path
 
-import argparse
-import json
-from pathlib import Path
-
-from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
-from flagquantum.core.operator_schema import operator_manifest
-
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = ROOT / "docs" / "operator_manifest.json"
-
-
-def build_manifest() -> dict[str, object]:
-    return {
-        "schema_version": "flagquantum_operator_manifest_v1",
-        "operators": operator_manifest(),
-        "lowerings": DEFAULT_LOWERING_REGISTRY.manifest()["backends"],
-    }
-
-
-def render_manifest() -> str:
-    return json.dumps(build_manifest(), indent=2, sort_keys=True) + "\n"
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--check", action="store_true")
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    args = parser.parse_args()
-    rendered = render_manifest()
-    if args.check:
-        if not args.output.exists() or args.output.read_text() != rendered:
-            raise SystemExit(f"operator manifest is stale: run {Path(__file__).name}")
-        return 0
-    args.output.write_text(rendered)
-    return 0
-
-
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _runpy.run_module("tools.docs.operator_manifest", run_name="__main__")
+else:
+    _implementation = _import_module("tools.docs.operator_manifest")
+    _sys.modules[__name__] = _implementation
+
+    def __getattr__(name):
+        return getattr(_implementation, name)

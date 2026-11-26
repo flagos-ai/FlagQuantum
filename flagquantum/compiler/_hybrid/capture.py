@@ -1,14 +1,7 @@
-"""Retained entry points for private hybrid Python capture."""
+"""Historical import facade for the relocated implementation."""
 
-from .frontend.diagnostics import (
-    CaptureDiagnostic as CaptureDiagnostic,
-)
-from .frontend.diagnostics import (
-    HybridCaptureError as HybridCaptureError,
-)
-from .frontend.source import (
-    capture_function as capture_function,
-)
-from .frontend.source import (
-    capture_source as capture_source,
-)
+import sys as _sys
+from importlib import import_module as _import_module
+
+_implementation = _import_module("flagquantum.compiler.frontends._structured.capture")
+_sys.modules[__name__] = _implementation

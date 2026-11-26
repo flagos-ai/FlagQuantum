@@ -35,12 +35,12 @@ import argparse
 import dataclasses
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
-from flagquantum.algorithms.core import transverse_field_ising
-from flagquantum.algorithms.trotter import trotter_circuit
+from flagquantum.algorithms.many_body.spin import (transverse_field_ising)
+from flagquantum.algorithms.many_body.trotter import trotter_circuit
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.core.ir import MeasurementNode, ensure_circuit_ir
 

@@ -16,7 +16,7 @@ from flagquantum.algorithms.fermion.density import (
 )
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import annihilate, create, number
+from flagquantum.core.operators.observable import annihilate, create, number
 
 
 def build_circuit(angle: torch.Tensor, *, encoding: Encoding) -> fq.Circuit:

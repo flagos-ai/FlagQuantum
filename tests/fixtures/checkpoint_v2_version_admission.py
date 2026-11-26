@@ -7,7 +7,7 @@ restore mutation; this fixture does not implement a historical state loader.
 from collections.abc import Mapping
 from typing import Any
 
-from flagquantum.runtime.training_state import TrainingStateError
+from flagquantum.runtime.checkpointing import TrainingStateError
 
 _LEGACY_TRAINING_STATE_VERSION = "flagquantum.training_state.v1"
 TRAINING_STATE_VERSION = "flagquantum.training_state.v2"

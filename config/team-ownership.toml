@@ -1,0 +1,210 @@
+schema = "flagquantum.team_ownership"
+version = "1.0"
+
+[policy]
+integration_team = "integration"
+protected_paths = [
+    "AGENTS.md",
+    "config/**",
+    "contracts/**",
+    ".github/**",
+    "pyproject.toml",
+    "flagquantum/__init__.py",
+    "flagquantum/_api.py",
+    "flagquantum/_import_compat.py",
+    # PEP 561 package marker: changing its presence changes distribution typing
+    # semantics, so it is governed with the other release-level package files.
+    "flagquantum/py.typed",
+    "flagquantum/core/_artifacts.py",
+    # FlagQuantum IR is the single source of truth. It was a flat module until
+    # the Phase 4 activation split it into a package whose `__init__.py` is the
+    # former module plus one deepened relative import. The glob below matches
+    # every file of that package, which the earlier entry could not express: a
+    # pattern ending in `/**` does not match a same-named module. The two
+    # spellings are not interchangeable in either direction, measured under the
+    # checker's `fnmatch.fnmatchcase` -- the flat `flagquantum/core/ir.py`
+    # matched the module and not the directory, and this glob matches the
+    # directory and not a sibling module. `tools/check_team_scope.py --validate`
+    # rejects a protected entry that matches no file, so the entry and the split
+    # land together.
+    "flagquantum/core/ir/**",
+    "docs/architecture/LONG_HORIZON_ARCHITECTURE.md",
+    "docs/architecture/decisions/**",
+    # `tools/**` implements the machine-checked rules: architecture boundaries,
+    # dependency policy, capability maturity, public API snapshots, interop
+    # contracts, evidence provenance, and the release gates. Changing a checker
+    # changes what the repository enforces, so it belongs to Integration rather
+    # than to the team whose code the checker happens to inspect. This is
+    # deliberately coarse: narrowing a rule later is safe, widening a rule that
+    # was already bypassed is not.
+    "tools/**",
+    # Release, deployment, and repository-level configuration. No development
+    # team owns these; a change here is coordinated by Integration.
+    "ci/**",
+    "docker/**",
+    ".coveragerc",
+    ".dockerignore",
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    ".pre-commit-config.yaml",
+    "ARCHITECTURE.md",
+    "CITATION.cff",
+    # Project-level statements about who may contribute, how decisions are made, and
+    # where a vulnerability is reported. They are the same class as `CONTRIBUTING.md`:
+    # changing one changes the terms the project offers its contributors, so they are
+    # coordinated by Integration rather than owned by a development team.
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
+    "LICENSE",
+    "MANIFEST.in",
+    "README.md",
+    "SECURITY.md",
+    "capability-maturity.toml",
+    "compose.dev.yaml",
+    "conftest.py",
+    "dependency-policy.toml",
+    # The declaration table `tools/check_evidence_revisions.py` reads. It records
+    # which revisions of the checked-in evidence are obtainable and which are not,
+    # so an edit to it changes what the repository discloses about its own
+    # evidence rather than what one team implements -- the same class as
+    # `capability-maturity.toml` above.
+    "evidence-revision-origins.toml",
+    "pytest.ini",
+    "setup.py",
+    # Attribution and source provenance for the native fermionic migration.
+    "third_party/openfermion/**",
+    # Released version metadata, in the same class as `pyproject.toml`: a change
+    # is a release decision rather than a development-team change.
+    "flagquantum/version.py",
+]
+shared_paths = [
+    "tests/**",
+    "benchmarks/**",
+    "examples/**",
+    "docs/**",
+    # Published or generated content rather than a domain implementation:
+    # figures, sealed evidence, and workshop material. Any team may add to them.
+    "assets/**",
+    "artifacts/**",
+]
+
+# `owns` lists describe this repository and nothing else. A pattern that matches no
+# tracked path here is a rule that can never fire, so it is removed rather than kept
+# as a reservation. The five removed patterns (`flagquantum/ops`, `flagquantum/_compiler`,
+# `flagquantum/compilation`, `flagquantum/devices`, `flagquantum/encoding`) named
+# directories of the v0.2.0 migration that never landed in this tree, as did the three
+# documentation paths that left the `docs` team with nothing to own.
+# `tests/unit/test_team_scope_policy.py` asserts both this and the same property for
+# `protected_paths`.
+#
+# Every `branch` and `worktree` value below is a reserved name from that migration,
+# not a live instruction: no branch with the `refactor/` prefix exists in this
+# repository, so do not cut one for ordinary work. A `branch` value is read only by the
+# uniqueness check in `tools/check_team_scope.py`, and the same layout is documented as
+# optional in `AGENTS.md` and `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
+[teams.integration]
+branch = "refactor/flagquantum-vnext-architecture"
+worktree = "FlagQuantum-vNext"
+owns = ["**"]
+
+[teams.core]
+branch = "refactor/vnext-team-core"
+worktree = "FlagQuantum-vNext-core"
+owns = [
+    "flagquantum/core/**",
+    "flagquantum/circuit.py",
+    "flagquantum/experimental/**",
+    "flagquantum/noise/**",
+    "flagquantum/observables/**",
+    "flagquantum/qec/**",
+    # Top-level package modules owned by core: the backend-neutral exception
+    # vocabulary, the stable operator face over `core/operator_schema.py`, and
+    # the parameter-shift utilities that operate on `core/ir/` programs.
+    "flagquantum/errors.py",
+    "flagquantum/gradients.py",
+    "flagquantum/operators/**",
+]
+
+[teams.compiler]
+branch = "refactor/vnext-team-compiler"
+worktree = "FlagQuantum-vNext-compiler"
+owns = [
+    "flagquantum/compiler/**",
+    "flagquantum/drawer/**",
+]
+
+[teams.runtime]
+branch = "refactor/vnext-team-runtime"
+worktree = "FlagQuantum-vNext-runtime"
+owns = [
+    "flagquantum/runtime/**",
+    # Top-level faces over runtime types. A change to either is normally driven
+    # by the runtime type it re-exports, so the runtime team owns the file.
+    "flagquantum/dynamic.py",
+    "flagquantum/training.py",
+]
+
+[teams.simulation]
+branch = "refactor/vnext-team-simulation"
+worktree = "FlagQuantum-vNext-simulation"
+owns = [
+    "flagquantum/simulation/**",
+    "flagquantum/kernels/**",
+    "flagquantum/lindblad/**",
+    "flagquantum/runtime/executors/**",
+]
+
+[teams.compute]
+branch = "refactor/vnext-team-platform-providers"
+worktree = "FlagQuantum-vNext-platform"
+owns = [
+    "flagquantum/compute/**",
+    "flagquantum/twin/**",
+]
+
+[teams.remote]
+branch = "refactor/vnext-team-execution-providers"
+worktree = "FlagQuantum-vNext-execution"
+owns = [
+    "flagquantum/compute/remote/**",
+    "flagquantum/compute/realtime/**",
+    "flagquantum/realtime/**",
+    "flagquantum/remote/**",
+    "flagquantum/deployment/**",
+    "flagquantum/runtime/target_execution.py",
+]
+
+[teams.ecosystem]
+branch = "refactor/vnext-team-ecosystem"
+worktree = "FlagQuantum-vNext-ecosystem"
+owns = [
+    "flagquantum/ecosystem/**",
+]
+
+[teams.services]
+branch = "refactor/vnext-team-agent-services"
+worktree = "FlagQuantum-vNext-agent"
+owns = [
+    "flagquantum/services/**",
+    "flagquantum/synth/**",
+]
+
+[teams.algorithms]
+branch = "refactor/vnext-team-algorithms"
+worktree = "FlagQuantum-vNext-algorithms"
+owns = [
+    "flagquantum/algorithms/**",
+    # `models.py` composes `algorithms.Hamiltonian` into the small trainable
+    # models used by product acceptance and tutorials.
+    "flagquantum/models.py",
+]
+
+[teams.verification]
+branch = "refactor/vnext-team-verification"
+worktree = "FlagQuantum-vNext-verification"
+owns = [
+    "flagquantum/benchmarking/**",
+    "flagquantum/testing/**",
+]

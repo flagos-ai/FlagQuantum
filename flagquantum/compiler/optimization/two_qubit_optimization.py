@@ -84,12 +84,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 
-from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import (
+from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,
 )
+
+from ...core.ir import CircuitIR, Instruction
 
 #: A 4x4 matrix of Python complex numbers, rows first.
 Matrix = list[list[complex]]

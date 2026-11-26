@@ -17,7 +17,7 @@ import flagquantum as fq
 import flagquantum.lindblad as fql
 from examples.rydberg_native_dynamics import native_pair_plan
 from flagquantum.experimental.simulation import RydbergProgram
-from flagquantum.simulation.lindblad import EvolutionValidationError
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 

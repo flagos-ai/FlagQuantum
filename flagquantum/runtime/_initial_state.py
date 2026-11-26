@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ..core.ir import CircuitIR, MeasurementNode
-from ..core.operator_schema import get_operator_schema
 from ..errors import CapabilityError, ValidationError
 from .dynamic._conditions import instruction_is_dynamic
 from .options import ExecutionOptions

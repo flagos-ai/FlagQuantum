@@ -152,7 +152,7 @@ Remaining boundary debt:
    this round does not change that contract.
 2. Statevector, MPS, TN, training-state, and operator-backend code directly calls
    `torch.cuda` stream/event/memory/RNG/synchronization APIs. Per-file ceilings in
-   `architecture.toml` register the debt; unified PlatformRuntime calls have not
+   `config/architecture.toml` register the debt; unified PlatformRuntime calls have not
    replaced it.
 3. Simulation uses `Tensor.is_cuda` and Triton CUDA restrictions for kernel
    selection. This leaks no CUDA Python objects but embeds vendor classification

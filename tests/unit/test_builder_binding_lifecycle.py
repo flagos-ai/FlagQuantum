@@ -7,9 +7,9 @@ import torch
 
 from flagquantum.circuit import Circuit
 from flagquantum.runtime.builder_compilation import BuilderBindings
-from flagquantum.runtime.module import Module
 from flagquantum.runtime.options import ExecutionOptions
 from flagquantum.runtime.policy import RuntimePolicy
+from flagquantum.runtime.training.module import Module
 
 pytestmark = pytest.mark.unit
 

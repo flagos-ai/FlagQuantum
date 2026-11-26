@@ -44,8 +44,8 @@ from .planner import build_noisy_execution_plan, select_execution_mode
 from .planner import plan_advanced as build_plan
 
 if TYPE_CHECKING:
-    from ..noise import NoiseModel
-    from .result import ExecutionResult
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.runtime.results import ExecutionResult
 
 
 def _peek_policy_from_options(options: dict[str, Any]) -> DistributedBackendPolicy:
@@ -124,7 +124,8 @@ def _validate_flagos_statevector(
                 "only for local statevector execution through flagos"
             )
         return None
-    from ..compute import get_platform_runtime
+    from flagquantum.compute.local import get_platform_runtime
+
     from .numerical_validation import certify_statevector_local_p0
     from .operator_probes import preflight_statevector_local_p0
 
@@ -365,7 +366,9 @@ def run_native(
     with ExitStack() as contexts:
         contexts.enter_context(runtime_config(selected_config))
         if operator_backend_name is not None or os.environ.get("FQ_OPERATOR_BACKEND"):
-            from ..compute.flaggems import operator_backend as operator_backend_context
+            from flagquantum.compute.local.flaggems import (
+                operator_backend as operator_backend_context,
+            )
 
             contexts.enter_context(
                 operator_backend_context(
@@ -1130,8 +1133,9 @@ def _normalize_execution_output(
     noise_model: NoiseModel | None = None,
     stamp_local_engine: bool = True,
 ) -> ExecutionResult:
+    from flagquantum.runtime.results import normalize_execution_result
+
     from .measurements import execute_measurements
-    from .result import normalize_execution_result
 
     result = normalize_execution_result(output, mode=mode, plan=execution_plan)
     if mode == "stabilizer":
@@ -1154,7 +1158,7 @@ def _normalize_execution_output(
         and execution_plan.world_size == 1
         and isinstance(result.state, torch.Tensor)
     ):
-        from ..compute import get_platform_runtime
+        from flagquantum.compute.local import get_platform_runtime
 
         actual_device = result.state.device
         platform = get_platform_runtime(actual_device.type)

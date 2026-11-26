@@ -8,7 +8,7 @@ import json
 from time import perf_counter
 
 import flagquantum as fq
-from flagquantum.algorithms.arithmetic import adder_circuit
+from flagquantum.algorithms.primitives.arithmetic import adder_circuit
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.scheduling.selection import select_arithmetic

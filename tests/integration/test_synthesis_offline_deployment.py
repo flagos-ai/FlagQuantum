@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from examples.synthesis_offline_deployment import build_artifacts
 from flagquantum.compiler import CouplingMap
-from flagquantum.deployment import validate_deployment_package
+from flagquantum.compute.remote.packages import validate_deployment_package
 
 pytestmark = pytest.mark.integration
 

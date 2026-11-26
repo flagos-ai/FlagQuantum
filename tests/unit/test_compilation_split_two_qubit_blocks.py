@@ -31,7 +31,7 @@ from flagquantum.compiler.optimization.two_qubit_optimization import (
 )
 from flagquantum.compiler.pipeline import optimize
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit

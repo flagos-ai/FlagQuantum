@@ -9,7 +9,8 @@ from typing import Any
 
 import torch
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ....core.numerics import (
     AccuracyMode,

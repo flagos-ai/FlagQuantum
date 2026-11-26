@@ -40,7 +40,7 @@ already covers QIR Base/Adaptive, timing, scheduling, gradient and distributed
 lowering, and evidence-based native evaluation. ADR `IR-001` through `IR-006` are
 approved. The design also already fixes where the internal levels live:
 § 19.13 places them under `flagquantum/_compiler/{ir,analyses,passes,pipelines,
-targets,emitters,diagnostics}/`, which `team-ownership.toml` already assigns to
+targets,emitters,diagnostics}/`, which `config/team-ownership.toml` already assigns to
 the compiler team, and § 19.13 marks `ProgramModule`, `QuantumModule`, and
 `TargetModule` as internal with no planned root exports. The parity program
 therefore does not need a new architecture; it needs the existing one scheduled,

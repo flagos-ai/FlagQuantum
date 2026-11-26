@@ -29,8 +29,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import readout_mitigation as module
-from flagquantum.algorithms.readout_mitigation import (
+from flagquantum.algorithms.error_mitigation import readout as module
+from flagquantum.algorithms.error_mitigation.readout import (
     MAX_CORRELATED_BLOCK_QUBITS,
     NORMALIZATION_TOLERANCE,
     READOUT_MITIGATION_ASSUMPTIONS,
@@ -44,13 +44,13 @@ from flagquantum.algorithms.readout_mitigation import (
     run_readout_mitigation,
     run_readout_mitigation_counts,
 )
-from flagquantum.errors import CapabilityError
-from flagquantum.noise import (
+from flagquantum.core.noise import (
     CorrelatedReadoutError,
     NoiseModel,
     ReadoutError,
     ReadoutRule,
 )
+from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
 

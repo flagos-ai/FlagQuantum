@@ -102,7 +102,7 @@ def test_jax_initial_statevector_shard_is_the_zero_state():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_initial_statevector_shard,
     )
 
@@ -122,7 +122,7 @@ def test_jax_local_positions_for_gate_input_matches_reference():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_local_positions_for_gate_input,
     )
 
@@ -153,7 +153,7 @@ def test_jax_gate_basis_in_for_delta_and_local_input_matches_reference():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_gate_basis_in_for_delta_and_local_input,
     )
 
@@ -195,7 +195,7 @@ def test_jax_accumulate_all_to_all_delta_reproduces_a_dense_two_qubit_gate():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
         jax_basis_indices_for_qubits,
         jax_rank_mask_for_touched_delta,
@@ -279,7 +279,7 @@ def test_jax_accumulate_all_to_all_delta_accepts_a_batched_matrix():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_accumulate_all_to_all_statevector_delta,
         jax_basis_indices_for_qubits,
     )
@@ -336,7 +336,7 @@ def test_jax_apply_local_statevector_gate_matches_a_dense_application():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_local_statevector_gate,
     )
 
@@ -374,7 +374,7 @@ def test_jax_apply_local_statevector_gate_diagonal_matches_dense():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_local_statevector_gate,
     )
 
@@ -409,7 +409,7 @@ def test_jax_apply_local_statevector_gate_diagonal_matches_dense():
 def test_jax_apply_local_statevector_gate_rejects_a_sharded_touched_wire():
     import jax.numpy as jnp
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_apply_local_statevector_gate,
     )
 
@@ -430,7 +430,7 @@ def test_jax_combine_pair_exchanged_statevector_matches_a_dense_application():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_combine_pair_exchanged_statevector,
     )
 
@@ -477,7 +477,7 @@ def test_jax_sharded_statevector_loss_sums_over_shards(observable: str):
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_loss,
     )
 
@@ -517,7 +517,7 @@ def test_jax_sharded_statevector_loss_defaults_to_every_wire():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_loss,
     )
 
@@ -536,7 +536,7 @@ def test_jax_sharded_statevector_loss_defaults_to_every_wire():
 def test_jax_sharded_statevector_loss_rejects_unsupported_inputs():
     import jax.numpy as jnp
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_loss,
     )
 
@@ -564,7 +564,7 @@ def test_jax_sharded_statevector_loss_rejects_unsupported_inputs():
 def test_jax_sharded_statevector_rank_loss_rejects_unsupported_observable():
     import jax.numpy as jnp
 
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_sharded_statevector_rank_loss,
     )
 

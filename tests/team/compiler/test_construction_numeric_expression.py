@@ -14,7 +14,10 @@ from flagquantum.compiler._construction.codegen.arithmetic import schedule_arith
 from flagquantum.compiler._construction.semantics.numeric_expression import (
     WordExpression,
 )
-from flagquantum.compiler._hybrid.model import HybridProgram, SourceLocation
+from flagquantum.compiler.frontends._structured.model import (
+    HybridProgram,
+    SourceLocation,
+)
 from flagquantum.ecosystem._qmod.adapter_model import _Expression
 from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
 

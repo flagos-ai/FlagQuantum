@@ -19,7 +19,7 @@ from examples.terminal_instrument_reference import fock_reference
 from flagquantum.core.ir import _decode_value
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime.measurements import _DensityMatrixTarget
-from flagquantum.runtime.result import MeasurementResult
+from flagquantum.runtime.results import MeasurementResult
 
 pytestmark = pytest.mark.unit
 Instrument = dict[str, tuple[torch.Tensor, ...]]

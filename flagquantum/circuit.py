@@ -14,6 +14,14 @@ from typing import TYPE_CHECKING, Any, Protocol, TypedDict
 
 import torch
 
+from flagquantum.core.operators.schema import (
+    MAX_POWER_REPEATS,
+    OPERATOR_ALIASES,
+    OPERATOR_SCHEMAS,
+    canonical_opcode,
+    get_operator_schema,
+)
+
 from .core._composition import (
     controlled_instruction,
     copy_instruction,
@@ -22,13 +30,6 @@ from .core._composition import (
 )
 from .core._gate_methods import install_gate_method
 from .core.ir import CircuitIR, Instruction
-from .core.operator_schema import (
-    MAX_POWER_REPEATS,
-    OPERATOR_ALIASES,
-    OPERATOR_SCHEMAS,
-    canonical_opcode,
-    get_operator_schema,
-)
 from .core.parameters import (
     bind_parameter_value,
     parameter_names_in_value,
@@ -38,9 +39,11 @@ from .core.runtime_config import RuntimeConfig, get_runtime_config
 from .errors import ValidationError
 
 if TYPE_CHECKING:
+    from flagquantum.core.measurement import OutputRequest
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.runtime.results import ExecutionResult
+
     from .core._gate_typing import _BuiltinGateMethods
-    from .noise import NoiseModel
-    from .observables import OutputRequest
     from .qec.dem import DetectorErrorModel
     from .qec.execution.context import MeasurementMap
     from .qec.execution.detector_sampling import CompiledDetectorSampler
@@ -51,7 +54,6 @@ if TYPE_CHECKING:
     from .runtime.execution_plan import CircuitAnalysis, ExecutionPlan
     from .runtime.options import ExecutionOptions
     from .runtime.planner.models import RuntimeSelectionPlan
-    from .runtime.result import ExecutionResult
     from .simulation.stabilizer.measurement_sampler import CompiledMeasurementSampler
 else:
     _BuiltinGateMethods = object
@@ -390,7 +392,7 @@ class Circuit(_BuiltinGateMethods):
                     f"Channel {opcode!r} derives its Kraus operators from its "
                     "declared parameters; pass parameters instead of a matrix."
                 )
-            from .noise.channels import channel_from_parameters
+            from flagquantum.core.operators.channels import channel_from_parameters
 
             channel = channel_from_parameters(opcode, merged_params)
             matrix = channel.kraus
@@ -939,7 +941,7 @@ class Circuit(_BuiltinGateMethods):
     probability = probabilities
 
     def density_matrix(self) -> torch.Tensor:
-        from .simulation.density_matrix import density_matrix
+        from flagquantum.simulation.density_matrix import density_matrix
 
         return density_matrix(self)
 

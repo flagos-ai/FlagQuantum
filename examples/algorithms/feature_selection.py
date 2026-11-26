@@ -31,7 +31,7 @@ import itertools
 
 import torch
 
-from flagquantum.algorithms.feature_selection import (
+from flagquantum.algorithms.quantum_ml.feature_selection import (
     FeatureSelectionProblem,
     feature_selection_qubo,
 )
@@ -64,8 +64,12 @@ def main() -> None:
     print("=" * 72)
     print(f"  {'task':<18}: build one selection objective and evaluate it at an")
     print(f"  {'':<18}  assignment")
-    print(f"  {'execution':<18}: none -- the unit builds an objective and runs no circuit")
-    print(f"  {'premise':<18}: the unit solves nothing, and the repository has no annealer")
+    print(
+        f"  {'execution':<18}: none -- the unit builds an objective and runs no circuit"
+    )
+    print(
+        f"  {'premise':<18}: the unit solves nothing, and the repository has no annealer"
+    )
     print()
     print("inputs")
     print(f"  {'features':<18}: {len(RELEVANCE)}")
@@ -88,10 +92,18 @@ def main() -> None:
         print(f"  penalty {penalty:<6}: {subset} at {round(score, 3)}")
     print()
     print("take away")
-    print("  the unit builds the objective and evaluates it where the caller points; the")
-    print("  subset selection above is the script's enumeration of all 32 subsets, not a")
-    print("  result of the unit. At the tight weight the cheapest subset has the target")
-    print("  size and at the loose one it does not, which is one instance at two weights")
+    print(
+        "  the unit builds the objective and evaluates it where the caller points; the"
+    )
+    print(
+        "  subset selection above is the script's enumeration of all 32 subsets, not a"
+    )
+    print(
+        "  result of the unit. At the tight weight the cheapest subset has the target"
+    )
+    print(
+        "  size and at the loose one it does not, which is one instance at two weights"
+    )
     print("  and not a weight at which the size term starts to bind.")
 
 

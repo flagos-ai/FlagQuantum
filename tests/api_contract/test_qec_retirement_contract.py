@@ -288,7 +288,7 @@ def test_phase_commands_validate_the_active_retirement_boundary() -> None:
         result = subprocess.run(
             [
                 sys.executable,
-                str(ROOT / "tools/check_qec_retirement.py"),
+                str(ROOT / "tools/validation/check_qec_retirement.py"),
                 "--phase",
                 phase,
             ],

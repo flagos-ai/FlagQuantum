@@ -7,7 +7,9 @@ from pathlib import Path
 import pytest
 
 import flagquantum.algorithms as algorithms
-from flagquantum.algorithms import Hamiltonian, fold_program, run_vqe
+from flagquantum.algorithms.error_mitigation.folding import fold_program
+from flagquantum.algorithms.optimization.vqe import run_vqe
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

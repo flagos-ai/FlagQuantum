@@ -20,7 +20,7 @@ from examples.synthesis.applications.physical_systems.hhl_lanchester.physics imp
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration

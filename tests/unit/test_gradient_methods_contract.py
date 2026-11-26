@@ -41,7 +41,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "gradient-methods-contract.toml"
 
-_GATE_PATH = ROOT / "tools" / "check_gradient_methods_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_gradient_methods_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_gradient_methods_contract", _GATE_PATH
 )
@@ -467,5 +467,5 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_gradient_methods_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_gradient_methods_contract.py"' in pre_push

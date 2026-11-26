@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 
-from flagquantum.remote._job_receipts import resume_or_submit
+from flagquantum.compute.remote._job_receipts import resume_or_submit
 
 pytestmark = pytest.mark.unit
-WORKSHOP = Path(__file__).resolve().parents[2] / "workshops/flagos2026"
+WORKSHOP = Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026"
 
 
 class State:

@@ -14,7 +14,7 @@ Inventory date: 2026-10-06
 
 Verification date: 2026-10-07
 
-Scope: `team-ownership.toml` coverage and `architecture.toml` package-surface
+Scope: `config/team-ownership.toml` coverage and `config/architecture.toml` package-surface
 consistency.
 
 This inventory changes no Stable Core surface, moves no file, adds no
@@ -26,7 +26,7 @@ removes entries that no longer match any path.
 
 ## Decision
 
-`team-ownership.toml` left eight `flagquantum/` domains and seven root modules
+`config/team-ownership.toml` left eight `flagquantum/` domains and seven root modules
 reachable only through `teams.integration.owns = ["**"]`. Because the
 most-specific rule in `docs/development/MULTI_TEAM_DEVELOPMENT.md` selects a
 specialist team when one matches and falls back to Integration otherwise, no path
@@ -59,14 +59,14 @@ findings now cite observed behaviour instead of inference.
   `flagquantum/encoding`, `docs/site`, `docs/roadmap/VNEXT_EXPERIENCE.md`,
   `docs/development/DOCUMENTATION_STRATEGY.md`, or `requirements*.txt`: none of
   them ever existed. `git grep` across the tree finds each name only in
-  `team-ownership.toml` itself, so no document authorizes any of them.
+  `config/team-ownership.toml` itself, so no document authorizes any of them.
 - `flagquantum/lindblad/` was the only real domain directory without a
   `README.md`; the other nineteen have one.
 
 ## Finding 1: eight domains and seven root modules have no specialist owner
 
 Coverage of `flagquantum/**` by the nine specialist teams in
-`team-ownership.toml`, applying the most-specific rule:
+`config/team-ownership.toml`, applying the most-specific rule:
 
 | Path under `flagquantum/` | Files | Specialist owner | Note |
 | --- | --- | --- | --- |
@@ -177,7 +177,7 @@ The same list contains four entries that match nothing in this checkout:
 | `flagquantum/compilation/**` | Removed by a documented migration. Remove this entry. |
 
 `teams.core.owns` contains `flagquantum/ops/**`, which is also absent and is not
-an allowed top-level directory in `architecture.toml`. `teams.docs.owns` contains
+an allowed top-level directory in `config/architecture.toml`. `teams.docs.owns` contains
 `docs/site/**`, which is absent.
 
 A full-tree scan over all 2518 files found eight `owns` entries and one
@@ -199,7 +199,7 @@ A full-tree scan over all 2518 files found eight `owns` entries and one
 
 All three `teams.docs.owns` entries are dead, and unlike the two entries removed
 above, none is authorized by a document: `git grep` finds both file names and the
-site directory only in `team-ownership.toml`. In practice `teams.docs` therefore
+site directory only in `config/team-ownership.toml`. In practice `teams.docs` therefore
 has no ownership at all, because `docs/**` is a *shared* path that already lets
 every team edit documentation.
 
@@ -216,16 +216,16 @@ so every tool change is an integration change.
 
 ## Finding 4: the package allowlist and the ownership list disagree
 
-`architecture.toml` `[package_layout].allowed_top_level_directories` lists
+`config/architecture.toml` `[package_layout].allowed_top_level_directories` lists
 services, algorithms, benchmarking, compiler, core, deployment, drawer, ecosystem,
 experimental, kernels, lindblad, noise, observables, qec, compute, remote,
 runtime, simulation, testing, twin.
 
 It does not list `_compiler`, `devices`, `encoding`, or `ops`. Yet
-`team-ownership.toml` assigns `_compiler/**` to Compiler and `devices/**` to
+`config/team-ownership.toml` assigns `_compiler/**` to Compiler and `devices/**` to
 Compute and `encoding/**` to Ecosystem, and both the IR Phase 2 and Phase 3 entry
 packets authorize creating `flagquantum/_compiler/passes/` and
-`flagquantum/_compiler/testing/`, with no corresponding `architecture.toml`
+`flagquantum/_compiler/testing/`, with no corresponding `config/architecture.toml`
 change proposed in those packets.
 
 Two readings were possible and the difference matters:
@@ -234,7 +234,7 @@ Two readings were possible and the difference matters:
    case there was no conflict and only Finding 3's dead entries remained.
 2. The allowlist is enforced literally, in which case creating
    `flagquantum/_compiler/` trips `tools/check_architecture.py`, and the Phase 4
-   internal level work planned for that path needs an `architecture.toml` change
+   internal level work planned for that path needs an `config/architecture.toml` change
    in the same integration PR.
 
 Reading 2 holds. `tools/check_architecture.py` walks the real `flagquantum/*`
@@ -242,11 +242,11 @@ directories that contain a `*.py` file and reports each one that is missing from
 `allowed_top_level_directories`, and it reports each allowlist entry with no such
 directory as well. The check is therefore bidirectional and literal.
 
-The immediate consequence is that no `architecture.toml` change is needed today,
+The immediate consequence is that no `config/architecture.toml` change is needed today,
 because `_compiler`, `devices`, `encoding`, and `ops` do not exist and so cannot
 be "unreviewed". It also means Finding 6's `devices` and `encoding` entries can
 never be satisfied by creating the directory alone: each needs an
-`architecture.toml` edit in the same change, which is a second protected file.
+`config/architecture.toml` edit in the same change, which is a second protected file.
 
 ## Finding 5: dependency and CI configuration is not in `protected_paths`
 
@@ -257,7 +257,7 @@ release configuration" under Integration coordination. `protected_paths` covers
 | Path | Why it is a dependency, CI, or release surface |
 | --- | --- |
 | `dependency-policy.toml` | Declares `schema = "flagquantum_dependency_policy_v2"`, the Python support matrix, the torch range, and every optional extra. `docs/development/DEPENDENCY_POLICY.md` calls it "the executable support matrix". |
-| `setup.py`, `MANIFEST.in`, `environment.yml` | Packaging and release inputs. |
+| `setup.py`, `MANIFEST.in`, `config/environments/environment.yml` | Packaging and release inputs. |
 | `pytest.ini`, `.coveragerc`, `.pre-commit-config.yaml` | Test and quality configuration that governs whether a change can be verified. |
 
 Editing `dependency-policy.toml` currently requires no integration coordination
@@ -281,7 +281,7 @@ nothing. `pyproject.toml`, the actual dependency manifest, stays protected.
 
 | Path | Proposed team | Evidence |
 | --- | --- | --- |
-| `flagquantum/kernels/**` | simulation | `MULTI_TEAM_DEVELOPMENT.md` states `simulation/**` "belongs to Simulation and owns numerical algorithms/kernels". `architecture.toml` gives the layer name `optional_kernels`, and `[boundaries].kernel_forbidden` prevents kernels from importing simulation, runtime, compute, remote, and deployment, placing it as a leaf numeric layer in the Simulation family. |
+| `flagquantum/kernels/**` | simulation | `MULTI_TEAM_DEVELOPMENT.md` states `simulation/**` "belongs to Simulation and owns numerical algorithms/kernels". `config/architecture.toml` gives the layer name `optional_kernels`, and `[boundaries].kernel_forbidden` prevents kernels from importing simulation, runtime, compute, remote, and deployment, placing it as a leaf numeric layer in the Simulation family. |
 | `flagquantum/lindblad/**` | simulation | The package is the plan and run facade over `flagquantum/simulation/lindblad.py`, which is already simulation-owned, and it imports `..simulation`. |
 | `flagquantum/dynamic.py` | runtime | Three lines that re-export `DynamicCircuit` from `runtime.dynamic.circuit`, a path Runtime already owns. |
 | `flagquantum/training.py` | runtime | Re-exports the training lifecycle types from `runtime.training_state`. |
@@ -424,8 +424,8 @@ PROTECTED_FIXTURES = (
     "flagquantum/_api.py",
     "flagquantum/core/_artifacts.py",
     "flagquantum/core/ir.py",
-    "team-ownership.toml",
-    "architecture.toml",
+    "config/team-ownership.toml",
+    "config/architecture.toml",
     "contracts/cudaq-export-contract.toml",
     "docs/architecture/decisions/ARCH_009_NATIVE_CPU_OPERATOR_BOUNDARY.md",
 )
@@ -443,7 +443,7 @@ never intentional; `owns` entries are reported because two of the remaining six
 name a path that a written design authorizes but no change has created yet, and
 the other four are Open Question 5.
 
-The split is deliberate. An exception list inside `team-ownership.toml` would
+The split is deliberate. An exception list inside `config/team-ownership.toml` would
 have added a concept to the policy file, and engineering decision principle 2
 asks for the smallest mechanism that satisfies the requirement. A hard failure on
 `owns` would instead have required resolving Finding 6 in this change. The report
@@ -458,10 +458,10 @@ surfaced `flagquantum/compilation/**` when the package was removed.
    `flagquantum/twin/**`? One application-domain team, three specialist teams, or
    continued integration ownership?
 2. Does `flagquantum/benchmarking/**` belong to Runtime or to Integration?
-3. ~~Is the `architecture.toml` allowlist enforced literally for private
+3. ~~Is the `config/architecture.toml` allowlist enforced literally for private
    directories?~~ Answered by the full-checkout verification: yes, and both
    directions are checked. Creating `flagquantum/_compiler/` therefore needs an
-   `architecture.toml` change in the same integration PR. No action is required
+   `config/architecture.toml` change in the same integration PR. No action is required
    today, because the directory does not exist.
 4. Should `dependency-policy.toml` and the packaging and CI configuration files
    join `protected_paths` (Finding 5)?
@@ -482,7 +482,7 @@ surfaced `flagquantum/compilation/**` when the package was removed.
   public API change, no capability maturity change, and no `IR_VERSION` change.
 - Team branches and worktrees for any new team are new operational resources. If
   the owner chooses new teams, they must be created with their branches recorded
-  in `team-ownership.toml` before a team session starts, because
+  in `config/team-ownership.toml` before a team session starts, because
   `MULTI_TEAM_DEVELOPMENT.md` requires a session to verify its branch against that
   file.
 - The `flagquantum/core/ir.py` correction, the specialist assignments, the

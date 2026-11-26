@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from .classical import bind_helper
 from .numeric import has_numeric, reject_numeric_reads
 from .ports import program_ports

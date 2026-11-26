@@ -151,7 +151,7 @@ helpers this route shares with the two shift routes leave that module for
 
 ### The merged tree crossed the module budget, and it was restored by subtraction
 
-`architecture.toml` sets `default_module_line_ceiling = 1250`, and
+`config/architecture.toml` sets `default_module_line_ceiling = 1250`, and
 `tests/unit/test_architecture_boundaries.py` asserts that the policy carries no
 `legacy_exceptions` key at all, so the ceiling cannot be raised for one module.
 On the tree this slice merges into, `flagquantum/gradients.py` measured **1326**

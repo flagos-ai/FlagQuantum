@@ -4,8 +4,8 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.errors as fqe
+from flagquantum.compute.remote import AmazonBraketProvider, braket_backend_profile
 from flagquantum.dynamic import DynamicCircuit
-from flagquantum.remote import AmazonBraketProvider, braket_backend_profile
 from flagquantum.runtime.dynamic import create_dynamic_deployment_package
 
 pytestmark = [pytest.mark.braket, pytest.mark.unit]

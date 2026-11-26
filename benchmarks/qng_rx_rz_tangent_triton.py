@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.kernels.triton import repeated_rx_rz_tangents
+from flagquantum.simulation.kernels.triton import repeated_rx_rz_tangents
 
 
 def reference(state, rx, rz):
@@ -33,6 +33,7 @@ def reference(state, rx, rz):
 def reverse_jacobian(state, rx, rz):
     tangents = []
     for family, parameter in (("rx", rx), ("rz", rz)):
+
         def selected(value):
             return reference(
                 state,
@@ -97,7 +98,9 @@ def main():
         raise RuntimeError("CUDA is required")
     torch.manual_seed(args.seed)
     state = torch.randn(args.batch, args.pairs, 2, device="cuda", dtype=torch.complex64)
-    state = state / torch.linalg.vector_norm(state.reshape(args.batch, -1), dim=1).reshape(-1, 1, 1)
+    state = state / torch.linalg.vector_norm(
+        state.reshape(args.batch, -1), dim=1
+    ).reshape(-1, 1, 1)
     rx = torch.randn(args.batch, args.depth, device="cuda")
     rz = torch.randn(args.batch, args.depth, device="cuda")
     cold_started = time.perf_counter()
@@ -106,7 +109,9 @@ def main():
     cold_seconds = time.perf_counter() - cold_started
     expected = reverse_jacobian(state, rx, rz)
     maximum_error = float(torch.max(torch.abs(actual - expected)))
-    relative_l2 = float(torch.linalg.vector_norm(actual - expected) / torch.linalg.vector_norm(expected))
+    relative_l2 = float(
+        torch.linalg.vector_norm(actual - expected) / torch.linalg.vector_norm(expected)
+    )
     output_state = reference(state, rx, rz)
     actual_metric = quantum_metric(output_state, actual)
     expected_metric = quantum_metric(output_state, expected)
@@ -158,7 +163,9 @@ def main():
         ),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(json.dumps(payload, indent=2))
 
 

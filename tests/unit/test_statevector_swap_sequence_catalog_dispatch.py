@@ -115,7 +115,7 @@ def test_swap_sequence_cpu_falls_back_without_importing_kernel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_SWAP_SEQUENCE", "1")
-    module = "flagquantum.kernels.triton.statevector_swap"
+    module = "flagquantum.simulation.kernels.triton.statevector_swap"
     sys.modules.pop(module, None)
     state = torch.randn(1, 1 << 20, dtype=torch.complex64)
 

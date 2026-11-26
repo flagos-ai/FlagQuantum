@@ -8,11 +8,11 @@ from unittest.mock import Mock
 import pytest
 
 import flagquantum as fq
+from flagquantum.compute.remote import jobs
+from flagquantum.compute.remote.compute import JiudingCredentials
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 from flagquantum.errors import CapabilityError, ExecutionError
-from flagquantum.remote import jobs
-from flagquantum.remote.compute import JiudingCredentials
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 
@@ -200,7 +200,7 @@ def test_receipt_validation_precedes_network(quafu, tmp_path):
 
 
 def test_jiuding_native_jobs_restore_without_resubmission(monkeypatch, tmp_path):
-    from flagquantum.remote.compute._native_job import NativeJiudingJobClient
+    from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
 
     calls = []
     submit_options = []
@@ -362,7 +362,7 @@ def test_unavailable_sdk_result_never_resubmits(quafu, monkeypatch):
 def test_native_job_configuration_fails_before_network(
     monkeypatch, options, error, message
 ):
-    from flagquantum.remote.compute._native_job import NativeJiudingJobClient
+    from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
 
     monkeypatch.delenv("JIUDING_PROJECT", raising=False)
     monkeypatch.setattr(

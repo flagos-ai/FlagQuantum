@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import torch
 
-from ...noise import KrausChannel, ReadoutError
+from flagquantum.core.noise import ReadoutError
+from flagquantum.core.operators.channels import KrausChannel
+
 from .operations import _apply_fixed_permutation
 
 

@@ -16,7 +16,7 @@ from typing import Any, cast
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.complex_bmm_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.complex_bmm_dispatch.v1"
@@ -110,7 +110,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton import fused_complex_bmm
+    from flagquantum.simulation.kernels.triton import fused_complex_bmm
 
     generator = torch.Generator(device="cuda").manual_seed(seed)
     left = torch.randn(

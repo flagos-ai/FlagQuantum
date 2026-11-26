@@ -443,7 +443,7 @@ not after.
 
 ## Owner and approvals
 
-Owner: FlagQuantum integration team (`integration` in `team-ownership.toml`,
+Owner: FlagQuantum integration team (`integration` in `config/team-ownership.toml`,
 which owns `flagquantum/core/ir.py` as a protected path).
 
 Approval requested by this document: the field name `global_phase`, its unit

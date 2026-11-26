@@ -15,8 +15,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from flagquantum.core.operators.schema import (
+    OPERATOR_SCHEMAS,
+    OperatorSchema,
+    get_operator_schema,
+)
+
 from ..errors import ValidationError
-from .operator_schema import OPERATOR_SCHEMAS, OperatorSchema, get_operator_schema
 
 #: Opcodes whose two qubits are a control and a target, so the documented public
 #: keywords are ``control``/``target`` rather than the positional pair.

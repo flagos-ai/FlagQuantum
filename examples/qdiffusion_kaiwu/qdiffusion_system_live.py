@@ -52,13 +52,13 @@ from examples.qdiffusion_kaiwu.validate_acceptance import _validate_config
 from examples.qdiffusion_kaiwu.verify_environment_lock import (
     verify_frozen_environment_lock,
 )
-from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuSDKClient,
     KaiwuTaskClient,
     resolve_kaiwu_credentials,
 )
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
 from flagquantum.version import __version__ as flagquantum_version
 
 ACKNOWLEDGEMENT = "I_ACKNOWLEDGE_QBOSON_QUOTA_USAGE"

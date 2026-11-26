@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from flagquantum import Circuit, Parameter
-from flagquantum.algorithms import pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import pauli_term
 from flagquantum.core.numerics import default_accuracy_requirement
 from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.executors.statevector.split_real_imag_device_double_single import (

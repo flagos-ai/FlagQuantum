@@ -15,7 +15,8 @@ from typing import Any
 
 import torch
 
-from ...algorithms.core import Hamiltonian
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
+
 from ..matrices import GATE_MAT_DICT
 from .models import MPSConfig
 from .state import MPSState

@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 
 import flagquantum as fq
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.quafu import QuafuProvider
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 
@@ -50,7 +50,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Client:
     client = Client()
     adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.QuafuProvider",
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider",
         lambda **options: QuafuProvider(_sdk_adapter=adapter, **options),
     )
     monkeypatch.setattr(

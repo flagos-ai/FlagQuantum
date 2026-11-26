@@ -9,6 +9,8 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, OperatorSchema
+
 from .core._parameter_occurrence import (
     _batch_occurrence_coefficient,
     _circuit_profile_of,
@@ -19,7 +21,6 @@ from .core.finite_differences import (
     default_difference_step,
 )
 from .core.ir import ensure_circuit_ir
-from .core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema
 from .errors import CapabilityError, ValidationError
 
 CircuitBuilder = Callable[[torch.Tensor], Any]

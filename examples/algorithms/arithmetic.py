@@ -33,11 +33,11 @@ import argparse
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.arithmetic import (
+from flagquantum.algorithms.logical_resources import estimate_logical_resources
+from flagquantum.algorithms.primitives.arithmetic import (
     adder_circuit,
     adder_qubits,
 )
-from flagquantum.algorithms.logical_resources import estimate_logical_resources
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.resource_estimation import estimate_resources
 

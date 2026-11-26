@@ -6,9 +6,10 @@ from dataclasses import replace
 
 import torch
 
+from flagquantum.core.operators.channels import amplitude_damping_channel
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ..core.ir import CircuitIR, Instruction
-from ..core.operator_schema import get_operator_schema
-from ..noise import amplitude_damping_channel
 
 
 def _matches_reset(gate: Instruction, kraus: tuple[torch.Tensor, ...]) -> bool:

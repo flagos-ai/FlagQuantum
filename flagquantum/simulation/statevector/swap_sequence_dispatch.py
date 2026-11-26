@@ -8,12 +8,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 from .dense_fusion_cpu import (
     _apply_swap_sequence,
@@ -131,7 +132,7 @@ def _apply_cataloged_swap_sequence(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.statevector_swap import (
+    from flagquantum.simulation.kernels.triton.statevector_swap import (
         apply_complex64_local_swap_sequence,
     )
 

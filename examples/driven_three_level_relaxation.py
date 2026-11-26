@@ -14,7 +14,7 @@ import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
 from examples.driven_three_level import initial_controls
-from flagquantum.observables.boson import annihilate
+from flagquantum.core.operators.boson import annihilate
 
 
 def relaxation_plan(

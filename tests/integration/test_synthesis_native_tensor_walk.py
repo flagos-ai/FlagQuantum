@@ -17,7 +17,7 @@ from examples.synthesis.applications.chemistry.tensor_hypercontraction.compariso
     reference_circuit,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.simulation.mps.state import MPSState
 

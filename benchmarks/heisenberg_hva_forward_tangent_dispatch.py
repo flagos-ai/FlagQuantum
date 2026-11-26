@@ -16,7 +16,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = (
     "flagquantum.kernel_benchmark_run.heisenberg_hva_forward_tangent_dispatch.v1"
@@ -131,9 +131,7 @@ def _pytorch_reference(
     count = int(parameters.numel())
     parameter_lanes = torch.arange(count, device=parameters.device).reshape(-1, 1)
     state = initial_state.reshape(-1)
-    tangents = torch.zeros(
-        count, state.numel(), dtype=state.dtype, device=state.device
-    )
+    tangents = torch.zeros(count, state.numel(), dtype=state.dtype, device=state.device)
     parameter = 0
     for _ in range(depth):
         for permutation, sign in actions:
@@ -143,9 +141,9 @@ def _pytorch_reference(
             sine, cosine = torch.sin(half), torch.cos(half)
             derivative = -0.5 * sine * state - 0.5j * cosine * transformed_state
             tangents = cosine * tangents - 1j * sine * transformed_tangents
-            tangents = tangents + (
-                parameter_lanes == parameter
-            ) * derivative.unsqueeze(0)
+            tangents = tangents + (parameter_lanes == parameter) * derivative.unsqueeze(
+                0
+            )
             state = cosine * state - 1j * sine * transformed_state
             parameter += 1
     return state, tangents
@@ -168,7 +166,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.hva_forward_tangent import (
+    from flagquantum.simulation.kernels.triton.hva_forward_tangent import (
         heisenberg_hva_forward_tangents,
     )
 

@@ -108,7 +108,7 @@ def test_pauli_rotation_cpu_falls_back_without_importing_kernel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_PAULI_ROTATION_2Q", "1")
-    module = "flagquantum.kernels.triton.statevector_pauli_rotation"
+    module = "flagquantum.simulation.kernels.triton.statevector_pauli_rotation"
     sys.modules.pop(module, None)
     state = torch.randn(1, 1 << 20, dtype=torch.complex64)
     angles = torch.tensor([0.23], dtype=torch.float32)

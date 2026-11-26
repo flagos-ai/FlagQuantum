@@ -60,18 +60,18 @@ from typing import Any
 
 import torch
 
-from flagquantum.algorithms import (
+from flagquantum.algorithms.error_mitigation import run_zne
+from flagquantum.algorithms.error_mitigation.folding import (
     FOLDING_PLACEMENTS,
-    Hamiltonian,
-    HamiltonianTerm,
     fold_noise_amplification,
     fold_program,
-    run_zne,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
 from flagquantum.core.ir import CircuitIR, ensure_circuit_ir
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import depolarizing_channel
 from flagquantum.errors import CapabilityError
-from flagquantum.noise import NoiseModel, depolarizing_channel
 
 #: The factor asked of both strategies, chosen because it is one the ``gate``
 #: strategy reaches exactly and the ``circuit`` strategy cannot reach at all.
@@ -205,7 +205,7 @@ def main() -> None:
             f"  fold {strategy}",
             f"{plan.requested_scale_factor:>8.2f}  {plan.scale_factor:>8.2f}  "
             f"{plan.body_instructions:>4}  {plan.folded_instructions:>6}  "
-            f"{plan.added_pairs:>5}  {str(plan.exact):>5}",
+            f"{plan.added_pairs:>5}  {plan.exact!s:>5}",
         )
     print(f"  {'':<{LABEL_WIDTH}}  -- a fold adds instructions in pairs, so the")
     print(f"  {'':<{LABEL_WIDTH}}  reachable ratios are the body length plus an even")

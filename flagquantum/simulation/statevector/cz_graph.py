@@ -7,7 +7,8 @@ from collections.abc import Sequence
 
 import torch
 
-from ...core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
+
 from .program import (
     _StatevectorCZGraphStep,
     _StatevectorGateStep,

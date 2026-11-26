@@ -13,8 +13,12 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, replace
 from typing import Literal, NoReturn
 
-from ...compiler._hybrid.model import SourceLocation
-from ...compiler._hybrid.verifier import Diagnostic, HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import SourceLocation
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+
 from .angles import SCIENTIFIC_LITERAL
 
 MAX_BYTES = 524288

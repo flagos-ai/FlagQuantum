@@ -38,12 +38,12 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.primitives import (
     BlockEncoding,
     LinearCombinationEncoding,
     WalkEncoding,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
 from flagquantum.errors import CapabilityError
 from flagquantum.simulation.unitary import get_unitary

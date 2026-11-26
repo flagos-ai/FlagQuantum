@@ -6,7 +6,8 @@ import ast
 import math
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+
 from ..program_types import (
     hadamard_transform,
     inplace_prepare_amplitudes,

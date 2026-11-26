@@ -121,7 +121,7 @@ from .oracle import append_multi_controlled_x
 from .state_preparation import arbitrary_state
 
 if TYPE_CHECKING:
-    from ..core import Hamiltonian
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
 __all__ = [
     "LinearCombinationEncoding",

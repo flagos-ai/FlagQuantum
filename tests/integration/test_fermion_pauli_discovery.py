@@ -21,9 +21,9 @@ from flagquantum.algorithms.fermion.stabilizer import (
     reduce_stabilizers,
 )
 from flagquantum.algorithms.fermion.symmetry import discover_z_parities
-from flagquantum.core.algebra.pauli import pauli
 from flagquantum.core.ir import Instruction
-from flagquantum.observables import FermionOperator, FermionTerm, number
+from flagquantum.core.operators.observable import FermionOperator, FermionTerm, number
+from flagquantum.core.operators.pauli import pauli
 
 pytestmark = pytest.mark.integration
 

@@ -12,7 +12,7 @@ provide deduplication. No clock, deadline, transport I/O or hardware is involved
 
 from __future__ import annotations
 
-import flagquantum.realtime as rt
+import flagquantum.compute.realtime as rt
 from examples.realtime.device_call import majority_decode
 
 SCHEMA = rt.HandlerSchema(

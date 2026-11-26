@@ -104,14 +104,16 @@ def test_diagonal_matrix_cpu_preserves_reference_and_lazy_import(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_DIAGONAL_MATRIX", "1")
-    sys.modules.pop("flagquantum.kernels.triton.statevector_diagonal", None)
+    sys.modules.pop("flagquantum.simulation.kernels.triton.statevector_diagonal", None)
     state = torch.randn(1, 1 << 4, dtype=torch.complex64)
     matrix = torch.diag(torch.randn(4, dtype=torch.complex64))
 
     actual = _apply_diagonal_matrix(state, matrix, (0, 3), 4)
 
     assert actual.shape == state.shape
-    assert "flagquantum.kernels.triton.statevector_diagonal" not in sys.modules
+    assert (
+        "flagquantum.simulation.kernels.triton.statevector_diagonal" not in sys.modules
+    )
 
 
 def test_diagonal_matrix_runtime_falls_back_when_support_rejects(

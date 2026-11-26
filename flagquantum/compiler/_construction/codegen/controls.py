@@ -1,9 +1,10 @@
 """Emit bounded controlled gates and modular permutations with clean scratch."""
 
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ....core._composition import controlled_instruction, inverted_instruction
 from ....core.controlled import _clean_mcx_instructions
 from ....core.ir import Instruction
-from ..._hybrid.model import Operation
 from ..mcx import one_clean_mcx
 from ..semantics._phase_polynomial import MAX_PHASE_DEGREE
 from ..verification.profile import _fail

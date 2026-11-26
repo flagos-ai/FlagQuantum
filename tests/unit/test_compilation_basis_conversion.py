@@ -36,7 +36,7 @@ from flagquantum.compiler.basis_translation import (
     with_equivalence_rule,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.errors import CompilationError
 from flagquantum.simulation.unitary import get_unitary
 

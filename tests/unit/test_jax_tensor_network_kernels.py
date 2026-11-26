@@ -20,7 +20,7 @@ def test_jax_contract_nodes_greedy_matches_einsum():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.primitives import (
+    from flagquantum.simulation.numerics.jax import (
         jax_contract_tensor_nodes,
     )
 
@@ -42,7 +42,7 @@ def test_jax_tensor_network_loss_state_norm_matches_reference():
     import jax.numpy as jnp
     import numpy as np
 
-    from flagquantum.simulation.jax.tensor_network.kernels import (
+    from flagquantum.simulation.tensor_network.jax.kernels import (
         jax_tensor_network_loss_from_output,
     )
 
@@ -175,7 +175,7 @@ def test_dense_statevector_contraction_respects_intermediate_bound(
     import numpy as np
 
     import flagquantum as fq
-    from flagquantum.simulation.jax.statevector.kernels import (
+    from flagquantum.simulation.statevector.jax.kernels import (
         jax_statevector_from_circuit,
     )
 

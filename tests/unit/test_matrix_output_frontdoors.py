@@ -12,10 +12,10 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.compute.remote import jobs
+from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 from flagquantum.errors import CapabilityError
-from flagquantum.remote import jobs
-from flagquantum.remote.compute._native_job import NativeJiudingJobClient
-from flagquantum.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
 
@@ -40,9 +40,11 @@ def test_root_qpu_routes_refuse_before_provider(
     monkeypatch: pytest.MonkeyPatch,
     target: str,
 ) -> None:
-    monkeypatch.setattr("flagquantum.remote.qpu.execution.QuafuProvider", _unexpected)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", _unexpected
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider", _unexpected
+    )
+    monkeypatch.setattr(
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", _unexpected
     )
     with pytest.raises(CapabilityError, match="flagquantum.lindblad"):
         fq.run(

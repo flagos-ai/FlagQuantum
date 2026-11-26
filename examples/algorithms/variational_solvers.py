@@ -48,13 +48,12 @@ from typing import Any
 
 import torch
 
-from flagquantum.algorithms import (
+from flagquantum.algorithms.optimization.qaoa import (
     QAOAResult,
     maxcut_hamiltonian,
-    qaoa_circuit,
-    qaoa_loss,
     run_qaoa,
 )
+from flagquantum.algorithms.optimization.qaoa_circuits import qaoa_circuit, qaoa_loss
 from flagquantum.circuit import Circuit
 
 #: A square with one diagonal: four nodes, five edges, largest cut 4 of 5.

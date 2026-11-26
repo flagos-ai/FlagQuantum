@@ -60,8 +60,9 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import Any, cast
 
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import canonical_opcode
 from .canonicalization import (
     _ROTATION_PARAM,
     _SELF_INVERSE,

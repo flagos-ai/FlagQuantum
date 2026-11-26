@@ -11,7 +11,7 @@ import pytest
 pytestmark = pytest.mark.unit
 NOTEBOOK = (
     Path(__file__).resolve().parents[2]
-    / "workshops/flagos2026/reference_notebooks/cloud/13_trained_hardware.ipynb"
+    / "examples/workshops/flagos2026/reference_notebooks/cloud/13_trained_hardware.ipynb"
 )
 
 

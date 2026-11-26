@@ -8,7 +8,7 @@ from math import nan
 
 import pytest
 
-from flagquantum.compute.cpu_target_capabilities import (
+from flagquantum.compute.local.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUPrecisionObservation,
     cpu_platform_to_target_capability_snapshot,

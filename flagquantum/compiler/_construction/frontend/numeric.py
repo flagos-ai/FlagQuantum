@@ -8,7 +8,14 @@ from dataclasses import replace
 from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
-from ..._hybrid.model import INDEX, HybridProgram, Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import (
+    INDEX,
+    HybridProgram,
+    Operation,
+    Value,
+    ValueId,
+)
+
 from ..program_types import maximum, minimum
 from ..semantics.numeric_expression import WordExpression
 from ..verification.profile import uint_type

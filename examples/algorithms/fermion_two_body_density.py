@@ -11,7 +11,7 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
 )

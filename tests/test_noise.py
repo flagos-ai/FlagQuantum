@@ -12,14 +12,14 @@ import flagquantum.noise as noise
 import flagquantum.runtime as fqr
 import flagquantum.runtime.planner as fqxp
 from flagquantum.compiler import lower_noise_model
-from flagquantum.noise import (
-    CorrelatedReadoutError,
+from flagquantum.core.noise import CorrelatedReadoutError, NoiseRule, ReadoutError
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
-    KrausChannel,
-    NoiseRule,
     QubitNoiseCalibration,
-    ReadoutError,
+)
+from flagquantum.core.operators.channels import (
+    KrausChannel,
     amplitude_damping_channel,
     bit_flip_channel,
     coherent_overrotation_channel,

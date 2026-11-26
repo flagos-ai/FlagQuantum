@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 
 if TYPE_CHECKING:
     from flagquantum.compiler._construction.frontend.python import Definition
-    from flagquantum.services.synthesis import Program
+    from flagquantum.synth._workflow import Program
 
 from .expressions import Case, corpus
 

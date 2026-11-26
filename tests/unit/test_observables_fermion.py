@@ -14,8 +14,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.errors import CapabilityError
-from flagquantum.observables import (
+from flagquantum.core.operators.fermion import FermionOperator, FermionTerm
+from flagquantum.core.operators.observable import (
     Observable,
     X,
     annihilate,
@@ -24,7 +24,7 @@ from flagquantum.observables import (
     number,
     parity_encoding,
 )
-from flagquantum.observables.fermion import FermionOperator, FermionTerm
+from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
 

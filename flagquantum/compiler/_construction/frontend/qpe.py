@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation, Value
+from flagquantum.compiler.frontends._structured.model import Operation, Value
+
 from ..program_types import phase
 from ..semantics.qpe_control import emit_controlled_effect
 from ..verification.register_profile import register_width

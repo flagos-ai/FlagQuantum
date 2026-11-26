@@ -15,7 +15,10 @@ from __future__ import annotations
 
 import flagquantum as fq
 from examples.extensions.reference_target_extension import AcmeAuroraTarget
-from flagquantum.remote.emulation import TargetEmulationError, emulate_declared_target
+from flagquantum.compute.remote.emulation import (
+    TargetEmulationError,
+    emulate_declared_target,
+)
 
 
 def main() -> None:

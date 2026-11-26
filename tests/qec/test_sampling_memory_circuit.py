@@ -717,7 +717,7 @@ def test_a_faults_channel_is_the_one_the_location_names() -> None:
     is an X, a Z, or a Y fault at execution time.
     """
 
-    from flagquantum.noise import KrausChannel
+    from flagquantum.core.operators.channels import KrausChannel
 
     memory = _memory(RepetitionCode(distance=3), 1)
     plan = _measurement_plan(memory)

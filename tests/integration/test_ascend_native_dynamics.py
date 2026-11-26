@@ -13,7 +13,7 @@ import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.experimental.simulation import IsingBraidProgram, RydbergProgram
 from flagquantum.runtime import sample_terminal
-from flagquantum.simulation.lindblad import EvolutionResult
+from flagquantum.simulation.dynamics.lindblad import EvolutionResult
 
 pytestmark = [pytest.mark.integration, pytest.mark.gpu, pytest.mark.distributed_accel]
 

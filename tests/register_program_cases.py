@@ -4,7 +4,7 @@ from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.verification.register_profile import (
     register_type,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,

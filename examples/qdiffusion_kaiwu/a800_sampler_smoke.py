@@ -18,16 +18,16 @@ from typing import Any
 import torch
 
 from examples.qdiffusion_kaiwu.private_io import write_private_json_exclusive
-from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import (
+from flagquantum.compute.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
 
 HOSTS = {"jp-a800-171", "jp-a800-172"}
 FULL_REVISION = re.compile(r"[0-9a-f]{40}")

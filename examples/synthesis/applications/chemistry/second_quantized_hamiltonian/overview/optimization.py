@@ -6,7 +6,12 @@ import flagquantum as fq
 from examples.synthesis.applications.chemistry.second_quantized_hamiltonian.main import (
     build_program,
 )
-from flagquantum.observables import Observable, annihilate, create, jordan_wigner
+from flagquantum.core.operators.observable import (
+    Observable,
+    annihilate,
+    create,
+    jordan_wigner,
+)
 
 
 def hamiltonian() -> Observable:

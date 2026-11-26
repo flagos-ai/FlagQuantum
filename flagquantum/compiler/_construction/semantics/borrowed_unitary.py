@@ -1,7 +1,12 @@
 """Checked views of pure helpers on initialized borrowed quantum storage."""
 
-from ..._hybrid.model import HybridProgram, Operation, Value
-from ..._hybrid.unitary_effects import unitary_regions
+from flagquantum.compiler.frontends._structured.model import (
+    HybridProgram,
+    Operation,
+    Value,
+)
+from flagquantum.compiler.frontends._structured.unitary_effects import unitary_regions
+
 from ..verification.profile import _fail
 from ..verification.register_profile import _borrowed_program
 

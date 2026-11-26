@@ -17,7 +17,7 @@ from typing import Any, TypedDict
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.mps_sampling_collapse_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.mps_sampling_collapse_dispatch.v1"
@@ -207,7 +207,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.mps_sampling_collapse import (
+    from flagquantum.simulation.kernels.triton.mps_sampling_collapse import (
         fused_mps_sampling_collapse,
     )
     from flagquantum.simulation.mps.site_kernels import (

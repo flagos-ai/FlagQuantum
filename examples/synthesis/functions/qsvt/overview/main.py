@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from examples.synthesis.functions.qsvt.main import main
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure

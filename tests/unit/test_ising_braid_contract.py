@@ -22,15 +22,15 @@ import flagquantum.lindblad as fql
 from flagquantum._api import plan as plan_native
 from flagquantum._api import run as run_native
 from flagquantum.core.ising import IsingBraidProgram
+from flagquantum.core.measurement import OutputRequest
 from flagquantum.errors import CapabilityError
 from flagquantum.experimental.simulation import RydbergProgram
-from flagquantum.observables import OutputRequest
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime import execution_plan_contract as plan_contract
 from flagquantum.runtime import sample_terminal
 from flagquantum.runtime.execution_plan import CircuitAnalysis, ExecutionPlan
 from flagquantum.runtime.execution_plan_contract import canonical_json
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]

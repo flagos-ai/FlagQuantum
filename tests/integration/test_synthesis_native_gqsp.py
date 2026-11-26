@@ -15,7 +15,7 @@ from examples.synthesis.algorithms.quantum_primitives.gqsp.main import (
 )
 from examples.synthesis.algorithms.quantum_primitives.gqsp.physics import PHASES
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.errors import PlanningError
 

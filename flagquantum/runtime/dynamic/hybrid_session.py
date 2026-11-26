@@ -8,9 +8,10 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.parameters import is_parameterized_value
-from ...noise import NoiseModel
 from ._conditions import (
     instruction_condition_clauses,
     validate_condition_clauses,

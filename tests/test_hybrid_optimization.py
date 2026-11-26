@@ -8,8 +8,9 @@ import torch
 
 import flagquantum as fq
 import flagquantum.algorithms as fqa
-from flagquantum.algorithms import Hamiltonian, pauli_term, vqe_loss
 from flagquantum.algorithms.optimization import OptimizationStage, optimize_hybrid
+from flagquantum.algorithms.optimization.vqe import vqe_loss
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.core.runtime_config import runtime_config
 
 pytestmark = pytest.mark.unit

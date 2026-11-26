@@ -6,21 +6,17 @@ from typing import Any
 
 import torch
 
+from flagquantum.simulation.statevector.adjoint import (
+    seed_adjoint as seed_adjoint,
+)
+
 from ....simulation.native_cpu import (
-    fused_observable_adjoint_seed,
     native_cpu_observable_rotation_boundary_available,
 )
 from ....simulation.statevector.adjoint import z_hamiltonian_chunk
 from .forward import _storage_global_indices
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
 from .reverse_support import _reverse_chunk_amplitudes
-
-
-def seed_adjoint(amplitudes: torch.Tensor, weights: torch.Tensor) -> torch.Tensor:
-    """Seed the CPU adjoint natively when supported, with an eager fallback."""
-
-    seed = fused_observable_adjoint_seed(amplitudes, weights)
-    return seed if seed is not None else 2 * amplitudes * weights.reshape(1, -1)
 
 
 def prepare_observable_adjoint(

@@ -3,12 +3,11 @@ from __future__ import annotations
 import pytest
 
 import flagquantum as fq
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
-    NoiseModel,
     QubitNoiseCalibration,
-    ReadoutError,
 )
 from flagquantum.services import (
     managed_quafu_simulator_device,

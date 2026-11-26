@@ -9,7 +9,7 @@ import flagquantum as fq
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import number
+from flagquantum.core.operators.observable import number
 
 
 def main() -> None:

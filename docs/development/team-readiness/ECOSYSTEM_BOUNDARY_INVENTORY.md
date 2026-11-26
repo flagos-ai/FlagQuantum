@@ -101,7 +101,7 @@ The v0.1 device-coupled encoding API has been removed. Parameterized
 | Amazon Braket SDK | `remote/qpu/braket.py` | Provider discovery/submission | Correct provider boundary; SDK objects should never enter IR/runtime records |
 | Quafu/QuarkCircuit | `remote/qpu/quafu.py` and its calibration helpers | Provider discovery/submission | Correct provider boundary; keep device/job objects local |
 
-`architecture.toml` already confines direct Qiskit and PennyLane imports to
+`config/architecture.toml` already confines direct Qiskit and PennyLane imports to
 their interop namespaces. The new team tests additionally scan Core, Compiler,
 Runtime, and Simulation for external SDK imports and confine JAX imports to the
 optional JAX backend.

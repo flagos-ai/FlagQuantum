@@ -6,8 +6,9 @@ import ast
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Operation, Value, ValueId
-from ..._hybrid.unitary_effects import unitary_regions
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.unitary_effects import unitary_regions
+
 from ..semantics.qpe_control import emit_controlled_effect
 from ..verification.register_profile import register_type, register_width
 

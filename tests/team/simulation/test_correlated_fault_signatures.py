@@ -9,12 +9,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.errors import CapabilityError
-from flagquantum.noise import (
+from flagquantum.core.operators.channels import (
     KrausChannel,
     amplitude_damping_channel,
     two_qubit_depolarizing_channel,
 )
+from flagquantum.errors import CapabilityError
 from flagquantum.simulation.stabilizer._fault_signatures import (
     _clifford_product_signatures,
     _pauli_channel_terms,

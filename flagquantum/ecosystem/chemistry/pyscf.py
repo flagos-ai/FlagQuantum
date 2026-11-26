@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 import torch
 
-from ...algorithms.chemistry_domain.problem import MolecularProblem
+from flagquantum.algorithms.chemistry.models.problem import MolecularProblem
 
 
 def build_molecular_problem(

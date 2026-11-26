@@ -81,9 +81,9 @@ PORTABLE_CPU_ROUTE = TRUSTED_CPU_ROUTE.replace(
 # idle host answers.
 DEVICE_QUERY_SOURCES = (
     ROOT / "benchmarks" / "continuous_performance.py",
-    ROOT / "tools" / "evaluate_performance_artifact.py",
-    ROOT / "tools" / "hardware_run_manifest.py",
-    ROOT / "tools" / "multinode_launch_plan.py",
+    ROOT / "tools" / "validation/evaluate_performance_artifact.py",
+    ROOT / "tools" / "release/hardware_run_manifest.py",
+    ROOT / "tools" / "validation/multinode_launch_plan.py",
 )
 
 # Without `nounits` the answer reads `4 MiB` where the parser expects `4`, so

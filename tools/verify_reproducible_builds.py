@@ -1,44 +1,18 @@
-#!/usr/bin/env python3
-"""Verify two isolated build directories contain byte-identical artifacts."""
+"""Compatibility command; implementation lives in its owning tools domain."""
 
-from __future__ import annotations
+import runpy as _runpy
+import sys as _sys
+from importlib import import_module as _import_module
+from pathlib import Path as _Path
 
-import argparse
-import hashlib
-import tarfile
-from pathlib import Path
-
-
-def _digest(path: Path) -> str:
-    if path.name.endswith(".tar.gz"):
-        digest = hashlib.sha256()
-        with tarfile.open(path, "r:gz") as archive:
-            for member in sorted(archive.getmembers(), key=lambda item: item.name):
-                digest.update(
-                    f"{member.name}\0{member.mode}\0{member.size}\0{member.type}".encode()
-                )
-                stream = archive.extractfile(member) if member.isfile() else None
-                if stream is not None:
-                    digest.update(stream.read())
-        return digest.hexdigest()
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("left", type=Path)
-    parser.add_argument("right", type=Path)
-    args = parser.parse_args()
-    left = {path.name: _digest(path) for path in args.left.iterdir() if path.is_file()}
-    right = {
-        path.name: _digest(path) for path in args.right.iterdir() if path.is_file()
-    }
-    if left != right:
-        print(f"non-reproducible builds:\nleft={left}\nright={right}")
-        return 1
-    print(f"reproducible build passed: {left}")
-    return 0
-
-
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _runpy.run_module(
+        "tools.validation.verify_reproducible_builds", run_name="__main__"
+    )
+else:
+    _implementation = _import_module("tools.validation.verify_reproducible_builds")
+    _sys.modules[__name__] = _implementation
+
+    def __getattr__(name):
+        return getattr(_implementation, name)

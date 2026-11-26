@@ -8,6 +8,10 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
+from flagquantum.core.operators.boson import DEFAULT_DENSE_MATRIX_BYTES
+from flagquantum.runtime.results import ExecutionResult, MeasurementResult
+from flagquantum.simulation.dynamics.problem import _error
+
 from ..core.geometry import same_time
 from ..core.ir.program.model import ProgramRecord
 from ..core.ir.program.physical import RydbergContext, RydbergPresence
@@ -16,21 +20,18 @@ from ..core.ir.program.physical_codec import (
     native_program_to_dict,
 )
 from ..errors import CapabilityError, ExecutionError, SerializationError
-from ..observables.boson import DEFAULT_DENSE_MATRIX_BYTES
-from ..simulation.lindblad_request import _error
 from .execution_plan_contract import (
     ExecutionPlanContractError,
     _environment_requirements,
 )
 from .options import ExecutionOptions
-from .result import ExecutionResult, MeasurementResult
 
 if TYPE_CHECKING:
-    from ..lindblad import LindbladPlan
+    from flagquantum.runtime.evolution import LindbladPlan
 
 
 def _sampling_options(options: ExecutionOptions | None) -> ExecutionOptions:
-    from ..lindblad import _execution_settings
+    from flagquantum.runtime.evolution import _execution_settings
 
     if options is not None and not isinstance(options, ExecutionOptions):
         raise TypeError("options must be an fq.ExecutionOptions instance")
@@ -174,9 +175,10 @@ def build_presence_plan(
     outputs: Any,
     **settings: Any,
 ) -> LindbladPlan:
-    from ..lindblad import LindbladPlan, _observables
-    from ..lindblad._native_plan import native_request
-    from ..lindblad._plan import _identity, build_lindblad_plan
+    from flagquantum.runtime.evolution import LindbladPlan, _observables
+    from flagquantum.runtime.evolution._native_plan import native_request
+    from flagquantum.runtime.evolution._plan import _identity, build_lindblad_plan
+
     from .distributed.backend_policy import resolve_distributed_backend_policy
 
     numeric_options = _sampling_options(options)
@@ -236,7 +238,8 @@ def build_presence_plan(
 
 
 def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
-    from ..lindblad import LindbladPlan
+    from flagquantum.runtime.evolution import LindbladPlan
+
     from ..simulation.rydberg_presence import (
         _continue_rydberg_presence,
         _presence_operators,

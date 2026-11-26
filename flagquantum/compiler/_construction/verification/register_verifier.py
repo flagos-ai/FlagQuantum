@@ -5,14 +5,15 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 
-from ....core._composition import _is_finite_unitary
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     HybridProgram,
     Operation,
     Value,
     ValueId,
 )
+
+from ....core._composition import _is_finite_unitary
 from ..codegen.gate_tape import check_gate_tape
 from ..semantics.borrowed_unitary import unitary_template_parts
 from ..semantics.pauli_rotation import checked_support

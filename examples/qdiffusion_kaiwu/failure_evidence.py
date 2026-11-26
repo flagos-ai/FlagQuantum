@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flagquantum.remote.kaiwu import KaiwuSDKError
+from flagquantum.compute.remote.kaiwu import KaiwuSDKError
 
 
 def redacted_failure_record(error: BaseException) -> dict[str, str]:

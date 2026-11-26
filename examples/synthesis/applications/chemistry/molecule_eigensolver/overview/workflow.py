@@ -14,14 +14,18 @@ from examples.synthesis.applications.chemistry.molecule_eigensolver.main import 
     build_program,
 )
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     fermion_hamiltonian,
     from_native_molecule,
 )
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.observables.fermion import FermionOperator, FermionTerm, jordan_wigner
+from flagquantum.core.operators.fermion import (
+    FermionOperator,
+    FermionTerm,
+    jordan_wigner,
+)
 from flagquantum.synth import CX, Output, QArray, QBit, R, X, allocate, qfunc
 
 DISTANCE = 0.735

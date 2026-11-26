@@ -9,18 +9,19 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compute.cpu_target_capabilities import (
+from flagquantum.compute.local.cpu_target_capabilities import (
     CPUCapabilityObservation,
     CPUCapabilityProbe,
     _ObservedCPUProbe,
     cpu_platform_to_target_capability_snapshot,
 )
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.core.target_capabilities import (
     CapabilityScope,
     EvidenceLevel,
     EvidenceReference,
 )
-from flagquantum.noise import NoiseModel, bit_flip_channel
 from flagquantum.runtime.noise_registry import noisy_density_matrix
 from flagquantum.runtime.planner import analyze, plan_runtime_selection
 from flagquantum.runtime.routing import StrictExecutionScope

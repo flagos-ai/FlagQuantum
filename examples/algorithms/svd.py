@@ -38,7 +38,7 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms.svd import estimate_singular_values
+from flagquantum.algorithms.linear_algebra.svd import estimate_singular_values
 
 MATRIX = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
 N_COUNTING_WIRES = 6
@@ -125,7 +125,9 @@ def main() -> None:
         f"{round(one_qubit.distribution[refused], 4)} of the sample at "
         f"{ONE_WIRE_SHOTS} shots"
     )
-    print(f"  {'one-shot sample':<18}: {ONE_WIRE_SAMPLE_SHOTS} shot, seed {ONE_WIRE_SEED}")
+    print(
+        f"  {'one-shot sample':<18}: {ONE_WIRE_SAMPLE_SHOTS} shot, seed {ONE_WIRE_SEED}"
+    )
     try:
         estimate_singular_values(
             MATRIX,

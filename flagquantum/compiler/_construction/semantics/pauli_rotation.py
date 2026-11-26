@@ -2,8 +2,9 @@
 
 import math
 
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ....core.ir import Instruction
-from ..._hybrid.model import Operation
 from ..verification.profile import _fail
 
 Support = tuple[tuple[int, str], ...]

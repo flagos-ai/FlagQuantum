@@ -11,7 +11,7 @@ from examples.synthesis.community.paper_implementation_project.bpde.main import 
     H1,
     native_program,
 )
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 
 
 def reference(delta: float) -> fq.Circuit:

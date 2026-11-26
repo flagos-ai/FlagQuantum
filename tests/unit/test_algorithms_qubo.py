@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from flagquantum.algorithms.qubo import (
+from flagquantum.algorithms.optimization.qubo import (
     QuboProblem,
     ising_to_qubo,
     max_cut_qubo,
@@ -62,7 +62,7 @@ def test_round_trip_preserves_energy_on_every_assignment() -> None:
 
 def test_round_trip_is_exact_for_a_hamiltonian_that_is_not_a_qubo() -> None:
     """A general Z-basis Hamiltonian survives the round trip through QUBO form."""
-    from flagquantum.algorithms.core import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     hamiltonian = Hamiltonian(
         [
@@ -118,7 +118,7 @@ def test_a_problem_with_no_coefficients_still_maps() -> None:
 
 def test_ising_to_qubo_rejects_a_non_z_term() -> None:
     """A Hamiltonian outside the Z basis has no QUBO form in this workflow."""
-    from flagquantum.algorithms.core import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     with pytest.raises(ValueError):
         ising_to_qubo(Hamiltonian([pauli_term(1.0, "X", (0,))]))
@@ -126,7 +126,7 @@ def test_ising_to_qubo_rejects_a_non_z_term() -> None:
 
 def test_a_bare_pair_hamiltonian_recovers_both_induced_linear_terms() -> None:
     """A pair contributes a single-qubit Z to each endpoint, even with no Z term emitted."""
-    from flagquantum.algorithms.core import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     recovered = ising_to_qubo(Hamiltonian([pauli_term(2.0, "ZZ", (0, 1))]))
     assert recovered.linear == {0: pytest.approx(-4.0), 1: pytest.approx(-4.0)}

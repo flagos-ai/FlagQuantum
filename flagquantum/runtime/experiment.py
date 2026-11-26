@@ -18,6 +18,8 @@ from pathlib import Path
 
 import torch
 
+from flagquantum.runtime.results import ExecutionResult, MeasurementResult
+
 from ..circuit import Circuit
 from ..core.contracts import AccuracyContract
 from ..core.ir import CircuitIR, ensure_circuit_ir
@@ -40,7 +42,6 @@ from .execution_plan_contract import (
     has_initial_state_extension,
     has_runtime_inputs_extension,
 )
-from .result import ExecutionResult, MeasurementResult
 
 _SCHEMA = "flagquantum.experiment"
 _VERSION = "1.0"

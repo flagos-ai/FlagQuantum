@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
-from flagquantum.remote import jobs
-from flagquantum.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote import jobs
+from flagquantum.compute.remote.qpu import _quafu_sdk
 
 pytestmark = pytest.mark.unit
 
@@ -272,7 +272,7 @@ def test_the_report_refuses_a_scalability_claim(streams):
 
 
 def test_the_fanout_is_not_re_exported(streams):
-    import flagquantum.remote as remote
+    import flagquantum.compute.remote as remote
 
     assert not hasattr(remote, "submit_to_targets")
     assert not hasattr(fq, "submit_to_targets")

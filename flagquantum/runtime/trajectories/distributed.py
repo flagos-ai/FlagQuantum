@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from flagquantum.runtime.results.trajectories import (
+    TrajectoryFailure,
+    TrajectoryStatistics,
+)
+
 from .checkpoint import TrajectoryCheckpoint
-from .result import TrajectoryFailure, TrajectoryStatistics
 from .statistics import TensorWelford
 
 

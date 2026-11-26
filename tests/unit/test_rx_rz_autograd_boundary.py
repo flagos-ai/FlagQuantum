@@ -21,7 +21,7 @@ def loop_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setitem(sys.modules, "triton.language", language)
     path = (
         Path(__file__).resolve().parents[2]
-        / "flagquantum/kernels/triton/single_qubit_loop.py"
+        / "flagquantum/simulation/kernels/triton/single_qubit_loop.py"
     )
     spec = importlib.util.spec_from_file_location("_test_rx_rz_loop", path)
     assert spec is not None and spec.loader is not None

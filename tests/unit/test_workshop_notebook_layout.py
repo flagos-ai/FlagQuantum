@@ -21,7 +21,7 @@ NOTEBOOKS = (
 
 
 def _notebook(relative_path: str) -> dict[str, object]:
-    path = ROOT / "workshops" / "flagos2026" / "notebooks" / relative_path
+    path = ROOT / "examples" / "workshops" / "flagos2026" / "notebooks" / relative_path
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -46,7 +46,7 @@ def _code_source(relative_path: str) -> str:
 
 
 def test_source_notebooks_are_clean_and_contain_valid_python() -> None:
-    notebook_root = ROOT / "workshops" / "flagos2026" / "notebooks"
+    notebook_root = ROOT / "examples" / "workshops" / "flagos2026" / "notebooks"
     paths = sorted(notebook_root.glob("*.ipynb"))
     assert len(paths) == 6
     paths += sorted((notebook_root.parent / "reference_notebooks").rglob("*.ipynb"))
@@ -100,7 +100,7 @@ def test_jiuding_labs_use_the_current_submit_contract(relative_path: str) -> Non
 
 def test_jiuding_helper_uses_target_instead_of_removed_gpus_argument() -> None:
     source = (
-        ROOT / "workshops" / "flagos2026" / "scripts" / "jiuding_job.py"
+        ROOT / "examples" / "workshops" / "flagos2026" / "scripts" / "jiuding_job.py"
     ).read_text(encoding="utf-8")
 
     assert '"--target"' in source
@@ -187,7 +187,7 @@ def test_workshop_locator_supports_both_deployment_layouts(
     )
     if full_checkout:
         repository = tmp_path / "repository"
-        workshop = repository / "workshops" / "flagos2026"
+        workshop = repository / "examples" / "workshops" / "flagos2026"
         (repository / "pyproject.toml").parent.mkdir(parents=True)
         (repository / "pyproject.toml").touch()
         expected_root = repository
@@ -198,7 +198,7 @@ def test_workshop_locator_supports_both_deployment_layouts(
     (workshop / "notebooks").mkdir(parents=True, exist_ok=True)
     notebook_dir.mkdir(parents=True, exist_ok=True)
     monkeypatch.chdir(notebook_dir)
-    monkeypatch.syspath_prepend(str(ROOT / "workshops/flagos2026/scripts"))
+    monkeypatch.syspath_prepend(str(ROOT / "examples/workshops/flagos2026/scripts"))
 
     namespace: dict[str, object] = {}
     exec(_locator_source(relative_path), namespace)

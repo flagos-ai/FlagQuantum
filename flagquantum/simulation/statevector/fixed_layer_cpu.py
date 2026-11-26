@@ -8,8 +8,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix
 from ..native_cpu.rotation import (
     fused_product_state_initialization_,

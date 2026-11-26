@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .....simulation.jax.mps.pullbacks import jax_mps_canonicalization_pullback
+from flagquantum.simulation.mps.jax.pullbacks import jax_mps_canonicalization_pullback
+
 from ..common import communication_tier as _communication_tier
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,

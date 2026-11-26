@@ -23,7 +23,7 @@ from typing import TypedDict, cast
 
 from flagquantum.compiler.optimization import one_qubit_optimization as current
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 
 _SOURCE = "flagquantum/compiler/optimization/one_qubit_optimization.py"
 _ROOT = Path(__file__).resolve().parents[1]

@@ -12,7 +12,8 @@ from pathlib import Path
 from statistics import fmean
 from typing import Any
 
-from ..remote.qpu import DeploymentResult
+from flagquantum.compute.remote.qpu import DeploymentResult
+
 from ._atomic import write_once
 from .circuit_support import TwinCircuitSupport
 from .evidence import TwinEvidenceEnvelope

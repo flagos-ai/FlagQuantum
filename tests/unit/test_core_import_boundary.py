@@ -13,7 +13,7 @@ That list is read today by two things, and both of them leave a hole:
   ``flagquantum.core``, so every one of the package's 21 modules is invisible to
   that check.
 * ``tools/check_architecture.py`` enforces ``[interop_boundaries]`` in
-  ``architecture.toml``, which names five frameworks (``braket``, ``cirq``,
+  ``config/architecture.toml``, which names five frameworks (``braket``, ``cirq``,
   ``cudaq``, ``pennylane``, ``qiskit``). The other names on the policy list have
   no boundary rule to enforce them: 13 of the 19 declared names have no reader at
   all.
@@ -134,7 +134,7 @@ def test_the_guard_scans_the_whole_core_package() -> None:
     modules = {path.relative_to(ROOT).as_posix() for path in _core_modules()}
 
     assert "flagquantum/core/__init__.py" in modules
-    assert "flagquantum/core/operator_schema.py" in modules
+    assert "flagquantum/core/operators/schema.py" in modules
     assert "flagquantum/core/ir/__init__.py" in modules
     assert "flagquantum/core/ir/program/verifier.py" in modules
     # The walk is recursive, so a module in a subdirectory added later is covered.

@@ -28,7 +28,7 @@ from flagquantum.runtime.execution_plan_contract import (
 )
 from flagquantum.runtime.options import ExecutionOptions
 from flagquantum.runtime.planner import plan as runtime_plan
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.unit
 

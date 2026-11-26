@@ -15,16 +15,16 @@ from examples.qdiffusion_kaiwu.qdiffusion_system_development_probe import (
     _run_qdiffusion_slice,
     _validate_imported_module_tree,
 )
-from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import (
+from flagquantum.compute.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
 
 pytestmark = pytest.mark.integration
 SOURCE_CONFORMANCE = "FLAGQUANTUM_TEST_KAIWU_SOURCE"

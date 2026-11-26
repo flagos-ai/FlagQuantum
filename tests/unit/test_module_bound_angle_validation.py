@@ -266,7 +266,7 @@ def test_a_hamiltonian_objective_refuses_before_it_reports_an_energy(
     unnoticed. The bound angle is still invalid and must still be refused.
     """
 
-    from flagquantum.algorithms import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     module = fq.Module(
         _square_builder,
@@ -292,7 +292,7 @@ def test_the_issue_reproduction_refuses_on_the_jax_backend() -> None:
     """
 
     pytest.importorskip("jax")
-    from flagquantum.algorithms import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     module = fq.Module(
         _square_builder,

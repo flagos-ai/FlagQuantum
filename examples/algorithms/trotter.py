@@ -52,14 +52,12 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms import (
-    Hamiltonian,
-    pauli_term,
-    transverse_field_ising,
+from flagquantum.algorithms.primitives.hamiltonian import (Hamiltonian, pauli_term)
+from flagquantum.algorithms.many_body.spin import (transverse_field_ising)
+from flagquantum.algorithms.many_body.trotter import (
+    pauli_exponential_circuit,
     trotter_circuit,
 )
-from flagquantum.algorithms.trotter import pauli_exponential_circuit
-from flagquantum.circuit import Circuit
 from flagquantum.compiler.resource_estimation import (
     ESTIMATE_BASIS,
     estimate_resources,
@@ -84,9 +82,7 @@ def defect(order: int, steps: int) -> float:
     """Return the largest entrywise gap between the circuit and exact evolution."""
 
     hamiltonian = transverse_field_ising(3, coupling=COUPLING, field=FIELD)
-    circuit = trotter_circuit(
-        hamiltonian, TIME, steps=steps, order=order, dtype=DTYPE
-    )
+    circuit = trotter_circuit(hamiltonian, TIME, steps=steps, order=order, dtype=DTYPE)
     exact = torch.matrix_exp(-1j * TIME * hamiltonian.matrix(dtype=DTYPE))
     return float((get_unitary(circuit) - exact).abs().max())
 
@@ -106,7 +102,9 @@ def primitive_residual(word: str, targets: tuple[int, ...], width: int) -> float
     )
     product = get_unitary(circuit) @ expected.conj().T
     phase = product[0, 0]
-    return float((product / phase - torch.eye(product.shape[0], dtype=DTYPE)).abs().max())
+    return float(
+        (product / phase - torch.eye(product.shape[0], dtype=DTYPE)).abs().max()
+    )
 
 
 def main() -> None:
@@ -245,16 +243,16 @@ def main() -> None:
     report("depth", estimate.depth)
     report("t count", estimate.t_count)
     print(f"  {'':<{LABEL_WIDTH}}  CUDA-Q ships exp_pauli as one operation the")
-    print(f"  {'':<{LABEL_WIDTH}}  compiler decomposes; emitting the decomposition here")
+    print(
+        f"  {'':<{LABEL_WIDTH}}  compiler decomposes; emitting the decomposition here"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  is what lets these counters see inside it")
     print()
 
     print("a tensor coefficient keeps its gradient")
     coefficient = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
     trainable = Hamiltonian([pauli_term(coefficient, "X", 0)])
-    gradient_circuit = trotter_circuit(
-        trainable, 0.3, order=2, dtype=DTYPE
-    )
+    gradient_circuit = trotter_circuit(trainable, 0.3, order=2, dtype=DTYPE)
     gradient_circuit.ry(0, theta=0.7)
     value = gradient_circuit.expectation_ps(z=[0]).sum()
     value.backward()
@@ -302,7 +300,7 @@ def main() -> None:
     for label, candidate, time, kwargs in cases:
         try:
             trotter_circuit(candidate, time, **kwargs)
-        except Exception as exc:  # noqa: BLE001 - the refusal is the output here
+        except Exception as exc:
             report(label, f"refused -- {type(exc).__name__}: {exc}")
         else:
             report(label, "NOT REFUSED")

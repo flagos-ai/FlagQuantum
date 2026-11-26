@@ -4,7 +4,14 @@ import math
 from collections.abc import Sequence
 from dataclasses import replace
 
-from ..._hybrid.model import HybridProgram, IRType, Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import (
+    HybridProgram,
+    IRType,
+    Operation,
+    Value,
+    ValueId,
+)
+
 from ..verification.profile import _fail
 
 

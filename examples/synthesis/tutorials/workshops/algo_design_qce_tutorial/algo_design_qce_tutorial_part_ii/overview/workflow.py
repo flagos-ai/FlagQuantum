@@ -8,7 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .ansatz import feasible, maxcut, penalty
 from .model import (

@@ -120,8 +120,8 @@ def _pauli_matrix(pauli: str, *, device: torch.device) -> torch.Tensor:
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-011 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_pauli_rotation import (
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.statevector_pauli_rotation import (
         apply_complex64_local_pauli_rotation_2q,
     )
     from flagquantum.simulation.statevector.operations import (

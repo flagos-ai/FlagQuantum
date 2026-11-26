@@ -9,7 +9,8 @@ from dataclasses import dataclass, field, replace
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
+
 from .integers import checked_integer, integer_operation
 from .masked_selection import emit_truth_xor
 from .syntax import Expression, Function, Parameter, Record, Statement, Token, reject

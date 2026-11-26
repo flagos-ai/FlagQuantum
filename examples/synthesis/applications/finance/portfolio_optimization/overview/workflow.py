@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer, CobylaResult
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer, CobylaResult
 
 from ..main import DEFAULT_PARAMS
 from .operations import build_program

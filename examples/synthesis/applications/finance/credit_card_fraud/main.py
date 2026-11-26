@@ -5,7 +5,7 @@ from typing import Annotated
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.observables import Z
+from flagquantum.core.operators.observable import Z
 from flagquantum.synth import (
     Output,
     QNum,

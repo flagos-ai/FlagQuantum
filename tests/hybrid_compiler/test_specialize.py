@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BOOL,
     INDEX,
     SpecializationError,

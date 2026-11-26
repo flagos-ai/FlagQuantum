@@ -1,5 +1,7 @@
 # Constrained synthesis
 
+This package owns the public synthesis workflow and its program/readout adapters (`_workflow.py`, `_program.py`, `_readout.py`). Compiler owns program preparation; Runtime owns plan inspection. Rotation mathematics remains at its existing locations until the directly overlapping #1084 synthesis family is integrated.
+
 This maintained domain facade re-exports one Services implementation. It adds no
 builder, Program wrapper, validation engine or executor. The initial unreleased
 candidate supports bounded typed Python programs, source-retaining unsigned

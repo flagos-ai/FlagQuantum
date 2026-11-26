@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import torch
 
-from ....kernels.catalog import KernelRequest
+from flagquantum.simulation.kernels.catalog import KernelRequest
+
 from .kernel_dispatch import KernelDecision, select_cataloged_triton_kernel
 
 

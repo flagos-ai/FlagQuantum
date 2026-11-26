@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from ..noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
+
 from .model import QPUDigitalTwin, TwinSnapshot
 
 
@@ -79,7 +80,7 @@ def from_quafu_chip_info(
     provider, backend = _split_target(target)
     if provider != "quafu":
         raise ValueError("from_quafu_chip_info requires target='quafu:<backend>'")
-    from ..remote.qpu import quafu_noise_model_from_chip_info
+    from flagquantum.compute.remote.qpu import quafu_noise_model_from_chip_info
 
     selected = tuple(int(qubit) for qubit in qubits)
     model = quafu_noise_model_from_chip_info(
