@@ -26,11 +26,11 @@ fourteen existing authored arithmetic, comparison, permutation and finite-field
 references. Root installation and source-development instructions use native
 package/repository names. The actual Bell-circuit example executes in acceptance.
 
-Q-0135 remains open for its complete source homepage and library/documentation
-dependency scope. The native entry is usable now, while the complete generated
-component catalog and upstream fundamentals/library page scope retain their
-existing parent entries. Hosted ReadTheDocs installation and full scientific
-documentation requirements retain Q-0014 and their requirement-file parents.
+The subsequent [homepage audit](DOCUMENTATION_HOMEPAGE_FILE_AUDIT.md) connects
+the complete native fundamentals and published component catalog to the root.
+Its acceptance is separate from this configuration/asset batch. The full API
+reference generator, hosted ReadTheDocs installation and scientific
+documentation requirements retain their own parent scope.
 
 ## Actual renderer comparison
 

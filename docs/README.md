@@ -52,6 +52,7 @@ environment, then build from the repository root.
 
 ```console
 python -m pip install 'sphinx==8.1.3' 'myst-nb==1.3.0' 'pydata-sphinx-theme==0.16.1'
+python -m tools.development.notebook_publication
 python -m sphinx -b html docs docs/_build/html
 ```
 
@@ -60,20 +61,18 @@ Local project branding reuses `assets/logo_flagquantum.png`. Source-audit
 environment details and site acceptance are recorded in
 [the documentation site audit](development/DOCUMENTATION_SITE_FILE_AUDIT.md).
 
-The complete component notebook catalog can be published before the same build.
+Publish the complete component notebook catalog before the HTML build so that
+the homepage's component-library route resolves every registered notebook.
 Publication preserves the authored notebook bytes and uses the explicit section
 order maintained by the existing development tools.
 
-```console
-python -m tools.development.notebook_publication
-python -m sphinx -b html docs docs/_build/html
-```
-
-The generated library entry is `docs/_build/html/components/index.html`, with
+The homepage links through `docs/_build/html/reference/components.html` to the
+generated library entry at `docs/_build/html/components/index.html`, with
 120 distinct authored notebooks. Generated copies under `docs/components` follow
 the checkout's existing publication and retention policy. The root homepage's
-full catalog integration and the API generator's setter-signature refusal are
-tracked separately in the development audits.
+catalog integration is documented in
+[the homepage audit](development/DOCUMENTATION_HOMEPAGE_FILE_AUDIT.md).
+The API generator's setter-signature refusal remains a separate open boundary.
 
 For a local documentation preview that rebuilds after edits, install the
 optional pinned watcher and use the same authored source tree.
