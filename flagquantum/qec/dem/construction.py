@@ -97,14 +97,8 @@ from flagquantum.qec.codes import CodeCheck
 from flagquantum.qec.codes import StabilizerCode as StabilizerCode
 from flagquantum.qec.dem.matrices import CssCodeMatrices as CssCodeMatrices
 from flagquantum.qec.dem.matrices import Entry
-from flagquantum.qec.dem.matrices import _binary_matrix as _binary_matrix
-from flagquantum.qec.dem.matrices import _code_matrix_entries as _code_matrix_entries
-from flagquantum.qec.dem.matrices import _column_supports as _column_supports
 from flagquantum.qec.dem.matrices import css_code_matrices as css_code_matrices
 from flagquantum.qec.execution.signatures import _FAULT_GATES as _FAULT_GATES
-from flagquantum.qec.execution.signatures import (
-    _FAULT_KIND_BY_LETTER as _FAULT_KIND_BY_LETTER,
-)
 from flagquantum.qec.execution.signatures import (
     _FAULT_LETTER_BY_KIND as _FAULT_LETTER_BY_KIND,
 )

@@ -120,9 +120,7 @@ def test_invalid_permutation_remains_rejected() -> None:
         sabre.restore_swaps((0, 0, 2), CouplingMap.line(3))
 
 
-@pytest.mark.parametrize(
-    "name", ("_restore_path", "restore_swaps", "plan_restore_swaps")
-)
+@pytest.mark.parametrize("name", ("restore_swaps", "plan_restore_swaps"))
 def test_restoration_helpers_keep_original_imports(name: str) -> None:
     assert getattr(sabre, name) is getattr(layout_restore, name)
 

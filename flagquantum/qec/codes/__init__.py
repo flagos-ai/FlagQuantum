@@ -53,7 +53,6 @@ if TYPE_CHECKING:
     from flagquantum.qec.codes.css import CssCode
 
 
-from ._css_helpers import _DISTANCE_SEARCH_WEIGHT as _DISTANCE_SEARCH_WEIGHT
 from ._css_helpers import BinaryMatrix as BinaryMatrix
 from ._css_helpers import _block_width as _block_width
 from ._css_helpers import _mask as _mask
@@ -68,8 +67,6 @@ from .checks import ancilla_band_counts as ancilla_band_counts
 from .checks import ancilla_bands as ancilla_bands
 from .colour import triangular_colour_code as triangular_colour_code
 from .repetition import RepetitionCode as RepetitionCode
-from .steane import _STEANE_CHECK_SUPPORTS as _STEANE_CHECK_SUPPORTS
-from .steane import _STEANE_LOGICAL_SUPPORT as _STEANE_LOGICAL_SUPPORT
 from .steane import SteaneCode as SteaneCode
 from .surface.rotated import RotatedSurfaceCode as RotatedSurfaceCode
 from .surface.rotated import _surface_ancilla_sites as _surface_ancilla_sites

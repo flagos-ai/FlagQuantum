@@ -2,8 +2,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.compiler.topology.routing as _stage_routing
 from flagquantum.compiler import CouplingMap, route_to_topology
+from flagquantum.compiler.topology import routing_emission as topology_routing_emission
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit
@@ -154,14 +154,7 @@ def test_persistent_layout_reuses_mapping_and_restores_final_permutation() -> No
 
 @pytest.mark.parametrize(
     "name",
-    (
-        "_swap_instruction",
-        "_routing_metadata",
-        "_remap_instruction",
-        "_route_persistent_layout",
-        "_route_sabre",
-        "record_post_routing_optimization",
-    ),
+    ("_route_persistent_layout", "_route_sabre", "record_post_routing_optimization"),
 )
 def test_moved_emission_helpers_remain_direct_imports(name: str) -> None:
     from flagquantum.compiler.topology import routing, routing_emission
@@ -192,7 +185,10 @@ def test_existing_entries_dispatch_to_emission(
     circuit = fq.Circuit(3).h(0).ry(2, theta=0.37).cx(0, 2)
     routed = entry.route_to_topology(circuit, CouplingMap.line(3), strategy=strategy)
     emitter.assert_called_once()
-    assert _stage_routing._routing_metadata is routing_emission._routing_metadata
+    assert (
+        topology_routing_emission._routing_metadata
+        is routing_emission._routing_metadata
+    )
     assert (
         entry.record_post_routing_optimization
         is routing_emission.record_post_routing_optimization

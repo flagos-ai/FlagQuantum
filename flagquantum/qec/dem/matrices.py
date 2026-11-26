@@ -41,7 +41,6 @@ import torch
 
 from flagquantum.qec.codes import StabilizerCode as StabilizerCode
 from flagquantum.qec.codes.matrices import CssCodeMatrices as CssCodeMatrices
-from flagquantum.qec.codes.matrices import _binary_matrix as _binary_matrix
 from flagquantum.qec.codes.matrices import css_code_matrices as css_code_matrices
 from flagquantum.qec.noise import PhenomenologicalNoise
 

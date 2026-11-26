@@ -84,3 +84,12 @@ annotation is imported only for type checking to avoid a runtime import cycle.
 `restore_swaps`, `plan_restore_swaps` and `_restore_path` remain direct aliases
 in `sabre.py`. The root routing module also retains `plan_restore_swaps`. Compiler
 owns the private alias under the removal condition and version stated above.
+
+## Internal helper imports
+
+Consumers import cost helpers from `routing_cost.py`, emission helpers from
+`routing_emission.py`, strategy helpers from `routing_strategy.py`, trial
+helpers from `sabre.py`, restoration from `layout_restore.py`, and rate
+quantization from `link_error_rates.py`. `routing.py` owns its real routing
+implementation and dependencies, without unused private aliases. Routing
+and weighted-link numerical assertions remain authoritative.

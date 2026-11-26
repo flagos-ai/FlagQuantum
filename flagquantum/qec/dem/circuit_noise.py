@@ -11,15 +11,12 @@ from flagquantum.core.operators.channels import (
     bit_flip_channel,
     phase_flip_channel,
 )
+from flagquantum.simulation.stabilizer._fault_signatures import _pauli_channel_terms
 
 from ...core.ir import CircuitIR
 from ...errors import CapabilityError
 from ..circuits.memory import MemoryCircuit
-from ..execution.signatures import (
-    _gate_product_signatures,
-    _lowered_program,
-    _pauli_channel_terms,
-)
+from ..execution.signatures import _gate_product_signatures, _lowered_program
 from .construction import _GATE_BOUND_FAMILIES, _UNPLACEABLE_RULE_GATES, _pauli_fault
 from .matrices import Entry
 from .model import DemError

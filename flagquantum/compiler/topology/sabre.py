@@ -71,7 +71,6 @@ from typing import TYPE_CHECKING, Any
 from ...core.ir import CircuitIR, Instruction
 from ..optimization.ordering_barrier import is_ordering_barrier
 from ._layer_lookahead import choose_layer_swaps
-from .layout_restore import _restore_path as _restore_path
 from .layout_restore import plan_restore_swaps as plan_restore_swaps
 from .layout_restore import restore_swaps as restore_swaps
 

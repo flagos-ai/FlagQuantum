@@ -12,36 +12,21 @@ from collections.abc import Callable
 from typing import Any
 
 from ...core.ir import CircuitIR, ensure_circuit_ir
-from ..lowering.operand_semantics import (
-    _require_multi_qubit_device_local as _require_multi_qubit_device_local,
-)
 from ..optimization.ordering_barrier import is_ordering_barrier as is_ordering_barrier
 from .coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
 from .coupling import CouplingMap as CouplingMap
 from .routing_cost import LinkErrorRates as LinkErrorRates
-from .routing_cost import (
-    _count_sabre_orientation_swaps as _count_sabre_orientation_swaps,
-)
 from .routing_cost import (
     _PricedDevice,
     _topology_cost_model,
     require_weight_reading_strategy,
 )
 from .routing_cost import (
-    _source_routing_counts as _source_routing_counts,
-)
-from .routing_cost import (
-    _TopologyCostModel as _TopologyCostModel,
-)
-from .routing_cost import (
     emitted_link_faults as emitted_link_faults,
 )
-from .routing_emission import _remap_instruction as _remap_instruction
 from .routing_emission import _route_persistent_layout as _route_persistent_layout
 from .routing_emission import _route_restore_after_each_gate
 from .routing_emission import _route_sabre as _route_sabre
-from .routing_emission import _routing_metadata as _routing_metadata
-from .routing_emission import _swap_instruction as _swap_instruction
 from .routing_emission import (
     record_post_routing_optimization as record_post_routing_optimization,
 )
@@ -64,15 +49,6 @@ from .routing_strategy import (
     RoutingStrategySelection as RoutingStrategySelection,
 )
 from .routing_strategy import (
-    _estimate_routing_cost as _estimate_routing_cost,
-)
-from .routing_strategy import (
-    _estimate_swap_plan as _estimate_swap_plan,
-)
-from .routing_strategy import (
-    _plan_sabre_for_topology as _plan_sabre_for_topology,
-)
-from .routing_strategy import (
     _select_routing_strategy as _select_routing_strategy,
 )
 from .routing_strategy import (
@@ -83,12 +59,6 @@ from .routing_strategy import (
 )
 from .sabre import (
     SabrePlan as SabrePlan,
-)
-from .sabre import (
-    _plan_sabre_trial as _plan_sabre_trial,
-)
-from .sabre import (
-    _select_sabre_trials as _select_sabre_trials,
 )
 from .sabre import (
     plan_restore_swaps as plan_restore_swaps,

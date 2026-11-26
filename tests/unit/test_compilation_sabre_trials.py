@@ -9,6 +9,8 @@ import pytest
 
 from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.compiler.topology import routing, routing_strategy, sabre
+from flagquantum.compiler.topology import routing_cost as topology_routing_cost
+from flagquantum.compiler.topology import routing_strategy as topology_routing_strategy
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.topology.routing_cost import _topology_cost_model
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -113,7 +115,7 @@ def test_ordered_device_ranks_trials_with_orientation_and_restoration(
     def cost(plan: sabre.SabrePlan) -> int:
         return sabre._restored_swap_count(
             plan, coupling
-        ) + 2 * routing._count_sabre_orientation_swaps(
+        ) + 2 * topology_routing_cost._count_sabre_orientation_swaps(
             source, topology, plan.placements
         )
 
@@ -125,7 +127,9 @@ def test_ordered_device_ranks_trials_with_orientation_and_restoration(
     candidates.append(sabre._plan_sabre_trial(source, coupling, layer_lookahead=True))
     assert all(candidate is not None for candidate in candidates)
     minimum = min(cost(candidate) for candidate in candidates if candidate is not None)
-    selected = routing._plan_sabre_for_topology(source, topology, tuple(range(6)))
+    selected = topology_routing_strategy._plan_sabre_for_topology(
+        source, topology, tuple(range(6))
+    )
     assert cost(selected) == minimum
     estimate = routing.estimate_routing_cost(source, device, strategy="sabre")
     routed = route_to_topology(source, device, strategy="sabre")
@@ -141,7 +145,7 @@ def test_materialization_reuses_the_selected_layout_search(seed: int) -> None:
     with patch.object(
         routing_strategy, "plan_sabre_layout", wraps=sabre.plan_sabre_layout
     ) as search:
-        estimate, plan = routing._estimate_routing_cost(
+        estimate, plan = topology_routing_strategy._estimate_routing_cost(
             source, topology, strategy="sabre_layout"
         )
         assert plan is not None

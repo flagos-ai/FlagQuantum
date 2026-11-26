@@ -77,7 +77,7 @@ def test_gate_bound_surface_model_needs_no_reference_execution(
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("a Clifford DEM must not allocate an amplitude store")
 
-    monkeypatch.setattr(construction, "_executed_flip_set", forbidden)
+    monkeypatch.setattr(signatures, "_executed_flip_set", forbidden)
     monkeypatch.setattr(construction, "_spliced_fault", forbidden)
     monkeypatch.setattr(signatures, "execute_hybrid_dynamic_session", forbidden)
     memory = build_memory_circuit(RotatedSurfaceCode(distance=distance), rounds=3)

@@ -39,3 +39,9 @@ The example prints one class identity, equal check layouts, the surviving
 `flagquantum.qec.codes` pickle module, Steane counts `7 6 2`, and zero logical error rate. The 001 and
 002 fixtures remain frozen; the pre-003 fixture also protects class/function
 pickles and method metadata. Never refresh fixtures to conceal drift.
+
+## Import ownership
+
+Code-specific search constants and Steane supports remain in their defining
+code modules; the package does not expose unused copies. Historical registered
+pickle helpers remain under the existing QEC retirement contract.

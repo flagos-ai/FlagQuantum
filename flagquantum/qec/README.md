@@ -1320,3 +1320,14 @@ separate statistical and scaling evidence.
 [Feedback modes and model boundaries](IMPLEMENTATION.md) explain the supported
 profiles. This reference experiment does not establish general FTQC or
 hard-real-time hardware feedback.
+
+## Internal aliases and frozen compatibility
+
+Internal callers import existing defining owners directly. Retire unused aliases
+only after checking frozen namespace, replacement-definition and pickle locators
+in the QEC historical-retirement contract and original fixtures. The
+[QEC alias record](../../docs/development/migration/qec-private-binding-retirement.md)
+itemizes the retained bindings.
+
+Internal algorithms use defining helper owners even when a frozen historical
+namespace must retain the same helper for serialized or published compatibility.

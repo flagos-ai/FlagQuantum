@@ -71,13 +71,9 @@ from dataclasses import dataclass
 from numbers import Integral, Real
 
 from flagquantum.errors import CapabilityError
-from flagquantum.qec.dem import (
-    DemError,
-    DetectorErrorModel,
-    _count,
-    _normalized_indices,
-)
+from flagquantum.qec.dem import DemError, DetectorErrorModel
 from flagquantum.qec.dem.graph import DecodingGraph
+from flagquantum.qec.dem.model import _count, _normalized_indices
 
 __all__ = ("BeliefPropagationDecodeResult", "BeliefPropagationDecoder")
 

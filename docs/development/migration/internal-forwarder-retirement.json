@@ -5773,7 +5773,7 @@
       "old": "flagquantum/compiler/routing.py",
       "module": "flagquantum.compiler.routing",
       "name": "_routing_metadata",
-      "owner": "flagquantum.compiler.topology.routing",
+      "owner": "flagquantum.compiler.topology.routing_emission",
       "pr_changed": false
     },
     {

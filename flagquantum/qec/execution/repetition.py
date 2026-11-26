@@ -25,8 +25,8 @@ from ..decoders import (
     RepetitionStreamingLookupDecoder,
     RepetitionTemporalDecoder,
     StreamingDecoder,
-    _repetition_wire,
 )
+from ..decoders.repetition import _repetition_wire
 from ..types import (
     Correction,
     DecodeResult,
