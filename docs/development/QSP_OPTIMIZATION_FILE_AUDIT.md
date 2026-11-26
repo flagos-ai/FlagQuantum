@@ -86,9 +86,10 @@ warnings. After annotation-only fixes, all40 new solver/FFT cases pass again.
 Strict mypy covers both complete numerical owners and both tests. Black/Ruff,
 Simulation scope, architecture, multi-level IR and protected API checks pass.
 
-Q-0650 closes the original test responsibility. Q-0649 retains open status because
-the two reproducible real-mode precision counterexamples remain under the
-planning rule for upstream defects. Its complete source adaptation and dependency
-chain are delivered. Release of this numerical acceptance boundary requires an
-explicit disposition of the source solver's unsuccessful/inaccurate results.
+Q-0650 closes the original test responsibility. On 2026-11-26 the user explicitly
+accepted Q-0649 as a complete faithful migration, with the two real-mode precision
+counterexamples retained as separate optimization work. The existing complete
+source adaptation, direct consumers and original-test evidence above are reused.
+This does not certify successful optimization or a complement-identity bound for
+the failing inputs. See the [approved disposition](G2_UPSTREAM_DEFECT_DISPOSITION.md).
 The reference implementation and tests retain their frozen blobs.
