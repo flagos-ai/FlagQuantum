@@ -97,6 +97,9 @@ def certified_and_monomial_map(
     from flagquantum.compiler.registers.primitives.controlled_swap import (
         controlled_swap_bit_ir,
     )
+    from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
+        _relative_swap_gates,
+    )
 
     if not basis_bits or not basis_bits[0]:
         raise AssertionError("Channel certificate needs nonempty basis inputs")
@@ -108,6 +111,48 @@ def certified_and_monomial_map(
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
+        if gate.name == "cx":
+            end = i
+            while end < len(gates) and gates[end].name == "cx":
+                end += 1
+            pairs = tuple((g.wires[1], g.wires[0]) for g in gates[i:end])
+            size = len(pairs)
+            fanout = i + 13 * size - 1
+            if fanout < len(gates) and gates[fanout].name == "cx":
+                control = gates[fanout].wires[0]
+                wires = (control, *(w for pair in pairs for w in pair))
+                if len(set(wires)) == len(wires):
+                    for inverse, layered in (
+                        (False, False),
+                        (True, False),
+                        (False, True),
+                        (True, True),
+                    ):
+                        ordered = pairs[::-1] if inverse else pairs
+                        relative_left, relative_right = tuple(
+                            zip(*ordered, strict=True)
+                        )
+                        block = _relative_swap_gates(
+                            control,
+                            relative_left,
+                            relative_right,
+                            adjoint=inverse,
+                            layer_rotations=layered,
+                        )
+                        if gates[i : i + len(block)] != block:
+                            continue
+                        for x, y in ordered:
+                            a, b = values[x].clone(), values[y].clone()
+                            # The dirty 111 column carries the source minus sign.
+                            phases *= 1 - 2 * (values[control] & a & b).to(torch.int64)
+                            values[x] = torch.where(values[control].bool(), b, a)
+                            values[y] = torch.where(values[control].bool(), a, b)
+                        i += len(block)
+                        break
+                    else:
+                        block = ()
+                    if block:
+                        continue
         if gate.name == "h" and i + 2 < len(gates):
             target = gate.wires[0]
             measured, correction = gates[i + 1 : i + 3]

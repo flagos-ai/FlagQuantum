@@ -12,9 +12,50 @@ from flagquantum.compiler.registers.primitives.and_compute import (
 )
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_certificate import certify_erasure_histories
-from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
+from tests.unit.measurement_checks import (
+    certified_and_channel_map,
+    certified_and_monomial_map,
+    forced_branch,
+)
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("width", (1, 2, 3))
+@pytest.mark.parametrize("inverse", (False, True))
+@pytest.mark.parametrize("layered", (False, True))
+def test_relative_swap_certificate_preserves_dirty_column_phases(
+    width: int, inverse: bool, layered: bool
+) -> None:
+    from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
+        _relative_swap_gates,
+    )
+
+    qubits = 1 + 2 * width
+    gates = _relative_swap_gates(
+        0,
+        tuple(range(1, 1 + width)),
+        tuple(range(1 + width, qubits)),
+        adjoint=inverse,
+        layer_rotations=layered,
+    )
+    basis = tuple(product((0, 1), repeat=qubits))
+    outputs, phases, events = certified_and_monomial_map(gates, basis)
+    assert events == 0 and -1 in phases
+    initial = torch.arange(1, (1 << qubits) + 1).to(torch.complex128)
+    initial[1::2] *= 1j
+    initial /= initial.norm()
+    expected = torch.zeros_like(initial)
+    for i, (word, phase) in enumerate(zip(outputs, phases, strict=True)):
+        key = sum(bit << (qubits - j - 1) for j, bit in enumerate(word))
+        expected[key] = initial[i] * phase
+    torch.testing.assert_close(
+        forced_branch(initial, gates, ()), expected, atol=2e-14, rtol=0
+    )
+    # A missing rotation must not be mistaken for the certified exact stream.
+    broken = tuple(g for i, g in enumerate(gates) if i != width + 2)
+    with pytest.raises(AssertionError):
+        certified_and_monomial_map(broken, basis)
 
 
 def test_lookup_erasure_phase_certificate_matches_every_complex_branch() -> None:
