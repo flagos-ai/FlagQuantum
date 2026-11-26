@@ -13,6 +13,8 @@ from ....core.ir.program.register_types import (
 )
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
+from ..component_builder import ComponentProgramBuilder
+from ..component_expansion import expand_component_calls_once
 from ..component_gate_function import bit_gate_function
 from ..component_wire_graph import WireCall, wire_component_program
 from ..control.unary_wire_calls import (
@@ -40,7 +42,7 @@ def pauli_select_component_pair(
         type(selection_width) is not int
         or selection_width < 1
         or type(target_width) is not int
-        or target_width < 1
+        or target_width < 0
         or not words
         or len(words) > 1 << selection_width
         or control_value is not None
@@ -132,5 +134,19 @@ def pauli_select_component_pair(
     )
     if control_value == 0:
         calls.append(bit_wire_call(Instruction("x", ports["control"])))
-    forward = wire_component_program(signature, ports, ports, calls)
+    wire_signature = Signature(
+        register for register in signature if target_width or register.name != "target"
+    )
+    wire_ports = {
+        name: wires for name, wires in ports.items() if target_width or name != "target"
+    }
+    forward = wire_component_program(wire_signature, wire_ports, wire_ports, calls)
+    if not target_width:
+        # The empty word owns a logical handle, never a physical wire identity.
+        wrapper = ComponentProgramBuilder(signature)
+        outputs = wrapper.call_program(
+            forward, {name: wrapper.inputs[name] for name in wire_ports}
+        )
+        outputs["target"] = wrapper.inputs["target"]
+        forward = expand_component_calls_once(wrapper.finalize(outputs))[0]
     return forward, adjoint_unary_wire_program(forward, tuple(leaves))
