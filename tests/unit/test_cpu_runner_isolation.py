@@ -390,3 +390,86 @@ def test_cached_torch_probe_rejects_wrong_version_or_accelerator_build(
         check=False,
     )
     assert (result.returncode == 0) == ready, result.stderr.decode()
+
+
+@pytest.mark.parametrize("inherit_cache", [False, True])
+def test_minimal_dependency_environment_can_exclude_installed_cache(
+    tmp_path: Path, inherit_cache: bool
+) -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/isolated-python/action.yml").read_text()
+    )
+    cached = tmp_path / "dependency-cache"
+    cached.mkdir()
+    (cached / "fq_cached_optional_probe.py").write_text("CACHED_PACKAGE = True\n")
+    marker = tmp_path / "cache-hook-used"
+    hook = tmp_path / "cached-environment.sh"
+    hook.write_text(r"""#!/bin/bash
+set -eu
+"$FQ_JOB_PYTHON" -m venv --without-pip "$FQ_JOB_VENV"
+site_directory="$("$FQ_JOB_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+printf '%s\n' "$FQ_BASE_ENV" > "$site_directory/dependency-cache.pth"
+: > "$FQ_CACHE_TEST_MARKER"
+printf '%s\n' "$FQ_JOB_VENV/bin" >> "$GITHUB_PATH"
+printf 'VIRTUAL_ENV=%s\n' "$FQ_JOB_VENV" >> "$GITHUB_ENV"
+""")
+    hook.chmod(0o755)
+    path_file = tmp_path / "github-path"
+    env_file = tmp_path / "github-environment"
+    environment = {
+        **os.environ,
+        "PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"],
+        "RUNNER_TEMP": str(tmp_path),
+        "RUNNER_ENVIRONMENT": "github-hosted",
+        "RUNNER_OS": "Linux",
+        "FQ_RUNNER_KIND": "cpu",
+        "FQ_BASE_ENV": str(cached),
+        "ACTIONS_RUNNER_HOOK_JOB_STARTED": str(hook),
+        "FQ_CACHE_TEST_MARKER": str(marker),
+        "FQ_INHERIT_INSTALLED_DEPENDENCIES": str(inherit_cache).lower(),
+        "FQ_SELF_HOSTED_PYPI_INDEX": "",
+        "LD_LIBRARY_PATH": str(tmp_path),
+        "FQ_TORCH_SPEC": "fq-absent-isolation-test-wheel==0",
+        "GITHUB_PATH": str(path_file),
+        "GITHUB_ENV": str(env_file),
+        "PYTHONPATH": str(cached),
+    }
+    subprocess.run(
+        ["bash", "-eu", "-c", action["runs"]["steps"][0]["run"]],
+        env=environment,
+        check=True,
+        timeout=60,
+    )
+    assert marker.exists() == inherit_cache
+    exported = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+    executable = Path(path_file.read_text().splitlines()[-1]) / "python"
+    result = subprocess.run(
+        [
+            str(executable),
+            "-I",
+            "-c",
+            "import importlib.util, json; "
+            "print(json.dumps(importlib.util.find_spec('fq_cached_optional_probe') is not None))",
+        ],
+        env={**environment, **exported},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    )
+    assert json.loads(result.stdout) == inherit_cache
+
+
+def test_native_fermion_requires_a_fresh_dependency_environment() -> None:
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/isolated-python/action.yml").read_text()
+    )
+    assert action["inputs"]["inherit-installed-dependencies"]["default"] == "true"
+    job = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]["native-fermion"]
+    isolation = [
+        step
+        for step in job["steps"]
+        if step.get("uses") == "./.github/actions/isolated-python"
+    ]
+    assert len(isolation) == 1
+    assert isolation[0]["with"]["inherit-installed-dependencies"] == "false"

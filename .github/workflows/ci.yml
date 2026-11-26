@@ -516,6 +516,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/isolated-python
         with:
+          inherit-installed-dependencies: "false"
           torch-spec: torch==${{ matrix.torch }}
           self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
@@ -526,7 +527,16 @@ jobs:
         run: python -m pip install --no-build-isolation -e . 'pytest>=7,<10'
       - name: Verify the independent core workflow on Linux
         run: |
-          python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'h5py', 'openfermion', 'cirq'))"
+          python - <<'PY'
+          import importlib.util
+          names = ("numpy", "scipy", "pyscf", "h5py", "openfermion", "cirq")
+          leaked = {
+              name: spec.origin
+              for name in names
+              if (spec := importlib.util.find_spec(name)) is not None
+          }
+          assert not leaked, leaked
+          PY
           python -m pytest tests/unit/fermion tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py tests/integration/test_molecular_hdf5_isolation.py tests/integration/test_fcidump_isolation.py -q
           python -m examples.algorithms.fermion_chemistry
       - name: Install and validate the independent optional file reader

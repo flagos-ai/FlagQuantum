@@ -28,8 +28,8 @@ all 17 remaining Runtime definitions differ only in direct-owner call bindings.
   359 passed / 13 existing environment skips. The complete carried-operand
   dispatch file passes 165 tests with its assertions unchanged.
 
-The complete regressions run with four workers in the actual Git checkout and
-normal process access. The existing credential-dependent Kaiwu live-smoke
+The complete regressions above ran on product migration commit `f6aa8edef`,
+with four workers in the actual Git checkout and normal process access. The existing credential-dependent Kaiwu live-smoke
 exclusion and optional/hardware skip policies are unchanged. Eleven source
 quality checks pass, including strict mypy over 1261 sources and Black over
 3662 files. Operator manifest, runtime schema, legacy-root usage and correctness
@@ -70,3 +70,21 @@ parent's 533 migration rows retains 15 old-import obligations for the gated
 joint migration; this batch does not resolve or qualify those obligations.
 Construction/IR, joint native/development distribution families and Rust remain
 behind their existing closeout gates. Exact pushed-head CI remains required.
+
+
+## CI dependency-isolation correction
+
+The native-fermion lane failed its pre-test optional-package absence assertion
+when the runner hook supplied its installed scientific dependency overlay.
+This lane now disables installed-dependency inheritance and creates a fresh
+virtual environment. Other lanes keep their existing overlay behavior and
+compatible wheel-download reuse remains available. The absence assertion keeps
+all six original module names and reports any leaked module origins.
+
+An actual-environment regression reproduces the ignored opt-out before the
+fix. The new cached/fresh cases and lane wiring checks pass; the complete five
+affected CI environment/routing/dependency suites pass **162 tests**. YAML,
+Bash and Python 3.10 probe syntax checks pass. This CI-only correction leaves
+all 1261 product Python files and the qualified wheel bytes unchanged; it adds
+three CI tests to the prior full-regression surface. The corrected pushed
+commit still requires its own complete CI qualification.
