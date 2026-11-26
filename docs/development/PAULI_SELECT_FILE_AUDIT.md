@@ -132,7 +132,8 @@ findings, none on this batch.
 
 The complete constructor-domain intake additionally identifies distinct work:
 Boolean width/control metadata and an empty target execute in the original
-root graph and generator but are not fully admitted by both native paths.
+root graph and generator. The scalar metadata follow-up below admits the
+Boolean cases; empty target execution remains outside the Core contract.
 Concrete SymPy integers execute in the source generator while its stored graph
 classifies them as parameterized. NumPy integer widths and floating widths fail
 in the original QAny validator. Empty selection fails in the original traversal.
@@ -141,3 +142,32 @@ g2-pauli-constructor-domain-intake-20261126.json in the reference evidence
 directory. They are not repaired by silently casting every numeric input, and
 the source's out-of-domain control value two does not become a new native
 binary-control contract.
+
+## Complete scalar constructor metadata dependency
+
+Both conversion paths now normalize Python integer/Boolean widths and concrete
+SymPy integer widths at the Ecosystem boundary. Existing concrete binary
+activation validation owns control normalization, including Boolean, NumPy
+integer/Boolean and binary floating controls. All values entering native Programs
+and structured instructions are ordinary Python integers; Core's strict numeric
+metadata rules remain unchanged. NumPy and floating widths retain refusal.
+
+The actual source generator's calls, operands and measurement feedback compare
+against normal append for every accepted profile and both control polarities.
+The complete directional Programs equal their canonical-integer counterparts.
+Full complex operators, every small raw measurement history and clean work are
+checked through those Programs in both directions. Twelve old operations and
+twenty-four complete Programs still equal the previously published baseline.
+
+Concrete SymPy integer widths retain two distinct source failures: stored graph
+decomposition reports a parameterized gate, and QEC counting raises AttributeError
+on Integer.bit_length. Both are explicitly reproduced. Its executable source SDK
+generator is compared independently; native canonical resource estimates are not
+reported as successful original symbolic-width model queries.
+
+The affected batch passes 80 cases in each Cirq profile and 145 local integration
+cases. Five touched Python files pass strict typing, format, lint and scope;
+English/links, architecture, IR and API checks pass. Repository dependency policy
+retains 724 findings, none on this batch. No frozen reference, primitive emitter,
+allocation lifetime or protected Core contract changes. Empty-target admission
+and wider constructor/capture scope remain separate work; Q-0592 stays open.
