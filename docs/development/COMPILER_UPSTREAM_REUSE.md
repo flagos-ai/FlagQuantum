@@ -199,7 +199,7 @@ print(compiled.metadata["routing"]["mapping_restored"])
 # True
 ```
 
-For a larger executable workflow, use `python -m examples.target_aware_compilation`.
+For a larger executable workflow, use `python -m examples.circuits.compiler.target_aware_compilation`.
 The path is `single_device_fast_path`; no distributed capability is added.
 
 This recovery port does not establish lower CZ counts, shorter compiled depth,

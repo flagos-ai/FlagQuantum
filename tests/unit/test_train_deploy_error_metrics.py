@@ -7,7 +7,7 @@ from dataclasses import replace
 import pytest
 import torch
 
-from examples import train_parameterized_circuit_then_deploy as example
+from examples.training import train_parameterized_circuit_then_deploy as example
 from flagquantum.compute.remote.qpu.contracts import (
     DeploymentResult,
     ProviderTaskHandle,

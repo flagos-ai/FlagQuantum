@@ -2,7 +2,12 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, "refactor/qec-restructure-*"]
+    # Keep stacked architecture PRs under the same checks before main merge.
+    branches:
+      - main
+      - "refactor/qec-restructure-*"
+      - "refactor/compute-local-memory-owner"
+      - "refactor/structure-*"
   workflow_dispatch:
 
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
@@ -1719,7 +1724,7 @@ jobs:
             python -m pip check
             python tools/validation/check_cudaq_export_contract.py --verify-sdk
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
-            python -m examples.cudaq_bell_export
+            python -m examples.ecosystem.cudaq_bell_export
             python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
           done
       - name: Retain resource limits and pytest timing reports

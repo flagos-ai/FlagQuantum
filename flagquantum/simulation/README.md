@@ -117,14 +117,14 @@ one branch for the sum would be a silent answer.
 
 The route carries an exact autograd graph. `d<Z(0)>/dtheta` for `RY(theta)` on
 `|0>` is `-sin(theta)`: `complex128` reproduces it exactly and the default
-`complex64` lands about `1e-8` away. `examples/density_matrix_execution.py` is
+`complex64` lands about `1e-8` away. `examples/simulation/density_matrix_execution.py` is
 the ten-minute path through the gate and channel part of the above, and
-`examples/dynamic_density_matrix.py` is the ten-minute path through the dynamic
+`examples/simulation/dynamic_density_matrix.py` is the ten-minute path through the dynamic
 part.
 
 ```bash
-python -m examples.density_matrix_execution
-python -m examples.dynamic_density_matrix
+python -m examples.simulation.density_matrix_execution
+python -m examples.simulation.dynamic_density_matrix
 ```
 
 ## Continuous-time open-system evolution
@@ -150,7 +150,7 @@ reports dimensions and retained-trajectory memory without evolving it.
 The issue #234 reference problem can be run directly:
 
 ```bash
-python -m examples.lindblad_evolution
+python -m examples.simulation.lindblad_evolution
 ```
 
 The minimal SDK call is:
@@ -229,7 +229,7 @@ Run both a three-level leakage model with a coupling gradient and a spin-mode
 exchange model built from the existing boson matrices:
 
 ```bash
-python -m examples.mixed_dimension_dynamics
+python -m examples.simulation.mixed_dimension_dynamics
 ```
 
 All three integrators, initial-state batching, the existing `EvolutionResult`,
@@ -273,7 +273,7 @@ print(f"Transfer: {r.populations[-1, p.basis_labels.index((1, 0))].item():.8f}")
 ```
 
 Expected: `Transfer: 0.11757891`. Run
-`python -m examples.constrained_basis_reference` for a gradient and a declared
+`python -m examples.simulation.constrained_basis_reference` for a gradient and a declared
 Ising convention through the same existing numerical path.
 
 basis_labels is mutually exclusive with explicit dimensions or n_qubits.
@@ -335,7 +335,7 @@ result = fql.run(
 print(result.populations[-1, [2, 6]])  # P(0, 2) = P(2, 0) = 0.5
 ```
 
-Run `python -m examples.boson_interference` for the same two-mode interference
+Run `python -m examples.simulation.boson_interference` for the same two-mode interference
 with independent loss on each mode, plan serialization, and unconditional output
 probabilities. Three levels per mode contain the complete two-excitation sector;
 two levels cannot represent bunching. Agreement at larger cutoffs checks this
@@ -349,7 +349,7 @@ same identity and existing schema 1.3/1.4. No new serializer or solver is used.
 Initial-state batches, live initial-state autograd, and initial-density adjoints
 reuse their existing paths. The algebra's coefficients remain numeric constants;
 for a trainable coupling, multiply its materialized matrix by a live tensor as
-in `examples/mixed_dimension_dynamics.py`. Direct symbolic/tensor coefficient
+in `examples/simulation/mixed_dimension_dynamics.py`. Direct symbolic/tensor coefficient
 binding remains a separate M1 gate. This bounded CPU consumer is not a bosonic
 or photonic backend, a Gaussian simulator, or a new circuit operation.
 
@@ -400,7 +400,7 @@ result = fql.run(
 print(f"Coupling derivative: {derivative.item():.8f}")  # 0.32210884
 ```
 
-Run `python -m examples.train_boson_coupling` for an actual Adam optimization
+Run `python -m examples.training.train_boson_coupling` for an actual Adam optimization
 using the same binding, plan/run, and autograd path. The algebra's canonical
 coefficients stay numeric; trainable values belong to the existing Hamiltonian
 request entries. Rebuild the bound terms and plan after each optimizer step.
@@ -440,7 +440,7 @@ print([round(value, 8) for value in gradient.tolist()])
 # [0.04337116, 0.08674232, 0.02168558]
 ```
 
-Run `python -m examples.train_piecewise_drive` for an actual optimizer update.
+Run `python -m examples.training.train_piecewise_drive` for an actual optimizer update.
 Rebind and rebuild after each update. Scheduled plans use version 1.5 and store
 ordered numerical Hamiltonians; static qubit 1.3 and finite-product 1.4 plans
 keep their contents and identities. JSON stores values rather than graphs, so
@@ -530,7 +530,7 @@ unrepresentable one for every engine in this directory.
 
 ```bash
 pip install 'flagquantum[stim]'
-python -m examples.stabilizer_sampling
+python -m examples.simulation.stabilizer_sampling
 ```
 
 ```python
@@ -556,7 +556,7 @@ rank-local kernels, specialized precision paths, and numerical migration rules.
 
 ## Native Rydberg model assembly
 
-rydberg_model.py consumes verified Core physical records and assembles bounded
+`dynamics/rydberg.py` consumes verified Core physical records and assembles bounded
 one/two-actor CPU interval Hamiltonians and absorbing loss operators. It reuses
 Core's exact path geometry and eight-ULP boundary semantics, scalar binding and
 the existing request mapping validator. The high-level Lindblad facade consumes
@@ -566,7 +566,7 @@ The initial-density adjoint delegates to the same forward/reverse integrator loo
 under no_grad; run retains live control graphs. Low-level mathematical entries
 retain their existing input contract.
 
-Run `python -m examples.rydberg_native_dynamics`; expected final survival is
+Run `python -m examples.simulation.rydberg_native_dynamics`; expected final survival is
 0.81873075, unconditional RR is 0.40936538 and exact numeric replay is True.
 The imposed linear trajectory uses interval midpoints: convergence of this
 approximation is separate from integration accuracy. The unchanged physical
@@ -577,7 +577,7 @@ feedback, GPU/distributed native dynamics or hardware control is implemented.
 
 ## Fixed Ising braid and unread-charge actions
 
-`ising_braid.py` consumes Core's approved four-sigma, total-vacuum source. Its
+`dynamics/ising_braid.py` consumes Core's approved four-sigma, total-vacuum source. Its
 internal `evolve_ising_braid` entry applies each ordered F/R generator through
 the existing `SuperOperator.left_right_multiply(...).apply(...)` algebra and
 returns one CPU complex128 density matrix in the declared fusion coordinates.
@@ -622,7 +622,7 @@ branches, original-trace normalization, unchanged inputs and unchanged RNG.
 
 ## Intermediate Rydberg presence evolution
 
-The private seams in `rydberg_presence.py` assemble the existing full native
+The private seams in `dynamics/rydberg_presence.py` assemble the existing full native
 control schedule once, preserving absolute grid times and interval bindings.
 They evolve its prefix, apply a Runtime-selected Kraus branch using its original
 positive trace, and continue the existing numerical engine on the remaining

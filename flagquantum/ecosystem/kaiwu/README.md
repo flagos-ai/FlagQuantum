@@ -70,7 +70,7 @@ For a copy-ready local QUBO-to-Ising workflow that does not read credentials,
 submit a remote task, or consume provider quota, run:
 
 ```bash
-python -m examples.kaiwu_matrix_boundary
+python -m examples.compute.kaiwu_matrix_boundary
 ```
 
 The example converts a two-variable QUBO problem, verifies QUBO/Ising energy

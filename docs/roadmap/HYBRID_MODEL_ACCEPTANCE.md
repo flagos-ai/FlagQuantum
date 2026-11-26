@@ -1,7 +1,7 @@
 # Hybrid Model Acceptance
 
 FlagQuantum maintains two small product workflows in
-`examples/hybrid_model_acceptance.py`: `HybridQuantumClassifier` and
+`examples/training/hybrid_model_acceptance.py`: `HybridQuantumClassifier` and
 `VariationalEnergyModel`. They are ordinary PyTorch modules containing
 `fq.Module`; runtime changes are expressed through `RuntimePolicy`, not model
 rewrites.
@@ -19,9 +19,9 @@ scalability claim, and these CI/development workflows keep
 `scalability_claim_allowed=false`.
 
 ```bash
-python examples/hybrid_model_acceptance.py --model classifier --steps 20
-python examples/hybrid_model_acceptance.py --model classifier --backend jax --steps 20
-python examples/hybrid_model_acceptance.py --model energy --backend jax --steps 5
+python examples/training/hybrid_model_acceptance.py --model classifier --steps 20
+python examples/training/hybrid_model_acceptance.py --model classifier --backend jax --steps 20
+python examples/training/hybrid_model_acceptance.py --model energy --backend jax --steps 5
 ```
 
 `--backend` selects the quantum backend for either model. JAX requires the

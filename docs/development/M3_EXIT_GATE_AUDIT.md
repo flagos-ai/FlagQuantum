@@ -47,7 +47,7 @@ input, device or route on current main. Main smoke remains smoke only.
 
 ### Circuit training and deployment packaging
 
-Run `python -m examples.train_parameterized_circuit_then_deploy`.
+Run `python -m examples.training.train_parameterized_circuit_then_deploy`.
 The existing template/optimizer, `fq.plan/run`, exported package and in-memory
 provider form one user workflow. The
 [golden-path consumers](../../tests/integration/test_train_then_deploy_golden_path.py)
@@ -61,7 +61,7 @@ execution; an external submitted task or QPU measurement remains M4 evidence.
 
 ### Driven three-level model
 
-Run `python -m examples.driven_three_level_relaxation`.
+Run `python -m examples.simulation.driven_three_level_relaxation`.
 Numeric initial states, four ordered control intervals and fixed `2 -> 1 -> 0`
 jumps reach the existing `fql.plan/run` path and EvolutionResult. The
 [closed-model consumers](../../tests/integration/test_driven_three_level.py)
@@ -76,7 +76,7 @@ truncation and device gate fidelity are outside this accepted profile.
 
 ### Moving neutral-atom pair
 
-Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
+Run `python -m examples.training.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
 The native roster, commanded transport, controls and declared loss reuse source
 validation and full-schedule/grid binding. The
 [native dynamics](../../tests/unit/test_native_rydberg_dynamics.py),
@@ -92,7 +92,7 @@ Calibration and actual transport/heating measurements remain M4 work.
 
 ### Spin coupled to a mode
 
-Run `python -m examples.spin_mode_thermal_bath`.
+Run `python -m examples.simulation.spin_mode_thermal_bath`.
 Conditioned finite thermal inputs, exchange coupling and fixed upward/downward
 jumps use existing boson algebra and numeric Lindblad planning. The
 [lossless reference](../../tests/integration/test_spin_mode_convergence.py) and
@@ -107,7 +107,7 @@ No infinite interacting Gibbs state or calibrated heating model is certified.
 
 ### Two-mode photonic interference and counting
 
-Run `python -m examples.absorptive_photon_counting`.
+Run `python -m examples.simulation.absorptive_photon_counting`.
 The accepted QND reference and absorptive instrument share finite evolution,
 terminal probability/private-draw authority and SuperOperator actions. The
 [QND/HOM consumers](../../tests/integration/test_boson_interference.py) and
@@ -124,7 +124,7 @@ in [its accepted delivery](M3_SCENARIO_ACCEPTANCE.md#accepted-absorptive-termina
 
 ### Small anyon braiding and fusion
 
-Run `python -m examples.ising_fusion_measurement`.
+Run `python -m examples.simulation.ising_fusion_measurement`.
 The existing native fixed four-sigma/vacuum source has discrete exchanges and
 zero/one observation; it does not need an invented Hamiltonian or clock.
 [Independent F/R consumers](../../tests/unit/test_ising_braid_contract.py),

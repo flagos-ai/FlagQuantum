@@ -20,7 +20,7 @@ cap it was given. A cell whose observed bond never reaches its cap was not
 truncated, so its spread measures floating-point noise and says nothing about
 agreement under approximation. Reading such a cell as evidence of agreement is
 the specific error this sweep exists to prevent: at the defaults of
-``examples/vqe_switch_sv_mps_tn.py`` (depth 2, ``max_bond`` 16) the bond reaches
+``examples/training/vqe_switch_sv_mps_tn.py`` (depth 2, ``max_bond`` 16) the bond reaches
 only 4, so the spread it reports is complex64 epsilon.
 
 Examples
@@ -175,7 +175,7 @@ def _expectation(
 def energy(target: Any, n_qubits: int) -> torch.Tensor:
     """Open-boundary transverse-field Ising energy.
 
-    This is the observable ``examples/vqe_switch_sv_mps_tn.py`` trains, so a
+    This is the observable ``examples/training/vqe_switch_sv_mps_tn.py`` trains, so a
     cell of this sweep measures the same quantity the single-point result
     reports.
     """

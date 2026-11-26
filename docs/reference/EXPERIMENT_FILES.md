@@ -19,7 +19,7 @@ assert experiment.result.counts == result.counts
 assert sum(experiment.result.counts[0].values()) == 128
 ```
 
-See [the runnable example](../../examples/save_experiment.py). An existing path
+See [the runnable example](../../examples/training/save_experiment.py). An existing path
 raises `FileExistsError`; pass `overwrite=True` to explicitly replace it. Writers
 publish a complete archive atomically and remove temporary files on failure.
 Paths are local strings or `os.PathLike[str]`; saving requires the `.fqx` suffix,

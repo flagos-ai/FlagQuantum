@@ -2,7 +2,7 @@
 
 import torch
 
-from flagquantum.simulation.matrix_free_exponential import exponential_action
+from flagquantum.simulation.numerics.matrix_free.exponential import exponential_action
 
 SIZE, LENGTH, TIME = 5, 32, 5.0
 BOTTOM, TOP = 9, 24

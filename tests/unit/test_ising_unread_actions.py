@@ -11,7 +11,7 @@ import pytest
 import torch
 
 from flagquantum.core.ising import IsingBraidProgram
-from flagquantum.simulation.ising_braid import evolve_ising_braid
+from flagquantum.simulation.dynamics.ising_braid import evolve_ising_braid
 
 pytestmark = pytest.mark.unit
 Word = tuple[tuple[int, bool], ...]

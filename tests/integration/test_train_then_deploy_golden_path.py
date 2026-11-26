@@ -27,7 +27,11 @@ _QASM_LINES = (
 def _run() -> str:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.train_parameterized_circuit_then_deploy"],
+        [
+            sys.executable,
+            "-m",
+            "examples.training.train_parameterized_circuit_then_deploy",
+        ],
         cwd=root,
         check=True,
         capture_output=True,
@@ -127,7 +131,7 @@ def test_the_exported_program_carries_the_trained_angles() -> None:
 def test_the_angle_readback_retains_small_exported_parameters(
     small_angle: float,
 ) -> None:
-    from examples.train_parameterized_circuit_then_deploy import (
+    from examples.training.train_parameterized_circuit_then_deploy import (
         PARAMETERS,
         circuit_template,
     )

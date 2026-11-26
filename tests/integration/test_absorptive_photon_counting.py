@@ -129,7 +129,7 @@ def test_scalar_reference_closure_and_closed_count_law(
 def test_complete_instrument_and_all_complex_scalar_blocks(
     cutoff: int, efficiency: float, mode: int
 ) -> None:
-    from examples.absorptive_photon_counting import absorptive_instrument
+    from examples.simulation.absorptive_photon_counting import absorptive_instrument
     from flagquantum.operators import SuperOperator
 
     instrument = absorptive_instrument(cutoff, efficiency, mode=mode)
@@ -168,8 +168,8 @@ def test_complete_instrument_and_all_complex_scalar_blocks(
 def test_absorption_differs_from_qnd_and_unresolved_alternatives_are_incoherent() -> (
     None
 ):
-    from examples.absorptive_photon_counting import absorptive_instrument
-    from examples.boson_interference import counting_instrument
+    from examples.simulation.absorptive_photon_counting import absorptive_instrument
+    from examples.simulation.boson_interference import counting_instrument
     from flagquantum.operators import SuperOperator
 
     density = torch.zeros((9, 9), dtype=torch.complex128)
@@ -207,8 +207,8 @@ def test_evolved_hom_sampling_full_branches_and_same_environment_replay(
     cutoff: int, rate: float, efficiency: float
 ) -> None:
     import flagquantum.lindblad as fql
-    from examples.absorptive_photon_counting import absorptive_instrument
-    from examples.boson_interference import interference_plan
+    from examples.simulation.absorptive_photon_counting import absorptive_instrument
+    from examples.simulation.boson_interference import interference_plan
     from flagquantum.operators import SuperOperator
     from flagquantum.runtime import sample_terminal
 
@@ -294,8 +294,8 @@ def test_evolved_hom_sampling_full_branches_and_same_environment_replay(
 @pytest.mark.parametrize("efficiency", [0.0, 0.65, 1.0])
 def test_sector_closed_embedding_with_no_infinite_fock_claim(efficiency: float) -> None:
     import flagquantum.lindblad as fql
-    from examples.absorptive_photon_counting import absorptive_instrument
-    from examples.boson_interference import interference_plan
+    from examples.simulation.absorptive_photon_counting import absorptive_instrument
+    from examples.simulation.boson_interference import interference_plan
     from flagquantum.operators import SuperOperator
 
     embedding = torch.tensor([4 * a + b for a in range(3) for b in range(3)])

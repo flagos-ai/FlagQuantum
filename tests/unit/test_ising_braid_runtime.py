@@ -148,7 +148,9 @@ def test_valid_unsupported_options_fail_before_numerical_execution(
     constructor: Callable[..., ExecutionOptions] = ExecutionOptions
     options = constructor(**{field: value})
     with (
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as numerical,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+        ) as numerical,
         pytest.raises(CapabilityError),
     ):
         run(IsingBraidProgram(), options=options)
@@ -252,7 +254,9 @@ def test_saved_plan_does_not_accept_overrides_or_remote_routes(field: str) -> No
     entry: Callable[..., ExecutionResult] = run
     value = ExecutionOptions() if field == "options" else object()
     with (
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as numerical,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+        ) as numerical,
         pytest.raises((TypeError, CapabilityError)),
     ):
         entry(selected, **{field: value})
@@ -321,7 +325,9 @@ def test_malformed_source_and_environment_are_refused_before_numerical_work() ->
             "flagquantum.runtime.distributed.backend_policy.resolve_distributed_backend_policy",
             return_value=SimpleNamespace(effective_world_size=2),
         ),
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as numerical,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+        ) as numerical,
     ):
         with pytest.raises(CapabilityError):
             plan(IsingBraidProgram())
@@ -361,7 +367,9 @@ def test_dispatch_profile_is_authenticated_by_the_seal_not_the_analysis_projecti
         replace(native, analysis=circuit.analysis),
     ):
         with (
-            patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as numerical,
+            patch(
+                "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+            ) as numerical,
             pytest.raises(ExecutionPlanContractError, match="analysis contradicts"),
         ):
             run(broken)

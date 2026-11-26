@@ -99,7 +99,9 @@ def test_unread_keeps_existing_cpu_options_and_allocation_refusals(
 ) -> None:
     constructor: Callable[..., fq.ExecutionOptions] = fq.ExecutionOptions
     with (
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as kernel,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+        ) as kernel,
         pytest.raises(CapabilityError),
     ):
         fq.run(_source(), options=constructor(**{field: value}))
@@ -113,7 +115,9 @@ def test_unread_planning_and_saved_execution_refuse_a_distributed_environment() 
             "flagquantum.runtime.distributed.backend_policy.resolve_distributed_backend_policy",
             return_value=SimpleNamespace(effective_world_size=2),
         ),
-        patch("flagquantum.simulation.ising_braid.evolve_ising_braid") as kernel,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid.evolve_ising_braid"
+        ) as kernel,
     ):
         with pytest.raises(CapabilityError):
             fq.plan(_source())

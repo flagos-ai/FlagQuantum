@@ -22,7 +22,7 @@ def test_maintained_hybrid_acceptance_source_script(backend: str) -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            str(ROOT / "examples/hybrid_model_acceptance.py"),
+            str(ROOT / "examples/training/hybrid_model_acceptance.py"),
             "--model",
             "classifier",
             "--backend",
@@ -49,9 +49,9 @@ def test_maintained_hybrid_acceptance_source_script(backend: str) -> None:
 @pytest.mark.integration
 def test_classifier_example_matches_torch_training_on_jax() -> None:
     pytest.importorskip("jax")
-    classifier_run = runpy.run_path(str(ROOT / "examples/hybrid_model_acceptance.py"))[
-        "classifier_run"
-    ]
+    classifier_run = runpy.run_path(
+        str(ROOT / "examples/training/hybrid_model_acceptance.py")
+    )["classifier_run"]
     native = classifier_run(5, "pytorch")
     accelerated = classifier_run(5, "jax")
     torch.testing.assert_close(
@@ -70,9 +70,9 @@ def test_classifier_example_matches_torch_training_on_jax() -> None:
 def test_classifier_example_refuses_missing_requested_jax(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    classifier_run = runpy.run_path(str(ROOT / "examples/hybrid_model_acceptance.py"))[
-        "classifier_run"
-    ]
+    classifier_run = runpy.run_path(
+        str(ROOT / "examples/training/hybrid_model_acceptance.py")
+    )["classifier_run"]
     monkeypatch.setitem(sys.modules, "jax", None)
     with pytest.raises(ExecutionError, match="JAX module execution failed") as error:
         classifier_run(1, "jax")

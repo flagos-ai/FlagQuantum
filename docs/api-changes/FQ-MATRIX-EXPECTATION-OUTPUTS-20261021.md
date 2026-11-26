@@ -61,7 +61,7 @@ No solver, tolerance or scientific assertion was weakened to pass the check.
 ## Runnable current user path
 
 ```bash
-python -m examples.mixed_dimension_dynamics
+python -m examples.simulation.mixed_dimension_dynamics
 ```
 
 Expected CPU output:
@@ -98,7 +98,7 @@ existing owners. There is no new API, schema, registry or solver. The public
 matrix constructor and circuit/remote refusal checks are the subsequent
 Core-owned implementation, not a capability claimed by this step.
 
-A public user example is `python -m examples.lindblad_output_names`, with:
+A public user example is `python -m examples.simulation.lindblad_output_names`, with:
 
 ```text
 Polarization: 1.0
@@ -129,7 +129,7 @@ the fake request/planner/lowering code is removed, and all consumer assertions
 and fixed plan payloads are retained. The Remote producer fixture is replaced
 with the real constructor while its refusal assertions remain unchanged.
 
-Run `python -m examples.matrix_expectation_dynamics` on CPU. Expected output:
+Run `python -m examples.simulation.matrix_expectation_dynamics` on CPU. Expected output:
 
 ```text
 Leakage expectation: 0.11757891

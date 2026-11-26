@@ -38,7 +38,7 @@ tests, and rendered in the
 ## Build and execute
 
 Run the complete CPU example with
-`python -m examples.cpu_statevector`, or use the same stable interfaces directly:
+`python -m examples.simulation.cpu_statevector`, or use the same stable interfaces directly:
 
 ```python
 import flagquantum as fq
@@ -282,7 +282,7 @@ result = fq.run(optimized_ir, options=options)
 `optimize` returns a new `CircuitIR`, leaves the input unchanged, and applies
 canonical rewrites to a fixed point. Use `compiler.compile` when a concrete
 target topology or target-aware lowering is required. The complete executable
-example is `python -m examples.compiler_optimize`.
+example is `python -m examples.circuits.compiler.compiler_optimize`.
 
 `optimize(program, optimization_level=...)` and `compile(program,
 optimization_level=...)` select how much of the pass library runs: `0` returns
@@ -311,7 +311,7 @@ compiled_ir = compiler.compile(
 The compiler emits only topology-valid two-qubit operations and records its
 routing decision in `compiled_ir.metadata["routing"]`. It does not select or
 invoke an execution backend. Run the complete example with
-`python -m examples.target_aware_compilation`.
+`python -m examples.circuits.compiler.target_aware_compilation`.
 
 A `CouplingMap` states which qubit pairs a device couples, so the route the
 compiler takes is the shortest one and its price is a SWAP count. A device that
@@ -336,7 +336,7 @@ and is `None` on a device that states only its couplings, so a caller who passes
 `CouplingMap` gets the plan it got before. A strategy that chooses its routes by
 hop count cannot read a calibration, so naming `sabre` or `sabre_layout` for a
 calibrated device is refused rather than silently answered without it. Run the
-complete example with `python -m examples.weighted_routing`.
+complete example with `python -m examples.circuits.compiler.weighted_routing`.
 
 ## Train with PyTorch
 
@@ -635,7 +635,7 @@ the existing `dimensions=` or `basis_labels=` declaration. Numeric shape,
 finiteness and Hermiticity are checked by the existing dynamics normalizer;
 live plans copy matrix values without detaching gradients. Circuit/remote
 outputs refuse this form before execution or submission. See
-[`examples/matrix_expectation_dynamics.py`](../../examples/matrix_expectation_dynamics.py).
+[`examples/simulation/matrix_expectation_dynamics.py`](../../examples/simulation/matrix_expectation_dynamics.py).
 `Observable` itself remains the Pauli algebra; samples/counts do not accept
 matrix operators. No result field or plan schema is added.
 
@@ -705,7 +705,7 @@ Use analytic probabilities/expectations for training. This primitive returns
 observed outcomes, rather than conditional states, hidden loss truth, detector
 events or feedback. Ordinary Lindblad shots/seed refusals and plan/IR schemas
 are unchanged. Run
-[`examples.terminal_instrument_sampling`](../../examples/terminal_instrument_sampling.py)
+[`examples.simulation.terminal_instrument_sampling`](../../examples/simulation/terminal_instrument_sampling.py)
 for presence and finite-Fock QND examples; the
 [approved contract](../development/API_CHANGE_PROPOSAL_083_TERMINAL_INSTRUMENT_SAMPLING.md)
 specifies the physical, rounding and failure boundaries.

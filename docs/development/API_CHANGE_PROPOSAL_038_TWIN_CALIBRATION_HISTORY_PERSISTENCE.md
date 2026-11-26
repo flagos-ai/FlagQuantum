@@ -46,7 +46,7 @@ for timestamp, cumulative, incremental in zip(
 The repository CLI exposes the same workflow:
 
 ```bash
-python examples/twin_calibration_history.py \
+python examples/twin/twin_calibration_history.py \
   shenglian-state-01.json shenglian-state-02.json shenglian-state-03.json \
   --output shenglian-history.json
 ```

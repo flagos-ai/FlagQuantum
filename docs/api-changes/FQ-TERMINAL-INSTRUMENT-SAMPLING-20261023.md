@@ -54,7 +54,7 @@ source hashes must not become permanent implementation locks.
 ## Runnable current-API reference
 
 ```bash
-python -m examples.terminal_instrument_reference
+python -m examples.simulation.terminal_instrument_reference
 python -m pytest tests/unit/test_terminal_instrument_contract.py -q
 ```
 
@@ -139,7 +139,7 @@ plan versions, event records or feedback.
 Run the actual user path:
 
 ```bash
-python -m examples.terminal_instrument_sampling
+python -m examples.simulation.terminal_instrument_sampling
 python -m pytest tests/unit/test_terminal_instrument_contract.py tests/unit/test_terminal_instruments.py -q
 ```
 

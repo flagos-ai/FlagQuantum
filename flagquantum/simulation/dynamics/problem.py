@@ -29,7 +29,10 @@ from flagquantum.core.parameters import (
     value_to_tensor,
 )
 from flagquantum.errors import ValidationError
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import (
+    PauliSum,
+    PauliSumTerm,
+)
 
 from .integrators import KRYLOV_SCHEMES, SOLVE_RESTART
 

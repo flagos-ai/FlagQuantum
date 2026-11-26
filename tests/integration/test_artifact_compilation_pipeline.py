@@ -10,7 +10,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_offline_deployment import bell
+from examples.synthesis.synthesis_offline_deployment import bell
 from flagquantum.compiler.artifacts.artifact_compilation import (
     ArtifactCompilationError,
     ArtifactCompilationResult,

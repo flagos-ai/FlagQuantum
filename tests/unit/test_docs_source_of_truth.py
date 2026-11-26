@@ -7,6 +7,7 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
+from tools.architecture.source_relocations import source_path
 from tools.release.evidence_provenance import (
     ProvenanceUnavailableError,
     revision_resolves,
@@ -100,14 +101,14 @@ def test_generated_capability_catalog_supports_goal_based_discovery():
 
 
 def test_quick_start_label_names_what_the_target_is():
-    assert DOCS.quick_start_label("examples/quick_start.py") == "Run example"
+    assert DOCS.quick_start_label("examples/training/quick_start.py") == "Run example"
     assert (
         DOCS.quick_start_label("examples/distributed_statevector_topologies/run.sh")
         == "Run example"
     )
     assert DOCS.quick_start_label("docs/reference/API.md") == "Read guide"
     assert (
-        DOCS.quick_start_label("examples/quick_start.py", sentence_case=False)
+        DOCS.quick_start_label("examples/training/quick_start.py", sentence_case=False)
         == "quick example"
     )
     assert (
@@ -155,7 +156,7 @@ def test_detail_rows_link_their_own_capability():
         if line.startswith("- **Start:**")
     ]
     declared = {
-        str(capability["quick_start"])
+        source_path(ROOT, str(capability["quick_start"])).relative_to(ROOT).as_posix()
         for capability in maturity["capabilities"].values()
     }
     assert set(detail_targets) <= declared
@@ -203,3 +204,9 @@ def test_stable_document_example_executes():
     circuit.cx(0, 1)
     result = fqr.run_native(circuit)
     assert result is not None
+
+
+def test_quick_start_link_uses_current_owner_for_historical_manifest_path():
+    assert DOCS.root_link("examples/quick_start.py", "Run example") == (
+        "[Run example](../../examples/training/quick_start.py)"
+    )

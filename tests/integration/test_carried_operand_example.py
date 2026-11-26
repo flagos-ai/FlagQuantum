@@ -29,7 +29,7 @@ _Z_IMAGE = "  z |0>      : +1.0000+0.0000j  +0.0000+0.0000j"
 
 def _run_example() -> str:
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.carried_operand_execution"],
+        [sys.executable, "-m", "examples.simulation.carried_operand_execution"],
         cwd=ROOT,
         check=True,
         capture_output=True,

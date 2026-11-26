@@ -64,7 +64,7 @@ accelerator evidence.
 ## Run and modify
 
 ```bash
-python -m examples.cpu_statevector
+python -m examples.simulation.cpu_statevector
 python -m pytest tests/integration/test_cpu_vertical_slice.py -q
 ```
 

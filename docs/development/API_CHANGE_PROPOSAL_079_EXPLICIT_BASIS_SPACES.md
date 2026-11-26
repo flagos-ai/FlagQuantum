@@ -246,7 +246,7 @@ alone changes neither a snapshot nor a released contract.
 
 ## Runnable current-API numerical reference
 
-Run `python -m examples.constrained_basis_reference`. It uses only APIs already
+Run `python -m examples.simulation.constrained_basis_reference`. It uses only APIs already
 implemented; its expected output is:
 
 ```text

@@ -7,7 +7,10 @@ import math
 import pytest
 import torch
 
-from examples.terminal_instrument_reference import fock_reference, presence_reference
+from examples.simulation.terminal_instrument_reference import (
+    fock_reference,
+    presence_reference,
+)
 from flagquantum.operators import SuperOperator
 
 pytestmark = pytest.mark.integration

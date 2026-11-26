@@ -19,7 +19,7 @@ from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import CapabilityError
 from flagquantum.operators import SuperOperator
-from flagquantum.simulation.ising_braid import (
+from flagquantum.simulation.dynamics.ising_braid import (
     _exchange_unitary,
     _fusion_matrices,
     evolve_ising_braid,

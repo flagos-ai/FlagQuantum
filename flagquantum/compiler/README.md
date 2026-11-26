@@ -148,9 +148,9 @@ for the current measurements and limits; archived measurements are not rewritten
 From the repository root:
 
 ```bash
-python -m examples.compiler_optimize
-python -m examples.target_aware_compilation
-python -m examples.compiler_synthesis
+python -m examples.circuits.compiler.compiler_optimize
+python -m examples.circuits.compiler.target_aware_compilation
+python -m examples.circuits.compiler.compiler_synthesis
 ```
 
 The first example checks optimization against the original circuit, prints the
@@ -186,11 +186,11 @@ gaps. It is a progress guarantee for connected operands, not an optimality claim
 
 ### Export a synthesized circuit and prepare an offline deployment
 
-Run [the Bell-state `@qfunc` example](../../examples/synthesis_offline_deployment.py)
+Run [the Bell-state `@qfunc` example](../../examples/synthesis/synthesis_offline_deployment.py)
 from the repository root.
 
 ```bash
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 ```
 
 The example prints standalone OpenQASM 3, then a `DeploymentPackage` for the
@@ -200,11 +200,11 @@ builds the package locally without credentials or a provider submission.
 
 ### Save and reload a routed executable and its evidence
 
-Run [the routed artifact example](../../examples/routed_artifact_preflight.py)
+Run [the routed artifact example](../../examples/circuits/compiler/routed_artifact_preflight.py)
 from the repository root, choosing a directory for the JSON handoff.
 
 ```bash
-python -m examples.routed_artifact_preflight --output-dir /tmp/fq-routed-artifact
+python -m examples.circuits.compiler.routed_artifact_preflight --output-dir /tmp/fq-routed-artifact
 ```
 
 The example starts with `fq.Circuit(2).rx(...).ry(...).cx(0, 1)`, using
@@ -260,7 +260,7 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Two-qubit block splitting | [two_qubit_optimization.py](optimization/two_qubit_optimization.py) |
 | Two-qubit KAK angles and entangler cost | [two_qubit_synthesis.py](optimization/two_qubit_synthesis.py) |
 | State-preparation ladders from amplitudes | [state_preparation_synthesis.py](optimization/state_preparation_synthesis.py) |
-| The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
+| The runnable path through all three synthesis entry points | `python -m examples.circuits.compiler.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](lowering/schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |

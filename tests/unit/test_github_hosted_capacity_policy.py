@@ -613,7 +613,12 @@ def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
     events = ci.get("on", ci.get(True))
     assert set(events) == {"pull_request", "workflow_dispatch"}
     assert events["pull_request"] == {
-        "branches": ["main", "refactor/qec-restructure-*"]
+        "branches": [
+            "main",
+            "refactor/qec-restructure-*",
+            "refactor/compute-local-memory-owner",
+            "refactor/structure-*",
+        ]
     }
     manual = _document("pre-commit.yaml")
     assert set(manual.get("on", manual.get(True))) == {"workflow_dispatch"}

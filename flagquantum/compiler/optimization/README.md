@@ -35,7 +35,7 @@ For a typical change, edit a rewrite and its focused semantic tests. Changes to
 pass composition also require the level and admission tests.
 
 ```bash
-python -m examples.compiler_optimize
+python -m examples.circuits.compiler.compiler_optimize
 python -m pytest -q tests/hybrid_compiler/test_passes.py tests/unit/test_compiler_pass_manager.py tests/unit/test_compiler_pass_plugins.py tests/team/compiler/test_optimization_levels.py
 ```
 

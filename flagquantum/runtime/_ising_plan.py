@@ -409,11 +409,12 @@ def _execute_pair_observation(
     record: ProgramRecord, *, seed: int, device: torch.device
 ) -> tuple[torch.Tensor, MeasurementResult]:
     """Compose existing probability/draw and Simulation authorities once."""
-    from ..simulation.ising_braid import (
+    from flagquantum.simulation.dynamics.ising_braid import (
         _charge_projectors,
         _continue_ising_sampled,
         _ising_sampled_prefix,
     )
+
     from ._terminal_instruments import _instrument_probabilities
     from .measurements import _draw_probability_indices
 
@@ -467,7 +468,7 @@ def _execute_pair_observation(
 
 def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
     """Assemble the shared result from Simulation's exact finite action."""
-    from ..simulation.ising_braid import evolve_ising_braid
+    from flagquantum.simulation.dynamics.ising_braid import evolve_ising_braid
 
     payload = plan.to_dict()
     record = native_program_from_dict(_require_mapping("program", payload["program"]))

@@ -104,7 +104,7 @@ GPU rerun or performance-gate waiver is part of this change.
 An existing user workflow supported by this private optimization remains:
 
 ```bash
-python -m examples.compiler_synthesis
+python -m examples.circuits.compiler.compiler_synthesis
 ```
 
 It checks one-qubit, two-qubit and state-preparation synthesis against the shipped

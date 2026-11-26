@@ -19,7 +19,7 @@ from flagquantum.core.ir.state_space import ProductStateSpace
 from flagquantum.errors import CapabilityError, SerializationError
 from flagquantum.simulation.dynamics.lindblad import _plan_density_matrix_evolution
 from flagquantum.simulation.dynamics.problem import _error
-from flagquantum.simulation.rydberg_model import native_model
+from flagquantum.simulation.dynamics.rydberg import native_model
 
 if TYPE_CHECKING:
     from flagquantum.runtime.evolution._plan import LindbladPlan
@@ -79,7 +79,7 @@ def native_request(
             "flagos",
         }:
             raise CapabilityError("presence dynamics requires CPU complex128")
-        from flagquantum.simulation.rydberg_presence import _presence_model
+        from flagquantum.simulation.dynamics.rydberg_presence import _presence_model
 
         numeric, bindings, _ = _presence_model(
             record, times, parameter_values=parameter_values, device=device

@@ -47,7 +47,7 @@ print(restored.verified_tv_error_bounds)
 The executable repository example can create the same artifact:
 
 ```bash
-python examples/twin_validation_history.py \
+python examples/twin/twin_validation_history.py \
   --observation shenglian-state-01.json shenglian-validation-01.json \
   --observation shenglian-state-02.json shenglian-validation-02.json \
   --output shenglian-validation-history.json

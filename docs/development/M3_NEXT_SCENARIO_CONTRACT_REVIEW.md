@@ -41,7 +41,7 @@ objective with respect to all eight pulse controls, performs a short optimizer
 loop, and saves/replays a detached numeric plan on CPU without credentials.
 
 Reuse the ordered basis `(0, 1, 2)` and four duration-0.25 constant segments from
-[driven_three_level.py](../../examples/driven_three_level.py). Set total time to
+[driven_three_level.py](../../examples/simulation/driven_three_level.py). Set total time to
 1 and use consistent arbitrary time units. Angular frequencies have inverse-time
 units; relaxation rates have inverse-time units and are not angular frequencies.
 For segment k, define the rotating-frame Hamiltonian explicitly as
@@ -160,7 +160,7 @@ assertions, inputs and budgets are unchanged.
 Run the public workflow with:
 
 ```bash
-python -m examples.driven_three_level_relaxation
+python -m examples.simulation.driven_three_level_relaxation
 ```
 
 Executed local CPU output:

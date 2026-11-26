@@ -40,7 +40,7 @@ state and workspace cleanup in the corresponding integration scenario.
 Run the existing Bell-state workflow from the repository root.
 
 ```bash
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 ```
 
 It captures a two-qubit Python `@qfunc`, emits OpenQASM 3 with H and CX, and

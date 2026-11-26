@@ -11,7 +11,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.rydberg_native_dynamics import native_pair_plan
+from examples.simulation.rydberg_native_dynamics import native_pair_plan
 from flagquantum.errors import CapabilityError, SerializationError
 from flagquantum.experimental.simulation import RydbergProgram
 from flagquantum.runtime.evolution._plan import _identity
@@ -482,7 +482,7 @@ def test_simultaneous_pair_drive_matches_dense_unitary_and_rydberg_blockade() ->
 def test_unconditional_assembly_refuses_observations_before_grid_work(
     opcode: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from flagquantum.simulation import rydberg_model
+    from flagquantum.simulation.dynamics import rydberg
 
     record = pulse().to_ir()
     function = record.functions[0]
@@ -501,8 +501,6 @@ def test_unconditional_assembly_refuses_observations_before_grid_work(
     def forbidden_grid(*args: object, **kwargs: object) -> None:
         pytest.fail("an unadmitted observation reached numerical grid assembly")
 
-    monkeypatch.setattr(rydberg_model, "_grid", forbidden_grid)
+    monkeypatch.setattr(rydberg, "_grid", forbidden_grid)
     with pytest.raises(CapabilityError, match="conditional trajectory"):
-        rydberg_model.native_model(
-            changed, [0.0, 0.5], dtype=torch.complex128, device="cpu"
-        )
+        rydberg.native_model(changed, [0.0, 0.5], dtype=torch.complex128, device="cpu")

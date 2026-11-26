@@ -6,7 +6,7 @@ from importlib import import_module
 
 import pytest
 
-from examples.synthesis_offline_deployment import bell
+from examples.synthesis.synthesis_offline_deployment import bell
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler.frontends._structured.model import HybridProgram
@@ -51,7 +51,7 @@ if {reverse!r}:
     modules.reverse()
 for module in modules:
     import_module(module)
-from examples.synthesis_offline_deployment import bell
+from examples.synthesis.synthesis_offline_deployment import bell
 from flagquantum import synth
 program = synth.synthesize(bell)
 assert tuple(gate.name for gate in program.circuit.instructions) == ("h", "cx")

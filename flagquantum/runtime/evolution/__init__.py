@@ -31,7 +31,7 @@ from flagquantum.simulation.dynamics.lindblad import (
 from flagquantum.simulation.dynamics.lindblad import (
     amplitude_damping as _amplitude_damping,
 )
-from flagquantum.simulation.rydberg_model import native_record
+from flagquantum.simulation.dynamics.rydberg import native_record
 
 _MISSING = object()
 

@@ -239,12 +239,12 @@ def build_presence_plan(
 
 def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     from flagquantum.runtime.evolution import LindbladPlan
-
-    from ..simulation.rydberg_presence import (
+    from flagquantum.simulation.dynamics.rydberg_presence import (
         _continue_rydberg_presence,
         _presence_operators,
         _rydberg_presence_prefix,
     )
+
     from ._terminal_instruments import _instrument_probabilities
     from .distributed.backend_policy import resolve_distributed_backend_policy
     from .measurements import _draw_probability_indices

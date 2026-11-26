@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.train_rydberg_controls import moving_pair_program
+from examples.training.train_rydberg_controls import moving_pair_program
 
 pytestmark = pytest.mark.integration
 

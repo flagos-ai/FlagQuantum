@@ -1,6 +1,6 @@
 # Dynamics numerics
 
-Owns Lindblad generators, problem validation, numerical integrators, density-matrix evolution and its adjoint. This is the numerical dynamics domain; other admitted evolution methods can join when implemented. Runtime evolution prepares requests and execution policy. Do not select resources, submit jobs or import Runtime.
+Owns Lindblad generators, physical program numerical assembly and actions, problem validation, numerical integrators, density-matrix evolution and its adjoint. This is the numerical dynamics domain; other admitted evolution methods can join when implemented. Runtime evolution prepares requests and execution policy. Do not select resources, submit jobs or import Runtime.
 
 Allowed dependencies: Core operator and measurement semantics plus tensor numerics.
 
@@ -22,3 +22,21 @@ for compatibility ownership and removal gates.
 
 CPU tests establish behavior and fixture conformance; physical hardware and
 distributed capacity require their separate evidence gates.
+
+## Physical program evolution
+
+`rydberg.py` assembles the numerical Hamiltonian from verified Core physical
+records. `rydberg_presence.py` applies the existing presence segments and
+continuations. `ising_braid.py` executes verified F/R actions and sampled
+continuations. Core keeps program semantics and physical records; Runtime owns
+planning, result assembly and trajectory lifecycle. These numerical modules
+do not select resources or admit unsupported programs.
+
+For a small change, begin with `tests/unit/test_rydberg_presence_actions.py` or
+`tests/unit/test_ising_braid_actions.py`, then run the corresponding Runtime
+scenario tests. These bounded CPU tests prove numerical and orchestration
+semantics, without establishing hardware support or scalability.
+
+Run `python -m examples.simulation.ising_braid_execution` for a bounded CPU
+example using the public planning and execution path. Change an ordered source
+action and inspect the corresponding probabilities before modifying a kernel.

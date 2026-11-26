@@ -17,7 +17,7 @@ from flagquantum.errors import (  # noqa: F401
     ExecutionError,
     ValidationError,
 )
-from flagquantum.simulation.matrix_free_hamiltonian import (  # noqa: F401
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import (  # noqa: F401
     PauliSum,
     PauliSumTerm,
 )

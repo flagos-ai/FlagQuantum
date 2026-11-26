@@ -16,7 +16,7 @@ The factors are *matrix operators*, not necessarily dense matrices. A factor
 must provide ``dtype``, ``dimension`` (for a ``torch.Tensor`` these are ``dtype``
 and ``shape[0]``), ``__matmul__`` and ``__rmatmul__`` with a square state, and a
 ``dense()`` matrix. ``torch.Tensor`` is one implementation;
-:class:`flagquantum.simulation.matrix_free_hamiltonian.PauliSum` is the other,
+:class:`flagquantum.simulation.numerics.matrix_free.hamiltonian.PauliSum` is the other,
 and a matrix-free ``H`` therefore joins a term without ever being materialized.
 Only :meth:`SuperOperator.adjoint` additionally requires ``adjoint()`` from a
 non-tensor factor, because a factor that can be applied cannot necessarily be

@@ -138,7 +138,7 @@ history database, set trust thresholds, or update a model automatically.
 The same workflow is available as a copy-and-run command:
 
 ```bash
-python examples/twin_calibration_history.py \
+python examples/twin/twin_calibration_history.py \
   shenglian-state-01.json shenglian-state-02.json shenglian-state-03.json \
   --output shenglian-history.json
 ```
@@ -306,7 +306,7 @@ identities cannot be reused across observations.
 Run the same offline workflow from the command line:
 
 ```bash
-python examples/twin_validation_history.py \
+python examples/twin/twin_validation_history.py \
   --observation shenglian-state-01.json shenglian-validation-01.json \
   --observation shenglian-state-02.json shenglian-validation-02.json \
   --output shenglian-validation-history.json
@@ -439,7 +439,7 @@ print(estimate.goodness_of_fit)
 The executable synthetic example shows the complete offline workflow:
 
 ```bash
-python examples/twin_parameter_estimation.py
+python examples/twin/twin_parameter_estimation.py
 ```
 
 Real `hardware_reports` must come from separate provider tasks validated
@@ -482,7 +482,7 @@ clipped.
 Run the complete synthetic estimate-to-candidate example with:
 
 ```bash
-python examples/twin_candidate_fit.py
+python examples/twin/twin_candidate_fit.py
 ```
 
 The resulting `TwinFittedCandidate` is accepted by existing candidate-suite
@@ -542,7 +542,7 @@ ordered mapping. Recording the decision still does not activate that release
 or authorize workload routing. `decision_authority` is an opaque application
 audit identifier; authentication and access control remain outside Twin.
 
-Run `python examples/twin_evolution_cycle.py` for a complete synthetic,
+Run `python examples/twin/twin_evolution_cycle.py` for a complete synthetic,
 offline example that persists, resumes, and records an explicit retain
 decision after parameter estimation.
 
@@ -592,7 +592,7 @@ print(evolution.latest_verified_bound_change)
 The executable offline form is:
 
 ```bash
-python examples/twin_evolution_history.py \
+python examples/twin/twin_evolution_history.py \
   --calibration-history shenglian-calibration-history.json \
   --validation-history shenglian-validation-history.json
 ```
@@ -834,7 +834,7 @@ Twin mapping translates every two-qubit instruction to physical qubits.
 This object can only narrow the supplied evidence. It does not infer support
 from provider topology, compose independently validated cells, estimate a new
 bound, or claim arbitrary-circuit accuracy. The complete offline example is
-`examples/twin_circuit_support.py`.
+`examples/twin/twin_circuit_support.py`.
 
 ### Compose connected structural coverage
 
@@ -866,7 +866,7 @@ Region coverage is structural only. Local cell error bounds are neither
 averaged nor combined, so `coverage.tv_error_bound` and
 `coverage.confidence_level` are always `None`. A region-level accuracy claim
 requires prospective evidence for the complete mapped workload. See
-`examples/twin_connected_region.py` for the complete offline workflow.
+`examples/twin/twin_connected_region.py` for the complete offline workflow.
 
 ### Compose a runnable regional Twin model
 
@@ -898,7 +898,7 @@ noise is inferred between cells.
 measurement distribution with noiseless statevector simulation. It is not a
 Twin-to-QPU accuracy measurement. A newly composed model therefore has no
 regional accuracy bound or confidence level. The full offline code is
-`examples/twin_region_model.py`.
+`examples/twin/twin_region_model.py`.
 
 ### Prospectively validate one regional circuit
 
@@ -1525,7 +1525,7 @@ v1 validation contract contains no authoritative completion timestamp. This
 operation remains offline: it does not collect calibration, submit or retry a
 task, mutate or promote a model, route a workload, or authorize hardware use.
 The complete command-line example is
-[`examples/twin_evidence_freshness.py`](../../examples/twin_evidence_freshness.py).
+[`examples/twin/twin_evidence_freshness.py`](../../examples/twin/twin_evidence_freshness.py).
 
 - `exact_circuit_verified`: later hardware verified this exact circuit.
 - `within_evidence_envelope`: the circuit is structurally in scope and an

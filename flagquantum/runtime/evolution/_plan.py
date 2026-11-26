@@ -30,7 +30,7 @@ from flagquantum.simulation.dynamics.problem import (
     _normalize_observables,
     _normalize_times,
 )
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import PauliSum
 
 _SCHEMA = "flagquantum.lindblad_plan"
 # 1.1 adds ``numerics.solve_tolerance`` to the decision, which version 1.0 did

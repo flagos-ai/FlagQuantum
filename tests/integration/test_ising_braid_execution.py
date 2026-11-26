@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from examples.ising_braid_execution import main
+from examples.simulation.ising_braid_execution import main
 from flagquantum._api import plan, run
 from flagquantum.core.ising import IsingBraidProgram
 

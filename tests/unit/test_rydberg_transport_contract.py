@@ -15,7 +15,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.rydberg_native_dynamics import native_pair_plan
+from examples.simulation.rydberg_native_dynamics import native_pair_plan
 from flagquantum.experimental.simulation import RydbergProgram
 from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 

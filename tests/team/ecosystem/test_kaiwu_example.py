@@ -14,7 +14,7 @@ def test_kaiwu_matrix_boundary_example_runs_without_remote_access(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     runpy.run_path(
-        str(ROOT / "examples" / "kaiwu_matrix_boundary.py"),
+        str(ROOT / "examples" / "compute" / "kaiwu_matrix_boundary.py"),
         run_name="__main__",
     )
 

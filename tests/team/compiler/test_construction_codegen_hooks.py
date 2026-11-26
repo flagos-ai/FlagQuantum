@@ -4,7 +4,7 @@ from importlib import import_module
 
 import pytest
 
-from examples.synthesis_offline_deployment import bell
+from examples.synthesis.synthesis_offline_deployment import bell
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import capture
 

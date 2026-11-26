@@ -175,7 +175,7 @@ submission, fallback, hidden conditioning or a different mathematical model.
 ## Runnable current-API reference
 
 ```bash
-python -m examples.terminal_instrument_reference
+python -m examples.simulation.terminal_instrument_reference
 python -m pytest tests/integration/test_terminal_instrument_reference.py -q
 ```
 

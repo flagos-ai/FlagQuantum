@@ -128,7 +128,7 @@ coupling map unless the listing states one; it does not invent a complete graph.
 The generic NeutralAtomProvider and register profile factory were retired under
 [proposal 082](../../../../docs/development/API_CHANGE_PROPOSAL_082_REMOTE_PROVIDER_BOUNDARY.md).
 Local atom geometry and timed controls belong to Core's experimental
-RydbergProgram; see [the construction example](../../../../examples/rydberg_program_geometry.py).
+RydbergProgram; see [the construction example](../../../../examples/circuits/rydberg_program_geometry.py).
 A concrete neutral-atom cloud adapter must name its actual service, supported
 program subset and task/result protocol. No such submission path is currently
 implemented. Braket's existing circuit adapter does not imply AHS support.

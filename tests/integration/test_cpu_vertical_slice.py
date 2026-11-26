@@ -21,7 +21,7 @@ pytestmark = pytest.mark.integration
 def test_cpu_statevector_user_example_runs_end_to_end() -> None:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.cpu_statevector"],
+        [sys.executable, "-m", "examples.simulation.cpu_statevector"],
         cwd=root,
         check=True,
         capture_output=True,

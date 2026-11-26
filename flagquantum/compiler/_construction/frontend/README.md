@@ -34,7 +34,7 @@ by `../verification/register_verifier.py`.
 Run the existing Bell-state example from the repository root.
 
 ```bash
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 ```
 
 It captures a two-qubit `@qfunc`, emits OpenQASM 3 with H and CX, and builds an

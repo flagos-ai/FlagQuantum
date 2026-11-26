@@ -34,7 +34,7 @@ parts of the planner.
 
 ```bash
 python -m pytest -q tests/unit/test_compilation_restore_paths.py tests/unit/test_compilation_sabre_layout.py tests/team/compiler/test_routing_conformance.py
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.target_aware_compilation
 ```
 
 The focused tests replay tokens for every permutation of five wires on line,

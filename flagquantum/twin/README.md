@@ -513,7 +513,7 @@ print(estimate.goodness_of_fit)
 Run the complete synthetic example with:
 
 ```bash
-python examples/twin_parameter_estimation.py
+python examples/twin/twin_parameter_estimation.py
 ```
 
 The estimator pools repeated reports by frozen probe identity, computes
@@ -550,7 +550,7 @@ candidate = fq.twin.load_twin("twin-candidate.json")
 Run the complete synthetic workflow with:
 
 ```bash
-python examples/twin_candidate_fit.py
+python examples/twin/twin_candidate_fit.py
 ```
 
 The candidate keeps the incumbent target, mapping, lifetimes, excited
@@ -589,7 +589,7 @@ print(cycle.recommended_action)
 Run the complete offline example with:
 
 ```bash
-python examples/twin_evolution_cycle.py
+python examples/twin/twin_evolution_cycle.py
 ```
 
 The only legal order is freshness and plan → parameter estimate → fitted

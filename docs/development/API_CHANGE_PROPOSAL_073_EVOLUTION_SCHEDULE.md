@@ -344,7 +344,7 @@ was verified at source commit
 - Mypy under repository defaults passed for 771 source files; Black, Ruff, API/IR and repository
   architecture, dependency, capability, documentation, parity, language and
   ownership checks passed. The PR example output matched its expected text;
-  `python -m examples.train_piecewise_drive` completed 80 Adam updates and
+  `python -m examples.training.train_piecewise_drive` completed 80 Adam updates and
   printed `Training reduced loss: True`.
 
 The full tiers require local loopback communication. Restricted-sandbox attempts

@@ -40,7 +40,7 @@ from collections.abc import Sequence
 import torch
 
 from flagquantum.operators import SuperOperator
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import PauliSum
 
 __all__ = ("DEFAULT_DENSE_GENERATOR_BYTES", "Liouvillian")
 
