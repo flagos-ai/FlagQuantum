@@ -12,9 +12,36 @@ from flagquantum.compiler.registers.primitives.and_compute import (
 )
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_certificate import certify_erasure_histories
-from tests.unit.measurement_checks import forced_branch
+from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 
 pytestmark = pytest.mark.unit
+
+
+def test_lookup_erasure_phase_certificate_matches_every_complex_branch() -> None:
+    gates = (
+        Instruction("cx", (0, 1)),
+        Instruction("h", (1,)),
+        Instruction("measure", (1,), metadata={"is_dynamic": True, "classical_bit": 7}),
+        Instruction("x", (1,), metadata={"conditions": ((7, 1),)}),
+        Instruction("z", (0,), metadata={"conditions": ((7, 1),)}),
+    )
+    assert certified_and_channel_map(gates, ((0, 0), (1, 0))) == (((0, 0), (1, 0)), 1)
+    initial = torch.tensor([1, 0, 2j, 0], dtype=torch.complex128) / 5**0.5
+    for outcome in (0, 1):
+        torch.testing.assert_close(
+            forced_branch(initial, gates, (outcome,)),
+            initial / 2**0.5,
+            atol=1e-14,
+            rtol=0,
+        )
+    with pytest.raises(AssertionError, match="Uncancelled"):
+        certified_and_channel_map(gates[:-1], ((0, 0), (1, 0)))
+    wrong_target = (
+        *gates[:-1],
+        Instruction("z", (1,), metadata={"conditions": ((7, 1),)}),
+    )
+    with pytest.raises(AssertionError, match="Uncancelled"):
+        certified_and_channel_map(wrong_target, ((0, 0), (1, 0)))
 
 
 def test_branch_identity_does_not_imply_clean_output() -> None:

@@ -86,6 +86,8 @@ def certified_and_monomial_map(
     and unconditional monomial gates. Erase requires the actual And invariant;
     its two histories give the same map divided by sqrt(2). Linearity extends
     the resulting columns to coherent states and every combined raw history.
+    X-basis lookup erasure retains each outcome's Boolean phase coefficient
+    until actual Z/CZ feedback cancels it on every supplied input column.
     Unknown gates, unbalanced erase targets and conditional atoms fail closed.
     """
     from flagquantum.compiler.registers.primitives.and_compute import (
@@ -102,9 +104,55 @@ def certified_and_monomial_map(
     assert all(len(word) == width and set(word) <= {0, 1} for word in basis_bits)
     values = torch.tensor(basis_bits, dtype=torch.uint8).T.contiguous()
     phases = torch.ones(len(basis_bits), dtype=torch.complex128)
+    measurement_phases: dict[int, torch.Tensor] = {}
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
+        if gate.name == "h" and i + 2 < len(gates):
+            target = gate.wires[0]
+            measured, correction = gates[i + 1 : i + 3]
+            if (
+                measured.name == "measure"
+                and measured.wires == (target,)
+                and correction.name == "x"
+                and correction.wires == (target,)
+            ):
+                bit = int(measured.metadata["classical_bit"])
+                assert gate == Instruction("h", (target,))
+                assert measured == Instruction(
+                    "measure",
+                    (target,),
+                    metadata={"is_dynamic": True, "classical_bit": bit},
+                )
+                assert correction == Instruction(
+                    "x", (target,), metadata={"conditions": ((bit, 1),)}
+                )
+                assert bit not in measurement_phases
+                # X-basis erasure contributes (-1)**(outcome * old_bit).
+                # Keep that coefficient until actual later feedback cancels it.
+                measurement_phases[bit] = values[target].clone()
+                values[target] = 0
+                events += 1
+                i += 3
+                continue
+        clauses = instruction_condition_clauses(gate)
+        if clauses and gate.name in {"z", "cz"}:
+            assert gate.matrix is None and not gate.params
+            assert set(gate.metadata) == {"conditions"}
+            assert len(clauses) == 1 and len(clauses[0]) == 1
+            bit, activation = clauses[0][0]
+            assert bit in measurement_phases
+            assert len(gate.wires) == (1 if gate.name == "z" else 2)
+            assert len(set(gate.wires)) == len(gate.wires)
+            assert all(0 <= wire < width for wire in gate.wires)
+            coefficient = values[gate.wires[0]].clone()
+            if gate.name == "cz":
+                coefficient &= values[gate.wires[1]]
+            measurement_phases[bit] ^= coefficient
+            if activation == 0:
+                phases *= 1 - 2 * coefficient.to(torch.int64)
+            i += 1
+            continue
         if (
             gate.name == "cx"
             and i + 2 < len(gates)
@@ -210,6 +258,10 @@ def certified_and_monomial_map(
         elif gate.name != "i":
             raise AssertionError(f"Uncertified monomial gate: {gate.name}")
         i += 1
+    assert all(
+        torch.count_nonzero(coefficient) == 0
+        for coefficient in measurement_phases.values()
+    ), "Uncancelled measured lookup phase"
     return tuple(tuple(word) for word in values.T.tolist()), phases, events
 
 
