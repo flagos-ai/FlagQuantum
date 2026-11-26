@@ -98,3 +98,11 @@ classical control scopes. Explicit close returns clean workspace. Start with
 normal append replacement and all small complex measurement histories. See
 `docs/development/UNARY_ITERATION_SESSION_AUDIT.md` for source ownership,
 allocation and actual-versus-model resource accounting.
+
+`arctan_lookup_component.arctan_lookup_program` also binds a leading scalar
+positive control to the existing bounded QROM owner. Dirty select/sign/target
+words remain THRU; no source arithmetic gate decomposition is invented. The
+independent source Cirq operator and the source Bloq tensor refusal are recorded
+separately in the mean-estimation dependency audit. Run
+`tests/unit/test_mean_estimation_multiple_controls.py` for controlled dirty-column
+maps and work cleanup.
