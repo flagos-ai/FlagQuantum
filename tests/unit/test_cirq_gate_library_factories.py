@@ -509,7 +509,7 @@ def test_external_adjoint_validation_and_independent_owner_delegation() -> None:
         )
 
 
-@pytest.mark.parametrize("kind", ("cxpow", "swappow", "scalar"))
+@pytest.mark.parametrize("kind", ("cxpow", "scalar"))
 def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
     kind: str, locked_source: Any
 ) -> None:
@@ -526,6 +526,155 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         SerializationError, match="exact adjoint owner.*control-wrapper"
     ):
         resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())
+
+
+@pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
+def test_controlled_swap_adjoint_retains_source_children_and_sdk_leaves(
+    control: str, locked_source: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from collections import Counter
+    from dataclasses import replace
+    from math import pi
+
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran._infra.data_types import QUInt
+
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+    from tests.unit.register_source_graph import assert_source_wire_streams
+
+    np = pytest.importorskip("numpy")
+    spec = {
+        "positive": CtrlSpec(cvs=1),
+        "negative": CtrlSpec(cvs=0),
+        "array": CtrlSpec(cvs=np.array([0, 1])),
+        "word": CtrlSpec(qdtypes=QUInt(2), cvs=1),
+    }[control]
+    raw = cirq.SwapPowGate(exponent=0.375)
+    source = Adjoint(Controlled(locked_source.CirqGateAsBloq(raw), spec))
+    graph = source.decompose_bloq()
+    children = tuple(instance.bloq for instance in graph.bloq_instances)
+    assert len(children) == 3
+    if control == "positive":
+        assert sorted(type(child).__name__ for child in children) == [
+            "Controlled",
+            "Toffoli",
+            "Toffoli",
+        ]
+    else:
+        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+        assert all(isinstance(child, ControlledViaAnd) for child in children)
+        assert sorted(
+            type(child.subbloq).__name__
+            for child in children
+            if isinstance(child, ControlledViaAnd)
+        ) == [
+            "CNOT",
+            "CNOT",
+            "CirqGateAsBloq",
+        ]
+    reference = import_register_emitter(source).snapshots[0]
+    library = _library(source, 0)
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        record = resolve_component_program(library, 0, cirq_gate_library_factories())
+        assert verify_program_record(record) == ()
+        root = record.functions[0]
+        calls = [
+            op
+            for block in root.blocks
+            for op in block.operations
+            if op.callee and "_child_" in op.callee
+        ]
+        assert len(calls) == 3
+        functions = {function.name: function for function in record.functions}
+        actual_ports = sorted(
+            tuple(
+                (
+                    register.name,
+                    register.dtype.quantum_bits,
+                    register.shape,
+                    register.side.value,
+                )
+                for register in functions[call.callee or ""].registers or ()
+            )
+            for call in calls
+        )
+        source_ports = sorted(
+            tuple(
+                (
+                    register.name,
+                    int(register.bitsize),
+                    register.shape,
+                    register.side.value,
+                )
+                for register in child.signature
+            )
+            for child in children
+        )
+        assert actual_ports == source_ports
+        n = reference.n_wires
+        assert root.registers is not None
+        ports = []
+        offset = 0
+        for register in root.registers:
+            width = int(register.dtype.quantum_bits)
+            for _ in register.all_idxs():
+                ports.append(tuple(range(offset, offset + width)))
+                offset += width
+        bound = bind_register_program(record, tuple(ports), clean=(n, n + 1))
+
+    def aliases(ir: CircuitIR) -> tuple[Instruction, ...]:
+        phases = {"t": pi / 4, "tdg": -pi / 4, "s": pi / 2, "sdg": -pi / 2}
+        return tuple(
+            (
+                replace(op, name="phase", params={"theta": phases[op.name]})
+                if op.name in phases
+                else op
+            )
+            for op in ir.instructions
+        )
+
+    actual, expected = aliases(bound.circuit), aliases(reference)
+    assert_source_wire_streams(actual, expected)
+    assert Counter(op.name for op in actual) == Counter(op.name for op in expected)
+    for seen, target in zip(actual, expected, strict=True):
+        if target.matrix is not None:
+            assert seen.matrix is not None
+            torch.testing.assert_close(seen.matrix, target.matrix, atol=2e-14, rtol=0)
+    values = (
+        (1,) if control == "positive" else ((0,) if control == "negative" else (0, 1))
+    )
+    expected_operator = torch.tensor(
+        cirq.unitary(
+            cirq.inverse(raw)
+            .on(*cirq.LineQubit.range(n - 2, n))
+            .controlled_by(*cirq.LineQubit.range(n - 2), control_values=values)
+        ),
+        dtype=torch.complex128,
+    )
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        appended = Circuit(bound.circuit.n_wires, dtype=torch.complex128).append(
+            FieldOperation(bound.circuit.n_wires, bound.circuit.instructions)
+        )
+        torch.testing.assert_close(
+            get_unitary(appended),
+            torch.kron(
+                expected_operator,
+                torch.eye(1 << (bound.circuit.n_wires - n), dtype=torch.complex128),
+            ),
+            atol=2e-12,
+            rtol=0,
+        )
+        torch.testing.assert_close(
+            logical_operator(bound.circuit, n),
+            logical_operator(reference, n),
+            atol=2e-12,
+            rtol=0,
+        )
 
 
 def test_raw_controlled_gate_has_its_own_original_adjoint_decomposition(

@@ -31,6 +31,7 @@ from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
+from ._controlled_gate_inverse import controlled_inverse_program
 from ._gate_metadata import cirq_gate_signature
 from ._named_gate_definitions import _NamedGateDefinitions
 from ._named_gate_inverse import named_inverse_program
@@ -80,6 +81,7 @@ def cirq_gate_library_factories(
     """
     recipes: dict[FunctionRecord, Any] = {}
     adjoint_sources: set[FunctionRecord] = set()
+    controlled_sources: dict[FunctionRecord, tuple[Any, ControlSpecification]] = {}
 
     def remember(
         gate: Any,
@@ -148,7 +150,11 @@ def cirq_gate_library_factories(
         bits = tuple(bit for group in groups for bit in group.bits())
         gate = recipes[child].controlled(num_controls=len(bits), control_values=bits)
         # Source Controlled owns a graph distinct from the raw SDK gate body.
-        return remember(gate, signature, name, adjoint_source=False)
+        result = remember(gate, signature, name, adjoint_source=False)
+        root = result.functions[0] if isinstance(result, ProgramRecord) else result
+        if child in adjoint_sources:
+            controlled_sources[root] = (recipes[child], spec)
+        return result
 
     def adjoint(
         name: str,
@@ -165,6 +171,15 @@ def cirq_gate_library_factories(
                 "Missing external adjoint-gate constructor context"
             )
         if child not in adjoint_sources:
+            if child in controlled_sources:
+                original, spec = controlled_sources[child]
+                assert child.registers is not None
+                signature = Signature(child.registers).adjoint()
+                if registers is not None and tuple(signature) != registers:
+                    raise SerializationError("External adjoint-gate signature differs")
+                program = controlled_inverse_program(original, spec, signature, name)
+                if program is not None:
+                    return program
             if adjoint_factory is not None:
                 return adjoint_factory(name, registers, arguments)
             raise SerializationError(

@@ -212,3 +212,47 @@ Compatibility ownership is Ecosystem's locked Qualtran 0.7.0 input boundary.
 It can be removed when that serialized input is retired; existing native
 Programs, exact component owners, cost data and ordinary execution remain
 independent of it.
+
+
+### Controlled external adjoint execution owner
+
+The scoped control context now retains the original child gate and ordered
+control specification independently of its forward SDK recipe. The explicit
+adjoint reverses the immediate source children before controlling each inverse.
+`cirq/_controlled_gate_inverse.py` admits raw SDK child execution views and the
+explicit CNOT control specialization. Other named children, nested SDK control
+wrappers, unknown inverse wrappers and decomposition work outside child ports
+remain unavailable. This is an internal Ecosystem conversion owner, with no
+Core instruction, public entry or source-runtime dependency in the resulting
+Program. Compiler continues to own register calls and binding.
+
+For SwapPow(0.375), the three original boundaries remain visible: controlled
+CNOT, controlled raw CXPow inverse, controlled CNOT. Positive CNOT specializes
+to Toffoli with its original packed control port. Negative, shaped-array and
+unsigned-word controls retain their source control/target ports. Four actual
+source graphs compare those child signatures and all primitive operands,
+parameters and matrices. Every complete complex operator column and clean-work
+output agrees. Ordinary `circuit.append(op)` executes the owned IR with both
+source and SDK imports disabled. These four bodies have no measurements, so
+there is one applicable measurement history per body.
+
+| Control specification | Actual source/native primitive instructions | Original resource model |
+| --- | --- | --- |
+| Positive scalar bit | 19: 2 CCX, 2 H, 7 phase, 8 CX | Refuses at atomic `C[And]` |
+| Negative scalar bit | 66: 6 X, 4 T, 27 local matrix atoms, 24 CX, 2 T-dagger, 3 phase | Refuses at atomic `C[And]` |
+| Bit array `[0, 1]` | 108: 6 X, 2 T, 45 local matrix atoms, 36 CX, 6 CCX, 2 T-dagger, 11 phase | Refuses at atomic `C[And]` |
+| Unsigned two-bit word equal to 1 | Same 108 primitives, retaining packed word input | Refuses at atomic `C[And]` |
+
+Matrix atoms above are the original SDK's local decomposition leaves, not a
+matrix substituted for the algorithm. All matrix payloads are compared
+separately from instruction names. Native generic-control model ownership
+remains absent and is not inferred from primitive inventory. The earlier
+21-instruction negative `Controlled(Adjoint(raw SwapPow))` path must not replace
+the 66-instruction `Adjoint(Controlled(raw SwapPow))` path. Equal operators do
+not erase this source constructor distinction.
+
+Whole-file Q0866/Q0876 acceptance remains open: generic named-child exact
+controls, nested explicit wrapper composition, missing model ownership and
+original unavailable graph boundaries are still separate gaps. No new parent
+is counted as accepted for this dependency delivery. The unrelated unapproved
+controlled-Y proposal remains untouched.
