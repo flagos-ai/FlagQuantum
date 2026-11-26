@@ -12,6 +12,7 @@ from ....compiler.registers.lookup.bounded_pauli_select import (
     source_bounded_pauli_select_cost,
 )
 from ....core.ir import CircuitIR, Instruction
+from ....core.value_math import SymbolicInt
 from ....errors import ValidationError
 
 
@@ -21,9 +22,11 @@ class SelectPauliLCU:
 
     Strings follow the target order and accept a leading minus sign.
     Selection is most-significant-bit first. Unused addresses apply identity.
+    Unbound selection expressions retain the complete signed table; explicitly
+    replace the width with a concrete integer before binding physical wires.
     """
 
-    selection_bitsize: int
+    selection_bitsize: SymbolicInt
     target_bitsize: int
     select_unitaries: Sequence[str]
     control_val: int | None = None
