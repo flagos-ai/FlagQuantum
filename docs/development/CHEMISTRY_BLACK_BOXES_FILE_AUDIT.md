@@ -162,3 +162,63 @@ Five frozen source blobs and six unchanged native owners are verified. A separat
 retains every supported result and domain-error message. Dependency policy keeps
 666 existing findings and zero changed-path findings. Evidence and eight separate
 measured/model rows are retained under the closure prefix.
+
+## Exact placeholder constructors: interface recorded before implementation
+
+The remaining exact library provider gap is QROAM/QROAMTwoRegs. Ecosystem owns
+translation into bodyless native FunctionRecord declarations and reuses the
+existing Algorithms signature/model owners. Existing ApplyControlledZs binding
+is reused from its current provider; no duplicate phase emitter is added.
+Original dimensions, direction, optional None/explicit blocking metadata and
+source counts remain in the owned library. The typed Program is deliberately
+nonexecutable because the original placeholders supply no physical bodies.
+
+Both placeholders use MSB-first caller-owned sel/trg words. A single row omits
+the selector. Two-axis signatures use the first axis only; the second axis and
+both blocks affect the model, not extra quantum ports. Existing positive,
+concrete dimension/model admission is preserved, with explicit refusal of
+zero-target/symbolic/invalid metadata. No physical lookup, measurements,
+complex-state execution or clean workspace is invented for these declarations.
+The earlier complete source acceptance is reused, not counted again.
+
+
+### Verified exact constructor and narrow model closure, November 27
+
+Both placeholder keys now resolve actual source libraries at levels zero, one
+and two through `ecosystem/_chemistry_black_boxes_library.py`. Wire round trips
+retain dimensions, is_adjoint, absent/None/explicit-one/nonpower block metadata
+and source counts. Resolution succeeds with SDK imports blocked. One-row
+selectors are omitted; two-axis costs still depend on both axes while the
+signature uses only the first. All resulting placeholder definitions have no
+body and explicitly refuse physical binding. The same provider reuses the
+existing ApplyControlledZs factory; exact definition equality verifies reuse.
+No execution, work, measurement or emitted gate count is claimed for QROAM.
+
+New one- and two-bit target cases exposed an existing native model gap. The
+original QubitCount fallback takes the maximum of signature width and its
+three-qubit Toffoli callee, even when multiplicity is zero. The native models
+now preserve that local model peak without changing logical ports or creating
+work. For QROAM(1,1,block=1), the original model has zero Toffoli and peak three
+although the signature is one bit. QROAMTwoRegs(1,7,1,3,2) has seven forward/six
+inverse Toffoli and peak three with two signature bits. These are analytical
+source semantics, not a physical implementation or a source defect waiver.
+
+An independent grid compares 330 valid inputs against unchanged source peaks
+and exact published20a08c460 native gate counts. All Toffoli values are
+unchanged; 71 narrow-width peak corrections now match original QubitCount.
+Six prior domain refusals retain their exact native messages. Automatic forward
+rows<target-width still has the original AssertionError and the existing native
+model ValueError. Positive concrete constructor declarations can exist even
+when that independent cost query refuses. Zero targets, symbolic dimensions,
+invalid blocks and nonbinary direction remain outside this native admission.
+
+The two actual Cirq1.7.0/Qiskit2.5.0 and Cirq1.6.1/Qiskit2.0.0 profiles each
+pass 266 concentrated cases without skips; local integration passes145.
+Three Python files pass strict typing, Black/Ruff, Algorithms/Ecosystem scopes,
+English/links, architecture, IR and public API baselines. Two frozen source/test
+blobs remain unchanged. Existing complete source and original four OpenFermion
+comparisons are reused, not represented as new parent acceptance.
+External evidence uses `g2-chemistry-placeholder-*-20261127`; resource receipt
+`g2-chemistry-placeholder-resources-20261127.json` separates source peak,
+signature width and unavailable primitive inventory. Q-0335/Q-0336 retain their
+previous acceptance. Exact registrations246/303 are separate from that status.

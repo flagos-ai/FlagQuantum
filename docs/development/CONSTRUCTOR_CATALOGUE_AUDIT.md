@@ -18,28 +18,28 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 82 |
-| Union of exact native registrations | 244 |
-| Keys without an exact factory in these providers | 59 |
+| Keys reachable through Ecosystem providers | 85 |
+| Union of exact native registrations | 246 |
+| Keys without an exact factory in these providers | 57 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq, twenty-nine finite first-quantization constructors and five
+The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine finite first-quantization constructors and five
 finite single-factorization and six finite double-factorization constructors
-add forty-one keys. These are
+and two chemistry lookup placeholders add forty-three keys. These are
 registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 59 keys without exact factories have these distinct source roles:
+The 57 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 51 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 49 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -195,8 +195,8 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.bookkeeping.partition.Join2` | `qualtran/bloqs/bookkeeping/partition.py` | `compiler/formats/legacy_partition_factories.py:partition_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.bookkeeping.split.Split` | `qualtran/bloqs/bookkeeping/split.py` | `compiler/formats/legacy_bookkeeping_factories.py:bookkeeping_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs` | `qualtran/bloqs/chemistry/black_boxes.py` | `compiler/formats/legacy_thc_selection_factories.py:thc_selection_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
-| `qualtran.bloqs.chemistry.black_boxes.QROAM` | `qualtran/bloqs/chemistry/black_boxes.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs` | `qualtran/bloqs/chemistry/black_boxes.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.chemistry.black_boxes.QROAM` | `qualtran/bloqs/chemistry/black_boxes.py` | `ecosystem/_chemistry_black_boxes_library.py:chemistry_black_boxes_factories` | Original positive concrete dimensions and direction/block metadata; bodyless analytical declaration and source fallback width preserved; [audit](CHEMISTRY_BLACK_BOXES_FILE_AUDIT.md) |
+| `qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs` | `qualtran/bloqs/chemistry/black_boxes.py` | `ecosystem/_chemistry_black_boxes_library.py:chemistry_black_boxes_factories` | Original positive concrete dimensions and direction/block metadata; bodyless analytical declaration and source fallback width preserved; [audit](CHEMISTRY_BLACK_BOXES_FILE_AUDIT.md) |
 | `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationBlockEncoding` | `qualtran/bloqs/chemistry/df/double_factorization.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.df.double_factorization.DoubleFactorizationOneBody` | `qualtran/bloqs/chemistry/df/double_factorization.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.df.prepare.InnerPrepareDoubleFactorization` | `qualtran/bloqs/chemistry/df/prepare.py` | `ecosystem/_double_factorization_library.py:double_factorization_factories` | Original finite metadata and literal nine/seven-call roots; selected phase/reflection executable, opaque original leaves retained; [audit](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md) |
