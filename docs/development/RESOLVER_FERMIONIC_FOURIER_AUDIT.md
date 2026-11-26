@@ -51,3 +51,39 @@ one original expected failure. Strict checking covers both changed Python
 files. Black, Ruff, Ecosystem scope, language, architecture, multilevel IR and
 public API checks pass. The dependency receipt retains exactly the existing
 720 findings. Receipts use prefix g2-fermionic-constructor and date 20261123.
+
+## Shared primitive and exact generic adjoint ownership, November 26
+
+The literal fifteen-call recipe and typed Program now belong to
+Compiler registers/phase/fermionic_fourier.py. Independent source call and cost
+classification belong to registers/resources/fermionic_fourier_model.py.
+The existing Algorithms helpers delegate to these owners with unchanged
+interfaces. Hubbard and Fourier consumers retain their complete previous
+instruction streams. Twenty-four complete Program, bound IR, model and
+Hubbard records match the published baseline byte-for-byte in their captured
+representations.
+
+Constructor adaptation now belongs to Compiler formats/
+legacy_fermionic_fourier_factories.py. The obsolete private Ecosystem module is
+removed and all consumers use the new owner. Generic Adjoint constructors keep
+explicit per-resolution inverse recipes and support the exact reversed body,
+including symbolic rotation metadata. Unknown child adjoints require their
+explicit owner. The source class flag remains ignored by its decomposition;
+it is not substituted for the correct generic adjoint.
+
+Depth-zero and deeper original generic-adjoint libraries assign different IDs
+to their unused forward argument. Raw whole-module names therefore differ.
+Both complete reachable inverse definitions and complete retained forward
+argument definitions match with the existing literal definition matcher;
+root calls, all fields, operands, parameters, feedback and physical streams
+remain checked. No unitary-equivalence shortcut or source patch is used.
+
+New checks cover signed k/n values, both original flag values, all three
+serialization depths, complete absolute complex operators, an entangled
+spectator on reversed physical bindings, and zero work/classical outputs.
+The only applicable measurement history is empty. Source-free reconstruction
+blocks SDK and Algorithms imports. A disabled Algorithms emitter cannot affect
+the constructor; replacing the shared gate implementation preserves the
+unchanged Hubbard consumer. Actual emission remains fifteen instructions,
+including two T-family gates and one literal Rz; independent source estimates
+classify Rz separately. Existing source phase/flag defects keep Q-0646 open.

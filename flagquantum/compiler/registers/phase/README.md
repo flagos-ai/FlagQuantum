@@ -22,3 +22,8 @@ unitary's zero/one controls and adjoint, following the pinned GQSP signal order.
 Simulation retains numerical phase ownership. The [finite emission guide](../../../../docs/development/GENERALIZED_QSP_EMISSION.md)
 gives the append example, workspace obligations, source-stage parity boundary
 and separate measured instruction counts versus source component estimates.
+
+The shared [fermionic Fourier pair](fermionic_fourier.py) owns the literal
+fifteen-call recipe and exact inverse. Algorithms and interchange constructors
+consume this same implementation; caller x/y ports require no scratch or
+measurement feedback. Its independent source model lives in the resource owner.
