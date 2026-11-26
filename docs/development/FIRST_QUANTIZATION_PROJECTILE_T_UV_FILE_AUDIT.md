@@ -5,6 +5,11 @@ connects both original UV constructors and the zeta declaration to the shared
 typed nu dependency. It preserves the source inverse/physical boundaries below;
 constructor registration does not close those gaps.
 
+The [finite kinetic constructor audit](RESOLVER_KINETIC_PREPARATION_AUDIT.md)
+adds all four ordinary/projectile T and unary constructor bindings. Only the
+ordinary T has the original uniform/r/s physical call graph; all opaque source
+leaves and negative narrow declaration counts remain explicit.
+
 The frozen Qualtran v0.7.0 reference is under
 `qualtran/bloqs/chemistry/pbc/first_quantization/projectile` at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
