@@ -636,3 +636,13 @@ Runtime supplies seeds/generators and assembles results/evidence. Reuse the
 existing physical density validator; do not create a second refusal policy.
 Start with `tests/unit/test_terminal_instruments.py` and
 `tests/unit/test_ising_sampled_runtime.py` for a small local change.
+
+## Direct numerical imports
+
+Internal consumers use the defining numerical module directly. Statevector
+readout lives in `statevector/measurement_ops.py`; diagonal actions in
+`statevector/diagonal_cpu.py` and `statevector/diagonal_matrix_dispatch.py`;
+sequence fusion in `statevector/dense_fusion_cpu.py`; program records in
+`statevector/program.py`. Stabilizer annotated text lives in
+`stabilizer/_circuit_text.py`. Local execution and engine modules retain
+their real dependencies and public entry points, without unused private aliases.

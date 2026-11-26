@@ -12,6 +12,10 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
+
 from ....core.ir import CircuitIR
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,
@@ -21,7 +25,6 @@ from ....simulation.statevector.index_basis import (
 )
 from ....simulation.statevector.operations import (
     _apply_diagonal_gate_eager,
-    _apply_diagonal_matrix,
     _apply_local_gate_eager,
     _apply_matrix,
     _combine_gate_basis_blocks_eager,

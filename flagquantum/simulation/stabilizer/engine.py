@@ -21,12 +21,6 @@ from flagquantum.core.operators.schema import canonical_opcode, get_operator_sch
 
 from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
-from ._circuit_text import (
-    _annotated_stim_source as _annotated_stim_source,
-)
-from ._circuit_text import (
-    _annotated_stim_text as _annotated_stim_text,
-)
 from ._gate_expansions import GATE_EXPANSIONS, expand_gate
 from ._validation import (
     _bounded_stim_expansion,

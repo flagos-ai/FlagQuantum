@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence  # noqa: F401
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from typing import get_type_hints as _class_type_hints
@@ -10,16 +10,10 @@ from typing import get_type_hints as _class_type_hints
 import torch
 
 from flagquantum.core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
-from flagquantum.core.operators.observable import Observable  # noqa: F401
 from flagquantum.core.parameters import Parameter
-from flagquantum.errors import (  # noqa: F401
+from flagquantum.errors import (
     CapabilityError,
     ExecutionError,
-    ValidationError,
-)
-from flagquantum.simulation.numerics.matrix_free.hamiltonian import (  # noqa: F401
-    PauliSum,
-    PauliSumTerm,
 )
 
 from .generator import Liouvillian
@@ -27,44 +21,24 @@ from .integrators import (
     DEFAULT_INTEGRATOR,
     INTEGRATOR_NAMES,
     KRYLOV_SCHEMES,
-    SOLVE_RESTART,  # noqa: F401
     advance_interval,
     integrator_order,
     substeps_per_interval,
 )
-
-# Request normalization moved to ``lindblad_request``; the names below stay
-# bound here because callers and the unit suite already reach them through this
-# module path. A ``noqa`` marks a name only that path uses.
 from .problem import (
     CollapseOperator,
     EvolutionValidationError,
-    _as_complex_matrix,  # noqa: F401
-    _descriptor_matrix,  # noqa: F401
-    _descriptor_pauli,  # noqa: F401
     _error,
-    _hamiltonian_terms,  # noqa: F401
-    _named_operator,  # noqa: F401
     _normalize_collapse_operators,
-    _normalize_collapse_terms,  # noqa: F401
-    _normalize_hamiltonian,  # noqa: F401
     _normalize_hamiltonians,
     _normalize_initial_state,
     _normalize_observables,
     _normalize_times,
-    _observable_matrix,  # noqa: F401
-    _observable_terms,  # noqa: F401
-    _pauli_operator,  # noqa: F401
-    _pauli_term,  # noqa: F401
-    _pauli_term_wires,  # noqa: F401
-    _require_density_matrices,  # noqa: F401
     _require_gradients_flag,
-    _require_hermitian_terms,  # noqa: F401
     _resolve_batch_size,
     _resolve_state_space,
     _solve_max_iterations,
     _solve_tolerance,
-    _statevectors_to_density,  # noqa: F401
 )
 
 

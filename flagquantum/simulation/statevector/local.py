@@ -8,6 +8,20 @@ from typing import TYPE_CHECKING, cast
 
 import torch
 
+from flagquantum.simulation.statevector.dense_fusion_cpu import (
+    _cpu_cx_rzz_swap_fusion_enabled,
+)
+from flagquantum.simulation.statevector.diagonal_cpu import (
+    _apply_disjoint_diagonal_regions_cpu,
+)
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
+from flagquantum.simulation.statevector.program import (
+    _StatevectorCXSequenceRZZSwapStep,
+    _StatevectorSwapSequenceStep,
+)
+
 from ...core.ir import CircuitIR
 from ...core.operators.schema import canonical_opcode
 from ...core.runtime_config import runtime_config
@@ -53,24 +67,13 @@ from .fusion_config import (
     _cpu_hadamard_controlled_phase_fusion_enabled,
 )
 from .measurement_ops import (
-    _expectation_from_operators as _expectation_from_operators,
-)
-from .measurement_ops import (
-    _expectation_pauli_string as _expectation_pauli_string,
-)
-from .measurement_ops import (
     _expectation_z as _measurement_expectation_z,
-)
-from .measurement_ops import (
-    _sample_statevector as _sample_statevector,
 )
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
     _apply_cx_permutation,
     _apply_cx_sequence_gather,
-    _apply_diagonal_matrix,
-    _apply_disjoint_diagonal_regions_cpu,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_rx_rz_loop,
@@ -78,7 +81,6 @@ from .operations import (
     _apply_single_wire_matrix,
     _compile_statevector_program,
     _cpu_cross_wire_diagonal_fusion_enabled,
-    _cpu_cx_rzz_swap_fusion_enabled,
     _cpu_cx_sequence_gather_enabled,
     _cpu_disjoint_single_wire_fusion_enabled,
     _cpu_single_wire_elementwise_enabled,
@@ -86,7 +88,6 @@ from .operations import (
     _diagonal_region,
     _fused_gate_matrix,
     _StatevectorCrossWireDiagonalStep,
-    _StatevectorCXSequenceRZZSwapStep,
     _StatevectorCXSequenceStep,
     _StatevectorDenseRegion,
     _StatevectorDisjointDenseStep,
@@ -94,7 +95,6 @@ from .operations import (
     _StatevectorGateStep,
     _StatevectorProgramStep,
     _StatevectorRXRZLoopStep,
-    _StatevectorSwapSequenceStep,
     _triton_parameterized_single_qubit_matrix_enabled,
     _triton_ry_rz_pair_enabled,
     _triton_single_qubit_loop_enabled,

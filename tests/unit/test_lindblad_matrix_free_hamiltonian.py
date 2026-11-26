@@ -23,7 +23,7 @@ from flagquantum.simulation import (
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
-from flagquantum.simulation.dynamics import lindblad as lindblad_module
+from flagquantum.simulation.dynamics import problem as lindblad_problem
 from flagquantum.simulation.numerics.matrix_free.hamiltonian import (
     PauliSum,
     PauliSumTerm,
@@ -58,7 +58,7 @@ def _dense_hamiltonian(hamiltonian: object, *, n_wires: int) -> torch.Tensor:
             if not term.factors:
                 matrix = matrix + term.coefficient * identity
                 continue
-            matrix = matrix + term.coefficient * lindblad_module._pauli_operator(
+            matrix = matrix + term.coefficient * lindblad_problem._pauli_operator(
                 "".join(axis for _, axis in term.factors),
                 tuple(wire for wire, _ in term.factors),
                 n_wires=n_wires,
@@ -68,7 +68,7 @@ def _dense_hamiltonian(hamiltonian: object, *, n_wires: int) -> torch.Tensor:
             )
         return matrix
     if isinstance(hamiltonian, torch.Tensor):
-        return lindblad_module._as_complex_matrix(
+        return lindblad_problem._as_complex_matrix(
             hamiltonian,
             name="hamiltonian",
             dim=dim,
@@ -78,7 +78,7 @@ def _dense_hamiltonian(hamiltonian: object, *, n_wires: int) -> torch.Tensor:
     matrix = torch.zeros((dim, dim), dtype=dtype, device=_DEVICE)
     for term in hamiltonian:  # type: ignore[attr-defined]
         matrix = matrix + float(term.get("coefficient", 1.0)) * (
-            lindblad_module._descriptor_matrix(
+            lindblad_problem._descriptor_matrix(
                 term,
                 n_wires=n_wires,
                 dtype=dtype,
@@ -144,7 +144,7 @@ def _dense_trajectory(
 def _normalize(
     hamiltonian: object, *, n_wires: int, dtype: torch.dtype = torch.complex128
 ) -> PauliSum | torch.Tensor:
-    return lindblad_module._normalize_hamiltonian(
+    return lindblad_problem._normalize_hamiltonian(
         hamiltonian,
         n_wires=n_wires,
         dim=2**n_wires,
@@ -199,7 +199,7 @@ def test_a_complex64_hamiltonian_keeps_the_state_precision() -> None:
     bound. The block itself is therefore what has to be checked.
     """
 
-    representation = lindblad_module._normalize_hamiltonian(
+    representation = lindblad_problem._normalize_hamiltonian(
         0.5 * fq.X(0) + 0.25 * fq.Z(0),
         n_wires=1,
         dim=2,
@@ -355,7 +355,7 @@ def test_the_observable_trajectory_matches_the_dense_expectation_values() -> Non
             torch.einsum(
                 "tij,ji->t",
                 reference,
-                lindblad_module._observable_matrix(
+                lindblad_problem._observable_matrix(
                     operator,
                     n_wires=2,
                     dtype=torch.complex128,

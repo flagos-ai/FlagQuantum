@@ -53,7 +53,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
 | Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-The cumulative 538-row [path map](migration/independent-structure-path-map.md) and
+The cumulative 545-row [path map](migration/independent-structure-path-map.md) and
 [machine-readable symbol ledger](migration/independent-structure-moves.json)
 identify every relocated file and every partial extraction. An implementation
 has one owner even when more than one historical public module exports it.
@@ -238,3 +238,13 @@ The same batch places raw dense probability extraction, joint reduction and
 parity reconstruction in Simulation Numerics. Backend/catalog selection and
 resource admission remain Runtime; the existing normalization tolerance moves
 with its numerical kernel, unchanged.
+
+The [Dynamics normalizer retirement](migration/dynamics-normalizer-retirement.md)
+removes unused internal reexports from the evolution engine. Problem normalization
+keeps its existing owner, and its test consumers import that owner directly.
+Seven declared public evolution exports and their historical identities remain.
+
+The [Simulation private-binding closure](migration/simulation-private-binding-retirement.md)
+also retires unused Statevector and Stabilizer aliases. Production, tests and
+benchmark producers import the defining modules directly; recorded benchmark
+results, contracts and published type/function identities are unchanged.

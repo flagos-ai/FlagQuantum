@@ -24,29 +24,8 @@ from .clifford_matching import (
     fuse_native_disjoint_clifford_matchings,
 )
 from .dense_fusion_cpu import (
-    _apply_swap_sequence as _apply_swap_sequence,
-)
-from .dense_fusion_cpu import (
-    _cpu_cx_rzz_swap_fusion_enabled as _cpu_cx_rzz_swap_fusion_enabled,
-)
-from .dense_fusion_cpu import (
-    _cpu_swap_sequence_fusion_enabled as _cpu_swap_sequence_fusion_enabled,
-)
-from .dense_fusion_cpu import (
     _fuse_cx_rzz_swap_sequences,
     _fuse_swap_sequences,
-)
-from .diagonal_cpu import (
-    _apply_cross_wire_diagonal_cpu as _apply_cross_wire_diagonal_cpu,
-)
-from .diagonal_cpu import (
-    _apply_disjoint_diagonal_regions_cpu as _apply_disjoint_diagonal_regions_cpu,
-)
-from .diagonal_matrix_dispatch import (
-    _apply_diagonal_matrix as _apply_diagonal_matrix,
-)
-from .diagonal_matrix_dispatch import (
-    _apply_diagonal_matrix_reference as _apply_diagonal_matrix_reference,
 )
 from .fixed_layer_cpu import (
     fuse_native_fixed_one_qubit_layers,
@@ -63,9 +42,6 @@ from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
 )
-from .program import (
-    _StatevectorCXSequenceRZZSwapStep as _StatevectorCXSequenceRZZSwapStep,
-)
 from .program import _StatevectorCXSequenceStep as _StatevectorCXSequenceStep
 from .program import _StatevectorDenseRegion as _StatevectorDenseRegion
 from .program import (
@@ -76,7 +52,6 @@ from .program import _StatevectorGateStep as _StatevectorGateStep
 from .program import _StatevectorPreCXStep as _StatevectorPreCXStep
 from .program import _StatevectorProgramStep as _StatevectorProgramStep
 from .program import _StatevectorRXRZLoopStep as _StatevectorRXRZLoopStep
-from .program import _StatevectorSwapSequenceStep as _StatevectorSwapSequenceStep
 from .single_qubit_cpu import apply_single_qubit_matrix_cpu
 from .two_qubit_matrix_dispatch import _try_apply_preferred_two_qubit_matrix
 from .wire_permutation import _clear_wire_permutation_cache

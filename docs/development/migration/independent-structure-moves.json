@@ -9470,6 +9470,162 @@
       },
       "remaining_imports": "numerical owners called directly; no retained old helper or tolerance binding",
       "compatibility": "internal tensor kernels and constant removed; dispatch and request admission remain Runtime"
+    },
+    {
+      "group": "dynamics-normalizer-retirement",
+      "old": "flagquantum/simulation/dynamics/lindblad.py",
+      "new": "flagquantum/simulation/dynamics/problem.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_as_complex_matrix",
+        "_descriptor_matrix",
+        "_descriptor_pauli",
+        "_hamiltonian_terms",
+        "_named_operator",
+        "_normalize_collapse_terms",
+        "_normalize_hamiltonian",
+        "_observable_matrix",
+        "_observable_terms",
+        "_pauli_operator",
+        "_pauli_term",
+        "_pauli_term_wires",
+        "_require_density_matrices",
+        "_require_hermitian_terms",
+        "_statevectors_to_density"
+      ],
+      "retired_private_members": [
+        "_as_complex_matrix",
+        "_descriptor_matrix",
+        "_descriptor_pauli",
+        "_hamiltonian_terms",
+        "_named_operator",
+        "_normalize_collapse_terms",
+        "_normalize_hamiltonian",
+        "_observable_matrix",
+        "_observable_terms",
+        "_pauli_operator",
+        "_pauli_term",
+        "_pauli_term_wires",
+        "_require_density_matrices",
+        "_require_hermitian_terms",
+        "_statevectors_to_density"
+      ],
+      "compatibility": "retirement of unused internal import aliases only; no definitions move and existing historical source identities stay unchanged",
+      "remaining_imports": "only real engine dependencies remain; all test consumers reach problem directly"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/stabilizer/engine.py",
+      "new": "flagquantum/simulation/stabilizer/_circuit_text.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_annotated_stim_source",
+        "_annotated_stim_text"
+      ],
+      "retired_private_members": [
+        "_annotated_stim_source",
+        "_annotated_stim_text"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/statevector/local.py",
+      "new": "flagquantum/simulation/statevector/measurement_ops.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_expectation_from_operators",
+        "_expectation_pauli_string",
+        "_sample_statevector"
+      ],
+      "retired_private_members": [
+        "_expectation_from_operators",
+        "_expectation_pauli_string",
+        "_sample_statevector"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/statevector/operations.py",
+      "new": "flagquantum/simulation/statevector/dense_fusion_cpu.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_apply_swap_sequence",
+        "_cpu_cx_rzz_swap_fusion_enabled",
+        "_cpu_swap_sequence_fusion_enabled"
+      ],
+      "retired_private_members": [
+        "_apply_swap_sequence",
+        "_cpu_cx_rzz_swap_fusion_enabled",
+        "_cpu_swap_sequence_fusion_enabled"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/statevector/operations.py",
+      "new": "flagquantum/simulation/statevector/diagonal_cpu.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_apply_cross_wire_diagonal_cpu",
+        "_apply_disjoint_diagonal_regions_cpu"
+      ],
+      "retired_private_members": [
+        "_apply_cross_wire_diagonal_cpu",
+        "_apply_disjoint_diagonal_regions_cpu"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/statevector/operations.py",
+      "new": "flagquantum/simulation/statevector/diagonal_matrix_dispatch.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_apply_diagonal_matrix",
+        "_apply_diagonal_matrix_reference"
+      ],
+      "retired_private_members": [
+        "_apply_diagonal_matrix",
+        "_apply_diagonal_matrix_reference"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "simulation-private-binding-retirement",
+      "old": "flagquantum/simulation/statevector/operations.py",
+      "new": "flagquantum/simulation/statevector/program.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_StatevectorCXSequenceRZZSwapStep",
+        "_StatevectorSwapSequenceStep"
+      ],
+      "retired_private_members": [
+        "_StatevectorCXSequenceRZZSwapStep",
+        "_StatevectorSwapSequenceStep"
+      ],
+      "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
+      "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
     }
   ],
   "retired_namespace_parents": [

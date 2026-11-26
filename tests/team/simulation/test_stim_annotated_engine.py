@@ -14,6 +14,7 @@ from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.qec.execution.experiments import run_stim_experiment
+from flagquantum.simulation.stabilizer import _circuit_text as stabilizer_circuit_text
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine
 
 pytestmark = pytest.mark.unit
@@ -38,7 +39,7 @@ def test_native_text_round_trip_retains_executed_probability(
             ),
         ),
     )
-    text = engine._annotated_stim_text(
+    text = stabilizer_circuit_text._annotated_stim_text(
         program,
         terminal_qubits=(0,),
         detector_columns=((0,),),

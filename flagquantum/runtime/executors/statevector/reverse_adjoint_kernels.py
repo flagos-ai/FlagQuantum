@@ -21,11 +21,13 @@ from flagquantum.runtime.executors.statevector.forward import (
     _wait_for_exchange,
 )
 from flagquantum.simulation.statevector.adjoint import _is_diagonal_instruction
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
 
 from ....core.ir import Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.statevector.operations import (
-    _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _instruction_matrix,

@@ -18,6 +18,13 @@ from flagquantum.simulation.statevector.cz_graph import (
     _cz_graph_signs_cpu,
     _fuse_cz_graphs,
 )
+from flagquantum.simulation.statevector.diagonal_cpu import (
+    _apply_cross_wire_diagonal_cpu,
+    _apply_disjoint_diagonal_regions_cpu,
+)
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
 from flagquantum.simulation.statevector.index_basis import (
     _basis_indices_for_wires,
     _basis_offset,
@@ -30,10 +37,7 @@ from flagquantum.simulation.statevector.local import (
     _cpu_disjoint_dense_max_wires,
 )
 from flagquantum.simulation.statevector.operations import (
-    _apply_cross_wire_diagonal_cpu,
     _apply_diagonal_gate_eager,
-    _apply_diagonal_matrix,
-    _apply_disjoint_diagonal_regions_cpu,
     _apply_local_gate_eager,
     _apply_matrix,
     _apply_matrix_layout,

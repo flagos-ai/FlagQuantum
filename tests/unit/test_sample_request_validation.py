@@ -115,7 +115,7 @@ def test_circuit_sample_rejects_an_unsupported_format_before_sampling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "flagquantum.simulation.statevector.local._sample_statevector",
+        "flagquantum.simulation.statevector.measurement_ops._sample_statevector",
         _refuse_sampling(),
     )
     with pytest.raises(ValueError, match=MESSAGE):

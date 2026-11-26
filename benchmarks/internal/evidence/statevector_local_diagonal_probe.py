@@ -107,7 +107,9 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
     from flagquantum.simulation.kernels.triton.statevector_diagonal import (
         apply_complex64_local_diagonal,
     )
-    from flagquantum.simulation.statevector.operations import _apply_diagonal_matrix
+    from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+        _apply_diagonal_matrix,
+    )
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for SV-010 benchmark evidence")

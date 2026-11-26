@@ -12,6 +12,7 @@ from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError
 from flagquantum.qec import PhenomenologicalNoise, RepetitionCode, build_memory_circuit
 from flagquantum.qec.adapters.stim import memory_to_stim_text
+from flagquantum.simulation.stabilizer import _circuit_text as stabilizer_circuit_text
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine
 
 pytestmark = pytest.mark.unit
@@ -51,7 +52,7 @@ def test_export_rejects_invalid_parity_before_native_validation(
 ) -> None:
     _select_embedded(monkeypatch, tmp_path)
     with pytest.raises(ValueError, match="parity column outside"):
-        engine._annotated_stim_text(
+        stabilizer_circuit_text._annotated_stim_text(
             CircuitIR(n_wires=1, instructions=()),
             terminal_qubits=(0,),
             detector_columns=((column,),),
@@ -111,14 +112,14 @@ def test_embedded_export_matches_sdk_binary64_law(
         ),
     )
     monkeypatch.setattr(engine, "__file__", str(tmp_path / "engine.py"))
-    reference = engine._annotated_stim_text(
+    reference = stabilizer_circuit_text._annotated_stim_text(
         program,
         terminal_qubits=(0,),
         detector_columns=((0,),),
         observable_columns=((0,),),
     )
     _select_embedded(monkeypatch, tmp_path)
-    actual = engine._annotated_stim_text(
+    actual = stabilizer_circuit_text._annotated_stim_text(
         program,
         terminal_qubits=(0,),
         detector_columns=((0,),),
@@ -136,7 +137,7 @@ def test_embedded_export_does_not_add_determinism_requirement(
 ) -> None:
     pytest.importorskip("flagquantum.simulation.stabilizer._embedded_stim")
     _select_embedded(monkeypatch, tmp_path)
-    text = engine._annotated_stim_text(
+    text = stabilizer_circuit_text._annotated_stim_text(
         CircuitIR(n_wires=1, instructions=(Instruction("h", (0,)),)),
         terminal_qubits=(0,),
         detector_columns=((0,),),

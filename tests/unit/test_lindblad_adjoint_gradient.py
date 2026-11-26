@@ -42,7 +42,7 @@ from flagquantum.simulation import (
     evolve_density_matrix,
 )
 from flagquantum.simulation.dynamics.generator import Liouvillian
-from flagquantum.simulation.dynamics.lindblad import (
+from flagquantum.simulation.dynamics.problem import (
     _normalize_collapse_operators,
     _normalize_hamiltonian,
 )

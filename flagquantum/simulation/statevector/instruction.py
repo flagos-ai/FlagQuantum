@@ -7,10 +7,12 @@ import torch
 from flagquantum.core.ir import Instruction
 from flagquantum.core.operators.schema import canonical_opcode
 from flagquantum.simulation.gate_matrix import gate_matrix as _gate_matrix
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
 
 from .operations import (
     _DIAGONAL_STATEVECTOR_GATES,
-    _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_single_qubit_fixed,

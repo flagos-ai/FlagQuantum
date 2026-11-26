@@ -24,8 +24,13 @@ import torch
 
 import flagquantum as fq
 from flagquantum.simulation.statevector import local as statevector_local
-from flagquantum.simulation.statevector.operations import (
+from flagquantum.simulation.statevector import (
+    measurement_ops as statevector_measurement_ops,
+)
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
     _apply_diagonal_matrix,
+)
+from flagquantum.simulation.statevector.operations import (
     _apply_matrix,
     _apply_single_wire_matrix,
     _cpu_single_wire_elementwise_enabled,
@@ -808,7 +813,7 @@ def test_the_pauli_string_path_reaches_the_new_kernel(
     circuit.state(refresh=True)
     recorder.reset()
 
-    statevector_local._expectation_pauli_string(
+    statevector_measurement_ops._expectation_pauli_string(
         circuit,
         x=tuple(range(n_wires)),
         y=(),
@@ -832,7 +837,7 @@ def test_pauli_string_expectations_agree_between_the_routes(
 
     def evaluate() -> torch.Tensor:
         circuit = rotation_circuit(n_wires, dtype=dtype, kind="ry")
-        return statevector_local._expectation_pauli_string(
+        return statevector_measurement_ops._expectation_pauli_string(
             circuit,
             x=wires if observable == "x" else (),
             y=wires if observable == "y" else (),
