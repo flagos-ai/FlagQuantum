@@ -14,10 +14,10 @@ from flagquantum.compiler.formats.legacy_component_resolution import (
     ResolvedArgument,
     resolve_component_program,
 )
-from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.ecosystem._fermionic_component_library import (
-    fermionic_library_factories,
+from flagquantum.compiler.formats.legacy_fermionic_fourier_factories import (
+    fermionic_fourier_factories,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.errors import SerializationError
 from tests.unit.test_component_graph import _native_trace, _source_trace
 from tests.unit.test_legacy_arithmetic_factories import _library
@@ -37,12 +37,12 @@ def test_fermionic_constructor_exact_decomposition(
 
     source = TwoBitFFFT(k, n, is_adjoint=adjoint)
     record = resolve_component_program(
-        _library(source, 0), 0, fermionic_library_factories()
+        _library(source, 0), 0, fermionic_fourier_factories()
     )
     for depth in (1, 2):
         assert (
             resolve_component_program(
-                _library(source, depth), 0, fermionic_library_factories()
+                _library(source, depth), 0, fermionic_fourier_factories()
             )
             == record
         )
@@ -77,9 +77,9 @@ def test_fermionic_defaults_example_symbolic_precision_and_validation() -> None:
 
     source = _two_bit_ffft.make()
     record = resolve_component_program(
-        _library(source, 0), 0, fermionic_library_factories()
+        _library(source, 0), 0, fermionic_fourier_factories()
     )
-    factory = next(iter(fermionic_library_factories().values()))
+    factory = next(iter(fermionic_fourier_factories().values()))
     assert factory("main", None, {"k": 2, "n": 3}) == record
     assert factory("main", None, {"k": 2, "n": 3, "eps": sympy.Symbol("eps")}) == record
     invalid: tuple[dict[str, ResolvedArgument], ...] = (
@@ -111,7 +111,7 @@ def test_fermionic_symbolic_rotation_reuses_existing_parameter_binding(
     k, n = (1, theta) if symbolic_denominator else (theta, 3)
     source = TwoBitFFFT(k, n, eps=sympy.Symbol("eps"))
     record = resolve_component_program(
-        _library(source, 0), 0, fermionic_library_factories()
+        _library(source, 0), 0, fermionic_fourier_factories()
     )
     assert _native_trace(record) == _source_trace(SourceCalls, source.decompose_bloq())
     bound = bind_register_program(record, ((0,), (1,)))
