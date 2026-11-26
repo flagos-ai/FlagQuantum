@@ -17,27 +17,27 @@ source registry, rather than inferred from package aliases.
 | Verified fact | Count |
 | --- | ---: |
 | Frozen source keys | 303 |
-| Exact Compiler format registrations | 200 |
-| Keys reachable through Ecosystem providers | 39 |
-| Union of exact native registrations | 201 |
-| Keys without an exact factory in these providers | 102 |
+| Exact Compiler format registrations | 201 |
+| Keys reachable through Ecosystem providers | 40 |
+| Union of exact native registrations | 202 |
+| Keys without an exact factory in these providers | 101 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 38 keys; CirqGateAsBloq is the
+The Ecosystem count overlaps Compiler for 39 keys; CirqGateAsBloq is the
 additional key. These are registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 102 keys without exact factories have these distinct source roles:
+The 101 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 94 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 93 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -350,7 +350,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient` | `qualtran/bloqs/qft/qft_phase_gradient.py` | `compiler/formats/legacy_gradient_qft_factories.py:gradient_qft_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.qft.qft_text_book.QFTTextBook` | `qualtran/bloqs/qft/qft_text_book.py` | `compiler/formats/legacy_qft_factories.py:qft_factories`, `compiler/formats/legacy_textbook_qpe_factories.py:textbook_qpe_library_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT` | `qualtran/bloqs/qft/two_bit_ffft.py` | `compiler/formats/legacy_fermionic_fourier_factories.py:fermionic_fourier_factories` | Scoped constructor receipt: [audit](RESOLVER_FERMIONIC_FOURIER_AUDIT.md); original limits retained |
-| `qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP` | `qualtran/bloqs/qsp/generalized_qsp.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP` | `qualtran/bloqs/qsp/generalized_qsp.py` | `compiler/formats/legacy_gqsp_factories.py:generalized_qsp_factories`, `ecosystem/_generalized_qsp_component_library.py:generalized_qsp_library_factories` | Typed finite GQSP constructor with injected phases and exact native child owners; [audit](RESOLVER_GENERALIZED_QSP_AUDIT.md); source/metadata boundaries retained |
 | `qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator` | `qualtran/bloqs/qubitization/qubitization_walk_operator.py` | `compiler/formats/legacy_qubitization_walk_factories.py:qubitization_walk_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.reflections.prepare_identity.PrepareIdentity` | `qualtran/bloqs/reflections/prepare_identity.py` | `compiler/formats/legacy_alias_preparation_factories.py:alias_preparation_factories`, `compiler/formats/legacy_reflection_factories.py:reflection_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare` | `qualtran/bloqs/reflections/reflection_using_prepare.py` | `compiler/formats/legacy_alias_preparation_factories.py:alias_preparation_factories`, `compiler/formats/legacy_reflection_factories.py:reflection_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
