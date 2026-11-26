@@ -60,6 +60,25 @@ SDK, original scientific environment or runner capacity. It does not accept the
 separate PR workflow, external Scorecard publishing, GPU gate or final G3 CI.
 No job, release, security upload or merge is triggered by this batch.
 
+### Open frozen-fixture prerequisite
+
+Subsequent full-source PR workflow review found a concrete prerequisite that
+the isolated dispatch fixture did not cover. For example,
+`tests/unit/test_development_tools.py` reads the sibling `ftqc-reference-env`
+tree and the external progress CSV directly. The hosted setup currently installs
+packages but does not create that source/metadata layout. Package installation
+alone cannot supply those files. Other reference consumers also require Jupyter
+template data and qualified tool-profile inputs.
+
+Q-0009 is therefore **implementation in progress**, not accepted as a complete
+source/dependency closure. Its published workflow and passing local dispatch
+evidence remain valid, but they do not close the missing fixture preparation.
+Shared frozen input provisioning must be audited and added before this parent
+can be accepted. Do not hide the gap by excluding `ftqc_reference`, silently
+skipping original comparisons or treating the isolated fixture as the full suite.
+No hosted failure was observed; this gap follows from the actual selected
+readers and the preparation steps. The complete PR workflow remains Q-0011.
+
 This procedural module defines no quantum primitive stream, resource model,
 complex state, measurement history or private work register. Those remain owned
 by the algorithm tests selected by the existing tier.
