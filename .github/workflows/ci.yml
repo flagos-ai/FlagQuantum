@@ -2629,6 +2629,8 @@ jobs:
           python -m pip install -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference)
           python -m pip check
           python -c "import galois, kickmix, qualtran"
+      - uses: ./.github/actions/prepare-ftqc-reference-inputs
+        timeout-minutes: 7
       - name: Compare compiler behavior with the pinned references
         run: python -m pytest tests/unit -m "ftqc_reference" -n 2 --dist=worksteal -ra
 

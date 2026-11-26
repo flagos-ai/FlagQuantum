@@ -52,6 +52,8 @@ jobs:
           python -m pip install --no-build-isolation -e '.[dev,jax,viz,interop-all]'
           python -m pip install -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference)
           python -m pip check
+      - uses: ./.github/actions/prepare-ftqc-reference-inputs
+        timeout-minutes: 7
       - name: Verify native and diagram prerequisites
         run: |
           dot -V

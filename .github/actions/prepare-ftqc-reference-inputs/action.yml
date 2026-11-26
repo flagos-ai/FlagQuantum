@@ -1,0 +1,20 @@
+name: Prepare frozen FTQC sources and format/lint tools
+description: Verify pinned source snapshots and supply the two isolated source-tool profiles.
+runs:
+  using: composite
+  steps:
+    - name: Acquire and verify frozen source files
+      shell: bash
+      run: |
+        python tools/ftqc_source_inputs.py \
+          --archive-cache "${RUNNER_TEMP}/ftqc-source-archives" \
+          --destination ../ftqc-reference-env
+    - name: Install isolated source format and lint tools
+      shell: bash
+      run: |
+        python -m pip install --disable-pip-version-check --no-cache-dir --no-deps --only-binary=:all: --retries 0 --timeout 30 \
+          --target ../ftqc-reference-env/format-command-deps \
+          -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference-format)
+        python -m pip install --disable-pip-version-check --no-cache-dir --no-deps --only-binary=:all: --retries 0 --timeout 30 \
+          --target ../ftqc-reference-env/lint-deps \
+          -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference-lint)

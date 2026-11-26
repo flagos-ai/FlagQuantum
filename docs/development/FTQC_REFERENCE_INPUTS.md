@@ -88,3 +88,41 @@ complex-state/append checks and local documentation rebuild consumers remain
 unchanged. This establishes data location, not a substitute SDK version/profile
 qualification. No scientific packages, hosted job or ReadTheDocs build are
 installed or launched by this helper.
+
+## Isolated source format and lint profiles
+
+The existing dependency policy owns `ftqc-reference-format` and
+`ftqc-reference-lint`. Their exact versions reproduce the already qualified
+source-tool consumers: Black 24.8.0, flynt 0.78, isort 5.10.1 and astor 0.8.1;
+Pylint 3.3.9 with astroid 3.3.11, dill 0.4.0, mccabe 0.7.0, platformdirs 4.5.1,
+tomlkit 0.13.3 and isort 5.10.1. Installed license notices were inspected for all
+eleven profile entries. These are test tools, not runtime dependencies or new
+production extras. Upstream format and Pylint requirement bounds and locked
+versions remain unmodified. Existing complete command/diagnostic comparisons
+qualify these selected tools; this does not install the entire upstream
+scientific `format.env.txt` or `pylint.env.txt` environment.
+
+The reusable `prepare-ftqc-reference-inputs` composite action first prepares the
+verified 1,280-file source snapshot, then installs the two small binary-only tool
+profiles into separate sibling targets. Both the FTQC comparison lane and CPU
+nightly caller use it after their native base dependencies. Explicit `--no-deps`
+is limited to these enumerated test targets, with common utilities supplied by
+the qualified CI interpreter. It never replaces the primary quality toolchain,
+uses source builds or changes production dependency installation.
+
+The existing source-aware consumers read `format-command-deps` and `lint-deps`
+and retain actual check/apply output, status propagation, failure combinations,
+source copyright edge behavior and original diagnostic equality. Other SDK
+profiles, wheel/cache inputs, external graphics tools and complete hosted-suite
+execution remain separate prerequisites before Q-0009/Q-0011 can close.
+
+## Open optional-reference collection prerequisite
+
+The complete native dependency/CI regression also runs the existing optional
+reference guard. It reports 759 unguarded optional imports across the current
+checkout after removing three needless NumPy imports from oracle shape checks.
+The same 759 findings occur under the preceding dependency policy: declaring the
+two new tool profiles neither introduces nor exempts these findings. The guard,
+its test, marker selections and refusal rules remain unchanged. This is an open
+G2 integration check, not a passing hosted-suite result or a grandfathered
+exception. Full Q-0009/Q-0011 and G2 acceptance require its actual resolution.
