@@ -9,6 +9,7 @@ from dataclasses import replace
 
 import numpy as np
 
+from ...core.ir import CircuitIR
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
@@ -17,9 +18,12 @@ from ...errors import SerializationError
 from ..registers.component_builder import BindingCollection, ComponentProgramBuilder
 from ..registers.component_control import (
     ControlAdder,
+    _stored_control_adder,
     control_component_via_predicate,
     quantum_control_signature,
 )
+from ..registers.component_gate_function import bit_gate_function
+from ..registers.primitives.pauli_rotation import pauli_power_ir
 from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_control_specs import control_registers_from_spec
@@ -62,6 +66,23 @@ def _fixed_positive_control(
                 return outputs[control_key], (outputs[data_key],)
 
             return ProgramRecord((function,)), add
+    for source, exponent in (("s_gate.SGate", 0.5), ("t_gate.TGate", 0.25)):
+        factory = leaves["qualtran.bloqs.basic_gates." + source]
+        for direction in (0, 1):
+            if child == factory(child.name, None, {"is_adjoint": direction}):
+                # Controlled(SGate/TGate) has an atomic SDK phase view, not
+                # the measured CZPow component's separate decomposition.
+                function = bit_gate_function(
+                    child.name + "_positive",
+                    tuple(Signature.build(ctrl=1, q=1)),
+                    CircuitIR(
+                        2,
+                        pauli_power_ir(
+                            "z", 1, (-1 if direction else 1) * exponent, control=0
+                        ),
+                    ),
+                )
+                return ProgramRecord((function,)), _stored_control_adder(function)
     raise SerializationError(
         "ControlledViaAnd child requires a registered positive-control provider"
     )
@@ -74,7 +95,8 @@ def controlled_via_and_factories(
 
     The injected owner returns the actual positive-control module and its adder.
     It owns arbitrary target semantics, helper definitions and private work.
-    Default fixed X/Y/Z/H providers preserve their source atomic controls.
+    Default fixed X/Y/Z/H and directional S/T providers preserve their source
+    atomic control views.
     Nested constructor recipes retain complete functions and ordered clauses
     within this catalogue, so controlling a wrapper combines new controls first.
     Unresolved symbolic widths retain declarations and require concrete binding.
