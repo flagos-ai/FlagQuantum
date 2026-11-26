@@ -13,12 +13,12 @@ from flagquantum.core.ir.program import verify_program_record
 from flagquantum.ecosystem._pauli_select_component_library import (
     capture_pauli_select_pair,
 )
+from tests.unit.pauli_select_reference import source as source
 from tests.unit.test_chebyshev_component import assert_all_small_raw_histories
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_default_linear_combination_oracles import bind
 from tests.unit.test_multi_control_component import atomic_leaves
 from tests.unit.test_multiplexed_source_binding import logical_operator
-from tests.unit.test_pauli_select_file import source as source
 from tests.unit.test_qubitization_walk_component import (
     reference_runtime as reference_runtime,
 )

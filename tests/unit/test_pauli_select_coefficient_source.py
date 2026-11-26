@@ -10,10 +10,10 @@ from flagquantum.ecosystem._pauli_select_component_library import (
 )
 from flagquantum.ecosystem.cirq._select_pauli_lcu import select_pauli_lcu_from_cirq
 from flagquantum.errors import SerializationError
+from tests.unit.pauli_select_reference import compile_pauli_select
+from tests.unit.pauli_select_reference import source as source
 from tests.unit.test_chebyshev_component import assert_all_small_raw_histories
 from tests.unit.test_default_linear_combination_oracles import bind
-from tests.unit.test_pauli_select_file import _compile
-from tests.unit.test_pauli_select_file import source as source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -81,7 +81,7 @@ def test_complete_nonfinite_metadata_bank_full_complex_branches_and_resources(
         control,
     )
     # Ordinary append, actual source primitive dependencies and independent cost.
-    _compile(original, words)
+    compile_pauli_select(original, words)
     expected = torch.as_tensor(original.tensor_contract(), dtype=torch.complex128)
     for record in capture_pauli_select_pair(original):
         bound, logical = bind(record)

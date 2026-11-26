@@ -9,10 +9,10 @@ from flagquantum.ecosystem._pauli_select_component_library import (
     capture_pauli_select_pair,
 )
 from flagquantum.ecosystem.cirq._select_pauli_lcu import select_pauli_lcu_from_cirq
+from tests.unit.pauli_select_reference import compile_pauli_select
+from tests.unit.pauli_select_reference import source as source
 from tests.unit.test_chebyshev_component import assert_all_small_raw_histories
 from tests.unit.test_default_linear_combination_oracles import bind
-from tests.unit.test_pauli_select_file import _compile
-from tests.unit.test_pauli_select_file import source as source
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_relative_controlled_swap import assert_source_dependencies
 
@@ -72,7 +72,7 @@ def test_complete_sdk_metadata_calls_complex_branches_and_normal_append(
             original.decompose_bloq()
         with pytest.raises(AttributeError, match="bit_length"):
             get_cost_value(original, QECGatesCost())
-        ir, work = _compile(canonical, words)
+        ir, work = compile_pauli_select(canonical, words)
         offset = int(control is not None)
         logical = offset + width + target
         scratch = tuple(range(logical, logical + work))
@@ -94,7 +94,7 @@ def test_complete_sdk_metadata_calls_complex_branches_and_normal_append(
         assert (
             original.decompose_bloq().signature == canonical.decompose_bloq().signature
         )
-        _compile(original, words)
+        compile_pauli_select(original, words)
     expected = torch.as_tensor(canonical.tensor_contract(), dtype=torch.complex128)
     for record in pair:
         bound, logical = bind(record)
