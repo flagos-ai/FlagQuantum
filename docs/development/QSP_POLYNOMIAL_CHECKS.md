@@ -118,6 +118,9 @@ The append consumer's two existing H/Rz gates are unchanged. Coefficient count,
 RNG calls, FFT size and sampled maxima are separate from quantum primitive gate
 counts. No rigorous whole-circle guarantee, synthesis, hardware performance,
 PyTorch gradient or scalability is claimed. The source's full-circle-bound
-defect remains open, so the Q-0766 parent and full G2 acceptance remain open
-under the frozen closure rules; the interface gaps listed in NUM06/NUM07 are
-now filled.
+defect remains recorded separately. On 2026-11-26 the user explicitly accepted
+Q-0766 as a complete faithful migration under the
+[approved disposition](G2_UPSTREAM_DEFECT_DISPOSITION.md). The completed
+interfaces, direct consumers and original-test evidence are reused; a rigorous
+whole-circle certificate remains separate optimization work. No source formula,
+failure or mathematical claim is changed. G2 as a whole remains incomplete.
