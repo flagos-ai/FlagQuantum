@@ -18,6 +18,7 @@ from ...core.ir import CircuitIR
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.signatures import Signature
+from ._control_values import import_control_values
 from ._decompose import decompose_cirq_once
 from ._feedback_import import (
     _has_explicit_matrix,
@@ -34,6 +35,26 @@ from .conversion import (
     _global_phase_angle,
     export_cirq,
 )
+
+
+def _raw_controlled_signature(
+    gate: Any, declared: _NamedGateDefinitions
+) -> Signature | None:
+    """Retain nested SDK controls only above an unmapped raw gate owner."""
+    cirq = _cirq()
+    if declared._select(gate) is not None or isinstance(
+        gate, cirq.ops.raw_types._InverseCompositeGate
+    ):
+        return None
+    if not isinstance(gate, cirq.ControlledGate):
+        return cirq_gate_signature(gate)
+    child = _raw_controlled_signature(gate.sub_gate, declared)
+    if child is None:
+        return None
+    registers, _ = import_control_values(gate.control_values)
+    return quantum_control_signature(
+        child, tuple((register.dtype, register.shape) for register in registers)
+    )
 
 
 def controlled_inverse_program(
@@ -58,18 +79,22 @@ def controlled_inverse_program(
         return None
     data = tuple(cirq.LineQid.for_gate(original))
     declared = _NamedGateDefinitions()
+    nested_signatures = {}
     for child in children:
         if (
-            not isinstance(child, cirq.GateOperation)
+            not isinstance(child, (cirq.GateOperation, cirq.ControlledOperation))
+            or not isinstance(child.gate, cirq.Gate)
             or child.tags
             or not set(child.qubits) <= set(data)
-            or isinstance(
-                child.gate,
-                (cirq.ControlledGate, cirq.ops.raw_types._InverseCompositeGate),
-            )
+            or isinstance(child.gate, cirq.ops.raw_types._InverseCompositeGate)
         ):
             return None
         selected = declared._select(child.gate)
+        if selected is None and isinstance(child.gate, cirq.ControlledGate):
+            nested = _raw_controlled_signature(child.gate, declared)
+            if nested is None:
+                return None
+            nested_signatures[child.gate] = nested
         if selected is not None and selected[0] not in {
             "cnot.CNOT",
             "rotation.XPowGate",
@@ -79,6 +104,7 @@ def controlled_inverse_program(
             "hadamard.Hadamard",
             "s_gate.SGate",
             "t_gate.TGate",
+            "swap.TwoBitSwap",
             "global_phase.GlobalPhase",
         }:
             return None
@@ -123,17 +149,18 @@ def controlled_inverse_program(
     ordered = tuple(reversed(source_order)) if inverse else source_order
     for index, child in enumerate(ordered):
         selected = declared._select(child.gate)
-        # The named Hadamard's adjoint returns itself. Cirq's HPow(-1)
-        # has a different decomposition despite the same unitary operator.
+        # Named self-adjoint atoms return themselves. SDK negative powers
+        # can have different decompositions despite the same unitary operator.
+        self_adjoint = {"hadamard.Hadamard": cirq.H, "swap.TwoBitSwap": cirq.SWAP}
         directed = (
-            cirq.H.on(*child.qubits)
-            if selected is not None and selected[0] == "hadamard.Hadamard"
+            self_adjoint[selected[0]].on(*child.qubits)
+            if selected is not None and selected[0] in self_adjoint
             else (cirq.inverse(child) if inverse else child)
         )
         operation = directed.controlled_by(*controls, control_values=bits)
         definition = declared.get(child.gate)
         child_signature = (
-            cirq_gate_signature(child.gate)
+            nested_signatures.get(child.gate, cirq_gate_signature(child.gate))
             if definition is None
             else Signature(definition.registers or ())
         )
@@ -150,6 +177,7 @@ def controlled_inverse_program(
                 "rotation.Rz",
                 "global_phase.GlobalPhase",
                 "hadamard.Hadamard",
+                "swap.TwoBitSwap",
             }
         )
         if (

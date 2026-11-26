@@ -493,3 +493,57 @@ The concentrated batch passes 509 cases without skips in each actual
 Cirq 1.7.0/Qiskit 2.5.0 and Cirq 1.6.1/Qiskit 2.0.0 environment. Local
 integration passes 145 cases. Three Python files pass strict typing,
 Black/Ruff, owner scopes, language, links, architecture, IR and API checks.
+
+### QFT roots and nested raw SDK control ports
+
+Explicit serialized Adjoint/Controlled QFT roots now preserve the source's
+complete child graph at zero through three targets, both output-reversal
+settings represented by the two-target cases, four control layouts and three
+adjoint depths. Nested raw SDK control metadata reuses the existing equality
+decoder and quantum-control signature owner, retaining separate `ctrl2`,
+`ctrl` and target ports. It is admitted only above an unmapped raw SDK owner;
+named measured controls are not flattened into equal SDK gates. Untagged
+ControlledOperation nodes retain the same gate-mapping contract as GateOperation.
+Unknown inverse wrappers and undeclared child work remain rejected.
+
+The named selector now distinguishes `ControlledGate(SWAP)` as TwoBitCSwap
+from the existing exact-instance CSWAP mapping to CSwap(1), as the original
+gate mapper does. Both retain their own source owner. QFT's atomic TwoBitCSwap
+reuses the existing 17-instruction exact Fredkin recipe. Named self-adjoint
+Hadamard and swap children keep their canonical source direction before control.
+No circuit optimization or replacement by an equal-unitary gate is introduced.
+
+| Targets / reversal | Actual positive / negative / two-bit-control primitives | Original/native model availability |
+| --- | --- | --- |
+| 0 | 0 / 0 / 0 | All seven categories zero |
+| 1 | 1 / 21 / 51 | Positive: Clifford 4, rotation 2; other activations separately matched |
+| 2, reversed output | 34 / 130 / 246 | Original nested controlled S/S-adjoint model fails |
+| 2, no output reversal | 17 / 64 / 138 | Same original model failure |
+| 3, reversed output | 65 / 195 / 369 | Same original model failure |
+
+All tested physical streams have no measurements or private work. Each literal
+child port, primitive order, operand, parameter and local matrix matches the
+unmodified source execution of the explicit adjoint graph. Complete complex
+operators, zero work, source-free native resolution, SDK-free append and IR
+round trips pass. Zero-target control uses an existing empty Program body on
+the caller's control register; it grants no standalone zero-wire IR operation.
+All 24 prior complete Programs and bindings match published `9c8061f3f`.
+
+The 60 physical/model receipts retain 24 available original/native model
+comparisons and 36 original model refusals. QFT with at least two targets
+reaches nested controlled S or S-adjoint, whose original call graph has no
+declared decomposition. Native resource mapping remains unavailable for this
+nested raw controlled phase instead of pricing its SDK primitive stream.
+Forward and inverse model failures are tested explicitly. This is an original
+boundary, not a new estimate or a waiver of whole-file parent acceptance.
+
+PauliStringPhasor still needs the named X control and single-qubit Pauli-string
+operation wrapper. Other exact named controls, child-private allocations and
+previously recorded original failures remain open. No protected API, resource
+schema, compiler arithmetic or reference source is changed.
+
+The concentrated batch passes 630 cases without skips in each actual SDK
+environment, with 145 local integration cases. Five Python files pass strict
+typing, Black/Ruff, scopes, language, links, architecture, IR and API checks.
+Counts use the original named primitive basis, retaining CH and local matrix
+atoms; they are not a fully synthesized Clifford+T inventory.

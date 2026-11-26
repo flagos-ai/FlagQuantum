@@ -545,6 +545,11 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
         "ccx_half",
         "ccx_integer",
         "ccx_zero",
+        "qft2",
+        "qft3",
+        "qft0",
+        "qft1",
+        "qft2_noreverse",
     ),
 )
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
@@ -602,6 +607,10 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
                 "ccx_zero": 0.0,
             }[kind]
         )
+    elif kind.startswith("qft"):
+        raw = cirq.QuantumFourierTransformGate(
+            int(kind[3]), without_reverse=kind.endswith("_noreverse")
+        )
     else:
         assert kind == "matrix1"
         raw = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
@@ -610,21 +619,13 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         source = Adjoint(source)
     graph = source.decompose_bloq()
     children = tuple(instance.bloq for instance in graph.bloq_instances)
-    child_count = (
-        len(
-            tuple(
-                cirq.flatten_to_ops(
-                    cirq.decompose_once_with_qubits(
-                        raw, cirq.LineQubit.range(cirq.num_qubits(raw))
-                    )
+    child_count = len(
+        tuple(
+            cirq.flatten_to_ops(
+                cirq.decompose_once_with_qubits(
+                    raw, cirq.LineQubit.range(cirq.num_qubits(raw))
                 )
             )
-        )
-        if kind.startswith("diag")
-        else (
-            3
-            if kind == "swap" or kind.startswith("ccx")
-            else (8 if kind.startswith("iswap") else 4)
         )
     )
     assert len(children) == child_count

@@ -195,6 +195,72 @@ def test_controlled_external_declared_cost_closes_source_child_models(
 
 
 @pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (0, 1, 0)))
+@pytest.mark.parametrize("depth", (1, 2, 3))
+@pytest.mark.parametrize(
+    "width,no_reverse", ((0, False), (1, False), (2, False), (2, True), (3, False))
+)
+def test_controlled_qft_models_keep_original_nested_phase_failures(
+    controls: tuple[int, ...],
+    depth: int,
+    width: int,
+    no_reverse: bool,
+    locked_source: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.bloq import (
+        Bloq,
+        DecomposeNotImplementedError,
+        DecomposeTypeError,
+    )
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq._decompose import decompose_cirq_once
+    from flagquantum.ecosystem.cirq.resource_keys import (
+        _controlled_key,
+        cirq_mapped_gate_resource_key,
+    )
+
+    gate = cirq.QuantumFourierTransformGate(width, without_reverse=no_reverse)
+    source: Bloq = Controlled(
+        CirqGateAsBloq(gate),
+        CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
+    )
+    for _ in range(depth):
+        source = Adjoint(source)
+    children = decompose_cirq_once(gate)
+    assert children is not None
+    keys = tuple(
+        _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
+        for child in children
+    )
+    if width >= 2:
+        with pytest.raises(
+            (DecomposeNotImplementedError, DecomposeTypeError),
+            match="declare a decomposition|atomic",
+        ):
+            get_cost_value(source, QECGatesCost())
+        assert None in keys
+        return
+    expected = get_cost_value(source, QECGatesCost())
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        actual = QECGateCost()
+        for key in keys:
+            assert key is not None
+            actual = actual.plus(query_qec_gate_cost(key), 1)
+    assert asdict(actual) == {
+        field.name: getattr(expected, field.name) for field in fields(actual)
+    }
+
+
+@pytest.mark.ftqc_reference
 def test_source_recognition_order_and_gate_costs() -> None:
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
