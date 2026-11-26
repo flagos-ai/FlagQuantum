@@ -37,7 +37,8 @@ Team scope, architecture, IR and API checks pass.
 
 Q-0610 closes as a complete declaration/model notebook. Q-0611 remains active
 at the frozen scope root's missing decomposition/phase-gradient port, source
-sorting's missing physical decomposition and Core bounded-permutation executable
-admission. Full-root physical amplitudes and cleanup are unverified. Q-0612
+sorting's missing physical decomposition. The current typed root admits its
+bounded permutation array under the existing Core contract; see the later
+measured-child context in KIKUCHI_GUIDING_STATE_FILE_AUDIT.md. Full-root physical amplitudes and cleanup are unverified. Q-0612
 retains its original skips/count-consistency and serialization xfails. Q-0613,
 the separate tutorial notebook, is the next whole file.

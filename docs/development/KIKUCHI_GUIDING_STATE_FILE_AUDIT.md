@@ -75,11 +75,81 @@ primitive instructions.
 Q-0611 remains active. The frozen scope root declares a sparse preparation child
 but provides no composite decomposition and omits that child's phase-gradient
 port. Full source sorting likewise has no physical decomposition. Its bounded
-`pi` register is not admitted by protected Core executable descriptors, so the
-native root program fails there. Downstream root wiring is present but cannot
-be execution-certified beyond that admission boundary. Root complex amplitudes
+`pi` array is now admitted by the existing Core contract, as the current typed
+fixture proves. Complete child helper ownership was still missing until the
+context closure below. Downstream whole preparation cannot be execution-certified
+while the original source leaves remain bodyless. Root complex amplitudes
 and a full preparation/erasure experiment remain unverified. No substitute
 sorter, reset of logical outputs, SDK fallback or repaired reference is used.
 
-Q-0610 and Q-0613, the two notebooks, remain the next whole-file batch. The
-original test parent Q-0612 remains active until those notebook cases are mapped.
+Q-0610 is already accepted by the complete notebook receipt 525190c3e. Q-0613,
+the separate tutorial, remains open for four native symbolic/bounded graph
+views. The original test parent Q-0612 remains active until that tutorial
+case and its original protocol outcomes are completely mapped.
+
+
+## Complete measured-child Program context (2026-11-27)
+
+The existing GuidingState.program now also accepts complete ProgramRecord
+children in each of its six source roles. Existing FunctionRecord callers
+produce entirely identical Programs at ell 2 and 4 relative to a4fcc9857.
+The same shared ComponentProgramBuilder imports and isolates complete child
+helpers; it owns no execution backend. Call order, packed MSB-first scope
+words, row-major bounded permutation words, flags and input/output directions
+remain the actual source ones. Missing helper definitions fail validation
+without mutating any supplied module.
+
+ProbabilisticUncompute.program composes the existing OnEach Hadamard and
+measured multi-control X owners. Source-sized words and flags remain THRU.
+Only private predicate work is erased; the Hadamard-transformed logical word
+and all three guiding-state flags are returned live. The serializable
+ProbabilisticUncompute source constructor reuses this Program through the
+Ecosystem factory. Libraries at depths 0/1/2 roundtrip and resolve with SDK
+modules blocked. Zero and symbolic widths remain logical declarations; no
+finite body or new instance serializer is invented.
+
+The full example root and ell-two root retain the source's actual bit
+predecessors and outputs after normalizing only zero-gate Split/Join/Partition
+views. Preparation, sorting and duplicate detection stay source declarations.
+Whole physical binding still refuses these three missing bodies. An identity
+fixture only proves unchanged interface behavior; it never substitutes for
+physical state preparation. Current bounded pi admission is verified without
+changing Core, the existing API contract or serialized vocabulary.
+
+The complete known uncompute/OR/X suffix has an independent original composite
+tensor operator. At widths one through three, every logical column and every
+raw measurement history agrees in absolute complex amplitudes, with private
+work zero. SDK-blocked append and trajectory execution preserve the same map.
+Logical words and arbitrary initial flags are included; they are not reset.
+The complete new uncompute streams at widths one through four match the
+previously source-validated flat consumer per wire, parameters and feedback.
+A shared bit-lineage checker now serves both this root and the accepted mean
+phase tests; computational stages and work lifetimes remain explicit.
+
+| Suffix word width | Actual instructions | Actual T/Tdg | Measurements | Peak private bits | Physical wires | Source QEC model | Source peak model |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| 1 | 31 | 4 | 1 | 1 | 5 | And=1, Clifford=7, measurement=1 | 5 |
+| 2 | 55 | 8 | 2 | 1 | 6 | And=2, Clifford=7, measurement=2 | 6 |
+| 3 | 77 | 12 | 3 | 2 | 8 | And=3, Clifford=21, measurement=3 | 8 |
+| 4 | 99 | 16 | 4 | 3 | 10 | And=4, Clifford=27, measurement=4 | 10 |
+
+These measured suffix inventories are separate from source QEC estimates and
+from the full preparation's model-only resources. Width four has stream and
+model evidence; full suffix complex-column/history checks cover widths one
+through three. No full guiding-state primitive inventory, complex map or
+preparation success bound is inferred from this suffix.
+
+Concentrated regression passes 91 cases without skips per actual Cirq 1.7.0 /
+Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile. Qualtran 0.7.0 and a real
+Kickmix 0.1 Simulator are asserted. Earlier complete source/test/notebook and
+seven-category model receipts are reused. The exact constructor catalogue
+moves to 258/303; two instance-bearing roots and their original physical and
+codec boundaries stay open. Q-0611, Q-0612 and Q-0613 are not closed by these
+measured-child context checks.
+
+
+The final local gate also passes 145 integration cases, strict mypy for all five
+changed Python files, Black/Ruff, both owning-team scopes, English/local links,
+architecture, multi-level IR and the protected API snapshot. Eight locked
+source/direct-dependency blobs match the CSV. Constructor discovery invokes no
+source constructor or child callback and finds no provider import failures.

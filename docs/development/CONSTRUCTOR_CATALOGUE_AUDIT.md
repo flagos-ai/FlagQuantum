@@ -18,16 +18,16 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 96 |
-| Union of exact native registrations | 257 |
-| Keys without an exact factory in these providers | 46 |
+| Keys reachable through Ecosystem providers | 97 |
+| Union of exact native registrations | 258 |
+| Keys without an exact factory in these providers | 45 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
 The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine
 finite first-quantization constructors, five single-factorization, six double-
 factorization, two chemistry lookup, two RSA/shim and seven ECC addition
 constructors, one ECC window root and the standalone particle-pair
-declaration add 54 unique Ecosystem keys. These are registration facts, not
+declaration and the probabilistic-uncompute leaf add 55 unique Ecosystem keys. These are registration facts, not
 accepted constructor totals. The ECC family includes all six literal stages and
 its root, with source-success libraries 0/1/2, complex channels, explicit work
 ownership and separate measured/model inventories. Its upstream release,
@@ -44,14 +44,14 @@ reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 46 keys without exact factories have these distinct source roles:
+The 45 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 38 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 37 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -349,7 +349,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiRowColumnOracle` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_block_encoding.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_block_encoding.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state.py` | `ecosystem/_guiding_state_component_library.py:guiding_state_library_factories` | Exact original bitsize constructor, source libraries 0/1/2 and shared measured helper ownership; zero/symbolic declarations remain bodyless. [Audit](KIKUCHI_GUIDING_STATE_FILE_AUDIT.md) |
 | `qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState` | `qualtran/bloqs/optimization/k_xor_sat/kikuchi_guiding_state.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes` | `qualtran/bloqs/optimization/k_xor_sat/load_kxor_instance.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadUniqueScopeIndex` | `qualtran/bloqs/optimization/k_xor_sat/load_kxor_instance.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
@@ -394,3 +394,15 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.swap_network.cswap_approx.CSwapApprox` | `qualtran/bloqs/swap_network/cswap_approx.py` | `compiler/formats/legacy_relative_swap_factories.py:relative_swap_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap` | `qualtran/bloqs/swap_network/multiplexed_cswap.py` | `compiler/formats/legacy_swap_network_factories.py:swap_network_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero` | `qualtran/bloqs/swap_network/swap_with_zero.py` | `compiler/formats/legacy_swap_network_factories.py:swap_network_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
+
+
+## Guiding-state measured dependency closure
+
+The serializable ProbabilisticUncompute constructor now delegates to the native
+Algorithms Program owner. Positive widths preserve the complete OnEach/zero-mark
+helper hierarchy; source libraries at depths 0/1/2 resolve without SDK imports.
+Zero and symbolic widths keep original declarations and physical refusal. The
+instance-bearing SimpleGuidingState and GuidingState classes still have no
+fabricated source codec or shallow factory. Full child Programs can enter the
+existing native guiding-state consumer, with declared preparation/sorting/
+duplicate holes retained. This adds one registration, not a completed parent.
