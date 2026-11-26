@@ -404,7 +404,7 @@ def test_minimal_dependency_environment_can_exclude_installed_cache(
     (cached / "fq_cached_optional_probe.py").write_text("CACHED_PACKAGE = True\n")
     marker = tmp_path / "cache-hook-used"
     hook = tmp_path / "cached-environment.sh"
-    hook.write_text(r"""#!/bin/bash
+    hook_script = r"""#!/bin/bash
 set -eu
 "$FQ_JOB_PYTHON" -m venv --without-pip "$FQ_JOB_VENV"
 site_directory="$("$FQ_JOB_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
@@ -412,7 +412,8 @@ printf '%s\n' "$FQ_BASE_ENV" > "$site_directory/dependency-cache.pth"
 : > "$FQ_CACHE_TEST_MARKER"
 printf '%s\n' "$FQ_JOB_VENV/bin" >> "$GITHUB_PATH"
 printf 'VIRTUAL_ENV=%s\n' "$FQ_JOB_VENV" >> "$GITHUB_ENV"
-""")
+"""
+    hook.write_text(hook_script)
     hook.chmod(0o755)
     path_file = tmp_path / "github-path"
     env_file = tmp_path / "github-environment"
