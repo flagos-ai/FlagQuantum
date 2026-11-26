@@ -10,9 +10,9 @@ seven exact Git blobs and actual locked Kickmix 0.1 Simulator availability.
 | Source definition | Native owner |
 |---|---|
 | QPEWindowStateBase m_bits/m_qdtype/m_register | Existing Algorithms PhaseEstimationWindow owns the RIGHT-only unsigned fractional qpe_reg output signature. |
-| RectangularWindowState fields and build_composite_bloq | Ecosystem _phase_window_component_library.py reuses rectangular_window_program, its allocated output and existing OnEach/H helper closure. |
+| RectangularWindowState fields and build_composite_bloq | Compiler formats/legacy_phase_window_factories.py reuses registers/phase/window_component.py, its allocated output and existing OnEach/H helper closure. |
 | Rectangular precision/delta and standard-deviation constructors | Existing Algorithms RectangularWindowState owns both original concrete and symbolic expressions. |
-| KaiserWindowState fields and signature | Ecosystem retains the exact source declaration with a RIGHT-only output and no gate body. |
+| KaiserWindowState fields and signature | Compiler retains the exact source declaration with a RIGHT-only output and no gate body. |
 | Kaiser coefficients and my_tensors | Existing Simulation kaiser_window_coefficients and Algorithms KaiserWindowState retain periodic normalized SciPy coefficients and tensor order. |
 | Kaiser from_precision_and_delta | Existing Algorithms owner retains the complete ln/ln-ln expression and original failures. |
 | Kaiser build_call_graph | Existing owner retains the separately declared rotation preparation child, original precision, concrete coefficient snapshots and symbolic length. |
@@ -63,3 +63,13 @@ source failure. Strict checking covers both changed Python files. Black,
 Ruff, Ecosystem scope, repository language, architecture, multilevel IR and
 public API checks pass. Dependency checking retains exactly the existing
 720 findings. Receipts use prefix g2-window-constructor and date 20261123.
+
+## Shared transformation owner continuation
+
+The private Ecosystem window owner has been removed. Both constructor parsing
+and rectangular Program construction now belong to Compiler; Algorithms retains
+its existing delegating interface and numerical declarations. See
+[complete shared-owner evidence](PHASE_WINDOW_SHARED_OWNER.md). All eighteen
+complete baseline records remain identical. The final profile passes 166 cases
+in each Cirq version and 145 local integration cases; strict six-file checks
+and architecture/IR/API verification pass. Existing source boundaries remain.
