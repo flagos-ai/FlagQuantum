@@ -19,6 +19,8 @@ _EXPRESSION_ARITIES = {
     "cos": 1,
     "exp": 1,
     "log": 1,
+    "acos": 1,
+    "floor": 1,
     "pow": 2,
     "div": 2,
 }
@@ -72,7 +74,8 @@ class ParameterExpression:
     """An immutable scalar expression over named circuit parameters.
 
     Arithmetic nodes retain their existing binding behavior. Real nonlinear
-    nodes support sin, cos, exp, log, pow and div, with finite scalar domains.
+    nodes support sin, cos, exp, log, acos, floor, pow and div, with finite
+    scalar domains.
     """
 
     op: str
@@ -88,7 +91,16 @@ class ParameterExpression:
                 f"Parameter expression {self.op!r} requires {expected_operands} "
                 f"operands; got {len(self.args)}."
             )
-        nonlinear = self.op in {"sin", "cos", "exp", "log", "pow", "div"}
+        nonlinear = self.op in {
+            "sin",
+            "cos",
+            "exp",
+            "log",
+            "acos",
+            "floor",
+            "pow",
+            "div",
+        }
         if nonlinear:
             error = _parameter_literal_error(self)
             if error:
@@ -146,6 +158,8 @@ def _bind_real_expression(operation: str, operands: tuple[Any, ...]) -> Any:
     for operand in operands:
         _require_real_scalar(operand)
     left = operands[0]
+    if operation == "acos" and (left < -1 or left > 1):
+        raise ValueError("Inverse cosine requires a real operand in [-1, 1]")
     if operation == "log" and left <= 0:
         raise ValueError("Logarithm requires a positive real operand")
     if operation == "div" and operands[1] == 0:

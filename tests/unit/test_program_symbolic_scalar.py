@@ -19,6 +19,23 @@ from flagquantum.core.parameters import Parameter, ParameterExpression
 pytestmark = pytest.mark.unit
 
 
+@pytest.mark.parametrize("operation", ("acos", "floor"))
+def test_approved_unary_expression_preserves_program_and_ir_payload(
+    operation: str,
+) -> None:
+    expression = ParameterExpression(operation, (Parameter("theta"),))
+    circuit = CircuitIR(1, (Instruction("rz", (0,), {"theta": expression}),))
+    lowered = circuit_to_program(circuit)
+    assert lowered.state == "supported_exact" and lowered.record is not None
+    assert verify_program_record(lowered.record) == ()
+    constant = lowered.record.functions[0].blocks[0].operations[0]
+    assert constant.literal == expression
+    restored = program_to_circuit(lowered.record)
+    assert restored.state == "supported_exact"
+    assert restored.canonical_payload == circuit.to_dict()
+    assert CircuitIR.from_json(circuit.to_json()).to_json() == circuit.to_json()
+
+
 def test_symbolic_roundtrip_and_canonical_tamper_detection() -> None:
     theta = Parameter("theta")
     value = -(theta + 0.25) * (2 - Parameter("other"))
