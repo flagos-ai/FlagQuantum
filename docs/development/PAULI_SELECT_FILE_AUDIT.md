@@ -50,7 +50,8 @@ Its source nonunitary coefficient domain and unsupported symbolic declarations
 remain explicitly outside the admitted unitary execution path. The locked source applies
 the sign of each coefficient's real part. Nonzero real parts of either
 sign map to signed unitary rows, regardless of coefficient magnitude
-or imaginary part. Zero and pure-imaginary coefficients produce a
+or imaginary part. This includes infinite real parts and discarded nonfinite
+imaginary metadata. NaN real parts, zero and pure-imaginary coefficients produce a
 nonunitary controlled leaf in the source. The native circuit accepts
 explicit signed Pauli rows.
 
@@ -67,11 +68,12 @@ adapter consumes the external fields and converts every `DensePauliString`
 immediately to a native signed Pauli word. Algorithms retains its existing
 `SelectPauliLCU`; Compiler retains bounded traversal and resource ownership.
 Cirq is imported lazily in the adapter and no external row is stored in native
-IR. The adapter preserves the source real-part sign rule, with finite nonzero
-real parts of either sign, arbitrary finite magnitude and imaginary part.
-Zero-real-part rows are refused as nonunitary. Invalid widths, target lengths,
+IR. The adapter preserves the source real-part sign rule, with nonzero
+real parts of either sign, including infinite magnitude and discarded nonfinite
+imaginary parts. Zero-real-part and NaN-real-part rows are refused as nonunitary.
+Invalid widths, target lengths,
 control values, insufficient address bits, empty tables, foreign row types and
-nonfinite coefficients are refused before construction.
+NaN real coefficients are refused before construction.
 
 The existing four-row factory, Ising grids, source dependency comparisons,
 operand and feedback checks, resource comparisons and all small tutorial
@@ -90,3 +92,52 @@ inventory and independent locked And/Clifford model remain separate evidence.
 Symbolic widths require explicit concrete binding. The original nonunitary
 zero/pure-imaginary coefficient leaves remain a recorded source boundary, not
 an accepted native unitary operation.
+
+## Complete coefficient normalization dependency
+
+Both Ecosystem conversion paths now use `_pauli_select_rows.py` for the exact
+sign-of-real conversion. Actual untouched nth_operation leaves prove that an
+infinite nonzero real coefficient still becomes a signed unitary Pauli, and
+nonfinite imaginary metadata is discarded. The old public adapter rejected
+all nonfinite metadata while the stored-Program capture rejected infinite real
+parts only. Neither restriction followed the complete original conversion.
+NaN real parts and zero real parts remain nonunitary source leaves and retain
+their native refusals. No external metadata reaches the resulting signed words.
+
+Twelve finite-coefficient operations and twenty-four complete directional
+Programs remain exactly equal to published b6da4d703. Newly admitted inputs
+produce the identical complete Programs of the corresponding normalized rows,
+so unchanged traversal, call, feedback and work evidence is reused. A four-row
+mixed bank additionally compares actual source primitive dependencies, ordinary
+append, independent resource categories, complete complex operators and every
+small raw measurement history in both directions and all three control modes.
+
+| Mixed IX / -XY / YZ / -ZI bank | Actual T-family / CX / measurement instructions | Independent source And / Clifford / measurements / logical peak |
+|---|---|---|
+| No external control, either direction | 8 / 16 / 2 | 2 / 14 / 2 / 5 |
+| Active on zero, either direction | 12 / 23 / 3 | 3 / 16 / 3 / 7 |
+| Active on one, either direction | 12 / 23 / 3 | 3 / 14 / 3 / 7 |
+
+This closes the actual coefficient-admission discrepancy without adding a
+primitive or changing a protected Core contract. Source nonunitary leaves,
+symbolic constructor failures and object-array serialization remain separate;
+this dependency closure does not by itself accept the whole-file parent.
+
+Final affected regression passes 63 cases in each Cirq 1.7/1.6 profile without
+skips, plus 145 local integration cases. Strict typing covers five Python files;
+format, lint, owner scopes, language/links, architecture, IR and API checks pass.
+Optional-test imports are guarded; frozen source and actual Kickmix availability
+are asserted on the reference lane. Dependency policy retains 724 repository
+findings, none on this batch.
+
+The complete constructor-domain intake additionally identifies distinct work:
+Boolean width/control metadata and an empty target execute in the original
+root graph and generator but are not fully admitted by both native paths.
+Concrete SymPy integers execute in the source generator while its stored graph
+classifies them as parameterized. NumPy integer widths and floating widths fail
+in the original QAny validator. Empty selection fails in the original traversal.
+These protocol distinctions are recorded in
+g2-pauli-constructor-domain-intake-20261126.json in the reference evidence
+directory. They are not repaired by silently casting every numeric input, and
+the source's out-of-domain control value two does not become a new native
+binary-control contract.
