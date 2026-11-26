@@ -209,7 +209,9 @@ def test_source_free_constructors_and_exact_recipe_scope(
         monkeypatch.setitem(sys.modules, module, None)
     factories = hubbard_selection_factories()
     for key, factory in factories.items():
-        if not key.endswith(".Adjoint"):
+        if key.startswith(
+            "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard."
+        ):
             record = factory("main", None, {"x_dim": 2, "y_dim": 2})
             assert (
                 isinstance(record, ProgramRecord)
