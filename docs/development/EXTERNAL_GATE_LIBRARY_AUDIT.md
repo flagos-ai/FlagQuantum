@@ -621,3 +621,71 @@ symbolic cases. Local integration passes 145 cases. Seven Python files pass
 strict typing, Black/Ruff, owner scopes, language, links, architecture, IR and
 API checks. Locked Qualtran 0.7.0 and the real Kickmix 0.1 Simulator are
 asserted before reference execution. The original source is not modified.
+
+### Complete CNOT/CY wrapper roots and CZ control-extension dependency
+
+A 30-family, 60-root intake of the remaining SDK control/adjoint boundary
+identified two source-executable unresolved families: raw CNOT and CY. In Cirq 1.7 their
+three-call decompositions contain basis rotations around the named CZ atom.
+Cirq 1.6 keeps a six-child raw ControlledGate(Y) decomposition instead.
+Both now bind the complete source graph for positive/negative scalar controls,
+mixed QBit arrays and packed integer controls at three explicit adjoint depths.
+The raw wrapper is distinct from the already accepted named CNOT/CY atom.
+
+CZ is self-adjoint in the source. Its single-bit control system combines the
+new activation and existing `q1` into a two-bit `q1` array, leaving `q2` scalar.
+The exact child is `_MultiControlledFromSinglyControlled(CZ)`, including under
+negative control. Its And compute, CZ and measured erasure are preserved by
+reusing the existing typed `multi_controlled_component_pair` owner. The native
+fixed CZ is wrapped in a typed call before composition; numerical instructions
+are not reversed to manufacture an inverse. Multi-bit controls retain the
+source generic SDK view and its original port grouping.
+
+| Complete wrapper, Cirq 1.7 | Actual positive / negative / two-bit-control primitives | Actual scalar-control measurements / work bits |
+| --- | --- | --- |
+| Raw CNOT | 24 / 37 / 77 | 1 / 1 |
+| Raw CY | 20 / 38 / 80 | 1 / 1 |
+
+All 24 physical/model records per SDK profile (48 total) separately match the original primitive
+inventories and seven QEC categories. Both Cirq 1.7 positive scalar models declare one
+And, two Cliffords, two rotations and one measurement. Negative scalar models
+have six Cliffords. Two-bit models declare four And cleanups/measurements,
+while their actual SDK executions have no measurement or private work. Named
+atoms and local matrix leaves remain in the physical counting basis.
+
+The focused source checks cover immediate dependency ports, per-wire order,
+operands, parameters, feedback, full complex basis columns, both histories of
+each applicable scalar-control measured cleanup and clean workspace. Normal append,
+serialization and source/SDK-free execution retain the existing user entry.
+This is Ecosystem binding to existing Compiler owners; no new Core operation,
+static CY conversion contract or source patch is introduced. Unapproved
+Proposal 127 is unchanged.
+
+The intake also records original unavailable raw Rx/Ry/Rz, power-atom and
+other no-decomposition paths. Those raw wrapper failures do not invalidate
+accepted named rotation constructors. Other successful SDK families and
+existing original failures are reused as evidence, not relabeled as missing
+implementations. No universal SDK decomposition claim or whole-file parent
+closure follows from this receipt.
+
+Cirq 1.6 has a different declared raw CY constructor. Its positive/negative/
+two-bit physical inventories are 6/55/97, without measurements or private
+work; raw CNOT is 22/37/77, with the same one-bit measured CZ extension as
+above. These are source-matched SDK-specific records, not a cross-version
+promise of identical decompositions. The raw CY model must follow each
+explicit adjoint's actual MatrixGate inputs. Repeated source matrix inversion
+introduces floating-point exponent changes that alter exact resource
+classification; a forward model cannot be reused solely because the unitary
+or named CY gate is equivalent. Directed child inputs and all seven source
+categories are retained for each depth. No rounding or source change masks
+that boundary.
+
+The final concentrated regression passes 880 cases without skips in each
+actual SDK profile, and 145 local integration cases pass. Seven Python files
+pass strict typing, formatting/lint, owner scopes, language/links, architecture,
+IR and API checks. An isolated comparison to published `50a4671bf` retains
+all 168 prior complete Programs, entry functions and bound CircuitIR JSON.
+The initial Cirq 1.6 assertions incorrectly assumed the Cirq 1.7 CY recipe
+and reused forward matrix models; both assumptions were corrected against
+unchanged source inputs before the final passing run. No source failure was
+removed or reclassified as success.

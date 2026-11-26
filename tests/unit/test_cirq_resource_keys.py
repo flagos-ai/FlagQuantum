@@ -123,6 +123,8 @@ def test_controlled_scalar_uses_source_phase_model(
         "phasor_negative",
         "phasor_zero",
         "phasor_empty",
+        "cnot",
+        "cy",
     ),
 )
 def test_controlled_external_declared_cost_closes_source_child_models(
@@ -176,6 +178,8 @@ def test_controlled_external_declared_cost_closes_source_child_models(
         )
     elif kind.startswith("phasor"):
         gate = pauli_phasor_case(cirq, kind)
+    elif kind in ("cnot", "cy"):
+        gate = cirq.CNOT if kind == "cnot" else cirq.Y.controlled()
     else:
         assert kind == "matrix"
         gate = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
@@ -188,6 +192,12 @@ def test_controlled_external_declared_cost_closes_source_child_models(
     children = decompose_cirq_once(gate)
     assert children is not None
     assert bool(children) == (kind != "phasor_empty")
+    if kind == "cy" and isinstance(gate, cirq.ControlledGate):
+        # Cirq 1.6 uses raw MatrixGate children here. Each source adjoint
+        # numerically inverts those matrices again; model classification is
+        # sensitive to their exact floating-point power exponents.
+        for _ in range(depth):
+            children = [cirq.inverse(child) for child in reversed(children)]
     keys = []
     for child in children:
         key = (
@@ -196,7 +206,7 @@ def test_controlled_external_declared_cost_closes_source_child_models(
                     child.gate, num_controls=len(controls), control_values=controls
                 )
             )
-            if kind.startswith("phasor")
+            if kind.startswith("phasor") or kind == "cy"
             else _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
         )
         assert key is not None
