@@ -132,3 +132,30 @@ tests have ten passing non-collective cases; the seven two-rank cases cannot be
 claimed passed because macOS c10d rendezvous timed out, including after allowing
 loopback networking. No skip or tolerance relaxation was added. Linux CI must
 validate the two-rank recovery path and its new provenance assertion.
+
+## Coverage scope follow-up
+
+The complete 192-shard measurement passed its test selections but the policy
+checker still queried retired physical package names. It reported zero coverage
+for Kernel/JAX/frontend scopes and measured only the remaining public facades
+for several other scopes. The existing source-relocation ledger now attributes
+actual file/definition line hits to the original policy directories. Splits and
+merges retain their original floors; unrelated destination functions/globals
+cannot donate coverage. Retained facades and new code are still measured.
+No policy minimum, exclusion, raw hit or global rate is changed.
+
+The real artifacts from CI run 45801572959 were downloaded and each SQLite
+input passed integrity_check. Their measured merge commit is
+`1de8b02aec693f93b8b4cbc1b151f19d47744e0d`; its tree exactly matches retirement
+head `47a78728bfe85309f404387426a03e0aa1d8d7c7`. Recombination preserves all
+111,547 covered and 125,677 total measured statements and the reported global
+88.76%. All frozen scope floors pass, including Operators 96.12%, Runtime
+Distributed 80.54% and the historical Kernel/JAX scopes.
+
+All 103 coverage/capacity/routing tests pass. Cases reject missing measurements,
+duplicate line counting, ignored facade lines, loss of a partial source floor,
+and donation from an unrelated destination. coverage-policy.toml remains byte
+identical (SHA-256 `405133db0ef6619c59f041dda43928247da2a0d11aa84df784b37ff35887b5fa`).
+The workflow now retains actual coverage.xml after a policy failure as well as
+a success, so diagnosis does not require downloading all shard databases.
+This is a local replay of real remote data; the next head still needs new CI.

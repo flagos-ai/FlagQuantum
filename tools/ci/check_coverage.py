@@ -11,13 +11,17 @@ if __package__ in (None, ""):
 
 
 import argparse
+import ast
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 from pathlib import Path
 
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
+
+from tools.architecture.source_relocations import source_identity
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = ROOT / "contracts" / "coverage-policy.toml"
@@ -29,15 +33,84 @@ def load_toml(path: Path) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def parse_coverage(path: Path) -> tuple[float, dict[str, float]]:
-    root = ET.parse(path).getroot()
-    global_rate = float(root.get("line-rate", "0")) * 100.0
-    packages: dict[str, float] = {}
-    for pkg in root.iter("package"):
-        name = pkg.get("name", "")
-        if name:
-            packages[name.replace("/", ".")] = float(pkg.get("line-rate", "0")) * 100.0
-    return global_rate, packages
+def _package_name(source: str) -> str:
+    parts = Path(source).parent.parts
+    if not parts or parts[0] != "flagquantum":
+        raise ValueError(f"coverage source is outside flagquantum: {source}")
+    return ".".join(parts[1:]) or "."
+
+
+def _line_scopes(
+    source: Path, repository: Path
+) -> tuple[str, list[tuple[int, int, str]]]:
+    """Keep measured implementations under their original policy directories."""
+    relative = source.relative_to(repository).as_posix()
+    tree = ast.parse(source.read_text(encoding="utf-8"), filename=relative)
+    package_root = repository / "flagquantum"
+    default = _package_name(source_identity(package_root, relative, "<module>"))
+    scopes: list[tuple[int, int, str]] = []
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            owner = _package_name(source_identity(package_root, relative, node.name))
+            start = (
+                min(node.lineno, *(item.lineno for item in node.decorator_list))
+                if node.decorator_list
+                else node.lineno
+            )
+            if node.end_lineno is None:
+                raise ValueError(
+                    f"missing coverage source span: {relative}:{node.lineno}"
+                )
+            scopes.append((start, node.end_lineno, owner))
+    # A partial extraction or a merge into an existing module must not donate
+    # unrelated covered globals to the moved implementation's policy scope.
+    if any(owner != default for _, _, owner in scopes):
+        default = _package_name(relative)
+    return default, scopes
+
+
+def parse_coverage(
+    path: Path, repository: Path = ROOT
+) -> tuple[float, dict[str, float]]:
+    """Read actual hits without changing global coverage or frozen scope floors.
+
+    Whole-file and definition-level moves use the existing source ledger. Every
+    measured statement is counted once, including retained public facades and
+    newly introduced code. XML package summaries alone cannot describe a split
+    or merged implementation and are not used as substitute measurements.
+    """
+    document = ET.parse(path).getroot()
+    global_rate = float(document.get("line-rate", "0")) * 100.0
+    counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    seen: set[tuple[str, int]] = set()
+    for entry in document.iter("class"):
+        relative = Path(entry.get("filename", "").replace("\\", "/"))
+        if relative.is_absolute():
+            relative = relative.relative_to(repository)
+        if ".." in relative.parts:
+            raise ValueError(f"invalid measured source path: {relative}")
+        if not relative.parts or relative.parts[0] != "flagquantum":
+            relative = Path("flagquantum") / relative
+        source = repository / relative
+        default, scopes = _line_scopes(source, repository)
+        for line in entry.findall("./lines/line"):
+            number = int(line.get("number", "0"))
+            hits = int(line.get("hits", "0"))
+            identity = (relative.as_posix(), number)
+            if number < 1 or hits < 0 or identity in seen:
+                raise ValueError(f"invalid or duplicate measured line: {identity}")
+            seen.add(identity)
+            owner = next(
+                (owner for start, end, owner in scopes if start <= number <= end),
+                default,
+            )
+            counts[owner][0] += int(hits > 0)
+            counts[owner][1] += 1
+    if not seen:
+        raise ValueError("coverage XML contains no measured source lines")
+    return global_rate, {
+        package: 100.0 * covered / total for package, (covered, total) in counts.items()
+    }
 
 
 def policy_errors(

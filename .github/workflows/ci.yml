@@ -2649,6 +2649,7 @@ jobs:
       - name: Enforce coverage policy
         run: python tools/ci/check_coverage.py
       - uses: ./.github/actions/upload-artifact
+        if: ${{ always() && hashFiles('coverage.xml') != '' }}
         timeout-minutes: 6
         with:
           name: coverage-${{ github.sha }}

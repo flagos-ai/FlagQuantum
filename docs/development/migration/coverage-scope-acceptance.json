@@ -1,0 +1,14 @@
+{
+  "measured_merge": {
+    "measured_merge_commit": "1de8b02aec693f93b8b4cbc1b151f19d47744e0d",
+    "verified_tree": "c41f0bfaa494944d2feac4d3f62e172e1b6a1c83",
+    "pr_head": "47a78728bfe85309f404387426a03e0aa1d8d7c7"
+  },
+  "global_percent_unchanged": 88.75999999999999,
+  "covered_statements_preserved": 111547,
+  "total_statements_preserved": 125677,
+  "coverage_policy_sha256": "405133db0ef6619c59f041dda43928247da2a0d11aa84df784b37ff35887b5fa",
+  "scope_floor_failures": [],
+  "ci_run_id": 45801572959,
+  "input_artifacts": 192
+}
