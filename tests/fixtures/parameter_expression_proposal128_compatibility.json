@@ -1,0 +1,519 @@
+{
+  "baseline_commit": "9b1a8cd196f9d8b8427b382c404f66705cc57840",
+  "legacy_fixture_sha256": "b6dea4dfaffed255c2ef96c31e07b07da4f20099b4d35d5c28b5a5f60db17178",
+  "cases": [
+    {
+      "name": "add",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "add",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    },
+                    2
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"add\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "c036b23890b27fdc3cb38f58000c9fec8774e24668c7a102ed83d854db223724",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 2.375
+    },
+    {
+      "name": "sub",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "sub",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    },
+                    2
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"sub\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "12408c407854bde613c9ea090d145d053216acb133e5a62c5b9984ccfd362fb0",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": -1.625
+    },
+    {
+      "name": "mul",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "mul",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    },
+                    2
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"mul\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "b04fd79eb311eeab6c8f0f61bc06d35bb886a9705d67bf5933364649ac7fcceb",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 0.75
+    },
+    {
+      "name": "neg",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "neg",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    }
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"neg\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "5268988eb5f57b84d9bfa3616e2b8a2973ebb1c60d43589fa3743d4557bd7735",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": -0.375
+    },
+    {
+      "name": "sin",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "sin",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    }
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"sin\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "b633ddb84ab6d9072bb4788c5e811b1407272a6e9e38a8c9b1769dd4fd481781",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 0.36627252908604757
+    },
+    {
+      "name": "cos",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "cos",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    }
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"cos\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "7b46757a9640c6ea1ae6b77a67e21b98adc59c64444b048b9db83fbb317a464a",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 0.9305076219123143
+    },
+    {
+      "name": "exp",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "exp",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    }
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"exp\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "b9338d2e2228354212e86c53dab26daedda3a887fa706bada1c6e1228eb8f919",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 1.4549914146182013
+    },
+    {
+      "name": "log",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "log",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    }
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"log\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "8733cdb4459b652b38e40e3685b5941441c08925a1ea23cd93ab2faede3a0883",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": -0.9808292530117262
+    },
+    {
+      "name": "pow",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "pow",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    },
+                    2
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"pow\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "08b3b27cd335ef97771cead9c421806af43eb75334ac792bd8df94a630aa90ed",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 0.140625
+    },
+    {
+      "name": "div",
+      "payload": {
+        "kind": "flagquantum.circuit_ir",
+        "version": "1.0",
+        "n_wires": 1,
+        "dtype": "complex64",
+        "shape": [
+          2
+        ],
+        "instructions": [
+          {
+            "opcode": "rz",
+            "wires": [
+              0
+            ],
+            "params": {
+              "theta": {
+                "$expression": {
+                  "op": "div",
+                  "args": [
+                    {
+                      "$parameter": "theta"
+                    },
+                    2
+                  ]
+                }
+              }
+            },
+            "matrix": null,
+            "metadata": {}
+          }
+        ],
+        "observables": [],
+        "measurements": [],
+        "metadata": {}
+      },
+      "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"div\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+      "content_hash": "5f980fa403de9ef5a039d0c42c76a2559684cdf24b3489ce7b7e920bd4adf76f",
+      "binding": {
+        "theta": 0.375
+      },
+      "value": 0.1875
+    }
+  ],
+  "failures": [
+    {
+      "name": "unknown",
+      "op": "unknown",
+      "args": [
+        "theta"
+      ],
+      "binding": 0.375,
+      "error_type": "ValueError",
+      "message": "Unsupported parameter expression op 'unknown'."
+    },
+    {
+      "name": "arity",
+      "op": "sin",
+      "args": [],
+      "binding": 0.375,
+      "error_type": "ValueError",
+      "message": "Parameter expression 'sin' requires 1 operands; got 0."
+    },
+    {
+      "name": "log_nonpositive",
+      "op": "log",
+      "args": [
+        "theta"
+      ],
+      "binding": -1,
+      "error_type": "ValueError",
+      "message": "Logarithm requires a positive real operand"
+    },
+    {
+      "name": "div_zero",
+      "op": "div",
+      "args": [
+        "theta",
+        0
+      ],
+      "binding": 0.375,
+      "error_type": "ValueError",
+      "message": "Division requires a nonzero denominator"
+    },
+    {
+      "name": "nonreal_power",
+      "op": "pow",
+      "args": [
+        "theta",
+        0.5
+      ],
+      "binding": -1,
+      "error_type": "ValueError",
+      "message": "Nonlinear expression requires real scalar operands"
+    },
+    {
+      "name": "boolean",
+      "op": "sin",
+      "args": [
+        "theta"
+      ],
+      "binding": true,
+      "error_type": "ValueError",
+      "message": "Nonlinear expression requires real scalar operands"
+    },
+    {
+      "name": "complex",
+      "op": "sin",
+      "args": [
+        "theta"
+      ],
+      "binding": {
+        "complex": [
+          1,
+          1
+        ]
+      },
+      "error_type": "ValueError",
+      "message": "Nonlinear expression requires real scalar operands"
+    }
+  ],
+  "parameter_key_precedence": 2.75
+}

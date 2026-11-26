@@ -24,6 +24,9 @@ measurements = "execution_plan_not_in_ir"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
 [symbolic_parameter_contract]
+proposal = "API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR"
+approval = "explicit_user_approval_2026-11-26"
+# Method surface is unchanged; the expression vocabulary extension is approved above.
 implementation_status = "implemented"
 public_api_change = false
 source_protocol = "cirq_parameter_protocol_with_sympy_expressions"
@@ -31,7 +34,7 @@ symbol_discovery = "cirq.parameter_symbols_with_original_sympy_identity"
 binding_reference = "cirq.resolve_parameters"
 target_representation = "flagquantum_parameter_or_parameter_expression"
 parameter_identity = "unique_name"
-supported_nodes = ["symbol", "real_constant", "add", "mul", "neg", "sin", "cos", "exp", "log", "pow", "div"]
+supported_nodes = ["symbol", "real_constant", "add", "mul", "neg", "sin", "cos", "exp", "log", "pow", "div", "acos", "floor"]
 unsupported_nodes = ["complex_constant", "unsupported_function", "unknown_symbol"]
 canonicalization = "deterministic_left_fold_after_sympy_canonicalization"
 import_failure = "reject_before_instruction_enters_ir"

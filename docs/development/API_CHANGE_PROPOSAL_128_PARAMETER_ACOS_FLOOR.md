@@ -2,9 +2,10 @@
 
 ## Review status
 
-Pending explicit user approval. This document does not authorize implementation
-or change the existing parameter contract. Proposal 107 remains approved only
-for sin, cos, exp, log, pow and div.
+Explicitly approved by the user on 2026-11-26. Implement contract, Core,
+adapters and the source consumer in independent commits in PR #1084.
+Proposal 107's old encodings and behavior remain covered by compatibility
+fixtures; this approval adds exactly acos and floor.
 
 ## Verified source requirement
 

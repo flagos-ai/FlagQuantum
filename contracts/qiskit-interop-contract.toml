@@ -20,14 +20,16 @@ global_phase = "preserved"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
 [symbolic_parameter_contract]
-proposal = "API_CHANGE_PROPOSAL_107_NONLINEAR_PARAMETER_EXPRESSIONS"
-supported_nodes = ["symbol", "real_constant", "add", "mul", "neg", "sin", "cos", "exp", "log", "pow", "div"]
+proposal = "API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR"
+approval = "explicit_user_approval_2026-11-26"
+supported_nodes = ["symbol", "real_constant", "add", "mul", "neg", "sin", "cos", "exp", "log", "pow", "div", "acos"]
 external_object_retention = false
 
 [unsupported]
 qiskit_features = [
     "control_flow_import",
     "parameter_expression_operations_outside_approved_real_vocabulary",
+    "symbolic_floor_export_without_numeric_binding",
     "nonstandard_register_layout_without_explicit_flattening",
     "custom_unitary_above_three_qubits",
 ]

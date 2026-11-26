@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -11,7 +12,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _inputs() -> tuple[dict, dict]:
+def _inputs() -> tuple[dict[str, Any], dict[str, Any]]:
     return (
         load_toml(ROOT / "contracts" / "qiskit-interop-contract.toml"),
         load_toml(ROOT / "dependency-policy.toml"),
@@ -20,6 +21,23 @@ def _inputs() -> tuple[dict, dict]:
 
 def test_qiskit_interop_contract_is_current() -> None:
     assert contract_errors(*_inputs()) == ()
+
+
+def test_approved_acos_contract_preserves_symbolic_floor_export_boundary() -> None:
+    contract, policy = _inputs()
+    symbolic = contract["symbolic_parameter_contract"]
+    assert symbolic["proposal"] == "API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR"
+    assert "acos" in symbolic["supported_nodes"]
+    assert "floor" not in symbolic["supported_nodes"]
+    assert (
+        "symbolic_floor_export_without_numeric_binding"
+        in contract["unsupported"]["qiskit_features"]
+    )
+    symbolic["supported_nodes"].append("floor")
+    assert (
+        "Qiskit symbolic parameter contract drifted from Proposal 128"
+        in contract_errors(contract, policy)
+    )
 
 
 def test_contract_rejects_operator_coverage_drift() -> None:

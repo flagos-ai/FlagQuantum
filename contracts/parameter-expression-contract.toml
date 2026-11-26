@@ -1,14 +1,14 @@
 schema = "flagquantum.parameter_expression_contract"
-version = "1.0"
-proposal = "docs/development/API_CHANGE_PROPOSAL_107_NONLINEAR_PARAMETER_EXPRESSIONS.md"
-approval = "explicit_user_approval_2026-11-19"
-implementation_status = "implemented_supported_real_expressions"
+version = "1.1"
+proposal = "docs/development/API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR.md"
+approval = "explicit_user_approval_2026-11-26"
+implementation_status = "approved_contract_pending_implementation"
 owner = "core"
 public_methods_added = []
 
 [expression]
 representation = "ParameterExpression"
-unary = ["neg", "sin", "cos", "exp", "log"]
+unary = ["neg", "sin", "cos", "exp", "log", "acos", "floor"]
 binary = ["add", "sub", "mul", "pow", "div"]
 arguments = "immutable_acyclic_tuple"
 leaves = "owned_parameters_and_finite_real_numbers"
@@ -19,12 +19,16 @@ scalars = "finite_real"
 tensors = "real_torch_scalar_preserving_dtype_device_autograd"
 parameter_precedence = "Parameter_key_before_name"
 domain_failures = "ValueError_before_execution"
-invalid_domains = ["division_by_zero", "log_nonpositive", "nonreal_power", "nonfinite_result"]
+invalid_domains = ["division_by_zero", "log_nonpositive", "nonreal_power", "nonfinite_result", "acos_outside_closed_unit_interval"]
+acos = "principal_real_on_closed_unit_interval_without_clamping"
+floor = "math_floor_integer_or_native_torch_floor"
+gradient = "native_torch_derivatives_without_endpoint_smoothing"
 
 [serialization]
 envelope = "$expression"
 fields = ["op", "args"]
 legacy_fixture = "tests/fixtures/parameter_expression_compatibility.json"
+proposal128_legacy_fixture = "tests/fixtures/parameter_expression_proposal128_compatibility.json"
 legacy_payload_and_hash = "byte_identical"
 older_evaluator = "reject_unsupported_operation"
 

@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib
 from pathlib import Path
 from typing import Any
 
 try:
-    import tomllib
+    tomllib = importlib.import_module("tomllib")
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
-    import tomli as tomllib
+    tomllib = importlib.import_module("tomli")
 
 from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
@@ -21,6 +22,25 @@ CONTRACT = ROOT / "contracts" / "qiskit-interop-contract.toml"
 DEPENDENCY_POLICY = ROOT / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum" / "ecosystem" / "qiskit" / "conversion.py"
 EXPECTED_SCHEMA = "flagquantum_qiskit_interop_contract_v1"
+EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
+    "proposal": "API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR",
+    "approval": "explicit_user_approval_2026-11-26",
+    "supported_nodes": [
+        "symbol",
+        "real_constant",
+        "add",
+        "mul",
+        "neg",
+        "sin",
+        "cos",
+        "exp",
+        "log",
+        "pow",
+        "div",
+        "acos",
+    ],
+    "external_object_retention": False,
+}
 EXPECTED_SEMANTICS = {
     "quantum_wire_mapping": "flat_qiskit_bit_index_equals_flagquantum_wire",
     "classical_bit_mapping": ("flat_qiskit_bit_index_equals_flagquantum_classical_bit"),
@@ -52,7 +72,8 @@ def conversion_issue_codes(path: Path = CONVERSION) -> set[str]:
 
 
 def load_toml(path: Path) -> dict[str, Any]:
-    return tomllib.loads(path.read_text(encoding="utf-8"))
+    result: dict[str, Any] = tomllib.loads(path.read_text(encoding="utf-8"))
+    return result
 
 
 def contract_errors(
@@ -69,6 +90,11 @@ def contract_errors(
         errors.append("Qiskit interop must use only the qiskit extra")
     if contract.get("core_import_allowed") is not False:
         errors.append("Qiskit core import must remain forbidden")
+    if (
+        contract.get("symbolic_parameter_contract")
+        != EXPECTED_SYMBOLIC_PARAMETER_CONTRACT
+    ):
+        errors.append("Qiskit symbolic parameter contract drifted from Proposal 128")
 
     tested = dependency_policy.get("tested", {})
     versions = contract.get("qiskit_versions")

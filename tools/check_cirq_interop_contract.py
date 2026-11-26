@@ -34,6 +34,8 @@ EXPECTED_SEMANTICS = {
     "loss_policy": "fail_closed_unless_allow_lossy_true",
 }
 EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
+    "proposal": "API_CHANGE_PROPOSAL_128_PARAMETER_ACOS_FLOOR",
+    "approval": "explicit_user_approval_2026-11-26",
     "implementation_status": "implemented",
     "public_api_change": False,
     "source_protocol": "cirq_parameter_protocol_with_sympy_expressions",
@@ -53,6 +55,8 @@ EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
         "log",
         "pow",
         "div",
+        "acos",
+        "floor",
     ],
     "unsupported_nodes": [
         "complex_constant",
