@@ -4,59 +4,90 @@ The reference is the immutable Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The batch covers
 `ec_add.py`, its tests and tutorial, and their direct arithmetic dependencies.
 
-## Typed constructor batch in progress (2026-11-27)
+## Stored constructor and direct dependency closure (2026-11-27)
 
-The complete seven-class frozen file remains the batch unit. The flag and slope
-constructors now resolve actual original libraries at levels 0, 1 and 2 without
-SDK imports. Compiler keeps their literal 20/24 calls, MSB-first nominal
-Montgomery ports and one-sided output ownership. The remaining coordinate,
-product, slope-cleanup, flag-cleanup and six-stage root bindings are unfinished;
-neither source-file parent is newly accepted. The first two stages are local
-module commits pending publication of the complete batch.
+All seven original constructor identifiers now resolve through native typed
+owners. The six stages retain 20, 24, 24, 28, 16 and 61 literal calls at width
+three; the ECAdd root retains its six calls and bystanders. Actual original
+libraries at levels 0, 1 and 2 resolve with SDK imports blocked. The unchanged
+symbolic example remains a declaration; the original five-bit/modulus-seven
+example has the complete six-call body. Extra constructor fields and incorrect
+signatures reject. A registration is not full source-file acceptance.
 
-The flag constructor matches original primitive operands and feedback at widths
-2, 3 and 5. Its width-3/modulus-3 binding emits 665 instructions, including
-221 CX, 112 T-family and 28 measurements, with 21 physical wires. The independent
-source model also gives 112 T, 28 measurements and a 21-qubit peak. All 81
-residue quadruples, their complex superposition and every erasure history pass.
-The five live RIGHT outputs transfer to the caller; all private work clears.
+Compiler owns one module per stage and the root, with one shared source word-copy
+loop. Algorithms continues to own the seven signatures. Ecosystem translates
+foreign fields and configures existing predicates, arithmetic and exact inverses.
+The required adjoints were added to the existing linear-comparison, modular-add
+and modular-double owners. Nine complete forward Programs remain identical to
+the pre-batch snapshot. Both signed and unsigned exact comparator inverses have
+source evidence, including the complete signed three-bit complex operator.
 
-The slope binding reuses the owned inverse and measured Montgomery lookup
-components rather than duplicating their numerical implementations. Kaliski
-physically frees and rebinds some input bits: binding must explicitly transfer
-existing input-pool ownership and use returned output layouts. Default binding
-without that transfer retains its rejection. The source rare-flag discrepancy
-is preserved, not replaced by the high-level callback.
+Coordinates are MSB-first Montgomery words without an embedded modulus in the
+outer declarations. Stage one transfers five RIGHT flags; stage two transfers
+RIGHT lam. Stage five consumes LEFT lam, and stage six consumes all five LEFT
+flags. Kaliski and doubling may physically release and rebind data. Explicit
+input-pool ownership and workspace-output transfer remain required; consumers
+use the returned output layouts. No ownership guard or public operation signature
+was weakened. The existing `circuit.append(op)` path stays available; the typed
+replacement is also appended and executed with Qualtran, Cirq and Qiskit blocked.
 
-On all 243 small coordinate/tangent inputs, the typed slope preserves the old
-source-validated coherent map and private cleanup. Its measured lookup route
-has 494 events, compared with 470 in the earlier reverse-forward lookup route.
-The exact inventory delta is +24 H, +24 measurements, +24 conditional X and
-+12 conditional Z, minus 12 CX. T-family and CCX inventories are unchanged.
-The upstream lookup adjoint is model-only: these additional measured leaf
-primitives have no upstream physical decomposition to compare. They are not
-described as literal full-stream parity with an absent body.
+### Complex channels, cleanup and resource scope
 
-| Typed slope, n=3, p=3, window=1 | Measured primitive inventory | Independent source model |
-| --- | --- | --- |
-| Gates and measurement | 13,742 instructions; 3,056 T/T†; 6 CCX; 494 measurement events | 470 And; 6 Toffoli; 168 CSwap; 3,175 Clifford; 470 measurement events; default T estimate 2,576 |
-| Quantum storage | 55 bound wires and 55 live peak, using returned layouts | 55 peak qubits |
+All 81 flag inputs, 243 slope inputs, 486 coordinate inputs, 72 product inputs
+(including every dirty three-bit y), and 486 inputs satisfying the slope-release
+promise pass. Flag cleanup and the complete root cover all 16 point pairs on the
+recorded modulus-three curve. Actual primitive And obligations and lookup
+outcome phase coefficients certify every erasure history on these domains.
+Two sparse complex executions independently compare the complete output support.
+The original control leaves additionally compare primitive operands and feedback
+on all 1,024 dirty logical inputs each. Private work and consumed logical storage
+return to zero on the recorded promises; logical RIGHT outputs remain live.
 
-The channel certificate now retains the Boolean phase coefficient of each
-X-basis lookup outcome until actual Z/CZ feedback cancels it. The two-outcome
-complex-state lemma and missing/wrong-feedback counterexamples validate this
-extension. Combined with the existing And lemmas it certifies all 494 slope
-histories on the recorded input domain; two full sparse complex executions
-independently agree. The controlled Equals dependency matches original gates
-at widths 1, 2, 3 and 5 under both polarities, including dirty targets.
+The source QROAM adjoint is model-only. Its native measured implementation adds
+24 measurement events per width-three product versus the historical reverse
+lookup route. The five products in the complete chain add 120 H, 120 measurements,
+120 conditional X and 60 conditional Z and remove 60 CX, with unchanged T-family
+and CCX counts. There is no asserted upstream physical stream through the absent
+lookup-adjoint body. Comparable source calls and primitive dependencies are
+checked at their actual boundaries. Lookup phases are retained until actual
+feedback cancels them; missing or incorrect feedback fails the certificate.
 
-The source default Toffoli conversion uses four T, while emitted Toffoli stays
-CCX. These categories remain separate. The concentrated snapshot passes 127
-cases in each actual Cirq 1.7.0/Qiskit 2.5.0 and Cirq 1.6.1/Qiskit 2.0.0
-profile, with real Qualtran 0.7.0 and Kickmix 0.1 Simulator asserted. Nine Python
-files pass strict typing, formatting, owner scopes, language, architecture, IR
-and public API checks. Existing classical matrices and notebook receipts are
-reused. Whole-batch regression and publication await the remaining five bindings.
+The following counts are measured from the typed width-three/modulus-three
+Programs, with multiplication window one. CCX remains an emitted primitive.
+Source default T estimates use four T per Toffoli and CSwap; the literal exact
+CSwap implementation uses seven T. Estimates are never substituted for emitted
+counts. Source and native live peaks agree in these fixtures.
+
+| Component | Emitted instructions | Emitted T/T† | Emitted CCX | Emitted measurements | Source default T estimate | Source measurements | Native/source peak |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Flags | 665 | 112 | 0 | 28 | 112 | 28 | 21/21 |
+| Slope | 13,742 | 3,056 | 6 | 494 | 2,576 | 470 | 55/55 |
+| Coordinates | 3,174 | 544 | 0 | 160 | 544 | 136 | 35/35 |
+| Products | 3,257 | 572 | 0 | 191 | 572 | 143 | 27/27 |
+| Slope cleanup | 13,529 | 3,016 | 3 | 484 | 2,524 | 460 | 54/54 |
+| Flag cleanup | 1,949 | 340 | 10 | 85 | 380 | 85 | 26/26 |
+| Complete root | 36,316 | 7,640 | 19 | 1,442 | 6,708 | 1,322 | 58/58 |
+
+### Retained failures and verification
+
+The original modulus-five infinity witness still releases f1=1. A direct sparse
+execution preserves the correct coordinates and that dirty physical flag; the
+source final-stage classical graph rejects its Free. The lease is located using
+the actual flag binding, not the scheduler's release order. The five-bit/window-
+five reduction witness still produces y=27 where the one-level callback gives
+1. These are retained failures, not successful cleanup. Other original coordinate,
+release, parameter, larger-input and symbolic aggregate-model boundaries below
+remain unwaived; Q-0457 and Q-0460 stay open.
+
+The final concentrated snapshot passes 175 cases in each actual Cirq 1.7.0 /
+Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile, with the real Qualtran 0.7.0
+and Kickmix 0.1 Simulator asserted. Local integration passes 145 cases. Twenty
+Python files pass strict typing, formatting, owner scopes, language, architecture,
+IR and public API checks. Twenty-seven frozen source/test and direct-dependency
+blobs match the locked inventory. Prior full
+original tests, slow classical matrices and notebook receipts are reused rather
+than rerun. `g2-ecc-complete-resources-20261127.json` records all seven inventories;
+`g2-ecc-forward-compatibility-20261127.json` records unchanged complete Programs.
 
 ## Stage one
 

@@ -49,3 +49,9 @@ while the control, words and dirty target remain caller-owned. Run
 original calls, primitive operands/feedback, all small complex columns and
 complete erasure histories. Model Toffoli-to-T conversion is reported separately
 from physical CCX and T-family inventories.
+
+`linear_greater_program(..., adjoint=True)` reverses the actual typed carry
+compute/erase and one-bit leaves. It preserves signed overflow behavior rather
+than replacing the source inverse with a mathematical comparison. The complete
+signed three-bit source operator and unsigned branch/cleanup checks are in
+`tests/unit/test_ecc_arithmetic_adjoints.py`.

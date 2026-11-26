@@ -18,28 +18,33 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 87 |
-| Union of exact native registrations | 248 |
-| Keys without an exact factory in these providers | 55 |
+| Keys reachable through Ecosystem providers | 94 |
+| Union of exact native registrations | 255 |
+| Keys without an exact factory in these providers | 48 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine finite first-quantization constructors and five
-finite single-factorization and six finite double-factorization constructors
-two chemistry lookup placeholders and two RSA/shim constructors add forty-five keys. These are
-registration facts, not accepted constructor totals.
+The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine
+finite first-quantization constructors, five single-factorization, six double-
+factorization, two chemistry lookup, two RSA/shim and seven ECC addition
+constructors add 52 unique Ecosystem keys. These are registration facts, not
+accepted constructor totals. The ECC family includes all six literal stages and
+its root, with source-success libraries 0/1/2, complex channels, explicit work
+ownership and separate measured/model inventories. Its upstream release,
+coordinate and model-only lookup boundaries remain open; see
+[ECC_ADDITION_FILE_AUDIT.md](ECC_ADDITION_FILE_AUDIT.md).
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 55 keys without exact factories have these distinct source roles:
+The 48 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 47 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 40 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the

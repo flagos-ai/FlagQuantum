@@ -73,3 +73,11 @@ cache or second definition registry. Full Program and bound-record comparison
 against published 4551a7e11 verifies this construction reuse before reusing its
 source amplitude/resource evidence. Source models and literal primitives retain
 their separate owners; this change does not remove gates or lower cost estimates.
+
+`modular_addition_program` and `modular_doubling_program` accept `adjoint=True`
+to reverse their existing child calls using exact addition, comparison and
+constant-load inverses. Forward Programs are unchanged. Doubling returns a
+different physical layout, so inverse consumers must use actual output bindings
+and transfer pool ownership when a source release touches caller storage. Run
+`tests/unit/test_ecc_arithmetic_adjoints.py` for original streams, all small
+complex columns, erasure histories and private cleanup.
