@@ -1,0 +1,45 @@
+{
+  "parent": "Q-0039",
+  "frozen_revision": "bcb17bb25360ed68ce3bc084645db3e929799389",
+  "source_blob": "fed8cda3ee0c55e415342c1750a6ff843acb7552",
+  "native_html_sha256": "8771b2dcc4e8e87943de361b2e154098957378fcd7592cf2e7026ad1bd833c7a",
+  "browser": "Chrome/158.0.8127.88",
+  "browser_mode": "Isolated actual headless Chrome,CDP;unchanged native and original HTML served read-only over loopback HTTP",
+  "desktop_viewport": [
+    1280,
+    900
+  ],
+  "mobile_viewport": [
+    390,
+    844
+  ],
+  "syntax_spans_initial": 74,
+  "three_register_sides_verified": true,
+  "invalid_identifier_and_width_refusal": true,
+  "regeneration_restores_code": true,
+  "mobile": {
+    "viewport": 390,
+    "body": 390,
+    "registerColumns": "350px",
+    "codeOverflow": true
+  },
+  "cdn_blocked_fallback": true,
+  "source_title": "Bloq Quickstarter",
+  "generated_python_import": "g2-quickstarter-browser-generated-import-20261126.json;all3ports and placeholder refusal verified",
+  "focused_cases_passed": 13,
+  "previous_complete_evidence_reused": "COMPONENT_QUICKSTARTER_AUDIT.md;HTML unchanged,prior complete source/template/builder/complex-amplitude/model evidence retained",
+  "visual_review": "Desktop,mobile,highlighted code and blocked-CDN plain code screenshots inspected",
+  "screenshots_sha256": {
+    "desktop.png": "cb9ae3f76e8c8f249da2fd75ac4c74c27028bbae9199af438f6f1d8852e4725e",
+    "mobile.png": "67676e59b613e1234eb401f5bf4ad73451841369eb70dc65ef40392bc1fb427e",
+    "highlighted-code.png": "fd5ac7619c0d45b515a5f6e4576b3632b90318110acc6a0ad922cdcc051b053e",
+    "plain-code.png": "217f3f4d146b655389fa77bdf007faa1fa58de409573b724267453c82428ebe1"
+  },
+  "cleanup": "Isolated Chrome profiles and local HTTP server terminated after review",
+  "not_claimed": [
+    "In-app browser success:its service timed out twice",
+    "Hosted deployment",
+    "All browser engines",
+    "New quantum emission:scaffold remains a placeholder until authored"
+  ]
+}

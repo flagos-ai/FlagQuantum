@@ -89,13 +89,52 @@ and 36 existing warnings. That batch preceded the final two additional input
 validation/event cases, both covered in the focused run. Strict typing,
 Black, Ruff, Integration scope, architecture, IR and API checks pass.
 
-The Node fixture is a behavior test double, not a browser renderer. The in-app
-browser rejected the local file URL because its URL policy allows only HTTP
-and HTTPS. No alternate route was used to evade that rejection. **Actual browser
-layout and interaction review remain pending, so Q-0039 remains open.**
+The original Node fixture is a behavior test double, not a browser renderer.
+The earlier in-app browser rejected the file URL under its HTTP/HTTPS-only
+policy; that route was not retried. The actual browser evidence below now
+closes the remaining renderer review for Q-0039.
 
 The retained highlight.js assets are optional and loaded from the same pinned
 CDN URLs with the original SRI and crossorigin attributes. Those assets were not
 fetched or rendered in the Node fixture. This batch does not claim a new supply
-chain audit of the inherited assets. Their load/failure behavior and the visual
-layout belong to the pending browser review.
+chain audit of the inherited assets.
+
+## Complete real-browser acceptance, November 26
+
+Q-0039 is accepted. An isolated actual Chrome 158.0.8127.88 renderer reviewed
+the unchanged native and original HTML over a read-only loopback HTTP server.
+The server served only those two files. This uses the allowed HTTP route;
+the rejected file URL was not bypassed. The in-app browser service timed out
+twice without returning state, so this acceptance uses actual local headless
+Chrome through its debugging protocol instead. It does not claim an in-app
+browser success.
+
+Desktop 1280x900 and mobile 390x844 screenshots were inspected. Inputs and
+buttons remain visible, mobile register fields form one column, and the
+document has no horizontal overflow. Long code lines scroll inside their code
+container. Actual keyup, change, add-register and regenerate events create
+Thru/Left/Right declarations, keep Right ports out of input parameters, reject
+invalid identifiers and empty widths, then restore the valid scaffold.
+
+The unchanged pinned CDN script and stylesheet loaded with the page's original
+integrity attributes. Actual highlighting created 74 syntax spans in the
+initial scaffold. A cache-disabled reload with the CDN blocked has no hljs
+global and still renders the complete plain Python scaffold with no generator
+error. Both highlighted and plain-code screenshots were inspected.
+
+The browser-generated three-port Python module imports under the existing
+native environment. Its ordered widths and sides match the form, quoted text
+remains intact, and execution still refuses the unimplemented body. All 13
+focused source/native tests pass again. Previous complete source, ownership,
+complex-amplitude, append and resource evidence is reused because the HTML
+is byte-identical; no new numerical or quantum behavior was introduced.
+
+[The receipt](evidence/component_quickstarter/20261126/receipt.json) records the
+HTML/source hashes, checks and screenshot hashes. Review images:
+[desktop](evidence/component_quickstarter/20261126/desktop.png),
+[mobile](evidence/component_quickstarter/20261126/mobile.png),
+[highlighted code](evidence/component_quickstarter/20261126/highlighted-code.png),
+and [plain code](evidence/component_quickstarter/20261126/plain-code.png).
+The isolated browser profiles and HTTP server were removed or terminated.
+Hosted services and other browser engines are outside this renderer evidence.
+The original generated Register(bitsize=...) failure remains recorded above.
