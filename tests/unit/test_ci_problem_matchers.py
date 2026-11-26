@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -69,14 +70,10 @@ process.stdout.write(JSON.stringify(observations));
 
 def tool(root: Path, module: str, *arguments: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [
-            sys.executable,
-            str(REFERENCE / "g2_execution_python.py"),
-            "-m",
-            module,
-            *arguments,
-        ],
+        [sys.executable, "-m", module, *arguments],
         cwd=root,
+        # Child tools use the current qualified environment, not a private script.
+        env=dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path)),
         capture_output=True,
         text=True,
         timeout=90,
