@@ -19,11 +19,17 @@ from ..compiler._component_trace.call_graph import (
 )
 from ..compiler._component_trace.qec_gate_cost import QECGateCost
 from ..compiler._component_trace.resource_model import estimate_component_resources
-from ..compiler.registers.component_builder import ComponentProgramBuilder
+from ..compiler.registers.bits.on_each import on_each_word_program
+from ..compiler.registers.component_builder import (
+    BindingCollection,
+    ComponentProgramBuilder,
+)
+from ..compiler.registers.component_gate_function import bit_gate_function
 from ..compiler.registers.control.multi_control import (
     multi_control_x_ir,
     source_multi_control_x_resource_formula,
 )
+from ..compiler.registers.control.multi_control_component import multi_control_x_program
 from ..compiler.registers.sorting.in_place_sort_declaration import (
     in_place_sort_signature,
     source_in_place_sort_resource_formula,
@@ -31,7 +37,7 @@ from ..compiler.registers.sorting.in_place_sort_declaration import (
 from ..compiler.registers.sorting.sorted_duplicates_resource_model import (
     source_sorted_duplicates_gate_cost,
 )
-from ..core.ir import Instruction
+from ..core.ir import CircuitIR, Instruction
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.register_bindings import RegisterBinding
 from ..core.ir.program.register_types import (
@@ -140,6 +146,35 @@ class ProbabilisticUncompute:
         pattern = (0,) * self.bitsize if type(self.bitsize) is int else self.bitsize
         return QECGateCost(clifford=self.bitsize).plus(
             source_multi_control_x_resource_formula(pattern), 1
+        )
+
+    def program(self) -> ProgramRecord:
+        """Compose owned Hadamards and measured zero marking on logical THRU ports."""
+        if type(self.bitsize) is not int or self.bitsize < 1:
+            raise ValueError("Uncompute requires a positive concrete word width")
+        hadamard = bit_gate_function(
+            "hadamard",
+            tuple(Signature.build(q=1)),
+            CircuitIR(1, (Instruction("h", (0,)),)),
+        )
+        builder = ComponentProgramBuilder(self.signature)
+        prepared = builder.call_program(
+            on_each_word_program(self.bitsize, hadamard),
+            {"q": builder.inputs["q"]},
+        )["q"]
+        assert isinstance(prepared, RegisterBinding)
+        result = builder.call_program(
+            multi_control_x_program((0,) * self.bitsize),
+            {
+                "controls": np.asarray(builder.split(prepared), dtype=object),
+                "target": builder.inputs["flag"],
+            },
+        )
+        return builder.finalize(
+            {
+                "q": builder.join(np.asarray(result["controls"]).flat),
+                "flag": result["target"],
+            }
         )
 
     def bind(
@@ -273,17 +308,19 @@ class GuidingState(PrepareOracle):
 
     def program(
         self,
-        preparation: FunctionRecord,
-        sorting: FunctionRecord,
-        duplicates: FunctionRecord,
-        uncompute: FunctionRecord,
-        flag_predicate: FunctionRecord,
-        flag_x: FunctionRecord,
+        preparation: FunctionRecord | ProgramRecord,
+        sorting: FunctionRecord | ProgramRecord,
+        duplicates: FunctionRecord | ProgramRecord,
+        uncompute: FunctionRecord | ProgramRecord,
+        flag_predicate: FunctionRecord | ProgramRecord,
+        flag_x: FunctionRecord | ProgramRecord,
     ) -> ProgramRecord:
         """Bind all six original child roles through shared packed-word rebindings.
 
         Every child must carry its actual source signature, including the
-        bounded pi array. Callers supply child bodies and their independent
+        bounded pi array. Complete Programs retain their helper definitions and
+        private work ownership. FunctionRecord callers preserve their existing
+        construction unchanged. Callers supply child bodies and their independent
         physical evidence for source-declaration-only sorting and preparation.
         """
         count, length, width = self.c, self.ell, self.inst.index_bitsize
@@ -312,7 +349,7 @@ class GuidingState(PrepareOracle):
             ),
             Signature.build(q=1),
         )
-        functions = (
+        children = (
             preparation,
             sorting,
             duplicates,
@@ -320,12 +357,34 @@ class GuidingState(PrepareOracle):
             flag_predicate,
             flag_x,
         )
+        if any(
+            isinstance(child, ProgramRecord) and not child.functions
+            for child in children
+        ):
+            raise ValueError("Guiding-state child Programs require a typed entry")
+        functions = tuple(
+            child.functions[0] if isinstance(child, ProgramRecord) else child
+            for child in children
+        )
         for function, expected in zip(functions, signatures, strict=True):
             if function.registers != tuple(expected):
                 raise ValueError(
                     f"Guiding-state child {function.name!r} has a different source signature"
                 )
-        builder = ComponentProgramBuilder(self.signature, functions)
+        builder = ComponentProgramBuilder(
+            self.signature,
+            (child for child in children if isinstance(child, FunctionRecord)),
+        )
+
+        def call(
+            child: FunctionRecord | ProgramRecord, bindings: dict[str, object]
+        ) -> dict[str, BindingCollection]:
+            if isinstance(child, ProgramRecord):
+                return builder.call_program(
+                    child, bindings, entry=child.functions[0].name
+                )
+            return builder.call_dict(child.name, bindings)
+
         target, ancilla = builder.inputs["T"], builder.inputs["ancilla"]
         assert isinstance(target, RegisterBinding) and isinstance(
             ancilla, RegisterBinding
@@ -341,7 +400,7 @@ class GuidingState(PrepareOracle):
             scope = builder.join(
                 target_bits[index * scope_width : (index + 1) * scope_width]
             )
-            result = builder.call_dict(preparation.name, {"S": scope})["S"]
+            result = call(preparation, {"S": scope})["S"]
             assert isinstance(result, RegisterBinding)
             scope_bits.extend(builder.split(result))
         target_bits = np.asarray(scope_bits, dtype=np.object_)
@@ -369,10 +428,8 @@ class GuidingState(PrepareOracle):
             ],
             dtype=object,
         )
-        sorted_outputs = builder.call_dict(sorting.name, {"xs": xs, "pi": pi_words})
-        checked = builder.call_dict(
-            duplicates.name, {"xs": sorted_outputs["xs"], "flag": flags[0]}
-        )
+        sorted_outputs = call(sorting, {"xs": xs, "pi": pi_words})
+        checked = call(duplicates, {"xs": sorted_outputs["xs"], "flag": flags[0]})
         flags[0] = checked["flag"]
         scratch = builder.join(
             [
@@ -381,14 +438,14 @@ class GuidingState(PrepareOracle):
                 for bit in builder.split(word)
             ]
         )
-        erased = builder.call_dict(uncompute.name, {"q": scratch, "flag": flags[1]})
+        erased = call(uncompute, {"q": scratch, "flag": flags[1]})
         flags[1] = erased["flag"]
-        marked = builder.call_dict(
-            flag_predicate.name,
+        marked = call(
+            flag_predicate,
             {"controls": np.asarray(flags[:2], dtype=object), "target": flags[2]},
         )
         flags[:2] = list(np.asarray(marked["controls"]).flat)
-        flags[2] = builder.call_dict(flag_x.name, {"q": marked["target"]})["q"]
+        flags[2] = call(flag_x, {"q": marked["target"]})["q"]
         target = builder.join(
             [
                 bit
