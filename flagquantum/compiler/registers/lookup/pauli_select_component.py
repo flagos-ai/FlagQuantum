@@ -104,12 +104,12 @@ def pauli_select_component_pair(
             "pauli_leaf_" + str(index), registers, CircuitIR(1 + len(active), gates)
         )
         record = ProgramRecord((function,))
-        # Signed Pauli leaves have only self-adjoint primitives. Reverse their
-        # literal stream as well as the enclosing measured unary traversal.
+        # The source controlled dense Pauli adjoint is the same Pauli leaf.
+        # Preserve its decomposition order inside the reversed outer graph.
         inverse = bit_gate_function(
             function.name + "_inverse",
             registers,
-            CircuitIR(1 + len(active), tuple(reversed(gates))),
+            CircuitIR(1 + len(active), gates),
         )
         leaves.append((record, ProgramRecord((inverse,))))
         calls.append(
