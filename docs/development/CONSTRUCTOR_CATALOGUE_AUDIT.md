@@ -17,27 +17,27 @@ source registry, rather than inferred from package aliases.
 | Verified fact | Count |
 | --- | ---: |
 | Frozen source keys | 303 |
-| Exact Compiler format registrations | 202 |
-| Keys reachable through Ecosystem providers | 41 |
-| Union of exact native registrations | 203 |
-| Keys without an exact factory in these providers | 100 |
+| Exact Compiler format registrations | 203 |
+| Keys reachable through Ecosystem providers | 42 |
+| Union of exact native registrations | 204 |
+| Keys without an exact factory in these providers | 99 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 40 keys; CirqGateAsBloq is the
+The Ecosystem count overlaps Compiler for 41 keys; CirqGateAsBloq is the
 additional key. These are registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 100 keys without exact factories have these distinct source roles:
+The 99 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 92 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 91 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -318,7 +318,7 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX` | `qualtran/bloqs/mcmt/multi_control_pauli.py` | `compiler/formats/legacy_multi_control_factories.py:multi_control_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.mcmt.multi_control_pauli.MultiControlZ` | `qualtran/bloqs/mcmt/multi_control_pauli.py` | `compiler/formats/legacy_multi_control_factories.py:multi_control_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT` | `qualtran/bloqs/mcmt/multi_target_cnot.py` | `compiler/formats/legacy_fanout_factories.py:fanout_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
-| `qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle` | `qualtran/bloqs/mean_estimation/complex_phase_oracle.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle` | `qualtran/bloqs/mean_estimation/complex_phase_oracle.py` | `compiler/formats/legacy_complex_phase_factories.py:complex_phase_factories`, `ecosystem/cirq/_complex_phase_library.py:complex_phase_library_factories` | Exact encoder pair and source-selected phase stages; explicit bounded native ArcTan replacement; [audit](RESOLVER_COMPLEX_PHASE_AUDIT.md); wide lookup and original allocation/protocol refusals retained |
 | `qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator` | `qualtran/bloqs/mean_estimation/mean_estimation_operator.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit` | `qualtran/bloqs/multiplexers/apply_gate_to_lth_target.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq` | `qualtran/bloqs/multiplexers/apply_lth_bloq.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
