@@ -34,7 +34,8 @@ def test_source_recognition_order_and_gate_costs() -> None:
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from sympy import Symbol
 
     theta = Symbol("theta", real=True)
@@ -119,7 +120,8 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     for base in (
         cirq.X,
@@ -141,7 +143,13 @@ def test_predicate_controls_map_to_source_costs(controls: tuple[int, ...]) -> No
         assert key is not None
         if base in (cirq.X, cirq.Y, cirq.Z, cirq.H):
             assert key == compound_control_key(
-                CliffordCall(str(base).lower(), 1), controls
+                {
+                    cirq.X: CliffordCall("x", 1),
+                    cirq.Y: CliffordCall("y", 1),
+                    cirq.Z: CliffordCall("z", 1),
+                    cirq.H: CliffordCall("h", 1),
+                }[base],
+                controls,
             )
         elif base in (cirq.T, cirq.S**-1):
             phase = PhaseCall("t") if base == cirq.T else PhaseCall("s", adjoint=True)
@@ -173,7 +181,7 @@ def test_nested_singleton_controls_preserve_original_activation_order() -> None:
 def test_identity_resource_key_respects_the_source_cirq_boundary() -> None:
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Identity
+    from qualtran.bloqs.basic_gates.identity import Identity
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     controlled = cirq.ControlledGate(cirq.I, control_values=(0, 1))
@@ -184,3 +192,58 @@ def test_identity_resource_key_respects_the_source_cirq_boundary() -> None:
     atomic = cirq.IdentityGate(3)
     assert type(cirq_gate_to_bloq(atomic)).__name__ == "CirqGateAsBloq"
     assert cirq_gate_resource_key(atomic) is None
+
+
+@pytest.mark.ftqc_reference
+def test_external_wrapper_static_atoms_precede_recursive_costs() -> None:
+    from importlib.metadata import version
+
+    import cirq
+    import kickmix
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq.resource_keys import cirq_mapped_gate_resource_key
+
+    assert version("qualtran") == "0.7.0"
+    assert getattr(kickmix, "__version__", None) == "0.1" and hasattr(
+        kickmix, "Simulator"
+    )
+    for gate in (
+        cirq.MatrixGate(cirq.unitary(cirq.H)),
+        cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17)),
+        cirq.MatrixGate(cirq.testing.random_unitary(4, random_state=23)),
+        cirq.CXPowGate(exponent=-0.375),
+        cirq.SwapPowGate(exponent=0.375),
+        cirq.GlobalPhaseGate(1j),
+        cirq.ControlledGate(cirq.H),
+        cirq.ResetChannel(),
+        cirq.ops.raw_types._InverseCompositeGate(
+            cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+        ),
+        cirq.ops.raw_types._InverseCompositeGate(
+            cirq.MatrixGate(cirq.testing.random_unitary(4, random_state=23))
+        ),
+        cirq.ops.raw_types._InverseCompositeGate(cirq.S),
+        cirq.ops.raw_types._InverseCompositeGate(cirq.XPowGate(exponent=0.5)),
+    ):
+        key = cirq_mapped_gate_resource_key(gate)
+        assert key is not None
+        expected = get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
+        actual = query_qec_gate_cost(key)
+        assert asdict(actual) == {
+            field.name: getattr(expected, field.name) for field in fields(actual)
+        }
+    assert cirq_mapped_gate_resource_key(cirq.IdentityGate(qid_shape=(3,))) is None
+    assert cirq_mapped_gate_resource_key(object()) is None
+    unowned_control = cirq.ControlledGate(
+        cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+    )
+    assert cirq_mapped_gate_resource_key(unowned_control) is None
+    from qualtran._infra.bloq import DecomposeNotImplementedError
+
+    unchecked_t_inverse = cirq.ops.raw_types._InverseCompositeGate(cirq.T)
+    with pytest.raises(DecomposeNotImplementedError, match="decomposition"):
+        get_cost_value(cirq_gate_to_bloq(unchecked_t_inverse), QECGatesCost())
+    assert cirq_mapped_gate_resource_key(unchecked_t_inverse) is None

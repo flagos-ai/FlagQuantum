@@ -13,6 +13,7 @@ from ...compiler._component_trace.compound_control_resource import (
     CONTROLLED_HADAMARD_COST,
     compound_control_key,
 )
+from ...compiler._component_trace.resource_classification import classify_resource_gate
 from ...compiler._component_trace.resource_generalization import (
     CliffordCall,
     ControlledRotationCall,
@@ -29,6 +30,7 @@ from ...compiler._component_trace.resource_generalization import (
     ZeroCostCall,
     identity_cost_key,
 )
+from ...compiler._component_trace.resource_model import ComponentCost, GateCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ._decompose import decompose_cirq_once
 from .conversion import _cirq
@@ -211,5 +213,65 @@ def cirq_gate_decomposition_resource_keys(
                 return None
             leaves.extend(child)
         return tuple(leaves)
+
+    return visit(gate, ())
+
+
+def cirq_mapped_gate_resource_key(gate: object) -> ResourceCall | None:
+    """Price the source named-gate mapping with its opaque-wrapper atoms.
+
+    Named gate mapping takes precedence. Otherwise the source wrapper prices a
+    one/two-qubit Clifford as one Clifford, or an arbitrary single-qubit unitary
+    as one rotation, before decomposing. This is an analytical declaration,
+    independent of the number of SDK-imported primitives. The source also
+    classifies stabilizer channels at this cost boundary; this grants no
+    executable body. Unknown decompositions return None, and no SDK object
+    enters the returned cost graph.
+    """
+    cirq = _cirq()
+
+    def visit(value: object, ancestors: tuple[object, ...]) -> ResourceCall | None:
+        key = cirq_gate_resource_key(value)
+        if key is not None:
+            return key
+        if not isinstance(value, cirq.Gate) or value in ancestors:
+            return None
+        if any(dimension != 2 for dimension in cirq.qid_shape(value)):
+            return None
+        if isinstance(value, cirq.ops.raw_types._InverseCompositeGate):
+            original = value._original
+            original_key = cirq_gate_resource_key(original)
+            if original_key is not None:
+                if classify_resource_gate(original_key) == "clifford":
+                    return cirq_gate_resource_key(cirq.inverse(original, default=None))
+                # Generic source Adjoint is not the named leaf's specialized
+                # inverse. Its unavailable or separately declared model must
+                # not be inferred from equal unitary cost categories.
+                return None
+            operations = decompose_cirq_once(original)
+            if operations is not None:
+                operations = cirq.inverse(operations, default=None)
+        else:
+            # A generic source control owns its child call graph; a raw SDK
+            # controlled-matrix decomposition is a different pricing boundary.
+            if isinstance(value, cirq.ControlledGate):
+                return None
+            width = cirq.num_qubits(value)
+            if width <= 2 and cirq.has_stabilizer_effect(value):
+                return ComponentCost("stabilizer_atom", width, GateCost(clifford=1))
+            if width == 1 and cirq.has_unitary(value):
+                return ComponentCost("unitary_atom", 1, GateCost(rotation=1))
+            operations = decompose_cirq_once(value)
+        if operations is None:
+            return None
+        children = []
+        for operation in operations:
+            if not isinstance(operation, cirq.GateOperation) or operation.tags:
+                return None
+            child = visit(operation.gate, (*ancestors, value))
+            if child is None:
+                return None
+            children.append(child)
+        return ResourceSequenceCall(tuple(children))
 
     return visit(gate, ())
