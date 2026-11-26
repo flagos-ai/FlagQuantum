@@ -1,8 +1,6 @@
 """Empty Pauli targets retain relative phase and linear storage ownership."""
 
 from collections import Counter
-from itertools import product
-from math import sqrt
 from pickle import dumps, loads
 from typing import Any
 
@@ -21,8 +19,10 @@ from flagquantum.ecosystem._pauli_select_component_library import (
 from flagquantum.ecosystem.cirq._select_pauli_lcu import select_pauli_lcu_from_cirq
 from flagquantum.errors import SerializationError
 from flagquantum.simulation.unitary import get_unitary
-from tests.unit.measurement_checks import forced_branch
-from tests.unit.pauli_select_reference import compile_pauli_select
+from tests.unit.pauli_select_reference import (
+    assert_all_branch_operators,
+    compile_pauli_select,
+)
 from tests.unit.pauli_select_reference import source as source
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_default_linear_combination_oracles import bind
@@ -36,26 +36,6 @@ TABLES = (
     (1, ("", "")),
     (1, ("-", "-")),
 )
-
-
-def assert_all_branch_operators(
-    ir: CircuitIR, logical: int, expected: torch.Tensor
-) -> None:
-    """Check every logical basis column in every unnormalized measured branch."""
-    count = sum(g.name == "measure" for g in ir.instructions)
-    stride = 1 << (ir.n_wires - logical)
-    for history in product((0, 1), repeat=count):
-        for column in range(1 << logical):
-            initial = torch.zeros(1 << ir.n_wires, dtype=torch.complex128)
-            initial[column * stride] = 1
-            target = torch.zeros_like(initial)
-            target[::stride] = expected[:, column] / sqrt(1 << count)
-            torch.testing.assert_close(
-                forced_branch(initial, ir.instructions, history),
-                target,
-                atol=3e-11,
-                rtol=0,
-            )
 
 
 @pytest.mark.parametrize("width,words", TABLES)
