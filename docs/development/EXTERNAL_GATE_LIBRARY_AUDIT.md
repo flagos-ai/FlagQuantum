@@ -547,3 +547,77 @@ environment, with 145 local integration cases. Five Python files pass strict
 typing, Black/Ruff, scopes, language, links, architecture, IR and API checks.
 Counts use the original named primitive basis, retaining CH and local matrix
 atoms; they are not a fully synthesized Clifford+T inventory.
+
+### Pauli-string phasor roots and declared control models
+
+Serialized explicit Adjoint/Controlled PauliStringPhasor roots now retain the
+single-qubit Pauli-string operation wrapper and the source XGate control
+specializations. A single positive control owns CNOT; the exact positive
+QBit array `(1, 1)` owns Toffoli and its packed control/target signature.
+A packed integer control remains a distinct source predicate. Source
+self-adjoint CNOT and X children retain their canonical direction. Temporary
+SDK control Qids follow the declared control-before-data order: SDK routines
+can sort equivalent controls, so mixed NamedQubit/LineQid ordering previously
+changed literal CNOT operands under double positive control. The corrected
+order matches the source per-wire stream without optimizing either circuit.
+
+The independent resource adapter now projects a raw child's declared call
+body before adding control. It does not control that child's static
+single-Clifford or single-rotation estimate. The existing sequence and
+predicate model owners perform all arithmetic. Automatic SDK mapping to
+ControlledViaAnd remains distinct from an explicitly constructed Controlled
+root; tests retain their different costs. Unknown bodies, channels without
+source decompositions and unowned nested predicate/inverse origins remain
+unavailable. Resource generalization uses this same authoritative mapper.
+No Core instruction, public schema or compiler arithmetic changes.
+
+| Pauli word / phase case | Actual positive / negative / two-bit-control primitives | Actual positive measurements / work bits |
+| --- | --- | --- |
+| Z | 38 / 32 / 88 | 2 / 1 |
+| XY | 48 / 107 / 245 | 2 / 1 |
+| YZ | 42 / 92 / 204 | 2 / 1 |
+| XYZ | 50 / 151 / 317 | 2 / 1 |
+| Negative XY coefficient | 48 / 107 / 245 | 2 / 1 |
+| XY, both phases zero | 10 / 75 / 157 | 0 / 0 |
+| Empty word | 0 / 0 / 0 | 0 / 0 |
+
+The 84 physical/model records cover these cases at four control layouts and
+three explicit adjoint depths. Seven independent QEC categories match the
+original model. For example, positive XY estimates two Toffolis, two Ands,
+four Cliffords, six rotations and two measurements, separately from its
+48 actual primitives. Negative XY has no actual measurement or work but its
+model estimates two measured And cleanups. Counts retain named atoms and
+local matrices; they are not a fully synthesized Clifford+T inventory.
+
+Every immediate child port, per-wire primitive dependency, operand, parameter
+and local matrix is compared with the unchanged source. Complete complex
+basis columns and every small measurement history verify absolute phase and
+clean work, including SDK-free `circuit.append(op)` and IR round trips.
+The additional exact positive control pair covers the specialized Toffoli
+port, full complex operator and no-work execution. Symbolic XY binds both
+phase expressions at nonzero and zero values while retaining the original
+two measured erasures; binding does not redispatch a concrete constructor.
+Symbolic declared models cover positive, negative and both two-bit patterns.
+
+All 24 prior complete Programs and bindings equal published `11fd9fa27`.
+A separately isolated old-selector comparison checks 84 prior adjoint roots:
+entry functions and bound CircuitIR JSON are identical. Some unused helper
+modules differ because named X controls now resolve to their source owners;
+whole-module byte identity is not claimed for those cases.
+
+The empty-word source SDK decomposition returns no operations even for
+nonzero phases. The native path follows that source execution boundary and
+does not claim a mathematical scalar-phase implementation or standalone
+zero-wire IR support. Arbitrary identity-letter words, other unowned named
+controls and child-private allocations remain outside this receipt. Original
+QFT nested phase model refusals and pending API proposals remain explicit.
+Whole-file serialization and resolver parents are not marked complete by
+this family closure.
+
+The concentrated regression passes 825 cases without skips in each actual
+Cirq 1.7.0/Qiskit 2.5.0 and Cirq 1.6.1/Qiskit 2.0.0 environment. Seven additional
+symbolic cases pass in each environment, alongside the three existing ISwap
+symbolic cases. Local integration passes 145 cases. Seven Python files pass
+strict typing, Black/Ruff, owner scopes, language, links, architecture, IR and
+API checks. Locked Qualtran 0.7.0 and the real Kickmix 0.1 Simulator are
+asserted before reference execution. The original source is not modified.

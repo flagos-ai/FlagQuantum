@@ -64,11 +64,7 @@ def generalize_cirq_resource_call(
         and _single_control_clause(gate.control_values) is None
     ):
         raise ValueError("Cirq resource generalization requires one AND control clause")
-    key = cirq_gate_resource_key(gate)
-    if key is None and isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
-        leaves = cirq_gate_decomposition_resource_keys(gate)
-        if leaves is not None:
-            key = ResourceSequenceCall(leaves)
+    key = cirq_mapped_gate_resource_key(gate)
     if key is None:
         return call
     for layout in reversed(call.layouts):
@@ -252,9 +248,46 @@ def cirq_mapped_gate_resource_key(gate: object) -> ResourceCall | None:
     independent of the number of SDK-imported primitives. The source also
     classifies stabilizer channels at this cost boundary; this grants no
     executable body. Unknown decompositions return None, and no SDK object
-    enters the returned cost graph.
+    enters the returned cost graph. Generic controls use the raw child's
+    declared calls rather than controlling its static atom estimate.
     """
     cirq = _cirq()
+
+    def declared_body(
+        value: object, ancestors: tuple[object, ...]
+    ) -> ResourceCall | None:
+        if not isinstance(value, cirq.Gate) or value in ancestors:
+            return None
+        key = cirq_gate_resource_key(value)
+        if key is not None:
+            # A generic outer control cannot merge a source predicate wrapper
+            # into a flat activation without owning that wrapper's call graph.
+            return (
+                None
+                if isinstance(value, cirq.ControlledGate)
+                and isinstance(key, PredicateControlledCall)
+                else key
+            )
+        if isinstance(
+            value, (cirq.ControlledGate, cirq.ops.raw_types._InverseCompositeGate)
+        ) or any(dimension != 2 for dimension in cirq.qid_shape(value)):
+            return None
+        operations = decompose_cirq_once(value)
+        if operations is None:
+            return None
+        children = []
+        for operation in operations:
+            if (
+                not isinstance(operation.gate, cirq.Gate)
+                or operation.tags
+                or operation.classical_controls
+            ):
+                return None
+            child = declared_body(operation.gate, (*ancestors, value))
+            if child is None:
+                return None
+            children.append(child)
+        return ResourceSequenceCall(tuple(children))
 
     def visit(value: object, ancestors: tuple[object, ...]) -> ResourceCall | None:
         key = cirq_gate_resource_key(value)
@@ -278,10 +311,17 @@ def cirq_mapped_gate_resource_key(gate: object) -> ResourceCall | None:
             if operations is not None:
                 operations = cirq.inverse(operations, default=None)
         else:
-            # A generic source control owns its child call graph; a raw SDK
-            # controlled-matrix decomposition is a different pricing boundary.
             if isinstance(value, cirq.ControlledGate):
-                return None
+                controls = _single_control_clause(value.control_values)
+                if (
+                    controls is None
+                    or cirq_gate_resource_key(value.sub_gate) is not None
+                ):
+                    return None
+                # Control bypasses the raw child's static atom price and owns
+                # its declared calls. Do not decompose the controlled SDK gate.
+                body = declared_body(value.sub_gate, (*ancestors, value))
+                return None if body is None else _controlled_key(body, controls)
             width = cirq.num_qubits(value)
             if width <= 2 and cirq.has_stabilizer_effect(value):
                 return ComponentCost("stabilizer_atom", width, GateCost(clifford=1))

@@ -26,6 +26,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
 from flagquantum.ecosystem.cirq.resource_keys import cirq_gate_resource_key
+from tests.unit.cirq_gate_cases import pauli_phasor_case
 from tests.unit.test_cirq_decomposition_file import locked_source as locked_source
 
 pytestmark = pytest.mark.unit
@@ -115,6 +116,13 @@ def test_controlled_scalar_uses_source_phase_model(
         "ccx_integer",
         "ccx_zero",
         "ccx_symbolic",
+        "phasor_xy",
+        "phasor_z",
+        "phasor_yz",
+        "phasor_xyz",
+        "phasor_negative",
+        "phasor_zero",
+        "phasor_empty",
     ),
 )
 def test_controlled_external_declared_cost_closes_source_child_models(
@@ -166,6 +174,8 @@ def test_controlled_external_declared_cost_closes_source_child_models(
                 "ccx_zero": 0.0,
             }[kind]
         )
+    elif kind.startswith("phasor"):
+        gate = pauli_phasor_case(cirq, kind)
     else:
         assert kind == "matrix"
         gate = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
@@ -176,10 +186,19 @@ def test_controlled_external_declared_cost_closes_source_child_models(
     for _ in range(depth):
         source = Adjoint(source)
     children = decompose_cirq_once(gate)
-    assert children is not None and children
+    assert children is not None
+    assert bool(children) == (kind != "phasor_empty")
     keys = []
     for child in children:
-        key = _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
+        key = (
+            cirq_mapped_gate_resource_key(
+                cirq.ControlledGate(
+                    child.gate, num_controls=len(controls), control_values=controls
+                )
+            )
+            if kind.startswith("phasor")
+            else _controlled_key(cirq_mapped_gate_resource_key(child.gate), controls)
+        )
         assert key is not None
         keys.append(key)
     expected = get_cost_value(source, QECGatesCost())
@@ -261,6 +280,154 @@ def test_controlled_qft_models_keep_original_nested_phase_failures(
 
 
 @pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (1, 1)))
+@pytest.mark.parametrize("kind", ("random", "identity", "hadamard", "clifford"))
+def test_sdk_control_model_uses_declared_body_instead_of_static_atom(
+    controls: tuple[int, ...],
+    kind: str,
+    locked_source: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq.resource_keys import (
+        CirqResourceCall,
+        cirq_mapped_gate_resource_key,
+        generalize_cirq_resource_call,
+    )
+
+    raw = {
+        "random": cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17)),
+        "identity": cirq.MatrixGate(cirq.unitary(cirq.I)),
+        "hadamard": cirq.MatrixGate(cirq.unitary(cirq.H)),
+        "clifford": cirq.SingleQubitCliffordGate.from_clifford_tableau(
+            cirq.CliffordTableau(1)
+        ),
+    }[kind]
+    gate = cirq.ControlledGate(raw, num_controls=len(controls), control_values=controls)
+    expected = get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
+    key = cirq_mapped_gate_resource_key(gate)
+    assert key is not None
+    assert generalize_cirq_resource_call(CirqResourceCall(gate)) == key
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        actual = query_qec_gate_cost(key)
+    assert asdict(actual) == {
+        field.name: getattr(expected, field.name) for field in fields(actual)
+    }
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((0,), (0, 1)))
+def test_sdk_control_projection_does_not_price_a_different_source_constructor(
+    controls: tuple[int, ...],
+    locked_source: object,
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq, cirq_gate_to_bloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq.resource_keys import cirq_mapped_gate_resource_key
+
+    raw = cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+    gate = cirq.ControlledGate(raw, num_controls=len(controls), control_values=controls)
+    automatic = cirq_gate_to_bloq(gate)
+    explicit = Controlled(
+        CirqGateAsBloq(raw),
+        CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
+    )
+    assert type(automatic).__name__ == "ControlledViaAnd"
+    automatic_cost = get_cost_value(automatic, QECGatesCost())
+    explicit_cost = get_cost_value(explicit, QECGatesCost())
+    assert automatic_cost != explicit_cost
+    key = cirq_mapped_gate_resource_key(gate)
+    assert key is not None
+    native = query_qec_gate_cost(key)
+    assert asdict(native) == {
+        field.name: getattr(automatic_cost, field.name) for field in fields(native)
+    }
+
+
+@pytest.mark.ftqc_reference
+def test_controlled_channel_without_declared_source_body_stays_opaque(
+    locked_source: object,
+) -> None:
+    cirq = pytest.importorskip("cirq")
+    from qualtran._infra.bloq import DecomposeNotImplementedError
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+
+    from flagquantum.ecosystem.cirq.resource_keys import (
+        CirqResourceCall,
+        cirq_mapped_gate_resource_key,
+        generalize_cirq_resource_call,
+    )
+
+    gate = cirq.ControlledGate(cirq.ResetChannel())
+    with pytest.raises(DecomposeNotImplementedError, match="declare a decomposition"):
+        get_cost_value(cirq_gate_to_bloq(gate), QECGatesCost())
+    assert cirq_mapped_gate_resource_key(gate) is None
+    call = CirqResourceCall(gate)
+    assert generalize_cirq_resource_call(call) is call
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("depth", (1, 2, 3))
+def test_phasor_positive_pair_model_keeps_x_gate_specialization(
+    depth: int, locked_source: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    test_controlled_external_declared_cost_closes_source_child_models(
+        (1, 1), depth, "phasor_xy", locked_source, monkeypatch
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (1, 1)))
+def test_symbolic_phasor_control_model_uses_declared_children(
+    controls: tuple[int, ...], locked_source: object
+) -> None:
+    import cirq
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from sympy import Symbol
+
+    from flagquantum.ecosystem.cirq._decompose import decompose_cirq_once
+    from flagquantum.ecosystem.cirq.resource_keys import cirq_mapped_gate_resource_key
+
+    theta = Symbol("theta", real=True)
+    gate = cirq.PauliStringPhasorGate(
+        cirq.DensePauliString("XY"), exponent_neg=theta, exponent_pos=theta / 2
+    )
+    source = Controlled(
+        CirqGateAsBloq(gate),
+        CtrlSpec(cvs=controls[0] if len(controls) == 1 else controls),
+    )
+    children = decompose_cirq_once(gate)
+    assert children is not None
+    cost = QECGateCost()
+    for child in children:
+        key = cirq_mapped_gate_resource_key(
+            cirq.ControlledGate(
+                child.gate, num_controls=len(controls), control_values=controls
+            )
+        )
+        assert key is not None
+        cost = cost.plus(query_qec_gate_cost(key), 1)
+    expected = get_cost_value(source, QECGatesCost())
+    assert asdict(cost) == {
+        field.name: getattr(expected, field.name) for field in fields(cost)
+    }
+
+
 def test_source_recognition_order_and_gate_costs() -> None:
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
@@ -468,10 +635,19 @@ def test_external_wrapper_static_atoms_precede_recursive_costs() -> None:
         }
     assert cirq_mapped_gate_resource_key(cirq.IdentityGate(qid_shape=(3,))) is None
     assert cirq_mapped_gate_resource_key(object()) is None
-    unowned_control = cirq.ControlledGate(
+    declared_control = cirq.ControlledGate(
         cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
     )
-    assert cirq_mapped_gate_resource_key(unowned_control) is None
+    controlled_key = cirq_mapped_gate_resource_key(declared_control)
+    assert controlled_key is not None
+    controlled_expected = get_cost_value(
+        cirq_gate_to_bloq(declared_control), QECGatesCost()
+    )
+    controlled_actual = query_qec_gate_cost(controlled_key)
+    assert asdict(controlled_actual) == {
+        field.name: getattr(controlled_expected, field.name)
+        for field in fields(controlled_actual)
+    }
     from qualtran._infra.bloq import DecomposeNotImplementedError
 
     unchecked_t_inverse = cirq.ops.raw_types._InverseCompositeGate(cirq.T)
