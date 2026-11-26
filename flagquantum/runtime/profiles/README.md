@@ -17,7 +17,7 @@ for compatibility ownership and removal gates.
 
    ```sh
    python -m pytest tests/team/runtime -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 CPU tests establish behavior and fixture conformance; physical hardware and

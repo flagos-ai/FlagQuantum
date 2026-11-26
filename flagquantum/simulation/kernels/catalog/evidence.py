@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .schema import KernelEvidence
 
 
@@ -549,11 +547,3 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
 
 
 __all__ = ["EVIDENCE"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (_evidence,):
-    _identity_export.__module__ = "flagquantum.kernels.catalog.evidence"
-del _identity_export
-
-_alias_module("flagquantum.kernels.catalog.evidence", __name__)

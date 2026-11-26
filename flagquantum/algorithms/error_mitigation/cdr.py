@@ -82,10 +82,10 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 from flagquantum.compiler.noise import lower_noise_model
 from flagquantum.core.ir import CircuitIR, Instruction, ensure_circuit_ir
@@ -851,27 +851,27 @@ def _fit(points: tuple[CliffordTrainingPoint, ...], spread: float) -> CliffordFi
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    CdrResult,
+    CliffordFit,
+    CliffordTrainingPoint,
+    CliffordVariant,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _finite_floats,
-    _angle_of,
-    _Site,
-    _plan_sites,
-    _require_no_request,
-    _snapped,
     CliffordVariant,
     clifford_variants,
     CliffordTrainingPoint,
     CliffordFit,
     CdrResult,
-    _expectation,
-    _require_no_readout,
-    _require_rewritten_names_survive,
-    _as_variant_irs,
     run_cdr,
-    _lowered,
-    _fit,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.cdr"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.cdr", __name__)

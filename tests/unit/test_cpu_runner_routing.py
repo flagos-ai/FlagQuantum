@@ -6,8 +6,11 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tools.architecture.source_relocations import source_path
+
 pytestmark = pytest.mark.unit
-WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOWS = ROOT / ".github/workflows"
 FULL_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
 
@@ -209,7 +212,7 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
             for step in job["steps"]
         )
     assert any(
-        step.get("run") == "python -I tools/ci_cpu_budget.py --dedicated"
+        step.get("run") == "python -I tools/ci/ci_cpu_budget.py --dedicated"
         for step in jobs["distributed-cpu-shard"]["steps"]
     )
     # CUDA-Q stays hosted because cold SDK downloads time out on the shared pool.
@@ -288,7 +291,8 @@ def test_sdk_jobs_retain_native_preflight_before_certification() -> None:
         )
         sdk = name.removesuffix("-optional").removesuffix("-compat")
         assert any(
-            f"python tools/check_{sdk}_interop_contract.py" in step.get("run", "")
+            f"python {source_path(ROOT, f'tools/check_{sdk}_interop_contract.py').relative_to(ROOT).as_posix()}"
+            in step.get("run", "")
             for step in steps[index + 1 :]
         )
 

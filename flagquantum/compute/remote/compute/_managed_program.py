@@ -13,8 +13,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from ._program_job import write_program_bundle
 
 _MANAGED_ROOT = "/share/project/.flagquantum"
@@ -318,21 +316,3 @@ __all__ = (
     "restore_managed_receipt",
     "submit_managed_program",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _source_files,
-    _source_archive,
-    _run_ssh,
-    _upload_archive,
-    _ensure_source,
-    submit_managed_program,
-    persist_managed_receipt,
-    restore_managed_receipt,
-    read_managed_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._managed_program"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._managed_program", __name__)

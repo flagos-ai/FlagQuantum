@@ -147,7 +147,9 @@ def _training_update(
         )
         return execution, loss, disabled
     if program is None:
-        from flagquantum.compiler.training import compile_training_callable
+        from flagquantum.compiler.frontends.torch._training import (
+            compile_training_callable,
+        )
 
         program = _TrainingProgram(objective)
         program.gradient_call = compile_training_callable(
@@ -186,7 +188,9 @@ def _training_update(
             )
             optimizer_reason = _optimizer_exclusion(optimizer)
             if not optimizer_reason:
-                from flagquantum.compiler.training import compile_training_callable
+                from flagquantum.compiler.frontends.torch._training import (
+                    compile_training_callable,
+                )
 
                 program.optimizer_call = compile_training_callable(
                     optimizer.step,

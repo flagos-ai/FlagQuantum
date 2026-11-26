@@ -6,8 +6,6 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def _normalize_counts(counts: Mapping[str, Any]) -> dict[str, int]:
     return {str(key): int(round(float(value))) for key, value in counts.items()}
@@ -207,24 +205,3 @@ def _outcome_counts(
         if sum(counts.values()) == shots:
             return counts
     return _probability_counts(table, shots, provider=provider, outcome_key=outcome_key)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _normalize_counts,
-    _flip_counts,
-    _unwrap_result_envelope,
-    _extract_counts,
-    _strip_barrier,
-    _format_circuit_source,
-    _first_named,
-    _outcome_collection,
-    _outcome_table,
-    _tally_outcomes,
-    _probability_counts,
-    _outcome_counts,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu.result_parsing"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu.result_parsing", __name__)

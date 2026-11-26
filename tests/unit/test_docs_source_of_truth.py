@@ -7,7 +7,10 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
-from tools.evidence_provenance import ProvenanceUnavailableError, revision_resolves
+from tools.release.evidence_provenance import (
+    ProvenanceUnavailableError,
+    revision_resolves,
+)
 
 pytestmark = pytest.mark.unit
 

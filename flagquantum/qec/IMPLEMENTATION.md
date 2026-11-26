@@ -49,7 +49,7 @@ or logical-suppression evidence.
 
    ```bash
    python -m pytest tests/qec -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 Runtime decoder feedback is trajectory-only; explicit batched feedback fails

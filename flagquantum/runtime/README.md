@@ -187,7 +187,7 @@ From the repository root:
 
 ```bash
 python -m pytest tests/integration/test_cpu_vertical_slice.py tests/team/runtime -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

@@ -223,7 +223,7 @@ or timeout stops; no automatic retry, check recovery or threshold weakening.
    preauthorize it or recover #1127.
 
 ```bash
-python tools/check_team_scope.py --team integration --files \
+python tools/architecture/check_team_scope.py --team integration --files \
     contracts/qec-shot-data-writing-v1-candidate.json \
     docs/development/QEC_SHOT_DATA_WRITING_PROPOSAL.md \
     flagquantum/qec/execution/shot_data.py \
@@ -235,8 +235,8 @@ python tools/check_team_scope.py --team integration --files \
     tests/team/simulation/test_shot_data_writing_conformance.py \
     tests/api_contract/test_public_docstring_examples.py \
     tests/unit/test_qec_installed_profiles.py \
-    tools/qec_installed_smoke.py \
-    tools/verify_embedded_stabilizer_install.py \
+    tools/release/qec_installed_smoke.py \
+    tools/validation/verify_embedded_stabilizer_install.py \
     examples/qec/shot_file_encoding.py \
     examples/README.md \
     docs/reference/API.md \
@@ -261,8 +261,8 @@ python -m ruff check \
     tests/team/simulation/test_shot_data_writing_conformance.py \
     tests/api_contract/test_public_docstring_examples.py \
     tests/unit/test_qec_installed_profiles.py \
-    tools/qec_installed_smoke.py \
-    tools/verify_embedded_stabilizer_install.py \
+    tools/release/qec_installed_smoke.py \
+    tools/validation/verify_embedded_stabilizer_install.py \
     examples/qec/shot_file_encoding.py
 python -m black --check \
     flagquantum/qec/execution/shot_data.py \
@@ -272,8 +272,8 @@ python -m black --check \
     tests/team/simulation/test_shot_data_writing_conformance.py \
     tests/api_contract/test_public_docstring_examples.py \
     tests/unit/test_qec_installed_profiles.py \
-    tools/qec_installed_smoke.py \
-    tools/verify_embedded_stabilizer_install.py \
+    tools/release/qec_installed_smoke.py \
+    tools/validation/verify_embedded_stabilizer_install.py \
     examples/qec/shot_file_encoding.py
 python -m mypy --strict --explicit-package-bases \
     flagquantum/qec/execution/shot_data.py \
@@ -283,17 +283,17 @@ python -m mypy --strict --explicit-package-bases \
     tests/team/simulation/test_shot_data_writing_conformance.py \
     tests/api_contract/test_public_docstring_examples.py \
     tests/unit/test_qec_installed_profiles.py \
-    tools/qec_installed_smoke.py \
-    tools/verify_embedded_stabilizer_install.py \
+    tools/release/qec_installed_smoke.py \
+    tools/validation/verify_embedded_stabilizer_install.py \
     examples/qec/shot_file_encoding.py
 python -m pytest tests/api_contract/test_public_docstring_examples.py -q -x
-python tools/public_api_snapshot.py
-python tools/docs_source_of_truth.py --check
-python tools/check_qec_installed_profiles.py
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/architecture/public_api_snapshot.py
+python tools/docs/docs_source_of_truth.py --check
+python tools/release/check_qec_installed_profiles.py
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 FQ_BUILD_EMBEDDED_STIM=1 MAX_JOBS=2 python -m build --sdist --wheel --no-isolation
-python tools/verify_embedded_stabilizer_install.py
+python tools/validation/verify_embedded_stabilizer_install.py
 python examples/qec/shot_file_encoding.py
 ```
 
@@ -327,8 +327,8 @@ scope record takes precedence over accidental omissions in a test-discovered fix
 | 9 | `tests/team/simulation/test_shot_data_writing_conformance.py` | Independent byte fixtures and fake/native/SDK replacement |
 | 10 | `tests/api_contract/test_public_docstring_examples.py` | Execute actual public writer doctest; retain old entries |
 | 11 | `tests/unit/test_qec_installed_profiles.py` | Extend installed-profile contract without removing old checks |
-| 12 | `tools/qec_installed_smoke.py` | Add actual write/read workflow to existing profile smoke |
-| 13 | `tools/verify_embedded_stabilizer_install.py` | Exercise actual extension writer with no SDK |
+| 12 | `tools/release/qec_installed_smoke.py` | Add actual write/read workflow to existing profile smoke |
+| 13 | `tools/validation/verify_embedded_stabilizer_install.py` | Exercise actual extension writer with no SDK |
 | 14 | `examples/qec/shot_file_encoding.py` | Shortest write/read/packed-decode user workflow |
 | 15 | `examples/README.md` | Register the new example |
 | 16 | `docs/reference/API.md` | Document additive API, input semantics and budgets |

@@ -39,6 +39,7 @@ from typing import Any
 
 from flagquantum.compute import realtime as rt
 from flagquantum.compute.realtime import protocol as realtime_protocol
+from tools.architecture.source_relocations import source_path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "realtime-messaging-v1-candidate.json"
@@ -781,7 +782,7 @@ def main() -> int:
     # approver; the path is checked rather than trusted.
     record = contract["approval"].get("record", "")
     _require(
-        isinstance(record, str) and (ROOT / record).is_file(),
+        isinstance(record, str) and (source_path(ROOT, record)).is_file(),
         f"the contract names {record!r} as its approval record, which is not a file",
     )
     _require(

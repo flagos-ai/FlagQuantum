@@ -44,11 +44,12 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
+from flagquantum.compiler.optimization.canonicalization import _ROTATION_PARAM
 from flagquantum.compiler.optimization.one_qubit_synthesis import (
     _MODULAR_FOLD_LIMIT,
     is_identity_one_qubit,
 )
-from flagquantum.compiler.pipeline import _ROTATION_PARAM, remove_identity_gates
+from flagquantum.compiler.pipeline import remove_identity_gates
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,

@@ -64,7 +64,7 @@ Two consequences are contracts rather than omissions, and both have a test:
 
 The lowerings stay in `flagquantum.compiler.operator_lowering`. This package must
 not import it: Core owns the schema table, Compiler consumes it, and
-`tools/check_architecture.py` enforces the direction.
+`tools/architecture/check_architecture.py` enforces the direction.
 
 Run the focused tests with:
 

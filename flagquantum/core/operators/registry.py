@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from importlib import import_module as _import_public_namespace
 from types import MappingProxyType
+from typing import get_type_hints as _class_type_hints
 
 from .schema import (
     OPERATOR_ALIASES,
@@ -87,13 +87,15 @@ __all__ = ("OperatorRegistry",)
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (OperatorRegistry,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (OperatorRegistry,):
     _identity_export.__module__ = "flagquantum.operators.registry"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.operators.registry")
-for _public_name in ("OperatorRegistry",):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

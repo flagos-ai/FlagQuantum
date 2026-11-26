@@ -6,7 +6,7 @@
 produced them
 **Contract:** `contracts/circuit-composition-contract.toml`, section `[issue_codes]`;
 `contracts/qubit-vocabulary-contract.toml`, section `[boundary]`
-**Gate:** `tools/check_circuit_composition_contract.py`, function `_relabelling_errors`
+**Gate:** `tools/validation/check_circuit_composition_contract.py`, function `_relabelling_errors`
 **Conformance:** `tests/unit/test_twin_region_relabelling.py`
 **Predecessor:** [Circuit composition](FQ-CIRCUIT-COMPOSITION-20261002.md)
 
@@ -122,7 +122,7 @@ gate compares all three for equality, so a change in the public surface could no
 absorbed by this one.
 
 ```console
-$ python -c "from pathlib import Path; from tools.census_wire_vocabulary import census; \
+$ python -c "from pathlib import Path; from tools.architecture.census_wire_vocabulary import census; \
              import flagquantum; print(len(census(Path(flagquantum.__file__).resolve().parent).internal))"
 225
 ```
@@ -146,10 +146,10 @@ deleting a copy, and neither public bucket moved.
 $ python -m pytest tests/unit/test_twin_region_relabelling.py -q
 7 passed
 
-$ python tools/check_circuit_composition_contract.py
+$ python tools/validation/check_circuit_composition_contract.py
 Circuit composition contract passed
 
-$ python tools/check_qubit_vocabulary.py
+$ python tools/architecture/check_qubit_vocabulary.py
 Qubit vocabulary contract passed: 341 of 341 baseline sites retired, 11 kept as deprecated aliases
 …
 Qubit vocabulary call sites: 0 keywords passed that their callee rejects (invariant: 0)

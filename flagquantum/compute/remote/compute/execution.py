@@ -6,8 +6,6 @@ import os
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .jiuding import JiudingClient
 
 if TYPE_CHECKING:
@@ -60,11 +58,3 @@ def execute_jiuding(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (execute_jiuding,):
-    _identity_export.__module__ = "flagquantum.remote.compute.execution"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute.execution", __name__)

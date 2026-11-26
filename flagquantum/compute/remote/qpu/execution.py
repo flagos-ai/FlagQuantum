@@ -6,7 +6,6 @@ import os
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.core.ir import ensure_circuit_ir
@@ -475,21 +474,3 @@ def counts_result(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _pauli_output_observable,
-    execute_quafu,
-    validate_quafu_output,
-    validate_azure_output,
-    _azure_target_width,
-    execute_azure,
-    _execute_expectation,
-    _execute_counts,
-    counts_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu.execution"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu.execution", __name__)

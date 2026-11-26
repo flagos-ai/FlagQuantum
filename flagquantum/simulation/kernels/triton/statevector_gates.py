@@ -10,8 +10,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from . import FLAT_LOCAL_MAX_AMPLITUDES
 
 if TYPE_CHECKING:
@@ -1144,42 +1142,3 @@ __all__ = [
     "single_qubit_matrix",
     "unpack_complex64_control_one",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _require_flat_local_address,
-    _GateContext,
-    _MatrixGateContext,
-    _complex64_local_1q_kernel,
-    apply_complex64_local_1q,
-    _complex64_local_2q_kernel,
-    apply_complex64_local_2q,
-    _complex64_transpose_1q_kernel,
-    apply_complex64_transpose_1q_inplace,
-    _complex64_control_one_pack_kernel,
-    _complex64_control_one_unpack_kernel,
-    pack_complex64_control_one,
-    unpack_complex64_control_one,
-    _complex64_local_cx_kernel,
-    apply_complex64_local_cx_inplace,
-    _complex64_local_cx_segment_kernel,
-    _local_cx_segment_positions,
-    apply_complex64_local_cx_segment,
-    _single_qubit_matrix_kernel,
-    _single_qubit_matrix_backward_kernel,
-    _cx_sequence_kernel,
-    _ry_rz_pair_kernel,
-    ry_rz_pair,
-    _launch_cx_sequence,
-    _launch_single_qubit_matrix,
-    _launch_single_qubit_matrix_backward,
-    _SingleQubitMatrix,
-    single_qubit_matrix,
-    _CXSequence,
-    cx_sequence,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_gates"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_gates", __name__)

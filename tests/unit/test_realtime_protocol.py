@@ -8,7 +8,7 @@ session lifecycle -- and, just as importantly, the refusals that keep a caller
 from mistaking a malformed call for a served one.
 
 The contract this file witnesses is ``contracts/realtime-messaging-v1-candidate.json``;
-``tools/check_realtime_messaging_contract.py`` reconciles that contract with the
+``tools/validation/check_realtime_messaging_contract.py`` reconciles that contract with the
 implementation and requires the eight witness tests named below to exist, so
 renaming one of them is a contract change rather than a private detail.
 """

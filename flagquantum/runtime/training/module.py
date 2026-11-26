@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 import torch
 from torch.utils.hooks import RemovableHandle
 
-from ..._import_compat import alias_module as _alias_module
 from ...circuit import Circuit
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...errors import (
@@ -43,7 +42,7 @@ from ..results.adapters import LiveRuntimeSummary, _module_execution_result
 
 if TYPE_CHECKING:
     from ...algorithms.primitives.hamiltonian import Hamiltonian
-    from ...compiler.module_builder import CapturedModuleBuilder
+    from ...compiler.frontends.torch._module_builder import CapturedModuleBuilder
     from ...simulation.mps.state import MPSState
     from ...simulation.tensor_network.state import TensorNetworkState
     from ..checkpointing import PrecisionPolicy, TrainingCheckpointRestore
@@ -415,7 +414,7 @@ class Module(torch.nn.Module):
         has_inputs: bool,
         signature: tuple[Any, ...],
     ) -> None:
-        from ...compiler.module_builder import capture_module_builder
+        from ...compiler.frontends.torch._module_builder import capture_module_builder
 
         capture = capture_module_builder(
             self._invoke_circuit_builder,
@@ -1247,4 +1246,4 @@ __all__ = [
     "normalize_execution_result",
 ]
 
-_alias_module("flagquantum.runtime.module", __name__)
+Module.__module__ = "flagquantum.runtime.module"

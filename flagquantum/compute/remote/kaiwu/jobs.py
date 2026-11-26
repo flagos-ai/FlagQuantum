@@ -16,8 +16,6 @@ from numbers import Real
 from pathlib import Path
 from typing import Any, cast
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .contracts import (
     KAIWU_TASK_RECEIPT_SCHEMA,
     FrozenIsingMatrix,
@@ -634,21 +632,6 @@ def new_receipt(
 
 # Preserve historical import identities for pickles and public introspection.
 for _identity_export in (
-    _effective_uid,
-    _validate_private_directory,
-    _verify_open_directory_binding,
-    _open_private_directory,
-    _reject_duplicate_json_keys,
-    _reject_nonfinite_json_constant,
-    _read_bounded_bytes,
-    _write_private_json_exclusive,
-    _read_private_json,
-    _freeze_matrix,
-    _matrix_sha256,
-    _normalize_status,
-    _validate_receipt,
-    _recompute_energy,
-    _validate_result,
     KaiwuRemoteJob,
     submit_kaiwu_task,
     restore_kaiwu_job,
@@ -656,5 +639,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.remote.kaiwu.jobs"
 del _identity_export
-
-_alias_module("flagquantum.remote.kaiwu.jobs", __name__)

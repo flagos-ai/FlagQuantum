@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -406,17 +404,3 @@ __all__ = [
     "fused_complex64_local_1q_reversible_vjp",
     "fused_complex64_sharded_1q_vjp_adjoint",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _complex64_local_1q_vjp_adjoint_kernel,
-    fused_complex64_local_1q_vjp_adjoint,
-    fused_complex64_local_1q_reversible_vjp,
-    _complex64_sharded_1q_vjp_adjoint_kernel,
-    fused_complex64_sharded_1q_vjp_adjoint,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_adjoint"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_adjoint", __name__)

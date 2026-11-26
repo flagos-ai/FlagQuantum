@@ -148,11 +148,6 @@ def _is_diagonal_instruction(instruction: Instruction) -> bool:
     )
 
 
-_is_diagonal_instruction.__module__ = (
-    "flagquantum.runtime.executors.statevector.forward"
-)
-
-
 def _pair_components(
     state: torch.Tensor, *, wire: int, n_wires: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -266,25 +261,8 @@ def _fused_single_process_cpu_reversible_vjp(
     return gradient
 
 
-_pair_components.__module__ = (
-    "flagquantum.runtime.executors.statevector.reverse_adjoint_kernels"
-)
-_complex_cross.__module__ = (
-    "flagquantum.runtime.executors.statevector.reverse_adjoint_kernels"
-)
-_single_process_cpu_pauli_rotation_gradient.__module__ = (
-    "flagquantum.runtime.executors.statevector.reverse_adjoint_kernels"
-)
-_fused_single_process_cpu_reversible_vjp.__module__ = (
-    "flagquantum.runtime.executors.statevector.reverse_adjoint_kernels"
-)
-
-
 def seed_adjoint(amplitudes: torch.Tensor, weights: torch.Tensor) -> torch.Tensor:
     """Seed the CPU adjoint natively when supported, with an eager fallback."""
 
     seed = fused_observable_adjoint_seed(amplitudes, weights)
     return seed if seed is not None else 2 * amplitudes * weights.reshape(1, -1)
-
-
-seed_adjoint.__module__ = "flagquantum.runtime.executors.statevector.reverse_observable"

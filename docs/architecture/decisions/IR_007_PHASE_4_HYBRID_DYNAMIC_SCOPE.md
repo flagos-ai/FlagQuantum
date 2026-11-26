@@ -134,7 +134,7 @@ failed acceptance item.
   this is the decision that the layout in Decision 11 records. The design sketch in
   `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 named `flagquantum/_compiler/**`, and
   that name cannot be created in this tree: measured, creating
-  `flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+  `flagquantum/_compiler/__init__.py` fails `tools/architecture/check_architecture.py` with
   `flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
   and one `from .._compiler import ...` line under `flagquantum/compiler/` fails
   the same gate with `compiler imports forbidden layer _compiler`, because
@@ -172,7 +172,7 @@ Three checks were run.
 
 1. The entry was `flagquantum/core/ir.py`, a literal repository-relative path, not
    `flagquantum/core/ir/**`. The `**` form appeared nowhere in `protected_paths`.
-2. `tools/check_team_scope.py` is present in this checkout and matches protected
+2. `tools/architecture/check_team_scope.py` is present in this checkout and matches protected
    paths with `fnmatch.fnmatchcase`. Under that matcher `flagquantum/core/ir.py`
    matched the literal entry and `flagquantum/core/ir/**` would not have, which is
    why the distinction matters. The literal form was the correct one for a flat
@@ -199,7 +199,7 @@ kept as the record of 2026-10-06 and are not restated.
 The internal levels live in `flagquantum/core/ir/**`, the package that already owns
 the public IR, and not under `flagquantum/_compiler/**` as
 `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 sketched. § 19.13's name cannot be created
-in this tree: `flagquantum/_compiler/` fails `tools/check_architecture.py` as an
+in this tree: `flagquantum/_compiler/` fails `tools/architecture/check_architecture.py` as an
 unreviewed top-level package directory, importing it from `flagquantum/compiler/`
 fails the same gate as a forbidden layer, and `config/team-ownership.toml` records the
 name among five patterns removed for matching no tracked path. Landing there would

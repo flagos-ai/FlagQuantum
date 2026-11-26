@@ -6,7 +6,6 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import Operation
 from flagquantum.compiler.frontends._structured.runtime_inputs import _runtime_shape
 
@@ -385,30 +384,3 @@ def as_predicate(lowerer: _DynamicLowerer, operation: Operation, value: Any) -> 
         return bool(value)
     except (RuntimeError, TypeError, ValueError) as exc:
         lowerer.fail(operation, "control.predicate", f"predicate is invalid: {exc}")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _MeasurementRef,
-    _ClassicalPredicate,
-    _ConditionalValue,
-    predicate_clauses,
-    canonicalize_clauses,
-    and_clauses,
-    or_clauses,
-    not_clauses,
-    negate_predicate,
-    conjoin_predicates,
-    disjoin_predicates,
-    compare_predicate,
-    compare_values,
-    conditional_product,
-    merge_conditional_values,
-    map_conditional_values,
-    same_runtime_value,
-    as_predicate,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.dynamic.expressions"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.dynamic.expressions", __name__)

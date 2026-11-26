@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from . import FLAT_LOCAL_MAX_AMPLITUDES
 
 if TYPE_CHECKING:
@@ -197,14 +195,3 @@ def apply_complex64_local_reversible_3q(
 
 
 __all__ = ["apply_complex64_local_reversible_3q"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _complex64_local_reversible_3q_kernel,
-    apply_complex64_local_reversible_3q,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_reversible_3q"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_reversible_3q", __name__)

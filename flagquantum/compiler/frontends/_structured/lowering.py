@@ -9,7 +9,6 @@ from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import HybridProgram
 from flagquantum.compiler.frontends._structured.passes import PassRecord
 from flagquantum.compiler.frontends._structured.specialize import (
@@ -205,17 +204,3 @@ def specialize_and_lower(
         optimize=optimize,
     )
     return lower_trace(trace, circuit_dtype=circuit_dtype, cache=cache)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    LoweredHybridProgram,
-    CircuitStructureCache,
-    _template,
-    lower_trace,
-    specialize_and_lower,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.lowering"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.lowering", __name__)

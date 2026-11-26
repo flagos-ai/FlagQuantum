@@ -5,7 +5,10 @@ import torch
 
 from flagquantum import synth
 from flagquantum.ecosystem._qmod import decisions
-from tools.validate_qmod_decision_predicates import grover_power_matrix, validate
+from tools.validation.validate_qmod_decision_predicates import (
+    grover_power_matrix,
+    validate,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -92,7 +95,7 @@ def test_decision_limits_fail_closed(
     ],
 )
 def test_actual_budgets(key: str, value: int) -> None:
-    from tools.validate_qmod_decision_predicates import FIXTURES
+    from tools.validation.validate_qmod_decision_predicates import FIXTURES
 
     with pytest.raises(
         ValueError,

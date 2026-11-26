@@ -13,7 +13,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir import ensure_circuit_ir
 from flagquantum.core.measurement import lower_outputs
 from flagquantum.runtime.results import ExecutionResult
@@ -385,16 +384,3 @@ class NativeJiudingJobClient(JiudingClient):
             requested_target=receipt["requested_target"],
             selected_target=receipt["selected_target"],
         )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _one,
-    _command,
-    _decode_lines,
-    NativeJiudingJobClient,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._native_job"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._native_job", __name__)

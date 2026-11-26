@@ -10,7 +10,7 @@ from examples.synthesis.algorithms.amplitude_amplification.amplification_iterati
     run_example,
 )
 from flagquantum import synth
-from tools.validate_qmod_iterations import CASES, validate
+from tools.validation.validate_qmod_iterations import CASES, validate
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128

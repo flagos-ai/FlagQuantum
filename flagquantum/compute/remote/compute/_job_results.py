@@ -7,8 +7,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def save_receipt(path: Path, receipt: Mapping[str, Any]) -> None:
     temporary = path.with_name(path.name + ".tmp")
@@ -25,14 +23,3 @@ def read_job_result(path: Path, run_id: str) -> object:
     if "value" not in result:
         raise RuntimeError("Jiuding job result is missing its value")
     return result["value"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    save_receipt,
-    read_job_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._job_results"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._job_results", __name__)

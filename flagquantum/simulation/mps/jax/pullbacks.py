@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def jax_mps_owner_local_vjp(
     parameter: Any,
@@ -138,6 +136,3 @@ def jax_mps_canonicalization_pullback(
         canonical_gradient,
         truncation_gradient,
     )
-
-
-_alias_module("flagquantum.simulation.jax.mps.pullbacks", __name__)

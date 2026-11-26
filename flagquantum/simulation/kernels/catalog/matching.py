@@ -6,8 +6,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .evidence import EVIDENCE
 from .implementations import IMPLEMENTATIONS
 from .schema import (
@@ -254,20 +252,3 @@ __all__ = [
     "KernelRequest",
     "match_kernel_implementations",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    KernelRequest,
-    KernelMismatch,
-    KernelCandidate,
-    KernelRejection,
-    KernelMatchResult,
-    _mismatch,
-    _capability_mismatches,
-    match_kernel_implementations,
-):
-    _identity_export.__module__ = "flagquantum.kernels.catalog.matching"
-del _identity_export
-
-_alias_module("flagquantum.kernels.catalog.matching", __name__)

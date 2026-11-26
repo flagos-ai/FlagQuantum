@@ -46,6 +46,8 @@ from typing import Any
 
 import torch
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -150,10 +152,10 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         "control_expansion_implementation",
     ):
         raw = contract.get(name)
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(f"circuit composition {name} path {raw!r} does not exist")
     for raw in contract.get("authorization", ()):
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(f"circuit composition authorization {raw!r} does not exist")
 
     scope = contract.get("scope", {})
@@ -263,7 +265,7 @@ def _power_errors(contract: dict[str, Any]) -> list[str]:
     # an unapproved surface written down, which is the failure this check exists for.
     owned = power.get("authorization")
     listed = list(contract.get("authorization", ()))
-    if not isinstance(owned, str) or not (ROOT / owned).is_file():
+    if not isinstance(owned, str) or not (source_path(ROOT, owned)).is_file():
         errors.append(f"circuit composition power authorization {owned!r} is gone")
     elif owned not in listed:
         errors.append(
@@ -300,7 +302,7 @@ def _power_errors(contract: dict[str, Any]) -> list[str]:
     # The bound the message reports is a constant of the rule source, and the contract
     # states it twice: as the number and as where it is owned. Both are read.
     raw_source = contract.get("power", {}).get("max_emitted_instructions_source")
-    if not isinstance(raw_source, str) or not (ROOT / raw_source).is_file():
+    if not isinstance(raw_source, str) or not (source_path(ROOT, raw_source)).is_file():
         errors.append(f"circuit composition power bound source {raw_source!r} is gone")
     if power.get("max_emitted_instructions") != MAX_POWER_REPEATS:
         errors.append(
@@ -786,7 +788,7 @@ def _relabelling_errors(contract: dict[str, Any], *, root: Path = ROOT) -> list[
 
     recorded = sorted(dict.fromkeys(declared))
     for name in recorded:
-        path = root / name
+        path = source_path(root, name)
         if not path.is_file():
             errors.append(f"circuit composition relabelling reader {name!r} is missing")
             continue
@@ -845,12 +847,12 @@ def _vocabulary_errors(contract: dict[str, Any]) -> list[str]:
                 "has no message phrase"
             )
             continue
-        if not isinstance(source, str) or not (ROOT / source).is_file():
+        if not isinstance(source, str) or not (source_path(ROOT, source)).is_file():
             errors.append(
                 f"circuit composition phrase source {source!r} does not exist"
             )
             continue
-        if phrase not in (ROOT / source).read_text(encoding="utf-8"):
+        if phrase not in (source_path(ROOT, source)).read_text(encoding="utf-8"):
             errors.append(
                 f"circuit composition phrase {phrase!r} no longer occurs in {source}"
             )
@@ -969,7 +971,7 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
             )
         # A value that names a file is checked as a file; the census is a measurement
         # and is checked by its own content below.
-        elif value.endswith(".py") and not (ROOT / value).is_file():
+        elif value.endswith(".py") and not (source_path(ROOT, value)).is_file():
             errors.append(
                 f"circuit composition verification path {value!r} does not exist"
             )
@@ -977,9 +979,12 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
     # One expand-and-compare test per provided operation: the contract names it, and this
     # gate refuses a name that is not a test in the conformance file.
     raw_contract = verification.get("contract")
-    if not isinstance(raw_contract, str) or not (ROOT / raw_contract).is_file():
+    if (
+        not isinstance(raw_contract, str)
+        or not (source_path(ROOT, raw_contract)).is_file()
+    ):
         return errors
-    names = _test_names(ROOT / raw_contract)
+    names = _test_names(source_path(ROOT, raw_contract))
     expansions = verification.get("expansion_tests", {})
     provided = list(contract.get("scope", {}).get("provided", ()))
     missing = [operation for operation in provided if operation not in expansions]

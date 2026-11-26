@@ -13,7 +13,6 @@ from typing import Any
 import torch
 from torch.fx import GraphModule, Interpreter, Node
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.circuit import Circuit
 from flagquantum.core.ir import (
     CircuitIR,
@@ -450,16 +449,3 @@ def capture_module_builder(
         tensor_constants=tuple(tensors.values()),
         group_names=names,
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _operation,
-    _jax_bindings,
-    CapturedModuleBuilder,
-    capture_module_builder,
-):
-    _identity_export.__module__ = "flagquantum.compiler._torch.module_builder"
-del _identity_export
-
-_alias_module("flagquantum.compiler._torch.module_builder", __name__)

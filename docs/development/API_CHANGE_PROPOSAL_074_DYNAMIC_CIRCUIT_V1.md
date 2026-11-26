@@ -178,7 +178,7 @@ condition_clauses -> instruction_condition_clauses => (((0, 1),),)
 So `conditions` is the public spelling and is a conjunction;
 `condition_clauses` is a private disjunctive-normal-form spelling
 (`flagquantum/runtime/dynamic/_conditions.py:19`) that only the private hybrid
-compiler produces (`flagquantum/compiler/_hybrid/dynamic_lowering.py:428`). The
+compiler produces (`flagquantum/compiler/frontends/_structured/dynamic_lowering.py:428`). The
 refusal at `_conditions.py:11` is a bare `ValueError`, not a member of the stable
 error hierarchy in `flagquantum/errors.py`.
 
@@ -407,16 +407,16 @@ The only producer of a repetition construct is the private hybrid compiler, whic
 refuses a data-dependent loop at capture:
 
 ```console
-$ grep -n "While\|while" flagquantum/compiler/_hybrid/capture.py
+$ grep -n "While\|while" flagquantum/compiler/frontends/_structured/capture.py
 202:            elif isinstance(statement, ast.While):
 203:                self.fail(statement, "control.while", "while is unsupported")
 ```
 
-Its loop operation is `scf.for` (`flagquantum/compiler/_hybrid/schemas.py:37`),
+Its loop operation is `scf.for` (`flagquantum/compiler/frontends/_structured/schemas.py:37`),
 bounded by construction, and `BoundedLoopUnrollPass`
-(`flagquantum/compiler/_hybrid/transforms.py:187`) preserves any loop whose bound
+(`flagquantum/compiler/frontends/_structured/transforms.py:187`) preserves any loop whose bound
 is not a constant with the remark `loops_preserved_dynamic_bounds`
-(`flagquantum/compiler/_hybrid/transforms.py:207`). `IR-007` decision 2 rejects
+(`flagquantum/compiler/frontends/_structured/transforms.py:207`). `IR-007` decision 2 rejects
 "unbounded loops" from Phase 4 scope, and `IMPLEMENTATION.md:69-70` records that
 "Conditional measurement/reset and measurement-dependent termination remain
 outside the profile". There is no
@@ -435,9 +435,9 @@ structured control flow does exist, privately, at
 `flagquantum/compiler/_hybrid/`: `HybridProgram`/`Region`/`Block`/`Operation`
 (`flagquantum/compiler/_hybrid/model.py:203`, `:188`, `:170`, `:137`), the closed
 vocabulary `scf.for`, `scf.if`, and `scf.yield`
-(`flagquantum/compiler/_hybrid/schemas.py:37-39`), a verifier
+(`flagquantum/compiler/frontends/_structured/schemas.py:37-39`), a verifier
 (`flagquantum/compiler/_hybrid/verifier.py`), and an ordered pass pipeline with
-mandatory re-verification (`flagquantum/compiler/_hybrid/passes.py:88`,
+mandatory re-verification (`flagquantum/compiler/frontends/_structured/passes.py:88`,
 `run_pass_pipeline`). Its `IMPLEMENTATION.md` states, quoted literally with line
 numbers, that it is "private Compiler machinery and is not exported from
 `flagquantum` or `flagquantum.compiler`" (`:5-6`), that it "does not own static
@@ -934,13 +934,13 @@ marked done.
       wrong classical bit are the three candidate wrong rules — and record both
       numbers. **No tolerance may be adopted before that measurement exists, and
       this proposal states no tolerance number.**
-- [ ] Measure that `python tools/check_repository_language.py` reports
+- [ ] Measure that `python tools/architecture/check_repository_language.py` reports
       `0 files contain Han-script text` after the document and any implementation
       notes are added.
 - [ ] Measure that the negative searches in premise 10 still return zero for
       `while`, repeat-until-success, and a loop opcode in `flagquantum/core/` and
       `flagquantum/runtime/`, and record the commands.
-- [ ] Measure that `flagquantum/compiler/_hybrid/capture.py:203` still refuses
+- [ ] Measure that `flagquantum/compiler/frontends/_structured/capture.py:203` still refuses
       `ast.While` with `while is unsupported`, and record the literal message.
 - [ ] Measure whether `flagquantum/_compiler/` exists and whether `IR-007` has moved
       off `Status: Proposed`. If either is false, record that decision 3's refusal

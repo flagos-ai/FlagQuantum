@@ -8,8 +8,6 @@ from dataclasses import dataclass
 from importlib import import_module
 from types import ModuleType
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from ._credentials import (
     KaiwuCredentials,
     resolve_kaiwu_credentials,
@@ -128,12 +126,7 @@ for _identity_export in (
     KaiwuSDKVersionError,
     KaiwuLicenseInitializationError,
     KaiwuSDKEnvironment,
-    _load_kaiwu_module,
-    _preflight_kaiwu_sdk,
-    _initialize_preflighted_kaiwu_license,
     initialize_kaiwu_license,
 ):
     _identity_export.__module__ = "flagquantum.remote.kaiwu.sdk"
 del _identity_export
-
-_alias_module("flagquantum.remote.kaiwu.sdk", __name__)

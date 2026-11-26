@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
-
-from flagquantum._import_compat import alias_module as _alias_module
+from typing import get_type_hints as _class_type_hints
 
 if TYPE_CHECKING:
     from flagquantum.core.noise import NoiseModel
@@ -154,6 +153,15 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (ManagedSimulatorReceipt,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     ManagedSimulatorReceipt,
     ManagedSimulatorExecution,
@@ -162,5 +170,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.services.managed_simulator"
 del _identity_export
-
-_alias_module("flagquantum.services.managed_simulator", __name__)

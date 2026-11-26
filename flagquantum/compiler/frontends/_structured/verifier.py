@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import (
     BOOL,
     INDEX,
@@ -474,18 +473,3 @@ def verify_program(program: HybridProgram) -> HybridProgram:
     if verifier.diagnostics:
         raise HybridVerificationError(tuple(verifier.diagnostics))
     return program
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    Diagnostic,
-    HybridVerificationError,
-    _arity_ok,
-    _is_scalar,
-    _Verifier,
-    verify_program,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.verifier"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.verifier", __name__)

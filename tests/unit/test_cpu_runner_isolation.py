@@ -282,7 +282,7 @@ def test_shared_tier_clears_platform_ranks_without_changing_test_selection(
     command = next(
         step["run"]
         for step in workflow["jobs"]["distributed-cpu-shard"]["steps"]
-        if "python tools/ci_tier.py pr-distributed" in str(step.get("run", ""))
+        if "python tools/ci/ci_tier.py pr-distributed" in str(step.get("run", ""))
     )
     for field, value in {"command": 0, "shards": 4, "shard": 0}.items():
         command = command.replace("${{ matrix." + field + " }}", str(value))
@@ -316,7 +316,7 @@ def test_shared_tier_clears_platform_ranks_without_changing_test_selection(
     subprocess.run(["bash", "-ec", command], env=environment, check=True, timeout=20)
     result = json.loads(output.read_text())
     assert result["args"] == [
-        "tools/ci_tier.py",
+        "tools/ci/ci_tier.py",
         "pr-distributed",
         "--command-index",
         "0",

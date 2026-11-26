@@ -6,15 +6,15 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
-from flagquantum.compiler.optimization.one_qubit_optimization import (
-    collapse_one_qubit_runs,
-)
-from flagquantum.compiler.pipeline import (
+from flagquantum.compiler.optimization.canonicalization import (
     _ROTATION_PARAM,
     _SELF_INVERSE,
     _add_values,
     _is_zero,
     _replace_param,
+)
+from flagquantum.compiler.optimization.one_qubit_optimization import (
+    collapse_one_qubit_runs,
 )
 from flagquantum.core.ir import CircuitIR, Instruction, ensure_circuit_ir
 

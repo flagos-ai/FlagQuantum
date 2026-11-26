@@ -97,5 +97,5 @@ independent reference, and run:
 ```bash
 python -m pytest tests/unit/test_algorithms_qft.py \
   tests/unit/test_algorithms_package.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```

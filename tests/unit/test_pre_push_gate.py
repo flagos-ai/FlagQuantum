@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.pre_push import Check, checks, environment_executable, run_checks
+from tools.ci.pre_push import Check, checks, environment_executable, run_checks
 
 pytestmark = pytest.mark.unit
 
@@ -25,48 +25,60 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "--show-diff-on-failure",
     ) in commands
     assert ("python", "tools/check_dependency_policy.py") in commands
-    assert ("python", "tools/check_braket_interop_contract.py") in commands
-    assert ("python", "tools/check_qiskit_interop_contract.py") in commands
-    assert ("python", "tools/check_cudaq_export_contract.py") in commands
-    assert ("python", "tools/check_pennylane_interop_contract.py") in commands
-    assert ("python", "tools/check_interop_capability_gap_matrix.py") in commands
-    assert ("python", "tools/check_openqasm_import_contract.py") in commands
+    assert ("python", "tools/validation/check_braket_interop_contract.py") in commands
+    assert ("python", "tools/validation/check_qiskit_interop_contract.py") in commands
+    assert ("python", "tools/validation/check_cudaq_export_contract.py") in commands
+    assert (
+        "python",
+        "tools/validation/check_pennylane_interop_contract.py",
+    ) in commands
+    assert (
+        "python",
+        "tools/validation/check_interop_capability_gap_matrix.py",
+    ) in commands
+    assert ("python", "tools/validation/check_openqasm_import_contract.py") in commands
     assert ("python", "tools/check_multi_level_ir_contract.py") in commands
-    assert ("python", "tools/check_double_single_contract.py") in commands
-    assert ("python", "tools/check_circuit_composition_contract.py") in commands
-    assert ("python", "tools/check_split_real_imag_contract.py") in commands
-    assert ("python", "tools/check_split_real_imag_p1_contract.py") in commands
+    assert ("python", "tools/validation/check_double_single_contract.py") in commands
     assert (
         "python",
-        "tools/validate_split_real_imag_training_evidence.py",
+        "tools/validation/check_circuit_composition_contract.py",
+    ) in commands
+    assert ("python", "tools/validation/check_split_real_imag_contract.py") in commands
+    assert (
+        "python",
+        "tools/validation/check_split_real_imag_p1_contract.py",
     ) in commands
     assert (
         "python",
-        "tools/check_split_real_imag_p2_precision_contract.py",
+        "tools/validation/validate_split_real_imag_training_evidence.py",
     ) in commands
     assert (
         "python",
-        "tools/validate_split_real_imag_precision_evidence.py",
+        "tools/validation/check_split_real_imag_p2_precision_contract.py",
     ) in commands
     assert (
         "python",
-        "tools/check_split_real_imag_p3_double_single_contract.py",
+        "tools/validation/validate_split_real_imag_precision_evidence.py",
     ) in commands
     assert (
         "python",
-        "tools/validate_split_real_imag_double_single_evidence.py",
+        "tools/validation/check_split_real_imag_p3_double_single_contract.py",
     ) in commands
     assert (
         "python",
-        "tools/check_split_real_imag_p4_device_double_single_contract.py",
+        "tools/validation/validate_split_real_imag_double_single_evidence.py",
     ) in commands
     assert (
         "python",
-        "tools/validate_split_real_imag_device_double_single_evidence.py",
+        "tools/validation/check_split_real_imag_p4_device_double_single_contract.py",
     ) in commands
     assert (
         "python",
-        "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
+        "tools/validation/validate_split_real_imag_device_double_single_evidence.py",
+    ) in commands
+    assert (
+        "python",
+        "tools/validation/check_split_real_imag_p5_autograd_optimizer_contract.py",
     ) in commands
     assert any(
         check.name == "strict type check of the whole package"
@@ -75,7 +87,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         for check in checks("python")
     )
     for tier in ("pr-default", "pr-runtime", "pr-distributed"):
-        assert ("python", "tools/ci_tier.py", tier) in commands
+        assert ("python", "tools/ci/ci_tier.py", tier) in commands
 
 
 def test_pre_push_gate_checks_ownership_of_the_changed_paths() -> None:
@@ -88,10 +100,14 @@ def test_pre_push_gate_checks_ownership_of_the_changed_paths() -> None:
     """
 
     commands = {check.command for check in checks("python")}
-    assert ("python", "tools/check_team_scope.py", "--validate") in commands
     assert (
         "python",
-        "tools/check_team_scope.py",
+        "tools/architecture/check_team_scope.py",
+        "--validate",
+    ) in commands
+    assert (
+        "python",
+        "tools/architecture/check_team_scope.py",
         "--require-classified",
         "--base",
         "origin/main",
@@ -102,7 +118,7 @@ def test_pre_push_gate_checks_new_evidence_retention() -> None:
     commands = {check.command for check in checks("python")}
     assert (
         "python",
-        "tools/check_evidence_retention.py",
+        "tools/release/check_evidence_retention.py",
         "--base",
         "origin/main",
     ) in commands
@@ -142,7 +158,7 @@ def test_pre_push_gate_keeps_the_active_environment_first_on_path(
 
     captured: list[dict[str, str]] = []
     monkeypatch.setattr(
-        "tools.pre_push.shutil.which",
+        "tools.ci.pre_push.shutil.which",
         lambda executable, *, path: executable,
     )
 
@@ -156,7 +172,7 @@ def test_pre_push_gate_keeps_the_active_environment_first_on_path(
         captured.append(env)
         return subprocess.CompletedProcess(command, 0)
 
-    monkeypatch.setattr("tools.pre_push.subprocess.run", fake_run)
+    monkeypatch.setattr("tools.ci.pre_push.subprocess.run", fake_run)
 
     assert (
         run_checks(
@@ -178,7 +194,7 @@ def test_pre_push_gate_leaves_bare_command_names_to_the_ambient_path(
 
     captured: list[dict[str, str]] = []
     monkeypatch.setattr(
-        "tools.pre_push.shutil.which",
+        "tools.ci.pre_push.shutil.which",
         lambda executable, *, path: executable,
     )
 
@@ -192,7 +208,7 @@ def test_pre_push_gate_leaves_bare_command_names_to_the_ambient_path(
         captured.append(env)
         return subprocess.CompletedProcess(command, 0)
 
-    monkeypatch.setattr("tools.pre_push.subprocess.run", fake_run)
+    monkeypatch.setattr("tools.ci.pre_push.subprocess.run", fake_run)
 
     assert (
         run_checks(
@@ -213,7 +229,7 @@ def test_pre_push_gate_stops_at_first_failure(
     invoked: list[tuple[str, ...]] = []
 
     monkeypatch.setattr(
-        "tools.pre_push.shutil.which",
+        "tools.ci.pre_push.shutil.which",
         lambda executable, *, path: executable,
     )
 
@@ -230,7 +246,7 @@ def test_pre_push_gate_stops_at_first_failure(
         invoked.append(command)
         return subprocess.CompletedProcess(command, 1)
 
-    monkeypatch.setattr("tools.pre_push.subprocess.run", fake_run)
+    monkeypatch.setattr("tools.ci.pre_push.subprocess.run", fake_run)
     selected = (
         Check("fails", ("python", "first.py")),
         Check("must not run", ("python", "second.py")),
@@ -245,14 +261,14 @@ def test_pre_push_gate_dry_run_does_not_spawn_processes(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(
-        "tools.pre_push.shutil.which",
+        "tools.ci.pre_push.shutil.which",
         lambda executable, *, path: executable,
     )
 
     def unexpected_run(*args: object, **kwargs: object) -> None:
         raise AssertionError("dry run must not spawn a subprocess")
 
-    monkeypatch.setattr("tools.pre_push.subprocess.run", unexpected_run)
+    monkeypatch.setattr("tools.ci.pre_push.subprocess.run", unexpected_run)
     assert (
         run_checks(
             (Check("dry", ("python", "check.py")),),

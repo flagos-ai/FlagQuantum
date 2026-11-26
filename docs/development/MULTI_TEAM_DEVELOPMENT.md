@@ -64,7 +64,7 @@ no team branch to match.
 Explicit-file preflight:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team compiler \
   --files flagquantum/compiler/pipeline.py tests/team/compiler/test_compiler_pipeline_replacement.py
 ```
@@ -72,7 +72,7 @@ python tools/check_team_scope.py \
 Completed-branch check, in this optional mode, against the integration branch:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team compiler \
   --base refactor/flagquantum-vnext-architecture
 ```
@@ -167,11 +167,11 @@ referenced by other sessions.
 Before delivery:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team TEAM \
   --base refactor/flagquantum-vnext-architecture
 
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Use `TEAM_HANDOFF_TEMPLATE.md`. Include the shared baseline, team branch, final
@@ -213,8 +213,8 @@ merge passes.
 
 Immediately run:
 
-1. `python tools/check_team_scope.py --validate`.
-2. `python tools/check_architecture.py`.
+1. `python tools/architecture/check_team_scope.py --validate`.
+2. `python tools/architecture/check_architecture.py`.
 3. Public API and serialization contract checks.
 4. The merged team's module tests.
 5. Tests for affected consumers.

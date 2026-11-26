@@ -6,8 +6,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 FLAGOS_TRAINING_WORLD_SIZES = (2, 4, 8)
 FLAGOS_TRAINING_DTYPES = ("complex64", "complex128")
 FLAGOS_TRAINING_CASES = ("gradient_reference", "sgd_trajectory", "adam_trajectory")
@@ -283,18 +281,3 @@ __all__ = (
     "training_case_from_dict",
     "training_run_from_dict",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    FlagOSTrainingCase,
-    FlagOSTrainingRun,
-    FlagOSTrainingProfile,
-    training_case_from_dict,
-    training_run_from_dict,
-    build_training_profile,
-):
-    _identity_export.__module__ = "flagquantum.runtime.distributed.training_profile"
-del _identity_export
-
-_alias_module("flagquantum.runtime.distributed.training_profile", __name__)

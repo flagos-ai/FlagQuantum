@@ -48,10 +48,10 @@ stated as reasoning and marked unverified. That checkout has since been disabled
 Every command below was executed against the full tree of 2518 files, so the
 findings now cite observed behaviour instead of inference.
 
-- The path matcher is `fnmatch.fnmatchcase` (`tools/check_team_scope.py`). Under
+- The path matcher is `fnmatch.fnmatchcase` (`tools/architecture/check_team_scope.py`). Under
   `fnmatch`, `*` already matches `/`, so `dir/**` requires a literal `dir/`
   prefix and can never match the sibling module `dir.py`.
-- `tools/check_architecture.py` compares `allowed_top_level_directories` against
+- `tools/architecture/check_architecture.py` compares `allowed_top_level_directories` against
   the real `flagquantum/*` directories that contain `*.py`, and reports both
   directions: an unreviewed directory and a stale allowlist entry each fail.
   Finding 4's second reading therefore holds.
@@ -141,7 +141,7 @@ entirely.
 
 The class of defect matters more than this instance. A `dir/**` entry whose
 directory does not exist protects nothing and fails silently, and nothing in the
-repository detected that. `tools/check_team_scope.py --validate` now rejects such
+repository detected that. `tools/architecture/check_team_scope.py --validate` now rejects such
 an entry, so the second instance cannot be introduced quietly.
 
 **Correction, 2026-10-08: the split this finding anticipated has landed.** The
@@ -233,11 +233,11 @@ Two readings were possible and the difference matters:
 1. The allowlist check ignores private and not-yet-created directories, in which
    case there was no conflict and only Finding 3's dead entries remained.
 2. The allowlist is enforced literally, in which case creating
-   `flagquantum/_compiler/` trips `tools/check_architecture.py`, and the Phase 4
+   `flagquantum/_compiler/` trips `tools/architecture/check_architecture.py`, and the Phase 4
    internal level work planned for that path needs an `config/architecture.toml` change
    in the same integration PR.
 
-Reading 2 holds. `tools/check_architecture.py` walks the real `flagquantum/*`
+Reading 2 holds. `tools/architecture/check_architecture.py` walks the real `flagquantum/*`
 directories that contain a `*.py` file and reports each one that is missing from
 `allowed_top_level_directories`, and it reports each allowlist entry with no such
 directory as well. The check is therefore bidirectional and literal.
@@ -436,7 +436,7 @@ This is the check with teeth. Reverting `flagquantum/core/ir.py` to
 reasoning into evidence and keeps the answer correct if a later change adds or
 removes a pattern.
 
-**Dead-pattern report.** `tools/check_team_scope.py --validate` now rejects a
+**Dead-pattern report.** `tools/architecture/check_team_scope.py --validate` now rejects a
 `protected_paths` entry that matches no file and reports each `owns` entry that
 matches no file. Protected entries are rejected because protecting nothing is
 never intentional; `owns` entries are reported because two of the remaining six

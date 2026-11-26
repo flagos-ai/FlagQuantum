@@ -297,7 +297,7 @@ def render_known_limitations(data: dict[str, object]) -> str:
             "",
             "These statements are support boundaries, not a development backlog. Promotion",
             "requires all evidence for the target level to pass",
-            "`python tools/check_capability_maturity.py`.",
+            "`python tools/validation/check_capability_maturity.py`.",
         ]
     )
     return "\n".join(rows)

@@ -3,7 +3,7 @@
 ``flagquantum/gradients.py`` owns what ``fq.gradient`` computes, and
 ``tests/unit/test_parameter_shift_coverage_contract.py`` owns the remote-safe batch
 profile. This file owns ``contracts/opcode-gradient-exactness-contract.toml`` and
-``tools/check_opcode_gradient_exactness.py``, and asks a different question of them: is
+``tools/validation/check_opcode_gradient_exactness.py``, and asks a different question of them: is
 the per-opcode matrix still well formed, and is the gate that re-measures it still
 enforced?
 
@@ -14,7 +14,7 @@ answers "is the matrix still a matrix": one row per differentiable opcode, one c
 opcode and measured mode, every excluded mode carrying a reason, the opcode and mode
 vocabularies the implementation's rather than the file's, and the relationship to the
 batch profile re-derivable from that file. The last section asks whether the gate is
-invoked by CI and by ``tools/pre_push.py`` at all, because a gate nothing runs is a
+invoked by CI and by ``tools/ci/pre_push.py`` at all, because a gate nothing runs is a
 script.
 
 The middle sections are a record of the two things this contract exists to prevent. The
@@ -399,6 +399,6 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_opcode_gradient_exactness.py" in workflow
+    assert "python tools/validation/check_opcode_gradient_exactness.py" in workflow
     pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_opcode_gradient_exactness.py"' in pre_push
+    assert '"tools/validation/check_opcode_gradient_exactness.py"' in pre_push

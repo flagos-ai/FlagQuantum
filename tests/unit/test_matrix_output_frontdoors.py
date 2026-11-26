@@ -159,7 +159,7 @@ def test_existing_api_checker_detects_unapproved_request_field_drift(
 ) -> None:
     from dataclasses import fields
 
-    from tools import public_api_snapshot
+    from tools.architecture import public_api_snapshot
 
     observable = next(
         field for field in fields(fq.OutputRequest) if field.name == "observable"

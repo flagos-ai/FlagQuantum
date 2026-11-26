@@ -17,8 +17,6 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from ._credentials import KaiwuCredentials
 from .contracts import (
     FrozenIsingMatrix,
@@ -550,5 +548,3 @@ class KaiwuSDKClient:
 for _identity_export in (KaiwuSDKClient,):
     _identity_export.__module__ = "flagquantum.remote.kaiwu.client"
 del _identity_export
-
-_alias_module("flagquantum.remote.kaiwu.client", __name__)

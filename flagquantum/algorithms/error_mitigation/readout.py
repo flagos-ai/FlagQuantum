@@ -100,10 +100,10 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.noise import (
     CorrelatedReadoutError,
     NoiseModel,
@@ -913,21 +913,26 @@ def run_readout_mitigation_counts(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _probability_matrix,
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
     ReadoutBlock,
     ReadoutMitigationPlan,
     ReadoutMitigationResult,
-    _build_block,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (
+    ReadoutBlock,
+    ReadoutMitigationPlan,
+    ReadoutMitigationResult,
     plan_readout_mitigation,
-    _square_matrix,
-    _checked_qubits,
-    _apply_block,
-    _check_observed,
     run_readout_mitigation,
     run_readout_mitigation_counts,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.readout_mitigation"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.readout_mitigation", __name__)

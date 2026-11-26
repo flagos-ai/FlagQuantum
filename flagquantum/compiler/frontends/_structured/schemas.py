@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 @dataclass(frozen=True)
 class OperationSchema:
@@ -53,11 +51,3 @@ OPERATION_SCHEMAS = {
         1, 1, 1, 1, 0, required_attributes=frozenset({"terms"})
     ),
 }
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (OperationSchema,):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.schemas"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.schemas", __name__)

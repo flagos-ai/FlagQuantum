@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.numerics.jax import (
     _jax_complex_dtype,
     _jax_pauli_matrix,
@@ -720,6 +719,3 @@ def jax_mps_hamiltonian_expectation(
             matmul_precision,
         )
     return total
-
-
-_alias_module("flagquantum.simulation.jax.mps.kernels", __name__)

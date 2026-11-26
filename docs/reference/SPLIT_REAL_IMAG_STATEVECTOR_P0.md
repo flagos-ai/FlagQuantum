@@ -50,7 +50,7 @@ pytest tests/test_split_real_imag_conformance.py
 In a Torch-FL CUDA-reference environment, run:
 
 ```bash
-python tools/validate_split_real_imag_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_flagos.py --device flagos:0
 ```
 
 That validator proves execution through the logical `flagos:0` device and

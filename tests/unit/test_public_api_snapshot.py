@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools import public_api_snapshot
+from tools.architecture import public_api_snapshot
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

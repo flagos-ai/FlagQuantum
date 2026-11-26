@@ -12,7 +12,6 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime, timezone
 from typing import Any, Literal, cast
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization._research_capabilities import (
     EnergyVarianceRequest,
     ExactGroundStateRequest,
@@ -1190,27 +1189,8 @@ for _identity_export in (
     ResearchCapabilityError,
     ResearchCapabilityAttempt,
     ResearchCapabilityEvidenceBundle,
-    _now,
-    _canonical_sha256,
-    _portable_evidence_value,
-    _evidence_sha256,
-    _capability_ref,
-    _request_sha256,
-    _provenance_base,
-    _finalize_bundle,
-    _error_from_validation,
-    _refused_bundle,
-    _scientific_report,
-    _execute_vqe,
-    _execute_exact,
-    _execute_variance,
-    _route_vqe,
     execute_research_capability,
-    _unsigned_payload,
-    _invalid_evidence,
     validate_research_evidence,
 ):
     _identity_export.__module__ = "flagquantum.services.research_execution"
 del _identity_export
-
-_alias_module("flagquantum.services.research_execution", __name__)

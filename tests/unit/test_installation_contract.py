@@ -337,7 +337,7 @@ def test_an_inplace_build_adds_this_machines_torch_library_to_the_rpath() -> Non
 def test_a_distributed_build_keeps_only_the_relocatable_rpath() -> None:
     """A wheel must not carry the build machine's PyTorch path.
 
-    `tools/verify_reproducible_builds.py` compares two isolated builds byte for
+    `tools/validation/verify_reproducible_builds.py` compares two isolated builds byte for
     byte, so an absolute path recorded at link time would differ between them.
     """
 

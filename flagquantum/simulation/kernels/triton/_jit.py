@@ -25,8 +25,6 @@ from typing import Any, Protocol, cast, overload
 
 import triton
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 __all__ = ["Kernel", "autotune", "jit"]
 
 
@@ -86,17 +84,3 @@ def autotune(
         Callable[[Kernel], Kernel],
         triton.autotune(configs=configs, key=key, **options),
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    Kernel,
-    jit,
-    jit,
-    jit,
-    autotune,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton._jit"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton._jit", __name__)

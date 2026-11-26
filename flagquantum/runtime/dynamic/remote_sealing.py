@@ -7,7 +7,6 @@ from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.artifacts.routing_evidence import stable_payload_sha256
 from flagquantum.compute.remote.packages import (
     DeploymentPackage,
@@ -139,5 +138,3 @@ def _validate_dynamic_remote_package_seal(
 
 
 __all__: tuple[str, ...] = ()
-
-_alias_module("flagquantum.deployment.dynamic_sealing", __name__)

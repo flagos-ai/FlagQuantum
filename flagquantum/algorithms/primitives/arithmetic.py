@@ -59,8 +59,8 @@ with itself about.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers._arithmetic_kernels import ripple_add
 
@@ -190,13 +190,15 @@ def _require_bit_count(n_bits: int) -> int:
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    AdderQubits,
-    adder_qubits,
-    adder_circuit,
-    _require_bit_count,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (AdderQubits,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (AdderQubits, adder_qubits, adder_circuit):
     _identity_export.__module__ = "flagquantum.algorithms.arithmetic"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.arithmetic", __name__)

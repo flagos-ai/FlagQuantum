@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
-from importlib import import_module as _import_namespace
 from typing import TYPE_CHECKING, Any
 
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
@@ -304,20 +303,3 @@ for _identity in (
 ):
     _identity.__module__ = "flagquantum.deployment.cloud"
 del _identity
-
-_namespace = _import_namespace("flagquantum.deployment.cloud")
-for _name in (
-    "Any",
-    "CircuitIR",
-    "CloudBackendProfile",
-    "DeploymentPackage",
-    "Hamiltonian",
-    "Mapping",
-    "PauliMeasurementPlan",
-    "Sequence",
-    "create_deployment_package",
-    "create_pauli_measurement_plan",
-    "deploy_circuit",
-):
-    setattr(_namespace, _name, globals()[_name])
-del _namespace, _name

@@ -8,7 +8,7 @@ Run the controller inside an environment where importing `torch_fl` registers
 `torch.flagos`:
 
 ```bash
-python tools/validate_flagos_statevector_training.py \
+python tools/validation/validate_flagos_statevector_training.py \
   --output artifacts/flagos_statevector_training_f3.json \
   --world-sizes 2,4,8 \
   --steps 3

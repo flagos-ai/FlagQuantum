@@ -129,10 +129,10 @@ hardware claim, and it does not select a runtime.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.types import Predicate
 from flagquantum.algorithms.search.grover import run_grover
 
@@ -502,17 +502,15 @@ def _centroid_index_width(n_centroids: int) -> int:
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    KMediansResult,
-    kmedians,
-    _nearest_centroid,
-    _strictly_better,
-    _operands,
-    _coordinates,
-    _median_positions,
-    _centroid_index_width,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (KMediansResult,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (KMediansResult, kmedians):
     _identity_export.__module__ = "flagquantum.algorithms.kmedians"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.kmedians", __name__)

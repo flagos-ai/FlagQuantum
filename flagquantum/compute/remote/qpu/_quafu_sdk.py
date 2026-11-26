@@ -9,7 +9,6 @@ from importlib import metadata
 from types import ModuleType
 from typing import Any, NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.errors import ExecutionError, ValidationError
 
 _DISTRIBUTION = "quafu-sdk"
@@ -351,18 +350,3 @@ def _raise_sdk_failure(exc: Exception, *, operation: str) -> NoReturn:
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _load_quafu_sdk,
-    _submission_api_key,
-    _plain_value,
-    _plain_mapping,
-    _QuafuSdkAdapter,
-    _raise_sdk_failure,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu._quafu_sdk"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu._quafu_sdk", __name__)

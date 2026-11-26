@@ -13,8 +13,6 @@ from typing import Protocol
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .contracts import (
     MemorySnapshot,
     PlatformDevice,
@@ -339,22 +337,3 @@ class CUDAPlatformRuntime:
 
 
 __all__ = ("CPUPlatformRuntime", "CUDAPlatformRuntime")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _sysconf_bytes,
-    _darwin_available_memory_bytes,
-    _file_integer,
-    _cgroup_memory_snapshot,
-    _minimum_known,
-    _host_memory_snapshot,
-    _CUDAStreamFactory,
-    _CPUEvent,
-    CPUPlatformRuntime,
-    CUDAPlatformRuntime,
-):
-    _identity_export.__module__ = "flagquantum.compute.pytorch"
-del _identity_export
-
-_alias_module("flagquantum.compute.pytorch", __name__)

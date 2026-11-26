@@ -7,8 +7,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 CAPACITY_PROFILE_SCHEMA = "flagquantum_flagos_statevector_capacity_f5_v1"
 CAPACITY_RUN_SCHEMA = "flagquantum_flagos_statevector_capacity_run_v1"
 CAPACITY_MODES = ("single", "replicated", "sharded")
@@ -261,21 +259,3 @@ __all__ = (
     "FlagOSStatevectorCapacityProfile",
     "build_flagos_statevector_capacity_profile",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    FlagOSCapacityProfileError,
-    _require,
-    _validate_boundary,
-    _validate_topology,
-    _oom_accepted,
-    _sharded_accepted,
-    FlagOSStatevectorCapacityProfile,
-    build_flagos_statevector_capacity_profile,
-    json_key,
-):
-    _identity_export.__module__ = "flagquantum.runtime.distributed.capacity_profile"
-del _identity_export
-
-_alias_module("flagquantum.runtime.distributed.capacity_profile", __name__)

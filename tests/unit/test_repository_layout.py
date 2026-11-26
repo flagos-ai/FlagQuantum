@@ -7,7 +7,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 import pytest
 
-from tools.check_repository_hygiene import layout_violations
+from tools.architecture.check_repository_hygiene import layout_violations
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

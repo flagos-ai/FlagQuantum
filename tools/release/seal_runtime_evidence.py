@@ -27,7 +27,7 @@ from flagquantum.runtime.observability.evidence import (
 )
 
 environment_errors = import_module(
-    "tools.check_release_evidence_environment"
+    "tools.release.check_release_evidence_environment"
     if __package__
     else "check_release_evidence_environment"
 ).environment_errors

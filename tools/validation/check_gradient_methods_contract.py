@@ -32,6 +32,8 @@ import inspect
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -189,10 +191,10 @@ def _header_errors(contract: dict[str, Any]) -> list[str]:
         errors.append("gradient methods maturity must be development_evidence")
     for name in ("implementation", "mode_source"):
         raw = contract.get(name)
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(f"gradient methods {name} path {raw!r} does not exist")
     for raw in contract.get("authorization", ()):
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(f"gradient methods authorization {raw!r} does not exist")
     return errors
 
@@ -697,10 +699,10 @@ def _refusal_errors(contract: dict[str, Any]) -> list[str]:
             errors.append(f"gradient methods refusal {code!r} has no message phrase")
             continue
         source = row.get("message_source")
-        if not isinstance(source, str) or not (ROOT / source).is_file():
+        if not isinstance(source, str) or not (source_path(ROOT, source)).is_file():
             errors.append(f"gradient methods refusal {code!r} names a missing source")
             continue
-        if phrase not in (ROOT / source).read_text(encoding="utf-8"):
+        if phrase not in (source_path(ROOT, source)).read_text(encoding="utf-8"):
             errors.append(
                 f"gradient methods refusal {code!r} phrase {phrase!r} is not in {source}"
             )
@@ -1015,7 +1017,7 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
             )
     for name in ("contract", "gate"):
         raw = verification.get(name)
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(
                 f"gradient methods verification {name} path {raw!r} does not exist"
             )

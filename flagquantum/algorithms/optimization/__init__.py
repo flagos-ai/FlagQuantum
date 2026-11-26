@@ -408,16 +408,9 @@ __all__ = [
 
 # Preserve historical import identities for pickles and public introspection.
 for _identity_export in (
-    _TensorJacobian,
-    _tensor_jacobian,
-    _synchronize,
     OptimizationStage,
     OptimizationRecord,
     HybridOptimizationResult,
-    _checked_scalar,
-    _replace,
-    _quantum_metric,
-    _torch_optimizer,
     optimize_hybrid,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.optimization"

@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 
 import flagquantum.qec as qec
-from tools import check_qec_retirement as gate
+from tools.validation import check_qec_retirement as gate
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

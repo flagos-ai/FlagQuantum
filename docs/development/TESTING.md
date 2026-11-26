@@ -54,12 +54,12 @@ for `benchmarks/results/scalability/`.
 
 | Situation | Command | What It Proves | What It Does Not Prove |
 | --- | --- | --- | --- |
-| Daily development or any issue baseline | `python tools/ci_tier.py pr-default` | Fast smoke/unit health for imports, minimal circuits, autograd, pure planner/audit helpers. | Runtime integration, distributed behavior, performance, or release readiness. |
-| Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration and not slow` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
-| Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
-| Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
-| Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Three workloads (statevector, MPS, tensor network), each partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
-| Release candidate or promoted benchmark claim | `python tools/ci_tier.py release` | Full non-performance-benchmark pytest plus benchmark root audit and scalability release scan. | Claims outside the audited payload. |
+| Daily development or any issue baseline | `python tools/ci/ci_tier.py pr-default` | Fast smoke/unit health for imports, minimal circuits, autograd, pure planner/audit helpers. | Runtime integration, distributed behavior, performance, or release readiness. |
+| Local API/runtime/planner/compiler changes | `python tools/ci/ci_tier.py pr-runtime` | Seeded `integration and not slow` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
+| Distributed planner/audit/benchmark contract changes | `python tools/ci/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
+| Real multi-GPU or accelerator testing | `python tools/ci/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
+| Multi-node transport testing | `python tools/ci/ci_tier.py multinode-scheduled` | Three workloads (statevector, MPS, tensor network), each partitioned across two nodes on one revision, driven by `tools/validation/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
+| Release candidate or promoted benchmark claim | `python tools/ci/ci_tier.py release` | Full non-performance-benchmark pytest plus benchmark root audit and scalability release scan. | Claims outside the audited payload. |
 
 The scheduled hardware workflow also runs the single-device density-matrix
 device/gradient and eager MPS TF32 precision regressions explicitly before the
@@ -236,8 +236,8 @@ push leaves the machine, the push gate runs:
 Run the same gate directly when diagnosing a failure:
 
 ```bash
-python tools/pre_push.py
-python tools/pre_push.py --dry-run
+python tools/ci/pre_push.py
+python tools/ci/pre_push.py --dry-run
 ```
 
 The gate stops at the first failure. It is CPU-safe and does not claim to
@@ -257,7 +257,7 @@ Use daily development for ordinary code edits and as the minimum verification
 entry point for every change.
 
 ```bash
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 ```
 
 This runs `smoke or unit`. It must stay fast, local, and free of torchrun, GPU,
@@ -271,11 +271,11 @@ including ones `main` already had. Nothing in the check output separates the two
 and re-running the same identifiers against a pristine base by hand is the only
 way to tell whether a change broke something.
 
-`tools/partition_failures_against_base.py` performs that comparison:
+`tools/ci/partition_failures_against_base.py` performs that comparison:
 
 ```bash
 python -m pytest -m "smoke or unit" -q --junitxml=/tmp/head.xml
-python tools/partition_failures_against_base.py \
+python tools/ci/partition_failures_against_base.py \
     --head-report /tmp/head.xml --base origin/main
 ```
 
@@ -303,7 +303,7 @@ selection, local execution, planner behavior, compiler integration, or other
 single-process API boundaries.
 
 ```bash
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-runtime
 # direct:
 python -m pytest -m "integration and not slow" -q
 ```
@@ -332,7 +332,7 @@ scalability release evidence.
 Use this tier only on an explicit accelerator runner.
 
 ```bash
-python tools/ci_tier.py gpu-scheduled
+python tools/ci/ci_tier.py gpu-scheduled
 # direct:
 python -m pytest -m "distributed_accel and gpu" -q
 python -m pytest -m "triton and gpu" -q
@@ -363,21 +363,21 @@ the device and run the file directly.
 | Variable | Test | What it runs |
 | --- | --- | --- |
 | `FLAGQUANTUM_ISING_SOURCE` | `tests/qec/test_ising_comparison.py` | Path to the pinned NVIDIA Ising-Decoding checkout; runs real-upstream CPU smoke, X/Z boundary-mask conformance and SafeTensors loading checks. Install the optional inference dependencies described in [the comparison protocol](QEC_AI_ISING_COMPARISON.md), then run this file directly. No gated weights are needed for these explicitly untrained integration checks. |
-| `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
+| `FLAGQUANTUM_DOMESTIC_ATTESTATION` | `tests/test_domestic_single_card_certification.py` | `tools/validation/validate_domestic_single_card.py --attestation <value>` over the P0-P5 phases |
 | `FLAGQUANTUM_TEST_TORCH_FL_FP64` | `tests/unit/test_statevector_ry_fp64.py`, `tests/unit/test_statevector_cx_fp64.py` | Direct FP64 RY/CX conformance on a provisioned Torch-FL GPU. Set to `1`, import `torch_fl` before pytest, and use the vendor configuration from `benchmarks/torch_fl_fp64/README.md`. These tests fail if the opted-in environment is missing; a stock CUDA FlagTree lane skips them and does not certify Torch-FL. |
-| `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validate_flagos_cuda_reference.py` |
+| `FLAGQUANTUM_TEST_FLAGOS_CUDA` | `tests/test_flagos_cuda_reference.py` | `tools/validation/validate_flagos_cuda_reference.py` |
 | `FLAGQUANTUM_TEST_ASCEND_910C` | `tests/test_ascend_910c_training.py`, `tests/unit/test_split_real_imag_statevector.py` | the pinned 910C stack and public-interface SGD example in `docs/guides/ASCEND_910C.md` |
-| `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validate_flagos_distributed_conformance.py` |
-| `FLAGQUANTUM_TEST_FLAGOS_TRANSPORT` | `tests/test_flagos_transport_observability.py` | `tools/observe_flagos_transport.py` |
-| `FLAGQUANTUM_TEST_SPLIT_DEVICE_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_device_double_single_flagos.py` | `tools/validate_split_real_imag_device_double_single_flagos.py` |
+| `FLAGQUANTUM_TEST_FLAGOS_DISTRIBUTED` | `tests/test_flagos_distributed_conformance.py` | `tools/validation/validate_flagos_distributed_conformance.py` |
+| `FLAGQUANTUM_TEST_FLAGOS_TRANSPORT` | `tests/test_flagos_transport_observability.py` | `tools/validation/observe_flagos_transport.py` |
+| `FLAGQUANTUM_TEST_SPLIT_DEVICE_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_device_double_single_flagos.py` | `tools/validation/validate_split_real_imag_device_double_single_flagos.py` |
 | `FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_CUDA` | `tests/test_split_real_imag_double_single_conformance.py` | the P3 double-single conformance on `cuda:0`; its CPU sibling needs no variable |
-| `FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_double_single_flagos.py` | `tools/validate_split_real_imag_double_single_flagos.py` |
-| `FLAGQUANTUM_TEST_SPLIT_FLAGOS` | `tests/test_split_real_imag_flagos.py` | `tools/validate_split_real_imag_flagos.py` |
-| `FLAGQUANTUM_TEST_P5_OPTIMIZER_DEVICE` | `tests/test_split_real_imag_optimizer_accelerator.py` | `tools/validate_split_real_imag_optimizer_accelerator.py --device <value>`, where the value is `cuda:0` or `flagos:0` |
+| `FLAGQUANTUM_TEST_SPLIT_DOUBLE_SINGLE_FLAGOS` | `tests/test_split_real_imag_double_single_flagos.py` | `tools/validation/validate_split_real_imag_double_single_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_FLAGOS` | `tests/test_split_real_imag_flagos.py` | `tools/validation/validate_split_real_imag_flagos.py` |
+| `FLAGQUANTUM_TEST_P5_OPTIMIZER_DEVICE` | `tests/test_split_real_imag_optimizer_accelerator.py` | `tools/validation/validate_split_real_imag_optimizer_accelerator.py --device <value>`, where the value is `cuda:0` or `flagos:0` |
 | `FLAGQUANTUM_TEST_SPLIT_PRECISION_CUDA` | `tests/test_split_real_imag_precision_conformance.py` | the P2 precision conformance on `cuda:0`; its CPU sibling needs no variable |
-| `FLAGQUANTUM_TEST_SPLIT_PRECISION_FLAGOS` | `tests/test_split_real_imag_precision_flagos.py` | `tools/validate_split_real_imag_precision_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_PRECISION_FLAGOS` | `tests/test_split_real_imag_precision_flagos.py` | `tools/validation/validate_split_real_imag_precision_flagos.py` |
 | `FLAGQUANTUM_TEST_SPLIT_CUDA` | `tests/test_split_real_imag_training_conformance.py` | the P1 training conformance on `cuda:0`; its CPU sibling needs no variable |
-| `FLAGQUANTUM_TEST_SPLIT_TRAINING_FLAGOS` | `tests/test_split_real_imag_training_flagos.py` | `tools/validate_split_real_imag_training_flagos.py` |
+| `FLAGQUANTUM_TEST_SPLIT_TRAINING_FLAGOS` | `tests/test_split_real_imag_training_flagos.py` | `tools/validation/validate_split_real_imag_training_flagos.py` |
 
 Most of these set the variable to `1`; the two that take a value say so above.
 Each entry asserts the JSON the tool prints, including its fail-closed claims,
@@ -428,7 +428,7 @@ second node:
   `flagquantum.runtime.executors.mps.metadata_transport.all_gather_json` is the
   tensor-native gather to reach for.
 - **Real two-node transport.** One rank per node, the same rendezvous address,
-  and `tools/probe_cuda_multinode_statevector.py` on both.
+  and `tools/validation/probe_cuda_multinode_statevector.py` on both.
   The probe retains one statevector shard per rank during execution, exports the
   whole amplitude vector as the product of a leg of its own rather than gathering
   it to check an answer, and records the selected NCCL route from a rank-zero
@@ -437,7 +437,7 @@ second node:
   checkpoint that a restarted run resumes from. Its output is correctness and
   communication evidence only; it is not a scalability or release claim.
 - **Real two-node MPS transport.** The same pair, the same launcher, and
-  `tools/probe_cuda_multinode_mps.py`: one logical six-wire matrix product state
+  `tools/validation/probe_cuda_multinode_mps.py`: one logical six-wire matrix product state
   split by site, three owned sites per rank, with the middle adjacent gate
   straddling the ownership boundary. It covers the same training path against an
   exact complex128 statevector reference, and its reverse runs the compiled site
@@ -445,7 +445,7 @@ second node:
   rather than reconstructed locally. The training legs run eagerly by design,
   because a checkpointed step is not a compiled-kernel step.
 - **Real two-node tensor-network transport.** The same pair and launcher again,
-  with `tools/probe_cuda_multinode_tn.py`: one fourteen-wire contraction bound to
+  with `tools/validation/probe_cuda_multinode_tn.py`: one fourteen-wire contraction bound to
   the release contract's own narrowest matched-speed rung, cut on the two labels
   its entangling gate contracts, four slices, two owned per rank. The
   cut is declared rather than chosen by the memory-driven automatic slicer,
@@ -458,7 +458,7 @@ second node:
   the committed checkpoint generation back and requires one integrity-checked
   file per rank whose payload agrees with its sidecar.
 
-`tools/multinode_launch_plan.py --run` drives that pair, one workload per
+`tools/validation/multinode_launch_plan.py --run` drives that pair, one workload per
 invocation selected by `--probe` (`statevector`, the default, `mps`, or `tn`),
 and the `multinode` job in `.github/workflows/scheduled-hardware.yml` is one
 call to it per workload.
@@ -467,7 +467,7 @@ carries, because SSH reaches the peer from there and not the other way round.
 
 It stages the tree onto a filesystem both nodes mount, so the two ranks cannot
 disagree about which revision they are evidence about, and it runs them through
-`tools/run_multinode_watchdog.py`, so a launcher that dies on one node does not
+`tools/ci/run_multinode_watchdog.py`, so a launcher that dies on one node does not
 leave the other waiting for a rendezvous that never arrives. Before any of that
 it refuses to launch on nine questions that a timeout would otherwise answer,
 among them whether this host is the launch host, whether the peer has the
@@ -484,11 +484,11 @@ run failed before writing its own. Both are named `fq-multinode*`, because the
 lane removes them and only a directory with that name is treated as its own.
 
 ```bash
-python tools/ci_tier.py multinode-scheduled
+python tools/ci/ci_tier.py multinode-scheduled
 # what that tier runs, on the launch host:
-python tools/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run --interface ens22f0 --transport rdma --measure
-python tools/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps --interface ens22f0 --transport rdma --measure
-python tools/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn --interface ens22f0 --transport rdma --measure
+python tools/validation/multinode_launch_plan.py --run --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run --interface ens22f0 --transport rdma --measure
+python tools/validation/multinode_launch_plan.py --run --probe mps --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-mps --interface ens22f0 --transport rdma --measure
+python tools/validation/multinode_launch_plan.py --run --probe tn --staging /nfs/fq-multinode-tier --checkpoint-directory /nfs/fq-multinode-tier-checkpoints --report-directory hardware-run-tn --interface ens22f0 --transport rdma --measure
 ```
 
 Each command names its route and asks for the measured leg. `--transport rdma`
@@ -535,7 +535,7 @@ and memory evidence, topology metadata, and an empty blocker set.
 Before running the single-node MPS NCCL certification matrix, execute:
 
 ```bash
-python tools/check_mps_single_node_certification_environment.py \
+python tools/validation/check_mps_single_node_certification_environment.py \
   --json-output benchmarks/results/smoke/mps-single-node-preflight.json
 ```
 
@@ -636,7 +636,7 @@ The checked-in `ci.yml` defines twenty-seven jobs:
   under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
   data files before enforcing the floors in `contracts/coverage-policy.toml`
-  with `tools/check_coverage.py`;
+  with `tools/ci/check_coverage.py`;
 - `supply-chain`: `pip-audit`, `bandit`, and a validated CycloneDX SBOM;
 - `ci-complete`: the single required CI complete gate, which requires every other
   CI job to succeed, including source hygiene, optional SDK matrices, wheel builds
@@ -750,7 +750,7 @@ cannot be retrieved (gai error: 8 - nodename nor servname provided, or not known
 
 `--standalone` picks the wildcard address, the reverse lookup of its IPv6 form
 fails, and c10d retries with exponential backoff rather than falling back. On
-this Mac the consequence is that `python tools/ci_tier.py release`, whose first
+this Mac the consequence is that `python tools/ci/ci_tier.py release`, whose first
 command is `pytest -m "not scalability"`, cannot pass: it reports 14 failures,
 all of them `subprocess.TimeoutExpired` in
 `tests/distributed/test_mps_stability_faults.py`. Those tests, their runtime
@@ -780,13 +780,13 @@ execution proof.
 
 | CI Tier | Trigger Condition | Command | Blocks Ordinary PRs | Proof Boundary |
 | --- | --- | --- | --- | --- |
-| PR default | Every pull request and ordinary local issue verification. | `python tools/ci_tier.py pr-default` | Yes | Fast `smoke or unit` health only. |
-| PR runtime/API/planner | Pull requests that touch runtime, API, planner, compiler, or integration boundaries. | `python tools/ci_tier.py pr-runtime` | Only when selected for that blast radius. | Seeded `integration` runtime/API files; not distributed or scalability evidence. |
-| PR distributed/audit/benchmark | Pull requests that touch distributed planning/runtime metadata, audit, benchmark JSON, or release gates. | `python tools/ci_tier.py pr-distributed` | Only for distributed/audit/benchmark changes. | CPU distributed semantics plus benchmark contract and release-gate validation; not capacity evidence. |
-| Nightly CPU | Scheduled nightly CPU-safe validation or explicit maintainer request. | `python tools/ci_tier.py nightly` | No | Broad non-benchmark, non-accelerator, non-multinode health. |
-| GPU scheduled | Scheduled/manual job on an explicit accelerator runner. | `python tools/ci_tier.py gpu-scheduled` | No | Accelerator-backed behavior for selected tests, including the Triton kernels that need a device; not multi-node or release evidence by itself. |
-| Multi-node scheduled/manual | Manual dispatch on the launch host, which is the node that can reach its peer over ssh. | `python tools/ci_tier.py multinode-scheduled` | No | One workload partitioned across two nodes on one revision; release claims still require audit payloads. |
-| Release | Release candidate validation before promoting benchmark payloads or publishing release notes. | `python tools/ci_tier.py release` | Release only | Full non-performance-benchmark pytest coverage plus benchmark audit and scalability release scan. |
+| PR default | Every pull request and ordinary local issue verification. | `python tools/ci/ci_tier.py pr-default` | Yes | Fast `smoke or unit` health only. |
+| PR runtime/API/planner | Pull requests that touch runtime, API, planner, compiler, or integration boundaries. | `python tools/ci/ci_tier.py pr-runtime` | Only when selected for that blast radius. | Seeded `integration` runtime/API files; not distributed or scalability evidence. |
+| PR distributed/audit/benchmark | Pull requests that touch distributed planning/runtime metadata, audit, benchmark JSON, or release gates. | `python tools/ci/ci_tier.py pr-distributed` | Only for distributed/audit/benchmark changes. | CPU distributed semantics plus benchmark contract and release-gate validation; not capacity evidence. |
+| Nightly CPU | Scheduled nightly CPU-safe validation or explicit maintainer request. | `python tools/ci/ci_tier.py nightly` | No | Broad non-benchmark, non-accelerator, non-multinode health. |
+| GPU scheduled | Scheduled/manual job on an explicit accelerator runner. | `python tools/ci/ci_tier.py gpu-scheduled` | No | Accelerator-backed behavior for selected tests, including the Triton kernels that need a device; not multi-node or release evidence by itself. |
+| Multi-node scheduled/manual | Manual dispatch on the launch host, which is the node that can reach its peer over ssh. | `python tools/ci/ci_tier.py multinode-scheduled` | No | One workload partitioned across two nodes on one revision; release claims still require audit payloads. |
+| Release | Release candidate validation before promoting benchmark payloads or publishing release notes. | `python tools/ci/ci_tier.py release` | Release only | Full non-performance-benchmark pytest coverage plus benchmark audit and scalability release scan. |
 
 ## Path Classification Mapping
 
@@ -806,7 +806,7 @@ execution proof.
 
 `AGENTS.md` is the concise agent-facing workflow for this tiered policy. It
 should stay consistent with this manual: start from
-`python tools/ci_tier.py pr-default`, then expand by blast radius. Focused
+`python tools/ci/ci_tier.py pr-default`, then expand by blast radius. Focused
 file-list commands are still useful for review-sized checks, but tier commands
 are the official vocabulary.
 
@@ -867,7 +867,7 @@ GitHub-hosted runners.
 
 Serializing our own lanes does not make a host private. A benchmark records the
 device state it found before its first allocation, and
-`tools/evaluate_performance_artifact.py --write` reads that record into a
+`tools/validation/evaluate_performance_artifact.py --write` reads that record into a
 `measurement_validity` block:
 
 - `clean` — every device the run used held at most `foreign_memory_floor_mib`
@@ -907,7 +907,7 @@ not establish that warmup was the only cause of a failed performance gate.
 CI measures the maintained package with the seeded smoke, unit, integration, and
 JAX tiers, excluding the `qiskit` and `triton` markers for the reasons given
 above. `contracts/coverage-policy.toml` is the authority: it sets a global
-floor and a per-directory floor for every package, and `tools/check_coverage.py`
+floor and a per-directory floor for every package, and `tools/ci/check_coverage.py`
 enforces both against the XML report. Floors only move upward; raising one is
 part of the change that earns it.
 
@@ -931,8 +931,8 @@ after the first distributed partition. Hosted fork jobs keep the same shared
 concurrency bucket; trusted CPU registrations can run the six partitions together.
 
 ```bash
-python tools/ci_tier.py pr-distributed --command-index 0 --shard-count 4 --shard-index 0
-python tools/ci_tier.py pr-distributed --command-index 1 --shard-count 2 --shard-index 0
+python tools/ci/ci_tier.py pr-distributed --command-index 0 --shard-count 4 --shard-index 0
+python tools/ci/ci_tier.py pr-distributed --command-index 1 --shard-count 2 --shard-index 0
 ```
 
 The representation-agreement sweep computes the full Ising observable batch on

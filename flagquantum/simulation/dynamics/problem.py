@@ -18,7 +18,6 @@ from typing import Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from flagquantum.core.operators.boson import DEFAULT_DENSE_MATRIX_BYTES, BosonOperator
 from flagquantum.core.operators.embedding import expand_operator
@@ -1176,41 +1175,6 @@ def _normalize_parameter_mapping(
     return values
 
 
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    EvolutionValidationError,
-    CollapseOperator,
-    _error,
-    _resolve_state_space,
-    _require_qubit_space,
-    _as_complex_matrix,
-    _solve_tolerance,
-    _solve_max_iterations,
-    _normalize_times,
-    _normalize_initial_state,
-    _statevectors_to_density,
-    _require_density_matrices,
-    _pauli_operator,
-    _descriptor_pauli,
-    _descriptor_matrix,
-    _pauli_term_wires,
-    _pauli_term,
-    _hamiltonian_terms,
-    _require_hermitian_terms,
-    _dense_operator_terms,
-    _normalize_hamiltonian,
-    _observable_terms,
-    _observable_matrix,
-    _named_operator,
-    _normalize_collapse_terms,
-    _normalize_collapse_operators,
-    _normalize_observables,
-    _resolve_batch_size,
-    _require_gradients_flag,
-    _normalize_hamiltonians,
-    _normalize_parameter_mapping,
-):
-    _identity_export.__module__ = "flagquantum.simulation.lindblad_request"
-del _identity_export
-
-_alias_module("flagquantum.simulation.lindblad_request", __name__)
+# Published class module names remain readable by historical pickle payloads.
+CollapseOperator.__module__ = "flagquantum.simulation.lindblad_request"
+EvolutionValidationError.__module__ = "flagquantum.simulation.lindblad_request"

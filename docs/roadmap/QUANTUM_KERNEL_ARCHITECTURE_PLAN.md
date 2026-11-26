@@ -479,13 +479,13 @@ both amplitudes in each affected pair are owned by the same rank.
 The following rules should be added to executable architecture policy when the
 directory is introduced:
 
-1. `flagquantum.kernels` may depend on PyTorch and optional kernel-language
+1. `flagquantum.simulation.kernels` may depend on PyTorch and optional kernel-language
    packages.
 2. Importing `flagquantum` must not import Triton, FlagTree, Torch-FL, vendor
    SDKs, or compiled kernel extensions.
-3. `flagquantum.kernels` must not import `flagquantum.runtime`.
-4. `flagquantum.kernels` must not import Torch-FL directly.
-5. `flagquantum.kernels` must not select devices or distributed topology.
+3. `flagquantum.simulation.kernels` must not import `flagquantum.runtime`.
+4. `flagquantum.simulation.kernels` must not import Torch-FL directly.
+5. `flagquantum.simulation.kernels` must not select devices or distributed topology.
 6. Runtime may import kernel launch wrappers only after provider and capability
    selection.
 7. Simulation may use backend-neutral kernel contracts but must not own runtime

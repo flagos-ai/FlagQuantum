@@ -9,7 +9,7 @@ preflight checks here are what notice when the convention stops holding.
 
 Both ranks run the same staged tree, read from a filesystem both nodes mount,
 so the two ranks cannot disagree about which revision they are evidence about.
-`tools/run_multinode_watchdog.py` runs them as one unit, so a launcher that
+`tools/ci/run_multinode_watchdog.py` runs them as one unit, so a launcher that
 dies on one node does not leave the other waiting for a rendezvous that will
 never arrive.
 
@@ -42,17 +42,17 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 
-TOOL = "tools/multinode_launch_plan.py"
-WATCHDOG = "tools/run_multinode_watchdog.py"
+TOOL = "tools/validation/multinode_launch_plan.py"
+WATCHDOG = "tools/ci/run_multinode_watchdog.py"
 
 # One two-node workload per probe. Each owns its own circuit, its own evidence
 # schema and its own capability entry; they share the plan, the preflight and
 # the watchdog, because those are properties of the pair rather than of what is
 # run on it.
 PROBES = {
-    "statevector": "tools/probe_cuda_multinode_statevector.py",
-    "mps": "tools/probe_cuda_multinode_mps.py",
-    "tn": "tools/probe_cuda_multinode_tn.py",
+    "statevector": "tools/validation/probe_cuda_multinode_statevector.py",
+    "mps": "tools/validation/probe_cuda_multinode_mps.py",
+    "tn": "tools/validation/probe_cuda_multinode_tn.py",
 }
 DEFAULT_PROBE = "statevector"
 # The lane the runbook and the launch-plan tests describe.

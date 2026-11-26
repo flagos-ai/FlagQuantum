@@ -28,7 +28,7 @@ so the two numbers are derived rather than re-argued. Delete the field once ever
 landed row carries its own note.
 
 Usage:
-    python tools/parity_plan_ledger.py [--check]
+    python tools/architecture/parity_plan_ledger.py [--check]
 """
 
 from __future__ import annotations
@@ -89,7 +89,7 @@ ROW_ID_PATTERN = re.compile(r"^W(?P<wave>\d+)-(?P<index>\d+)(?P<split>[ab])?$")
 def _gate_vocabulary() -> frozenset[str]:
     """The names a ``gate_tier`` entry may use.
 
-    Two real sources rather than a third list: ``tools/ci_tier.py`` owns the tier
+    Two real sources rather than a third list: ``tools/ci/ci_tier.py`` owns the tier
     names a workflow runs, and ``pytest.ini`` owns the marker names a lane
     selects. A row may name either, because a row is proved by a tier script or
     by a marker lane, and the plan's own column already mixes the two.

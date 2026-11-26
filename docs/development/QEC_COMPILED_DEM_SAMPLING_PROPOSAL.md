@@ -218,18 +218,18 @@ python -m black --check flagquantum/qec/dem/model.py flagquantum/qec/execution/d
 python -m mypy --follow-imports=silent --strict flagquantum/qec/execution/dem_sampling.py flagquantum/simulation/stabilizer/_dem_sampling.py tests/qec/test_compiled_dem_sampler.py tests/team/simulation/test_compiled_dem_sampler_conformance.py tests/unit/test_compiled_dem_sampler_budget.py tests/unit/test_embedded_dem_sampler_source_lock.py examples/qec/compiled_dem_sampler.py
 FQ_BUILD_EMBEDDED_STIM=1 PIP_NO_INDEX=1 UV_OFFLINE=1 MAX_JOBS=2 python -m build --no-isolation --wheel --outdir "$EVIDENCE/dist"
 PIP_NO_INDEX=1 UV_OFFLINE=1 python -m build --no-isolation --sdist --outdir "$EVIDENCE/dist"
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
-python tools/public_api_snapshot.py
-python tools/check_capability_maturity.py
-python tools/docs_source_of_truth.py --check
-python tools/parity_matrix.py --check
-python tools/check_repository_hygiene.py
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
+python tools/architecture/public_api_snapshot.py
+python tools/validation/check_capability_maturity.py
+python tools/docs/docs_source_of_truth.py --check
+python tools/architecture/parity_matrix.py --check
+python tools/architecture/check_repository_hygiene.py
 python -m pytest tests/api_contract/test_public_docstring_examples.py tests/unit/test_qec_installed_profiles.py -q -x
 python -m examples.qec.compiled_dem_sampler
 ```
 
-The implementation runner supplies the above timeouts and process-group cleanup; shell lines alone do not enforce budgets. Installed checks run outside the checkout in two fresh project environments with a locked existing dependency closure: no Stim SDK with embedded marker, and existing Stim 1.16.0 oracle/profile. Use `python -m pip install --no-deps --no-index <exact-wheel>` only with verified existing pip tooling; never let this resolve dependencies. Execute the extended `tools/verify_embedded_stabilizer_install.py` and `tools/qec_installed_smoke.py` as appropriate to that existing profile, then the new focused suites against the installed package. Save exact expanded commands and origin receipts. If the required tooling/cache is unavailable, stop before building.
+The implementation runner supplies the above timeouts and process-group cleanup; shell lines alone do not enforce budgets. Installed checks run outside the checkout in two fresh project environments with a locked existing dependency closure: no Stim SDK with embedded marker, and existing Stim 1.16.0 oracle/profile. Use `python -m pip install --no-deps --no-index <exact-wheel>` only with verified existing pip tooling; never let this resolve dependencies. Execute the extended `tools/validation/verify_embedded_stabilizer_install.py` and `tools/release/qec_installed_smoke.py` as appropriate to that existing profile, then the new focused suites against the installed package. Save exact expanded commands and origin receipts. If the required tooling/cache is unavailable, stop before building.
 
 Apply Ruff, Black and strict Mypy to every changed Python path, including the two installed-verification tools, existing installed-profile test and doctest list; the focused lines above identify the principal new implementation and tests, and do not exempt other changed Python files.
 
@@ -268,7 +268,7 @@ Approval requested: implement and publish this single bounded 32-path capability
 10. `tests/unit/test_embedded_dem_sampler_source_lock.py` (new)
 11. `tests/unit/test_compiled_dem_sampler_budget.py` (new)
 12. `tests/api_contract/test_public_docstring_examples.py` (existing)
-13. `tools/qec_installed_smoke.py` (existing)
+13. `tools/release/qec_installed_smoke.py` (existing)
 14. `examples/qec/compiled_dem_sampler.py` (new)
 15. `examples/README.md` (existing)
 16. `flagquantum/qec/dem/README.md` (existing)
@@ -284,7 +284,7 @@ Approval requested: implement and publish this single bounded 32-path capability
 26. `docs/reference/API.md` (existing)
 27. `contracts/cudaq-parity-matrix.toml` (existing)
 28. `docs/reference/CUDAQ_PARITY_MATRIX.md` (existing)
-29. `tools/verify_embedded_stabilizer_install.py` (existing)
+29. `tools/validation/verify_embedded_stabilizer_install.py` (existing)
 30. `tests/unit/test_qec_installed_profiles.py` (existing)
 31. `flagquantum/simulation/stabilizer/csrc/vendor/stim-1.16.0/src/stim/simulators/dem_sampler.h` (new, unchanged upstream bytes)
 32. `flagquantum/simulation/stabilizer/csrc/vendor/stim-1.16.0/src/stim/simulators/dem_sampler.inl` (new, unchanged upstream bytes)

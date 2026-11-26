@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import (
     Block,
     Operation,
@@ -157,18 +156,3 @@ __all__ = (
     "substitute_operation",
     "substitute_value",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    rewrite_regions,
-    substitute_value,
-    substitute_operation,
-    fresh_value,
-    clone_inline_block,
-    region_operation_count,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.rewrites"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.rewrites", __name__)

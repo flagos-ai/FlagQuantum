@@ -101,9 +101,3 @@ __all__ = [
     "statevector_probabilities",
     "repeated_rxx_ryy_rzz_tangents",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (__getattr__,):
-    _identity_export.__module__ = "flagquantum.kernels.triton"
-del _identity_export

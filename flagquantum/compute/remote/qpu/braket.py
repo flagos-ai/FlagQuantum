@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
     DeploymentPackage,
@@ -321,14 +320,8 @@ class AmazonBraketProvider(QuantumProvider):
 # Preserve historical import identities for pickles and public introspection.
 for _identity_export in (
     BraketSubmissionPreview,
-    _property_value,
-    _first_property,
-    _braket_coupling_map,
-    _braket_dynamic_groups,
     braket_backend_profile,
     AmazonBraketProvider,
 ):
     _identity_export.__module__ = "flagquantum.remote.qpu.braket"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.braket", __name__)

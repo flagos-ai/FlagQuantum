@@ -18,8 +18,8 @@ from flagquantum.qec import PyMatchingDecoder
 from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
 from flagquantum.qec.decoders.matching_graph import MatchingEdge, MatchingGraph
 from flagquantum.qec.dem.graph import DecodingGraph
-from tools.check_qec_installed_profiles import _run
-from tools.qec_installed_smoke import (
+from tools.release.check_qec_installed_profiles import _run
+from tools.release.qec_installed_smoke import (
     PROFILES,
     _embedded_profile,
     _exercise,
@@ -626,7 +626,7 @@ def test_graph_missing_sdk_has_existing_dependency_error(
 
 @pytest.mark.parametrize("profile", ("core", "stim", "pymatching", "both"))
 def test_native_detector_installed_profile(profile: str) -> None:
-    from tools.qec_installed_smoke import _exercise_native_detector_execution
+    from tools.release.qec_installed_smoke import _exercise_native_detector_execution
 
     if _embedded_profile() or profile in ("stim", "both"):
         if not _embedded_profile():
@@ -654,7 +654,7 @@ def test_core_sampler_success_requires_the_explicit_embedded_profile(
     embedded: bool,
 ) -> None:
     from flagquantum.dynamic import DynamicCircuit
-    from tools import qec_installed_smoke
+    from tools.release import qec_installed_smoke
 
     class Sampler:
         def sample(self, shots: int, *, bit_packed: bool) -> torch.Tensor:
@@ -695,7 +695,7 @@ def test_core_sampler_success_requires_the_explicit_embedded_profile(
 
 @pytest.mark.parametrize("profile", ("core", "stim", "pymatching", "both"))
 def test_measurement_file_conversion_installed_profile(profile: str) -> None:
-    from tools.qec_installed_smoke import _exercise_measurement_file_conversion
+    from tools.release.qec_installed_smoke import _exercise_measurement_file_conversion
 
     if _embedded_profile() or profile in ("stim", "both"):
         if not _embedded_profile():
@@ -717,7 +717,7 @@ def test_file_conversion_profile_failure_is_not_silently_skipped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum import Circuit
-    from tools import qec_installed_smoke
+    from tools.release import qec_installed_smoke
 
     monkeypatch.setattr(qec_installed_smoke, "_embedded_profile", lambda: True)
 

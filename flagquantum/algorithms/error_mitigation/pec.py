@@ -64,10 +64,10 @@ import itertools
 import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.noise import NoiseModel
@@ -752,20 +752,25 @@ def run_pec(
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    PauliTwirlDecomposition,
+    PecLocation,
+    PecResult,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _word_operators,
-    _commutation_parity,
-    _quasi_probabilities,
     PauliTwirlDecomposition,
     pauli_twirl_decomposition,
     PecLocation,
     PecResult,
-    _corrected,
-    _declared_channel,
-    _read,
     run_pec,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.pec"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.pec", __name__)

@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from tools import hardware_telemetry as telemetry
-from tools import run_with_watchdog as watchdog
+from tools.ci import run_with_watchdog as watchdog
+from tools.validation import hardware_telemetry as telemetry
 
 pytestmark = pytest.mark.unit
 

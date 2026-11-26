@@ -204,7 +204,7 @@ this document does not close them.
   behavior changes.
 - **`fq.__all__` is unchanged at 34 names** and `docs/public_api_v1.json` and
   `contracts/public-api-v1-candidate.json` are not touched. `python -m
-  tools.public_api_snapshot` passes without a rewrite.
+  tools.architecture.public_api_snapshot` passes without a rewrite.
 - **The doctest gate gains an entry.** `SPSAOptimizer`'s `Examples:` block is a
   `>>>` example in a new module, and
   `tests/api_contract/test_public_docstring_examples.py::test_every_module_with_examples_is_covered`
@@ -314,9 +314,9 @@ circuits, from `flagquantum.algorithms.SPSAOptimizer` with a seeded
   documents), and **compiler domain owner** for the one-line gate change.
   **API owner** approval is required only if `SPSAOptimizer` is later promoted
   into `fq.__all__`, which this document does not propose.
-- Verification: `python tools/check_team_scope.py --team algorithms --files
+- Verification: `python tools/architecture/check_team_scope.py --team algorithms --files
   <changed paths>` passes for the algorithms-owned paths and names the
   protected integration paths and the `compiler`-owned gate as the split
-  recorded above. `python tools/ci_tier.py pr-default` and
-  `python tools/ci_tier.py pr-runtime` are the tiers for a new local algorithm
+  recorded above. `python tools/ci/ci_tier.py pr-default` and
+  `python tools/ci/ci_tier.py pr-runtime` are the tiers for a new local algorithm
   on the statevector path.

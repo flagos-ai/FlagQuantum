@@ -15,6 +15,8 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
@@ -163,7 +165,10 @@ def contract_errors(
         errors.append("Qiskit contract is missing [verification]")
     else:
         for name, raw_path in verification.items():
-            if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
+            if (
+                not isinstance(raw_path, str)
+                or not (source_path(ROOT, raw_path)).is_file()
+            ):
                 errors.append(f"Qiskit verification path {name!r} does not exist")
     return tuple(errors)
 

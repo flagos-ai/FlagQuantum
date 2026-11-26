@@ -14,8 +14,6 @@ from typing import Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .contracts import (
     MemorySnapshot,
     PlatformActivationError,
@@ -237,11 +235,3 @@ class FlagOSPlatformRuntime:
 
 
 __all__ = ("FlagOSPlatformRuntime",)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (FlagOSPlatformRuntime,):
-    _identity_export.__module__ = "flagquantum.compute.flagos"
-del _identity_export
-
-_alias_module("flagquantum.compute.flagos", __name__)

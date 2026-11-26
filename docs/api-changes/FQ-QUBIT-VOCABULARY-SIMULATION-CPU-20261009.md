@@ -95,7 +95,7 @@ rather than a concept. This is why `boundary.measured_private` drops from 331 to
 ## The one payload key this slice keeps
 
 `simulation/lindblad.py::EvolutionPlan::n_wires` is written into
-`EvolutionPlan.to_dict()`. The record is read back by `flagquantum/lindblad/_plan.py`,
+`EvolutionPlan.to_dict()`. The record is read back by `flagquantum/runtime/evolution/_plan.py`,
 a private reader that reconstructs the dataclass from the payload, so the spelling
 reaches a serialized schema and moves only when that schema is versioned. It is
 the slice's single row in `[attribute_exclusions]`, and the gate checks that the
@@ -166,7 +166,7 @@ classes of reader had to follow, and the discipline was the same in each case:
    only when the callee is a function this slice renamed *and* the keyword is one
    of that function's retired parameters, so a keyword that names a neighbouring
    function's own parameter is left alone.
-   `tools/census_wire_vocabulary.py` keeps citing
+   `tools/architecture/census_wire_vocabulary.py` keeps citing
    `infer_n_wires_from_dense_state`: it is the docstring's example of the old
    spelling, not a call.
 
@@ -183,7 +183,7 @@ because the name belongs to a neighbour:
   their spellings for the same reason.
 * `self.n_wires` stays: it is the excluded `EvolutionPlan` field.
 
-`tools/check_team_scope.py` reads the change as `(protected) 1, (shared) 15,
+`tools/architecture/check_team_scope.py` reads the change as `(protected) 1, (shared) 15,
 algorithms 1, core 1, simulation 31`, so the contract declares WQ-6's owner as
 `simulation + algorithms + core` rather than `simulation` alone. The alternative —
 leaving the catch-up to a later slice — would have left the package failing
@@ -199,11 +199,11 @@ Each command was run at the commit that carries the rename, in
 | 1 | `python -m black --check flagquantum tests tools` | all files unchanged |
 | 2 | `python -m ruff check flagquantum tests tools` | `All checks passed!` |
 | 3 | `python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | `Success: no issues found in 624 source files` |
-| 4 | `python tools/check_architecture.py` | `architecture boundaries passed` |
-| 5 | `python tools/check_qubit_vocabulary.py` | exit 0; `208 of 341` parameters retired, `84 of 122` attributes retired, `7 of 10` definitions retired; WQ-6 is `77 / 1 / 3` with 0 remaining |
-| 6 | `python tools/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
-| 7 | `python tools/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
-| 8 | `python tools/check_team_scope.py --require-classified --base 57c0b8338` | every changed path is classified: 1 protected, 15 shared, 1 `algorithms`, 1 `core`, 31 `simulation` |
+| 4 | `python tools/architecture/check_architecture.py` | `architecture boundaries passed` |
+| 5 | `python tools/architecture/check_qubit_vocabulary.py` | exit 0; `208 of 341` parameters retired, `84 of 122` attributes retired, `7 of 10` definitions retired; WQ-6 is `77 / 1 / 3` with 0 remaining |
+| 6 | `python tools/architecture/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
+| 7 | `python tools/ci/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
+| 8 | `python tools/architecture/check_team_scope.py --require-classified --base 57c0b8338` | every changed path is classified: 1 protected, 15 shared, 1 `algorithms`, 1 `core`, 31 `simulation` |
 | 9 | the CI marker lane | no new failure; see the PR body for the exact run |
 
 Status: landed. The rename is WQ-6's and no other slice may retire a site this

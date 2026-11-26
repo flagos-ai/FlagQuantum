@@ -170,7 +170,7 @@ CI/runner settings, or historical evidence. No research execution.
 ## Verification commands
 
 ```bash
-python tools/check_team_scope.py --team integration --files <the-10-listed-paths>
+python tools/architecture/check_team_scope.py --team integration --files <the-10-listed-paths>
 python -m pytest -q \
   tests/unit/test_dynamic_final_outputs_contract.py \
   tests/integration/test_dynamic_final_outputs.py \
@@ -179,10 +179,10 @@ python -m pytest -q \
   tests/unit/test_dynamic_terminal_measurement_normalization.py \
   tests/test_algorithm_examples.py::test_examples_readme_names_every_example_that_does_not_use_the_root_alias
 python -m examples.local.dynamic_final_outputs
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
-python tools/check_docs_links.py
-python tools/docs_source_of_truth.py --check
+python tools/docs/check_docs_links.py
+python tools/docs/docs_source_of_truth.py --check
 ```
 
 Run Black, minimum Ruff and strict Mypy on the changed Python files, plus

@@ -45,7 +45,7 @@ is not claimed to reproduce the failed Linux shard's exact assignment.
 ## Existing contributor workflow and verification
 
 ```bash
-python tools/ci_tier.py pr-runtime --shard-count 4 --shard-index 0
+python tools/ci/ci_tier.py pr-runtime --shard-count 4 --shard-index 0
 python -m pytest tests/unit/test_pytest_shard.py \
   tests/unit/test_ci_coverage_plan.py -q
 ```

@@ -11,9 +11,6 @@ from .lowering.basis_translation import (
 )
 from .lowering.basis_translation import __all__ as __all__
 from .lowering.basis_translation import (
-    _gate as _gate,
-)
-from .lowering.basis_translation import (
     translate as translate,
 )
 from .lowering.basis_translation import (

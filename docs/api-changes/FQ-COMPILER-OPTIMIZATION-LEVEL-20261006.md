@@ -70,7 +70,7 @@ for the reason above: `compile` is a Stable Core export name and
 `flagquantum.compiler.compile` is a declared `public_apis` entry of the
 `program_compilation` capability, which is `production_supported`.
 
-`python tools/check_team_scope.py --team compiler --files` over the complete
+`python tools/architecture/check_team_scope.py --team compiler --files` over the complete
 change set is the check that the first of those two claims holds.
 
 ## Problem and affected user journey
@@ -183,7 +183,7 @@ not be recoverable from the result.
 records no `flagquantum.compiler.compile` entry, so the protected baseline
 signature is not the surface this change touches; the root `fq.compile`, which is
 the Stable Core export, does not forward the new parameter and its signature is
-unchanged. `python tools/public_api_snapshot.py` was run on this branch with the
+unchanged. `python tools/architecture/public_api_snapshot.py` was run on this branch with the
 change in place and reported `public API migration baseline passed`. That is
 evidence about this snapshot, not a licence to regenerate one: no snapshot, and no
 file under `contracts/`, is modified by this change.
@@ -240,7 +240,7 @@ branch):
 - **Affected surfaces:** `flagquantum/compiler/{pipeline,optimization_levels}.py`,
   `flagquantum/compiler/README.md`, `tests/team/compiler/**`,
   `docs/reference/{API,RELEASE_NOTES}.md`.
-- **Team scope:** `python tools/check_team_scope.py --team compiler --files` over
+- **Team scope:** `python tools/architecture/check_team_scope.py --team compiler --files` over
   the complete change set reports `team ownership policy passed`.
 - **Approval required from:** the API owner, for adding a parameter to a
   `production_supported` capability's declared public entry points; the integration

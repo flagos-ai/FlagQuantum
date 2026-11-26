@@ -15,6 +15,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
@@ -113,11 +115,14 @@ def contract_errors(
 
     verification = contract.get("verification", {})
     policy_path = verification.get("policy")
-    if not isinstance(policy_path, str) or not (ROOT / policy_path).is_file():
+    if (
+        not isinstance(policy_path, str)
+        or not (source_path(ROOT, policy_path)).is_file()
+    ):
         errors.append("CUDA-Q policy verification path does not exist")
     for name in ("policy", "integration", "conformance", "core_isolation"):
         path = verification.get(name)
-        if not isinstance(path, str) or not (ROOT / path).is_file():
+        if not isinstance(path, str) or not (source_path(ROOT, path)).is_file():
             errors.append(f"CUDA-Q {name} verification path does not exist")
     if verification.get("sdk_lane") != ".github/workflows/ci.yml#cudaq-optional":
         errors.append("CUDA-Q SDK lane reference drifted")

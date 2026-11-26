@@ -2,7 +2,7 @@
 
 The gate is the only thing standing between a measured tensor-network run and a
 release claim, so these tests seal artifacts exactly as
-``tools/seal_runtime_evidence.py`` does and require the gate to accept a complete
+``tools/release/seal_runtime_evidence.py`` does and require the gate to accept a complete
 set and to name the specific thing that is missing from an incomplete one. The
 capacity premise is deliberately absent from the frozen manifest, so the tests
 also pin that the gate reports the missing premise instead of assuming one.

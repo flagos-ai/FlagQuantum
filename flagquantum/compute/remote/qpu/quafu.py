@@ -10,7 +10,6 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 from urllib import parse
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
     DeploymentPackage,
@@ -619,15 +618,6 @@ __all__ = ["QuafuProvider"]
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _quafu_backend_name,
-    _is_simulator_target,
-    _validate_quafu_shots,
-    _service_options,
-    _submission_options,
-    QuafuProvider,
-):
+for _identity_export in (QuafuProvider,):
     _identity_export.__module__ = "flagquantum.remote.qpu.quafu"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.quafu", __name__)

@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import json
 from functools import lru_cache
+from importlib.util import resolve_name
 from pathlib import Path
 
 _MANIFEST = Path("docs/development/migration/independent-structure-moves.json")
@@ -151,8 +152,72 @@ def relocation_errors(repository_root: Path) -> tuple[str, ...]:
             and node.args[0].value == target
             for node in ast.walk(tree)
         )
-        if not delegates and not (set(row["symbols"]) - {"__getattr__"}) <= imports:
+        required = (
+            set(row.get("public_compatibility_symbols", row["symbols"]))
+            - {"__getattr__"}
+            - set(row.get("retired_reexports", ()))
+        )
+        if not delegates and not required <= imports:
             errors.append(
                 f"historical facade does not forward its declared symbols: {old}"
             )
+    return tuple(errors)
+
+
+def retired_import_errors(repository_root: Path) -> tuple[str, ...]:
+    """Reject operational consumers of physically retired internal entry points."""
+    manifest = repository_root / _MANIFEST
+    if not manifest.is_file():
+        return ()
+    payload = json.loads(manifest.read_bytes())
+    rows = payload["moves"]
+    retired = {
+        _module(row["old"])
+        for row in rows
+        if row.get("compatibility") == "none" and row["old"].endswith(".py")
+    } - {_module(row["new"]) for row in rows if row["new"].endswith(".py")}
+    retired.update(payload.get("retired_namespace_parents", ()))
+    retired.update(
+        _module(row["old"]) + "." + name
+        for row in rows
+        for name in (
+            *row.get("retired_reexports", ()),
+            *row.get("retired_private_members", ()),
+        )
+    )
+    errors: list[str] = []
+    for directory in payload.get("retired_directories", ()):
+        if (repository_root / directory).exists():
+            errors.append(f"retired internal directory still exists: {directory}")
+    for domain in ("flagquantum", "tools", "tests", "examples", "benchmarks"):
+        for path in (repository_root / domain).rglob("*.py"):
+            relative = path.relative_to(repository_root).as_posix()
+            package = _module(relative)
+            if path.name != "__init__.py":
+                package = package.rpartition(".")[0]
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+            for node in ast.walk(tree):
+                imports: list[str] = []
+                if isinstance(node, ast.Import):
+                    imports = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    base = (
+                        resolve_name("." * node.level + (node.module or ""), package)
+                        if node.level
+                        else node.module or ""
+                    )
+                    imports = [base, *(base + "." + alias.name for alias in node.names)]
+                for name in imports:
+                    blocked = next(
+                        (
+                            ".".join(name.split(".")[:end])
+                            for end in range(1, len(name.split(".")) + 1)
+                            if ".".join(name.split(".")[:end]) in retired
+                        ),
+                        None,
+                    )
+                    if blocked:
+                        error = f"{relative}:{node.lineno}: imports retired internal path {blocked}"
+                        if error not in errors:
+                            errors.append(error)
     return tuple(errors)

@@ -54,6 +54,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -348,14 +350,14 @@ def _header_errors(contract: dict[str, Any]) -> list[str]:
         "batch_profile",
     ):
         raw = contract.get(name)
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(f"opcode exactness {name} path {raw!r} does not exist")
     authorization = contract.get("authorization")
     if not isinstance(authorization, list) or not authorization:
         errors.append("opcode exactness authorization is not a non-empty list")
     else:
         for raw in authorization:
-            if not isinstance(raw, str) or not (ROOT / raw).is_file():
+            if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
                 errors.append(
                     f"opcode exactness authorization record {raw!r} does not exist"
                 )
@@ -812,12 +814,12 @@ def _refusal_errors(contract: dict[str, Any]) -> list[str]:
             raw = row.get(field)
             if raw is None:
                 continue
-            if not isinstance(raw, str) or not (ROOT / raw).is_file():
+            if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
                 errors.append(
                     f"opcode exactness refusal {field} path {raw!r} does not exist"
                 )
                 continue
-            if phrase not in (ROOT / raw).read_text(encoding="utf-8"):
+            if phrase not in (source_path(ROOT, raw)).read_text(encoding="utf-8"):
                 errors.append(
                     f"opcode exactness refusal phrase {phrase!r} does not occur in {raw}"
                 )
@@ -948,7 +950,7 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
             )
     for name in ("contract", "gate"):
         raw = verification.get(name)
-        if not isinstance(raw, str) or not (ROOT / raw).is_file():
+        if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
             errors.append(
                 f"opcode exactness verification {name} path {raw!r} does not exist"
             )

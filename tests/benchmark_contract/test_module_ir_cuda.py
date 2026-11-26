@@ -13,7 +13,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from tools.sanitize_public_evidence import sanitize_text
+from tools.release.sanitize_public_evidence import sanitize_text
 
 pytestmark = [pytest.mark.gpu, pytest.mark.benchmark_contract]
 

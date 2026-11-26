@@ -538,7 +538,7 @@ must keep `scalability_claim_allowed=false` and must not use
 require capacity and sharded optimizer-update evidence.
 
 Production promotion is a two-step operation: the executor writes measurements
-and a raw log, then `tools/seal_runtime_evidence.py` captures the commit,
+and a raw log, then `tools/release/seal_runtime_evidence.py` captures the commit,
 workload hash, command, device UUIDs, topology, rank mapping, backend, warmup,
 iterations, seeds, and log checksum. With no `FQ_EVIDENCE_SIGNING_KEY`, it emits
 a v2 envelope with a canonical SHA-256 checksum. This checks content integrity,
@@ -551,7 +551,7 @@ Before an eight-GPU release run, validate the environment without printing
 secret material:
 
 ```bash
-python tools/check_release_evidence_environment.py --world-size 8
+python tools/release/check_release_evidence_environment.py --world-size 8
 ```
 
 ### Promotion walkthrough
@@ -573,7 +573,7 @@ python -m torch.distributed.run --nnodes=2 --nproc-per-node=4 \
 #    is refused for a single-device run. Cross-host legs need one
 #    `--device-uuid <uuid>@<node>` per rank, or every rank is attributed to the
 #    host the sealer runs on.
-python tools/seal_runtime_evidence.py \
+python tools/release/seal_runtime_evidence.py \
   --measurements /tmp/capacity_completion.json \
   --raw-log /tmp/capacity_completion.log \
   --workload benchmarks/manifests/statevector_capacity_workload_v2.json \
@@ -585,7 +585,7 @@ python tools/seal_runtime_evidence.py \
 #    gate, so a set that fails evaluation cannot be promoted.
 python benchmarks/internal/evidence/statevector_release_gate.py \
   --candidate benchmarks/results/smoke/release_candidates/<campaign>
-python tools/promote_release_candidates.py \
+python tools/release/promote_release_candidates.py \
   --candidate benchmarks/results/smoke/release_candidates/<campaign>
 
 # 4. The promoted directory must now audit clean.

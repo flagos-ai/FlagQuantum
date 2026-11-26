@@ -12,7 +12,7 @@ serialization schema version, and it regenerates no public-API snapshot.
 
 ## Problem
 
-`tools/check_release_evidence_environment.py` is the preflight the sealer runs
+`tools/release/check_release_evidence_environment.py` is the preflight the sealer runs
 before it writes anything. One of its checks was:
 
 > `scalability directory already contains promoted JSON; seal into the candidate
@@ -54,7 +54,7 @@ state of a directory the command does not write to.
 `readiness_errors` takes `seal_destination` and `release_root`, and refuses a
 destination that resolves inside the release root. `environment_errors` passes
 the repository's release root and forwards the destination from its caller;
-`tools/seal_runtime_evidence.py` passes `args.output`. The standalone
+`tools/release/seal_runtime_evidence.py` passes `args.output`. The standalone
 `--seal-destination` option lets a launcher ask the same question before it
 measures anything.
 
@@ -101,21 +101,21 @@ between two promotions.
       `test_a_destination_that_resolves_into_the_release_directory_is_refused`
 - [x] The standalone environment check invents no destination error:
       `test_the_environment_check_alone_names_no_destination`
-- [x] `tools/seal_runtime_evidence.py` passes the destination it will write:
+- [x] `tools/release/seal_runtime_evidence.py` passes the destination it will write:
       the sealer's own call site, exercised by the capacity-baseline seal below
 - [x] The check was exercised against the real release directory at the real
-      revision: `python tools/check_release_evidence_environment.py
+      revision: `python tools/release/check_release_evidence_environment.py
       --world-size 1 --seal-destination
       benchmarks/results/scalability/leg.json` exits 2 naming the destination,
       and the same command with a candidate destination names no destination
       error
 - [x] `ruff check` passes on the three touched files
-- [x] `tools/check_team_scope.py --team integration --files` passes on the three
+- [x] `tools/architecture/check_team_scope.py --team integration --files` passes on the three
       touched files
 
 ## Non-goals
 
-- The promotion gate is not relaxed. `tools/promote_release_candidates.py` still
+- The promotion gate is not relaxed. `tools/release/promote_release_candidates.py` still
   re-runs the capability's gate over the candidate set with a signing key and
   moves nothing unless it passes, and `benchmarks/audit_results.py
   --require-scalability` still re-validates every promoted payload.

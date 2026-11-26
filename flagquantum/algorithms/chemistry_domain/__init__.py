@@ -10,6 +10,8 @@ __doc__ = _implementation.__doc__ or ""
 
 
 def __getattr__(name: str) -> _Any:
+    if name.startswith("_"):
+        raise AttributeError(name)
     cached = _alias_sys.modules.get(f"{__name__}.{name}")
     if cached is not None:
         return cached

@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from tools.validate_split_real_imag_double_single_evidence import evidence_errors
+from tools.validation.validate_split_real_imag_double_single_evidence import (
+    evidence_errors,
+)
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

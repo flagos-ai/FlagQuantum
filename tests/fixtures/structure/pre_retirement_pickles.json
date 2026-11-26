@@ -1,0 +1,21 @@
+{
+  "source_commit": "5f8e97c771925ebaf0a19f8fca26ab16c328ec4a",
+  "wheel_sha256": "f18b20df5d3d94c3f6a3d6a5572c7f8019b876fce5a4dcae0949bbba9bd87672",
+  "fixtures": [
+    {
+      "type": "MemorySnapshot",
+      "module": "flagquantum.compute.contracts",
+      "pickle_base64": "gASVgAAAAAAAAACMHWZsYWdxdWFudHVtLmNvbXB1dGUuY29udHJhY3RzlIwOTWVtb3J5U25hcHNob3SUk5QpgZR9lCiMD2FsbG9jYXRlZF9ieXRlc5RLDIwOcmVzZXJ2ZWRfYnl0ZXOUSyCMCmZyZWVfYnl0ZXOUTowLdG90YWxfYnl0ZXOUTnViLg=="
+    },
+    {
+      "type": "CollapseOperator",
+      "module": "flagquantum.simulation.lindblad_request",
+      "pickle_base64": "gASVaQAAAAAAAACMJ2ZsYWdxdWFudHVtLnNpbXVsYXRpb24ubGluZGJsYWRfcmVxdWVzdJSMEENvbGxhcHNlT3BlcmF0b3KUk5QpgZRdlCiMEWFtcGxpdHVkZV9kYW1waW5nlEc/yZmZmZmZmksAhZRlYi4="
+    },
+    {
+      "type": "LindbladPlan",
+      "module": "flagquantum.lindblad._plan",
+      "pickle_base64": "gASVSAMAAAAAAACMGmZsYWdxdWFudHVtLmxpbmRibGFkLl9wbGFulIwMTGluZGJsYWRQbGFulJOUKYGUXZQoWAoDAAB7ImRlY2lzaW9uIjp7ImJhdGNoX3NpemUiOjEsImRpbWVuc2lvbiI6Miwibl90aW1lcyI6Miwibl93aXJlcyI6MSwibnVtZXJpY3MiOnsiZGV2aWNlIjoiY3B1IiwibWV0aG9kIjoicnVuZ2Uta3V0dGEiLCJvcmRlciI6NCwicHJlY2lzaW9uIjoiY29tcGxleDEyOCIsInJlcXVpcmVfZ3JhZGllbnRzIjpmYWxzZSwic29sdmVfdG9sZXJhbmNlIjpudWxsLCJzdGVwX3NpemUiOjAuMDV9LCJ0cmFqZWN0b3J5X2J5dGVzIjoxMjh9LCJpZGVudGl0eSI6IjgyNGYwZjAxNTAwZTAxNmJhNTM2MTFjNTkxMzBkYjY1OWZlZWQ5MjBlMmU0MGEwMjU2NzI0MmVkOTliNjMwMzEiLCJyZXF1ZXN0Ijp7ImNvbGxhcHNlX29wZXJhdG9ycyI6W10sImhhbWlsdG9uaWFuIjp7InNoYXBlIjpbMiwyXSwidmFsdWVzIjpbW1sxLjAsMC4wXSxbMC4wLDAuMF1dLFtbMC4wLDAuMF0sWy0xLjAsMC4wXV1dfSwiaW5pdGlhbF9kZW5zaXR5X21hdHJpeCI6eyJzaGFwZSI6WzIsMl0sInZhbHVlcyI6W1tbMS4wLDAuMF0sWzAuMCwwLjBdXSxbWzAuMCwwLjBdLFswLjAsMC4wXV1dfSwibl9xdWJpdHMiOjEsIm9ic2VydmFibGVzIjpbeyJuYW1lIjoiZXhwZWN0YXRpb25fMCIsIm9wZXJhdG9yIjp7InNoYXBlIjpbMiwyXSwidmFsdWVzIjpbW1sxLjAsMC4wXSxbMC4wLDAuMF1dLFtbMC4wLDAuMF0sWy0xLjAsMC4wXV1dfX1dLCJyZXR1cm5fZGVuc2l0eV9tYXRyaWNlcyI6ZmFsc2UsInRpbWVzIjpbMC4wLDAuMV19LCJzY2hlbWEiOiJmbGFncXVhbnR1bS5saW5kYmxhZF9wbGFuIiwidmVyc2lvbiI6IjEuMyJ9lE5lYi4="
+    }
+  ]
+}

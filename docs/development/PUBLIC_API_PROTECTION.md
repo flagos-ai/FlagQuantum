@@ -36,7 +36,7 @@ boundary.
 
 Phase 0 also records the pre-open-source migration baseline in
 `contracts/public-api-v0.2-baseline.json`. The baseline checker is
-`tools/public_api_snapshot.py`; it protects the starting point while the final
+`tools/architecture/public_api_snapshot.py`; it protects the starting point while the final
 Stable Core is being selected. It is intentionally not the final frozen API
 contract.
 
@@ -131,12 +131,12 @@ Required agent behavior:
 ### 2. Machine-readable contract
 
 The checked-in baseline is `contracts/public-api-v0.2-baseline.json`.
-`tools/public_api_snapshot.py` compares the package with the protected baseline
+`tools/architecture/public_api_snapshot.py` compares the package with the protected baseline
 and reviewed candidate contracts. CI invokes it from `.github/workflows/ci.yml`.
 Run the current checks from the repository root:
 
 ```bash
-python tools/public_api_snapshot.py
+python tools/architecture/public_api_snapshot.py
 python -m pytest tests/unit/test_public_api_candidate.py -q
 ```
 
@@ -271,7 +271,7 @@ minimum CODEOWNERS coverage is expected to include:
 /flagquantum/runtime/policy.py         @FlagQuantum/api-maintainers
 /flagquantum/runtime/execution.py      @FlagQuantum/api-maintainers
 /flagquantum/runtime/module.py         @FlagQuantum/api-maintainers
-/tools/public_api_snapshot.py    @FlagQuantum/api-maintainers
+/tools/architecture/public_api_snapshot.py    @FlagQuantum/api-maintainers
 /.github/workflows/ci.yml    @FlagQuantum/api-maintainers
 /.github/CODEOWNERS                    @FlagQuantum/api-maintainers
 /AGENTS.md                             @FlagQuantum/api-maintainers

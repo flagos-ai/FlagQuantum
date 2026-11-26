@@ -32,7 +32,7 @@ def named_binder(
 ) -> None:
     if request.param == "core":
         monkeypatch.setattr(
-            "flagquantum.runtime.module._bind_named_instructions", _core_bind
+            "flagquantum.runtime.training.module._bind_named_instructions", _core_bind
         )
         monkeypatch.setattr(
             "flagquantum.runtime._runtime_inputs._bind_named_instructions", _core_bind

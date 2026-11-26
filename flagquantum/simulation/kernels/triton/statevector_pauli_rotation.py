@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -207,16 +205,3 @@ def apply_complex64_local_pauli_rotation_2q(
 
 
 __all__ = ["apply_complex64_local_pauli_rotation_2q"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _complex64_local_pauli_rotation_kernel,
-    apply_complex64_local_pauli_rotation_2q,
-):
-    _identity_export.__module__ = (
-        "flagquantum.kernels.triton.statevector_pauli_rotation"
-    )
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_pauli_rotation", __name__)

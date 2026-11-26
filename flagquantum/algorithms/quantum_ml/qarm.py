@@ -58,10 +58,10 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.estimation.amplitude_estimation import (
     AmplitudeEstimationResult,
     run_amplitude_estimation,
@@ -788,21 +788,19 @@ def _append_support_match(
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (FrequentItemsetOperator,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     FrequentItemsetOperator,
     frequent_itemset_operator,
     run_frequent_itemset,
-    _validated_matrix,
-    _validated_incidence,
-    _validated_item_count,
-    _validated_threshold,
-    _validated_support_width,
-    _ladder_ancillas,
-    _append_pattern_bracket,
-    _append_support_step,
-    _append_support_match,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.qarm"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.qarm", __name__)

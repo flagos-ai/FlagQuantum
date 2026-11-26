@@ -57,10 +57,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.artifacts.physical_plan import build_physical_circuit_plan
 from flagquantum.compiler.artifacts.target_conformance import verify_target_emission
 from flagquantum.compiler.formats.target_emission import (
@@ -1044,30 +1044,26 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    EmulatedExecutionRecord,
+    LocalTargetEmulation,
+    TargetCompilationDiagnostic,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     TargetEmulationError,
     EmulatedExecutionRecord,
     TargetCompilationDiagnostic,
     LocalTargetEmulation,
-    _record_payload,
-    _requested_kind,
-    _prepare_program,
-    _select_emission_profile,
-    _select_declared_device,
-    _declared_emission_profile,
-    _require_declared_request_kinds,
-    _declared_limits,
-    _declared_target_profile,
-    _declared_native_gates,
-    _declaration_digest,
-    _target_snapshot,
-    _local_counts,
-    _require_profile_coverage,
-    _execute,
     emulate,
     emulate_declared_target,
 ):
     _identity_export.__module__ = "flagquantum.remote.emulation"
 del _identity_export
-
-_alias_module("flagquantum.remote.emulation", __name__)

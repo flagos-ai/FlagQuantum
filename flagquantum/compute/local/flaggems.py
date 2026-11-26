@@ -18,8 +18,6 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .registry import get_platform_runtime
 
 # A probe answers "can this optional backend be used here?" and reports
@@ -872,34 +870,3 @@ __all__ = [
     "plan_operator_replacements",
     "validate_flaggems_ops",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    OperatorBackendAvailability,
-    OperatorReplacementPlan,
-    OperatorBackendSession,
-    OperatorValidationResult,
-    _normalize_backend_name,
-    _split_ops,
-    _env_bool,
-    _import_flag_gems,
-    _extract_flaggems_catalog_keys,
-    _active_flaggems_registered_keys,
-    _availability_from_module,
-    _probe_flaggems_in_subprocess,
-    flaggems_availability,
-    _known_flaggems_catalog,
-    plan_operator_replacements,
-    flaggems_preflight,
-    operator_backend,
-    operator_backend_from_env,
-    _torch_dtype_from_string,
-    _real_objective,
-    _run_flaggems_op_smoke,
-    validate_flaggems_ops,
-):
-    _identity_export.__module__ = "flagquantum.compute.flaggems"
-del _identity_export
-
-_alias_module("flagquantum.compute.flaggems", __name__)

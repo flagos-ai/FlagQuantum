@@ -48,7 +48,7 @@ The active phase is `retired`, recorded explicitly in the contract. From a core
 installation in the repository root:
 
 ```bash
-PYTHONPATH=. python tools/check_qec_retirement.py --phase retired
+PYTHONPATH=. python tools/validation/check_qec_retirement.py --phase retired
 PYTHONPATH=. python -m pytest tests/api_contract/test_qec_retirement_contract.py -q
 ```
 

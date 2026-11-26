@@ -83,13 +83,13 @@ def checks(python_executable: str) -> tuple[Check, ...]:
                 "--ignore-missing-imports",
                 "--follow-imports",
                 "skip",
-                "tools/ci_tier.py",
-                "tools/check_evidence_retention.py",
+                "tools/ci/ci_tier.py",
+                "tools/release/check_evidence_retention.py",
             ),
         ),
         Check(
             "capability maturity",
-            (python_executable, "tools/check_capability_maturity.py"),
+            (python_executable, "tools/validation/check_capability_maturity.py"),
         ),
         Check(
             "dependency policy",
@@ -97,7 +97,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "Amazon Braket circuit interoperability contract",
-            (python_executable, "tools/check_braket_interop_contract.py"),
+            (python_executable, "tools/validation/check_braket_interop_contract.py"),
         ),
         Check(
             "Cirq interoperability contract",
@@ -105,67 +105,88 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "CUDA-Q export contract",
-            (python_executable, "tools/check_cudaq_export_contract.py"),
+            (python_executable, "tools/validation/check_cudaq_export_contract.py"),
         ),
         Check(
             "Qiskit interoperability contract",
-            (python_executable, "tools/check_qiskit_interop_contract.py"),
+            (python_executable, "tools/validation/check_qiskit_interop_contract.py"),
         ),
         Check(
             "PennyLane interoperability contract",
-            (python_executable, "tools/check_pennylane_interop_contract.py"),
+            (python_executable, "tools/validation/check_pennylane_interop_contract.py"),
         ),
         Check(
             "interoperability capability-gap matrix",
-            (python_executable, "tools/check_interop_capability_gap_matrix.py"),
+            (
+                python_executable,
+                "tools/validation/check_interop_capability_gap_matrix.py",
+            ),
         ),
         Check(
             "construction-time composition contract",
-            (python_executable, "tools/check_circuit_composition_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_circuit_composition_contract.py",
+            ),
         ),
         Check(
             "density-matrix output contract",
-            (python_executable, "tools/check_density_matrix_output_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_density_matrix_output_contract.py",
+            ),
         ),
         Check(
             "von Neumann entropy output contract",
-            (python_executable, "tools/check_vn_entropy_output_contract.py"),
+            (python_executable, "tools/validation/check_vn_entropy_output_contract.py"),
         ),
         Check(
             "batch parameter-shift coverage contract",
-            (python_executable, "tools/check_parameter_shift_coverage_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_parameter_shift_coverage_contract.py",
+            ),
         ),
         Check(
             "parameter-shift Hessian contract",
-            (python_executable, "tools/check_parameter_shift_hessian_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_parameter_shift_hessian_contract.py",
+            ),
         ),
         Check(
             "opcode gradient exactness contract",
-            (python_executable, "tools/check_opcode_gradient_exactness.py"),
+            (python_executable, "tools/validation/check_opcode_gradient_exactness.py"),
         ),
         Check(
             "gradient method and execution mode matrix",
-            (python_executable, "tools/check_gradient_methods_contract.py"),
+            (python_executable, "tools/validation/check_gradient_methods_contract.py"),
         ),
         Check(
             "native gradients contract",
-            (python_executable, "tools/check_native_gradients_contract.py"),
+            (python_executable, "tools/validation/check_native_gradients_contract.py"),
         ),
         Check(
             "metric tensor contract",
-            (python_executable, "tools/check_metric_tensor_contract.py"),
+            (python_executable, "tools/validation/check_metric_tensor_contract.py"),
         ),
         Check(
             "primitives admission contract",
-            (python_executable, "tools/check_primitives_admission_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_primitives_admission_contract.py",
+            ),
         ),
         Check(
             "construction-layer acceptance contract",
-            (python_executable, "tools/check_construction_acceptance_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_construction_acceptance_contract.py",
+            ),
         ),
         Check(
             "OpenQASM import contract",
-            (python_executable, "tools/check_openqasm_import_contract.py"),
+            (python_executable, "tools/validation/check_openqasm_import_contract.py"),
         ),
         Check(
             "internal multi-level IR contract",
@@ -173,97 +194,103 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "realtime messaging contract",
-            (python_executable, "tools/check_realtime_messaging_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_realtime_messaging_contract.py",
+            ),
         ),
         Check(
             "qubit vocabulary ledgers",
-            (python_executable, "tools/check_qubit_vocabulary.py"),
+            (python_executable, "tools/architecture/check_qubit_vocabulary.py"),
         ),
         Check(
             "Double-Single FP32 contract",
-            (python_executable, "tools/check_double_single_contract.py"),
+            (python_executable, "tools/validation/check_double_single_contract.py"),
         ),
         Check(
             "split real/imag statevector P0 contract",
-            (python_executable, "tools/check_split_real_imag_contract.py"),
+            (python_executable, "tools/validation/check_split_real_imag_contract.py"),
         ),
         Check(
             "split real/imag statevector P1 contract",
-            (python_executable, "tools/check_split_real_imag_p1_contract.py"),
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p1_contract.py",
+            ),
         ),
         Check(
             "split real/imag P1 A800 reference evidence",
             (
                 python_executable,
-                "tools/validate_split_real_imag_training_evidence.py",
+                "tools/validation/validate_split_real_imag_training_evidence.py",
             ),
         ),
         Check(
             "split real/imag statevector P2 precision contract",
             (
                 python_executable,
-                "tools/check_split_real_imag_p2_precision_contract.py",
+                "tools/validation/check_split_real_imag_p2_precision_contract.py",
             ),
         ),
         Check(
             "split real/imag P2 A800 reference evidence",
             (
                 python_executable,
-                "tools/validate_split_real_imag_precision_evidence.py",
+                "tools/validation/validate_split_real_imag_precision_evidence.py",
             ),
         ),
         Check(
             "split real/imag statevector P3 Double-Single contract",
             (
                 python_executable,
-                "tools/check_split_real_imag_p3_double_single_contract.py",
+                "tools/validation/check_split_real_imag_p3_double_single_contract.py",
             ),
         ),
         Check(
             "split real/imag P3 A800 reference evidence",
             (
                 python_executable,
-                "tools/validate_split_real_imag_double_single_evidence.py",
+                "tools/validation/validate_split_real_imag_double_single_evidence.py",
             ),
         ),
         Check(
             "split real/imag statevector P4 device Double-Single contract",
             (
                 python_executable,
-                "tools/check_split_real_imag_p4_device_double_single_contract.py",
+                "tools/validation/check_split_real_imag_p4_device_double_single_contract.py",
             ),
         ),
         Check(
             "split real/imag P4 A800 reference evidence",
             (
                 python_executable,
-                "tools/validate_split_real_imag_device_double_single_evidence.py",
+                "tools/validation/validate_split_real_imag_device_double_single_evidence.py",
             ),
         ),
         Check(
             "split real/imag statevector P5 autograd/optimizer contract",
             (
                 python_executable,
-                "tools/check_split_real_imag_p5_autograd_optimizer_contract.py",
+                "tools/validation/check_split_real_imag_p5_autograd_optimizer_contract.py",
             ),
         ),
         Check(
             "split real/imag P5 optimizer A800 reference evidence",
             (
                 python_executable,
-                "tools/validate_split_real_imag_optimizer_evidence.py",
+                "tools/validation/validate_split_real_imag_optimizer_evidence.py",
             ),
         ),
         Check(
             "domestic single-card certification contract",
             (
                 python_executable,
-                "tools/check_domestic_single_card_contract.py",
+                "tools/validation/check_domestic_single_card_contract.py",
             ),
         ),
         Check(
             "required-check contract",
-            (python_executable, "tools/validate_required_checks.py"),
+            (python_executable, "tools/ci/validate_required_checks.py"),
         ),
         Check(
             # This gate reads checked-in evidence and the git object database, so it
@@ -273,7 +300,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             # naming the old one passes every other check in this list, so the one
             # place it can be caught before the branch is published is here.
             "evidence revision provenance",
-            (python_executable, "tools/check_evidence_revisions.py"),
+            (python_executable, "tools/release/check_evidence_revisions.py"),
         ),
         Check(
             # The ledger is the only enumerated record of the plan's rows, and the
@@ -284,11 +311,11 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             # done, a gate tier no lane runs -- is caught only here, and only
             # before the branch is published.
             "parity plan row ledger",
-            (python_executable, "tools/parity_plan_ledger.py", "--check"),
+            (python_executable, "tools/architecture/parity_plan_ledger.py", "--check"),
         ),
         Check(
             "multi-team ownership policy",
-            (python_executable, "tools/check_team_scope.py", "--validate"),
+            (python_executable, "tools/architecture/check_team_scope.py", "--validate"),
         ),
         Check(
             "ownership of every path this branch changes",
@@ -300,7 +327,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             # revision could not be resolved rather than reading as a pass.
             (
                 python_executable,
-                "tools/check_team_scope.py",
+                "tools/architecture/check_team_scope.py",
                 "--require-classified",
                 "--base",
                 "origin/main",
@@ -310,26 +337,26 @@ def checks(python_executable: str) -> tuple[Check, ...]:
             "retention metadata for new benchmark evidence",
             (
                 python_executable,
-                "tools/check_evidence_retention.py",
+                "tools/release/check_evidence_retention.py",
                 "--base",
                 "origin/main",
             ),
         ),
         Check(
             "lazy import budget",
-            (python_executable, "tools/check_import_time.py"),
+            (python_executable, "tools/validation/check_import_time.py"),
         ),
         Check(
             "smoke and unit tier",
-            (python_executable, "tools/ci_tier.py", "pr-default"),
+            (python_executable, "tools/ci/ci_tier.py", "pr-default"),
         ),
         Check(
             "runtime integration tier",
-            (python_executable, "tools/ci_tier.py", "pr-runtime"),
+            (python_executable, "tools/ci/ci_tier.py", "pr-runtime"),
         ),
         Check(
             "distributed CPU and release-contract tier",
-            (python_executable, "tools/ci_tier.py", "pr-distributed"),
+            (python_executable, "tools/ci/ci_tier.py", "pr-distributed"),
         ),
     )
 

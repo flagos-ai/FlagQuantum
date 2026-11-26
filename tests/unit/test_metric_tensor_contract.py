@@ -3,7 +3,7 @@
 ``tests/test_gradient_api.py``, ``tests/integration/test_gradient_modes.py`` and
 ``tests/test_native_circuit.py`` own the behaviour of ``fq.gradient`` and the
 batch profile. This file owns ``contracts/metric-tensor-contract.toml`` and
-``tools/check_metric_tensor_contract.py``, and asks one question of them -- is
+``tools/validation/check_metric_tensor_contract.py``, and asks one question of them -- is
 the matrix the Fubini-Study metric of the state the program delivers, and is it
 computed without reading the derivative rule that describes an expectation value
 instead?
@@ -28,7 +28,7 @@ state -- is deliberately not counted, because it is the implementation's method
 with the oracle's constants and would show consistency rather than correctness.
 
 The final section asks whether the gate is wired into CI and
-``tools/pre_push.py`` at all.
+``tools/ci/pre_push.py`` at all.
 """
 
 from __future__ import annotations
@@ -658,9 +658,9 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_metric_tensor_contract.py" in workflow
+    assert "python tools/validation/check_metric_tensor_contract.py" in workflow
     pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_metric_tensor_contract.py"' in pre_push
+    assert '"tools/validation/check_metric_tensor_contract.py"' in pre_push
 
 
 def test_the_gate_reports_what_it_measured(capsys: pytest.CaptureFixture[str]) -> None:

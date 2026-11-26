@@ -476,14 +476,6 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    amplitude_damping,
-    _infer_n_qubits,
-    _execution_settings,
-    _observables,
-    run,
-    plan,
-    adjoint_gradient,
-):
+for _identity_export in (amplitude_damping, run, plan, adjoint_gradient):
     _identity_export.__module__ = "flagquantum.lindblad"
 del _identity_export

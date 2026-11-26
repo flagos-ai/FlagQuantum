@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence  # noqa: F401
 from dataclasses import dataclass
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from flagquantum.core.operators.observable import Observable  # noqa: F401
 from flagquantum.core.parameters import Parameter
@@ -729,17 +729,24 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    EvolutionPlan,
+    EvolutionResult,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     amplitude_damping,
     EvolutionResult,
     EvolutionPlan,
-    _complex_tensor_to_json,
     plan_density_matrix_evolution,
-    _plan_density_matrix_evolution,
     evolve_density_matrix,
-    _evolve_density_matrix,
 ):
     _identity_export.__module__ = "flagquantum.simulation.lindblad"
 del _identity_export
-
-_alias_module("flagquantum.simulation.lindblad", __name__)

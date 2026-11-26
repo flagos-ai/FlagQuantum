@@ -6,7 +6,7 @@ This demand-driven stage converts existing OpenFermion FermionOperator and
 QubitOperator values at the ecosystem boundary. It does not restore an external
 execution path. The sole native representations remain the existing
 `flagquantum.observables.fermion.FermionOperator` and
-`flagquantum.core.algebra.pauli.PauliOperator`.
+`flagquantum.core.operators.pauli.PauliOperator`.
 
 The concrete `flagquantum.ecosystem.openfermion` module exposes
 `from_openfermion_fermion`, `to_openfermion_fermion`,
@@ -136,7 +136,7 @@ fakes do not replace the real-upstream tests. Run:
 ```bash
 python -m pytest tests/unit/test_openfermion_native_boundary.py tests/integration/test_openfermion_interop.py -q
 python -m pytest tests/unit/test_openfermion_conversion.py -m openfermion -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

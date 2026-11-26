@@ -13,7 +13,7 @@ from flagquantum import synth
 from flagquantum.compiler import estimate_resources
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.synth._program import synthesize_registers
-from tools.public_api_snapshot import _initial_state_run_signature
+from tools.architecture.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,7 +41,7 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
     )
     assert active["namespace_exports"] == program["previous_namespace_exports"]
     # Later authorized deltas are checked by the current admission validator.
-    from tools.public_api_snapshot import (
+    from tools.architecture.public_api_snapshot import (
         _validate_authorized_synthesis_python_program,
     )
 

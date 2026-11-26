@@ -21,7 +21,6 @@ from collections.abc import Callable, Mapping
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.matrix_free_exponential import exponential_action
 from flagquantum.simulation.matrix_free_linear_solve import gmres
 
@@ -243,19 +242,3 @@ __all__ = (
     "integrator_order",
     "substeps_per_interval",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    integrator_order,
-    substeps_per_interval,
-    advance_interval,
-    _runge_kutta_4_step,
-    _crank_nicolson_interval,
-    _crank_nicolson_step,
-    _krylov_exponential_interval,
-):
-    _identity_export.__module__ = "flagquantum.simulation.lindblad_integrators"
-del _identity_export
-
-_alias_module("flagquantum.simulation.lindblad_integrators", __name__)

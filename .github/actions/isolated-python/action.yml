@@ -74,4 +74,4 @@ runs:
         echo "PIP_INDEX_URL=$index" >> "$GITHUB_ENV"
     - name: Measure CPU and memory limits and select pytest workers
       shell: bash
-      run: python -I tools/ci_cpu_budget.py
+      run: python -I tools/ci/ci_cpu_budget.py

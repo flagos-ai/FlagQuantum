@@ -20,29 +20,29 @@ from pathlib import Path
 
 import pytest
 
-from tools.evidence_provenance import (
+from tools.release.evidence_provenance import (
     ORIGIN_PRODUCING_HOST_HISTORY,
     ProvenanceUnavailableError,
     is_full_revision,
     revision_resolves,
     source_revision_errors,
 )
-from tools.validate_flagos_reference_evidence import (
+from tools.validation.validate_flagos_reference_evidence import (
     evidence_errors as flagos_reference_errors,
 )
-from tools.validate_split_real_imag_device_double_single_evidence import (
+from tools.validation.validate_split_real_imag_device_double_single_evidence import (
     evidence_errors as split_p4_errors,
 )
-from tools.validate_split_real_imag_double_single_evidence import (
+from tools.validation.validate_split_real_imag_double_single_evidence import (
     evidence_errors as split_p3_errors,
 )
-from tools.validate_split_real_imag_optimizer_evidence import (
+from tools.validation.validate_split_real_imag_optimizer_evidence import (
     evidence_errors as split_p5_errors,
 )
-from tools.validate_split_real_imag_precision_evidence import (
+from tools.validation.validate_split_real_imag_precision_evidence import (
     evidence_errors as split_p2_errors,
 )
-from tools.validate_split_real_imag_training_evidence import (
+from tools.validation.validate_split_real_imag_training_evidence import (
     evidence_errors as split_p1_errors,
 )
 

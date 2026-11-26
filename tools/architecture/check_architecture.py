@@ -16,6 +16,8 @@ import sys
 from importlib.util import resolve_name
 from pathlib import Path
 
+from tools.architecture.source_relocations import retired_import_errors
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - CPython 3.10 development tools
@@ -343,6 +345,7 @@ def _imports_jax_executor(path: Path) -> bool:
 
 def architecture_errors() -> tuple[str, ...]:
     errors = list(_long_horizon_contract_errors())
+    errors.extend(retired_import_errors(ROOT))
     if not (ROOT / CONFIG["realtime_boundaries"]["approval"]).is_file():
         errors.append("realtime boundary approval record is missing")
     for cycle in eager_import_cycles():
@@ -687,9 +690,7 @@ def architecture_errors() -> tuple[str, ...]:
             forbidden = tuple(boundaries["kernel_forbidden"])
             for module, _ in imports:
                 # The owning prefix is not a dependency on another engine.
-                module = module.replace(
-                    "flagquantum.simulation.kernels", "flagquantum.kernels", 1
-                )
+                module = module.removeprefix("flagquantum.simulation.kernels")
                 if any(part in module.split(".") for part in forbidden):
                     errors.append(
                         f"{relative}: optimized kernel imports forbidden layer {module}"

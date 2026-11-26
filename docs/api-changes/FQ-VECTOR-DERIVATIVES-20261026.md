@@ -263,7 +263,7 @@ not exhibit.
   truth for the same support boundary.
 - No serialized schema changes. `IR_VERSION` stays `1.0`. No exception type is
   added: the refusals reuse `CapabilityError`, `ValidationError`, and `TypeError`.
-- `tools/public_api_snapshot.py`'s authorized-signature table gains the three
+- `tools/architecture/public_api_snapshot.py`'s authorized-signature table gains the three
   names. The table is a list of the objects the contract's `signatures` block
   names; a name absent from it raised `KeyError` before the edit, which is the
   check failing closed rather than a check that had to be relaxed.
@@ -289,13 +289,13 @@ $ python -m pytest tests/integration/test_gradient_modes.py -q
 $ python -m pytest tests/test_gradient_api.py -q
 37 passed
 
-$ python tools/public_api_snapshot.py
+$ python tools/architecture/public_api_snapshot.py
 public API migration baseline passed
 
-$ python tools/check_capability_maturity.py
+$ python tools/validation/check_capability_maturity.py
 capability maturity matrix passed
 
-$ python tools/docs_source_of_truth.py --check
+$ python tools/docs/docs_source_of_truth.py --check
 $ echo $?
 0
 ```

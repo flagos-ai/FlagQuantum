@@ -39,7 +39,6 @@ from collections.abc import Sequence
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.operators import SuperOperator
 from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
 
@@ -160,11 +159,3 @@ class Liouvillian:
                 "materializing it"
             )
         return self._superoperator.dense(max_bytes=int(max_bytes))
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (Liouvillian,):
-    _identity_export.__module__ = "flagquantum.simulation.lindblad_generator"
-del _identity_export
-
-_alias_module("flagquantum.simulation.lindblad_generator", __name__)

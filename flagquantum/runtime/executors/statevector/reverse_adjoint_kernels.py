@@ -20,19 +20,7 @@ from flagquantum.runtime.executors.statevector.forward import (
     _vectorized_subgroup_exchange_gate,
     _wait_for_exchange,
 )
-from flagquantum.simulation.statevector.adjoint import (
-    _complex_cross as _complex_cross,
-)
-from flagquantum.simulation.statevector.adjoint import (
-    _fused_single_process_cpu_reversible_vjp as _fused_single_process_cpu_reversible_vjp,
-)
 from flagquantum.simulation.statevector.adjoint import _is_diagonal_instruction
-from flagquantum.simulation.statevector.adjoint import (
-    _pair_components as _pair_components,
-)
-from flagquantum.simulation.statevector.adjoint import (
-    _single_process_cpu_pauli_rotation_gradient as _single_process_cpu_pauli_rotation_gradient,
-)
 
 from ....core.ir import Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config

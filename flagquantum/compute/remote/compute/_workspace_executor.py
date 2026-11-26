@@ -12,8 +12,6 @@ import time
 from dataclasses import replace
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 SCHEMA = "flagquantum.jiuding.workspace_executor"
 VERSION = "1.3"
 MAX_MESSAGE_BYTES = 8 * 1024 * 1024
@@ -331,21 +329,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _error_response,
-    _read_exact,
-    read_message,
-    write_message,
-    _encode_tensor,
-    _encode_measurement_value,
-    execute,
-    serve,
-    main,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._workspace_executor"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._workspace_executor", __name__)

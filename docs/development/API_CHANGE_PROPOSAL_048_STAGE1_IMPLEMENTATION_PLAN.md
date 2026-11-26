@@ -24,8 +24,8 @@
 - Do not modify `flagquantum/qec/types.py`, `decoders.py`, `repetition.py`, `noise.py`, or `__init__.py`'s existing exports. The seven names pinned by `contracts/hybrid-compilation-private-v0-candidate.json` keep their signatures.
 - Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, or `config/architecture.toml`.
 - Do not touch `capability-maturity.toml`, the generated docs under `docs/generated/`, or any capability row. Staging a capability promotion is Stage 5 work.
-- All source, docstring, and comment text is English (`tools/check_repository_language.py` gates this).
-- Gates that must pass on every task that changes `flagquantum/`: `black --check`, `ruff check` (the repository's selected rule set requires `zip(..., strict=...)` in every `zip` call), `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`, and `python tools/check_architecture.py`.
+- All source, docstring, and comment text is English (`tools/architecture/check_repository_language.py` gates this).
+- Gates that must pass on every task that changes `flagquantum/`: `black --check`, `ruff check` (the repository's selected rule set requires `zip(..., strict=...)` in every `zip` call), `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`, and `python tools/architecture/check_architecture.py`.
 - Module line ceiling is 1250 for anything other than `flagquantum/__init__.py`. New modules stay far below it.
 - Every task ends with a commit. Conventional-commit prefixes used by this repository: `feat:`, `test:`, `docs:`.
 
@@ -1601,15 +1601,15 @@ git commit -m "feat: publish the code-independent QEC records layer"
 - [ ] **Step 1: Run the structural gates**
 
 ```bash
-docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:local bash -lc "python -m pip install -e . --no-deps -q && python tools/check_architecture.py && python tools/check_repository_hygiene.py && python tools/check_repository_language.py && python -m tools.docs_source_of_truth --check && python -m tools.operator_manifest --check && python -m tools.correctness_certification --check && python tools/check_legacy_root_api_usage.py"
+docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:local bash -lc "python -m pip install -e . --no-deps -q && python tools/architecture/check_architecture.py && python tools/architecture/check_repository_hygiene.py && python tools/architecture/check_repository_language.py && python -m tools.docs.docs_source_of_truth --check && python -m tools.docs.operator_manifest --check && python -m tools.validation.correctness_certification --check && python tools/architecture/check_legacy_root_api_usage.py"
 ```
 
-Expected: every command exits 0 with no error list. `docs_source_of_truth` and `public_api_snapshot` are the two most likely to react to the new exports; if either reports a required regeneration, read `tools/docs_source_of_truth.py`'s own instructions and regenerate rather than hand-editing a generated file.
+Expected: every command exits 0 with no error list. `docs_source_of_truth` and `public_api_snapshot` are the two most likely to react to the new exports; if either reports a required regeneration, read `tools/docs/docs_source_of_truth.py`'s own instructions and regenerate rather than hand-editing a generated file.
 
 - [ ] **Step 2: Run the coverage channel and record the real numbers**
 
 ```bash
-docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:viz bash -lc "python -m pip install -e . --no-deps -q && python -m pytest -m 'smoke or unit or integration or jax' --cov=flagquantum --cov-report=xml -q && python tools/check_coverage.py"
+docker run --rm -v $PWD:/w -v /Users/baai/Documents/liuwei/FlagQuantum-upstream/.git:/Users/baai/Documents/liuwei/FlagQuantum-upstream/.git -w /w flagquantum-dev:viz bash -lc "python -m pip install -e . --no-deps -q && python -m pytest -m 'smoke or unit or integration or jax' --cov=flagquantum --cov-report=xml -q && python tools/ci/check_coverage.py"
 ```
 
 Expected: the global floor is 76 and `packages.qec` has a floor of 82. Report the measured global rate and the measured `qec` rate verbatim in the task summary. If `packages.qec` falls below 82, add tests to the new modules rather than lowering the floor. This run is long; if it does not finish within the command timeout, report that it did not finish and give the per-file numbers from `python -m pytest tests/qec --cov=flagquantum.qec --cov-report=term-missing -q` instead, clearly labeled as a partial measurement.

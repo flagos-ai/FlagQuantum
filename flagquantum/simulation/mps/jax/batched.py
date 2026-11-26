@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.mps.models import MpsSplitInfo, MpsSplitMethod
 
 
@@ -148,6 +147,3 @@ def jax_mps_apply_two_batched(
         max_bond=max_bond,
         cutoff=cutoff,
     )
-
-
-_alias_module("flagquantum.simulation.jax.mps.batched", __name__)

@@ -18,6 +18,8 @@ from collections import Counter
 from pathlib import Path
 from typing import TypedDict, cast
 
+from tools.architecture.source_relocations import source_path
+
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "tests/fixtures/classiq_qmod/corpus_catalog.json"
 
@@ -201,7 +203,7 @@ def verify_catalog(catalog: Catalog) -> None:
         ):
             if (
                 not reference.startswith(("tests/", "tools/"))
-                or not (ROOT / reference).is_file()
+                or not source_path(ROOT, reference).is_file()
             ):
                 raise ValueError(f"missing validation source: {reference}")
         for companion in case["companion_files"]:

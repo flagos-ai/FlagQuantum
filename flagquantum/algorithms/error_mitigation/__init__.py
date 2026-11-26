@@ -895,21 +895,13 @@ def run_zne(
 
 # Preserve historical import identities for pickles and public introspection.
 for _identity_export in (
-    _finite_floats,
-    _as_scale_factors,
-    _require_order,
-    _require_point_count,
-    _vandermonde,
     richardson_weights,
-    _weighted,
     ExtrapolationFit,
     extrapolate_richardson,
     extrapolate_polynomial,
-    _scaled_channel,
     scale_noise_model,
     ZneMeasurement,
     ZneResult,
-    _measure,
     run_zne,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.error_mitigation"

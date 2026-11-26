@@ -6,7 +6,6 @@ from collections.abc import Mapping, Sequence
 from math import prod
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.tensor_network.jax.kernels import (
     _jax_einsum_by_labels,
     _jax_einsum_reorder,
@@ -215,6 +214,3 @@ def contract_assigned_slices(
             slice_nodes(nodes, dict(assignments)), output_labels
         )
     return partial
-
-
-_alias_module("flagquantum.simulation.jax.tensor_network.contraction", __name__)

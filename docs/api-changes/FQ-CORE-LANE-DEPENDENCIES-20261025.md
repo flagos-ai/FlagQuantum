@@ -141,7 +141,7 @@ fact about the interpreter rather than providing a fallback, it cannot be
 simulated on a supported interpreter the way a missing import can, and it does
 not survive a stripped standard library. The three sites are normalized
 (`flagquantum/simulation/numerics/conformance.py`,
-`tools/check_interop_capability_gap_matrix.py`, `tools/check_qubit_vocabulary.py`),
+`tools/validation/check_interop_capability_gap_matrix.py`, `tools/architecture/check_qubit_vocabulary.py`),
 and `stdlib_fallback_errors()` holds all four source trees to the single form.
 
 ### 5. The `cpu-core` job asserts the lane
@@ -187,7 +187,7 @@ The `tomllib` census over all four source trees reads **54 `try`-form sites, 0
 other**. `tests/unit/test_dependency_policy.py` passes 24 tests, including the
 two that assert the scans return no error on the real tree and that the scan
 covers every collected tree — a scan that silently reads nothing fails rather
-than reports success. `tools/check_import_time.py` passes with `numpy` on the
+than reports success. `tools/validation/check_import_time.py` passes with `numpy` on the
 forbidden list and reports no forbidden module loaded. `python -m pytest
 tests/smoke/test_no_jax_core.py -q` passes.
 

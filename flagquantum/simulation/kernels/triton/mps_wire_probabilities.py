@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING
 import torch
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -134,18 +132,3 @@ def fused_mps_qubit_probabilities(tensor: torch.Tensor) -> torch.Tensor:
 
 
 __all__ = ["fused_mps_qubit_probabilities"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _mps_qubit_probabilities_kernel,
-    _validate,
-    _reference,
-    _supported_shape,
-    _launch,
-    fused_mps_qubit_probabilities,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.mps_wire_probabilities"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.mps_wire_probabilities", __name__)

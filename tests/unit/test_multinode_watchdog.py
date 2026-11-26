@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.run_multinode_watchdog import run_jobs
+from tools.ci.run_multinode_watchdog import run_jobs
 
 pytestmark = pytest.mark.unit
 

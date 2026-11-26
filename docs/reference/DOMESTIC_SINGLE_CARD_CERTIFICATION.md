@@ -49,7 +49,7 @@ for cross-checking:
 ```bash
 export FLAGQUANTUM_TORCH_FL_COMMIT=<40-character-revision>
 export FLAGQUANTUM_FLAGOS_CONTAINER_IMAGE=sha256:<64-character-digest>
-python tools/validate_domestic_single_card.py \
+python tools/validation/validate_domestic_single_card.py \
   --attestation /provisioner/domestic-card-attestation.json \
   --output /tmp/flagquantum-domestic-single-card.json
 ```

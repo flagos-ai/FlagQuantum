@@ -9,8 +9,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from ._program_job import (
     decode_program_result,
     write_program_bundle,
@@ -168,14 +166,3 @@ def decode_job_result(value: Any, receipt: dict[str, Any]) -> Any:
 
 
 __all__ = ("_ProgramSubmissionMixin", "decode_job_result")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _ProgramSubmissionMixin,
-    decode_job_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._program_submission"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._program_submission", __name__)

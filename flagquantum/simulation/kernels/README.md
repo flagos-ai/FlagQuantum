@@ -1,6 +1,6 @@
 # FlagQuantum kernel catalog
 
-`flagquantum.kernels` owns quantum-computing operations whose performance,
+`flagquantum.simulation.kernels` owns quantum-computing operations whose performance,
 memory traffic, or distributed addressing justify a specialized implementation.
 It separates the mathematical operation from the backend that executes it.
 
@@ -24,7 +24,7 @@ reference, a direct Triton kernel, and a future FlagTree implementation may all
 implement the same contract without creating three meanings for the operation.
 
 The machine-readable records live in [`catalog/`](catalog). Importing
-`flagquantum.kernels.catalog` is metadata-only and must not import Triton,
+`flagquantum.simulation.kernels.catalog` is metadata-only and must not import Triton,
 initialize CUDA, or load an implementation module.
 
 Each implementation also has one **evidence record**. Evidence records link the
@@ -1211,7 +1211,7 @@ dtype, layout, derivative direction, addressing requirements, and optional
 provider and maturity filters.
 
 ```python
-from flagquantum.kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
@@ -1256,7 +1256,7 @@ The device axis is a closed vocabulary, declared once as `KernelDevice` in
 
 The catalog declares this axis itself instead of importing
 `flagquantum.compute`, because the protected boundaries in `config/architecture.toml`
-forbid `flagquantum.kernels` from importing `compute` (`kernel_forbidden`
+forbid `flagquantum.simulation.kernels` from importing `compute` (`kernel_forbidden`
 includes `compute`). To keep the declaration from becoming a second source of
 truth, `tests/unit/test_kernel_catalog.py` asserts that `KERNEL_DEVICES` equals
 the device types reported by `flagquantum.compute.list_platform_status()`. A

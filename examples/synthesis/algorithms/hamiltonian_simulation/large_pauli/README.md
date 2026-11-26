@@ -3,7 +3,7 @@
 Pauli Z evolution as native qfunc phase intent, Qmod and an independent Circuit.
 
 Run this module for the small three-form example. Reproduce the unchanged
-12-bit originals with tools/validate_qmod_large_pauli.py; this example does not
+12-bit originals with tools/validation/validate_qmod_large_pauli.py; this example does not
 claim a native Python qfunc Hamiltonian-array API.
 
 ## Run

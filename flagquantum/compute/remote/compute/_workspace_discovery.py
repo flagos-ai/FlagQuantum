@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def summarize_workspaces(
     workspaces: Iterable[Mapping[str, Any]],
@@ -69,14 +67,3 @@ def select_workspace(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    summarize_workspaces,
-    select_workspace,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._workspace_discovery"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._workspace_discovery", __name__)

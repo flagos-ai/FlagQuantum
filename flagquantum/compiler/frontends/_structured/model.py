@@ -9,8 +9,6 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def _freeze(value: Any) -> Any:
     if value is None or isinstance(value, (bool, int, float, str)):
@@ -234,24 +232,3 @@ class HybridProgram:
             self.to_data(), ensure_ascii=True, separators=(",", ":"), sort_keys=True
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _freeze,
-    _encode,
-    IRType,
-    scalar_type,
-    tensor_type,
-    ValueId,
-    Value,
-    SourceLocation,
-    Operation,
-    Block,
-    Region,
-    HybridProgram,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.model"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.model", __name__)

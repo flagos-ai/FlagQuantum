@@ -6,13 +6,13 @@ from types import MappingProxyType
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler import ResourceEstimate, estimate_resources
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import require_basis
-from flagquantum.compiler.layout import Layout, _routing_swap_phases, final_layout
+from flagquantum.compiler.layout import Layout, final_layout
 from flagquantum.compiler.pipeline import schedule_layers
 from flagquantum.compiler.topology.coupling import CouplingMap
+from flagquantum.compiler.topology.layout import _routing_swap_phases
 from flagquantum.core.classical_control import (
     is_classical_control_instruction as instruction_is_dynamic,
 )
@@ -533,22 +533,3 @@ def _inspect_execution_with_resources(
         _controls(plan, program),
     )
     return checked, resources
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    ExecutionContractError,
-    _check_limits,
-    _program,
-    _controls,
-    _placement,
-    _layout,
-    CheckedExecution,
-    _check_basis,
-    inspect_execution,
-    _inspect_execution_with_resources,
-):
-    _identity_export.__module__ = "flagquantum.services._synthesis_execution"
-del _identity_export
-
-_alias_module("flagquantum.services._synthesis_execution", __name__)

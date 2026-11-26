@@ -10,7 +10,7 @@ from examples.synthesis.functions.standard_gates.phase.main import (
     main,
 )
 from flagquantum import synth
-from tools.validate_native_source_states import compare_states
+from tools.validation.validate_native_source_states import compare_states
 
 
 def reference_circuit() -> fq.Circuit:

@@ -6,8 +6,6 @@ from collections.abc import Mapping, Sequence
 from numbers import Real
 from typing import Any, cast
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def qsteed_chip_info(calibration: Mapping[str, Any]) -> dict[str, Any]:
     """Return the minimal legacy-shaped topology currently consumed by QSteed.
@@ -121,16 +119,3 @@ def _fidelity(value: Any, *, field: str) -> float:
 
 
 __all__ = ("qsteed_chip_info",)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    qsteed_chip_info,
-    _is_sequence,
-    _qubit_index,
-    _fidelity,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu._quafu_calibration"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu._quafu_calibration", __name__)

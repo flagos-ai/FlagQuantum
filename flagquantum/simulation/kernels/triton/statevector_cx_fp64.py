@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -73,14 +71,3 @@ def apply_cx(
 
 
 __all__ = ("apply_cx",)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _cx,
-    apply_cx,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_cx_fp64"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_cx_fp64", __name__)

@@ -12,7 +12,7 @@ Run the controller in an explicitly provisioned eight-device Torch-FL
 environment:
 
 ```bash
-python tools/validate_flagos_statevector_scale.py \
+python tools/validation/validate_flagos_statevector_scale.py \
   --output flagos-statevector-scale-profile.json
 ```
 

@@ -33,7 +33,7 @@ def test_native_workflow_without_external_science_packages() -> None:
         from flagquantum.algorithms.fermion.preparation import prepare_slater, prepare_gaussian
         from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform, lift_stabilizer_state
         from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
-        from flagquantum.core.algebra.pauli import pauli
+        from flagquantum.core.operators.pauli import pauli
         from flagquantum.ecosystem.chemistry.pyscf import build_molecular_problem
         problem = from_native_molecule(create_molecular_hamiltonian([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))]))
         active = select_active_space(problem, active_orbitals=(0, 1)).problem

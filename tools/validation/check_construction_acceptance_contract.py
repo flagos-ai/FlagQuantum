@@ -35,6 +35,8 @@ import inspect
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -91,7 +93,7 @@ def _family_partition_errors(contract: dict[str, Any]) -> list[str]:
     source = census.get("family_declaration_source")
     if not source:
         return ["census.family_declaration_source is missing"]
-    path = ROOT / source
+    path = source_path(ROOT, source)
     if not path.exists():
         return [f"census.family_declaration_source {source!r} does not exist"]
 
@@ -476,8 +478,10 @@ def _power_errors(contract: dict[str, Any]) -> list[str]:
             "power_acceptance.single_instruction_rewrite_measured_in is missing, so the "
             "rewrite is contracted as measured by nothing"
         )
-    elif isinstance(test_path, str) and (ROOT / test_path).is_file():
-        if rewrite_test.rsplit("::", 1)[-1] not in _test_names(ROOT / test_path):
+    elif isinstance(test_path, str) and (source_path(ROOT, test_path)).is_file():
+        if rewrite_test.rsplit("::", 1)[-1] not in _test_names(
+            source_path(ROOT, test_path)
+        ):
             errors.append(
                 f"power_acceptance names the rewrite test {rewrite_test!r}, which does "
                 "not exist"
@@ -625,13 +629,13 @@ def _verification_errors(contract: dict[str, Any]) -> list[str]:
         value = verification.get(key)
         if not isinstance(value, str) or not value.endswith(".py"):
             errors.append(f"verification.{key} must name a Python file")
-        elif not (ROOT / value).is_file():
+        elif not (source_path(ROOT, value)).is_file():
             errors.append(f"verification.{key} path {value!r} does not exist")
 
     raw = verification.get("contract_test")
-    if not isinstance(raw, str) or not (ROOT / raw).is_file():
+    if not isinstance(raw, str) or not (source_path(ROOT, raw)).is_file():
         return errors
-    names = _test_names(ROOT / raw)
+    names = _test_names(source_path(ROOT, raw))
     requirements = verification.get("requirements", {})
     covered = list(contract.get("subject", {}).get("covered", ()))
     missing = [member for member in covered if member not in requirements]

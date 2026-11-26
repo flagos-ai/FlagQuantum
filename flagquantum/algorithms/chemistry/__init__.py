@@ -946,30 +946,15 @@ def _device(device: torch.device | str | None) -> torch.device | str:
 
 # Preserve historical import identities for pickles and public introspection.
 for _identity_export in (
-    _count,
-    _angle,
-    _index,
-    _excitation_indices,
-    _parameters,
-    _circuit,
-    _product,
     excitation_operator,
     UCCSDExcitations,
     uccsd_excitations,
-    _single_excitation_sequence,
     single_excitation,
-    _double_excitation_sequence,
     double_excitation,
     uccsd_factors,
-    _apply_factors,
-    _apply_sequence,
-    _apply_single,
-    _apply_double,
     uccsd_ansatz,
     coupler_hardware_efficient_parameter_count,
-    _coupler_pair,
     coupler_hardware_efficient_ansatz,
-    _device,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.chemistry"
 del _identity_export

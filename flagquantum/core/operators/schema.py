@@ -7,8 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
-
-from flagquantum._import_compat import alias_module as _alias_module
+from typing import get_type_hints as _class_type_hints
 
 #: Rule names ``OperatorSchema.adjoint`` may use, and what each one computes.
 #:
@@ -872,19 +871,25 @@ __all__ = [
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    GateInfo,
+    OperatorSchema,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     OperatorSchema,
     parameter_shift_rule,
     GateInfo,
-    _unitary,
-    _channel,
     canonical_opcode,
     get_operator_schema,
-    _control_partner_errors,
     control_ladder_level,
-    _negate_angle,
-    _shift_angle,
-    _scale_angle,
     inverse_operator,
     power_operator,
     gate_info,
@@ -892,5 +897,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.core.operator_schema"
 del _identity_export
-
-_alias_module("flagquantum.core.operator_schema", __name__)

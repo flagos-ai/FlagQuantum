@@ -66,7 +66,7 @@ other domains, at five import sites:
 | --- | --- |
 | `flagquantum/runtime/dynamic/routing.py:5` | `CouplingMap`, `route_to_topology` |
 | `flagquantum/deployment/cloud.py:22-25` | `CouplingMap`, `compile`, and `compiler.openqasm.emit_openqasm`, `compiler.qcis.emit_qcis` |
-| `flagquantum/deployment/routing_evidence.py:10` | `CouplingMap` |
+| `flagquantum/compiler/artifacts/routing_evidence.py:10` | `CouplingMap` |
 | `flagquantum/remote/qpu/azure.py:11` | `CouplingMap` |
 | `flagquantum/remote/qpu/braket.py:70` | `CouplingMap` |
 
@@ -101,7 +101,7 @@ definition lives in Compiler while Deployment and Remote construct it.
 the first. No check reports it, because `[boundaries] compiler_forbidden` in
 `config/architecture.toml` is `["_compiler", "compilation", "runtime", "deployment",
 "simulation", "compute", "remote"]` — `noise` is absent, and
-`tools/check_architecture.py:530-537` only enforces the listed entries.
+`tools/architecture/check_architecture.py:530-537` only enforces the listed entries.
 
 The omission is not cosmetic. It means the deny list is a record of what someone
 remembered to forbid, not of what the layer order implies, and the two lists have
@@ -130,7 +130,7 @@ contributor looks for the real compiler.
 ### The declared layer order is enforced by nothing
 
 `config/architecture.toml` has a `[layers] order` table listing nine layers. No tool
-reads it. `tools/check_architecture.py:269` reads only
+reads it. `tools/architecture/check_architecture.py:269` reads only
 `package_layout.allowed_top_level_directories`; the strings `layers` and `order`
 appear nowhere else in the checker.
 
@@ -156,7 +156,7 @@ only at explicit program-to-plan composition or maintained raw-program
 compatibility boundaries ... New imports remain blocked; do not invent a duplicate
 Core contract merely to make this list shorter."
 
-The list is self-cleaning — `tools/check_architecture.py:632-639` errors on an
+The list is self-cleaning — `tools/architecture/check_architecture.py:632-639` errors on an
 allowance that is no longer used — but it has no removal target. Nothing states
 which of the eight should disappear, by when, or what replaces each. Combined with
 a `compiler_convergence` track marked complete, the repository simultaneously says
@@ -186,14 +186,14 @@ journeys rather than end-user paths:
 | Compiler depends only on Core (contract) | `contracts/long-horizon-architecture-v1.json`, `domains.compiler.may_depend_on == ["core"]` |
 | Compiler imports Noise (reality) | `flagquantum/compiler/noise.py:10-15` |
 | The deny list omits `noise` | `config/architecture.toml`, `[boundaries] compiler_forbidden` (7 entries, no `noise`) |
-| The checker only enforces listed entries | `tools/check_architecture.py:530-537` |
+| The checker only enforces listed entries | `tools/architecture/check_architecture.py:530-537` |
 | `CouplingMap` is not a public API | absent from `docs/public_api_v1.json`; no `tests/api_contract/` coverage |
 | `CouplingMap` is cross-domain | `deployment/cloud.py:22`, `deployment/routing_evidence.py:10`, `remote/qpu/azure.py:11`, `remote/qpu/braket.py:70` |
 | Core owns shared contracts | `contracts/long-horizon-architecture-v1.json`, `shared_contract_owner == "core"`, and `core_contracts` completion evidence |
 | `_hybrid/` is private and migration-scoped | `flagquantum/compiler/IMPLEMENTATION.md`; `flagquantum/compiler/README.md` lists it under "Structured hybrid programs" |
 | QEC imports `_hybrid` | `flagquantum/qec/dem.py:34`, `flagquantum/qec/repetition.py:8` |
-| Layer order is unenforced | `tools/check_architecture.py:269` reads only `package_layout`; no `layers` reference exists in `tools/` |
-| 13 of 20 directories are unchecked | `config/architecture.toml` `allowed_top_level_directories` (20) versus the 7 prefixes tested at `tools/check_architecture.py:524-593` |
+| Layer order is unenforced | `tools/architecture/check_architecture.py:269` reads only `package_layout`; no `layers` reference exists in `tools/` |
+| 13 of 20 directories are unchecked | `config/architecture.toml` `allowed_top_level_directories` (20) versus the 7 prefixes tested at `tools/architecture/check_architecture.py:524-593` |
 | The Runtime allowance has 8 entries and no removal condition | `config/architecture.toml` `[long_horizon_boundaries] runtime_compiler_import_allowed`; `compiler_convergence` track `status == "complete"` |
 | Package size | `flagquantum/compiler/*.py` 6,019 lines; `flagquantum/compiler/_hybrid/*.py` 4,361 lines; 31 files, 10,380 total |
 | Module ceiling | `config/architecture.toml`, `default_module_line_ceiling = 1250`; `physical_plan.py` 970 |
@@ -335,7 +335,7 @@ with the reason, not as an in-place string edit.
 - `docs/architecture/decisions/README.md` gains the ADR this document precedes, and
   the mapping-rules table gains a row for the layer-order check with its real
   coverage.
-- `config/architecture.toml` gains the missing boundary rules; `tools/check_architecture.py`
+- `config/architecture.toml` gains the missing boundary rules; `tools/architecture/check_architecture.py`
   gains the layer-order enforcement and the new directory coverage.
 - `tests/unit/test_architecture_boundaries.py` gains the cases that fail when a
   newly covered directory imports upward.
@@ -349,7 +349,7 @@ with the reason, not as an in-place string edit.
 
 - Owning domain: `integration`, with `compiler` as the affected domain.
   `docs/api-changes/**` is a shared path, and
-  `python tools/check_team_scope.py --team integration --files
+  `python tools/architecture/check_team_scope.py --team integration --files
   docs/api-changes/FQ-COMPILER-BOUNDARY-SPLIT-20260930.md` passes.
 - Required approvals before implementation: **integration owner** (architecture
   policy and `config/architecture.toml`), **API owner** (`CouplingMap` ownership and the

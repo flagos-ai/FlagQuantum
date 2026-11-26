@@ -21,7 +21,7 @@ from flagquantum.core.contracts import (
 )
 from flagquantum.runtime.audit.contracts import audit_execution_record
 from flagquantum.runtime.results.records import record_execution
-from tools.runtime_contract_schema import render_schema
+from tools.release.runtime_contract_schema import render_schema
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

@@ -7,7 +7,6 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.diagnostics import SpecializationError
 from flagquantum.compiler.frontends._structured.model import IRType
 
@@ -114,17 +113,3 @@ def _input_signature(values: Sequence[Any], types: Sequence[IRType]) -> str:
     ]
     encoded = json.dumps(descriptors, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _normalized_dtype,
-    _runtime_shape,
-    _runtime_device_class,
-    _input_descriptor,
-    _input_signature,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.runtime_inputs"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.runtime_inputs", __name__)

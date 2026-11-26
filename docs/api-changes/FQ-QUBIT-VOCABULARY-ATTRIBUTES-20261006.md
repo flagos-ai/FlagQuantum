@@ -243,7 +243,7 @@ change. Two sites sit on that line and are deliberately **not** excluded:
   `operator_manifest()`, which writes `docs/operator_manifest.json`. That function
   is a module-level builder, not a method of `OperatorSchema`, and the JSON is a
   build artifact: `.github/workflows/ci.yml` runs
-  `python tools/operator_manifest.py --check`, so a rename that forgot to
+  `python tools/docs/operator_manifest.py --check`, so a rename that forgot to
   regenerate the file cannot merge. A runtime payload such as `CircuitIR` has no
   such check, which is why it is excluded and this one is not.
 - `GateInfo.n_wires` is a plain field. Nothing serializes `GateInfo`, and it is
@@ -323,10 +323,10 @@ psi = infer_n_qubits_from_dense_state(psi)  # was infer_n_wires_from_dense_state
 
 ## Documentation and tooling impact
 
-- `tools/census_wire_vocabulary.py` gains two surfaces and one declaration kind:
+- `tools/architecture/census_wire_vocabulary.py` gains two surfaces and one declaration kind:
   members, module-level definitions, and `self.name = ...` instance attributes.
   The module docstring now names three attribute doors instead of two.
-- `tools/check_qubit_vocabulary.py` gains `_definition_errors` and reconciles the
+- `tools/architecture/check_qubit_vocabulary.py` gains `_definition_errors` and reconciles the
   attribute surface **per declaration kind**, so a field converted into a property
   moves obligation without changing a total and without going unnoticed.
 - `contracts/qubit-vocabulary-contract.toml` gains `[attribute_ledger]`,
@@ -334,7 +334,7 @@ psi = infer_n_qubits_from_dense_state(psi)  # was infer_n_wires_from_dense_state
   `[definition_ledger]`, `[definition_retirement]`, and
   per-slice `attribute_field_count` / `attribute_member_count` /
   `attribute_instance_count` / `definition_count`.
-- No change to `.github/workflows/ci.yml` or `tools/pre_push.py`: the gate is
+- No change to `.github/workflows/ci.yml` or `tools/ci/pre_push.py`: the gate is
   already wired in as a step of the existing `quality` job, and this extension adds
   no job, so the required-check roster is unchanged.
 
@@ -348,7 +348,7 @@ appear above, plus the acceptance tests below.
 
 ## Acceptance Tests
 
-1. `python tools/check_qubit_vocabulary.py` exits 0 and reports
+1. `python tools/architecture/check_qubit_vocabulary.py` exits 0 and reports
    `0 of 122 attribute sites retired, 0 kept as deprecated aliases` and
    `0 of 10 definition names retired` alongside the parameter totals, with WQ-2 at
    28 attribute sites.
@@ -364,7 +364,7 @@ appear above, plus the acceptance tests below.
 5. A field converted into a property, or a field that stops being serialized, is
    reported rather than silently reclassified; a member of a private class is not a
    site, so privacy stays private all the way down.
-6. `tools/validate_required_checks.py` still passes: this change adds steps and
+6. `tools/ci/validate_required_checks.py` still passes: this change adds steps and
    tests, never a job.
 7. Running the repository's public-API gates after the WQ-2 rename reports no
    Stable Core diff beyond the authorized export-adjacent changes.

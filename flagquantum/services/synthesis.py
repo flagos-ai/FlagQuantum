@@ -1,14 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
-from flagquantum.synth._workflow import (
-    _DEFAULT_BUDGET as _DEFAULT_BUDGET,
-)
-from flagquantum.synth._workflow import (
-    _LINE_BASIS as _LINE_BASIS,
-)
 from flagquantum.synth._workflow import (
     CRX as CRX,
 )
@@ -79,15 +70,6 @@ from flagquantum.synth._workflow import (
     X as X,
 )
 from flagquantum.synth._workflow import __all__ as __all__
-from flagquantum.synth._workflow import (
-    _complete as _complete,
-)
-from flagquantum.synth._workflow import (
-    _synthesize as _synthesize,
-)
-from flagquantum.synth._workflow import (
-    _target as _target,
-)
 from flagquantum.synth._workflow import (
     adjoint as adjoint,
 )
@@ -181,6 +163,3 @@ from flagquantum.synth._workflow import (
 from flagquantum.synth._workflow import (
     within as within,
 )
-
-_implementation = _import_module("flagquantum.synth._workflow")
-_sys.modules[__name__] = _implementation

@@ -243,7 +243,7 @@ exists" as the row, is the whole content of this move.
 `classical_control_flow` moved from `unsupported` to `partial` in the same
 wave, and three reasons beside it were corrected in the same change, because the
 `language_and_programming_model` domain was describing a repository that no longer
-existed. [capture.py](../../flagquantum/compiler/_hybrid/capture.py) has been a
+existed. [capture.py](../../flagquantum/compiler/frontends/_structured/capture.py) has been a
 restricted Python AST bridge since before this document was written: it reads one
 selected synchronous function, carries classical values with real def-use through
 `Value`, `Operation`, `Block`, and `Region`, verifies them with an SSA pass that
@@ -731,7 +731,7 @@ than an omission.
 - **Do not close a row by editing its status.** The scoreboard is generated, and a
   hand edit to it is a defect.
 - **Do not decline a row silently.** `out_of_scope` is a decision and not a status
-  edit, so `tools/parity_matrix.py` refuses the token without an `excluded` priority
+  edit, so `tools/architecture/parity_matrix.py` refuses the token without an `excluded` priority
   and a `decision_ref` to a record that exists and names the row by id, and
   [`test_parity_scope_rows.py`](../../tests/unit/test_parity_scope_rows.py) fails if a
   declined type reappears in the tree. The token means capability the programme has
@@ -746,7 +746,7 @@ of a narrative.
 
 - `contracts/cudaq-parity-matrix.toml` is the source of truth; the generated
   [`docs/reference/CUDAQ_PARITY_MATRIX.md`](../reference/CUDAQ_PARITY_MATRIX.md) is
-  the scoreboard; `tools/parity_matrix.py --check` fails on drift and is wired into
+  the scoreboard; `tools/architecture/parity_matrix.py --check` fails on drift and is wired into
   CI.
 - A probe may claim `measured` only with a landed payload under
   `benchmarks/results/` that `benchmarks/audit_results.py` accepts, together with

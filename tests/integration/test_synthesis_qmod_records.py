@@ -311,8 +311,11 @@ def test_compiler_rechecks_owned_record_layout(fields):
 def test_small_original_records_against_independent_cost(name, scale):
     import hashlib
 
-    from tools.validate_qmod_records import BLOBS, FIXTURES, RecordCost
-    from tools.validate_qmod_sparse_phase import independent_terms, reference_circuit
+    from tools.validation.validate_qmod_records import BLOBS, FIXTURES, RecordCost
+    from tools.validation.validate_qmod_sparse_phase import (
+        independent_terms,
+        reference_circuit,
+    )
 
     source = FIXTURES / f"{name}.qmod"
     raw = source.read_bytes()
@@ -355,7 +358,7 @@ def test_original_matrix_records_keep_shape_and_resource_budget(
 ):
     import hashlib
 
-    from tools.validate_qmod_records import BLOBS, FIXTURES, RecordCost
+    from tools.validation.validate_qmod_records import BLOBS, FIXTURES, RecordCost
 
     source = FIXTURES / f"{name}.qmod"
     raw = source.read_bytes()

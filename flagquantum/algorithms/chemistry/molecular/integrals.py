@@ -89,10 +89,10 @@ import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.errors import CapabilityError, ValidationError
 
 __all__ = (
@@ -1107,31 +1107,24 @@ def molecular_integrals(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _double_factorial,
-    _triple,
-    _primitive_norm,
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
     AtomicOrbital,
     MolecularGeometry,
-    _sub,
-    _dot,
-    _norm,
-    _boys,
-    _hermite_e,
-    _Pair,
-    _pair_primitives,
-    _overlap,
-    _kinetic,
-    _differentiate,
-    _potential_grid,
-    _evaluate,
-    _nuclear,
-    _electron_repulsion,
     MolecularIntegrals,
-    _atomic_orbitals,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (
+    AtomicOrbital,
+    MolecularGeometry,
+    MolecularIntegrals,
     molecular_integrals,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.chemistry_integrals"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.chemistry_integrals", __name__)

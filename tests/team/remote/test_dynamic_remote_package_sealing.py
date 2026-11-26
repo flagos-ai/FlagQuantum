@@ -11,7 +11,7 @@ from typing import Any, cast
 import pytest
 
 import flagquantum as fq
-import flagquantum.deployment.dynamic_sealing as sealing
+import flagquantum.runtime.dynamic.remote_sealing as sealing
 from flagquantum.compiler import CouplingMap
 from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.compute.remote.qpu.quafu_dynamic import (

@@ -169,9 +169,9 @@ root-export or vendor-source changes are in scope.
 | 14 | `docs/guides/STIM_USER_MIGRATION.md` | Show the familiar Stim method name with native Circuit and maps. |
 | 15 | `tests/qec/test_measurement_file_conversion.py` | Scenario tests: independent fixed records, contract fake, producer replacement, formats, budgets and I/O failures. |
 | 16 | `tests/api_contract/test_public_docstring_examples.py` | Add the converter class/method to real doctest execution; retain all existing entries. |
-| 17 | `tools/qec_installed_smoke.py` | Exercise current four installation profiles using the new public workflow. |
+| 17 | `tools/release/qec_installed_smoke.py` | Exercise current four installation profiles using the new public workflow. |
 | 18 | `tests/unit/test_qec_installed_profiles.py` | Verify installed-smoke failure isolation and actual exercised paths. |
-| 19 | `tools/verify_embedded_stabilizer_install.py` | Prove native converter calls with neither Stim nor PyMatching installed. |
+| 19 | `tools/validation/verify_embedded_stabilizer_install.py` | Prove native converter calls with neither Stim nor PyMatching installed. |
 | 20 | `examples/qec/measurement_file_conversion.py` | Add a deterministic public file-to-detector example. |
 | 21 | `examples/README.md` | Register the example in the existing index. |
 | 22 | `docs/roadmap/FTQC_SIMULATION_MASTER_PLAN.md` | Update P0/FTS-04/R03/R08 evidence without closing scientific milestones. |
@@ -299,15 +299,15 @@ stop and list it rather than installing or downloading opportunistically.
 Check the final base/head and all 26 owned paths before editing:
 
 ```bash
-python tools/check_team_scope.py --team integration --files flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py flagquantum/simulation/stabilizer/csrc/embedded_sampler.cpp flagquantum/simulation/stabilizer/csrc/STIM_PROVENANCE.md flagquantum/qec/execution/README.md flagquantum/simulation/stabilizer/README.md contracts/qec-measurement-file-conversion-v1-candidate.json docs/development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md docs/reference/API.md docs/reference/KNOWN_LIMITATIONS.md docs/roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md docs/guides/STIM_USER_MIGRATION.md tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py examples/README.md docs/roadmap/FTQC_SIMULATION_MASTER_PLAN.md capability-maturity.toml contracts/cudaq-parity-matrix.toml docs/generated/CAPABILITIES.md docs/reference/CUDAQ_PARITY_MATRIX.md
-python -m ruff check flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
-python -m black --check flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
-python -m mypy --strict flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
+python tools/architecture/check_team_scope.py --team integration --files flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py flagquantum/simulation/stabilizer/csrc/embedded_sampler.cpp flagquantum/simulation/stabilizer/csrc/STIM_PROVENANCE.md flagquantum/qec/execution/README.md flagquantum/simulation/stabilizer/README.md contracts/qec-measurement-file-conversion-v1-candidate.json docs/development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md docs/reference/API.md docs/reference/KNOWN_LIMITATIONS.md docs/roadmap/QEC_STIM_PYMATCHING_DELIVERY_PLAN.md docs/guides/STIM_USER_MIGRATION.md tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/release/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/validation/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py examples/README.md docs/roadmap/FTQC_SIMULATION_MASTER_PLAN.md capability-maturity.toml contracts/cudaq-parity-matrix.toml docs/generated/CAPABILITIES.md docs/reference/CUDAQ_PARITY_MATRIX.md
+python -m ruff check flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/release/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/validation/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
+python -m black --check flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/release/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/validation/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
+python -m mypy --strict flagquantum/qec/execution/measurement_conversion.py flagquantum/simulation/stabilizer/_record_conversion.py flagquantum/simulation/stabilizer/_embedded_sampler.py flagquantum/simulation/stabilizer/_measurement_file_validation.py tests/qec/test_measurement_file_conversion.py tests/api_contract/test_public_docstring_examples.py tools/release/qec_installed_smoke.py tests/unit/test_qec_installed_profiles.py tools/validation/verify_embedded_stabilizer_install.py examples/qec/measurement_file_conversion.py
 python -m pytest tests/qec/test_measurement_file_conversion.py tests/qec/test_explicit_measurement_conversion.py tests/qec/test_terminal_measurement_conversion.py tests/qec/test_native_detector_execution.py tests/team/simulation/test_explicit_record_conversion_conformance.py tests/unit/test_qec_installed_profiles.py -m "unit or integration" -q
 python -m pytest tests/api_contract/test_public_docstring_examples.py -q
 python -m examples.qec.measurement_file_conversion
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 ```
 
 The new file tests carry `unit` and real `integration` markers using the existing
@@ -326,8 +326,8 @@ prepared environment (each externally supervised by an explicit timeout):
 ```bash
 PIP_NO_INDEX=1 FQ_BUILD_EMBEDDED_STIM=1 python -m build --sdist --wheel --no-isolation --outdir /private/tmp/fq-file-conversion-dist
 python tools/verify_distribution_artifacts.py /private/tmp/fq-file-conversion-dist
-python tools/check_qec_installed_profiles.py --dist-dir /private/tmp/fq-file-conversion-dist --report-dir /private/tmp/fq-file-conversion-installed
-python tools/verify_embedded_stabilizer_install.py
+python tools/release/check_qec_installed_profiles.py --dist-dir /private/tmp/fq-file-conversion-dist --report-dir /private/tmp/fq-file-conversion-installed
+python tools/validation/verify_embedded_stabilizer_install.py
 ```
 
 Run the native verifier only from a fresh installed no-Stim/no-PyMatching profile,

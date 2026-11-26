@@ -13,7 +13,7 @@ from flagquantum.ecosystem.qiskit import (
     QiskitDependencyError,
     conversion,
 )
-from tools.check_architecture import CONFIG, architecture_errors
+from tools.architecture.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -106,7 +106,7 @@ def test_ci_proves_both_qiskit_optionality_and_real_compatibility() -> None:
     assert "QISKIT_VERSION: ${{ matrix.qiskit }}.*" in workflow
     assert 'version="$QISKIT_VERSION"' in workflow
     assert '"qiskit[qasm3-import]==${version}"' in workflow
-    assert "python tools/check_qiskit_interop_contract.py" in workflow
+    assert "python tools/validation/check_qiskit_interop_contract.py" in workflow
     assert "tests/test_qiskit_interop.py" in workflow
     assert "tests/test_qiskit_interop_conformance.py" in workflow
     assert "tests/optional/test_qiskit_aer_backend.py" in workflow

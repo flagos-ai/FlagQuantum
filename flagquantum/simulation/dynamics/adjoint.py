@@ -43,7 +43,6 @@ from typing import Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir.state_space import ProductStateSpace
 from flagquantum.core.parameters import Parameter
 
@@ -313,11 +312,6 @@ def _adjoint_gradient(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    adjoint_gradient,
-    _adjoint_gradient,
-):
+for _identity_export in (adjoint_gradient,):
     _identity_export.__module__ = "flagquantum.simulation.lindblad_adjoint"
 del _identity_export
-
-_alias_module("flagquantum.simulation.lindblad_adjoint", __name__)

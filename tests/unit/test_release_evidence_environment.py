@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_release_evidence_environment import readiness_errors
+from tools.release.check_release_evidence_environment import readiness_errors
 
 pytestmark = pytest.mark.unit
 

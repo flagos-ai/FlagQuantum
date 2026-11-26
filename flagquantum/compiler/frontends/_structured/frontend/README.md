@@ -24,7 +24,7 @@ annotations reference the state through `TYPE_CHECKING` imports.
 
 The existing `flagquantum.compiler._hybrid.capture_source` and
 `capture_function` entries call `source.py` directly. The private
-`flagquantum.compiler._hybrid.capture` module retains aliases to those same
+`flagquantum.compiler.frontends._structured.capture` module retains aliases to those same
 functions and diagnostic types for existing consumers. New capture code imports
 its implementation directly. Compiler owns this retained private entry, whose
 scope is these four names; remove it when its remaining consumers migrate in an
@@ -57,4 +57,4 @@ Expected result is 25 passing accepted- and rejected-source scenarios.
 Preserve operation order, effect ownership, semantic identity, source positions,
 error classes and bounded-profile rejection behavior. Unsupported source must
 fail before execution. Run `python -m pytest tests/hybrid_compiler -q` and
-`python tools/check_architecture.py` for the broader compiler regression.
+`python tools/architecture/check_architecture.py` for the broader compiler regression.

@@ -42,7 +42,6 @@ from typing import Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.state_preparation import arbitrary_state
 from flagquantum.circuit import Circuit
 
@@ -372,17 +371,6 @@ def _resolve_qubits(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    amplitude_encode,
-    angular_encode,
-    append_angular_encode,
-    _rotation_gate,
-    _rotation_angles,
-    _amplitude_vector,
-    _as_tensor,
-    _resolve_qubits,
-):
+for _identity_export in (amplitude_encode, angular_encode, append_angular_encode):
     _identity_export.__module__ = "flagquantum.algorithms.data_encoding"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.data_encoding", __name__)

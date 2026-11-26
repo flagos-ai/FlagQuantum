@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from flagquantum.compiler.training import compile_training_callable
+from flagquantum.compiler.frontends.torch._training import compile_training_callable
 
 pytestmark = pytest.mark.unit
 

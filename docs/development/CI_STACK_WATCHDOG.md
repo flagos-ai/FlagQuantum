@@ -64,7 +64,7 @@ authorization; no remote reproduction, interpreter upgrade or reboot is claimed.
 
 ## Replacement behavior
 
-`tools.pytest_stack_watchdog` wraps each test's existing setup, call and teardown
+`tools.ci.pytest_stack_watchdog` wraps each test's existing setup, call and teardown
 protocol. A daemon timer requests one snapshot at the configured interval.
 `sys._current_frames()` supplies owned Python frame references, and ordinary
 Python traceback formatting prints at most 100 frames per thread. References
@@ -78,8 +78,8 @@ zero interval disables this plugin. The two coverage commands use:
 
 ```bash
 python -m pytest ... \
-  -p tools.pytest_shard --cov=flagquantum --cov-report= \
-  -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 \
+  -p tools.ci.pytest_shard --cov=flagquantum --cov-report= \
+  -p tools.ci.pytest_stack_watchdog --fq-stack-dump-after=300 \
   -o faulthandler_timeout=0
 ```
 
@@ -124,7 +124,7 @@ catalog case, run:
 ```bash
 python -m pytest 'tests/integration/test_synthesis_native_catalog.py::test_original_source_reference_remains_a_test_only_check[tests/fixtures/classiq_qmod/example_references/applications/finance/rainbow_options/rainbow_options_integration_method/comparisons/circuit.py]' \
   -p pytest_cov --cov=flagquantum --cov-report= \
-  -p tools.pytest_stack_watchdog --fq-stack-dump-after=1 \
+  -p tools.ci.pytest_stack_watchdog --fq-stack-dump-after=1 \
   -o faulthandler_timeout=0 -s
 ```
 

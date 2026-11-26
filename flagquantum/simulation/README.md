@@ -19,7 +19,7 @@ Runtime owns those decisions and calls the appropriate numerical primitives.
 | Continuous-time Lindblad evolution | [lindblad.py](lindblad.py) |
 | Clifford sampling beyond an amplitude store | [stabilizer/](stabilizer/README.md) |
 | Reusable arithmetic and precision | [numerics/](numerics/README.md) |
-| Optional JAX kernels | [jax/](jax/README.md) |
+| Optional JAX kernels | [jax/](numerics/README.md) |
 
 For a typical local change, run the matching suite from the repository root:
 

@@ -32,7 +32,7 @@ from flagquantum.synth import (
     prepare_state,
     qfunc,
 )
-from tools.synthesis_catalog import ROOT
+from tools.docs.synthesis_catalog import ROOT
 
 pytestmark = pytest.mark.integration
 NATIVE_COMPARISONS = sorted(

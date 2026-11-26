@@ -171,7 +171,7 @@ next contributor who reads `config/architecture.toml` concludes Compiler may imp
   recorded in the W0-06 proposal and belongs to the split decision, not to the pass
   infrastructure decision.
 - **`docs/architecture/decisions/**` is an integration-protected path.**
-  `tools/check_team_scope.py` requires `--team integration` for it.
+  `tools/architecture/check_team_scope.py` requires `--team integration` for it.
 
 ## Acceptance Tests
 
@@ -192,7 +192,7 @@ next contributor who reads `config/architecture.toml` concludes Compiler may imp
    the test file, not in the package.
 4. **The public surface is unchanged.**
    `tests/unit/test_api_namespace_convergence.py:74-76` and
-   `tools/public_api_snapshot.py` still pass, and
+   `tools/architecture/public_api_snapshot.py` still pass, and
    `flagquantum/compiler/__init__.py` still exports exactly six names.
 5. **The quadratic cost is gone.** A timing test on 4000 distinct-wire gates
    asserts a bound that the list implementation cannot meet, so a future
@@ -200,7 +200,7 @@ next contributor who reads `config/architecture.toml` concludes Compiler may imp
 6. **The pass manager is not published.** No name matching a pass-manager type
    appears in `flagquantum/compiler/__init__.py` before W6-08 is approved.
 7. **The Compiler boundary is machine-checked where it is claimed.**
-   `tools/check_architecture.py` enforces boundary lists for seven prefixes but has
+   `tools/architecture/check_architecture.py` enforces boundary lists for seven prefixes but has
    none for `observables`; this ADR does not add one, and it does not claim the
    checker is complete.
 

@@ -1,7 +1,7 @@
 """Fixed-shot source composition with independent labels and failure ownership.
 
 Pure fixtures exercise the contract in core lanes. Real SDK/profile acceptance
-is mandatory in tools/qec_installed_smoke.py, not replaced by optional skips.
+is mandatory in tools/release/qec_installed_smoke.py, not replaced by optional skips.
 """
 
 from __future__ import annotations

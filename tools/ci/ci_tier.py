@@ -119,7 +119,7 @@ CI_TIERS: dict[str, CITier] = {
         commands=(
             (
                 "{python}",
-                "tools/multinode_launch_plan.py",
+                "tools/validation/multinode_launch_plan.py",
                 "--run",
                 "--staging",
                 "/nfs/fq-multinode-tier",
@@ -143,7 +143,7 @@ CI_TIERS: dict[str, CITier] = {
             ),
             (
                 "{python}",
-                "tools/multinode_launch_plan.py",
+                "tools/validation/multinode_launch_plan.py",
                 "--run",
                 "--probe",
                 "mps",
@@ -169,7 +169,7 @@ CI_TIERS: dict[str, CITier] = {
             ),
             (
                 "{python}",
-                "tools/multinode_launch_plan.py",
+                "tools/validation/multinode_launch_plan.py",
                 "--run",
                 "--probe",
                 "tn",
@@ -292,7 +292,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             (
                 *command,
                 "-p",
-                "tools.pytest_shard",
+                "tools.ci.pytest_shard",
                 "--fq-shard-count",
                 str(args.shard_count),
                 "--fq-shard-index",

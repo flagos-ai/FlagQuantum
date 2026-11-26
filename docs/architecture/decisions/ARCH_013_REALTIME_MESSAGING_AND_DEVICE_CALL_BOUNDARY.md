@@ -121,7 +121,7 @@ package would have to change `config/architecture.toml`, and that is a separate 
 the limits, the status convention, and the hash vectors so a tool can read them
 without importing the package. `LoopbackTransport` is the contract fake: an
 in-process transport that performs no I/O and is how the protocol is exercised
-offline. The gate `tools/check_realtime_messaging_contract.py` is the contract's
+offline. The gate `tools/validation/check_realtime_messaging_contract.py` is the contract's
 reader, and it fails if the contract and the implementation disagree. Two of its
 checks reach outside this repository on purpose, because a contract that only
 agrees with the code it was written from proves nothing:

@@ -17,6 +17,8 @@ from types import MappingProxyType
 import pytest
 
 import flagquantum as fq
+import flagquantum.compiler.optimization.canonicalization as _stage_canonicalization
+import flagquantum.compiler.optimization.pass_registry as _stage_pass_registry
 from flagquantum.compiler import pass_manager, pipeline
 from flagquantum.compiler.optimization import optimization_levels
 from flagquantum.core.ir import (
@@ -536,8 +538,14 @@ def test_the_two_opcode_tables_are_the_program_independent_analyses() -> None:
     }
 
     assert independent == {"self_inverse_opcodes", "rotation_parameters"}
-    assert manager.analyze(program, "self_inverse_opcodes") == pipeline._SELF_INVERSE
-    assert manager.analyze(program, "rotation_parameters") == pipeline._ROTATION_PARAM
+    assert (
+        manager.analyze(program, "self_inverse_opcodes")
+        == _stage_canonicalization._SELF_INVERSE
+    )
+    assert (
+        manager.analyze(program, "rotation_parameters")
+        == _stage_canonicalization._ROTATION_PARAM
+    )
 
 
 def test_an_analysis_that_needs_another_is_resolved_after_it() -> None:
@@ -759,13 +767,13 @@ def test_a_replaced_fact_changes_what_a_pass_removes_without_touching_the_pass()
     # The replacement demonstration: `merge_self_inverse` is not modified, only
     # the registry it is handed, and the fact it reads changes what it removes.
     narrowed = pass_manager.AnalysisSpec(
-        lambda program: frozenset(pipeline._SELF_INVERSE - {"x"}),
+        lambda program: frozenset(_stage_canonicalization._SELF_INVERSE - {"x"}),
         program_independent=True,
     )
     registry = pass_manager.PassRegistry(
         pipeline.BUILTIN_PASSES,
-        pipeline._BUILTIN_PASS_SPECS,
-        {**pipeline._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
+        _stage_pass_registry._BUILTIN_PASS_SPECS,
+        {**_stage_pass_registry._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
     )
     program = _ir(Instruction(name="x", wires=(0,)), Instruction(name="x", wires=(0,)))
 
@@ -793,8 +801,8 @@ def test_a_replaced_rotation_table_changes_what_remove_identity_gates_removes() 
     )
     registry = pass_manager.PassRegistry(
         pipeline.BUILTIN_PASSES,
-        pipeline._BUILTIN_PASS_SPECS,
-        {**pipeline._BUILTIN_ANALYSES, "rotation_parameters": narrowed},
+        _stage_pass_registry._BUILTIN_PASS_SPECS,
+        {**_stage_pass_registry._BUILTIN_ANALYSES, "rotation_parameters": narrowed},
     )
     program = _ir(
         Instruction(name="i", wires=(0,)),
@@ -816,13 +824,13 @@ def test_a_replaced_self_inverse_set_changes_what_the_cancellation_pass_removes(
     # A pass whose fact lives in another module reads the declared one too, so the
     # replacement route reaches it without editing `commutation_cancellation`.
     narrowed = pass_manager.AnalysisSpec(
-        lambda program: frozenset(pipeline._SELF_INVERSE - {"cx"}),
+        lambda program: frozenset(_stage_canonicalization._SELF_INVERSE - {"cx"}),
         program_independent=True,
     )
     registry = pass_manager.PassRegistry(
         pipeline.BUILTIN_PASSES,
-        pipeline._BUILTIN_PASS_SPECS,
-        {**pipeline._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
+        _stage_pass_registry._BUILTIN_PASS_SPECS,
+        {**_stage_pass_registry._BUILTIN_ANALYSES, "self_inverse_opcodes": narrowed},
     )
     # `cx(0, 1) z(0) cx(0, 1)` is a bare `z(0)` only because the two `cx` cancel
     # across a proven commuting gap, and `cx` is exactly what was dropped.
@@ -846,10 +854,10 @@ def test_a_replaced_self_inverse_set_changes_what_the_cancellation_pass_removes(
     # What matters is that the wrapper forwards the facts, so the replacement route
     # reaches a pass in another module without editing either one.
     assert registry.resolve("cancel_commuting_self_inverse") is (
-        pipeline._cancel_commuting_self_inverse
+        _stage_pass_registry._cancel_commuting_self_inverse
     )
     assert pipeline.BUILTIN_PASSES["cancel_commuting_self_inverse"] is (
-        pipeline._cancel_commuting_self_inverse
+        _stage_pass_registry._cancel_commuting_self_inverse
     )
 
 
@@ -924,10 +932,10 @@ def test_a_spec_whose_function_is_a_different_object_than_the_pass_is_refused() 
         pass_manager.PassRegistry(
             pipeline.BUILTIN_PASSES,
             {
-                **pipeline._BUILTIN_PASS_SPECS,
+                **_stage_pass_registry._BUILTIN_PASS_SPECS,
                 "merge_self_inverse": pass_manager.PassSpec(lambda program: program),
             },
-            pipeline._BUILTIN_ANALYSES,
+            _stage_pass_registry._BUILTIN_ANALYSES,
         )
     assert registry.resolve("merge_self_inverse") is pipeline.merge_self_inverse
 

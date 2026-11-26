@@ -18,7 +18,7 @@ from torch.profiler import ProfilerActivity, profile
 
 import flagquantum as fq
 import flagquantum.experimental.distributed as fqxd
-from flagquantum.runtime.executors.mps.profiling import build_mps_critical_path_report
+from flagquantum.runtime.observability.mps import build_mps_critical_path_report
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]

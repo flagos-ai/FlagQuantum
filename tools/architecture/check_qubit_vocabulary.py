@@ -52,6 +52,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
@@ -81,7 +83,7 @@ from tools.architecture.census_wire_vocabulary import (  # noqa: E402
 CONTRACT = ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 PRE_PUSH = ROOT / "tools/ci/pre_push.py"
-SELF_PATH = "tools/check_qubit_vocabulary.py"
+SELF_PATH = "tools/architecture/check_qubit_vocabulary.py"
 
 # Surface -> (table, key) holding the names that are renamed but still reachable
 # through a deprecated forwarder. The definition surface has no entry.
@@ -93,7 +95,7 @@ ALIAS_TABLES = {
 EXPECTED_HEADER = {
     "schema": "flagquantum_qubit_vocabulary_contract_v1",
     "maturity": "development_evidence",
-    "census_tool": "tools/census_wire_vocabulary.py",
+    "census_tool": "tools/architecture/census_wire_vocabulary.py",
     "gate_tool": SELF_PATH,
     "ir_version": "1.0",
     "ir_version_unchanged": True,
@@ -171,7 +173,11 @@ def contract_errors(
     errors: list[str] = []
 
     for name, value in EXPECTED_HEADER.items():
-        if contract.get(name) != value:
+        if (
+            source_path(ROOT, str(contract.get(name))) != source_path(ROOT, value)
+            if name in {"census_tool", "gate_tool"}
+            else contract.get(name) != value
+        ):
             errors.append(f"qubit vocabulary contract {name} must be {value!r}")
 
     naming = contract.get("naming", {})
@@ -362,7 +368,7 @@ def contract_errors(
                     f"qubit vocabulary path {path} is owned by {owner} and {slice_id}"
                 )
             owned[path] = slice_id
-            if not (ROOT / path).is_file():
+            if not source_path(ROOT, path).is_file():
                 errors.append(f"qubit vocabulary slice {slice_id} names missing {path}")
         for name in ("title", "owner_team"):
             if not entry.get(name):
@@ -432,11 +438,11 @@ def contract_errors(
         )
 
     for name, raw_path in contract.get("verification", {}).items():
-        if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
+        if not isinstance(raw_path, str) or not source_path(ROOT, raw_path).is_file():
             errors.append(f"qubit vocabulary verification path {name!r} does not exist")
     for name in ("proposal", "authorization", "naming_reference", "predecessor"):
         raw_path = contract.get(name)
-        if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
+        if not isinstance(raw_path, str) or not source_path(ROOT, raw_path).is_file():
             errors.append(f"qubit vocabulary reference {name!r} does not exist")
 
     for gated in (CI_WORKFLOW, PRE_PUSH):
@@ -732,7 +738,7 @@ def _documentation_errors(
             continue
         if relative in exempt:
             errors.append(f"qubit vocabulary documentation exempts {relative} twice")
-        if not (ROOT / relative).is_file():
+        if not source_path(ROOT, relative).is_file():
             errors.append(f"qubit vocabulary documentation exempts missing {relative}")
         if not isinstance(row.get("reason"), str) or not row["reason"]:
             errors.append(

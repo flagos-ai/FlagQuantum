@@ -7,10 +7,10 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any, cast
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir.state_space import ExplicitBasisSpace, ProductStateSpace
 from flagquantum.core.parameters import Parameter
 from flagquantum.errors import CapabilityError, SerializationError
@@ -793,21 +793,14 @@ def _decode_request(
 
 __all__ = ("LindbladPlan",)
 
+# Published class module names remain readable by historical pickle payloads.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (LindbladPlan,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
 
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _request_hamiltonian_matrix,
-    _canonical_json,
-    _identity,
-    _complex_tensor_payload,
-    _complex_tensor,
-    _serialized_basis_labels,
-    _summary,
-    LindbladPlan,
-    build_lindblad_plan,
-    _decode_request,
-):
-    _identity_export.__module__ = "flagquantum.lindblad._plan"
-del _identity_export
-
-_alias_module("flagquantum.lindblad._plan", __name__)
+LindbladPlan.__module__ = "flagquantum.lindblad._plan"

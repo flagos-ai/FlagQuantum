@@ -123,7 +123,8 @@ def _validator_without_one_clause(**replacements: str) -> types.ModuleType:
 
     source = inspect.getsource(
         __import__(
-            "flagquantum.deployment.routing_evidence", fromlist=["routing_evidence"]
+            "flagquantum.compiler.artifacts.routing_evidence",
+            fromlist=["routing_evidence"],
         )
     )
     for original, replacement in replacements.items():
@@ -199,7 +200,7 @@ def test_obstacle_1_the_strategy_vocabulary_is_read_from_its_authority() -> None
     )
 
     source = inspect.getsource(
-        __import__("flagquantum.deployment.routing_evidence", fromlist=["_"])
+        __import__("flagquantum.compiler.artifacts.routing_evidence", fromlist=["_"])
     )
     assert source.count(STRATEGY_CLAUSE) == 1
     assert source.count(COPIED_STRATEGY_CLAUSE) == 0

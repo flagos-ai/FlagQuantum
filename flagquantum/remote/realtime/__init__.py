@@ -16,6 +16,6 @@ for _name in __all__:
     globals()[_name] = getattr(_realtime, _name)
 
 for _name in ("protocol", "payload", "service", "channels", "session"):
-    _module = import_module(f"flagquantum.compute.realtime.{_name}")
+    _module = import_module(f"flagquantum.realtime.{_name}")
     globals()[_name] = _module
     sys.modules[f"{__name__}.{_name}"] = _module

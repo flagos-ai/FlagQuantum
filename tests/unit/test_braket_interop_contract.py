@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_braket_interop_contract import contract_errors, load_toml
+from tools.validation.check_braket_interop_contract import contract_errors, load_toml
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -63,7 +63,7 @@ def test_contract_requires_implementation_evidence() -> None:
 
 def test_ci_checks_contract_and_certified_sdk_lanes() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_braket_interop_contract.py" in workflow
+    assert "python tools/validation/check_braket_interop_contract.py" in workflow
     assert "braket-optional:" in workflow
     assert 'OPTIONAL_VERSIONS: "1.117.0 1.127.1"' in workflow
     assert '"amazon-braket-sdk==${version}"' in workflow

@@ -43,14 +43,14 @@ if TYPE_CHECKING:
 
 _EXPORT_MODULES = {
     "small_data_reuploading_z": ".statevector.small",
-    "CollapseOperator": ".lindblad",
-    "EvolutionPlan": ".lindblad",
-    "EvolutionResult": ".lindblad",
-    "EvolutionValidationError": ".lindblad",
-    "amplitude_damping": ".lindblad",
-    "evolve_density_matrix": ".lindblad",
-    "plan_density_matrix_evolution": ".lindblad",
-    "adjoint_gradient": ".lindblad_adjoint",
+    "CollapseOperator": ".dynamics.lindblad",
+    "EvolutionPlan": ".dynamics.lindblad",
+    "EvolutionResult": ".dynamics.lindblad",
+    "EvolutionValidationError": ".dynamics.lindblad",
+    "amplitude_damping": ".dynamics.lindblad",
+    "evolve_density_matrix": ".dynamics.lindblad",
+    "plan_density_matrix_evolution": ".dynamics.lindblad",
+    "adjoint_gradient": ".dynamics.adjoint",
     "MAX_UNITARY_QUBITS": ".unitary",
     "get_unitary": ".unitary",
 }
@@ -58,10 +58,13 @@ __all__ = list(_EXPORT_MODULES)
 
 
 def __getattr__(name: str) -> Any:
-    if name == "jax":
-        return import_module(".jax", __name__)
     if name in {"lindblad", "lindblad_adjoint", "unitary", "small_statevector"}:
-        module = ".statevector.small" if name == "small_statevector" else f".{name}"
+        module = {
+            "small_statevector": ".statevector.small",
+            "lindblad": ".dynamics.lindblad",
+            "lindblad_adjoint": ".dynamics.adjoint",
+            "unitary": ".unitary",
+        }[name]
         return import_module(module, __name__)
     if name in _EXPORT_MODULES:
         value = getattr(import_module(_EXPORT_MODULES[name], __name__), name)

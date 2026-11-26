@@ -40,7 +40,7 @@ DEVICE_QUERY = "index,memory.used,memory.total,utilization.gpu"
 def _device_state() -> str:
     """Record what the host's devices hold, as the raw answer to `DEVICE_QUERY`.
 
-    The reading of this answer lives in `tools/evaluate_performance_artifact.py`,
+    The reading of this answer lives in `tools/validation/evaluate_performance_artifact.py`,
     where it is unit-tested and where the gate that consumes it lives. This
     function only captures, so that the evidence survives any later change to
     how it is interpreted.

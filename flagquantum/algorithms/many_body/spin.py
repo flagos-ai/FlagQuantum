@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from importlib import import_module as _import_public_namespace
-
 from flagquantum.algorithms.primitives.hamiltonian import (
     Hamiltonian,
     HamiltonianTerm,
@@ -84,12 +82,3 @@ for _identity in (
 ):
     _identity.__module__ = "flagquantum.algorithms.core"
 del _identity
-
-_public_namespace = _import_public_namespace("flagquantum.algorithms.core")
-for _name in (
-    "transverse_field_ising",
-    "zz_chain_hamiltonian",
-    "heisenberg_chain_hamiltonian",
-):
-    setattr(_public_namespace, _name, globals()[_name])
-del _public_namespace, _name

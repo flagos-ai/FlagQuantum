@@ -1087,7 +1087,7 @@ pass/provider. Warnings/remarks use sinks/reports/log policy, not print.
 
 **Correction, 2026-10-08: the internal directory below is not buildable in this
 tree, and the levels live in the IR package instead.** Measured, creating
-`flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+`flagquantum/_compiler/__init__.py` fails `tools/architecture/check_architecture.py` with
 `flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
 because the directory is absent from `config/architecture.toml`
 `package_layout.allowed_top_level_directories`; one `from .._compiler import ...`

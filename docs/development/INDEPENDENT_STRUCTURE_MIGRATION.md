@@ -3,7 +3,7 @@
 The implementation now covers the independently auditable structure migration,
 including product modules, development tools and repository configuration. The
 allocator move in commit `08549f62` was the first package, not the scope limit.
-Final local acceptance is complete; results are recorded below. This is a
+The implementation migration and internal-forwarder retirement have passed final local acceptance. The retirement inventory records the retained public boundary and the only #1084-dependent internal files. This is a
 structure change: it introduces no Rust implementation or performance claim.
 
 ## Frozen integration inputs
@@ -12,7 +12,7 @@ structure change: it introduces no Rust implementation or performance claim.
 | --- | --- |
 | Main | `7278efd00f6768fbbacff6a41eb4dec57a59783e` |
 | PR #1084 base | `03017ddf96dd2d9604f2dbc4d2cdfe2f3837f878` |
-| Audited open, draft #1084 head | `8b1aca5be01cfd15ace0cb831221c8f03a48dbba` |
+| Audited open, draft #1084 head | `9b1a8cd196f9d8b8427b382c404f66705cc57840` |
 | Migration branch | `refactor/compute-local-memory-owner` |
 | Review | [Draft PR #1331](https://github.com/flagos-ai/FlagQuantum/pull/1331) |
 | Audit date | 2026-11-26, Asia/Shanghai |
@@ -22,7 +22,7 @@ contains main changes absent from the feature branch and would overstate overlap
 The audit additionally checks the complete PR tree for new target collisions and
 new consumers, including paths whose content is unchanged from the PR base.
 Git trees, not the capped GitHub changed-files API, provide the inventory.
-The final incremental check from `0a1f4cbe` to `8b1aca5b` covers twelve changed paths,
+The final incremental check from `8b1aca5b` to `9b1a8cd1` covers seven changed paths,
 with no relocated-source intersection or newly added target collision.
 Target emulation retains its extension SDK target-description adapter in
 `compute/remote/emulation.py` and delegates execution to the existing Runtime
@@ -53,7 +53,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
 | Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-The exhaustive [path map](migration/independent-structure-path-map.md) and
+The exhaustive 456-row [path map](migration/independent-structure-path-map.md) and
 [machine-readable symbol ledger](migration/independent-structure-moves.json)
 identify every relocated file and every partial extraction. An implementation
 has one owner even when more than one historical public module exports it.
@@ -96,40 +96,44 @@ provider submission lifecycle and training/checkpoint policy stay in Runtime.
 Pure mathematical helpers extracted from those files are individually recorded;
 partial rows never redirect the entire original module.
 
-## Compatibility and retirement
+## Compatibility after internal retirement
 
-Integration owns the migration map and historical forwarding layer. Core,
-Compiler, Compute Local, Remote, Runtime, Simulation, Algorithms and Ecosystem
-own their respective authoritative implementations and contributor guides.
+The [itemized retirement inventory](migration/internal-forwarder-retirement.md)
+and its JSON identify every removed path, all 99 public compatibility entries (including 16 pre-existing expert Compiler facades),
+and the only three internal files awaiting #1084 consumer reconciliation.
+They supersede the initial blanket facade policy of commit `5f8e97c77`.
 
-- Protected exports, signatures, class identity and serialized module names stay
-  unchanged. Their facades follow `PUBLIC_API_PROTECTION.md` and release policy;
-  a directory migration does not authorize deleting them in a later release.
-- Old non-package module paths share canonical module state. Old package
-  namespaces forward exports without loading duplicate child implementations.
-  Mixed namespaces forward each definition to its specific owner and preserve
-  the annotation globals needed by historical public classes.
-- Private aliases needed by #1084 and old tool command paths are transitional.
-  Integration must reconcile feature-branch imports, CI commands, hooks and
-  source inspectors, then remove the unprotected aliases as a dedicated cleanup.
-  The target is the #1084 integration/0.5.0 migration window; this is a review
-  gate, not permission to remove protected APIs automatically.
-- Internal code imports authoritative owners. Existing approved northbound
-  Compiler capture/training facades remain the named Runtime interfaces.
-  Existing program-to-plan and deployment composition receives exact
-  path entries in the architecture policy; other Runtime Compiler imports remain
-  forbidden. No contract, type or numerical algorithm is duplicated to evade a
-  boundary.
-- The private allocator source is removed. Module-to-package conversions remove
-  the old `.py` and keep the same Python import identity. Workshop/configuration
-  paths move with their readers rather than retaining duplicate contents.
+283 tracked files, including all 138 historical root tool wrappers, are removed.
+Old Kernel/JAX/algebra/Torch frontend trees are absent. Internal Runtime, service,
+deployment and provider helpers use direct canonical imports. CI, hooks and
+wheel test commands invoke the owning tool directories. No generic module alias
+helper remains and canonical imports do not recreate historical namespaces.
+Published facades share the actual classes/functions through ordinary imports.
 
-`_import_compat.py` performs the common module-state/parent binding operation.
-Realtime uses only standard-library code. Frozen source identifiers are resolved
-through explicit symbol ownership, not by regenerating contracts. The scanner
-still visits new definitions and new parameters. Missing targets, duplicate
-implementations, missing forwarding and ambiguous ownership fail validation.
-Unknown historical evidence paths do not acquire a fabricated successor.
+Runtime imports exactly the same three reviewed frontend symbols directly from
+`compiler.frontends.torch._module_builder` and `compiler.frontends.torch._training`.
+The approved exact importer/name constraints remain; the intermediate compiler
+module/training facades are removed. Frozen interface records are historical
+contracts; path resolution maps their source identities without editing them.
+
+The only internal leftovers are `compiler/_hybrid/model.py`, `verifier.py` and
+their import parent: the audited #1084 tests explicitly import them. The incoming
+callers must be reconciled at integration and those three files removed together.
+They are not public API. Root command wrappers are not retained for future merge
+conflicts; the map provides the deterministic incoming command replacements.
+
+Public compatibility follows exact API, maintained namespace and serialization
+obligations, itemized per file. Actual pickle bytes written by the pre-retirement
+wheel prove the MemorySnapshot, CollapseOperator and LindbladPlan module paths.
+Remote credentials explicitly forbid serialization, so their private old modules
+are removed while their public namespace exports remain. Removing other public
+entries requires an API-owner-approved versioned public migration under release
+policy; there is no automatic 0.5.0 expiry.
+
+Source identity mapping protects frozen evidence references, not runtime imports.
+The guard rejects missing owners, duplicated definitions, resurrected retired
+files/directories and absolute or relative imports of retired internal modules.
+Unknown evidence paths do not acquire fabricated successors.
 
 ## Validation and evidence
 
@@ -143,11 +147,11 @@ python -m pytest tests/unit tests/api_contract tests/team -n 4 -q \
 python -m ruff check flagquantum tests tools
 python -m black --check flagquantum tests tools
 python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
-python tools/check_architecture.py
-python tools/public_api_snapshot.py
-python tools/check_qubit_vocabulary.py
-python tools/check_team_scope.py --validate
-python tools/check_docs_links.py
+python tools/architecture/check_architecture.py
+python tools/architecture/public_api_snapshot.py
+python tools/architecture/check_qubit_vocabulary.py
+python tools/architecture/check_team_scope.py --validate
+python tools/docs/check_docs_links.py
 ```
 
 The worker compatibility scenario exports a real package source archive and runs
@@ -170,3 +174,6 @@ separate gates.
 Rollback is a normal commit revert of the atomic migration and its path-policy
 updates. No persisted public payload, checkpoint schema or provider receipt is
 rewritten by rollback.
+
+The [internal-retirement acceptance record](migration/internal-forwarder-retirement-acceptance.md)
+qualifies the cleaned tree separately from the preceding facade-based migration.

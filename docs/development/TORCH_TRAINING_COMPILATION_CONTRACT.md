@@ -8,7 +8,7 @@ approval covers the narrow #936 boundary below, not automatic backend selection.
 
 The user approved a contract-first follow-up that permits **only**
 `flagquantum/runtime/training.py` to import private
-`compile_training_callable` from `flagquantum/compiler/training.py`.
+`compile_training_callable` from `flagquantum/compiler/frontends/torch/_training.py`.
 Land the exact architecture-checker exception and this contract/fake before
 domain-owned implementation commits. This is not permission for arbitrary
 Runtime-to-Compiler imports, a new numerical owner or a new public API.

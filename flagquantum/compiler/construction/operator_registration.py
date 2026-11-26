@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from importlib import import_module as _import_public_namespace
-
 from flagquantum.core.operators.registry import OperatorRegistry
 from flagquantum.core.operators.schema import (
     ADJOINT_RULES,
@@ -199,21 +197,6 @@ __all__ = ("register_operator",)
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _spelling_surface,
-    _install_circuit_methods,
-    register_operator,
-):
+for _identity_export in (register_operator,):
     _identity_export.__module__ = "flagquantum.operators.registry"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.operators.registry")
-for _public_name in (
-    "_install_circuit_methods",
-    "_spelling_surface",
-    "register_operator",
-):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

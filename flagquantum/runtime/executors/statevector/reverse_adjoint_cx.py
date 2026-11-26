@@ -7,12 +7,6 @@ from dataclasses import replace
 from typing import Any
 
 from flagquantum.simulation.statevector.cx_adjoint import (
-    apply_cpu_compact_cx_adjoint_segment as apply_cpu_compact_cx_adjoint_segment,
-)
-from flagquantum.simulation.statevector.cx_adjoint import (
-    apply_cpu_cx_adjoint_index as apply_cpu_cx_adjoint_index,
-)
-from flagquantum.simulation.statevector.cx_adjoint import (
     apply_cpu_cx_adjoint_segment as apply_cpu_cx_adjoint_segment,
 )
 from flagquantum.simulation.statevector.cx_adjoint import (

@@ -17,7 +17,7 @@ for compatibility ownership and removal gates.
 
    ```sh
    python -m pytest tests/unit/test_algorithms_data_encoding.py -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 CPU tests establish behavior and fixture conformance; physical hardware and

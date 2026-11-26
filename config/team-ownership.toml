@@ -11,7 +11,6 @@ protected_paths = [
     "pyproject.toml",
     "flagquantum/__init__.py",
     "flagquantum/_api.py",
-    "flagquantum/_import_compat.py",
     # PEP 561 package marker: changing its presence changes distribution typing
     # semantics, so it is governed with the other release-level package files.
     "flagquantum/py.typed",
@@ -24,7 +23,7 @@ protected_paths = [
     # spellings are not interchangeable in either direction, measured under the
     # checker's `fnmatch.fnmatchcase` -- the flat `flagquantum/core/ir.py`
     # matched the module and not the directory, and this glob matches the
-    # directory and not a sibling module. `tools/check_team_scope.py --validate`
+    # directory and not a sibling module. `tools/architecture/check_team_scope.py --validate`
     # rejects a protected entry that matches no file, so the entry and the split
     # land together.
     "flagquantum/core/ir/**",
@@ -65,7 +64,7 @@ protected_paths = [
     "compose.dev.yaml",
     "conftest.py",
     "dependency-policy.toml",
-    # The declaration table `tools/check_evidence_revisions.py` reads. It records
+    # The declaration table `tools/release/check_evidence_revisions.py` reads. It records
     # which revisions of the checked-in evidence are obtainable and which are not,
     # so an edit to it changes what the repository discloses about its own
     # evidence rather than what one team implements -- the same class as
@@ -102,7 +101,7 @@ shared_paths = [
 # Every `branch` and `worktree` value below is a reserved name from that migration,
 # not a live instruction: no branch with the `refactor/` prefix exists in this
 # repository, so do not cut one for ordinary work. A `branch` value is read only by the
-# uniqueness check in `tools/check_team_scope.py`, and the same layout is documented as
+# uniqueness check in `tools/architecture/check_team_scope.py`, and the same layout is documented as
 # optional in `AGENTS.md` and `docs/development/MULTI_TEAM_DEVELOPMENT.md`.
 [teams.integration]
 branch = "refactor/flagquantum-vnext-architecture"
@@ -151,7 +150,6 @@ branch = "refactor/vnext-team-simulation"
 worktree = "FlagQuantum-vNext-simulation"
 owns = [
     "flagquantum/simulation/**",
-    "flagquantum/kernels/**",
     "flagquantum/lindblad/**",
     "flagquantum/runtime/executors/**",
 ]
@@ -198,7 +196,7 @@ owns = [
     "flagquantum/algorithms/**",
     # `models.py` composes `algorithms.Hamiltonian` into the small trainable
     # models used by product acceptance and tutorials.
-    "flagquantum/models.py",
+    "flagquantum/algorithms/quantum_ml/models.py",
 ]
 
 [teams.verification]

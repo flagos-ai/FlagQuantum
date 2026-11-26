@@ -28,7 +28,7 @@ Examples
 Partition a run's failures against the merge base::
 
     python -m pytest -m "smoke or unit" -q --junitxml=/tmp/head.xml
-    python tools/partition_failures_against_base.py \\
+    python tools/ci/partition_failures_against_base.py \\
         --head-report /tmp/head.xml --base origin/main
 
 Exit status is 0 when nothing was introduced, 1 when something was, and 2 when

@@ -10,7 +10,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from tools import collect_ftqc_mixed_continuation as controller
+from tools.validation import collect_ftqc_mixed_continuation as controller
 
 pytestmark = pytest.mark.unit
 

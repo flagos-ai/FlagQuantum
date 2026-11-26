@@ -33,7 +33,7 @@ def test_flagos_transport_observability_ladder(tmp_path: Path) -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            "tools/observe_flagos_transport.py",
+            "tools/validation/observe_flagos_transport.py",
             "--output",
             str(output),
             "--timeout-seconds",

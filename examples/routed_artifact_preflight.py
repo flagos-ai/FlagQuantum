@@ -40,7 +40,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
-from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
+from flagquantum.compute.remote.validation import prepare_artifact_deployment
 
 
 def _target_snapshot(evaluated_at: datetime) -> TargetCapabilitySnapshot:

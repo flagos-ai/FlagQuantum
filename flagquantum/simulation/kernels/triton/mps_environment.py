@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -393,24 +391,3 @@ def fused_mps_environment_channels(
 
 
 __all__ = ["fused_mps_environment_channels", "fused_mps_environment_transfer"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _mps_environment_transfer_kernel,
-    _mps_environment_channels_kernel,
-    _validate,
-    _reference,
-    _supported_shape,
-    _validate_channels,
-    _reference_channels,
-    _supported_channel_shape,
-    _launch,
-    _launch_channels,
-    fused_mps_environment_transfer,
-    fused_mps_environment_channels,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.mps_environment"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.mps_environment", __name__)

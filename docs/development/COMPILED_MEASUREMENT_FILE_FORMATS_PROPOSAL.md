@@ -76,8 +76,8 @@ strict Mypy, existing executable-docstring tests, and seeded pr-default and
 pr-runtime tiers, with explicit timeouts. Then build one offline macOS arm64
 embedded wheel using `FQ_BUILD_EMBEDDED_STIM=1 python -m build --wheel --no-isolation`.
 In a qualified disposable installed prefix without the Stim distribution,
-run `tools/verify_embedded_stabilizer_install.py` and
-`tools/qec_installed_smoke.py core` from outside the source tree with PYTHONPATH
+run `tools/validation/verify_embedded_stabilizer_install.py` and
+`tools/release/qec_installed_smoke.py core` from outside the source tree with PYTHONPATH
 unset. Verify installed package/extension provenance and actual native writer
 calls. Missing dependencies or any new failed acceptance stop the run; retain
 all logs without automatic retries. Final-head example and installed receipts

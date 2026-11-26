@@ -48,11 +48,11 @@ SABRE_ROUTING_STRATEGIES = ("sabre", "sabre_layout")
 # starts from a layout `plan_sabre_layout` searched for, so its
 # `initial_logical_to_physical` is the identity on only 23 of the 60 programs in
 # `tests/team/compiler/test_routing_conformance.py`, while
-# `flagquantum/deployment/routing_evidence.py` requires the identity because a
+# `flagquantum/compiler/artifacts/routing_evidence.py` requires the identity because a
 # deployment artifact must state a physical starting assignment a provider can
 # reproduce. It stays a caller-selected strategy and stays priceable, so a caller
 # whose provider accepts a permuted start can still ask for it by name.
-# `flagquantum/deployment/routing_evidence.py` reads this constant, so the
+# `flagquantum/compiler/artifacts/routing_evidence.py` reads this constant, so the
 # accepted set and the selectable set cannot drift apart.
 DEPLOYABLE_ROUTING_STRATEGIES = (
     "restore_after_each_gate",

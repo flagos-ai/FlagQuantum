@@ -8,7 +8,11 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.synth._workflow import _synthesize
-from tools.validate_qmod_predicate_oracle import FIXTURES, marked_states, validate
+from tools.validation.validate_qmod_predicate_oracle import (
+    FIXTURES,
+    marked_states,
+    validate,
+)
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128
@@ -286,7 +290,7 @@ def test_unsized_marker_port_specializes_to_the_one_bit_phase_context() -> None:
 
 
 def test_grover_callback_field_name_is_not_a_captured_variable() -> None:
-    from tools.validate_qmod_predicate_oracle import reference_circuit
+    from tools.validation.validate_qmod_predicate_oracle import reference_circuit
 
     source = (
         RECORD

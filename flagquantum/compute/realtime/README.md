@@ -85,7 +85,7 @@ for the approved migration.
    requires every declared reader to exist:
 
    ```bash
-   python tools/check_realtime_messaging_contract.py
+   python tools/validation/check_realtime_messaging_contract.py
    ```
 
 4. Run the witness tests, which are the contract's named readers:

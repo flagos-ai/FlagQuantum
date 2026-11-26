@@ -1,6 +1,6 @@
 """Collect the separately approved FTS-10D matrix once, after main admission.
 
-Invoke as python -m tools.collect_ftqc_phase_cost from the reviewed checkout.
+Invoke as python -m tools.validation.collect_ftqc_phase_cost from the reviewed checkout.
 CI tests inject synthetic payloads; no live numerical trial or probe is allowed.
 """
 

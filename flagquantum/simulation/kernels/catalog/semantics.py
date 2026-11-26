@@ -1,8 +1,6 @@
-"""Provider-neutral semantics currently implemented in ``flagquantum.kernels``."""
+"""Provider-neutral semantics currently implemented in ``flagquantum.simulation.kernels``."""
 
 from __future__ import annotations
-
-from flagquantum._import_compat import alias_module as _alias_module
 
 from .schema import KernelDomain, KernelSemantic
 
@@ -315,11 +313,3 @@ SEMANTICS: tuple[KernelSemantic, ...] = (
 
 
 __all__ = ["SEMANTICS"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (_semantic,):
-    _identity_export.__module__ = "flagquantum.kernels.catalog.semantics"
-del _identity_export
-
-_alias_module("flagquantum.kernels.catalog.semantics", __name__)

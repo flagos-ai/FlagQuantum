@@ -7,7 +7,6 @@ import json
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.topology.routing import (
     DEPLOYABLE_ROUTING_STRATEGIES,
@@ -302,5 +301,3 @@ __all__ = [
     "stable_payload_sha256",
     "validate_deployment_routing_plan",
 ]
-
-_alias_module("flagquantum.deployment.routing_evidence", __name__)

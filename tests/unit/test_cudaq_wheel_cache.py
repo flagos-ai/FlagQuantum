@@ -162,7 +162,7 @@ def test_certified_checks_and_aggregate_are_retained() -> None:
     for command in (
         "for version in ${OPTIONAL_VERSIONS}; do",
         "python -m pip check",
-        "python tools/check_cudaq_export_contract.py --verify-sdk",
+        "python tools/validation/check_cudaq_export_contract.py --verify-sdk",
         "python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q",
         "assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)",
     ):

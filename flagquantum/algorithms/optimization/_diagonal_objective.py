@@ -5,7 +5,6 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.circuit import Circuit
 
 
@@ -84,14 +83,3 @@ class DiagonalQaoa:
         tail = torch.dot(energies[:cutoff], weights[:cutoff]).item()
         tail += (self.alpha - used) * energies[cutoff].item()
         return DiagonalMetrics(tail / self.alpha, mean, variance)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    DiagonalMetrics,
-    DiagonalQaoa,
-):
-    _identity_export.__module__ = "flagquantum.algorithms._diagonal_objective"
-del _identity_export
-
-_alias_module("flagquantum.algorithms._diagonal_objective", __name__)

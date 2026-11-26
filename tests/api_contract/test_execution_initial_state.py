@@ -396,7 +396,7 @@ def test_rehashed_incompatible_decisions_are_rejected(change: str) -> None:
 
 @pytest.mark.parametrize("change", ["signature", "scope", "release", "unknown"])
 def test_api_checker_refuses_unapproved_expansion(change: str) -> None:
-    from tools.public_api_snapshot import (
+    from tools.architecture.public_api_snapshot import (
         INITIAL_STATE_CONTRACT,
         _validate_authorized_initial_state,
     )

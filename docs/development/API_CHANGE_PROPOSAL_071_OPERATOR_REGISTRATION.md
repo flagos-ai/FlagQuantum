@@ -1287,7 +1287,7 @@ records each one that moves.
 - **`docs/public_api_v1.json` is unchanged, and its `stable_exports` list stays
   at 41 names.** (Revision 1 measured 36; Revision 3 re-measured 41 after five
   unrelated names landed. This proposal adds none of them and removes none.)
-  `tools/public_api_snapshot.py` refuses automatic regeneration and reports
+  `tools/architecture/public_api_snapshot.py` refuses automatic regeneration and reports
   `public API migration baseline passed`.
 
 - **Three suites pin behaviour this proposal changes, and each is disclosed
@@ -1345,7 +1345,7 @@ records each one that moves.
   The second half of that token becomes false when Decision 7 lands, so the row's
   `reason` and that evidence entry are edited in the same change as the code, and
   `docs/generated/CAPABILITIES.md` is regenerated rather than hand-edited.
-  `tools/parity_matrix.py --check` must still report
+  `tools/architecture/parity_matrix.py --check` must still report
   `parity-matrix: contract valid and document current`.
 
 - **`capability-maturity.toml` has no entry for this area, and one entry's
@@ -1495,10 +1495,10 @@ deleting it and observing a test fail.
       every change, and `get_operator_schema('any') is None` is asserted with
       them, so that a later registration cannot silently widen the table under
       the name of this change.
-- [ ] `python tools/parity_matrix.py --check` reports
+- [ ] `python tools/architecture/parity_matrix.py --check` reports
       `parity-matrix: contract valid and document current`, and
-      `python tools/docs_source_of_truth.py --check` reports no stale generated
-      document, and `python tools/check_capability_maturity.py --check` reports
+      `python tools/docs/docs_source_of_truth.py --check` reports no stale generated
+      document, and `python tools/validation/check_capability_maturity.py --check` reports
       `capability maturity matrix passed`. Note that
       `docs_source_of_truth.py --check` exits `0` even when it prints a staleness
       line, so the item is the printed prose and not the exit status.

@@ -1,7 +1,7 @@
 """Measure the frozen MPS capacity workload and emit an MPS release payload.
 
 The output of this script is a *measurements document*, not a signed artifact: it
-reports what executed, and ``tools/seal_runtime_evidence.py`` reports what that is
+reports what executed, and ``tools/release/seal_runtime_evidence.py`` reports what that is
 worth. Six roles are implemented.
 
 ``capacity-failure`` runs the frozen capacity workload on one device and records
@@ -39,7 +39,7 @@ re-implemented here: a second construction of the same circuit would be a second
 source of truth for the site count, the bond schedule and the rank boundaries.
 
 The producer measures and reports; it does not seal. Sealing is
-``tools/seal_runtime_evidence.py``, and the frozen release world of sixteen ranks
+``tools/release/seal_runtime_evidence.py``, and the frozen release world of sixteen ranks
 is carried by ``EvidenceScope.MULTI_NODE_SCALE`` since API change proposal 065, so
 a completed sixteen-rank payload can be sealed. The completion role still checks
 carriability before it measures and warns if the manifest it was pointed at names
@@ -1886,7 +1886,7 @@ def _role_release_payload(arguments: argparse.Namespace) -> int:
     """Project one role document onto the contract the sealer reads.
 
     A role document states the release contract under ``measurements`` beside the
-    per-rank records it was assembled from. ``tools/seal_runtime_evidence.py``
+    per-rank records it was assembled from. ``tools/release/seal_runtime_evidence.py``
     takes its evidence input at the top level, so something has to lift the
     contract out; doing it here keeps the projection reviewable and repeatable
     instead of leaving it to whoever runs the campaign.

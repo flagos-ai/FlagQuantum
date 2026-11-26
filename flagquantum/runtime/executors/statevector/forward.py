@@ -12,10 +12,6 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from flagquantum.simulation.statevector.adjoint import (
-    _is_diagonal_instruction as _is_diagonal_instruction,
-)
-
 from ....core.ir import CircuitIR
 from ....simulation.statevector.index_basis import (
     _basis_indices_for_wires,

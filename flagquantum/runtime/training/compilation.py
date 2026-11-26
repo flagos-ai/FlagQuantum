@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 import torch
 from torch.fx import GraphModule
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.circuit import Circuit
 from flagquantum.core.ir import ensure_circuit_ir
 from flagquantum.errors import ExecutionError, FlagQuantumError, ValidationError
@@ -417,28 +416,3 @@ def _execute_prebuilt(
             raise ExecutionError("module execution failed") from error
     finally:
         module._builder_bindings.clear()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _TrainingProgram,
-    _tensor_signature,
-    _configuration,
-    _objective_capture_configuration,
-    _objective_signature,
-    _training_signature,
-    _training_exclusion,
-    _training_value,
-    _optimizer_exclusion,
-    _scalar_objective,
-    _prepare_training_program,
-    _prepared_execution,
-    _compilation_diagnostics,
-    _build_training_circuit,
-    _snapshot_statistics,
-    _execute_prebuilt,
-):
-    _identity_export.__module__ = "flagquantum.runtime.training_compilation"
-del _identity_export
-
-_alias_module("flagquantum.runtime.training_compilation", __name__)

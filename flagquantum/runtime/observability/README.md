@@ -9,7 +9,7 @@ then run from the repository root:
 
 ```sh
 python -m pytest tests/unit/test_mps_profiling.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Keep existing public contracts and serialized identities. Physical accelerators

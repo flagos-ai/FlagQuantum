@@ -9,7 +9,7 @@ ones no test reads, and the ledger of readers for the ones a test does read.
 It reconciles the contract with the shipped importer rather than with a second
 copy of the same facts:
 
-* ``refusal_issue_codes`` is compared with ``openqasm_import._ISSUE_CODES``,
+* ``refusal_issue_codes`` is compared with ``_stage_openqasm_import._ISSUE_CODES``,
   and every declared code must appear as a literal argument of ``_refuse(...)``
   in that module, so the vocabulary cannot drift from what the importer raises;
 * ``supported_versions`` is compared with ``openqasm_import.SUPPORTED_VERSIONS``;
@@ -27,6 +27,8 @@ from __future__ import annotations
 import sys as _entry_sys
 from pathlib import Path as _EntryPath
 
+import flagquantum.compiler.formats.openqasm_import as _stage_openqasm_import
+
 if __package__ in (None, ""):
     _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
 
@@ -41,6 +43,7 @@ from typing import Any
 import flagquantum as fq
 from flagquantum.compiler import openqasm_import
 from flagquantum.core.ir import IR_VERSION
+from tools.architecture.source_relocations import source_path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
@@ -237,7 +240,7 @@ def contract_errors(
     *,
     exported: tuple[str, ...] = tuple(fq.__all__),
     signature: str | None = None,
-    issue_codes: tuple[str, ...] = tuple(openqasm_import._ISSUE_CODES),
+    issue_codes: tuple[str, ...] = tuple(_stage_openqasm_import._ISSUE_CODES),
     versions: tuple[float, ...] = tuple(openqasm_import.SUPPORTED_VERSIONS),
     witness_tests: set[str] | None = None,
 ) -> tuple[str, ...]:
@@ -266,7 +269,7 @@ def contract_errors(
         errors.append("OpenQASM import contract needs an [approval] record")
     else:
         record = approval.get("approval_record")
-        if not isinstance(record, str) or not (ROOT / record).is_file():
+        if not isinstance(record, str) or not (source_path(ROOT, record)).is_file():
             errors.append(f"approval record {record!r} does not exist")
         if not approval.get("approved_at") or not approval.get("approved_by"):
             errors.append("the approval record needs approved_at and approved_by")
@@ -330,7 +333,7 @@ def contract_errors(
                 errors.append(f"the OpenQASM {lane} lane must remain supported")
 
     migration = contract.get("qubit_naming_migration")
-    if not isinstance(migration, str) or not (ROOT / migration).is_file():
+    if not isinstance(migration, str) or not (source_path(ROOT, migration)).is_file():
         errors.append(f"qubit_naming_migration {migration!r} does not exist")
 
     rules = contract.get("rules")
@@ -384,9 +387,9 @@ def main(argv: list[str] | None = None) -> int:
             f"{', '.join(dynamic)}; every refusal must name a declared literal code"
         )
     for code in sorted(codes):
-        if code not in openqasm_import._ISSUE_CODES:
+        if code not in _stage_openqasm_import._ISSUE_CODES:
             errors.append(f"the importer refuses with the undeclared code {code!r}")
-    for code in openqasm_import._ISSUE_CODES:
+    for code in _stage_openqasm_import._ISSUE_CODES:
         if code not in codes:
             errors.append(f"the declared code {code!r} is never raised by the importer")
     errors.extend(construction_time_only())

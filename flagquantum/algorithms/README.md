@@ -364,7 +364,7 @@ test that demonstrates convergence or the expected failure, and run:
 python -m pytest tests/unit/test_algorithms_package.py \
   tests/test_hybrid_optimization.py \
   tests/integration/test_cpu_vertical_slice.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

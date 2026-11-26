@@ -1,8 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
 from flagquantum.compute.realtime.channels import (
     DEFAULT_SLOT_SIZE as DEFAULT_SLOT_SIZE,
 )
@@ -28,6 +25,3 @@ from flagquantum.compute.realtime.channels import __all__ as __all__
 from flagquantum.compute.realtime.channels import (
     loopback_channel as loopback_channel,
 )
-
-_implementation = _import_module("flagquantum.compute.realtime.channels")
-_sys.modules[__name__] = _implementation

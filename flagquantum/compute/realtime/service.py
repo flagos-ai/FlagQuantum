@@ -19,10 +19,10 @@ status rather than a fabricated success.
 
 from __future__ import annotations
 
-import sys as _alias_sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, Protocol
+from typing import get_type_hints as _class_type_hints
 
 from .payload import (
     HandlerSchema,
@@ -284,20 +284,22 @@ class FunctionTableService:
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (FunctionEntry,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     RealtimeHandlerError,
     FunctionEntry,
     DeviceCallSession,
     DeviceCallService,
     FunctionTableSession,
-    _as_results,
     FunctionTableService,
 ):
     _identity_export.__module__ = "flagquantum.realtime.service"
 del _identity_export
-
-_alias_sys.modules["flagquantum.realtime.service"] = _alias_sys.modules[__name__]
-_parent = _alias_sys.modules.get("flagquantum.realtime")
-if _parent is not None:
-    setattr(_parent, "service", _alias_sys.modules[__name__])
-del _parent

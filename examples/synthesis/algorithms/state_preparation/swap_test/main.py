@@ -1,7 +1,7 @@
 """One-bit swap test in native qfunc, Qmod and public Circuit syntax.
 
 The pinned three-bit original has non-normalized vectors and remains refused.
-Run tools/validate_qmod_swap_test.py for its labelled diagnostic comparison.
+Run tools/validation/validate_qmod_swap_test.py for its labelled diagnostic comparison.
 This example uses valid one-bit states and existing native phase/CX primitives;
 it adds no native array preparation or swap_test export."""
 

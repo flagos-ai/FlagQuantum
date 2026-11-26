@@ -8,7 +8,7 @@ import pytest
 
 from flagquantum import synth
 from flagquantum.synth import _workflow as synthesis
-from tools.public_api_snapshot import validate
+from tools.architecture.public_api_snapshot import validate
 
 pytestmark = pytest.mark.unit
 

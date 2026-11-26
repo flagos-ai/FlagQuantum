@@ -12,8 +12,6 @@ from typing import Any, ParamSpec, TypeVar, cast
 import torch
 from torch.fx import GraphModule
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 TorchBackend = Callable[[GraphModule, list[Any]], Callable[..., Any]]
@@ -254,16 +252,3 @@ def compile_training_callable(
             status="eager", reason=f"compiler_creation_failed:{type(error).__name__}"
         )
         return step
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _functional_tensor_operation,
-    _safe_objective_capture,
-    _objective_exclusion,
-    compile_training_callable,
-):
-    _identity_export.__module__ = "flagquantum.compiler._torch.training"
-del _identity_export
-
-_alias_module("flagquantum.compiler._torch.training", __name__)

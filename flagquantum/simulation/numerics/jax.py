@@ -6,8 +6,6 @@ from collections.abc import Callable, Iterable
 from contextvars import ContextVar
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 TorchCircuitBuilder = Callable[..., Any]
 
 
@@ -571,6 +569,3 @@ def jax_contract_tensor_nodes(
         operands.extend((tensor, labels))
     operands.append(tuple(output_labels))
     return jnp.einsum(*operands, optimize=path, precision=matmul_precision)
-
-
-_alias_module("flagquantum.simulation.jax.primitives", __name__)

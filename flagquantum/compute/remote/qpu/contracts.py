@@ -6,8 +6,8 @@ import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
     DeploymentPackage,
@@ -219,6 +219,20 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    DeploymentResult,
+    ProviderSubmissionPreview,
+    ProviderTaskHandle,
+    QuantumProvider,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     ProviderTaskHandle,
     DeploymentResult,
@@ -231,5 +245,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.remote.qpu.contracts"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.contracts", __name__)

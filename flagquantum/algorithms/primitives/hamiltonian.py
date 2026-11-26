@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from importlib import import_module as _import_public_namespace
 from typing import Literal
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
@@ -390,25 +390,15 @@ def pauli_term(
 
 __all__ = ("HamiltonianTerm", "Hamiltonian", "pauli_term")
 
-for _identity in (
-    _as_qubit_tuple,
-    _normalize_pauli,
-    _coefficient_tensor,
-    HamiltonianTerm,
-    Hamiltonian,
-    pauli_term,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (HamiltonianTerm,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity in (HamiltonianTerm, Hamiltonian, pauli_term):
     _identity.__module__ = "flagquantum.algorithms.core"
 del _identity
-
-_public_namespace = _import_public_namespace("flagquantum.algorithms.core")
-for _name in (
-    "_as_qubit_tuple",
-    "_normalize_pauli",
-    "_coefficient_tensor",
-    "HamiltonianTerm",
-    "Hamiltonian",
-    "pauli_term",
-):
-    setattr(_public_namespace, _name, globals()[_name])
-del _public_namespace, _name

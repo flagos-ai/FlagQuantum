@@ -680,7 +680,7 @@ hashes, calibration identifiers, or retrospective matches cannot substitute
 for those identities.
 
 Q-ATLAS research workflows can use
-`tools/convert_q_atlas_twin_evidence.py` after freezing the companion identity
+`tools/validation/convert_q_atlas_twin_evidence.py` after freezing the companion identity
 binding. The tool is an offline compatibility boundary, not a public framework
 API. Existing historical audits that did not record this bridge prospectively
 remain useful research evidence but cannot be relabeled as evidence for a

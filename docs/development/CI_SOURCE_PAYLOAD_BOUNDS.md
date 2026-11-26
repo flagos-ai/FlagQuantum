@@ -71,7 +71,7 @@ Black, Ruff and strict Linux-target mypy pass the complete changed Python files.
 All 17 focused repository hygiene and evidence-vocabulary tests also pass.
 The first mypy run also exposed an existing unvalidated `Request.data` type in
 the test bootstrap; an explicit bytes assertion fixes that typing issue without
-changing the bootstrap's acceptance. The required full `python tools/ci_tier.py pr-default` attempt reached its
+changing the bootstrap's acceptance. The required full `python tools/ci/ci_tier.py pr-default` attempt reached its
 300-second supervisor budget at approximately 41 percent and was terminated;
 it is not a passing full-suite result. Exact-head GitHub CI remains required
 before integration.

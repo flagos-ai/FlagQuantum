@@ -3,7 +3,6 @@
 from collections.abc import Mapping, Sequence
 from typing import Literal
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
@@ -139,11 +138,3 @@ def synthesize_registers(
         exact_mps=exact_mps,
         numeric_formats=formats,
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (synthesize_registers,):
-    _identity_export.__module__ = "flagquantum.services._synthesis_registers"
-del _identity_export
-
-_alias_module("flagquantum.services._synthesis_registers", __name__)

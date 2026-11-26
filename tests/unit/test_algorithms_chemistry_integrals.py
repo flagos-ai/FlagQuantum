@@ -376,9 +376,7 @@ def _primitive(exponent: float, centre, angular) -> AtomicOrbital:
 
 
 def test_the_module_declares_exactly_the_seven_documented_names() -> None:
-    from flagquantum.algorithms.chemistry.molecular import (
-        integrals as chemistry_integrals,
-    )
+    import flagquantum.algorithms.chemistry_integrals as chemistry_integrals
 
     assert chemistry_integrals.__all__ == (
         "ATOMIC_NUMBERS",
@@ -1331,9 +1329,7 @@ def test_the_module_examples_still_run() -> None:
 
     import doctest
 
-    from flagquantum.algorithms.chemistry.molecular import (
-        integrals as chemistry_integrals,
-    )
+    import flagquantum.algorithms.chemistry_integrals as chemistry_integrals
 
     results = doctest.testmod(chemistry_integrals, verbose=False)
     assert results.failed == 0

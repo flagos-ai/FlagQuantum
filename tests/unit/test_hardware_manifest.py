@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from tools.hardware_run_manifest import main
+from tools.release.hardware_run_manifest import main
 
 pytestmark = pytest.mark.unit
 

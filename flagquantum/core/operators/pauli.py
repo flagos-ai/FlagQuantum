@@ -7,8 +7,6 @@ import operator
 from dataclasses import dataclass
 from numbers import Complex
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 Factors = tuple[tuple[int, str], ...]
 _PRODUCT = {
     ("x", "y"): ("z", 1j),
@@ -149,17 +147,3 @@ class PauliOperator:
 def pauli(coefficient: complex = 1.0, factors: Factors = ()) -> PauliOperator:
     """Construct a single word; ``pauli()`` is the identity."""
     return PauliOperator((PauliTerm(coefficient, factors),))
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    count,
-    scalar,
-    PauliTerm,
-    PauliOperator,
-    pauli,
-):
-    _identity_export.__module__ = "flagquantum.core.algebra.pauli"
-del _identity_export
-
-_alias_module("flagquantum.core.algebra.pauli", __name__)

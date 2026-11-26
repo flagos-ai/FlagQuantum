@@ -102,10 +102,10 @@ from __future__ import annotations
 import itertools
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.chemistry.molecular.integrals import (
     MolecularGeometry,
     MolecularIntegrals,
@@ -886,20 +886,27 @@ def create_molecular_hamiltonian(
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    HartreeFockSolution,
+    MolecularHamiltonian,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     HartreeFockSolution,
     MolecularHamiltonian,
-    _hartree_fock_energy,
     restricted_hartree_fock,
     molecular_orbital_integrals,
     fold_frozen_core,
     second_quantized_hamiltonian,
-    _determinant_masks,
-    _sector_dimension,
     exact_ground_state_energy,
     create_molecular_hamiltonian,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.molecular"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.molecular", __name__)

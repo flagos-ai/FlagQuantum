@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.frontend import expressions
 from flagquantum.compiler.frontends._structured.frontend.expressions import _call_name
 from flagquantum.compiler.frontends._structured.model import (
@@ -176,15 +175,3 @@ def parse_observable(owner: _Capture, node: ast.expr) -> tuple[tuple[str, int], 
     ):
         owner.fail(node, "quantum.observable", "observable terms are invalid")
     return terms
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    capture_quantum_call,
-    capture_return,
-    parse_observable,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.quantum"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.quantum", __name__)

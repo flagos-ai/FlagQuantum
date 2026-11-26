@@ -2,8 +2,6 @@
 
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def experiment_body(
     *,
@@ -81,11 +79,3 @@ def experiment_body(
         flag=False,
     )
     return body
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (experiment_body,):
-    _identity_export.__module__ = "flagquantum.remote.compute._job_payload"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._job_payload", __name__)

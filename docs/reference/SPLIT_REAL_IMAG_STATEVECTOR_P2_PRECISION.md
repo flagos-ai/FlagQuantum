@@ -81,7 +81,7 @@ pytest tests/test_split_real_imag_precision_conformance.py
 In a Torch-FL CUDA-reference environment:
 
 ```bash
-python tools/validate_split_real_imag_precision_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_precision_flagos.py --device flagos:0
 ```
 
 The 2026-08-24 NVIDIA A800 native CUDA and Torch-FL reference runs are recorded
@@ -89,7 +89,7 @@ in the checked-in
 [`split_real_imag_precision_a800_20260824.json`](../../artifacts/split_real_imag_precision_a800_20260824.json)
 artifact. CI validates its source revision, archive and profile identities,
 full matrix, thresholds, route evidence, and non-promotion claims with
-`tools/validate_split_real_imag_precision_evidence.py`.
+`tools/validation/validate_split_real_imag_precision_evidence.py`.
 
 CUDA and CUDA-backed `flagos:0` results are portability evidence only. They do
 not certify a domestic accelerator or prove that provider-internal kernels

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,
@@ -129,14 +128,3 @@ __all__ = (
     "CUDA_STATEVECTOR_WORKLOAD",
     "cuda_statevector_capability_snapshot",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _timestamp,
-    cuda_statevector_capability_snapshot,
-):
-    _identity_export.__module__ = "flagquantum.compute.cuda_target_capabilities"
-del _identity_export
-
-_alias_module("flagquantum.compute.cuda_target_capabilities", __name__)

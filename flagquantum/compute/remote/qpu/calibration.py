@@ -6,7 +6,6 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.noise import (
     CorrelatedReadoutError,
     NoiseModel,
@@ -180,11 +179,6 @@ __all__ = ("quafu_noise_model_from_chip_info",)
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _captured_at,
-    quafu_noise_model_from_chip_info,
-):
+for _identity_export in (quafu_noise_model_from_chip_info,):
     _identity_export.__module__ = "flagquantum.remote.qpu.calibration"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.calibration", __name__)

@@ -30,7 +30,7 @@ import flagquantum as fq
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime.execution import run_native
 from flagquantum.runtime.options import _MODES, ExecutionOptions
-from tools.check_construction_acceptance_contract import contract_errors
+from tools.validation.check_construction_acceptance_contract import contract_errors
 
 #: The exception classes the contract names. `fq` re-exports the error hierarchy
 #: selectively, so the classes are read from their owning module rather than from the

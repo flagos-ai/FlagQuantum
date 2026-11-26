@@ -117,7 +117,7 @@ pytest tests/unit/test_statevector_operator_profile.py -v
 Run the full Torch-FL CUDA-backed `flagos:0` integration:
 
 ```bash
-python tools/validate_flagos_cuda_reference.py \
+python tools/validation/validate_flagos_cuda_reference.py \
   --dtypes complex64,complex128 --depths 8,32,128
 ```
 
@@ -130,31 +130,31 @@ FLAGQUANTUM_TEST_FLAGOS_CUDA=1 pytest tests/test_flagos_cuda_reference.py -v
 Run the forward-only split FP32 integration separately:
 
 ```bash
-python tools/validate_split_real_imag_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_flagos.py --device flagos:0
 ```
 
 Run the split FP32 observable and parameter-shift integration separately:
 
 ```bash
-python tools/validate_split_real_imag_training_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_training_flagos.py --device flagos:0
 ```
 
 Run the selective Double-Single P2 integration separately:
 
 ```bash
-python tools/validate_split_real_imag_precision_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_precision_flagos.py --device flagos:0
 ```
 
 Run the full-state Double-Single P3 integration separately:
 
 ```bash
-python tools/validate_split_real_imag_double_single_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_double_single_flagos.py --device flagos:0
 ```
 
 Run the device-generated-gate Double-Single P4 integration separately:
 
 ```bash
-python tools/validate_split_real_imag_device_double_single_flagos.py \
+python tools/validation/validate_split_real_imag_device_double_single_flagos.py \
   --device flagos:0
 ```
 
@@ -170,7 +170,7 @@ isolation record, runtime evidence, and numerical metrics are stored in
 Validate a checked-in or newly generated result without accelerator access:
 
 ```bash
-python tools/validate_flagos_reference_evidence.py \
+python tools/validation/validate_flagos_reference_evidence.py \
   artifacts/flagos_cuda_reference_a800_20260824.json
 ```
 

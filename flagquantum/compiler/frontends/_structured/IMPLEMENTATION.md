@@ -25,7 +25,7 @@ models, or runtime contracts here.
 
    ```bash
    python -m pytest tests/hybrid_compiler -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 The first golden scenario is nested tensor-indexed loops with data-dependent

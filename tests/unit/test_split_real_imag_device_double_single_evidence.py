@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.validate_split_real_imag_device_double_single_evidence import (
+from tools.validation.validate_split_real_imag_device_double_single_evidence import (
     evidence_errors,
 )
 

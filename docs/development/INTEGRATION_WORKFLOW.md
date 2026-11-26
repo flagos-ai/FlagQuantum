@@ -218,7 +218,7 @@ request, since it routes work through an integration branch that CI does not wat
 
 ### What `--validate` currently enforces
 
-`tools/check_team_scope.py:64-76` requires every team to declare a unique `branch` and a
+`tools/architecture/check_team_scope.py:64-76` requires every team to declare a unique `branch` and a
 unique `worktree`, and `ci.yml:76` runs that validation on every pull request. So the
 repository has a machine-checked invariant over 22 values that no process consumes. The
 only reader of either field is the uniqueness check itself. The two fields are kept as a
@@ -257,7 +257,7 @@ Two decisions were taken on 2026-10-08, in the change that closes
    `cpu-core (3.10)`, `cpu-core (3.11)`, `cpu-core (3.12)`, `package`, `distributed-cpu`,
    `coverage`, and `pre-commit` must each complete successfully on a head branch up to date
    with `main` before a merge is accepted — including a merge performed by the maintainer.
-   `.github/required-checks.json` records the names, `tools/validate_required_checks.py`
+   `.github/required-checks.json` records the names, `tools/ci/validate_required_checks.py`
    proves each name is one a workflow job produces, and `ci.yml`/`pre-commit.yaml` no
    longer cancel a superseded run of `main`, so the merge push of a revision is read
    instead of discarded.
@@ -277,7 +277,7 @@ reproducible as a test failure rather than as a second silent outage.
 
 Nothing in this repository compares the two, and that is the remaining hole in the gate.
 `.github/required-checks.json` is a *record* of what branch protection holds —
-`externally_configured: true` says so — and `tools/validate_required_checks.py` reads it
+`externally_configured: true` says so — and `tools/ci/validate_required_checks.py` reads it
 against the workflow documents, not against GitHub. The settings are changed through the
 API, so a later edit to branch protection can leave the file describing a rule that is no
 longer in force, and no check fails. Re-reading the two together is a manual step, and it
@@ -295,7 +295,7 @@ enforcement have parted, and the record is the half that is wrong: branch protec
 rule, and the file is what the repository believes about it.
 
 The approved API change proposals written before this date still describe
-`tools/validate_required_checks.py` as pinning "six externally configured required
+`tools/ci/validate_required_checks.py` as pinning "six externally configured required
 checks". That was true of the contract at the time each was approved, and those proposals
 are records of an approval rather than a description of the current roster, so they are left
 as written. The roster is eight here and in `.github/required-checks.json`.
@@ -397,7 +397,7 @@ The following are recorded so that the declaration cannot decay while it is deci
   `docs/development/**` is shared, so any team may edit the second and only Integration
   may edit the first.
 - **Removing `branch` and `worktree` from `config/team-ownership.toml` is a policy change.**
-  `tools/check_team_scope.py:64-76` reads them and `ci.yml:76` runs the validation on
+  `tools/architecture/check_team_scope.py:64-76` reads them and `ci.yml:76` runs the validation on
   every pull request, so the removal must land with the checker and be reflected in
   `tests/unit/test_team_scope_policy.py`. `config/team-ownership.toml` and `tools/**` are both
   protected integration paths.
@@ -468,7 +468,7 @@ control](#branch-protection-now-supplies-the-control-and-did-not-before).
 ## Owner and approvals
 
 - Owning domain: `integration`. This document, `AGENTS.md`, `config/team-ownership.toml`,
-  `tools/check_team_scope.py`, and `.github/workflows/ci.yml` are all integration-owned
+  `tools/architecture/check_team_scope.py`, and `.github/workflows/ci.yml` are all integration-owned
   protected paths, and Candidate A changes nothing outside them.
 - `docs/development/INTEGRATION_WORKFLOW.md` is a shared documentation path, so this
   file may be added by any team; the corrections it proposes to `AGENTS.md` and

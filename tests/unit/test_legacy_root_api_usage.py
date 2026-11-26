@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from tools.check_legacy_root_api_usage import (
+from tools.architecture.check_legacy_root_api_usage import (
     validate,
     validate_test_debt,
     violations_for_text,

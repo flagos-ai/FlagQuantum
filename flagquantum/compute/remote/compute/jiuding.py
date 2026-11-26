@@ -28,8 +28,6 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from ._jiuding_credentials import JiudingCredentials, resolve_jiuding_credentials
 from ._job_results import read_job_result, save_receipt
 from ._program_submission import _ProgramSubmissionMixin, decode_job_result
@@ -1245,5 +1243,3 @@ class JiudingClient(_ProgramSubmissionMixin):
 # Preserve public provider serialization identities.
 _NoRedirect.__module__ = "flagquantum.remote.compute.jiuding"
 JiudingClient.__module__ = "flagquantum.remote.compute.jiuding"
-
-_alias_module("flagquantum.remote.compute.jiuding", __name__)

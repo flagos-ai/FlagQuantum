@@ -11,7 +11,7 @@ import pytest
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.synth import _workflow as synthesis
-from tools.public_api_snapshot import _validate_authorized_synthesis_run
+from tools.architecture.public_api_snapshot import _validate_authorized_synthesis_run
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

@@ -7,8 +7,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from flagquantum.runtime.results import ExecutionResult
 
@@ -221,15 +219,3 @@ __all__ = (
     "execute_request",
     "write_program_bundle",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    write_program_bundle,
-    execute_request,
-    decode_program_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._program_job"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._program_job", __name__)

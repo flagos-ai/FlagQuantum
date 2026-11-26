@@ -14,13 +14,13 @@ decides, not how a change travels.
 | --- | --- | --- |
 | Contributor | Anyone who opens an issue or a pull request. No membership step and no form to fill in. | Anyone |
 | Team | One of the 12 entries in `config/team-ownership.toml`. **A path-ownership classification, not a people roster.** | Unstaffed; see below |
-| Integration | The role that resolves protected paths and cross-team changes. `--team integration` is the supported bypass in `tools/check_team_scope.py`. | The maintainer |
+| Integration | The role that resolves protected paths and cross-team changes. `--team integration` is the supported bypass in `tools/architecture/check_team_scope.py`. | The maintainer |
 | Maintainer | Merge rights on `main`; decides releases, API authorization, and this document. | One account today |
 
 ### The teams are not staffed
 
 `config/team-ownership.toml` defines 11 teams, and each owns a set of paths. They are a
-classification mechanism: `tools/check_team_scope.py` resolves *which domain owns this
+classification mechanism: `tools/architecture/check_team_scope.py` resolves *which domain owns this
 path*, which is what makes a boundary checkable. They are **not** eleven working groups.
 
 Read the roster honestly: there is one maintainer. No branch named in that file has ever
@@ -35,10 +35,10 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 | Ordinary change | A domain's internal implementation, its tests, and its documentation. | The required checks on the pull request, merged by the maintainer |
 | Protected surface | `AGENTS.md`, `config/architecture.toml`, `config/team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
-| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/check_capability_maturity.py`, approved by Integration |
+| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
 | Release | `flagquantum/version.py`, tags, release notes | Maintainer |
 
-The distinction that matters is the second row. `tools/check_team_scope.py` refuses a
+The distinction that matters is the second row. `tools/architecture/check_team_scope.py` refuses a
 team-authored change to a protected path, which is why a change that *starts* as an
 implementation can become an integration change. The rule is mechanical rather than a
 matter of judgment.
@@ -110,7 +110,7 @@ Both halves are now stated rather than left nominal:
 - **The required checks are the review of record for `main`.** Each of the eight must
   complete successfully, on a head branch up to date with `main`, before a merge is
   accepted — including a merge by the maintainer, because `enforce_admins` is on.
-  `.github/required-checks.json` records the names and `tools/validate_required_checks.py`
+  `.github/required-checks.json` records the names and `tools/ci/validate_required_checks.py`
   proves each name is one a workflow job produces, so a required check cannot be a name
   that reports nothing. The name is the check run's own name — the job key, or the job's
   `name:` where it declares one, with GitHub's matrix suffix — and not a
@@ -153,7 +153,7 @@ repository already has a machine-checked one. The maintainer and the domain appr
 recorded above, in the document that explains how the decision is made.
 
 **`.github/CODEOWNERS` — not added.** `config/team-ownership.toml` plus
-`tools/check_team_scope.py` already are the path-ownership authority, and the classification
+`tools/architecture/check_team_scope.py` already are the path-ownership authority, and the classification
 is enforced on every pull request by `ci.yml`. A `CODEOWNERS` file would be a second
 statement of the same fact, which `AGENTS.md` prohibits, and it would have no effect on
 merging today because `require_code_owner_reviews` is `false`. Generating it from

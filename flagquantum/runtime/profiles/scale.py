@@ -6,8 +6,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 FLAGOS_SCALE_WORLD_SIZES = (2, 4, 8)
 FLAGOS_SCALE_DTYPES = ("complex64", "complex128")
 FLAGOS_SCALE_CASES = (
@@ -306,18 +304,3 @@ __all__ = (
     "scale_case_from_dict",
     "scale_run_from_dict",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    FlagOSStatevectorScaleCase,
-    FlagOSStatevectorScaleRun,
-    FlagOSStatevectorScaleProfile,
-    scale_case_from_dict,
-    scale_run_from_dict,
-    build_scale_profile,
-):
-    _identity_export.__module__ = "flagquantum.runtime.distributed.scale_profile"
-del _identity_export
-
-_alias_module("flagquantum.runtime.distributed.scale_profile", __name__)

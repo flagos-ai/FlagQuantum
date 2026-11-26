@@ -11,7 +11,6 @@ session resolves and carries calls; it does not decide when they happen.
 
 from __future__ import annotations
 
-import sys as _alias_sys
 from types import TracebackType
 
 from .channels import (
@@ -115,9 +114,3 @@ class RealtimeSession:
 for _identity_export in (RealtimeSession,):
     _identity_export.__module__ = "flagquantum.realtime.session"
 del _identity_export
-
-_alias_sys.modules["flagquantum.realtime.session"] = _alias_sys.modules[__name__]
-_parent = _alias_sys.modules.get("flagquantum.realtime")
-if _parent is not None:
-    setattr(_parent, "session", _alias_sys.modules[__name__])
-del _parent

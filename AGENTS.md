@@ -274,7 +274,7 @@ worktree to a different branch, or commit unrelated changes left by another
 session.
 
 Before editing, identify the responsible team and run
-`python tools/check_team_scope.py --team <team> --files <paths...>`. A team may
+`python tools/architecture/check_team_scope.py --team <team> --files <paths...>`. A team may
 change its most-specific owned paths and shared test/documentation paths.
 Protected integration surfaces, including Stable Core contracts, public API,
 architecture policy, CI, dependency manifests, and ADRs, require a separate
@@ -343,7 +343,7 @@ when a smaller seeded tier proves the touched surface.
 Default verification for every change:
 
 ```bash
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 # equivalent direct command:
 python -m pytest -m "smoke or unit" -q
 ```
@@ -352,11 +352,11 @@ Expand by blast radius:
 
 | Change Surface | Primary Tier | Command |
 | --- | --- | --- |
-| local API, runtime, planner, compiler, or single-device behavior | `integration` | `python tools/ci_tier.py pr-runtime` |
-| distributed planning, runtime metadata, audit logic, benchmark JSON, or release-gate code | `distributed_cpu`, `benchmark_contract`, `release_gate` | `python tools/ci_tier.py pr-distributed` |
-| accelerator-backed distributed behavior | `distributed_accel`, `gpu` | `python tools/ci_tier.py gpu-scheduled` |
-| multi-node transport or rank-placement behavior | `distributed_multinode` | `python tools/ci_tier.py multinode-scheduled` |
-| release candidate or promoted benchmark claim | full non-scalability pytest plus benchmark audit | `python tools/ci_tier.py release` |
+| local API, runtime, planner, compiler, or single-device behavior | `integration` | `python tools/ci/ci_tier.py pr-runtime` |
+| distributed planning, runtime metadata, audit logic, benchmark JSON, or release-gate code | `distributed_cpu`, `benchmark_contract`, `release_gate` | `python tools/ci/ci_tier.py pr-distributed` |
+| accelerator-backed distributed behavior | `distributed_accel`, `gpu` | `python tools/ci/ci_tier.py gpu-scheduled` |
+| multi-node transport or rank-placement behavior | `distributed_multinode` | `python tools/ci/ci_tier.py multinode-scheduled` |
+| release candidate or promoted benchmark claim | full non-scalability pytest plus benchmark audit | `python tools/ci/ci_tier.py release` |
 
 Only run marker-selection commands that have seeded tests; an empty selection is not verification evidence.
 

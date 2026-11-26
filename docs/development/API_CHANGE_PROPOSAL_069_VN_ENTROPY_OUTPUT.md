@@ -144,7 +144,7 @@ A signature check cannot tell a correct entropy from a plausible one, because
 several wrong implementations return a number in the right range. The contract
 [`contracts/vn-entropy-output-contract.toml`](../../contracts/vn-entropy-output-contract.toml)
 and its gate
-[`tools/check_vn_entropy_output_contract.py`](../../tools/check_vn_entropy_output_contract.py)
+[`tools/validation/check_vn_entropy_output_contract.py`](../../tools/validation/check_vn_entropy_output_contract.py)
 record and re-measure four dimensions.
 
 | Dimension | What would pass a signature check and fail here |
@@ -375,7 +375,7 @@ An existing caller who never asks for an entropy sees no change at all.
 ## Verification
 
 ```bash
-python tools/check_vn_entropy_output_contract.py
+python tools/validation/check_vn_entropy_output_contract.py
 # Von Neumann entropy output contract passed: 14 recorded values (12 pure, 2 mixed)
 # reproduce an amplitude-side reference assembled in the gate and satisfy the identity on a
 # selection and its complement; the pure rows agree across 5 execution modes (60 route
@@ -383,10 +383,10 @@ python tools/check_vn_entropy_output_contract.py
 # bases agree with the natural entropy divided by their logarithm; 18 recorded refusals
 # raise the sentence the contract states
 
-python -m tools.public_api_snapshot
+python -m tools.architecture.public_api_snapshot
 # public API migration baseline passed
 
-python tools/docs_source_of_truth.py --check
+python tools/docs/docs_source_of_truth.py --check
 # (no output: generated documentation is current)
 
 python -m pytest tests/unit/test_vn_entropy_output_contract.py -q
@@ -395,10 +395,10 @@ python -m pytest tests/unit/test_vn_entropy_output_contract.py -q
 python -m pytest tests/unit/test_vn_entropy_output.py -q
 # 7 passed
 
-python tools/validate_required_checks.py
+python tools/ci/validate_required_checks.py
 # validated 6 externally configured required checks
 
-python tools/check_construction_acceptance_contract.py
+python tools/validation/check_construction_acceptance_contract.py
 # Construction acceptance contract passed: 38 exports, opcode census 35, IR_VERSION 1.0
 ```
 

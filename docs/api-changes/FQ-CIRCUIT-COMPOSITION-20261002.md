@@ -171,7 +171,7 @@ with it; the IR field `Instruction.wires` is deliberately **not** renamed, for t
 reason that proposal records.
 
 Sharing the label reader with `twin/` is planned as its own change (`N1-2`), because
-`flagquantum/twin/**` is owned by a different team: `tools/check_team_scope.py
+`flagquantum/twin/**` is owned by a different team: `tools/architecture/check_team_scope.py
 --team core` refuses `flagquantum/twin/region_model.py` in this branch, and the
 replacement belongs to the team that owns the consumer.
 

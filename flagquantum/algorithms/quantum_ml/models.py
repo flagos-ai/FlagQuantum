@@ -7,7 +7,6 @@ from typing import Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.circuit import Circuit
 from flagquantum.runtime.contracts import Module, RuntimePolicy
@@ -156,17 +155,3 @@ class VariationalEnergyModel(torch.nn.Module):
 
 
 __all__ = ["HybridQuantumClassifier", "VariationalEnergyModel"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _deployment_quantum_parameters,
-    _classifier_circuit,
-    _energy_circuit,
-    HybridQuantumClassifier,
-    VariationalEnergyModel,
-):
-    _identity_export.__module__ = "flagquantum.models"
-del _identity_export
-
-_alias_module("flagquantum.models", __name__)

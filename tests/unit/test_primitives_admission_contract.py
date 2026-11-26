@@ -37,7 +37,7 @@ TYPES = ROOT / "flagquantum" / "algorithms" / "primitives" / "types.py"
 
 
 def _load_gate():
-    """Import `tools/check_primitives_admission_contract.py` by path.
+    """Import `tools/validation/check_primitives_admission_contract.py` by path.
 
     `tools/` is not a package on `sys.path` in the unit-test lane, so the module is loaded from
     its file the same way the repository loads other standalone gate tools.

@@ -8,7 +8,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.diagnostics import (
     SpecializationError as SpecializationError,
 )
@@ -396,16 +395,3 @@ def specialize_program(
         control_decisions=tuple(specializer.control_decisions),
         nonsmooth_control_decisions=tuple(specializer.nonsmooth_control_decisions),
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    TraceGate,
-    SpecializedTrace,
-    _Specializer,
-    specialize_program,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.specialize"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.specialize", __name__)

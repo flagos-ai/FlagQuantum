@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -209,16 +207,3 @@ def heisenberg_hva_forward_tangents(
 
 
 __all__ = ["heisenberg_hva_forward_tangents"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _insert_zero_bit,
-    _two_qubit_forward_tangent_kernel,
-    _rz_forward_tangent_kernel,
-    heisenberg_hva_forward_tangents,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.hva_forward_tangent"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.hva_forward_tangent", __name__)

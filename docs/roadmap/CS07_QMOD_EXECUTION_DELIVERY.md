@@ -36,7 +36,7 @@ Contributors can inspect the private native path without an SDK or cloud:
 ```python
 import flagquantum as fq
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 
 source = "qfunc main(output q:qbit) { allocate(q); H(q); }"
 imported = parse_qmod(source, source_version=SUPPORTED_SOURCE_VERSION)

@@ -9,8 +9,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools import configure_a100_entry_pool as deployment
-from tools.configure_a100_entry_pool import ENTRY, GENERAL, ORDINARY, Runner, partition
+from tools.validation import configure_a100_entry_pool as deployment
+from tools.validation.configure_a100_entry_pool import (
+    ENTRY,
+    GENERAL,
+    ORDINARY,
+    Runner,
+    partition,
+)
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

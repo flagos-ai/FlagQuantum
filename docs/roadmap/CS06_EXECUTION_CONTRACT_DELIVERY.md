@@ -35,7 +35,7 @@ existing `fq.plan` and `fq.run(plan)` entry points:
 
 ```python
 from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.services._synthesis_execution import inspect_execution
+from flagquantum.runtime.planner.synthesis import inspect_execution
 
 # plan is the existing fq.plan(...) product, not a new execution manager.
 checked = inspect_execution(

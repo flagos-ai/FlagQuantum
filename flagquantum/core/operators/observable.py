@@ -7,9 +7,9 @@ import operator
 from collections.abc import Iterable
 from dataclasses import dataclass
 from importlib import import_module
-from importlib import import_module as _import_public_namespace
 from numbers import Real
 from typing import Any, cast
+from typing import get_type_hints as _class_type_hints
 
 from flagquantum.core._qubit_aliases import OMITTED, Omitted, warn_qubit_alias
 
@@ -257,39 +257,15 @@ def __getattr__(name: str) -> Any:
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _PauliTerm,
-    Observable,
-    _real_scalar,
-    _qubit,
-    _qubits,
-    _pauli,
-    _selected_qubit,
-    _required_qubit,
-    I,
-    X,
-    Y,
-    Z,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (Observable,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (_PauliTerm, Observable, I, X, Y, Z):
     _identity_export.__module__ = "flagquantum.observables"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.observables")
-for _public_name in (
-    "I",
-    "Observable",
-    "X",
-    "Y",
-    "Z",
-    "_PauliTerm",
-    "_pauli",
-    "_qubit",
-    "_qubits",
-    "_real_scalar",
-    "_required_qubit",
-    "_selected_qubit",
-):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

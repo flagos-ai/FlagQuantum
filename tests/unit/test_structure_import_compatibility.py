@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import importlib
 import json
 import os
@@ -28,10 +29,8 @@ pytestmark = pytest.mark.unit
 
 
 def test_relocated_registry_and_public_entry_share_provider_state(monkeypatch) -> None:
-    historical = importlib.import_module("flagquantum.compute.registry")
     provider = object()
-    monkeypatch.setattr(historical, "_PLATFORMS", {"test": provider})
-    assert historical is registry
+    monkeypatch.setattr(registry, "_PLATFORMS", {"test": provider})
     assert registry.get_platform_runtime("test") is provider
     assert fq.compute.get_platform_runtime("test") is provider
 
@@ -90,7 +89,9 @@ def test_metadata_and_protocol_imports_do_not_activate_compute(module: str) -> N
     subprocess.run([sys.executable, "-c", source], check=True, timeout=30)
 
 
-def test_source_snapshot_runs_both_worker_entrypoints(tmp_path: Path) -> None:
+def test_source_snapshot_runs_the_authoritative_worker_entrypoint(
+    tmp_path: Path,
+) -> None:
     from flagquantum.compute.remote.compute._managed_program import _source_archive
 
     _, compressed = _source_archive()
@@ -107,12 +108,7 @@ def test_source_snapshot_runs_both_worker_entrypoints(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     environment = dict(os.environ, PYTHONPATH=str(unpacked))
-    for index, module in enumerate(
-        (
-            "flagquantum.remote.compute._worker",
-            "flagquantum.compute.remote.compute._worker",
-        )
-    ):
+    for index, module in enumerate(("flagquantum.compute.remote.compute._worker",)):
         output = tmp_path / f"result-{index}.json"
         subprocess.run(
             [sys.executable, "-m", module, str(script), str(output), "compatibility"],
@@ -187,47 +183,119 @@ def test_relocated_kernels_cannot_import_runtime(
 
 
 @pytest.mark.parametrize(
-    "historical,canonical",
+    "historical,canonical,symbol",
     (
         (
             "flagquantum.remote.compute.jiuding",
             "flagquantum.compute.remote.compute.jiuding",
+            "JiudingClient",
         ),
         (
-            "flagquantum.kernels.catalog.schema",
-            "flagquantum.simulation.kernels.catalog.schema",
+            "flagquantum.noise.channels",
+            "flagquantum.core.operators.channels",
+            "KrausChannel",
         ),
-        ("flagquantum.noise.channels", "flagquantum.core.operators.channels"),
         (
             "flagquantum.operators.superoperator",
             "flagquantum.core.operators.superoperator",
-        ),
-        ("flagquantum.core.algebra.pauli", "flagquantum.core.operators.pauli"),
-        (
-            "flagquantum.compiler._torch.module_builder",
-            "flagquantum.compiler.frontends.torch._module_builder",
-        ),
-        (
-            "flagquantum.compiler._hybrid.specialize",
-            "flagquantum.compiler.frontends._structured.specialize",
-        ),
-        (
-            "flagquantum.simulation.jax.primitives",
-            "flagquantum.simulation.numerics.jax",
-        ),
-        (
-            "flagquantum.simulation.jax.mps.kernels",
-            "flagquantum.simulation.mps.jax.kernels",
+            "SuperOperator",
         ),
     ),
 )
-def test_standard_legacy_import_after_canonical_import_shares_identity(
-    historical: str, canonical: str
+def test_standard_public_import_after_canonical_import_shares_identity(
+    historical: str, canonical: str, symbol: str
 ) -> None:
     source = (
         "import importlib; "
         f"canonical = importlib.import_module({canonical!r}); "
         f"import {historical} as historical; "
-        "assert historical is canonical"
+        f"assert historical.{symbol} is canonical.{symbol}"
     )
     subprocess.run([sys.executable, "-c", source], check=True, timeout=30)
+
+
+def test_internal_imports_are_absent_even_after_loading_their_replacements() -> None:
+    source = """
+import base64
+import importlib
+import sys
+from pathlib import Path
+import flagquantum
+import tools
+tools.__path__ = [str(Path(flagquantum.__file__).resolve().parents[1] / "tools")]
+# A pre-existing editable installation must not resolve paths from another checkout.
+sys.meta_path[:] = [finder for finder in sys.meta_path
+                    if not getattr(finder, "__module__", "").startswith("__editable___flagquantum")]
+pairs = (
+    ('flagquantum.compiler._torch', 'flagquantum.compiler.frontends.torch'),
+    ('flagquantum.simulation.jax', 'flagquantum.simulation.numerics.jax'),
+    ('flagquantum.kernels', 'flagquantum.simulation.kernels.catalog'),
+    ('flagquantum.core.algebra', 'flagquantum.core.operators.pauli'),
+    ('flagquantum.runtime.training_compilation', 'flagquantum.runtime.training.compilation'),
+    ('tools.check_architecture', 'tools.architecture.check_architecture'),
+)
+for old, current in pairs:
+    importlib.import_module(current)
+    assert old not in sys.modules, old
+    try:
+        importlib.import_module(old)
+    except ModuleNotFoundError as error:
+        assert error.name == old, (old, error)
+    else:
+        raise AssertionError(f'retired internal import still resolves: {old}')
+"""
+    subprocess.run([sys.executable, "-c", source], check=True, timeout=30)
+
+
+def test_pickles_written_before_internal_retirement_still_execute() -> None:
+    from flagquantum.runtime.evolution import LindbladPlan, run
+    from flagquantum.simulation.dynamics.problem import CollapseOperator
+
+    path = Path(__file__).parents[1] / "fixtures/structure/pre_retirement_pickles.json"
+    fixtures = json.loads(path.read_text())["fixtures"]
+    expected = {
+        "MemorySnapshot": MemorySnapshot,
+        "CollapseOperator": CollapseOperator,
+        "LindbladPlan": LindbladPlan,
+    }
+    values = {}
+    for row in fixtures:
+        value = pickle.loads(base64.b64decode(row["pickle_base64"]))
+        assert type(value) is expected[row["type"]]
+        assert type(value).__module__ == row["module"]
+        values[row["type"]] = value
+    assert values["MemorySnapshot"].allocated_bytes == 12
+    assert values["CollapseOperator"].rate == 0.2
+    result = run(values["LindbladPlan"])
+    torch.testing.assert_close(
+        result.expectation(), torch.ones_like(result.expectation())
+    )
+
+
+def test_public_pickle_locators_do_not_forward_internal_helpers() -> None:
+    import flagquantum.lindblad._plan as public_plan
+    import flagquantum.observables as public_observables
+    import flagquantum.simulation.lindblad_request as public_request
+
+    assert public_plan.__all__ == ("LindbladPlan",)
+    assert public_request.__all__ == ("CollapseOperator", "EvolutionValidationError")
+    assert not hasattr(public_plan, "_decode_request")
+    assert not hasattr(public_request, "_complex_tensor")
+    assert not hasattr(public_observables, "_real_scalar")
+
+
+_PUBLIC_ANNOTATION_CASES = json.loads(
+    (
+        Path(__file__).parents[1] / "fixtures/structure/public_class_annotations.json"
+    ).read_text()
+)["supported_classes"]
+
+
+@pytest.mark.parametrize("reference", _PUBLIC_ANNOTATION_CASES)
+def test_pre_retirement_public_class_field_annotations_still_resolve(
+    reference: str,
+) -> None:
+    module, _, name = reference.rpartition(".")
+    cls = getattr(importlib.import_module(module), name)
+    assert cls.__module__ == module
+    assert get_type_hints(cls)

@@ -13,8 +13,8 @@ import json
 import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization.vqe import run_vqe
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.version import __version__
@@ -701,6 +701,31 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    ComplexAmplitude,
+    ConvergencePoint,
+    EnergyVarianceReference,
+    ExactSectorReference,
+    ExecutionProvenance,
+    GroundStateAnsatz,
+    GroundStateOptimizer,
+    GroundStateResources,
+    GroundStateVQERequest,
+    GroundStateVQEResult,
+    PauliExpectationEvidence,
+    PauliSum,
+    PauliSumTerm,
+    StatevectorEvidence,
+    UnsupportedCapability,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     PauliSumTerm,
     PauliSum,
@@ -717,12 +742,7 @@ for _identity_export in (
     GroundStateVQEResult,
     ExactSectorReference,
     EnergyVarianceReference,
-    _canonical_digest,
-    _provenance,
     ground_state_vqe_capability,
-    _unsupported_reason,
-    _native_hamiltonian,
-    _unsupported_vqe_result,
     validate_ground_state_vqe_request,
     exact_sector_reference,
     energy_variance_reference,
@@ -730,5 +750,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.services.ground_state"
 del _identity_export
-
-_alias_module("flagquantum.services.ground_state", __name__)

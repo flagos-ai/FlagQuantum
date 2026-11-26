@@ -16,6 +16,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
@@ -105,7 +107,7 @@ def matrix_errors(matrix: Mapping[str, Any], *, root: Path = ROOT) -> tuple[str,
         if contract_name in seen_contracts:
             errors.append(f"{name}: adapter contract is reused: {contract_name}")
         seen_contracts.add(contract_name)
-        contract_path = root / contract_name
+        contract_path = source_path(root, contract_name)
         if not contract_path.is_file():
             errors.append(f"{name}: adapter contract does not exist: {contract_name}")
             continue
@@ -197,7 +199,7 @@ def build_report(matrix: Mapping[str, Any], *, root: Path = ROOT) -> dict[str, A
     reports: list[dict[str, Any]] = []
     for framework in _frameworks(matrix):
         contract_name = str(framework["contract"])
-        contract = load_toml(root / contract_name)
+        contract = load_toml(source_path(root, contract_name))
         mapped = sorted(
             {
                 str(item["flagquantum"])

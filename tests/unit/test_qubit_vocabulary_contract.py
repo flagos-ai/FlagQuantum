@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 pytestmark = pytest.mark.unit
 
 _ROOT = Path(__file__).resolve().parents[2]
-_TOOLS = _ROOT / "tools"
+_TOOLS = _ROOT / "tools" / "architecture"
 _CONTRACT_PATH = _ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 
 

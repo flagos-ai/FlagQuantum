@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from importlib import import_module as _import_public_namespace
 
 import torch
 
@@ -68,10 +67,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.algorithms.core"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.algorithms.core")
-for _public_name in ("hardware_efficient_ansatz", "hardware_efficient_parameter_count"):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

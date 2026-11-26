@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Protocol
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 class _Request(Protocol):
     def __call__(
@@ -184,18 +182,3 @@ def discover_resources(
                     }
                 )
     return sorted(resources, key=lambda item: (item["project"], item["queue"]))
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _Request,
-    _objects,
-    _named_record,
-    _high_priority_configurations,
-    _private_images,
-    discover_resources,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._resource_discovery"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._resource_discovery", __name__)

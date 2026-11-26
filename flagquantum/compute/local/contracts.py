@@ -6,10 +6,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Protocol, runtime_checkable
+from typing import get_type_hints as _class_type_hints
 
 import torch
-
-from flagquantum._import_compat import alias_module as _alias_module
 
 
 class PlatformError(RuntimeError):
@@ -138,11 +137,24 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    MemorySnapshot,
+    PlatformDevice,
+    PlatformIdentity,
+    PlatformRuntime,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     PlatformError,
     PlatformActivationError,
     PlatformUnavailableError,
-    _frozen_metadata,
     PlatformDevice,
     MemorySnapshot,
     PlatformIdentity,
@@ -150,5 +162,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.compute.contracts"
 del _identity_export
-
-_alias_module("flagquantum.compute.contracts", __name__)

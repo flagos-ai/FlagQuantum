@@ -6,7 +6,6 @@ from collections.abc import Sequence
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.fermion.numerics import static_tensor
 from flagquantum.core.operators.pauli import scalar
 
@@ -148,14 +147,8 @@ def closed_shell_determinant_energy(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _real_integral,
-    rotate_spatial_integrals,
-    closed_shell_determinant_energy,
-):
+for _identity_export in (rotate_spatial_integrals, closed_shell_determinant_energy):
     _identity_export.__module__ = (
         "flagquantum.algorithms.chemistry_domain.orbital_rotation"
     )
 del _identity_export
-
-_alias_module("flagquantum.algorithms.chemistry_domain.orbital_rotation", __name__)

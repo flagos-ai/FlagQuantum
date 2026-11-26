@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -153,14 +151,3 @@ def apply_complex64_local_diagonal(
 
 
 __all__ = ["apply_complex64_local_diagonal"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _complex64_local_diagonal_kernel,
-    apply_complex64_local_diagonal,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_diagonal"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_diagonal", __name__)

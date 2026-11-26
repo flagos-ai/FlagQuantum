@@ -11,10 +11,6 @@ analysis, and then run by ``PassManager`` over ``OPTIMIZATION_PIPELINE``. The
 modules hold the authority; these names are the supported way to reach it.
 """
 
-import sys as _alias_sys
-from importlib import import_module as _import_module
-from types import ModuleType as _ModuleType
-
 from .layout import Layout, apply_layout, final_layout, remove_layout_restore
 from .layout_planning import plan_dense_layout, plan_trivial_layout
 from .noise import lower_noise_model
@@ -67,12 +63,3 @@ __all__ = (
     "schedule_layers",
     "translate",
 )
-
-
-def __getattr__(name: str) -> _ModuleType:
-    cached = _alias_sys.modules.get(f"{__name__}.{name}")
-    if cached is not None:
-        return cached
-    if name in ("_torch", "_hybrid"):
-        return _import_module(f".{name}", __name__)
-    raise AttributeError(name)

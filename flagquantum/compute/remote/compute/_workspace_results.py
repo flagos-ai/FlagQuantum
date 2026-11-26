@@ -6,8 +6,6 @@ import base64
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     import torch
 
@@ -137,15 +135,3 @@ def measurement_result(
 
 
 __all__ = ("decode_tensor", "measurement_result")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    decode_tensor,
-    _decode_value,
-    measurement_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._workspace_results"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._workspace_results", __name__)

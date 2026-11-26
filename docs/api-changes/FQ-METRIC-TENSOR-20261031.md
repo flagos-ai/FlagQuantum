@@ -181,8 +181,8 @@ Measured after the split:
 | `flagquantum/gradients.py` | 1148 | 1250 |
 | `flagquantum/core/_parameter_occurrence.py` | 218 | 1250 |
 
-`python tools/check_architecture.py` reports `architecture boundaries passed`,
-and `python tools/check_team_scope.py --require-classified` classifies the new
+`python tools/architecture/check_architecture.py` reports `architecture boundaries passed`,
+and `python tools/architecture/check_team_scope.py --require-classified` classifies the new
 path under `core`. Nothing the contracts pin moves with it: both contract
 implementations keep their census strings in `flagquantum/gradients.py`, the
 coverage gate still finds the profile's constant opcode literals in that file,
@@ -264,12 +264,12 @@ by comparison.
 
 ## Verification
 
-`tools/check_metric_tensor_contract.py` re-derives the witnesses from
+`tools/validation/check_metric_tensor_contract.py` re-derives the witnesses from
 `contracts/metric-tensor-contract.toml`, drives the implementation, builds all
 thirteen refusals, drives every mode, and compares all of it against the contract.
 It runs in the `quality` job of `.github/workflows/ci.yml` as a **step** beside
-the two gradient gates and in `tools/pre_push.py`. It is a step rather than a job
-deliberately: `tools/validate_required_checks.py` pins six externally configured
+the two gradient gates and in `tools/ci/pre_push.py`. It is a step rather than a job
+deliberately: `tools/ci/validate_required_checks.py` pins six externally configured
 required checks across four jobs, so adding a job would change the required-check
 contract and adding a step does not.
 
@@ -347,7 +347,7 @@ gate that crashes on a mutated contract is a broken gate.
 Focused run:
 
 ```bash
-python tools/check_metric_tensor_contract.py
+python tools/validation/check_metric_tensor_contract.py
 python -m pytest tests/unit/test_metric_tensor_contract.py -q
 python -m pytest tests/test_gradient_api.py tests/integration/test_gradient_modes.py -q
 ```

@@ -3,7 +3,7 @@
 
 ``fq.density_matrix(qubits=...)`` asks an execution for the state on those qubits as a matrix.
 The output *kind* is authorized by ``contracts/observable-outputs-v1-candidate.json``, and
-``tools/public_api_snapshot.py`` already proves the signature is the reviewed one. Neither of
+``tools/architecture/public_api_snapshot.py`` already proves the signature is the reviewed one. Neither of
 those can say what the matrix is, because a matrix is a numerical object: a request whose
 signature is exactly as reviewed can still return a matrix that is a marginal instead of a
 trace, in ascending order instead of the order the caller named, or at a cost nobody agreed to.

@@ -77,7 +77,7 @@ directory and does not match a sibling module, so the two spellings protect
 disjoint sets of files.
 
 **Re-measured at approval, because the proposal could not inspect the matcher
-when it was written.** `tools/check_team_scope.py` matches protected paths with
+when it was written.** `tools/architecture/check_team_scope.py` matches protected paths with
 `fnmatch.fnmatchcase`, measured directly on the spellings and on files created for
 the measurement. Before the split, the module path matched the literal entry and
 not the glob. After the split, `flagquantum/core/ir/__init__.py` matches the glob
@@ -109,7 +109,7 @@ candidate ways to make them agree failed measurement differently.
   the single source of truth behind a new name for no capability gain.
 - **`flagquantum/_compiler/`, which `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13
   fixes as the internal layout, cannot be created in this tree.** Measured:
-  creating `flagquantum/_compiler/__init__.py` makes `tools/check_architecture.py`
+  creating `flagquantum/_compiler/__init__.py` makes `tools/architecture/check_architecture.py`
   fail with `flagquantum/_compiler: unreviewed top-level package directory is
   forbidden`, because the directory is absent from
   `config/architecture.toml` `package_layout.allowed_top_level_directories`; adding a
@@ -259,7 +259,7 @@ instead.
       actionable blocker.
 - [ ] Sharded dynamic execution either preserves feedback semantics or fails closed
       and reports the blocker; no replicated execution is described as distributed.
-- [ ] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
+- [ ] `python tools/ci/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
       pass.
 - [ ] Static batched execution shows no regression against the recorded baseline.
 - [ ] `IR_VERSION`, `CircuitIR` schema, and `docs/public_api_v1.json` are unchanged.

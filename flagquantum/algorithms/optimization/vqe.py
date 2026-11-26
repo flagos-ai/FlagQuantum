@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
-from importlib import import_module as _import_public_namespace
 from time import perf_counter
 from typing import Protocol
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
@@ -431,13 +431,26 @@ __all__ = (
 )
 
 # Preserve the public algorithm and serialized result identities.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    AdaptVQEIteration,
+    AdaptVQEResult,
+    LayerwiseVQEResult,
+    VQEResult,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     VQEResult,
     AdaptVQEIteration,
     AdaptVQEResult,
     vqe_loss,
     OptimizerFactory,
-    _require_parameter_dependence,
     run_vqe,
     run_adapt_vqe,
     run_hybrid_vqe,
@@ -446,22 +459,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.algorithms.core"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.algorithms.core")
-for _public_name in (
-    "AdaptVQEIteration",
-    "AdaptVQEResult",
-    "LayerwiseVQEResult",
-    "OptimizerFactory",
-    "VQEResult",
-    "_require_parameter_dependence",
-    "run_adapt_vqe",
-    "run_hybrid_vqe",
-    "run_layerwise_vqe",
-    "run_vqe",
-    "vqe_loss",
-):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

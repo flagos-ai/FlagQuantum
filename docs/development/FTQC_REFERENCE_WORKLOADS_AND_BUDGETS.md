@@ -275,7 +275,7 @@ Every implementation/evidence PR must continue to include a real public-user cod
 
 ### Stage A admission implementation: optional RSS watchdog
 
-`tools/run_with_watchdog.py --rss-limit-bytes 2147483648` adds opt-in POSIX process-group RSS supervision to the existing wall-time watchdog. Existing hardware invocations omit the flag and do not query RSS. The supported workload is a trusted local command whose children remain in its owned process group; this is not isolation against untrusted commands escaping with `setsid`, an allocator limit, or a cgroup boundary. Shared pages may be counted once per group member. Short-lived allocations or processes between observations can be missed.
+`tools/ci/run_with_watchdog.py --rss-limit-bytes 2147483648` adds opt-in POSIX process-group RSS supervision to the existing wall-time watchdog. Existing hardware invocations omit the flag and do not query RSS. The supported workload is a trusted local command whose children remain in its owned process group; this is not isolation against untrusted commands escaping with `setsid`, an allocator limit, or a cgroup boundary. Shared pages may be counted once per group member. Short-lived allocations or processes between observations can be missed.
 
 The monitor queries `ps` with a 50 ms query timeout, checks actual observation gaps against 100 ms, and stops on an unavailable/malformed query or excessive gap. An unavailable initial query prevents command launch (exit 125). A live RSS exceedance, lost accounting, excessive sampling gap, no live positive-RSS observation, or children outliving the launcher stops the owned group (exit 124). Otherwise the command's exit code is preserved. SIGTERM and Python interruption run owned-group cleanup; SIGKILL of the supervisor cannot run Python cleanup. Reuse parent/campaign supervision for that external failure boundary.
 
@@ -296,7 +296,7 @@ print("HTH probabilities:", *[f"{float(p):.8f}" for p in probabilities[0]])
 Run from the source checkout in an environment permitting read-only POSIX `ps` accounting:
 
 ```bash
-PYTHONPATH=. python tools/run_with_watchdog.py --phase ftqc-reference \
+PYTHONPATH=. python tools/ci/run_with_watchdog.py --phase ftqc-reference \
   --stall-seconds 10 --timeout-seconds 120 --rss-limit-bytes 2147483648 \
   --diagnostics /tmp/ftqc-rss-reference -- python /tmp/ftqc_rss_example.py
 ```
@@ -327,7 +327,7 @@ A reader can reproduce each declared process through the existing tools. The fol
 
 ```bash
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=. \
-python tools/run_with_watchdog.py --phase A2-16384 \
+python tools/ci/run_with_watchdog.py --phase A2-16384 \
   --stall-seconds 120 --timeout-seconds 120 --rss-limit-bytes 2147483648 \
   --diagnostics /tmp/ftqc-a2-supervisor -- \
   python -m flagquantum.benchmarking run qec_memory_sampling \

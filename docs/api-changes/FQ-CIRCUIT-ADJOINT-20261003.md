@@ -173,7 +173,7 @@ link its sibling proposal above rather than name it in prose.
 | The hand-written QFT inverse is reproduced | `pytest tests/unit/test_circuit_adjoint.py -k matches_the_recorded_inverse_transform` | identical instruction sequences for `n = 1..5` (1, 4, 7, 12, 17 instructions) |
 | Non-invertible operations fail closed | `pytest tests/unit/test_circuit_adjoint.py -k refuses_an_operation_without_a_unitary_inverse` | `CapabilityError` naming the opcode and its qubits for a channel, a dynamic operation, a conditioned gate, and a matrix with no conjugate transpose |
 | The compiler's self-inverse list does not contradict the schema | `pytest tests/unit/test_circuit_adjoint.py -k compiler_self_inverse_transform_agrees` | `_SELF_INVERSE` is a subset of the declared set; the only difference is `i`, which `remove_identity_gates` already owns |
-| The serialized field changed consistently | `python tools/operator_manifest.py --check` after regeneration | 20 changed lines, one per operator that stopped saying `matrix_adjoint` |
+| The serialized field changed consistently | `python tools/docs/operator_manifest.py --check` after regeneration | 20 changed lines, one per operator that stopped saying `matrix_adjoint` |
 | The `u2` / `u3` rules match an independent implementation | `python -c "import pennylane as qml; print(qml.adjoint(qml.U3)(0.4, 0.9, 1.3, wires=0).simplify())"` with `pennylane==0.45.1` | `u3(-theta, -lbd, -phi)` equals `U3(theta, pi - lbd, pi - phi)` to `2.48e-16`; `u2(phi, lbd)` equals `U2(pi - lbd, pi - phi)` modulo `2 pi` |
 
 ## Decision Candidates
@@ -222,7 +222,7 @@ forbids.
 - `IR_VERSION` stays `1.0`. `adjoint` rewrites the instruction sequence; it does
   not add an instruction kind.
 - No root export is added, removed, or renamed. `docs/public_api_v1.json` and
-  `docs/generated/STABLE_API.md` are unchanged, and `tools/public_api_snapshot.py`
+  `docs/generated/STABLE_API.md` are unchanged, and `tools/architecture/public_api_snapshot.py`
   passes.
 - `Circuit.adjoint` is a new method on an existing stable class. It does not
   change any existing signature, default, or documented exception.
@@ -248,9 +248,9 @@ forbids.
   order and identity of the returned circuit, and the QFT conformance check.
 - `tests/unit/test_operator_schema.py` — the schema contract, unchanged and
   passing.
-- `tools/operator_manifest.py --check` — the regenerated manifest is current.
-- `tools/public_api_snapshot.py` — the stable surface is unchanged.
-- `tools/check_team_scope.py --team core` — the changed paths are owned.
+- `tools/docs/operator_manifest.py --check` — the regenerated manifest is current.
+- `tools/architecture/public_api_snapshot.py` — the stable surface is unchanged.
+- `tools/architecture/check_team_scope.py --team core` — the changed paths are owned.
 
 ## Open Questions
 

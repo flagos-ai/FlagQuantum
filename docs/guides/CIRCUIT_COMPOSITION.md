@@ -557,7 +557,7 @@ published ladder ceiling, because the ancilla-free ladder is exact but exponenti
 | What does `control` guarantee about the controls, and what does it cost? | `[control]` in the same contract |
 | Which refusals exist, and are they reachable? | `[[refusals]]`, 32 rows, 31 reachable |
 | Does each operation expand to the hand-built program? | `contract["verification"].expansion_tests`, four named tests |
-| Does the contract still describe the code? | `python tools/check_circuit_composition_contract.py` |
+| Does the contract still describe the code? | `python tools/validation/check_circuit_composition_contract.py` |
 
 The refusal vocabulary is deliberately message-phrase based, because the operations raise
 the exception classes the package already exports (`TypeError`, `ValidationError`,

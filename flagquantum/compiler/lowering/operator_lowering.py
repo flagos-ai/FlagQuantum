@@ -196,7 +196,7 @@ def _builtin_registry() -> OperatorLoweringRegistry:
             if backend == "qcis":
                 supported = opcode in qcis_supported
                 strategy = "decomposition"
-                implementation = "flagquantum.compiler.qcis._decompose"
+                implementation = "flagquantum.compiler.formats.qcis._decompose"
                 reason = "no QCIS decomposition" if not supported else ""
             elif backend == "qasm":
                 strategy = "serialization"

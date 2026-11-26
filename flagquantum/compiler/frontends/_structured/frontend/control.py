@@ -6,7 +6,6 @@ import ast
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.frontend import expressions
 from flagquantum.compiler.frontends._structured.frontend.expressions import (
     _Binding,
@@ -396,22 +395,3 @@ def reject_outer_binding_writes(
             "classical values written inside control flow require explicit "
             f"region-carried results: {', '.join(changed)}",
         )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    capture_if,
-    capture_branch_region,
-    structured_carried_names,
-    capture_for,
-    loop_carried_names,
-    require_classical_carry,
-    require_matching_carry,
-    loop_bounds,
-    bind_loop_target,
-    reject_outer_binding_writes,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.control"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.control", __name__)

@@ -9,8 +9,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import autotune, jit
 else:
@@ -438,19 +436,3 @@ def fused_mps_range_projection(
 
 
 __all__ = ["fused_mps_range_projection", "fused_mps_two_site"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _TwoSiteContext,
-    _two_site_forward_kernel,
-    _two_site_range_kernel,
-    _launch,
-    _FusedMPSTwoSite,
-    fused_mps_two_site,
-    fused_mps_range_projection,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.mps_two_site"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.mps_two_site", __name__)

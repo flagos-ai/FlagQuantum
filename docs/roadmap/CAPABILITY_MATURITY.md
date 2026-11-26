@@ -16,7 +16,7 @@ The levels are deliberately non-interchangeable:
 Status is capability-specific. A stable public API does not promote an
 experimental backend, and CPU semantic evidence does not promote a distributed
 runtime. Promotion requires adding every evidence field required by the target
-level and passing `python tools/check_capability_maturity.py`.
+level and passing `python tools/validation/check_capability_maturity.py`.
 
 Schema v2 also makes public performance claims fail closed. Each claim must
 identify a checked-in raw JSON artifact and its SHA-256 digest, match the code
@@ -37,14 +37,14 @@ history this repository does not contain; the pin is then published with that
 disclosure rather than presented as a revision to check out. The check fails
 closed in a shallow clone, which cannot separate a revision it never fetched from
 one the repository never contained, so repository-history pins are resolved by
-the full-history `quality` job. `tools/evidence_provenance.py` owns both values
+the full-history `quality` job. `tools/release/evidence_provenance.py` owns both values
 and applies the same rule to the checked-in evidence under `artifacts/`.
 
 Applying that rule to one artifact at a time left most of the evidence unexamined.
 Only six checked-in validators resolved a revision, and each had its artifact path
 written into it, so an artifact no validator named was never asked: nineteen
 artifacts under `artifacts/` recorded revisions this repository does not contain,
-and thirteen of them said nothing about it. `tools/check_evidence_revisions.py`
+and thirteen of them said nothing about it. `tools/release/check_evidence_revisions.py`
 therefore walks every citation file type under `artifacts/`, `benchmarks/results/` and
 `docs/development/evidence/` rather than a list, and asks both questions a reader
 depends on. A revision is obtainable when this repository holds the commit and a ref
@@ -158,7 +158,7 @@ is told what it is.
 
 The walk asks what an artifact records; it does not ask whether a reader can turn the
 citation into a commit. A shortened hexadecimal run cannot be expanded by a reader
-who does not already have the commit, so `tools/check_evidence_revisions.py` also
+who does not already have the commit, so `tools/release/check_evidence_revisions.py` also
 requires any shortened run under a declared citation root to be given in full in the
 same file, and it reports a run that names exactly one revision this repository gives
 in full, because that is what separates a citation from a task identifier or a date.
@@ -393,7 +393,7 @@ remain independently bounded. Static eleven/twelve-bit Grover reflections reuse
 this path; smaller reflections preserve their previous resource template.
 
 The two unchanged graph-coloring and whitebox originals retain one and ten
-rounds. Run tools/validate_qmod_decision_predicates.py with --case
+rounds. Run tools/validation/validate_qmod_decision_predicates.py with --case
 whitebox_fuzzing (or grover_graph_coloring) and --output /tmp/decision.json.
 References use an independent gate-level Grover Circuit and analytic amplitudes;
 production still executes every original round. The largest validation-only
@@ -417,7 +417,7 @@ The unchanged hidden_shift.qmod and deutsch_jozsa.qmod originals have independen
 public Circuit and analytic full-state checks, including absolute phase, numeric
 bit order and clean workspace. Their numeric predicates reuse the local
 eight-input budget, including exact integer min/max; dynamic array widths are
-proven by literal allocation. Run tools/validate_qmod_quantum_callbacks.py with
+proven by literal allocation. Run tools/validation/validate_qmod_quantum_callbacks.py with
 --case hidden_shift (or deutsch_jozsa) and --output /tmp/callback.json. Run
 python -m examples.synthesis.algorithms.hidden_shift.quantum_callbacks.main for the original Qmod, existing
 native qfunc phase-composition and Circuit comparison. This adds no higher-order
@@ -452,7 +452,7 @@ has a supplied amplitude 0.996625424765961 inconsistent with the approximately
 0.9979545784437375 mass of its exp(+x/2), x>=21 preparation. It deliberately
 refuses; a clearly labelled corrected diagnostic copy tests that full path,
 including x += -18, without increasing original coverage. No original parameter
-is silently changed. Run tools/validate_qmod_exact_amplification.py with --case
+is silently changed. Run tools/validation/validate_qmod_exact_amplification.py with --case
 exact_amplitude_amplification (or partial_exponential_state_preparation) and
 --output /tmp/amplification.json. The second choice validates the corrected copy
 and the original refusal. Run python -m examples.synthesis.algorithms.amplitude_amplification.exact_amplification.main
@@ -498,7 +498,7 @@ zero preparation error bound, violating the official unit-norm contract. It
 remains refused; no automatic normalization or weakened verifier is introduced.
 A separately archived, normalized diagnostic copy checks the complete path
 against independent Circuit permutation and symmetric/antisymmetric algebra.
-It contributes zero original execution coverage. Run tools/validate_qmod_swap_test.py
+It contributes zero original execution coverage. Run tools/validation/validate_qmod_swap_test.py
 --output /tmp/swap-test.json. Run python -m examples.synthesis.algorithms.state_preparation.swap_test.main for valid
 one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
 Dropped input states are retained semantic data, not clean workspace. This is
@@ -521,7 +521,7 @@ Whole registers and scalar/static indexed locations can concatenate into one
 helper array actual, preserving low-to-high source order and existing alias
 checks. Bound helpers may declare an unallocated unsized qbit[] alias. All
 source initialization, Const mutation, width, loop shadow and resource budgets
-remain checked. Run tools/validate_qmod_binding_scopes.py --case 0 --output
+remain checked. Run tools/validation/validate_qmod_binding_scopes.py --case 0 --output
 /tmp/autoencoder.json (also case 1) for the unchanged quantum_autoencoder.qmod
 with two nonzero parameter bindings and independent Circuit full-state comparison.
 Run python -m examples.synthesis.applications.machine_learning.autoencoder.main for the original Qmod, existing
@@ -548,7 +548,7 @@ apply accepts the same checked pure unitary effects; ownership changes refuse.
 X apply_to_all and phase-flip views reuse indexed lowering; whole-register routes
 remain unchanged. Static loops and physical/effect/helper budgets remain bounded.
 
-Run tools/validate_qmod_iterations.py with --case quantum_counting (also
+Run tools/validation/validate_qmod_iterations.py with --case quantum_counting (also
 quantum_counting_iqae or qmci_pi_estimation), --repetitions 0/1/2 and --output
 /tmp/iterations.json for unchanged originals against independent Circuit and
 analytic full vectors. Run python -m examples.synthesis.algorithms.amplitude_amplification.amplification_iterations.main
@@ -566,7 +566,7 @@ quantum_counting_qpe, qpe_for_matrix and qpe_for_unitary_matrix originals compar
 complete complex statevectors against independent matrix powers and an explicit
 inverse Fourier transform. Source/license hashes are pinned in
 tests/fixtures/classiq_qmod/static_qpe_sources.json; run
-tools/validate_qmod_static_qpe.py for individual cases. Dropped problem registers
+tools/validation/validate_qmod_static_qpe.py for individual cases. Dropped problem registers
 remain semantic data and workspace is checked separately.
 
 The source slice reuses existing controls, phases, preparation and inverse QFT.

@@ -1,8 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
 from flagquantum.runtime.results import (
     EXECUTION_DIAGNOSTICS_SCHEMA as EXECUTION_DIAGNOSTICS_SCHEMA,
 )
@@ -28,6 +25,3 @@ from flagquantum.runtime.results import __all__ as __all__
 from flagquantum.runtime.results import (
     normalize_execution_result as normalize_execution_result,
 )
-
-_implementation = _import_module("flagquantum.runtime.results")
-_sys.modules[__name__] = _implementation

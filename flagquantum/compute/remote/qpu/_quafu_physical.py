@@ -8,8 +8,6 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 _QREG_DECLARATION = re.compile(r"\bqreg\s+q\s*\[\s*(\d+)\s*\]\s*;")
 _CREG_DECLARATION = re.compile(r"\bcreg\s+c\s*\[\s*(\d+)\s*\]\s*;")
 _QUBIT_REFERENCE = re.compile(r"\bq\s*\[\s*(\d+)\s*\]")
@@ -197,15 +195,3 @@ def validate_physical_result(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    backend_snapshot_sha256,
-    prepare_physical_qasm,
-    validate_physical_result,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu._quafu_physical"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu._quafu_physical", __name__)

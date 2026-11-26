@@ -64,7 +64,7 @@ method any caller can request. That is how `statevector_adjoint`,
 
 ## Measured state
 
-All figures below are re-derived by `tools/check_native_gradients_contract.py` on every
+All figures below are re-derived by `tools/validation/check_native_gradients_contract.py` on every
 run, so none of them is a snapshot that can go stale silently.
 
 | Fact | Measured |
@@ -100,10 +100,10 @@ sight of, and leaves the choice where it belongs.
 ## Verification
 
 ```bash
-python tools/check_native_gradients_contract.py
+python tools/validation/check_native_gradients_contract.py
 python -m pytest tests/unit/test_native_gradients_contract.py -q
 ```
 
-The gate is wired into `.github/workflows/ci.yml` and `tools/pre_push.py`, and
+The gate is wired into `.github/workflows/ci.yml` and `tools/ci/pre_push.py`, and
 `tests/unit/test_native_gradients_contract.py::test_the_gate_runs_in_ci_and_before_push`
 asserts both, because a gate no workflow invokes is a script.

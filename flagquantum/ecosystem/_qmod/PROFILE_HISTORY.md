@@ -793,7 +793,7 @@ entry point. Run each case in a fresh process to collect synthesis,
 execution and reference timings together with peak process RSS.
 
 ```bash
-PYTHONPATH=. python tools/validate_qmod_sparse_phase.py \
+PYTHONPATH=. python tools/validation/validate_qmod_sparse_phase.py \
   --case network_traffic_optimization --scale 0.007 \
   --check-phase --output network-validation.json
 ```
@@ -893,7 +893,7 @@ print(program.report["workspace_qubits"])  # 0.
 ```
 
 Full original record examples can be verified explicitly with
-`PYTHONPATH=. python tools/validate_qmod_records.py --case ising_model --scale 0.003 --check-phase --output ising-validation.json`.
+`PYTHONPATH=. python tools/validation/validate_qmod_records.py --case ising_model --scale 0.003 --check-phase --output ising-validation.json`.
 The tool uses Python's arithmetic AST parser and an independent closed
 classical evaluator, exact rational finite differences and directly
 constructed Circuits. It does not import the Qmod parser or phase
@@ -955,7 +955,7 @@ print(dict(program.probabilities(result, registers=("v.a", "v.b"))))
 print(program.report["resources"])  # 5 qubits, 856 operations, depth 721.
 ```
 
-`python tools/validate_qmod_knapsack.py --case qaoa_knapsack --scale 0.003 --output knapsack-validation.json`
+`python tools/validation/validate_qmod_knapsack.py --case qaoa_knapsack --scale 0.003 --output knapsack-validation.json`
 checks the complete original against a direct Circuit with dense 32-state
 diagonal phases and RX mixers. Its reference does not use the predicate or
 polynomial compiler. The other two retained cases are `qaoa` and
@@ -1017,7 +1017,7 @@ with synthesize and read registers `("x", "coin")`; it returns `(1, 0)` and
 `(1023, 1)` with probability one half each. Its actual circuit uses 16 qubits,
 150 operations and depth 142, including five clean work qubits.
 
-`python tools/validate_qmod_permutations.py --case molecular_energy_curve --parameter -0.81 --output molecular-validation.json`
+`python tools/validation/validate_qmod_permutations.py --case molecular_energy_curve --parameter -0.81 --output molecular-validation.json`
 compares the full state against an independent X followed by RY Circuit.
 Use `--case discrete_quantum_walk` without `--parameter` for the original walk
 and its full-state/clean-workspace reference. Molecular energy curve and molecule
@@ -1039,7 +1039,7 @@ seed-zero draws, identity/global phase and numeric bit order are preserved.
 The finite absolute-weight normalization uses math.fsum. Sampling stays at the
 adapter boundary; no random state or external Qmod type enters Compiler.
 See docs/api-changes/FQ-SYNTH-UP06-PAULI-20261105.md and the independent tool
-`tools/validate_qmod_large_pauli.py`. This remains local corpus integration work.
+`tools/validation/validate_qmod_large_pauli.py`. This remains local corpus integration work.
 
 ## Bounded exact integers and static composition
 
@@ -1064,7 +1064,7 @@ writable owner, with distinct locations and checked local width/bit order.
 Mixed-owner Pauli targets and unsupported multi-operator formulas fail closed.
 
 The three unchanged Fermi, BB84 and credit-card originals have independent full
-state-vector acceptance. Run tools/validate_qmod_integer_composition.py or
+state-vector acceptance. Run tools/validation/validate_qmod_integer_composition.py or
 python -m examples.synthesis.tutorials.composition.integer_composition.main. The example also shows the
 existing native qfunc equivalent; Python qfunc parameter syntax is not extended
 by this Qmod adapter slice. Arbitrary classical execution and cscope/VQE/save
@@ -1097,7 +1097,7 @@ this slice adds no Python Grover export. The unchanged 3_sat_grover.qmod and
 grover_max_cut.qmod fixtures use r=0/1/2 with independent dense Circuit and
 analytic full-vector references. Their bit order, absolute phase, clean scratch,
 source/license digests and real budget refusals are checked. Use
-tools/validate_qmod_grover.py --case 3_sat_grover --iterations 2 --output /tmp/sat.json
+tools/validation/validate_qmod_grover.py --case 3_sat_grover --iterations 2 --output /tmp/sat.json
 and repeat for grover_max_cut. See the contract
 docs/api-changes/FQ-SYNTH-UP06-GROVER-20261105.md.
 
@@ -1130,7 +1130,7 @@ preparation and nested/array-valued borrowed records remain outside this slice.
 Three unchanged originals are accepted separately: grover_operator.qmod,
 oracles_workshop.qmod and grover.qmod (r=0/1/2). The workshop subtraction does not
 wrap; the graph original marks >=4, unlike the previous <=4 Max-Cut original.
-Run tools/validate_qmod_predicate_oracle.py --case grover --iterations 2
+Run tools/validation/validate_qmod_predicate_oracle.py --case grover --iterations 2
 --output /tmp/predicate.json for independent full-state Circuit comparison.
 python -m examples.synthesis.algorithms.grover.predicate_oracle.main compares Qmod, existing native
 qfunc phase intent and an independent Circuit. It does not add a native Python
@@ -1151,7 +1151,7 @@ remain independently bounded. Static eleven/twelve-bit Grover reflections reuse
 this path; smaller reflections preserve their previous resource template.
 
 The two unchanged graph-coloring and whitebox originals retain one and ten
-rounds. Run tools/validate_qmod_decision_predicates.py with --case
+rounds. Run tools/validation/validate_qmod_decision_predicates.py with --case
 whitebox_fuzzing (or grover_graph_coloring) and --output /tmp/decision.json.
 References use an independent gate-level Grover Circuit and analytic amplitudes;
 production still executes every original round. The largest validation-only
@@ -1175,7 +1175,7 @@ The unchanged hidden_shift.qmod and deutsch_jozsa.qmod originals have independen
 public Circuit and analytic full-state checks, including absolute phase, numeric
 bit order and clean workspace. Their numeric predicates reuse the local
 eight-input budget, including exact integer min/max; dynamic array widths are
-proven by literal allocation. Run tools/validate_qmod_quantum_callbacks.py with
+proven by literal allocation. Run tools/validation/validate_qmod_quantum_callbacks.py with
 --case hidden_shift (or deutsch_jozsa) and --output /tmp/callback.json. Run
 python -m examples.synthesis.algorithms.hidden_shift.quantum_callbacks.main for the original Qmod, existing
 native qfunc phase-composition and Circuit comparison. This adds no higher-order
@@ -1210,7 +1210,7 @@ has a supplied amplitude 0.996625424765961 inconsistent with the approximately
 0.9979545784437375 mass of its exp(+x/2), x>=21 preparation. It deliberately
 refuses; a clearly labelled corrected diagnostic copy tests that full path,
 including x += -18, without increasing original coverage. No original parameter
-is silently changed. Run tools/validate_qmod_exact_amplification.py with --case
+is silently changed. Run tools/validation/validate_qmod_exact_amplification.py with --case
 exact_amplitude_amplification (or partial_exponential_state_preparation) and
 --output /tmp/amplification.json. The second choice validates the corrected copy
 and the original refusal. Run python -m examples.synthesis.algorithms.amplitude_amplification.exact_amplification.main
@@ -1256,7 +1256,7 @@ zero preparation error bound, violating the official unit-norm contract. It
 remains refused; no automatic normalization or weakened verifier is introduced.
 A separately archived, normalized diagnostic copy checks the complete path
 against independent Circuit permutation and symmetric/antisymmetric algebra.
-It contributes zero original execution coverage. Run tools/validate_qmod_swap_test.py
+It contributes zero original execution coverage. Run tools/validation/validate_qmod_swap_test.py
 --output /tmp/swap-test.json. Run python -m examples.synthesis.algorithms.state_preparation.swap_test.main for valid
 one-bit Qmod, existing native phase/CX qfunc composition and Circuit comparison.
 Dropped input states are retained semantic data, not clean workspace. This is
@@ -1279,7 +1279,7 @@ Whole registers and scalar/static indexed locations can concatenate into one
 helper array actual, preserving low-to-high source order and existing alias
 checks. Bound helpers may declare an unallocated unsized qbit[] alias. All
 source initialization, Const mutation, width, loop shadow and resource budgets
-remain checked. Run tools/validate_qmod_binding_scopes.py --case 0 --output
+remain checked. Run tools/validation/validate_qmod_binding_scopes.py --case 0 --output
 /tmp/autoencoder.json (also case 1) for the unchanged quantum_autoencoder.qmod
 with two nonzero parameter bindings and independent Circuit full-state comparison.
 Run python -m examples.synthesis.applications.machine_learning.autoencoder.main for the original Qmod, existing
@@ -1306,7 +1306,7 @@ apply accepts the same checked pure unitary effects; ownership changes refuse.
 X apply_to_all and phase-flip views reuse indexed lowering; whole-register routes
 remain unchanged. Static loops and physical/effect/helper budgets remain bounded.
 
-Run tools/validate_qmod_iterations.py with --case quantum_counting (also
+Run tools/validation/validate_qmod_iterations.py with --case quantum_counting (also
 quantum_counting_iqae or qmci_pi_estimation), --repetitions 0/1/2 and --output
 /tmp/iterations.json for unchanged originals against independent Circuit and
 analytic full vectors. Run python -m examples.synthesis.algorithms.amplitude_amplification.amplification_iterations.main
@@ -1349,9 +1349,9 @@ Run the three unchanged originals against independent matrix-power and explicit
 inverse-Fourier Circuits, with absolute complex phase and zero workspace checks:
 
 ```sh
-python tools/validate_qmod_static_qpe.py --case quantum_counting_qpe --output /tmp/counting-qpe.json
-python tools/validate_qmod_static_qpe.py --case qpe_for_matrix --output /tmp/matrix-qpe.json
-python tools/validate_qmod_static_qpe.py --case qpe_for_unitary_matrix --output /tmp/unitary-qpe.json
+python tools/validation/validate_qmod_static_qpe.py --case quantum_counting_qpe --output /tmp/counting-qpe.json
+python tools/validation/validate_qmod_static_qpe.py --case qpe_for_matrix --output /tmp/matrix-qpe.json
+python tools/validation/validate_qmod_static_qpe.py --case qpe_for_unitary_matrix --output /tmp/unitary-qpe.json
 python -m examples.synthesis.algorithms.phase_estimation.static_qpe.main
 ```
 
@@ -1466,7 +1466,7 @@ override that point through the internal `classical_inputs` binding. Run the com
 the repository's local command.
 
 ```sh
-python -m tools.run_qmod_cscope tests/fixtures/classiq_qmod/qaoa_in_qaoa.qmod
+python -m tools.validation.run_qmod_cscope tests/fixtures/classiq_qmod/qaoa_in_qaoa.qmod
 ```
 
 The command prints the saved Hamiltonian and optimization summary as JSON.

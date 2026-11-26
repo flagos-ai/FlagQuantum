@@ -132,7 +132,7 @@ requires `stim`; selecting `get_decoder("pymatching", model)` requires
 ## Verify source and installed distributions
 
 ```bash
-PYTHONPATH=. python tools/check_qec_retirement.py --phase retired
+PYTHONPATH=. python tools/validation/check_qec_retirement.py --phase retired
 PYTHONPATH=. python -m pytest tests/api_contract/test_qec_retirement_contract.py tests/qec -q
 artifact_dir="$(mktemp -d)"
 uv build --sdist --out-dir "$artifact_dir"

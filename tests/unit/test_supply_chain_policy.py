@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.validate_sbom import sbom_errors
+from tools.release.validate_sbom import sbom_errors
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,14 +11,17 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_ci_has_coverage_security_and_sbom_gates():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
     coverage_config = (ROOT / ".coveragerc").read_text()
-    assert "python tools/check_coverage.py" in workflow
+    assert "python tools/ci/check_coverage.py" in workflow
     assert "flagquantum/benchmarking/*" in coverage_config
-    assert "flagquantum/kernels/triton/*" in coverage_config
-    assert "python tools/write_audit_requirements.py audit-requirements.txt" in workflow
+    assert "flagquantum/simulation/kernels/triton/*" in coverage_config
+    assert (
+        "python tools/validation/write_audit_requirements.py audit-requirements.txt"
+        in workflow
+    )
     assert "pip-audit --strict --disable-pip --no-deps" in workflow
     assert "bandit -q -lll -r flagquantum" in workflow
     assert "cyclonedx-py environment" in workflow
-    assert "tools/validate_sbom.py" in workflow
+    assert "tools/release/validate_sbom.py" in workflow
 
 
 def test_sbom_validator_fails_closed_and_accepts_minimum_valid_payload():

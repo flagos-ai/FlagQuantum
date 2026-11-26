@@ -10,15 +10,6 @@ import torch
 
 from flagquantum.core.operators.channels import KrausChannel
 from flagquantum.core.operators.embedding import (
-    _basis_bits as _basis_bits,
-)
-from flagquantum.core.operators.embedding import (
-    _bits_to_index as _bits_to_index,
-)
-from flagquantum.core.operators.embedding import (
-    _complex_dtype as _complex_dtype,
-)
-from flagquantum.core.operators.embedding import (
     _validate_qubits as _validate_qubits,
 )
 from flagquantum.core.operators.embedding import (

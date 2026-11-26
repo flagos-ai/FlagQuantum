@@ -14,7 +14,6 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir import CircuitIR
 from flagquantum.runtime.distributed import (
     destroy_torch_distributed,
@@ -143,15 +142,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _emit_result,
-    _response,
-    main,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._distributed_job"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._distributed_job", __name__)

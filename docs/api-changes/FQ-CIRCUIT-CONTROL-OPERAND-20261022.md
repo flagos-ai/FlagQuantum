@@ -198,7 +198,7 @@ Three things in `contracts/circuit-composition-contract.toml`:
 3. `[control].authorization` names this document, and `authorization` lists it
    alongside the four existing records.
 
-`tools/check_circuit_composition_contract.py` is extended to measure the wrap rather
+`tools/validation/check_circuit_composition_contract.py` is extended to measure the wrap rather
 than read it back: it wraps `diag(1, i)` under one control, compares the recorded
 instruction with a `diag(1, 1, 1, i)` written out in the gate itself, and checks the
 wire order and the rename rule. Editing the contract's prose without editing the
@@ -216,7 +216,7 @@ measurement now fails in both directions.
 | A declared name is renamed, an undeclared one is kept | `pytest tests/unit/test_circuit_control.py -k renamed_and_an_undeclared` | `['any']` and `['custom']` |
 | Metadata is still refused | `pytest tests/unit/test_circuit_control.py -k execution_metadata_is_refused` | `CapabilityError` naming the dropped metadata |
 | An unreadable shape is refused, not guessed | `pytest tests/unit/test_circuit_control.py -k no_square_shape` | `CapabilityError` naming the shape |
-| The frozen vocabulary still counts 32 rows, 31 reachable | `python tools/check_circuit_composition_contract.py` | `Circuit composition contract passed` |
+| The frozen vocabulary still counts 32 rows, 31 reachable | `python tools/validation/check_circuit_composition_contract.py` | `Circuit composition contract passed` |
 | The new bytes are load-bearing | `pytest tests/unit/test_circuit_composition_contract.py -k mutated_contract` | 35 mutations, including `operand_control_matrix` and `operand_control_wires`, each caught by name |
 | The guide's quoted transcripts are real | `pytest tests/unit/test_circuit_composition_guide.py` | every block executes and matches its quoted output |
 

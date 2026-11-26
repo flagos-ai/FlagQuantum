@@ -55,18 +55,18 @@ family complete — which is why the emptiness of `not_covered` above is checked
 against it rather than asserted on its own.
 
 Scope of the affected surface: `contracts/construction-acceptance-contract.toml`
-(new), `tools/check_construction_acceptance_contract.py` (new),
+(new), `tools/validation/check_construction_acceptance_contract.py` (new),
 `tests/unit/test_construction_acceptance.py` (new), `.github/workflows/ci.yml`, and
-`tools/pre_push.py`. `contracts/**`, `tools/**`, `.github/**`, and `tests/**` are
+`tools/ci/pre_push.py`. `contracts/**`, `tools/**`, `.github/**`, and `tests/**` are
 protected integration surfaces, so this change is classified **`integration`** and
 verified as such:
 
 ```console
-$ python tools/check_team_scope.py --team integration --files \
+$ python tools/architecture/check_team_scope.py --team integration --files \
     contracts/construction-acceptance-contract.toml \
-    tools/check_construction_acceptance_contract.py \
+    tools/validation/check_construction_acceptance_contract.py \
     tests/unit/test_construction_acceptance.py \
-    .github/workflows/ci.yml tools/pre_push.py
+    .github/workflows/ci.yml tools/ci/pre_push.py
 team ownership policy passed
 ```
 
@@ -80,7 +80,7 @@ and this slice's branch, which was still open, was merged with `main` and the ga
 with exactly the sentence it was built to say:
 
 ```console
-$ python tools/check_construction_acceptance_contract.py
+$ python tools/validation/check_construction_acceptance_contract.py
 construction member 'Circuit.control' is contracted as absent but is present; the
 acceptance must be extended to cover it
 measured_root_export_count is stale: contract says 36, fq.__all__ has 37
@@ -286,7 +286,7 @@ mean -- and `family_declaration_keys` names the two fields that declare the fami
 `covered` plus `not_covered` must equal that declaration:
 
 ```console
-$ python tools/check_construction_acceptance_contract.py     # control + its requirement deleted
+$ python tools/validation/check_construction_acceptance_contract.py     # control + its requirement deleted
 the construction family this acceptance covers is not the family
 'contracts/circuit-composition-contract.toml' declares:
 only here [], only there ['Circuit.control']
@@ -418,7 +418,7 @@ on exactly the two modes whose agreement is least obvious.
 The gate, on this checkout:
 
 ```console
-$ python tools/check_construction_acceptance_contract.py
+$ python tools/validation/check_construction_acceptance_contract.py
 Construction acceptance contract passed: 37 exports, opcode census 35, IR_VERSION 1.0
 ```
 
@@ -539,7 +539,7 @@ changes what `Circuit.compose` does.
 - `tests/unit/test_construction_acceptance.py::test_the_census_rejects_a_member_deleted_from_the_family`
 - `tests/unit/test_construction_acceptance.py::test_the_census_rejects_a_spelling_that_no_row_measures`
 
-and the gate `tools/check_construction_acceptance_contract.py`, which fails on a
+and the gate `tools/validation/check_construction_acceptance_contract.py`, which fails on a
 construction member that is present while contracted absent, a mode set that the
 contract's partition does not equal, an IR-identity mismatch on any contracted
 placement, a control row whose width is not `max(ctrl_qubits) + 1`, a control row

@@ -1,11 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
-from flagquantum.core.operators.schema import (
-    _SCHEMAS as _SCHEMAS,
-)
 from flagquantum.core.operators.schema import (
     ADJOINT_RULES as ADJOINT_RULES,
 )
@@ -38,24 +32,6 @@ from flagquantum.core.operators.schema import (
 )
 from flagquantum.core.operators.schema import __all__ as __all__
 from flagquantum.core.operators.schema import (
-    _channel as _channel,
-)
-from flagquantum.core.operators.schema import (
-    _control_partner_errors as _control_partner_errors,
-)
-from flagquantum.core.operators.schema import (
-    _negate_angle as _negate_angle,
-)
-from flagquantum.core.operators.schema import (
-    _scale_angle as _scale_angle,
-)
-from flagquantum.core.operators.schema import (
-    _shift_angle as _shift_angle,
-)
-from flagquantum.core.operators.schema import (
-    _unitary as _unitary,
-)
-from flagquantum.core.operators.schema import (
     canonical_opcode as canonical_opcode,
 )
 from flagquantum.core.operators.schema import (
@@ -79,6 +55,3 @@ from flagquantum.core.operators.schema import (
 from flagquantum.core.operators.schema import (
     power_operator as power_operator,
 )
-
-_implementation = _import_module("flagquantum.core.operators.schema")
-_sys.modules[__name__] = _implementation

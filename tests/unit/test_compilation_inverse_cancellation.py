@@ -23,8 +23,10 @@ import pytest
 import torch
 
 import flagquantum.compiler.optimization.inverse_cancellation as inverse_cancellation_module
+import flagquantum.compiler.optimization.pass_registry as _stage_pass_registry
 import flagquantum.compiler.pipeline as pipeline_module
 from flagquantum.compiler import optimize
+from flagquantum.compiler.optimization.canonicalization import _SELF_INVERSE
 from flagquantum.compiler.optimization.commutation_cancellation import (
     cancel_commuting_self_inverse,
 )
@@ -37,7 +39,6 @@ from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
-from flagquantum.compiler.pipeline import _SELF_INVERSE
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, inverse_operator
 from flagquantum.simulation.gate_matrix import gate_matrix
@@ -601,7 +602,7 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     bound = [
         name
         for name, function in pipeline_module.BUILTIN_PASSES.items()
-        if function is pipeline_module._merge_inverse_pairs
+        if function is _stage_pass_registry._merge_inverse_pairs
     ]
     assert bound == ["merge_inverse_pairs"]
     assert pipeline_module.OPTIMIZATION_PIPELINE.count("merge_inverse_pairs") == 1

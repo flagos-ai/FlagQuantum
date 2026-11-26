@@ -9,8 +9,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -431,22 +429,3 @@ def repeated_rx_rz_tangents(
 
 
 __all__ = ["repeated_rx_rz", "repeated_rx_rz_tangents"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _LoopContext,
-    _TensorJacobian,
-    _tensor_jacobian,
-    _rx_rz_loop_kernel,
-    _rx_rz_loop_tangent_kernel,
-    _rx_rz_loop_backward_kernel,
-    _launch,
-    _RepeatedRXRZ,
-    repeated_rx_rz,
-    repeated_rx_rz_tangents,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.single_qubit_loop"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.single_qubit_loop", __name__)

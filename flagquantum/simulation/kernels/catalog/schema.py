@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, get_args
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 KernelDomain = Literal["statevector", "gradient", "mps", "measurement", "numerics"]
 KernelProvider = Literal["pytorch", "triton", "flagtree"]
 KernelDirection = Literal["forward", "backward", "jvp", "vjp", "jacobian"]
@@ -14,7 +12,7 @@ KernelMaturity = Literal["experimental", "provisional", "stable"]
 
 # The execution-device axis is closed on purpose. ``flagquantum.compute`` owns the
 # platform registry, but the protected boundaries in ``config/architecture.toml`` forbid
-# ``flagquantum.kernels`` from importing it, so the catalog declares the axis here
+# ``flagquantum.simulation.kernels`` from importing it, so the catalog declares the axis here
 # and ``tests/unit/test_kernel_catalog.py`` asserts the two vocabularies agree.
 # An open axis would make a misspelled device indistinguishable from a device that
 # simply has no implementation, which is exactly the fail-open the axis prevents.
@@ -76,15 +74,3 @@ __all__ = [
     "KernelProvider",
     "KernelSemantic",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    KernelSemantic,
-    KernelImplementation,
-    KernelEvidence,
-):
-    _identity_export.__module__ = "flagquantum.kernels.catalog.schema"
-del _identity_export
-
-_alias_module("flagquantum.kernels.catalog.schema", __name__)

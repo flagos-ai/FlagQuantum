@@ -8,8 +8,6 @@ from typing import Any, cast
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .provenance import triton_compiler_provenance
 
 _TLE_BACKEND_ALIASES = {"cuda": "nvidia"}
@@ -305,18 +303,3 @@ __all__ = (
     "require_flagtree_tle_primitive",
     "unpack_complex64_control_one_tle",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    require_flagtree_tle_primitive,
-    apply_complex64_local_1q_tle,
-    apply_complex64_transpose_1q_tle_inplace,
-    fused_complex64_sharded_1q_vjp_adjoint_tle,
-    pack_complex64_control_one_tle,
-    unpack_complex64_control_one_tle,
-):
-    _identity_export.__module__ = "flagquantum.kernels.flagtree"
-del _identity_export
-
-_alias_module("flagquantum.kernels.flagtree", __name__)

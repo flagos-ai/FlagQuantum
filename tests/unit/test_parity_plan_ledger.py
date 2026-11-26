@@ -15,8 +15,7 @@ import copy
 
 import pytest
 
-from tools.ci_tier import CI_TIERS
-from tools.parity_plan_ledger import (
+from tools.architecture.parity_plan_ledger import (
     BLOCKER_VOCABULARY,
     KIND_VOCABULARY,
     LEDGER_PATH,
@@ -26,6 +25,7 @@ from tools.parity_plan_ledger import (
     summarize,
     validate,
 )
+from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
 

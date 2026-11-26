@@ -8,7 +8,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from tools.validate_qmod_static_qpe import CASES, validate
+from tools.validation.validate_qmod_static_qpe import CASES, validate
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128

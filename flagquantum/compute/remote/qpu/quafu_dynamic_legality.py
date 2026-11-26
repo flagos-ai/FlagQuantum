@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
 from flagquantum.runtime.dynamic.dialects.openqasm3 import export_dynamic_qasm3
@@ -259,18 +258,3 @@ def _preview_quafu_dynamic_request(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _QuafuDynamicLegalityPreview,
-    _snapshot_fact,
-    _quafu_extension,
-    _provider_contract_blockers,
-    _routing_blockers,
-    _preview_quafu_dynamic_request,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu.quafu_dynamic_legality"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu.quafu_dynamic_legality", __name__)

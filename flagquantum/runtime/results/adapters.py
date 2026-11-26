@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from flagquantum.core.ir import CircuitIR
     from flagquantum.runtime.training.module import Module
@@ -115,11 +113,3 @@ __all__ = ("LiveRuntimeSummary",)
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    LiveRuntimeSummary,
-    _module_execution_result,
-):
-    _identity_export.__module__ = "flagquantum.runtime.result_adapters"
-del _identity_export
-
-_alias_module("flagquantum.runtime.result_adapters", __name__)

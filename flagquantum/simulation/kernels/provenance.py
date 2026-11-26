@@ -5,8 +5,6 @@ from __future__ import annotations
 from functools import lru_cache
 from importlib import metadata
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 @lru_cache(maxsize=1)
 def triton_compiler_provenance() -> tuple[str | None, str | None, str, str]:
@@ -35,11 +33,3 @@ def triton_compiler_provenance() -> tuple[str | None, str | None, str, str]:
 
 
 __all__ = ("triton_compiler_provenance",)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (triton_compiler_provenance,):
-    _identity_export.__module__ = "flagquantum.kernels.provenance"
-del _identity_export
-
-_alias_module("flagquantum.kernels.provenance", __name__)

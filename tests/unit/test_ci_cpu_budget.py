@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from tools.ci_cpu_budget import GIB, controller_directories, read_limits, select_workers
+from tools.ci.ci_cpu_budget import (
+    GIB,
+    controller_directories,
+    read_limits,
+    select_workers,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -106,7 +111,7 @@ def test_probe_uses_affinity_quota_memory_and_exports_report(
 ) -> None:
     import json
 
-    from tools import ci_cpu_budget as budget
+    from tools.ci import ci_cpu_budget as budget
 
     monkeypatch.setattr(
         budget.os, "sched_getaffinity", lambda _: set(range(32)), raising=False
@@ -148,7 +153,7 @@ def test_launcher_budget_accounts_for_nested_eight_rank_processes(
     shared: bool,
     expected: int,
 ) -> None:
-    from tools.ci_cpu_budget import select_distributed_workers
+    from tools.ci.ci_cpu_budget import select_distributed_workers
 
     assert select_distributed_workers(cpus, memory_gib * GIB, shared) == expected
 
@@ -184,7 +189,7 @@ def test_mc550_service_budget_uses_its_own_quota_without_double_reservation(
 ) -> None:
     import json
 
-    from tools import ci_cpu_budget as budget
+    from tools.ci import ci_cpu_budget as budget
 
     group = tmp_path / service
     group.mkdir()
@@ -228,7 +233,7 @@ def test_mc550_service_budget_uses_its_own_quota_without_double_reservation(
 def test_isolated_launcher_budget_fits_all_child_ranks(
     cpus: float, memory_gib: int, shared: bool, expected: int
 ) -> None:
-    from tools.ci_cpu_budget import select_distributed_workers
+    from tools.ci.ci_cpu_budget import select_distributed_workers
 
     assert (
         select_distributed_workers(cpus, memory_gib * GIB, shared, dedicated=True)
@@ -242,7 +247,7 @@ def test_container_inherits_stricter_host_service_budget(
 ):
     import json
 
-    from tools import ci_cpu_budget as budget
+    from tools.ci import ci_cpu_budget as budget
 
     host = tmp_path / "host.json"
     host.write_text(

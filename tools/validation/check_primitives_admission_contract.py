@@ -50,7 +50,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from tools.architecture.source_relocations import source_identity
+from tools.architecture.source_relocations import source_identity, source_path
 
 try:
     import tomllib
@@ -142,7 +142,7 @@ def measure_consumers() -> dict[str, dict[str, list[str]]]:
     """
     measured: dict[str, dict[str, list[str]]] = {}
     for root_name in CONSUMER_ROOTS:
-        root = ROOT / root_name
+        root = source_path(ROOT, root_name)
         if not root.exists():
             continue
         bucket = "framework" if root_name == FRAMEWORK_ROOT else root_name
@@ -509,7 +509,7 @@ def _gradient_test_errors(name: str, test: Any) -> list[str]:
             "path::test_name for the gradient test"
         ]
     path_text, _, function = test.partition("::")
-    path = ROOT / path_text
+    path = source_path(ROOT, path_text)
     if not path.is_file():
         return [f"primitive {name} names a missing gradient test file: {path_text!r}"]
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -542,7 +542,7 @@ def _dimension_errors(contract: dict[str, Any]) -> list[str]:
         return errors
     texts: list[tuple[str, str]] = []
     for entry in stated_in:
-        path = ROOT / str(entry)
+        path = source_path(ROOT, str(entry))
         if not path.is_file():
             errors.append(
                 f"primitives admission contract names a missing stating file {entry!r}"

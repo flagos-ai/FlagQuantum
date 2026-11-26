@@ -20,7 +20,7 @@ started and explicitly scoped out.
 > [`API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md`](../development/API_CHANGE_PROPOSAL_065_QUBIT_VOCABULARY.md)
 > (decision record). Its baseline lives in
 > `contracts/qubit-vocabulary-contract.toml` and is enforced by
-> `tools/check_qubit_vocabulary.py`.
+> `tools/architecture/check_qubit_vocabulary.py`.
 >
 > **What carries forward unchanged**: the `Omitted` sentinel rule, the
 > `warn_qubit_alias` deprecation path, the removal version, the serialized-key and
@@ -380,7 +380,7 @@ instead of a persisted-format migration.
 2. **Renaming a serialized key without a version decision.** The key and the
    version are one decision; see Candidate B.
 3. **Regenerating `contracts/public-api-v0.2-baseline.json` or
-   `docs/public_api_v1.json` to make the rename pass.** `tools/public_api_snapshot.py`
+   `docs/public_api_v1.json` to make the rename pass.** `tools/architecture/public_api_snapshot.py`
    already refuses `--write`; neither artifact may be regenerated merely to make
    the check green.
 4. **Silently accepting both `qubit=` and `wire=` on a new surface.** Supplying
@@ -431,7 +431,7 @@ instead of a persisted-format migration.
 - Numerical parity: probability, expectation, counts, and sample results are
   bit-equal between the new and deprecated spellings for the same seed.
 - Batched hybrid forward values and classical/quantum gradients are unchanged.
-- `tools/public_api_snapshot.py` passes after the candidate contracts and
+- `tools/architecture/public_api_snapshot.py` passes after the candidate contracts and
   `docs/public_api_v1.json` are synchronized.
 - The new terminology gate fails on a fixture that reintroduces a `wire`-named
   public parameter, and the fixture is asserted in the gate's own test — a gate

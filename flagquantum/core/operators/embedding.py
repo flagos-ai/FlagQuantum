@@ -80,12 +80,6 @@ def expand_operator(
     return full
 
 
-for _identity_export in (
-    _complex_dtype,
-    _basis_bits,
-    _bits_to_index,
-    _validate_qubits,
-    expand_operator,
-):
+for _identity_export in (expand_operator,):
     _identity_export.__module__ = "flagquantum.simulation.density_matrix"
 del _identity_export

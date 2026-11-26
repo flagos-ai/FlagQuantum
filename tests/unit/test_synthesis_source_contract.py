@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.public_api_snapshot import _validate_authorized_synthesis_qmod
+from tools.architecture.public_api_snapshot import _validate_authorized_synthesis_qmod
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

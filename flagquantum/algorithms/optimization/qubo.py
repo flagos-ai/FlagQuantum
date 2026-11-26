@@ -13,10 +13,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
 __all__ = [
@@ -307,10 +307,17 @@ def max_cut_qubo(edges: Iterable[tuple[int, int]], *, n_nodes: int) -> QuboProbl
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (QuboProblem,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _is_index,
     QuboProblem,
-    _constant_wire,
     qubo_energy,
     qubo_to_ising,
     ising_to_qubo,
@@ -318,5 +325,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.algorithms.qubo"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.qubo", __name__)

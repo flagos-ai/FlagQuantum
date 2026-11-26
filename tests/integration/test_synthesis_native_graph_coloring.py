@@ -16,7 +16,7 @@ from examples.synthesis.applications.optimization.min_graph_coloring.comparisons
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from tools.validate_qmod_phase_factors import ArithmeticOracle
+from tools.validation.validate_qmod_phase_factors import ArithmeticOracle
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

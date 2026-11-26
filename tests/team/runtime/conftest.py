@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.evidence_provenance import revision_resolves
+from tools.release.evidence_provenance import revision_resolves
 
 _ROOT = Path(__file__).resolve().parents[3]
 

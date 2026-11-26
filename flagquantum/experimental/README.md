@@ -23,7 +23,7 @@ implementations.
 baseline lists the package, not its unstable contents. Keep it that way. A name
 reached through this package stays unstable by design, and promoting one to the
 Stable Core surface is an API change proposal, not an edit here. Run
-`python tools/check_capability_maturity.py` before adding a name.
+`python tools/validation/check_capability_maturity.py` before adding a name.
 
 ## What guards this surface
 
@@ -105,8 +105,8 @@ To add, move, or remove an unstable name:
 
    ```bash
    python -m pytest tests/api_contract/test_experimental_namespace_contract.py -q
-   python tools/check_capability_maturity.py
-   python tools/ci_tier.py pr-default
+   python tools/validation/check_capability_maturity.py
+   python tools/ci/ci_tier.py pr-default
    ```
 
 Do not add an implementation to this package. If a capability is stable enough

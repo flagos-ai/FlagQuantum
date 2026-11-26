@@ -42,10 +42,10 @@ Scope of the affected surface, all of it additive:
 | `docs/roadmap/NOISY_SIMULATION_ROADMAP.md`, `docs/roadmap/CUDAQ_PARITY_STRATEGY.md`, `docs/reference/CUDAQ_PARITY_MATRIX.md` | shared | Boundary statements |
 | `examples/algorithms/error_mitigation.py`, `examples/**/README.md` | shared | The ten-minute golden path |
 | `tests/unit/test_error_mitigation.py`, `tests/test_error_mitigation.py`, `tests/test_algorithm_examples.py` | shared | Focused and scenario tests |
-| `flagquantum/kernels/README.md` | `simulation` | Records why the unit is not a kernel |
+| `flagquantum/simulation/kernels/README.md` | `simulation` | Records why the unit is not a kernel |
 
 No public stable name is added or removed. `fq.__all__` is unchanged,
-`docs/public_api_v1.json` is unchanged, and `python -m tools.public_api_snapshot`
+`docs/public_api_v1.json` is unchanged, and `python -m tools.architecture.public_api_snapshot`
 passes, because the new names live in `flagquantum.algorithms` rather than at the
 `fq.*` root.
 
@@ -328,15 +328,15 @@ orders these the other way for that reason.
 
 - Owning domain: `algorithms` for `error_mitigation.py` and the example, with
   `integration` for the capability record and the parity contract, and
-  `simulation` for the note in `flagquantum/kernels/README.md` explaining why this
+  `simulation` for the note in `flagquantum/simulation/kernels/README.md` explaining why this
   workload needs no fused kernel.
 - Required approvals before implementation: **algorithms domain owner** (the unit
   and its public names), **integration owner** (the capability row, the parity
   transition, and the generated documents), and **API owner** only if any of the
   new names is later promoted into `fq.__all__`, which this document does not
   propose.
-- Verification: `python tools/check_team_scope.py --team integration --files
+- Verification: `python tools/architecture/check_team_scope.py --team integration --files
   <changed paths>` passes for the whole change set; `--team algorithms` reports
   the three protected and one simulation-owned path, which is the split recorded
-  above. `python tools/ci_tier.py pr-default` and `python tools/ci_tier.py
+  above. `python tools/ci/ci_tier.py pr-default` and `python tools/ci/ci_tier.py
   pr-runtime` are the tiers for a new local algorithm on the density-matrix path.

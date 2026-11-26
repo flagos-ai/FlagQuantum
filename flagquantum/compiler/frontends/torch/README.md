@@ -11,8 +11,8 @@ execution, capture reuse and invalidation. This directory must not select
 devices, implement numerical simulation kernels or submit jobs.
 
 The supported user workflow is `fq.Module` and ordinary Torch training. Existing
-expert module paths `flagquantum.compiler.module_builder` and
-`flagquantum.compiler.training` remain available. Internal consumers should
+expert module paths `flagquantum.compiler.frontends.torch._module_builder` and
+`flagquantum.compiler.frontends.torch._training` remain available. Internal consumers should
 import directly from this directory.
 
 ```bash

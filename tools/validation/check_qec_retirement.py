@@ -28,6 +28,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts/qec-historical-import-retirement-v0.4.json"
 
@@ -57,7 +59,7 @@ def import_errors(modules: Sequence[str], *, absent: bool) -> list[str]:
 def fixture_errors(root: Path = ROOT) -> list[str]:
     errors = []
     for name, expected in load_contract()["frozen_fixture_sha256"].items():
-        path = root / name
+        path = source_path(root, name)
         if (
             not path.is_file()
             or hashlib.sha256(path.read_bytes()).hexdigest() != expected
@@ -119,7 +121,7 @@ def check(phase: str) -> list[str]:
     modules = contract["module_replacements"]
     retired = set(modules)
     baseline = json.loads(
-        (ROOT / contract["preserved"]["root_api_fixture"]).read_text()
+        (source_path(ROOT, contract["preserved"]["root_api_fixture"])).read_text()
     )
     errors = fixture_errors()
     from flagquantum.version import __version__
@@ -198,7 +200,7 @@ def check(phase: str) -> list[str]:
             errors.append(
                 f"RotatedSurfaceCode: expected one definition, found {definitions}"
             )
-        if (ROOT / surface["retired_implementation"]).exists():
+        if (source_path(ROOT, surface["retired_implementation"])).exists():
             errors.append("RotatedSurfaceCode: duplicate implementation remains")
         errors += import_errors(
             (

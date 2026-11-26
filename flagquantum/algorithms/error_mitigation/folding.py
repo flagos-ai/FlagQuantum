@@ -132,10 +132,10 @@ import json
 import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.circuit import Circuit
 
 if TYPE_CHECKING:  # pragma: no cover - imported for annotations only
@@ -1071,20 +1071,20 @@ def fold_noise_amplification(
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (FoldNoiseAmplification,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _require_scale_factor,
-    _pair_count,
-    _require_unitary,
-    _plan_identity,
     FoldingPlan,
-    _placement_order,
     fold_program,
-    _channel_locations,
-    _noise_identity,
     FoldNoiseAmplification,
     fold_noise_amplification,
 ):
     _identity_export.__module__ = "flagquantum.algorithms.folding"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.folding", __name__)

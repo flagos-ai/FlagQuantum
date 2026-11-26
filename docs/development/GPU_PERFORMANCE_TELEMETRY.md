@@ -9,10 +9,10 @@ or a finding that host contention caused the historical failures.
 
 ## Ownership and behavior
 
-Integration owns this tooling change. `tools/run_with_watchdog.py` continues to
+Integration owns this tooling change. `tools/ci/run_with_watchdog.py` continues to
 own the child process group, output, deadlines, cancellation and exit status.
 The optional `--hardware-samples` path requests JSON Lines observations; the
-helper in `tools/hardware_telemetry.py` only collects hardware/process facts.
+helper in `tools/validation/hardware_telemetry.py` only collects hardware/process facts.
 No compiler, simulation, runtime or SDKBench implementation changes. The
 existing benchmark and performance evaluator are unchanged.
 
@@ -81,7 +81,7 @@ This example launches no remote or paid job and requires no GPU. On systems
 without NVIDIA tooling, the sample explicitly records its unavailability:
 
 ```sh
-python tools/run_with_watchdog.py --phase local-diagnostic \
+python tools/ci/run_with_watchdog.py --phase local-diagnostic \
   --stall-seconds 3 --timeout-seconds 5 --diagnostics /tmp/fq-diagnostic \
   --hardware-samples /tmp/fq-diagnostic-samples.jsonl \
   -- python -c "import time; time.sleep(1.2)"

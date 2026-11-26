@@ -7,7 +7,6 @@ from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any, NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.diagnostics import SpecializationError
 from flagquantum.compiler.frontends._structured.dynamic import expressions
 from flagquantum.compiler.frontends._structured.dynamic.expressions import (
@@ -567,15 +566,3 @@ def lower_dynamic_program(
 
 
 __all__ = ("LoweredDynamicProgram", "lower_dynamic_program")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    LoweredDynamicProgram,
-    _DynamicLowerer,
-    lower_dynamic_program,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.dynamic.program"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.dynamic.program", __name__)

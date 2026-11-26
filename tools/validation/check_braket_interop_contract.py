@@ -17,6 +17,8 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
@@ -168,7 +170,7 @@ def contract_errors(
     }.items():
         if verification.get(name) != expected_path:
             errors.append(f"Braket {name} path drifted")
-        elif not (ROOT / expected_path).is_file():
+        elif not (source_path(ROOT, expected_path)).is_file():
             errors.append(f"Braket verification path does not exist: {expected_path}")
     return tuple(errors)
 

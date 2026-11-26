@@ -13,7 +13,7 @@ correctness and hardware-specific thresholds. Median absolute deviation controls
 short-kernel outliers while the ordinary coefficient remains visible.
 
 Hardware jobs publish run-scoped artifacts through CI. A reviewed baseline may
-be supplied to `tools/evaluate_performance_artifact.py`; absent baselines never
+be supplied to `tools/validation/evaluate_performance_artifact.py`; absent baselines never
 silently become release evidence. Only current, public claims belong under
 `benchmarks/results/`.
 

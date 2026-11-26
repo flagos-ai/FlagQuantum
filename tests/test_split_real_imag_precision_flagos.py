@@ -18,7 +18,10 @@ def test_split_real_imag_precision_runs_on_torch_fl_flagos_device() -> None:
             "set FLAGQUANTUM_TEST_SPLIT_PRECISION_FLAGOS=1 in a Torch-FL environment"
         )
     completed = subprocess.run(
-        [sys.executable, "tools/validate_split_real_imag_precision_flagos.py"],
+        [
+            sys.executable,
+            "tools/validation/validate_split_real_imag_precision_flagos.py",
+        ],
         cwd=ROOT,
         check=True,
         capture_output=True,

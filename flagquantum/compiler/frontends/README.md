@@ -4,7 +4,7 @@ Owns Torch capture and the existing structured Python frontend. `_structured/` r
 
 Allowed dependencies: Core IR and Compiler transformations; Torch for the Torch frontend.
 
-Published entry points: Existing fq.Module capture and compiler.module_builder/compiler.training entry points. Historical import paths are forwarding facades;
+Published entry points: Existing fq.Module capture and compiler.frontends.torch._module_builder/compiler.frontends.torch._training entry points. Historical import paths are forwarding facades;
 the implementation in this directory is authoritative. See the
 [relocation ledger](../../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md)
 for compatibility ownership and removal gates.
@@ -17,7 +17,7 @@ for compatibility ownership and removal gates.
 
    ```sh
    python -m pytest tests/unit/test_structure_import_compatibility.py -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 CPU tests establish behavior and fixture conformance; physical hardware and

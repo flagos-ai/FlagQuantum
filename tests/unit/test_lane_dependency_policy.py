@@ -43,7 +43,7 @@ fourth is about the policy rather than the lanes, which is what made the
 `cotengra` probe above invisible to the second.
 
 What a lane runs is read from the `-m` expressions in the workflows and from the
-`tools/ci_tier.py` tiers they invoke, so a job whose selection lives in a tier is
+`tools/ci/ci_tier.py` tiers they invoke, so a job whose selection lives in a tier is
 seen too.
 """
 
@@ -58,7 +58,7 @@ from typing import NamedTuple
 import pytest
 
 from tools.check_dependency_policy import distribution_name, load_toml
-from tools.ci_tier import CI_TIERS
+from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
 
@@ -229,7 +229,7 @@ def _job_blocks() -> list[tuple[str, str, str]]:
 
 
 def _tier_expressions(text: str) -> list[str]:
-    """The `-m` expressions of every `tools/ci_tier.py <tier>` this text invokes.
+    """The `-m` expressions of every `tools/ci/ci_tier.py <tier>` this text invokes.
 
     Read from the tier's command tuples rather than from their rendered text,
     which joins the arguments and loses the quoting around an expression.

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.parity_matrix import CONTRACT_PATH, load_inputs
+from tools.architecture.parity_matrix import CONTRACT_PATH, load_inputs
 
 pytestmark = pytest.mark.unit
 

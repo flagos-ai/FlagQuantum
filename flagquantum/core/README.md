@@ -76,7 +76,7 @@ contract test, and run:
 ```bash
 python -m pytest tests/team/core tests/api_contract \
   tests/integration/test_cpu_vertical_slice.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

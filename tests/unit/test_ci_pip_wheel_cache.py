@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.ci_pip_wheel_cache import seed_wheel_responses
+from tools.ci.ci_pip_wheel_cache import seed_wheel_responses
 
 pytestmark = pytest.mark.unit
 

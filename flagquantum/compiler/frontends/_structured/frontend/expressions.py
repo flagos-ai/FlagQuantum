@@ -6,7 +6,6 @@ import ast
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import (
     BOOL,
     INDEX,
@@ -337,27 +336,3 @@ def literal_non_negative_int(owner: _Capture, node: ast.expr, code: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 0:
         owner.fail(node, code, "expected a static non-negative integer")
     return value
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _TensorView,
-    _call_name,
-    emit_expression,
-    reject_inline_measurement,
-    emit_constant,
-    resolve_tensor_view,
-    emit_shape_dimension,
-    emit_dimension,
-    emit_tensor_extract,
-    emit_index,
-    capture_measurement,
-    wires_node,
-    static_wires,
-    dynamic_wires,
-    literal_non_negative_int,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.expressions"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.expressions", __name__)

@@ -22,11 +22,11 @@ from __future__ import annotations
 
 import math
 import struct
-import sys as _alias_sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 from .protocol import RealtimeProtocolError
 
@@ -409,6 +409,18 @@ def _encode_array(descriptor: TypeDescriptor, value: Any, *, owner: str) -> byte
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    HandlerSchema,
+    TypeDescriptor,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     PayloadType,
     TypeDescriptor,
@@ -417,18 +429,6 @@ for _identity_export in (
     encode_results,
     decode_arguments,
     decode_results,
-    _encode,
-    _decode,
-    _encode_one,
-    _decode_one,
-    _encode_scalar,
-    _encode_array,
 ):
     _identity_export.__module__ = "flagquantum.realtime.payload"
 del _identity_export
-
-_alias_sys.modules["flagquantum.realtime.payload"] = _alias_sys.modules[__name__]
-_parent = _alias_sys.modules.get("flagquantum.realtime")
-if _parent is not None:
-    setattr(_parent, "payload", _alias_sys.modules[__name__])
-del _parent

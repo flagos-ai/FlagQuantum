@@ -11,7 +11,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler.artifacts.routing_evidence import (
     build_deployment_routing_evidence,
@@ -239,5 +238,3 @@ def evaluate_dynamic_routing_rematch(
 
 
 __all__: tuple[str, ...] = ()
-
-_alias_module("flagquantum.deployment.dynamic_rematch", __name__)

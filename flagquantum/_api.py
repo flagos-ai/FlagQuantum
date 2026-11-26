@@ -198,7 +198,7 @@ def run(
 
     # A synthesis product has already loaded its canonical owner. Ordinary
     # circuit execution must not import application services to identify it.
-    synthesis = sys.modules.get("flagquantum.services.synthesis")
+    synthesis = sys.modules.get("flagquantum.synth._workflow")
     if synthesis is not None and isinstance(program_or_plan, synthesis.Program):
         if type(program_or_plan) is not synthesis.Program:
             raise TypeError(
@@ -224,7 +224,7 @@ def run(
 
     # A created LindbladPlan has already loaded its module. Keep ordinary
     # circuit execution free of an eager dynamics import.
-    dynamics = sys.modules.get("flagquantum.lindblad._plan")
+    dynamics = sys.modules.get("flagquantum.runtime.evolution._plan")
     if dynamics is not None and isinstance(program_or_plan, dynamics.LindbladPlan):
         if any(
             value is not None

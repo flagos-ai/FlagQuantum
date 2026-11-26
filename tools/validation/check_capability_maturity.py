@@ -17,6 +17,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -92,7 +94,7 @@ CLAIM_VALUE_FORMATS = (
 CLAIM_AGGREGATES = ("single", "max", "min", "count", "unique")
 
 #: Why a claim's ``code_version`` may not resolve in this repository. The values
-#: and their meaning come from ``tools/evidence_provenance.py``, which records
+#: and their meaning come from ``tools/release/evidence_provenance.py``, which records
 #: the same disclosure for the checked-in evidence artifacts under ``artifacts/``.
 CODE_VERSION_ORIGIN_FIELD = "code_version_origin"
 
@@ -213,7 +215,7 @@ def code_version_errors(
     reader can check out, and the documentation then rendered it as ``code
     <revision>``.
 
-    Resolution has the three outcomes ``tools/evidence_provenance.py`` keeps
+    Resolution has the three outcomes ``tools/release/evidence_provenance.py`` keeps
     apart, and this function keeps them apart the same way. A pin that resolves
     is traceable, a pin that names no commit here must disclose that with
     ``code_version_origin = "producing_host_history"``, and a checkout that
@@ -337,7 +339,7 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
         ):
             value = capability.get(field)
             if isinstance(value, str) and not value.startswith("not_applicable"):
-                if not (root / value).exists():
+                if not (source_path(root, value)).exists():
                     errors.append(f"{name}: {field} path does not exist: {value}")
         for claim in capability.get("performance_claims", ()):
             claim_id = (
@@ -362,7 +364,7 @@ def maturity_errors(data: dict[str, Any], root: Path = ROOT) -> tuple[str, ...]:
             artifact = claim.get("artifact")
             if not isinstance(artifact, str) or not artifact:
                 continue
-            artifact_path = root / artifact
+            artifact_path = source_path(root, artifact)
             try:
                 artifact_path.resolve().relative_to(
                     (root / "benchmarks/results").resolve()

@@ -10,10 +10,10 @@ from itertools import product
 from math import exp, fsum, sqrt
 from types import MappingProxyType
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir import _normalize_angle
 from flagquantum.core.runtime_config import get_runtime_config
 from flagquantum.errors import ValidationError
@@ -652,12 +652,19 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    KrausChannel,
+    UnitaryMixture,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _as_probability,
-    _complex_dtype,
-    _real_dtype,
-    _pauli_basis,
-    _scaled_unitary,
     UnitaryMixture,
     KrausChannel,
     bit_flip_channel,
@@ -674,5 +681,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.noise.channels"
 del _identity_export
-
-_alias_module("flagquantum.noise.channels", __name__)

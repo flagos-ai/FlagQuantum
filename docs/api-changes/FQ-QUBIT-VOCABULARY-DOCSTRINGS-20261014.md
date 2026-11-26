@@ -4,8 +4,8 @@
 **Slice:** `WD-2`
 **Surface:** wire-named tokens in Python docstrings and comments inside the package
 **Contract:** `contracts/qubit-vocabulary-contract.toml`, section `[docstring]`
-**Gate:** `tools/check_qubit_vocabulary.py`, function `_docstring_errors`
-**Census:** `tools/census_wire_vocabulary.py`, function `docstring_census`
+**Gate:** `tools/architecture/check_qubit_vocabulary.py`, function `_docstring_errors`
+**Census:** `tools/architecture/census_wire_vocabulary.py`, function `docstring_census`
 **Predecessor:** [the documentation slice](FQ-QUBIT-VOCABULARY-DOCUMENTATION-20261013.md)
 
 ## What this slice decides
@@ -223,7 +223,7 @@ commit undoes that.
 The gate:
 
 ```console
-$ python tools/check_qubit_vocabulary.py
+$ python tools/architecture/check_qubit_vocabulary.py
 ...
 Qubit vocabulary documentation: 4 of 4 documented wire-named keywords exempt as recorded (0 to reword)
 Qubit vocabulary docstrings and comments: 43 of 43 wire-named tokens kept as recorded (0 to reword)
@@ -270,7 +270,7 @@ correction is worth more than the original claim:
   this repository contains the string `api_contract`, and `pytest.ini` does not declare
   it;
 * the pull-request lane's tier command is `python -m pytest -m "smoke or unit" -q`
-  (`tools/ci_tier.py:52`), run with `testpaths = tests` (`pytest.ini:2`), so it collects
+  (`tools/ci/ci_tier.py:52`), run with `testpaths = tests` (`pytest.ini:2`), so it collects
   this module. Verified rather than reasoned:
   ```console
   $ python -m pytest -m "smoke or unit" --collect-only -p no:cacheprovider \
@@ -489,7 +489,7 @@ right work.
 ## What the example surface cost, and what it cost to give that back
 
 A new surface is not free, and the price of this one was paid by a lane that is not
-this slice's. The tier command CI runs for a pull request is `tools/ci_tier.py
+this slice's. The tier command CI runs for a pull request is `tools/ci/ci_tier.py
 pr-default`, whose selection is `pytest -m "smoke or unit" -q` over `pytest.ini`'s
 `testpaths = tests`. Four runs of it, all on this machine in one sitting, two at each
 revision, with the second pair ignoring the two modules this slice owns:

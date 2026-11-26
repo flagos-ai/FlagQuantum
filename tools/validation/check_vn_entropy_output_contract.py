@@ -3,7 +3,7 @@
 
 ``fq.vn_entropy(qubits=...)`` asks an execution for the entropy of a subsystem. The output
 *kind* is authorized by ``contracts/observable-outputs-v1-candidate.json`` and
-``tools/public_api_snapshot.py`` already proves the signature is the reviewed one. Neither can
+``tools/architecture/public_api_snapshot.py`` already proves the signature is the reviewed one. Neither can
 say what the number is: a request whose signature is exactly as reviewed can still return a
 Rényi entropy, an entropy in bits where nats were promised, the entropy of a different
 subsystem, or a value assembled from the wrong eigenvalues -- and every one of those is a

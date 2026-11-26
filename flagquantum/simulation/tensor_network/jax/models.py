@@ -6,8 +6,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 @dataclass(frozen=True)
 class JAXTensorNetworkNode:
@@ -17,6 +15,3 @@ class JAXTensorNetworkNode:
     labels: tuple[int, ...]
     name: str = ""
     metadata: Mapping[str, Any] | None = None
-
-
-_alias_module("flagquantum.simulation.jax.tensor_network.models", __name__)

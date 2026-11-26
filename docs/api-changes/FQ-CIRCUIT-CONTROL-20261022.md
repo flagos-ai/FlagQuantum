@@ -239,9 +239,9 @@ nothing measured here moves with it.
 | The one-control shortcut is the registered partner | `pytest tests/unit/test_circuit_composition_contract.py -k expands_to_the_hand_built_ladder` | `x -> cx`, `cnot -> ccx`, `swap -> cswap`, `rz -> crz`, one instruction each |
 | The ladder is written out by hand and matched | same test | `t` at 2 controls equals the nine-instruction `h`/`cphase` program |
 | The ladder computes the gate | same test | four prepared registers against the definition's basis and phase |
-| The census is load-bearing | `python tools/check_circuit_composition_contract.py` | 31 of 35 opcodes declare a form; the 4 refusals are exactly the channels |
+| The census is load-bearing | `python tools/validation/check_circuit_composition_contract.py` | 31 of 35 opcodes declare a form; the 4 refusals are exactly the channels |
 | The ceiling is enforced | same run | level 11 refuses with the level it needs and `MAX_LADDER_LEVEL` |
-| The serialized field changed consistently | `python tools/operator_manifest.py --check` after regeneration | 35 added lines, one `control` key per operator |
+| The serialized field changed consistently | `python tools/docs/operator_manifest.py --check` after regeneration | 35 added lines, one `control` key per operator |
 
 The two `/tmp/n19/` instruments are **scratch probes, not repository files**, and they
 were written before the emitter existed so that the recursion could be checked against a
@@ -361,12 +361,12 @@ sharing `diagonal_ladder`.
   the definition of a controlled gate, the ladder written out by hand, the
   one-control shortcut, the parameter-object identity of every emitted angle, the
   refusal paths, and the ceiling.
-- `tools/check_circuit_composition_contract.py` — re-derives the level formula,
+- `tools/validation/check_circuit_composition_contract.py` — re-derives the level formula,
   the ladder bound, the census, the ceiling, the signature, and the width and
   input-state claims from the implementation rather than from the contract text.
-- `tools/operator_manifest.py --check` — the regenerated manifest is current.
-- `tools/public_api_snapshot.py` — the stable surface is unchanged.
-- `tools/check_team_scope.py --team core` — the changed paths are owned.
+- `tools/docs/operator_manifest.py --check` — the regenerated manifest is current.
+- `tools/architecture/public_api_snapshot.py` — the stable surface is unchanged.
+- `tools/architecture/check_team_scope.py --team core` — the changed paths are owned.
 
 ## Open Questions
 

@@ -16,7 +16,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import CloudBackendProfile, DeploymentPackage
 
 from .contracts import (
@@ -375,14 +374,6 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    quantinuum_backend_profile,
-    _language,
-    _quantinuum_counts,
-    _quantinuum_outcome,
-    QuantinuumProvider,
-):
+for _identity_export in (quantinuum_backend_profile, QuantinuumProvider):
     _identity_export.__module__ = "flagquantum.remote.qpu.quantinuum"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.quantinuum", __name__)

@@ -1,6 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
 from importlib import import_module as _import_module
 
 from flagquantum.algorithms.optimization._research_options import (
@@ -14,4 +13,3 @@ from flagquantum.algorithms.optimization._research_options import (
 _implementation = _import_module(
     "flagquantum.algorithms.optimization._research_options"
 )
-_sys.modules[__name__] = _implementation

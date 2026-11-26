@@ -119,7 +119,7 @@ statevector, MPS, and tensor-network operations live in
 `flagquantum.simulation.jax`. Shared distributed protocols remain independent
 of those optional numerical implementations. Module budgets and dependency
 restrictions are enforced by `config/architecture.toml` and
-`tools/check_architecture.py`.
+`tools/architecture/check_architecture.py`.
 
 Importing the PyTorch-native executor and backend-neutral protocols must not
 import or initialize JAX/XLA. JAX facade modules resolve extracted definitions

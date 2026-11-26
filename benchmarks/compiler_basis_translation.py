@@ -82,7 +82,8 @@ from benchmarks.compiler_two_qubit_synthesis import (
     baseline_reach,
     snapshot,
 )
-from flagquantum.compiler.basis_translation import EQUIVALENCE_RULES, _gate
+from flagquantum.compiler.basis_translation import EQUIVALENCE_RULES
+from flagquantum.compiler.lowering.basis_translation import _gate
 from flagquantum.compiler.lowering.native_gate_legalization import (
     NativeGateLegalizationError,
     legalize_native_gates,

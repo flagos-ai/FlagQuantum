@@ -59,10 +59,8 @@ from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
-from flagquantum.compiler.resource_estimation import (
-    _T_FAMILY_OPCODES,
-    estimate_resources,
-)
+from flagquantum.compiler.optimization.resource_estimation import _T_FAMILY_OPCODES
+from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.core.ir import Instruction, MeasurementNode, ensure_circuit_ir
 from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.errors import CapabilityError

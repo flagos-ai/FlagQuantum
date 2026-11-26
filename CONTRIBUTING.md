@@ -117,7 +117,7 @@ To get your contribution reviewed and merged:
 Run the complete push gate explicitly at any time:
 
 ```bash
-python tools/pre_push.py
+python tools/ci/pre_push.py
 ```
 
 The local gate cannot reproduce clean Python 3.10–3.12 environments, package

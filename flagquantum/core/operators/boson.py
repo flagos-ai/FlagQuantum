@@ -37,10 +37,9 @@ import math
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from numbers import Complex
+from typing import get_type_hints as _class_type_hints
 
 import torch
-
-from flagquantum._import_compat import alias_module as _alias_module
 
 from .observable import _qubit, _qubits
 
@@ -537,20 +536,21 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    BosonOperator,
+    BosonTerm,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _complex_scalar,
-    _degree,
-    _degrees,
-    _first_defect,
-    _canonical_terms,
-    _factor_sequence,
     BosonTerm,
     BosonOperator,
-    _compose,
-    _truncation,
-    _levels,
-    _ladder_matrices,
-    _term_matrix,
     identity,
     create,
     annihilate,
@@ -560,5 +560,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.observables.boson"
 del _identity_export
-
-_alias_module("flagquantum.observables.boson", __name__)

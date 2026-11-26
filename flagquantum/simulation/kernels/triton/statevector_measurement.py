@@ -9,8 +9,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -776,45 +774,3 @@ __all__ = [
     "statevector_pauli_expectation",
     "statevector_probabilities",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _ProbabilityContext,
-    _PauliExpectationContext,
-    _MarginalProbabilityContext,
-    _statevector_probabilities_kernel,
-    _statevector_probabilities_backward_kernel,
-    _statevector_marginal_probability_partial_kernel,
-    _statevector_marginal_probability_backward_kernel,
-    _statevector_pauli_expectation_partial_kernel,
-    _statevector_pauli_expectation_backward_kernel,
-    _reference,
-    _marginal_reference,
-    _validate,
-    _supported,
-    _normalize_marginal_qubits,
-    _validate_marginal_state,
-    _pack_positions,
-    _marginal_supported,
-    _normalize_pauli_product,
-    _validate_pauli_state,
-    _pauli_expectation_reference,
-    _pauli_supported,
-    _launch_forward,
-    _launch_backward,
-    _StatevectorProbabilities,
-    _launch_marginal_forward,
-    _launch_marginal_backward,
-    _StatevectorMarginalProbabilities,
-    _launch_pauli_forward,
-    _launch_pauli_backward,
-    _StatevectorPauliExpectation,
-    statevector_probabilities,
-    statevector_marginal_probabilities,
-    statevector_pauli_expectation,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_measurement"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_measurement", __name__)

@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 _BUNDLE_SCHEMA = "flagquantum.research_capability_evidence_bundle.v1"
 _BUNDLE_FIELDS = frozenset(
     {
@@ -104,11 +102,3 @@ def _evidence_shape_error(payload: Mapping[str, Any]) -> tuple[str, str] | None:
     if payload["error"] is not None and not isinstance(payload["error"], Mapping):
         return ("INVALID_EVIDENCE_ERROR", "evidence error must be null or a mapping")
     return None
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (_evidence_shape_error,):
-    _identity_export.__module__ = "flagquantum.services.research_evidence_shape"
-del _identity_export
-
-_alias_module("flagquantum.services.research_evidence_shape", __name__)

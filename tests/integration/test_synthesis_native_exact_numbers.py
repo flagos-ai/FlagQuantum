@@ -23,7 +23,7 @@ from flagquantum.compiler._construction.verification.register_profile import (
 from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition
-from tools.synthesis_catalog import load_catalog
+from tools.docs.synthesis_catalog import load_catalog
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

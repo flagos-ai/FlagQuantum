@@ -10,8 +10,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -455,23 +453,3 @@ def fused_complex_bmm(left: torch.Tensor, right: torch.Tensor) -> torch.Tensor:
 
 
 __all__ = ["fused_complex_bmm", "fused_complex_layout_bmm"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _BMMContext,
-    _LayoutBMMContext,
-    _flattened_offset,
-    _complex_layout_bmm_kernel,
-    _complex_bmm_kernel,
-    _launch,
-    _launch_layout,
-    _FusedComplexLayoutBMM,
-    fused_complex_layout_bmm,
-    _FusedComplexBMM,
-    fused_complex_bmm,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.complex_bmm"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.complex_bmm", __name__)

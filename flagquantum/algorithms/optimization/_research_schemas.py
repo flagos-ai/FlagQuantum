@@ -7,8 +7,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Literal
-
-from flagquantum._import_compat import alias_module as _alias_module
+from typing import get_type_hints as _class_type_hints
 
 _DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
@@ -449,16 +448,19 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (ResearchSchemaDocument,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _closed,
-    _nullable,
-    _document,
     ResearchSchemaDocument,
-    _entry,
     list_research_schemas,
     describe_research_schema,
 ):
     _identity_export.__module__ = "flagquantum.services.research_schemas"
 del _identity_export
-
-_alias_module("flagquantum.services.research_schemas", __name__)

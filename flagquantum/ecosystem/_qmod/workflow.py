@@ -7,7 +7,6 @@ from typing import Literal
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization._diagonal_objective import (
     DiagonalMetrics,
     DiagonalQaoa,
@@ -103,17 +102,3 @@ def run_qaoa_workflow(
         for name, kind in settings.saved
     }
     return QmodWorkflowResult(result, MappingProxyType(saved))
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    VqeEvaluation,
-    VqeRun,
-    QmodWorkflowResult,
-    _EvaluationLimitError,
-    run_qaoa_workflow,
-):
-    _identity_export.__module__ = "flagquantum.services._qmod_workflow"
-del _identity_export
-
-_alias_module("flagquantum.services._qmod_workflow", __name__)

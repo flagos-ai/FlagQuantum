@@ -1,9 +1,6 @@
 """Compatibility imports for :mod:`flagquantum.compiler.formats.openqasm_import`."""
 
 from .formats.openqasm_import import (
-    _ISSUE_CODES as _ISSUE_CODES,
-)
-from .formats.openqasm_import import (
     SUPPORTED_VERSIONS as SUPPORTED_VERSIONS,
 )
 from .formats.openqasm_import import (

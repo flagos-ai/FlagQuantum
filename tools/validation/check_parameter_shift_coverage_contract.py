@@ -37,6 +37,8 @@ from typing import Any
 
 import torch
 
+from tools.architecture.source_relocations import source_path
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -347,7 +349,7 @@ def contract_errors(contract: Mapping[str, Any], root: Path) -> list[str]:
         if not isinstance(relative, str):
             errors.append(f"{key} must be a path string")
             continue
-        if not (root / relative).is_file():
+        if not (source_path(root, relative)).is_file():
             errors.append(f"{key} {relative!r} does not exist")
 
     protocol = contract.get("protocol", {})
@@ -397,7 +399,8 @@ def contract_errors(contract: Mapping[str, Any], root: Path) -> list[str]:
     measured_literals = {
         name
         for _, name in opcode_literals(
-            (root / contract["implementation"]).read_text(), set(declaration)
+            (source_path(root, contract["implementation"])).read_text(),
+            set(declaration),
         )
     }
     if measured_literals != constant_gates:

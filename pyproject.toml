@@ -208,10 +208,10 @@ before-build = [
 ]
 before-test = "python -m pip install 'torch>=2.14,<2.15'"
 test-requires = ["stim>=1.16,<2"]
-test-sources = ["tools/verify_installed_sparse_blossom.py"]
+test-sources = ["tools/validation/verify_installed_sparse_blossom.py"]
 test-command = [
     "python -c \"import flagquantum as fq; from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); assert fq.Circuit(2).h(0).cx(0, 1).state().shape[-1] == 4\"",
-    "python tools/verify_installed_sparse_blossom.py",
+    "python tools/validation/verify_installed_sparse_blossom.py",
 ]
 
 [tool.cibuildwheel.linux]
@@ -308,7 +308,7 @@ select = [
 # namespace change.
 #
 # RUF036 sorts `None` to the end of a union, and RUF009-adjacent union order
-# appears in public signatures, which `tools/public_api_snapshot.py` pins as
+# appears in public signatures, which `tools/architecture/public_api_snapshot.py` pins as
 # text. Reordering them turns a style fix into an "authorized API signature
 # changed" entry that a reviewer has to wave through.
 #

@@ -3,8 +3,6 @@
 from collections.abc import Callable
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def resolve_catalog_image(
     image: str,
@@ -31,11 +29,3 @@ def resolve_catalog_image(
     if len(matches) != 1:
         raise ValueError("Image was not uniquely resolved in the Jiuding catalog")
     return next(iter(matches.values()))
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (resolve_catalog_image,):
-    _identity_export.__module__ = "flagquantum.remote.compute._jiuding_images"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._jiuding_images", __name__)

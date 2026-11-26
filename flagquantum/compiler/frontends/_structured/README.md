@@ -19,7 +19,7 @@ scenario under `tests/hybrid_compiler`. Run from the repository root:
 
 ```bash
 python -m pytest tests/hybrid_compiler -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Check optimized and unoptimized behavior, including gradients where supported.

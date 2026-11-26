@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.numerics.jax import (
     _jax_apply_matrix,
     _jax_complex_dtype,
@@ -463,6 +462,3 @@ def jax_sharded_statevector_loss(
             signs = 1.0 - 2.0 * bit.astype(probabilities.real.dtype)
             total = total + jnp.sum(probabilities * signs.reshape(1, -1))
     return jnp.real(total)
-
-
-_alias_module("flagquantum.simulation.jax.statevector.kernels", __name__)

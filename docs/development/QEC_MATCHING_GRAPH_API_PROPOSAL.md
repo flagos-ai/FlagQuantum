@@ -196,7 +196,7 @@ leaking. Do not route old methods through new signed-domain result validation.
    unchanged old contract coverage; no ignore/threshold relaxation.
 9. tests/unit/test_qec_installed_profiles.py: core absence, pure boundary and
    profile-source integration; preserve original skip predicates.
-10. tools/qec_installed_smoke.py: real PyMatching/both wheel and sdist route,
+10. tools/release/qec_installed_smoke.py: real PyMatching/both wheel and sdist route,
     preserving all earlier sample/report/output cells present on actual main.
 11. examples/qec/check_matrix_matching.py (new): executable ten-minute user path.
 12. docs/development/QEC_MATCHING_GRAPH_API_PROPOSAL.md (new): reviewed contract,

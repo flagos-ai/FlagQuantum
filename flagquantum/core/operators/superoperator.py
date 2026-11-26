@@ -61,8 +61,6 @@ from typing import Any, Protocol
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 __all__ = ("DEFAULT_DENSE_MATRIX_BYTES", "SuperOperator")
 
 DEFAULT_DENSE_MATRIX_BYTES = 16 * 1024 * 1024
@@ -1107,19 +1105,6 @@ class SuperOperator:
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    OperatorFactor,
-    _factor_dtype,
-    _factor_dimension,
-    _dense_matrix,
-    _factor_adjoint,
-    _coefficient,
-    _basis_entry,
-    _choi_eigenvalues,
-    _same_factor,
-    SuperOperator,
-):
+for _identity_export in (OperatorFactor, SuperOperator):
     _identity_export.__module__ = "flagquantum.operators.superoperator"
 del _identity_export
-
-_alias_module("flagquantum.operators.superoperator", __name__)

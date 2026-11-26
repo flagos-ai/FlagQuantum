@@ -1,6 +1,6 @@
 {
   "baseline": "7278efd00f6768fbbacff6a41eb4dec57a59783e",
-  "pr1084_head": "8b1aca5be01cfd15ace0cb831221c8f03a48dbba",
+  "pr1084_head": "9b1a8cd196f9d8b8427b382c404f66705cc57840",
   "moves": [
     {
       "group": "compute",
@@ -26,7 +26,20 @@
         "PlatformUnavailableError",
         "_frozen_metadata"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "MemorySnapshot",
+        "PlatformActivationError",
+        "PlatformDevice",
+        "PlatformError",
+        "PlatformIdentity",
+        "PlatformRuntime",
+        "PlatformUnavailableError"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_frozen_metadata"
+      ]
     },
     {
       "group": "compute",
@@ -38,7 +51,9 @@
         "list_platform_status",
         "resolve_platform_device"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "compute",
@@ -56,7 +71,9 @@
         "_minimum_known",
         "_sysconf_bytes"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "compute",
@@ -65,7 +82,9 @@
       "symbols": [
         "FlagOSPlatformRuntime"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "compute",
@@ -95,7 +114,9 @@
         "plan_operator_replacements",
         "validate_flaggems_ops"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "compute",
@@ -112,7 +133,9 @@
         "cpu_platform_to_target_capability_snapshot",
         "probe_local_cpu_target_capabilities"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "compute",
@@ -122,7 +145,9 @@
         "_timestamp",
         "cuda_statevector_capability_snapshot"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -136,14 +161,18 @@
         "require_flagtree_tle_primitive",
         "unpack_complex64_control_one_tle"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
       "old": "flagquantum/kernels/__init__.py",
       "new": "flagquantum/simulation/kernels/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -152,7 +181,9 @@
       "symbols": [
         "triton_compiler_provenance"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -161,14 +192,18 @@
       "symbols": [
         "_semantic"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
       "old": "flagquantum/kernels/catalog/__init__.py",
       "new": "flagquantum/simulation/kernels/catalog/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -184,7 +219,9 @@
         "_mismatch",
         "match_kernel_implementations"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -194,7 +231,9 @@
         "_flagtree",
         "_triton"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -203,7 +242,9 @@
       "symbols": [
         "_evidence"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -214,7 +255,9 @@
         "KernelImplementation",
         "KernelSemantic"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -226,7 +269,9 @@
         "_require_unique",
         "validate_catalog"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -238,7 +283,9 @@
         "_rxx_ryy_rzz_tangent_kernel",
         "repeated_rxx_ryy_rzz_tangents"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -248,7 +295,9 @@
         "_complex64_local_pauli_rotation_kernel",
         "apply_complex64_local_pauli_rotation_2q"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -260,7 +309,9 @@
         "_two_qubit_forward_tangent_kernel",
         "heisenberg_hva_forward_tangents"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -274,7 +325,9 @@
         "_validate",
         "fused_mps_hermitian_observable_adjoint"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -287,7 +340,9 @@
         "backward",
         "forward"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -297,7 +352,9 @@
         "_complex64_local_reversible_3q_kernel",
         "apply_complex64_local_reversible_3q"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -307,7 +364,9 @@
         "_complex64_local_diagonal_kernel",
         "apply_complex64_local_diagonal"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -321,7 +380,9 @@
         "_validate",
         "fused_mps_qubit_probabilities"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -335,7 +396,9 @@
         "_reference",
         "fused_mps_one_site"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -344,7 +407,9 @@
       "symbols": [
         "__getattr__"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -358,7 +423,9 @@
         "_validate",
         "fused_mps_sampling_collapse"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -376,7 +443,9 @@
         "repeated_rx_rz",
         "repeated_rx_rz_tangents"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -391,7 +460,9 @@
         "fused_mps_range_projection",
         "fused_mps_two_site"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -404,7 +475,9 @@
         "fused_complex64_local_1q_vjp_adjoint",
         "fused_complex64_sharded_1q_vjp_adjoint"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -442,7 +515,9 @@
         "single_qubit_matrix",
         "unpack_complex64_control_one"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -461,7 +536,9 @@
         "fused_complex_bmm",
         "fused_complex_layout_bmm"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -481,7 +558,9 @@
         "fused_mps_environment_channels",
         "fused_mps_environment_transfer"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -522,7 +601,9 @@
         "statevector_pauli_expectation",
         "statevector_probabilities"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -533,7 +614,9 @@
         "_swap_source_bit_positions",
         "apply_complex64_local_swap_sequence"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -543,7 +626,9 @@
         "_cx",
         "apply_cx"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -554,21 +639,27 @@
         "autotune",
         "jit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
       "old": "flagquantum/kernels/triton/extensions/__init__.py",
       "new": "flagquantum/simulation/kernels/triton/extensions/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
       "old": "flagquantum/kernels/triton/extensions/tle/__init__.py",
       "new": "flagquantum/simulation/kernels/triton/extensions/tle/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -580,7 +671,9 @@
         "launch_complex64_control_one_pack_tle",
         "launch_complex64_control_one_unpack_tle"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -590,7 +683,9 @@
         "_complex64_sharded_1q_vjp_adjoint_tle_kernel",
         "launch_complex64_sharded_1q_vjp_adjoint_tle"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
@@ -602,12 +697,16 @@
         "launch_complex64_local_1q_tle",
         "launch_complex64_transpose_1q_tle"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "kernels",
       "old": "flagquantum/kernels/README.md",
-      "new": "flagquantum/simulation/kernels/README.md"
+      "new": "flagquantum/simulation/kernels/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -623,14 +722,20 @@
         "request_digest",
         "resume_or_submit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
       "old": "flagquantum/remote/__init__.py",
       "new": "flagquantum/compute/remote/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "remote",
@@ -648,7 +753,22 @@
         "submit",
         "submit_to_targets"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "MultiTargetSubmission",
+        "RemoteJob",
+        "TargetSubmission",
+        "restore_job",
+        "submit",
+        "submit_to_targets"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_Receipt",
+        "_normalize",
+        "_prepare_quafu_package",
+        "_submit_quafu"
+      ]
     },
     {
       "group": "remote",
@@ -663,7 +783,9 @@
         "submit_collection",
         "validate_context"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -674,7 +796,19 @@
         "_iqm_outcome",
         "iqm_backend_profile"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "IQMProvider",
+        "iqm_backend_profile"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_CONNECTIVITY_NAMES",
+        "_DEVICE_TYPE_NAMES",
+        "_IQM_STATUS",
+        "_SIMULATOR_TYPES",
+        "_iqm_outcome"
+      ]
     },
     {
       "group": "remote",
@@ -688,7 +822,9 @@
         "_routing_blockers",
         "_snapshot_fact"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -705,7 +841,9 @@
         "validate_azure_output",
         "validate_quafu_output"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -719,7 +857,22 @@
         "_submission_options",
         "_validate_quafu_shots"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "QuafuProvider"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MAX_SHOTS",
+        "_QREG_DECLARATION",
+        "_QUBIT_REFERENCE",
+        "_SDK_PROTOCOL",
+        "_is_simulator_target",
+        "_quafu_backend_name",
+        "_service_options",
+        "_submission_options",
+        "_validate_quafu_shots"
+      ]
     },
     {
       "group": "remote",
@@ -731,7 +884,9 @@
         "_qubit_index",
         "qsteed_chip_info"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -747,14 +902,32 @@
         "_probabilities_to_counts",
         "azure_backend_profile"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AzureQuantumProvider",
+        "AzureSubmissionPreview",
+        "azure_backend_profile"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_BIT",
+        "_attribute",
+        "_azure_counts",
+        "_bitstring",
+        "_job_id",
+        "_probabilities_to_counts"
+      ]
     },
     {
       "group": "remote",
       "old": "flagquantum/remote/qpu/__init__.py",
       "new": "flagquantum/compute/remote/qpu/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "remote",
@@ -770,7 +943,9 @@
         "declared_width",
         "edge_pair"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -783,7 +958,19 @@
         "_quantinuum_outcome",
         "quantinuum_backend_profile"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "QuantinuumProvider",
+        "quantinuum_backend_profile"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_QUANTINUUM_STATUS",
+        "_SIMULATOR_MARKERS",
+        "_language",
+        "_quantinuum_counts",
+        "_quantinuum_outcome"
+      ]
     },
     {
       "group": "remote",
@@ -794,7 +981,9 @@
         "prepare_physical_qasm",
         "validate_physical_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -811,7 +1000,9 @@
         "_text",
         "_timestamp"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -822,7 +1013,9 @@
         "_normalize_quafu_dynamic_mock_result",
         "_submit_quafu_dynamic_once"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -835,7 +1028,8 @@
         "QuantumCloudTransport",
         "UrllibTransport"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "remote",
@@ -849,7 +1043,9 @@
         "_raise_sdk_failure",
         "_submission_api_key"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -865,7 +1061,8 @@
         "preflight_submission",
         "validate_deployment_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "remote",
@@ -885,7 +1082,9 @@
         "_tally_outcomes",
         "_unwrap_result_envelope"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -897,7 +1096,19 @@
         "_program_format",
         "ionq_backend_profile"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "IonQProvider",
+        "ionq_backend_profile"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_CONNECTIVITY_NAMES",
+        "_IONQ_STATUS",
+        "_SIMULATOR_MARKERS",
+        "_ionq_outcome",
+        "_program_format"
+      ]
     },
     {
       "group": "remote",
@@ -907,7 +1118,14 @@
         "_captured_at",
         "quafu_noise_model_from_chip_info"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "quafu_noise_model_from_chip_info"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_captured_at"
+      ]
     },
     {
       "group": "remote",
@@ -922,7 +1140,19 @@
         "_property_value",
         "braket_backend_profile"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AmazonBraketProvider",
+        "BraketSubmissionPreview",
+        "braket_backend_profile"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_braket_coupling_map",
+        "_braket_dynamic_groups",
+        "_first_property",
+        "_property_value"
+      ]
     },
     {
       "group": "remote",
@@ -939,7 +1169,21 @@
         "_preflight_kaiwu_sdk",
         "initialize_kaiwu_license"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KaiwuLicenseInitializationError",
+        "KaiwuSDKEnvironment",
+        "KaiwuSDKError",
+        "KaiwuSDKUnavailableError",
+        "KaiwuSDKVersionError",
+        "initialize_kaiwu_license"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_initialize_preflighted_kaiwu_license",
+        "_load_kaiwu_module",
+        "_preflight_kaiwu_sdk"
+      ]
     },
     {
       "group": "remote",
@@ -950,7 +1194,9 @@
         "_normalize_pair",
         "resolve_kaiwu_credentials"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "private credentials path removed; public namespace retained; credentials explicitly reject serialization"
     },
     {
       "group": "remote",
@@ -959,14 +1205,30 @@
       "symbols": [
         "KaiwuSDKClient"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KaiwuSDKClient"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MAX_SCHEMA_DIMENSIONS",
+        "_MAX_SCHEMA_FIELDS",
+        "_MAX_SCHEMA_SEQUENCE_TYPES",
+        "_PINNED_1_3_1_TASK_MODES",
+        "_PINNED_SDK_VERSION",
+        "_SAFE_SCHEMA_NAME"
+      ]
     },
     {
       "group": "remote",
       "old": "flagquantum/remote/kaiwu/__init__.py",
       "new": "flagquantum/compute/remote/kaiwu/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "remote",
@@ -993,7 +1255,34 @@
         "restore_kaiwu_job",
         "submit_kaiwu_task"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KaiwuRemoteJob",
+        "new_receipt",
+        "restore_kaiwu_job",
+        "submit_kaiwu_task"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MAX_PRIVATE_JSON_BYTES",
+        "_MAX_RECEIPT_CLOCK_SKEW",
+        "_PRIVATE_JSON_READ_CHUNK_BYTES",
+        "_effective_uid",
+        "_freeze_matrix",
+        "_matrix_sha256",
+        "_normalize_status",
+        "_open_private_directory",
+        "_read_bounded_bytes",
+        "_read_private_json",
+        "_recompute_energy",
+        "_reject_duplicate_json_keys",
+        "_reject_nonfinite_json_constant",
+        "_validate_private_directory",
+        "_validate_receipt",
+        "_validate_result",
+        "_verify_open_directory_binding",
+        "_write_private_json_exclusive"
+      ]
     },
     {
       "group": "remote",
@@ -1004,7 +1293,8 @@
         "KaiwuTaskReceipt",
         "KaiwuTaskResult"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "remote",
@@ -1018,7 +1308,9 @@
         "_private_images",
         "discover_resources"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1027,7 +1319,9 @@
       "symbols": [
         "resolve_catalog_image"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1036,7 +1330,9 @@
       "symbols": [
         "experiment_body"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1047,7 +1343,9 @@
         "execute_request",
         "write_program_bundle"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1064,7 +1362,9 @@
         "serve",
         "write_message"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1075,7 +1375,9 @@
         "decode_tensor",
         "measurement_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1084,7 +1386,9 @@
       "symbols": [
         "execute_jiuding"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1094,7 +1398,9 @@
         "_ProgramSubmissionMixin",
         "decode_job_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1105,14 +1411,20 @@
         "_response",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
       "old": "flagquantum/remote/compute/__init__.py",
       "new": "flagquantum/compute/remote/compute/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "remote",
@@ -1124,7 +1436,9 @@
         "load_jiuding_credentials",
         "resolve_jiuding_credentials"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "private credentials path removed; public namespace retained; credentials explicitly reject serialization"
     },
     {
       "group": "remote",
@@ -1136,7 +1450,9 @@
         "_decode_lines",
         "_one"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1146,7 +1462,9 @@
         "select_workspace",
         "summarize_workspaces"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1163,7 +1481,9 @@
         "restore_managed_receipt",
         "submit_managed_program"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1173,7 +1493,9 @@
         "read_job_result",
         "save_receipt"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1184,7 +1506,17 @@
         "_NoRedirect",
         "_measurement_program"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "JiudingClient"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MAX_BATCH_ITEMS",
+        "_NoRedirect",
+        "_SUPPORTED_RESIDENT_MEASUREMENTS",
+        "_measurement_program"
+      ]
     },
     {
       "group": "remote",
@@ -1193,7 +1525,9 @@
       "symbols": [
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "remote",
@@ -1208,7 +1542,19 @@
         "RealtimeHandlerError",
         "_as_results"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "DeviceCallService",
+        "DeviceCallSession",
+        "FunctionEntry",
+        "FunctionTableService",
+        "FunctionTableSession",
+        "RealtimeHandlerError"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_as_results"
+      ]
     },
     {
       "group": "remote",
@@ -1227,7 +1573,28 @@
         "read_request",
         "read_response"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "RPCHeader",
+        "RPCResponse",
+        "RealtimeCallError",
+        "RealtimeProtocolError",
+        "frame_request",
+        "frame_response",
+        "function_id",
+        "read_request",
+        "read_response"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_FNV_MASK",
+        "_FNV_OFFSET_BASIS",
+        "_FNV_PRIME",
+        "_REQUEST",
+        "_RESPONSE",
+        "_require_room",
+        "_require_slot_size"
+      ]
     },
     {
       "group": "remote",
@@ -1236,14 +1603,19 @@
       "symbols": [
         "RealtimeSession"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "remote",
       "old": "flagquantum/realtime/__init__.py",
       "new": "flagquantum/compute/realtime/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "remote",
@@ -1264,7 +1636,32 @@
         "encode_arguments",
         "encode_results"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "HandlerSchema",
+        "PayloadType",
+        "TypeDescriptor",
+        "decode_arguments",
+        "decode_results",
+        "encode_arguments",
+        "encode_results"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_ELEMENT_FORMAT",
+        "_ELEMENT_WIDTH",
+        "_SCALAR_STRUCT",
+        "_SCALAR_WIDTH",
+        "_SCHEMA_HEADER",
+        "_SCHEMA_HEADER_SIZE",
+        "_TYPE_DESCRIPTOR",
+        "_decode",
+        "_decode_one",
+        "_encode",
+        "_encode_array",
+        "_encode_one",
+        "_encode_scalar"
+      ]
     },
     {
       "group": "remote",
@@ -1278,7 +1675,8 @@
         "RingTransport",
         "loopback_channel"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "remote",
@@ -1307,7 +1705,38 @@
         "emulate",
         "emulate_declared_target"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "EmulatedExecutionRecord",
+        "LocalTargetEmulation",
+        "TargetCompilationDiagnostic",
+        "TargetEmulationError",
+        "emulate",
+        "emulate_declared_target"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_APPROXIMATE_REPRESENTATION",
+        "_EMULATED_DEFAULT_MAXIMUM_OPERATIONS",
+        "_EMULATED_DEFAULT_MAXIMUM_SHOTS",
+        "_EMULATED_RESULT_FORMATS",
+        "_SUPPORTED_REQUEST_KINDS",
+        "_declaration_digest",
+        "_declared_emission_profile",
+        "_declared_limits",
+        "_declared_native_gates",
+        "_declared_target_profile",
+        "_execute",
+        "_local_counts",
+        "_prepare_program",
+        "_record_payload",
+        "_requested_kind",
+        "_require_declared_request_kinds",
+        "_require_profile_coverage",
+        "_select_declared_device",
+        "_select_emission_profile",
+        "_target_snapshot"
+      ]
     },
     {
       "group": "remote",
@@ -1353,7 +1782,20 @@
         "evolve_density_matrix",
         "plan_density_matrix_evolution"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "EvolutionPlan",
+        "EvolutionResult",
+        "amplitude_damping",
+        "evolve_density_matrix",
+        "plan_density_matrix_evolution"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_complex_tensor_to_json",
+        "_evolve_density_matrix",
+        "_plan_density_matrix_evolution"
+      ]
     },
     {
       "group": "dynamics",
@@ -1363,7 +1805,14 @@
         "_adjoint_gradient",
         "adjoint_gradient"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "adjoint_gradient"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_adjoint_gradient"
+      ]
     },
     {
       "group": "dynamics",
@@ -1378,7 +1827,9 @@
         "integrator_order",
         "substeps_per_interval"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "dynamics",
@@ -1417,7 +1868,43 @@
         "_solve_tolerance",
         "_statevectors_to_density"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "CollapseOperator",
+        "EvolutionValidationError"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_as_complex_matrix",
+        "_dense_operator_terms",
+        "_descriptor_matrix",
+        "_descriptor_pauli",
+        "_error",
+        "_hamiltonian_terms",
+        "_named_operator",
+        "_normalize_collapse_operators",
+        "_normalize_collapse_terms",
+        "_normalize_hamiltonian",
+        "_normalize_hamiltonians",
+        "_normalize_initial_state",
+        "_normalize_observables",
+        "_normalize_parameter_mapping",
+        "_normalize_times",
+        "_observable_matrix",
+        "_observable_terms",
+        "_pauli_operator",
+        "_pauli_term",
+        "_pauli_term_wires",
+        "_require_density_matrices",
+        "_require_gradients_flag",
+        "_require_hermitian_terms",
+        "_require_qubit_space",
+        "_resolve_batch_size",
+        "_resolve_state_space",
+        "_solve_max_iterations",
+        "_solve_tolerance",
+        "_statevectors_to_density"
+      ]
     },
     {
       "group": "dynamics",
@@ -1426,7 +1913,9 @@
       "symbols": [
         "Liouvillian"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1449,7 +1938,8 @@
       "symbols": [
         "Module"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "runtime",
@@ -1483,7 +1973,40 @@
         "save_training_checkpoint",
         "seed_everything"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "NonFiniteTrainingError",
+        "PrecisionPolicy",
+        "PrecisionPolicyError",
+        "SeedContract",
+        "TopologyMismatchError",
+        "TrainingCheckpointRestore",
+        "TrainingStateError",
+        "assert_finite_training",
+        "load_training_checkpoint",
+        "save_training_checkpoint",
+        "seed_everything"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_CAPTURED_TRAINING_STATE_VERSION",
+        "_LEGACY_TRAINING_STATE_VERSION",
+        "_captured_workload_signature",
+        "_current_workload_signature",
+        "_has_custom_checkpoint_methods",
+        "_load_training_checkpoint_payload",
+        "_optimizer_contract",
+        "_parameter_training",
+        "_quantum_owner",
+        "_restore_rng",
+        "_restore_training_checkpoint",
+        "_rng_state",
+        "_topology",
+        "_validate_checkpoint_target",
+        "_validate_parameter_training",
+        "_validate_training_checkpoint",
+        "_workload_signature"
+      ]
     },
     {
       "group": "runtime",
@@ -1507,7 +2030,9 @@
         "_training_signature",
         "_training_value"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1518,7 +2043,8 @@
         "MeasurementResult",
         "normalize_execution_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "runtime",
@@ -1528,7 +2054,9 @@
         "LiveRuntimeSummary",
         "_module_execution_result"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1538,7 +2066,9 @@
         "mps_marginal",
         "native_mps"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1547,7 +2077,9 @@
       "symbols": [
         "record_execution"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1561,7 +2093,9 @@
         "training_case_from_dict",
         "training_run_from_dict"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1575,7 +2109,9 @@
         "scale_case_from_dict",
         "scale_run_from_dict"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "runtime",
@@ -1592,7 +2128,9 @@
         "build_flagos_statevector_capacity_profile",
         "json_key"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "core",
@@ -1616,7 +2154,29 @@
         "parameter_shift_rule",
         "power_operator"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "GateInfo",
+        "OperatorSchema",
+        "canonical_opcode",
+        "control_ladder_level",
+        "gate_info",
+        "get_operator_schema",
+        "inverse_operator",
+        "operator_manifest",
+        "parameter_shift_rule",
+        "power_operator"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_SCHEMAS",
+        "_channel",
+        "_control_partner_errors",
+        "_negate_angle",
+        "_scale_angle",
+        "_shift_angle",
+        "_unitary"
+      ]
     },
     {
       "group": "core",
@@ -1629,7 +2189,9 @@
         "pauli",
         "scalar"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "core",
@@ -1638,7 +2200,15 @@
       "symbols": [
         "OperatorRegistry"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "OperatorRegistry"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_install_circuit_methods",
+        "_spelling_surface"
+      ]
     },
     {
       "group": "core",
@@ -1656,7 +2226,25 @@
         "_factor_dtype",
         "_same_factor"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "OperatorFactor",
+        "SuperOperator"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_BASIS_TOLERANCE_IN_EPSILON",
+        "_CHOI_TOLERANCE_IN_EPSILON",
+        "_Term",
+        "_basis_entry",
+        "_choi_eigenvalues",
+        "_coefficient",
+        "_dense_matrix",
+        "_factor_adjoint",
+        "_factor_dimension",
+        "_factor_dtype",
+        "_same_factor"
+      ]
     },
     {
       "group": "core",
@@ -1682,7 +2270,31 @@
         "two_qubit_depolarizing_channel",
         "y_flip_channel"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KrausChannel",
+        "UnitaryMixture",
+        "amplitude_damping_channel",
+        "bit_flip_channel",
+        "channel_from_parameters",
+        "coherent_overrotation_channel",
+        "depolarizing_channel",
+        "phase_damping_channel",
+        "phase_flip_channel",
+        "reset_error_channel",
+        "thermal_relaxation_channel",
+        "two_qubit_depolarizing_channel",
+        "y_flip_channel"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_UNITARY_TOLERANCE",
+        "_as_probability",
+        "_complex_dtype",
+        "_pauli_basis",
+        "_real_dtype",
+        "_scaled_unitary"
+      ]
     },
     {
       "group": "core",
@@ -1696,7 +2308,18 @@
         "ReadoutRule",
         "_decode_readout_error"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "CorrelatedReadoutError",
+        "NoiseModel",
+        "NoiseRule",
+        "ReadoutError",
+        "ReadoutRule"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_decode_readout_error"
+      ]
     },
     {
       "group": "core",
@@ -1707,7 +2330,8 @@
         "GateDuration",
         "QubitNoiseCalibration"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "core",
@@ -1728,7 +2352,34 @@
         "_required_qubit",
         "_selected_qubit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "I",
+        "Observable",
+        "X",
+        "Y",
+        "Z",
+        "_PauliTerm",
+        "__getattr__"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_FERMION_EXPORTS",
+        "_PauliTerm",
+        "_SUBMODULES",
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_DEFAULT_MAX_PAULI_SAMPLE_WIRES",
+        "_optional_qubits",
+        "_pauli",
+        "_qubit",
+        "_qubits",
+        "_real_scalar",
+        "_required_qubit",
+        "_sampled_pauli_term",
+        "_selected_qubit",
+        "_selection_alias"
+      ]
     },
     {
       "group": "core",
@@ -1756,7 +2407,38 @@
         "number",
         "parity_encoding"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "FermionOperator",
+        "FermionTerm",
+        "annihilate",
+        "create",
+        "jordan_wigner",
+        "number",
+        "parity_encoding"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_ANNIHILATION_IMAGE",
+        "_CREATION_IMAGE",
+        "_IMAGINARY_TOLERANCE",
+        "_Monomial",
+        "_PAULI_PRODUCT",
+        "_PauliSum",
+        "_canonical_terms",
+        "_complex_scalar",
+        "_compose",
+        "_degree",
+        "_degrees",
+        "_factor_sequence",
+        "_first_defect",
+        "_image_of",
+        "_jordan_wigner_factor",
+        "_merge_pauli",
+        "_multiply_pauli",
+        "_order_key",
+        "_parity_factor"
+      ]
     },
     {
       "group": "core",
@@ -1783,7 +2465,35 @@
         "number",
         "position"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "BosonOperator",
+        "BosonTerm",
+        "annihilate",
+        "create",
+        "identity",
+        "momentum",
+        "number",
+        "position"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_TRUNCATION_DIMENSION",
+        "_Factor",
+        "_Monomial",
+        "_MonomialKey",
+        "_canonical_terms",
+        "_complex_scalar",
+        "_compose",
+        "_degree",
+        "_degrees",
+        "_factor_sequence",
+        "_first_defect",
+        "_ladder_matrices",
+        "_levels",
+        "_term_matrix",
+        "_truncation"
+      ]
     },
     {
       "group": "core",
@@ -1815,7 +2525,35 @@
         "samples",
         "vn_entropy"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "OutputRequest",
+        "counts",
+        "density_matrix",
+        "expectation",
+        "lower_outputs",
+        "probabilities",
+        "samples",
+        "vn_entropy"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_FERMION_EXPORTS",
+        "_PauliTerm",
+        "_SUBMODULES",
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_DEFAULT_MAX_PAULI_SAMPLE_WIRES",
+        "_optional_qubits",
+        "_pauli",
+        "_qubit",
+        "_qubits",
+        "_real_scalar",
+        "_required_qubit",
+        "_sampled_pauli_term",
+        "_selected_qubit",
+        "_selection_alias"
+      ]
     },
     {
       "group": "core",
@@ -1831,7 +2569,15 @@
         "_spelling_surface",
         "register_operator"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "register_operator"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_install_circuit_methods",
+        "_spelling_surface"
+      ]
     },
     {
       "group": "core",
@@ -1852,7 +2598,13 @@
         "_validate_qubits",
         "expand_operator"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [
+        "_basis_bits",
+        "_bits_to_index",
+        "_complex_dtype"
+      ],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
     {
       "group": "core",
@@ -1865,7 +2617,9 @@
       "symbols": [
         "log_base_divisor"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
     {
       "group": "evolution",
@@ -1880,7 +2634,23 @@
         "plan",
         "run"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "adjoint_gradient",
+        "amplitude_damping",
+        "plan",
+        "run"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_MISSING",
+        "_execution_settings",
+        "_infer_n_qubits",
+        "_observables"
+      ]
     },
     {
       "group": "evolution",
@@ -1898,7 +2668,21 @@
         "_summary",
         "build_lindblad_plan"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "LindbladPlan"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_canonical_json",
+        "_complex_tensor",
+        "_complex_tensor_payload",
+        "_decode_request",
+        "_identity",
+        "_request_hamiltonian_matrix",
+        "_serialized_basis_labels",
+        "_summary"
+      ]
     },
     {
       "group": "evolution",
@@ -1910,7 +2694,9 @@
         "native_request",
         "validate_native_plan"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "evolution",
@@ -1925,7 +2711,9 @@
         "DiagonalMetrics",
         "DiagonalQaoa"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "algorithms",
@@ -1943,7 +2731,25 @@
         "maximum_likelihood_estimate",
         "run_amplitude_estimation"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AmplitudeEstimationResult",
+        "amplitude_estimation_circuit",
+        "amplitude_resolution",
+        "maximum_likelihood_estimate",
+        "run_amplitude_estimation"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_GroverOperator",
+        "_LIKELIHOOD_FLOOR",
+        "_amplitude_grid",
+        "_counting_probability",
+        "_resonant_term",
+        "_validate_counting_width"
+      ]
     },
     {
       "group": "algorithms",
@@ -1955,7 +2761,17 @@
         "adder_circuit",
         "adder_qubits"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AdderQubits",
+        "adder_circuit",
+        "adder_qubits"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MINIMUM_BITS",
+        "_require_bit_count"
+      ]
     },
     {
       "group": "algorithms",
@@ -1981,7 +2797,35 @@
         "clifford_variants",
         "run_cdr"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "CdrResult",
+        "CliffordFit",
+        "CliffordTrainingPoint",
+        "CliffordVariant",
+        "clifford_variants",
+        "run_cdr"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_MAXIMUM_TRAINING_POINTS",
+        "_MINIMUM_TRAINING_POINTS",
+        "_QUARTER_TURN",
+        "_QUARTER_TURN_WORDS",
+        "_SEPARATION_TOLERANCE",
+        "_Site",
+        "_angle_of",
+        "_as_variant_irs",
+        "_expectation",
+        "_finite_floats",
+        "_fit",
+        "_lowered",
+        "_plan_sites",
+        "_require_no_readout",
+        "_require_no_request",
+        "_require_rewritten_names_survive",
+        "_snapped"
+      ]
     },
     {
       "group": "algorithms",
@@ -2043,7 +2887,38 @@
         "_triple",
         "molecular_integrals"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AtomicOrbital",
+        "MolecularGeometry",
+        "MolecularIntegrals",
+        "molecular_integrals"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_ERI_SYMMETRY",
+        "_P_ANGULAR",
+        "_Pair",
+        "_STO3G",
+        "_S_ANGULAR",
+        "_atomic_orbitals",
+        "_boys",
+        "_differentiate",
+        "_dot",
+        "_double_factorial",
+        "_electron_repulsion",
+        "_evaluate",
+        "_hermite_e",
+        "_kinetic",
+        "_norm",
+        "_nuclear",
+        "_overlap",
+        "_pair_primitives",
+        "_potential_grid",
+        "_primitive_norm",
+        "_sub",
+        "_triple"
+      ]
     },
     {
       "group": "algorithms",
@@ -2060,7 +2935,23 @@
         "_residual",
         "_trust_region_step"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "CobylaOptimizer",
+        "CobylaResult"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_AffineModel",
+        "_MAX_PIVOTS",
+        "_PIVOT_TOLERANCE",
+        "_finite_positive",
+        "_initial_tableau",
+        "_largest_violation",
+        "_linearized_residual",
+        "_residual",
+        "_trust_region_step"
+      ]
     },
     {
       "group": "algorithms",
@@ -2082,7 +2973,22 @@
         "_normalize_pauli",
         "pauli_term"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "Hamiltonian",
+        "HamiltonianTerm",
+        "pauli_term"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "algorithms",
@@ -2098,7 +3004,22 @@
         "angular_encode",
         "append_angular_encode"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "amplitude_encode",
+        "angular_encode",
+        "append_angular_encode"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_ROTATION",
+        "_ROTATION_GATES",
+        "_amplitude_vector",
+        "_as_tensor",
+        "_resolve_qubits",
+        "_rotation_angles",
+        "_rotation_gate"
+      ]
     },
     {
       "group": "algorithms",
@@ -2136,7 +3057,18 @@
         "_validated_target",
         "feature_selection_qubo"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "FeatureSelectionProblem",
+        "feature_selection_qubo"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_validated_penalty",
+        "_validated_redundancy",
+        "_validated_relevance",
+        "_validated_target"
+      ]
     },
     {
       "group": "algorithms",
@@ -2155,7 +3087,23 @@
         "fold_noise_amplification",
         "fold_program"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "FoldNoiseAmplification",
+        "FoldingPlan",
+        "fold_noise_amplification",
+        "fold_program"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_channel_locations",
+        "_noise_identity",
+        "_pair_count",
+        "_placement_order",
+        "_plan_identity",
+        "_require_scale_factor",
+        "_require_unitary"
+      ]
     },
     {
       "group": "algorithms",
@@ -2171,7 +3119,21 @@
         "optimal_iterations",
         "run_grover"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "GroverResult",
+        "grover_circuit",
+        "optimal_iterations",
+        "run_grover"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_GROVER_QUBIT_LIMIT",
+        "_append_diffusion",
+        "_append_multi_controlled_z",
+        "_validate_register_width",
+        "_validate_search_width"
+      ]
     },
     {
       "group": "algorithms",
@@ -2187,7 +3149,23 @@
         "_strictly_better",
         "kmedians"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KMediansResult",
+        "kmedians"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_CENTROID_WIRE_LIMIT",
+        "_DEFAULT_SHOTS",
+        "_MAX_CENTROIDS",
+        "_centroid_index_width",
+        "_coordinates",
+        "_median_positions",
+        "_nearest_centroid",
+        "_operands",
+        "_strictly_better"
+      ]
     },
     {
       "group": "algorithms",
@@ -2206,7 +3184,26 @@
         "restricted_hartree_fock",
         "second_quantized_hamiltonian"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "HartreeFockSolution",
+        "MolecularHamiltonian",
+        "create_molecular_hamiltonian",
+        "exact_ground_state_energy",
+        "fold_frozen_core",
+        "molecular_orbital_integrals",
+        "restricted_hartree_fock",
+        "second_quantized_hamiltonian"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_SCF_MAX_ITERATIONS",
+        "_SCF_TOLERANCE",
+        "_SPIN_PATTERNS",
+        "_determinant_masks",
+        "_hartree_fock_energy",
+        "_sector_dimension"
+      ]
     },
     {
       "group": "algorithms",
@@ -2217,7 +3214,15 @@
         "NelderMeadResult",
         "_finite_positive"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "NelderMeadOptimizer",
+        "NelderMeadResult"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_finite_positive"
+      ]
     },
     {
       "group": "algorithms",
@@ -2251,7 +3256,20 @@
         "_validate_counting_width",
         "principal_components"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "PcaResult",
+        "principal_components"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_SHOTS",
+        "_PhaseFromDensityMatrix",
+        "_counter_distribution",
+        "_density_matrix",
+        "_pca_circuit",
+        "_validate_counting_width"
+      ]
     },
     {
       "group": "algorithms",
@@ -2270,7 +3288,25 @@
         "pauli_twirl_decomposition",
         "run_pec"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "PauliTwirlDecomposition",
+        "PecLocation",
+        "PecResult",
+        "pauli_twirl_decomposition",
+        "run_pec"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DECOMPOSITION_TOLERANCE",
+        "_MAXIMUM_TERMS",
+        "_commutation_parity",
+        "_corrected",
+        "_declared_channel",
+        "_quasi_probabilities",
+        "_read",
+        "_word_operators"
+      ]
     },
     {
       "group": "algorithms",
@@ -2290,7 +3326,28 @@
         "frequent_itemset_operator",
         "run_frequent_itemset"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "FrequentItemsetOperator",
+        "frequent_itemset_operator",
+        "run_frequent_itemset"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_SHOTS",
+        "_HALF_TURN",
+        "_MAX_ITEM_QUBITS",
+        "_MAX_SUPPORT_QUBITS",
+        "_append_pattern_bracket",
+        "_append_support_match",
+        "_append_support_step",
+        "_ladder_ancillas",
+        "_validated_incidence",
+        "_validated_item_count",
+        "_validated_matrix",
+        "_validated_support_width",
+        "_validated_threshold"
+      ]
     },
     {
       "group": "algorithms",
@@ -2312,7 +3369,29 @@
         "kernel_ridge_regression",
         "quantum_kernel_matrix"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "KernelMatrixResult",
+        "KernelRidgeClassifier",
+        "kernel_ridge_classifier",
+        "kernel_ridge_regression",
+        "quantum_kernel_matrix"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_SHOTS",
+        "_MAX_FEATURES",
+        "_MAX_FEATURE_ANGLE",
+        "_ancilla_share",
+        "_append_feature_state",
+        "_generator",
+        "_kernel_entry",
+        "_swap_test_overlap",
+        "_validated_labels",
+        "_validated_regularization",
+        "_validated_ridge_operands",
+        "_validated_rows"
+      ]
     },
     {
       "group": "algorithms",
@@ -2327,7 +3406,20 @@
         "qubo_energy",
         "qubo_to_ising"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "QuboProblem",
+        "ising_to_qubo",
+        "max_cut_qubo",
+        "qubo_energy",
+        "qubo_to_ising"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_IDENTITY_WIRE",
+        "_constant_wire",
+        "_is_index"
+      ]
     },
     {
       "group": "algorithms",
@@ -2347,7 +3439,24 @@
         "run_readout_mitigation",
         "run_readout_mitigation_counts"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "ReadoutBlock",
+        "ReadoutMitigationPlan",
+        "ReadoutMitigationResult",
+        "plan_readout_mitigation",
+        "run_readout_mitigation",
+        "run_readout_mitigation_counts"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_apply_block",
+        "_build_block",
+        "_check_observed",
+        "_checked_qubits",
+        "_probability_matrix",
+        "_square_matrix"
+      ]
     },
     {
       "group": "algorithms",
@@ -2358,7 +3467,8 @@
         "VQESolver",
         "vqe_objective"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "algorithms",
@@ -2368,7 +3478,16 @@
         "SPSAOptimizer",
         "SPSAResult"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "SPSAOptimizer",
+        "SPSAResult"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_FIRST_STEP",
+        "_STABILITY_FRACTION"
+      ]
     },
     {
       "group": "algorithms",
@@ -2387,7 +3506,25 @@
         "_validated_shots",
         "estimate_singular_values"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "SingularValueResult",
+        "estimate_singular_values"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_SHOTS",
+        "_MAX_DATA_QUBITS",
+        "_PhaseFromEmbedding",
+        "_append_block_encoding",
+        "_counting_distribution",
+        "_embedding_of",
+        "_estimation_circuit",
+        "_input_amplitudes",
+        "_select_unitary",
+        "_validated_counting_width",
+        "_validated_shots"
+      ]
     },
     {
       "group": "algorithms",
@@ -2404,7 +3541,22 @@
         "pauli_exponential_circuit",
         "trotter_circuit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "pauli_exponential_circuit",
+        "trotter_circuit"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_BASIS_CHANGE",
+        "_append_exponential",
+        "_append_term",
+        "_prepare_terms",
+        "_real_coefficient",
+        "_require_order",
+        "_require_steps",
+        "_supported_operators"
+      ]
     },
     {
       "group": "algorithms",
@@ -2418,14 +3570,29 @@
         "maxcut_objective",
         "run_qaoa"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "QAOAResult",
+        "maxcut_hamiltonian",
+        "maxcut_objective",
+        "run_qaoa"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_checked_cut_edges",
+        "_checked_endpoint"
+      ]
     },
     {
       "group": "algorithms",
       "old": "flagquantum/algorithms/chemistry_domain/__init__.py",
       "new": "flagquantum/algorithms/chemistry/models/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_Any",
+        "_import_module"
+      ]
     },
     {
       "group": "algorithms",
@@ -2436,7 +3603,17 @@
         "closed_shell_determinant_energy",
         "rotate_spatial_integrals"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "closed_shell_determinant_energy",
+        "rotate_spatial_integrals"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_real_integral"
+      ]
     },
     {
       "group": "algorithms",
@@ -2446,7 +3623,8 @@
         "ActiveSpaceResult",
         "select_active_space"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "algorithms",
@@ -2457,7 +3635,8 @@
         "fermion_hamiltonian",
         "from_native_molecule"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "algorithms",
@@ -2470,7 +3649,9 @@
         "_deployment_quantum_parameters",
         "_energy_circuit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "algorithms",
@@ -2484,7 +3665,21 @@
         "hardware_efficient_ansatz",
         "hardware_efficient_parameter_count"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "hardware_efficient_ansatz",
+        "hardware_efficient_parameter_count"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "algorithms",
@@ -2498,7 +3693,21 @@
         "heisenberg_hva",
         "heisenberg_hva_parameter_count"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "heisenberg_hva",
+        "heisenberg_hva_parameter_count"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "algorithms",
@@ -2512,7 +3721,21 @@
         "qaoa_circuit",
         "qaoa_loss"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "qaoa_circuit",
+        "qaoa_loss"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "algorithms",
@@ -2544,7 +3767,29 @@
         "run_vqe",
         "vqe_loss"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "AdaptVQEIteration",
+        "AdaptVQEResult",
+        "LayerwiseVQEResult",
+        "OptimizerFactory",
+        "VQEResult",
+        "run_adapt_vqe",
+        "run_hybrid_vqe",
+        "run_layerwise_vqe",
+        "run_vqe",
+        "vqe_loss"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "frontends",
@@ -2558,7 +3803,9 @@
         "substitute_operation",
         "substitute_value"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2571,7 +3818,9 @@
         "PassOutcome",
         "StructuredControlFlowSimplificationPass"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2585,7 +3834,9 @@
         "fold_value",
         "operations"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2594,7 +3845,9 @@
       "symbols": [
         "SpecializationError"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2607,7 +3860,9 @@
         "lower_trace",
         "specialize_and_lower"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2641,14 +3896,18 @@
       "old": "flagquantum/compiler/_hybrid/capture.py",
       "new": "flagquantum/compiler/frontends/_structured/capture.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/dynamic_lowering.py",
       "new": "flagquantum/compiler/frontends/_structured/dynamic_lowering.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2657,7 +3916,9 @@
       "symbols": [
         "OperationSchema"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2668,7 +3929,9 @@
         "inverse_effects",
         "unitary_regions"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2681,7 +3944,9 @@
         "_runtime_device_class",
         "_runtime_shape"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2693,7 +3958,9 @@
         "_Specializer",
         "specialize_program"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2705,7 +3972,9 @@
         "PassRecord",
         "run_pass_pipeline"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2745,14 +4014,18 @@
         "predicate_clauses",
         "same_runtime_value"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/dynamic/__init__.py",
       "new": "flagquantum/compiler/frontends/_structured/dynamic/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2763,7 +4036,9 @@
         "_DynamicLowerer",
         "lower_dynamic_program"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2773,7 +4048,9 @@
         "CaptureDiagnostic",
         "HybridCaptureError"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2791,7 +4068,9 @@
         "require_matching_carry",
         "structured_carried_names"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2814,14 +4093,18 @@
         "static_wires",
         "wires_node"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/frontend/__init__.py",
       "new": "flagquantum/compiler/frontends/_structured/frontend/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2830,7 +4113,9 @@
       "symbols": [
         "_Capture"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2841,7 +4126,9 @@
         "capture_return",
         "parse_observable"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2852,14 +4139,18 @@
         "capture_function",
         "capture_source"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_torch/__init__.py",
       "new": "flagquantum/compiler/frontends/torch/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2871,7 +4162,9 @@
         "_operation",
         "capture_module_builder"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2883,12 +4176,16 @@
         "_safe_objective_capture",
         "compile_training_callable"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/IMPLEMENTATION.md",
-      "new": "flagquantum/compiler/frontends/_structured/IMPLEMENTATION.md"
+      "new": "flagquantum/compiler/frontends/_structured/IMPLEMENTATION.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
@@ -2898,17 +4195,23 @@
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/dynamic/README.md",
-      "new": "flagquantum/compiler/frontends/_structured/dynamic/README.md"
+      "new": "flagquantum/compiler/frontends/_structured/dynamic/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_hybrid/frontend/README.md",
-      "new": "flagquantum/compiler/frontends/_structured/frontend/README.md"
+      "new": "flagquantum/compiler/frontends/_structured/frontend/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "frontends",
       "old": "flagquantum/compiler/_torch/README.md",
-      "new": "flagquantum/compiler/frontends/torch/README.md"
+      "new": "flagquantum/compiler/frontends/torch/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -2924,7 +4227,22 @@
         "_target",
         "synthesize"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "InputState",
+        "Program",
+        "SynthesisError",
+        "UInt",
+        "synthesize"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_DEFAULT_BUDGET",
+        "_LINE_BASIS",
+        "_complete",
+        "_synthesize",
+        "_target"
+      ]
     },
     {
       "group": "services",
@@ -2933,7 +4251,9 @@
       "symbols": [
         "synthesize_registers"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -2944,7 +4264,9 @@
         "_ReadDiagnostics",
         "probabilities"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -2962,7 +4284,9 @@
         "_program",
         "inspect_execution"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -2971,7 +4295,9 @@
       "symbols": [
         "prepare_inputs"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -2984,7 +4310,9 @@
         "_EvaluationLimitError",
         "run_qaoa_workflow"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -3017,7 +4345,45 @@
         "run_ground_state_vqe",
         "validate_ground_state_vqe_request"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "ComplexAmplitude",
+        "ConvergencePoint",
+        "EnergyVarianceReference",
+        "ExactSectorReference",
+        "ExecutionProvenance",
+        "GroundStateAnsatz",
+        "GroundStateOptimizer",
+        "GroundStateResources",
+        "GroundStateVQERequest",
+        "GroundStateVQEResult",
+        "PauliExpectationEvidence",
+        "PauliSum",
+        "PauliSumTerm",
+        "StatevectorEvidence",
+        "UnsupportedCapability",
+        "energy_variance_reference",
+        "exact_sector_reference",
+        "ground_state_vqe_capability",
+        "run_ground_state_vqe",
+        "validate_ground_state_vqe_request"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_ANSATZ_NAME",
+        "_BASIS_CONVENTION",
+        "_OPTIMIZER_NAME",
+        "_REFERENCE_SCHEMA",
+        "_REQUEST_SCHEMA",
+        "_RESULT_SCHEMA",
+        "_TOOL_NAME",
+        "_TOOL_VERSION",
+        "_canonical_digest",
+        "_native_hamiltonian",
+        "_provenance",
+        "_unsupported_reason",
+        "_unsupported_vqe_result"
+      ]
     },
     {
       "group": "services",
@@ -3043,7 +4409,38 @@
         "search_research_capabilities",
         "validate_research_capability_input"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "EnergyVarianceRequest",
+        "ExactGroundStateRequest",
+        "ResearchCapabilityCandidate",
+        "ResearchCapabilityManifest",
+        "ResearchCapabilityQuery",
+        "ResearchResourceEstimate",
+        "ResearchValidationIssue",
+        "ResearchValidationReport",
+        "describe_research_capability",
+        "estimate_research_capability",
+        "search_research_capabilities",
+        "validate_research_capability_input"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_EXACT_ID",
+        "_MANIFESTS",
+        "_MANIFESTS_BY_ID",
+        "_MATURITY_BINDING",
+        "_VARIANCE_ID",
+        "_VQE_ID",
+        "_closed_mapping",
+        "_normalize_research_request",
+        "_normalized_query",
+        "_pauli_sum_from_mapping",
+        "_statevector_from_mapping",
+        "_unsupported_report"
+      ]
     },
     {
       "group": "services",
@@ -3052,7 +4449,9 @@
       "symbols": [
         "_evidence_shape_error"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -3083,7 +4482,43 @@
         "execute_research_capability",
         "validate_research_evidence"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "ResearchCapabilityAttempt",
+        "ResearchCapabilityError",
+        "ResearchCapabilityEvidenceBundle",
+        "ResearchCapabilityRef",
+        "execute_research_capability",
+        "validate_research_evidence"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_CONVERGENCE_TOLERANCE",
+        "_CONVERGENCE_WINDOW",
+        "_EXACT_ID",
+        "_VARIANCE_ID",
+        "_VQE_ID",
+        "_canonical_sha256",
+        "_capability_ref",
+        "_error_from_validation",
+        "_evidence_sha256",
+        "_execute_exact",
+        "_execute_variance",
+        "_execute_vqe",
+        "_finalize_bundle",
+        "_installed_vqe_providers",
+        "_invalid_evidence",
+        "_now",
+        "_portable_evidence_value",
+        "_provenance_base",
+        "_refused_bundle",
+        "_request_sha256",
+        "_route_vqe",
+        "_scientific_report",
+        "_unsigned_payload"
+      ]
     },
     {
       "group": "services",
@@ -3093,7 +4528,10 @@
         "ResearchExecutionOptions",
         "validate_research_execution_options"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ]
     },
     {
       "group": "services",
@@ -3108,7 +4546,9 @@
         "plan_vqe_provider_route",
         "research_vqe_metrics"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "services",
@@ -3123,7 +4563,42 @@
         "describe_research_schema",
         "list_research_schemas"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "ResearchSchemaDocument",
+        "describe_research_schema",
+        "list_research_schemas"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_COMPLEX_AMPLITUDE",
+        "_DIALECT",
+        "_EVIDENCE",
+        "_EXACT_REQUEST",
+        "_EXACT_RESULT",
+        "_EXECUTION",
+        "_ISSUE",
+        "_MANIFEST",
+        "_PAULI_SUM",
+        "_PAULI_TERM",
+        "_PROVIDER_PROVENANCE",
+        "_SCHEMAS",
+        "_SCHEMAS_BY_ID",
+        "_STATEVECTOR",
+        "_STRUCTURED_ERROR",
+        "_UNSUPPORTED",
+        "_VALIDATION_REPORT",
+        "_VARIANCE_REQUEST",
+        "_VARIANCE_RESULT",
+        "_VQE_REQUEST",
+        "_VQE_RESULT",
+        "_closed",
+        "_document",
+        "_entry",
+        "_nullable"
+      ]
     },
     {
       "group": "services",
@@ -3139,7 +4614,20 @@
         "preflight_deployment",
         "preflight_execution"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "DeploymentPreflightReport",
+        "ExecutionPreflightReport",
+        "ValidationIssue",
+        "ValidationReport",
+        "preflight_deployment",
+        "preflight_execution"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_issue",
+        "_validate"
+      ]
     },
     {
       "group": "services",
@@ -3151,7 +4639,17 @@
         "managed_quafu_simulator_device",
         "run_managed_quafu_simulator"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "ManagedSimulatorExecution",
+        "ManagedSimulatorReceipt",
+        "managed_quafu_simulator_device",
+        "run_managed_quafu_simulator"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_QUAFU_MANAGED_SIMULATORS"
+      ]
     },
     {
       "group": "services",
@@ -3163,7 +4661,15 @@
       "symbols": [
         "capabilities"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "capabilities"
+      ],
+      "required_private_annotation_or_payload_globals": [],
+      "retired_private_members": [
+        "_issue",
+        "_validate"
+      ]
     },
     {
       "group": "tools/validation",
@@ -3172,7 +4678,9 @@
       "symbols": [
         "probe_basis_mps"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3183,7 +4691,9 @@
         "_sha256",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3194,7 +4704,9 @@
         "main",
         "write_json_atomic"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3204,7 +4716,9 @@
         "main",
         "probe"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3213,7 +4727,9 @@
       "symbols": [
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -3271,7 +4787,9 @@
         "site_identifier",
         "supersedes"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -3292,7 +4810,9 @@
         "eager_import_cycles",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3305,7 +4825,9 @@
         "main",
         "sdk_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3320,7 +4842,9 @@
         "maturity_errors",
         "validate_claim_measurements"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3343,7 +4867,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3372,7 +4898,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -3384,7 +4912,9 @@
         "parse_coverage",
         "policy_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3396,7 +4926,9 @@
         "main",
         "sdk_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3420,7 +4952,9 @@
         "main",
         "measure"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/docs",
@@ -3435,7 +4969,9 @@
         "repository_files",
         "violations"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3445,7 +4981,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3456,7 +4994,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3473,7 +5013,9 @@
         "main",
         "retention_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3516,7 +5058,9 @@
         "recorded_revisions",
         "revision_field_names"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3549,7 +5093,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3562,7 +5108,9 @@
         "probe_source",
         "sample_imports"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3577,7 +5125,9 @@
         "main",
         "matrix_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -3591,7 +5141,9 @@
         "validate_test_debt",
         "violations_for_text"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3600,7 +5152,9 @@
       "symbols": [
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3648,7 +5202,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3663,7 +5219,9 @@
         "main",
         "readiness_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3696,7 +5254,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3730,7 +5290,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3748,7 +5310,9 @@
         "ir_version_unchanged",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3771,7 +5335,9 @@
         "measure_exactness",
         "opcode_literals"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3815,7 +5381,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3827,7 +5395,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3854,7 +5424,9 @@
         "measure_semantics",
         "measure_surface"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3872,7 +5444,9 @@
         "maturity_entries",
         "qec_matrix_rows"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3884,7 +5458,9 @@
         "_run",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3899,7 +5475,9 @@
         "load_contract",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3911,7 +5489,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -3935,7 +5515,9 @@
         "scan_vocabulary",
         "slice_progress"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -3974,7 +5556,9 @@
         "check_wire",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -3987,7 +5571,9 @@
         "main",
         "readiness_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4001,7 +5587,9 @@
         "tracked_files",
         "violations"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4014,7 +5602,9 @@
         "repository_files",
         "violations"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4026,7 +5616,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4038,7 +5630,9 @@
         "contract_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4049,7 +5643,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4060,7 +5656,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4071,7 +5669,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4082,7 +5682,9 @@
         "load_toml",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4104,7 +5706,9 @@
         "protected_path_errors",
         "scope_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4136,7 +5740,9 @@
         "main",
         "measure"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4147,7 +5753,9 @@
         "verify_plan",
         "write_plan"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4161,7 +5769,9 @@
         "select_distributed_workers",
         "select_workers"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4172,7 +5782,9 @@
         "main",
         "seed_wheel_responses"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4185,7 +5797,9 @@
         "print_tiers",
         "run_commands"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4208,7 +5822,9 @@
         "retained_bytes",
         "stop"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4230,7 +5846,9 @@
         "schedule",
         "summarize"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4246,7 +5864,9 @@
         "main",
         "partition"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4259,7 +5879,9 @@
         "convert",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4269,7 +5891,9 @@
         "main",
         "render"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4280,7 +5904,9 @@
         "build_map",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4298,7 +5924,9 @@
         "_write_json",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/docs",
@@ -4325,7 +5953,9 @@
         "test_node_exists",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4345,7 +5975,9 @@
         "record_of",
         "resolve_optional_baseline"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4359,7 +5991,9 @@
         "revision_resolves",
         "source_revision_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/docs",
@@ -4370,7 +6004,9 @@
         "main",
         "verify_asset"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4387,7 +6023,9 @@
         "collect_failure_identity",
         "unavailable_failure_identity"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4399,7 +6037,9 @@
         "_sha256",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4409,7 +6049,9 @@
         "TelemetrySample",
         "record_sample"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4420,7 +6062,9 @@
         "main",
         "materialize"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4471,7 +6115,9 @@
         "stage",
         "staging_check"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4481,7 +6127,9 @@
         "main",
         "normalize_payload"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4503,7 +6151,9 @@
         "_write_json",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4522,7 +6172,9 @@
         "reference",
         "scalar_branches"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/docs",
@@ -4533,7 +6185,9 @@
         "main",
         "render_manifest"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4553,7 +6207,9 @@
         "version_pin_problems",
         "version_provenance_problems"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4568,7 +6224,9 @@
         "summarize",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4588,7 +6246,9 @@
         "require_base_package",
         "run_base_failures"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4602,7 +6262,9 @@
         "parse_args",
         "run_checks"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4652,7 +6314,9 @@
         "main",
         "probe"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4687,7 +6351,9 @@
         "main",
         "probe"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4733,7 +6399,9 @@
         "main",
         "probe"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4745,7 +6413,9 @@
         "main",
         "probe"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4755,7 +6425,9 @@
         "_load_gate",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/architecture",
@@ -4800,7 +6472,9 @@
         "stable_value",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4817,7 +6491,9 @@
         "pytest_testnodedown",
         "shard_for"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4830,7 +6506,9 @@
         "pytest_runtest_protocol",
         "pytest_unconfigure"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4859,7 +6537,9 @@
         "_sample_cell",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4875,7 +6555,9 @@
         "stop_worker",
         "worker"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4886,7 +6568,9 @@
         "main",
         "run_jobs"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4896,7 +6580,9 @@
         "main",
         "run_case"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4905,7 +6591,9 @@
       "symbols": [
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -4919,7 +6607,9 @@
         "_stop_group",
         "run"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4930,7 +6620,9 @@
         "main",
         "render_schema"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4942,7 +6634,9 @@
         "sanitize_text",
         "unsanitized_files"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -4954,7 +6648,9 @@
         "_recorded_provenance",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/docs",
@@ -4975,7 +6671,9 @@
         "render",
         "verify_catalog"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -4994,7 +6692,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5013,7 +6713,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5036,7 +6738,9 @@
         "main",
         "run"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5048,7 +6752,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5075,7 +6781,9 @@
         "_write_json",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5100,7 +6808,9 @@
         "_write_json",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5122,7 +6832,9 @@
         "_write_json",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5131,7 +6843,9 @@
       "symbols": [
         "compare_states"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5143,7 +6857,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5155,7 +6871,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5169,7 +6887,9 @@
         "reference_circuit",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5184,7 +6904,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5198,7 +6920,9 @@
         "reference_circuit",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5213,7 +6937,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5227,7 +6953,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5239,7 +6967,9 @@
         "reference_circuit",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5255,7 +6985,9 @@
         "reference_schedule",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5266,7 +6998,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5279,7 +7013,9 @@
         "reference_circuit",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5292,7 +7028,9 @@
         "reference_circuit",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5303,7 +7041,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5314,7 +7054,9 @@
         "compare_classical_phase",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5329,7 +7071,9 @@
         "reference_circuit",
         "resiliency_cost"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5342,7 +7086,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5355,7 +7101,9 @@
         "reference",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/ci",
@@ -5369,7 +7117,9 @@
         "main",
         "unproduced_checks"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/release",
@@ -5379,7 +7129,9 @@
         "main",
         "sbom_errors"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5390,7 +7142,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5402,7 +7156,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5413,7 +7169,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5425,7 +7183,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5437,7 +7197,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5449,7 +7211,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5460,7 +7224,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5471,7 +7237,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5483,7 +7251,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5494,7 +7264,9 @@
         "evidence_errors",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5506,7 +7278,9 @@
         "main",
         "validate"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5518,7 +7292,9 @@
         "_verify_shot_file_reading",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5527,7 +7303,9 @@
       "symbols": [
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5537,7 +7315,9 @@
         "_digest",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "tools/validation",
@@ -5548,7 +7328,9 @@
         "installed_audit_requirements",
         "main"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "repository",
@@ -5936,7 +7718,22 @@
         "_native_program",
         "validate_deployment_package"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "CloudBackendProfile",
+        "DeploymentPackage",
+        "DeploymentPackageIdentityError",
+        "validate_deployment_package"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_grouped_hamiltonian_statistics",
+        "_measured_coefficient",
+        "_native_program",
+        "_validate_count_histogram"
+      ]
     },
     {
       "group": "deployment",
@@ -5952,7 +7749,21 @@
         "create_pauli_measurement_plan",
         "deploy_circuit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "create_deployment_package",
+        "create_pauli_measurement_plan",
+        "deploy_circuit"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_grouped_hamiltonian_statistics",
+        "_measured_coefficient",
+        "_native_program",
+        "_validate_count_histogram"
+      ]
     },
     {
       "group": "deployment",
@@ -5976,7 +7787,22 @@
         "hamiltonian_expectation_from_counts",
         "hamiltonian_expectation_from_grouped_counts"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "PauliMeasurementPlan",
+        "expectation_z_from_counts",
+        "hamiltonian_expectation_from_counts",
+        "hamiltonian_expectation_from_grouped_counts"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_grouped_hamiltonian_statistics",
+        "_measured_coefficient",
+        "_native_program",
+        "_validate_count_histogram"
+      ]
     },
     {
       "group": "deployment",
@@ -5993,7 +7819,9 @@
         "stable_payload_sha256",
         "validate_deployment_routing_plan"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "deployment",
@@ -6007,7 +7835,9 @@
         "_route_requirements",
         "evaluate_dynamic_routing_rematch"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "deployment",
@@ -6019,7 +7849,9 @@
         "_seal_payload",
         "_validate_dynamic_remote_package_seal"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "deployment",
@@ -6029,19 +7861,25 @@
         "ArtifactDeploymentDryRun",
         "prepare_artifact_deployment"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/statevector/__init__.py",
       "new": "flagquantum/simulation/statevector/jax/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/statevector/README.md",
-      "new": "flagquantum/simulation/statevector/jax/README.md"
+      "new": "flagquantum/simulation/statevector/jax/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6062,19 +7900,25 @@
         "jax_sharded_statevector_rank_loss",
         "jax_statevector_from_circuit"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/mps/__init__.py",
       "new": "flagquantum/simulation/mps/jax/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/mps/README.md",
-      "new": "flagquantum/simulation/mps/jax/README.md"
+      "new": "flagquantum/simulation/mps/jax/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6109,7 +7953,9 @@
         "jax_sharded_mps_z_sum",
         "parse_zz_z_chain_hamiltonian"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6122,7 +7968,9 @@
         "jax_mps_apply_two_batched",
         "jax_mps_split_pair_batched"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6133,7 +7981,9 @@
         "jax_mps_canonicalization_pullback",
         "jax_mps_owner_local_vjp"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6142,19 +7992,25 @@
       "symbols": [
         "JAXTensorNetworkNode"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/tensor_network/__init__.py",
       "new": "flagquantum/simulation/tensor_network/jax/__init__.py",
       "symbols": [],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
       "old": "flagquantum/simulation/jax/tensor_network/README.md",
-      "new": "flagquantum/simulation/tensor_network/jax/README.md"
+      "new": "flagquantum/simulation/tensor_network/jax/README.md",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6171,7 +8027,9 @@
         "jax_tensor_network_z_sum",
         "jax_tensor_network_z_values"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6188,7 +8046,9 @@
         "slice_nodes",
         "zero_for_output"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/jax",
@@ -6237,7 +8097,9 @@
         "jax_contract_tensor_nodes",
         "jax_evaluate_declared_batch"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "algorithms",
@@ -6253,7 +8115,22 @@
         "transverse_field_ising",
         "zz_chain_hamiltonian"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "heisenberg_chain_hamiltonian",
+        "transverse_field_ising",
+        "zz_chain_hamiltonian"
+      ],
+      "required_private_annotation_or_payload_globals": [
+        "_import_module"
+      ],
+      "retired_private_members": [
+        "_PAULI_NAMES",
+        "_as_qubit_tuple",
+        "_coefficient_tensor",
+        "_normalize_pauli",
+        "_require_parameter_dependence"
+      ]
     },
     {
       "group": "runtime/telemetry-and-trajectories",
@@ -6264,7 +8141,8 @@
         "TrajectoryFailure",
         "TrajectoryStatistics"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "required_private_annotation_or_payload_globals": []
     },
     {
       "group": "runtime/telemetry-and-trajectories",
@@ -6274,7 +8152,9 @@
         "build_mps_critical_path_report",
         "workload_fingerprint"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
     },
     {
       "group": "simulation/numerics",
@@ -6295,7 +8175,12 @@
         "cpu_cx_permutation_images",
         "cpu_cx_permutation_index"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [
+        "apply_cpu_compact_cx_adjoint_segment",
+        "apply_cpu_cx_adjoint_index"
+      ],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
     {
       "group": "simulation/numerics",
@@ -6308,7 +8193,11 @@
       "symbols": [
         "_is_diagonal_instruction"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [
+        "_is_diagonal_instruction"
+      ],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
     {
       "group": "simulation/numerics",
@@ -6327,7 +8216,14 @@
         "_pair_components",
         "_single_process_cpu_pauli_rotation_gradient"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [
+        "_complex_cross",
+        "_fused_single_process_cpu_reversible_vjp",
+        "_pair_components",
+        "_single_process_cpu_pauli_rotation_gradient"
+      ],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
     {
       "group": "simulation/numerics",
@@ -6340,7 +8236,203 @@
       "symbols": [
         "seed_adjoint"
       ],
-      "same_import_path": false
+      "same_import_path": false,
+      "retired_reexports": [],
+      "remaining_imports": "used by this implementation; not a historical forwarding interface"
+    },
+    {
+      "group": "compiler-interface-retirement",
+      "old": "flagquantum/compiler/module_builder.py",
+      "new": "flagquantum/compiler/frontends/torch/_module_builder.py",
+      "symbols": [],
+      "same_import_path": false,
+      "source_kind": "retired internal facade, not an implementation definition",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
+    },
+    {
+      "group": "compiler-interface-retirement",
+      "old": "flagquantum/compiler/training.py",
+      "new": "flagquantum/compiler/frontends/torch/_training.py",
+      "symbols": [],
+      "same_import_path": false,
+      "source_kind": "retired internal facade, not an implementation definition",
+      "compatibility": "none",
+      "retirement": "internal path removed; consumers use authoritative owner"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/basis_translation.py",
+      "new": "flagquantum/compiler/lowering/basis_translation.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_gate"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/layout.py",
+      "new": "flagquantum/compiler/topology/layout.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_routing_swap_phases"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/noise.py",
+      "new": "flagquantum/compiler/lowering/noise.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_encode_channel_instruction"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/openqasm.py",
+      "new": "flagquantum/compiler/formats/openqasm.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_format_number"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/openqasm_import.py",
+      "new": "flagquantum/compiler/formats/openqasm_import.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_ISSUE_CODES"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/pipeline.py",
+      "new": "flagquantum/compiler/optimization/canonicalization.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_ROTATION_PARAM",
+        "_SELF_INVERSE",
+        "_WireLocalProgram",
+        "_add_values",
+        "_is_zero",
+        "_replace_param",
+        "_rotation_table",
+        "_self_inverse_table"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/pipeline.py",
+      "new": "flagquantum/compiler/optimization/pass_registry.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_BUILTIN_ANALYSES",
+        "_BUILTIN_PASS_SPECS",
+        "_cancel_commuting_self_inverse",
+        "_collapse_one_qubit_runs",
+        "_collapse_two_qubit_blocks",
+        "_commutation_blocks",
+        "_merge_commuting_rotations",
+        "_merge_inverse_pairs",
+        "_remove_diagonal_gates_before_measure",
+        "_rotation_parameters",
+        "_self_inverse_opcodes"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/pipeline.py",
+      "new": "flagquantum/compiler/optimization/pipeline.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_as_ir",
+        "_with_recorded_level"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/qcis.py",
+      "new": "flagquantum/compiler/formats/qcis.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_decompose"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/resource_estimation.py",
+      "new": "flagquantum/compiler/optimization/resource_estimation.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_T_FAMILY_OPCODES"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/routing.py",
+      "new": "flagquantum/compiler/topology/routing.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "pre-existing facade aliases, not moved definitions",
+      "retired_reexports": [
+        "_routing_metadata"
+      ],
+      "retirement": "unused private reexports removed; public expert entry preserved"
+    },
+    {
+      "group": "existing-compiler-alias-retirement",
+      "old": "flagquantum/compiler/pipeline.py",
+      "new": "flagquantum/compiler/optimization/pipeline.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "unused private wrapper retired, not a moved definition",
+      "retired_reexports": [
+        "_registry_admitting"
+      ],
+      "retirement": "unused private wrapper removed; actual optimizer adapter retains public registry-factory injection"
     }
+  ],
+  "retired_namespace_parents": [
+    "flagquantum.core.algebra",
+    "flagquantum.simulation.jax"
+  ],
+  "retired_directories": [
+    "flagquantum/kernels",
+    "flagquantum/simulation/jax",
+    "flagquantum/core/algebra",
+    "flagquantum/compiler/_torch",
+    "flagquantum/compiler/_hybrid/frontend",
+    "flagquantum/compiler/_hybrid/dynamic"
   ]
 }

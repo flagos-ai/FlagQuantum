@@ -22,7 +22,7 @@ from benchmarks.internal.evidence.mps_training_recovery import (  # noqa: E402
     tensor_tree,
     tree_max_error,
 )
-from tools.run_mps_capacity_series import point_command  # noqa: E402
+from tools.validation.run_mps_capacity_series import point_command  # noqa: E402
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.integration]
 ROOT = Path(__file__).resolve().parents[2]

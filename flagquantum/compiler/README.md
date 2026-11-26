@@ -48,7 +48,6 @@ owners.
 | [basis_translation.py](basis_translation.py) | [lowering/basis_translation.py](lowering/basis_translation.py) |
 | [layout.py](layout.py) | [topology/layout.py](topology/layout.py) |
 | [layout_planning.py](layout_planning.py) | [topology/layout_planning.py](topology/layout_planning.py) |
-| [module_builder.py](module_builder.py) | [_torch/module_builder.py](_torch/module_builder.py) |
 | [noise.py](noise.py) | [lowering/noise.py](lowering/noise.py) |
 | [openqasm.py](openqasm.py) | [formats/openqasm.py](formats/openqasm.py) |
 | [openqasm_import.py](openqasm_import.py) | [formats/openqasm_import.py](formats/openqasm_import.py) |
@@ -60,15 +59,23 @@ owners.
 | [resource_estimation.py](resource_estimation.py) | [optimization/resource_estimation.py](optimization/resource_estimation.py) |
 | [routing.py](routing.py) | [topology/routing.py](topology/routing.py), [topology/routing_strategy.py](topology/routing_strategy.py), [topology/routing_emission.py](topology/routing_emission.py), [topology/link_error_rates.py](topology/link_error_rates.py), [topology/sabre.py](topology/sabre.py), [topology/layout_restore.py](topology/layout_restore.py) |
 | [select_lowering.py](select_lowering.py) | [lowering/select_lowering.py](lowering/select_lowering.py) |
-| [training.py](training.py) | [_torch/training.py](_torch/training.py) |
 | [translate.py](translate.py) | [formats/translate.py](formats/translate.py) |
 
-The 18 forwarding modules in this table preserve documented expert imports.
+The 16 forwarding modules in this table preserve documented expert imports.
 `pipeline.py` also preserves the existing entry signatures and replacement hooks.
 Compiler owns their compatibility scope. Retirement requires an approved public
 import migration and its declared target version.
 
 Private root imports have been retired after repository consumers migrated.
+The former `module_builder.py` and `training.py` files were private Runtime-to-Compiler
+integration boundaries, not expert API additions. Runtime now imports the same
+three approved symbols directly from their Torch frontend owners; the exact
+importer/name restrictions remain in architecture policy. Unused private stage
+reexports and the unused `_registry_admitting` wrapper are also removed.
+
+The live `_optimize_to_fixed_point` helper binds the public registry factory for
+`optimize` and post-routing optimization. That dependency injection is actual
+entry-point behavior, not an old import adapter.
 
 | Retired root modules | Authoritative implementation |
 | --- | --- |
@@ -88,23 +95,23 @@ checked by `tests/team/compiler/test_implementation_import_boundaries.py`.
 
 Additional contributor workflows are documented in
 [formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
-[registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
+[registers/README.md](registers/README.md), and [_torch/README.md](frontends/torch/README.md).
 
 The private hybrid stages also have explicit implementation owners.
 
 | Existing hybrid entry or helper | Implementation owner |
 | --- | --- |
-| `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](_hybrid/specialize.py) |
-| `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](_hybrid/runtime_inputs.py), with direct aliases at the old path |
-| `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](_hybrid/diagnostics.py) |
-| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
+| `_hybrid.specialize.specialize_program`, `TraceGate`, `SpecializedTrace` | [_hybrid/specialize.py](frontends/_structured/specialize.py) |
+| `_hybrid.specialize` input metadata and signature helpers | [_hybrid/runtime_inputs.py](frontends/_structured/runtime_inputs.py), with direct aliases at the old path |
+| `_hybrid.SpecializationError`, `_hybrid.specialize.SpecializationError` | [_hybrid/diagnostics.py](frontends/_structured/diagnostics.py) |
+| `_hybrid.lower_dynamic_program` | [_hybrid/dynamic/program.py](frontends/_structured/dynamic/program.py), with entry aliases in `_hybrid/dynamic_lowering.py` |
 
 The [hybrid contributor guide](frontends/_structured/README.md#input-validation-and-specialization-ownership)
 describes the shared input boundary and its local accepted/rejected workflow.
 
 ## Reusable Module frontend
 
-[Module capture](_torch/module_builder.py) owns the private entry approved in
+[Module capture](frontends/torch/_module_builder.py) owns the private entry approved in
 [the lowering contract](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md).
 It replaces Runtime's capture with canonical CircuitIR placeholders plus the
 existing Torch FX binding graph. The graph is an ephemeral classical artifact,
@@ -258,8 +265,8 @@ python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py 
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
 | OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
-| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](_hybrid/dynamic/program.py) |
-| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](_hybrid/dynamic/expressions.py) |
+| Measurement-feedback traversal and CircuitIR emission | [_hybrid/dynamic/program.py](frontends/_structured/dynamic/program.py) |
+| Measurement predicates and condition-partitioned values | [_hybrid/dynamic/expressions.py](frontends/_structured/dynamic/expressions.py) |
 | Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
 | QIR base-profile emission | [qir.py](formats/qir.py) |
 
@@ -627,7 +634,7 @@ anything, and it does not read arbitrary third-party OpenQASM.
 `openqasm_gates.py` holds the gate spellings both directions read. `openqasm.py`
 emits, `openqasm_import.py` parses, and `target_conformance.py` checks an
 emission against an expected program; the three share one table, so a spelling
-one direction accepts and the other writes cannot appear. `tools/check_openqasm_import_contract.py`
+one direction accepts and the other writes cannot appear. `tools/validation/check_openqasm_import_contract.py`
 reads [openqasm-import-v1-candidate.json](../../contracts/openqasm-import-v1-candidate.json)
 against the shipped importer: the refusal vocabulary, the version lanes, the
 exposed signature, the root additions, and a reader for every declared rule.

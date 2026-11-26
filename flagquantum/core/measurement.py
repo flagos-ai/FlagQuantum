@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from importlib import import_module as _import_public_namespace
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
@@ -46,9 +46,6 @@ def log_base_divisor(log_base: float | None) -> float:
     if value == 1.0:
         raise ValueError("log_base must not be 1, which has no logarithm")
     return math.log(value)
-
-
-log_base_divisor.__module__ = "flagquantum.simulation.entropy"
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -446,37 +443,24 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (OutputRequest,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     OutputRequest,
     expectation,
-    _selection_alias,
     probabilities,
     density_matrix,
     vn_entropy,
     samples,
     counts,
-    _optional_qubits,
-    _sampled_pauli_term,
     lower_outputs,
 ):
     _identity_export.__module__ = "flagquantum.observables"
 del _identity_export
-
-# Bind the historical public namespace for class annotation introspection.
-
-_public_namespace = _import_public_namespace("flagquantum.observables")
-for _public_name in (
-    "OutputRequest",
-    "_optional_qubits",
-    "_sampled_pauli_term",
-    "_selection_alias",
-    "counts",
-    "density_matrix",
-    "expectation",
-    "lower_outputs",
-    "probabilities",
-    "samples",
-    "vn_entropy",
-):
-    setattr(_public_namespace, _public_name, globals()[_public_name])
-del _public_namespace, _public_name

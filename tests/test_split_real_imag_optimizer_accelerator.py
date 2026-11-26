@@ -19,7 +19,7 @@ def test_split_real_imag_p5_optimizer_accelerator_route() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            "tools/validate_split_real_imag_optimizer_accelerator.py",
+            "tools/validation/validate_split_real_imag_optimizer_accelerator.py",
             "--device",
             device,
             "--checkpoints",

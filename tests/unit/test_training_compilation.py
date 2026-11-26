@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler import training as compiler
+from flagquantum.compiler.frontends.torch import _training as compiler
 from flagquantum.runtime.results import ExecutionResult
 from flagquantum.runtime.results.adapters import LiveRuntimeSummary
 from flagquantum.runtime.training.compilation import _compilation_diagnostics

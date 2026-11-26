@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from tools.validate_flagos_statevector_capacity import _canonical_sha256, _manifest
+from tools.validation.validate_flagos_statevector_capacity import (
+    _canonical_sha256,
+    _manifest,
+)
 
 pytestmark = pytest.mark.benchmark_contract
 ROOT = Path(__file__).resolve().parents[2]

@@ -19,7 +19,7 @@ def test_domestic_single_card_p0_p5_route() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            "tools/validate_domestic_single_card.py",
+            "tools/validation/validate_domestic_single_card.py",
             "--attestation",
             attestation,
         ],

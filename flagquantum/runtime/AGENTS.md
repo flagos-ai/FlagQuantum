@@ -3,12 +3,12 @@
 Runtime owns planning, one execution attempt, resources, sessions, distributed
 orchestration, recovery, observability, and evidence assembly. It must not add
 numerical algorithms. Compiler dependencies are forbidden except the user-approved
-Module frontend capture entry: `module.py` may import `CapturedModuleBuilder` and
-`capture_module_builder` from `compiler.module_builder`, replacing its current
+Module frontend capture entry: `training/module.py` may import `CapturedModuleBuilder` and
+`capture_module_builder` from `compiler.frontends.torch._module_builder`, replacing its current
 builder capture. The contract and replacement fake must land before that
 implementation; see `docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md`.
 The separately user-approved lazy Torch training boundary permits only
-`training.py` to import `compile_training_callable` from `compiler.training`.
+`training/__init__.py` to import `compile_training_callable` from `compiler.frontends.torch._training`.
 Its approved contract and replacement fake must land before implementation;
 see `docs/development/TORCH_TRAINING_COMPILATION_CONTRACT.md`. It preserves
 caller-owned parameters/optimizer state, Torch defaults and checkpoint schemas;

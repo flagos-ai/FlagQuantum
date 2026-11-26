@@ -70,5 +70,5 @@ For broader coverage, run the hybrid compiler and QEC consumers.
 
 ```bash
 python -m pytest tests/hybrid_compiler tests/qec -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```

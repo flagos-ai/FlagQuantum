@@ -47,6 +47,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -216,7 +218,7 @@ def _axis_of(site: str, values: tuple[str, ...] | None) -> str:
 def _census() -> tuple[dict[str, Any], ...]:
     """Every gradient-method declaration in the package, with its resolved value."""
     rows: list[dict[str, Any]] = []
-    for path in sorted((ROOT / CENSUS_SOURCE).rglob("*.py")):
+    for path in sorted((source_path(ROOT, CENSUS_SOURCE)).rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         visitor = _ScopeVisitor(path)
         visitor.visit(tree)
@@ -352,7 +354,7 @@ def _header_errors(contract: Mapping[str, Any]) -> list[str]:
         errors.append("authorization must name the change record that admits this file")
     else:
         for record in authorization:
-            if not (ROOT / str(record)).is_file():
+            if not (source_path(ROOT, str(record))).is_file():
                 errors.append(f"authorization record {record!r} does not exist")
     if contract.get("shared_identifier") != "gradient_method":
         errors.append(
@@ -901,10 +903,10 @@ def _verification_errors(contract: Mapping[str, Any]) -> list[str]:
     contract_path = str(verification.get("contract", ""))
     if not contract_path:
         errors.append("[verification] does not name a contract test")
-    elif not (ROOT / contract_path).is_file():
+    elif not (source_path(ROOT, contract_path)).is_file():
         errors.append(f"[verification] contract test {contract_path!r} does not exist")
     gate_path = str(verification.get("gate", ""))
-    if gate_path != "tools/check_native_gradients_contract.py":
+    if source_path(ROOT, gate_path) != Path(__file__).resolve():
         errors.append(
             f"[verification] gate is {gate_path!r}, expected this file; a contract that "
             "names another gate is not enforced by it"
@@ -919,15 +921,15 @@ def _verification_errors(contract: Mapping[str, Any]) -> list[str]:
     # The gate must be reachable from both the CI workflow and the pre-push runner, the
     # way every other contract gate in this repository is.
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    if "tools/check_native_gradients_contract.py" not in workflow:
+    if "tools/validation/check_native_gradients_contract.py" not in workflow:
         errors.append(
             "the gate is not invoked by .github/workflows/ci.yml, so it does not run "
             "in CI"
         )
     pre_push = (ROOT / "tools" / "ci/pre_push.py").read_text(encoding="utf-8")
-    if "tools/check_native_gradients_contract.py" not in pre_push:
+    if "tools/validation/check_native_gradients_contract.py" not in pre_push:
         errors.append(
-            "the gate is not invoked by tools/pre_push.py, so it does not run before "
+            "the gate is not invoked by tools/ci/pre_push.py, so it does not run before "
             "a push"
         )
     return errors

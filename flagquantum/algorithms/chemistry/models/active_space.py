@@ -7,7 +7,6 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.chemistry.models.problem import MolecularProblem
 from flagquantum.algorithms.chemistry.molecular import fold_frozen_core
 from flagquantum.core.operators.pauli import count
@@ -79,5 +78,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.algorithms.chemistry_domain.active_space"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.chemistry_domain.active_space", __name__)

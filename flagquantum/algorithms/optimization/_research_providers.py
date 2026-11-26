@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any, Protocol
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization.ground_state import (
     GroundStateVQERequest,
     GroundStateVQEResult,
@@ -172,19 +171,3 @@ __all__ = (
     "plan_vqe_provider_route",
     "research_vqe_metrics",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    ResearchProviderAvailability,
-    ResearchVQEProvider,
-    NativeResearchVQEProvider,
-    installed_vqe_providers,
-    plan_vqe_provider_route,
-    denied_vqe_provider_route,
-    research_vqe_metrics,
-):
-    _identity_export.__module__ = "flagquantum.services.research_providers"
-del _identity_export
-
-_alias_module("flagquantum.services.research_providers", __name__)

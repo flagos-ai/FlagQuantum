@@ -9,8 +9,6 @@ import triton
 import triton.experimental.tle.language as tle
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ..._jit import jit
 else:
@@ -179,16 +177,3 @@ def launch_complex64_sharded_1q_vjp_adjoint_tle(
 
 
 __all__ = ("launch_complex64_sharded_1q_vjp_adjoint_tle",)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _complex64_sharded_1q_vjp_adjoint_tle_kernel,
-    launch_complex64_sharded_1q_vjp_adjoint_tle,
-):
-    _identity_export.__module__ = (
-        "flagquantum.kernels.triton.extensions.tle.statevector_adjoint"
-    )
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.extensions.tle.statevector_adjoint", __name__)

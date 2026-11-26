@@ -1,8 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
 from flagquantum.compute.realtime.service import (
     DISPATCH_MODES as DISPATCH_MODES,
 )
@@ -37,9 +34,3 @@ from flagquantum.compute.realtime.service import (
     RealtimeHandlerError as RealtimeHandlerError,
 )
 from flagquantum.compute.realtime.service import __all__ as __all__
-from flagquantum.compute.realtime.service import (
-    _as_results as _as_results,
-)
-
-_implementation = _import_module("flagquantum.compute.realtime.service")
-_sys.modules[__name__] = _implementation

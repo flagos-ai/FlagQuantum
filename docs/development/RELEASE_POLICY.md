@@ -48,7 +48,7 @@ successfully. The names are recorded in `.github/required-checks.json` and every
 one of them is enforced on `main`, including for the maintainer. Each name is the
 name of the check run itself — the job key, or the job's `name:` where it declares
 one, with GitHub's matrix suffix — which is what branch protection matches, and
-`tools/validate_required_checks.py` refuses a name no workflow job reports.
+`tools/ci/validate_required_checks.py` refuses a name no workflow job reports.
 
 While `main` is red the release waits, and the remedy is a fix that passes on
 `main` rather than a release cut beside it. A revision whose required checks

@@ -17,11 +17,11 @@ nothing could test would be a claim rather than a behaviour.
 
 from __future__ import annotations
 
-import sys as _alias_sys
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
+from typing import get_type_hints as _class_type_hints
 
 from .protocol import (
     RealtimeCallError,
@@ -290,6 +290,15 @@ def loopback_channel(
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (DeviceCallOutcome,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     RingTransport,
     DeviceCallOutcome,
@@ -300,9 +309,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.realtime.channels"
 del _identity_export
-
-_alias_sys.modules["flagquantum.realtime.channels"] = _alias_sys.modules[__name__]
-_parent = _alias_sys.modules.get("flagquantum.realtime")
-if _parent is not None:
-    setattr(_parent, "channels", _alias_sys.modules[__name__])
-del _parent

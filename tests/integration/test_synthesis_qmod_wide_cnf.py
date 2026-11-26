@@ -20,7 +20,7 @@ from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.simulation.mps.entrypoints import run_mps
 from flagquantum.simulation.mps.state import MPSState
-from tools._qmod_basis_mps import probe_basis_mps
+from tools.validation._qmod_basis_mps import probe_basis_mps
 
 pytestmark = pytest.mark.integration
 _DTYPE = torch.complex128

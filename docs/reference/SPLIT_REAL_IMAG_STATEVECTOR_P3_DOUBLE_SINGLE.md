@@ -80,13 +80,13 @@ pytest tests/test_split_real_imag_double_single_conformance.py
 In a Torch-FL CUDA-reference environment:
 
 ```bash
-python tools/validate_split_real_imag_double_single_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_double_single_flagos.py --device flagos:0
 ```
 
 The checked-in A800 native-CUDA and `flagos:0` portability record is
 [`split_real_imag_double_single_a800_20260824.json`](../../artifacts/split_real_imag_double_single_a800_20260824.json).
 It is fail-closed by
-`tools/validate_split_real_imag_double_single_evidence.py` and does not promote
+`tools/validation/validate_split_real_imag_double_single_evidence.py` and does not promote
 the experimental path to a hardware, convergence, performance, vendor, or
 production certification.
 

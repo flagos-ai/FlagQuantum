@@ -6,7 +6,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.analysis import (
     FOLDABLE_OPERATIONS,
     HybridProgramAnalysis,
@@ -342,17 +341,3 @@ __all__ = (
     "PassOutcome",
     "StructuredControlFlowSimplificationPass",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    PassOutcome,
-    ConstantFoldPass,
-    StructuredControlFlowSimplificationPass,
-    BoundedLoopUnrollPass,
-    DeadConstantEliminationPass,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.transforms"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.transforms", __name__)

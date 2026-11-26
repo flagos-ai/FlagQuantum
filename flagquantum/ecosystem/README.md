@@ -37,7 +37,7 @@ round-trip or explicit-rejection case, and run:
 
 ```bash
 python -m pytest tests/team/ecosystem tests/api_contract/test_open_source_golden_paths.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from importlib import import_module as _import_namespace
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 from flagquantum.compiler import CouplingMap
 from flagquantum.compiler.artifacts.routing_evidence import (
@@ -235,27 +235,23 @@ def validate_deployment_package(
     return package
 
 
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    CloudBackendProfile,
+    DeploymentPackage,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity in (
     CloudBackendProfile,
     DeploymentPackage,
     DeploymentPackageIdentityError,
-    _native_program,
     validate_deployment_package,
 ):
     _identity.__module__ = "flagquantum.deployment.cloud"
 del _identity
-
-_namespace = _import_namespace("flagquantum.deployment.cloud")
-for _name in (
-    "Any",
-    "CircuitIR",
-    "CloudBackendProfile",
-    "CouplingMap",
-    "DeploymentPackage",
-    "DeploymentPackageIdentityError",
-    "Mapping",
-    "_native_program",
-    "validate_deployment_package",
-):
-    setattr(_namespace, _name, globals()[_name])
-del _namespace, _name

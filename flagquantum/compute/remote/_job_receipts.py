@@ -12,7 +12,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir import CircuitIR, ensure_circuit_ir
 from flagquantum.core.measurement import OutputRequest, lower_outputs
 
@@ -192,20 +191,3 @@ def resume_or_submit(
             f"Job {job.id} was submitted but its recovery record could not be completed; do not resubmit: {exc}"
         ) from exc
     return job
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _Journal,
-    _SubmissionSettings,
-    request_digest,
-    _receipt_digest,
-    _read_journal,
-    _reserve,
-    _complete,
-    resume_or_submit,
-):
-    _identity_export.__module__ = "flagquantum.remote._job_receipts"
-del _identity_export
-
-_alias_module("flagquantum.remote._job_receipts", __name__)

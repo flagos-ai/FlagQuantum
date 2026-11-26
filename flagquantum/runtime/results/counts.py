@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from importlib import import_module as _import_namespace
 from numbers import Integral
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
@@ -230,34 +230,20 @@ def _grouped_hamiltonian_statistics(
     return total, math.sqrt(total_variance)
 
 
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (PauliMeasurementPlan,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity in (
     PauliMeasurementPlan,
-    _validate_count_histogram,
     expectation_z_from_counts,
-    _measured_coefficient,
     hamiltonian_expectation_from_counts,
     hamiltonian_expectation_from_grouped_counts,
-    _grouped_hamiltonian_statistics,
 ):
     _identity.__module__ = "flagquantum.deployment.cloud"
 del _identity
-
-_namespace = _import_namespace("flagquantum.deployment.cloud")
-for _name in (
-    "Any",
-    "DeploymentPackage",
-    "Hamiltonian",
-    "Mapping",
-    "ObservableGroup",
-    "PauliMeasurementPlan",
-    "Sequence",
-    "_grouped_hamiltonian_statistics",
-    "_measured_coefficient",
-    "_validate_count_histogram",
-    "expectation_z_from_counts",
-    "hamiltonian_expectation_from_counts",
-    "hamiltonian_expectation_from_grouped_counts",
-    "torch",
-):
-    setattr(_namespace, _name, globals()[_name])
-del _namespace, _name

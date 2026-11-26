@@ -5,8 +5,6 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .evidence import EVIDENCE
 from .implementations import IMPLEMENTATIONS
 from .schema import (
@@ -255,16 +253,3 @@ def validate_catalog(
 
 
 __all__ = ["validate_catalog"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _require_unique,
-    _require_components,
-    _require_devices,
-    validate_catalog,
-):
-    _identity_export.__module__ = "flagquantum.kernels.catalog.validation"
-del _identity_export
-
-_alias_module("flagquantum.kernels.catalog.validation", __name__)

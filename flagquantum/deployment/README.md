@@ -21,10 +21,10 @@ this package contacts a target.
   `hamiltonian_expectation_from_grouped_counts`.
 - [`cloud.py`](cloud.py): those entry points plus `CloudBackendProfile` and
   `DeploymentPackage`.
-- [`routing_evidence.py`](routing_evidence.py): `stable_payload_sha256`,
+- [`routing_evidence.py`](../compiler/artifacts/routing_evidence.py): `stable_payload_sha256`,
   `deployment_artifact_sha256`, and the routing-plan validator used before an
   artifact is handed to a target. Module-level, not re-exported.
-- [`artifact_dry_run.py`](artifact_dry_run.py): `prepare_artifact_deployment`,
+- [`artifact_dry_run.py`](../compute/remote/validation.py): `prepare_artifact_deployment`,
   the offline rehearsal for an artifact that has not been submitted.
 
 A package is identified by the identity recorded in it; a package whose
@@ -47,7 +47,7 @@ identity does not match its program is refused rather than repaired.
    these helpers:
 
    ```bash
-   python tools/ci_tier.py pr-default
+   python tools/ci/ci_tier.py pr-default
    ```
 
 Counts validation stays fail-closed: a histogram that cannot be attributed to

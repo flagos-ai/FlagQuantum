@@ -1,8 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
 from flagquantum.compute.remote.qpu.contracts import (
     DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA as DEPLOYMENT_SUBMISSION_RECEIPT_SCHEMA,
 )
@@ -31,6 +28,3 @@ from flagquantum.compute.remote.qpu.contracts import (
 from flagquantum.compute.remote.qpu.contracts import (
     validate_deployment_result as validate_deployment_result,
 )
-
-_implementation = _import_module("flagquantum.compute.remote.qpu.contracts")
-_sys.modules[__name__] = _implementation

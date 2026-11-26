@@ -189,7 +189,7 @@ export set are unaffected either way.
       execution, including that no fallback path executes.
 - [x] Sharded dynamic execution is tested for both outcomes: preserved feedback
       semantics, or an explicit blocker.
-- [x] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
+- [x] `python tools/ci/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
       pass.
 - [x] Static batched execution shows no regression against the recorded baseline
       on the declared Apple-arm64 CPU profile; the evidence and its limits are

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_coverage import (
+from tools.ci.check_coverage import (
     EXPECTED_SCHEMA,
     load_toml,
     parse_coverage,

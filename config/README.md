@@ -9,8 +9,8 @@ From the repository root, use:
 
 ```sh
 conda env create -f config/environments/environment.yml
-python tools/check_architecture.py
-python tools/check_team_scope.py --validate
+python tools/architecture/check_architecture.py
+python tools/architecture/check_team_scope.py --validate
 ```
 
 The editable pip requirement in the environment file is relative to that file's

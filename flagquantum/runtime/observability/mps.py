@@ -8,8 +8,6 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 MPS_PROFILE_SCHEMA = "flagquantum.site_sharded_mps_profile.v1"
 MPS_PROFILE_PHASES = (
     "forward",
@@ -165,5 +163,3 @@ __all__ = (
     "build_mps_critical_path_report",
     "workload_fingerprint",
 )
-
-_alias_module("flagquantum.runtime.executors.mps.profiling", __name__)

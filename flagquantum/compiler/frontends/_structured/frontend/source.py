@@ -8,7 +8,6 @@ import textwrap
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.frontend.diagnostics import (
     CaptureDiagnostic,
     HybridCaptureError,
@@ -89,15 +88,3 @@ def capture_function(
         filename=filename,
         line_offset=start_line - 1,
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _function_node,
-    capture_source,
-    capture_function,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.source"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.source", __name__)

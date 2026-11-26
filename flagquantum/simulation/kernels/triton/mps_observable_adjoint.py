@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -264,18 +262,3 @@ def fused_mps_hermitian_observable_adjoint(
 
 
 __all__ = ["fused_mps_hermitian_observable_adjoint"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _mps_hermitian_observable_adjoint_kernel,
-    _validate,
-    _reference,
-    _supported_shape,
-    _launch,
-    fused_mps_hermitian_observable_adjoint,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.mps_observable_adjoint"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.mps_observable_adjoint", __name__)

@@ -208,12 +208,12 @@ excluded, with `ExecutionRecordContract` as its witness.
 
 The program is only credible if the two new surfaces are gated, not described.
 
-- `tools/census_wire_vocabulary.py` scans **four** surfaces and names each reason:
+- `tools/architecture/census_wire_vocabulary.py` scans **four** surfaces and names each reason:
   parameters, attribute names (three declaration kinds), module-level definition
   names, and message strings (reported, never ledgered). The module docstring
   records the measurement error that moved 102 → 144, and the one that shows why
   members need their own evidence rule.
-- `tools/check_qubit_vocabulary.py` reconciles the contract against a live scan
+- `tools/architecture/check_qubit_vocabulary.py` reconciles the contract against a live scan
   and reports progress per slice **per surface**: 341 parameter sites, 122
   attribute sites, 10 definition names. A slice is finished when all three of its
   counters reach zero.
@@ -222,8 +222,8 @@ The program is only credible if the two new surfaces are gated, not described.
   per-slice `attribute_field_count`, `attribute_member_count`,
   `attribute_instance_count`, `definition_count`.
 - Both tools stay wired as **steps** of the existing `quality` job and inside
-  `tools/pre_push.py`. No job is added, so
-  `tools/validate_required_checks.py`'s six externally configured required checks
+  `tools/ci/pre_push.py`. No job is added, so
+  `tools/ci/validate_required_checks.py`'s six externally configured required checks
   are untouched.
 
 ## 8. Evidence rules, per declaration kind
@@ -299,7 +299,7 @@ fq.draw(circuit, qubit_order=(1, 0), show_all_qubits=True)
 ## Verification
 
 ```bash
-python tools/check_qubit_vocabulary.py
+python tools/architecture/check_qubit_vocabulary.py
 # Qubit vocabulary contract passed: 0 of 341 baseline sites retired, 11 kept as deprecated aliases
 #   WQ-2 ... remaining 16
 # Qubit vocabulary contract passed: 0 of 122 attribute sites retired, 0 kept as deprecated aliases
@@ -311,7 +311,7 @@ python -m pytest tests/unit/test_census_wire_vocabulary.py \
     tests/unit/test_qubit_vocabulary_contract.py -q
 # 122 passed
 
-python tools/validate_required_checks.py
+python tools/ci/validate_required_checks.py
 # validated 6 externally configured required checks
 ```
 

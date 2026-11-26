@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Require every recorded evidence revision to be obtainable or accounted for.
 
-``tools/evidence_provenance.py`` answers two questions about a source revision an
+``tools/release/evidence_provenance.py`` answers two questions about a source revision an
 artifact records: does this repository contain the commit, and does a ref of this
 repository reach it? Only the six checked-in validators ask either one, and each
 has its artifact path written into it. An artifact no validator names is therefore
@@ -52,7 +52,7 @@ the table: a declaration names one artifact, or a directory that contains the
 artifacts recording the revision, which is how a bulk evidence surface states one
 origin once instead of repeating it for every file.
 
-The second is the artifact itself. ``tools/evidence_provenance.py`` already reads
+The second is the artifact itself. ``tools/release/evidence_provenance.py`` already reads
 ``source.revision_origin``, and the same convention applies beside any field that
 records a revision: an artifact carrying ``base_commit`` may state
 ``base_commit_origin``, and one carrying ``environment.torch_fl_revision`` may state

@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core._artifacts import (
     CircuitArtifactBindingResult,
     ProgramArtifactV2,
@@ -168,5 +167,3 @@ def prepare_artifact_deployment(
 
 
 __all__ = ("ArtifactDeploymentDryRun", "prepare_artifact_deployment")
-
-_alias_module("flagquantum.deployment.artifact_dry_run", __name__)

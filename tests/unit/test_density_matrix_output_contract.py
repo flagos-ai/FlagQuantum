@@ -32,7 +32,7 @@ CONTRACT_PATH = ROOT / "contracts" / "density-matrix-output-contract.toml"
 
 
 def _load_gate() -> Any:
-    """Import ``tools/check_density_matrix_output_contract.py`` by path.
+    """Import ``tools/validation/check_density_matrix_output_contract.py`` by path.
 
     The checker is a script rather than an importable package member, so loading it by path is
     what keeps this test measuring the file the CI step runs.

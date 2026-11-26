@@ -17,7 +17,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler import CouplingMap
 from flagquantum.compute.remote.packages import CloudBackendProfile, DeploymentPackage
 
@@ -344,12 +343,6 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    iqm_backend_profile,
-    IQMProvider,
-    _iqm_outcome,
-):
+for _identity_export in (iqm_backend_profile, IQMProvider):
     _identity_export.__module__ = "flagquantum.remote.qpu.iqm"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.iqm", __name__)

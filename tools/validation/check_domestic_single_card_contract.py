@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -83,7 +85,7 @@ def contract_errors(
 
     paths = contract.get("verification_paths", {})
     for path in paths.values():
-        if not isinstance(path, str) or not (ROOT / path).is_file():
+        if not isinstance(path, str) or not (source_path(ROOT, path)).is_file():
             errors.append(
                 f"domestic single-card verification path is missing: {path!r}"
             )
@@ -100,7 +102,9 @@ def contract_errors(
 
 def main() -> int:
     contract = tomllib.loads(CONTRACT.read_text(encoding="utf-8"))
-    template_path = ROOT / contract["verification_paths"]["attestation_template"]
+    template_path = source_path(
+        ROOT, contract["verification_paths"]["attestation_template"]
+    )
     template = json.loads(template_path.read_text(encoding="utf-8"))
     errors = contract_errors(contract, template)
     if errors:

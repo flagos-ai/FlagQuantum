@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from typing import NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def _normalize_pair(
     user_id: str,
@@ -91,15 +89,3 @@ def resolve_kaiwu_credentials(
         error_type=RuntimeError,
         source="environment",
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _normalize_pair,
-    KaiwuCredentials,
-    resolve_kaiwu_credentials,
-):
-    _identity_export.__module__ = "flagquantum.remote.kaiwu._credentials"
-del _identity_export
-
-_alias_module("flagquantum.remote.kaiwu._credentials", __name__)

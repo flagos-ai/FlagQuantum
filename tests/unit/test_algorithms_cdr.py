@@ -847,6 +847,6 @@ def test_the_package_reexports_the_unit() -> None:
     assert algorithms.run_cdr is run_cdr
     assert algorithms.clifford_variants is clifford_variants
     assert algorithms.CdrResult is CdrResult
-    assert algorithms.cdr is cdr_module
+    assert algorithms.cdr.run_cdr is cdr_module.run_cdr
     for name in cdr_module.__all__:
         assert name in algorithms.__all__, name

@@ -18,7 +18,6 @@ from typing import Protocol
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.target_capabilities import (
     CapabilityBlocker,
     CapabilityFact,
@@ -529,21 +528,3 @@ __all__ = [
     "cpu_platform_to_target_capability_snapshot",
     "probe_local_cpu_target_capabilities",
 ]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    CPUPrecisionObservation,
-    CPUCapabilityObservation,
-    CPUCapabilityProbe,
-    _ObservedCPUProbe,
-    _isoformat,
-    _blocker,
-    _missing_fact,
-    cpu_platform_to_target_capability_snapshot,
-    probe_local_cpu_target_capabilities,
-):
-    _identity_export.__module__ = "flagquantum.compute.cpu_target_capabilities"
-del _identity_export
-
-_alias_module("flagquantum.compute.cpu_target_capabilities", __name__)

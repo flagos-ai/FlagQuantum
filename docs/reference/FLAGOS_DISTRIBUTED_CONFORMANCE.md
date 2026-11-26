@@ -17,7 +17,7 @@ Run it in an explicitly provisioned Torch-FL environment:
 
 ```bash
 torchrun --standalone --nproc-per-node=2 \
-  tools/validate_flagos_distributed_conformance.py \
+  tools/validation/validate_flagos_distributed_conformance.py \
   --output flagos-distributed-conformance.json
 ```
 

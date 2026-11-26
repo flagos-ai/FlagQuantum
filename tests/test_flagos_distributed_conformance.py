@@ -33,7 +33,7 @@ def test_flagos_two_rank_process_group_and_sharded_statevector(tmp_path: Path) -
             "torch.distributed.run",
             "--standalone",
             "--nproc-per-node=2",
-            "tools/validate_flagos_distributed_conformance.py",
+            "tools/validation/validate_flagos_distributed_conformance.py",
             "--output",
             str(output),
         ],

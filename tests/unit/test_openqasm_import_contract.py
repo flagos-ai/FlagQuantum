@@ -1,6 +1,6 @@
 """The OpenQASM import contract must fail closed on every claim it makes.
 
-``tools/check_openqasm_import_contract.py`` reconciles
+``tools/validation/check_openqasm_import_contract.py`` reconciles
 ``contracts/openqasm-import-v1-candidate.json`` with the shipped importer. These
 tests drive it with one deliberate drift per claim, so a gate that silently
 stopped reading a field fails here rather than passing in CI.
@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from tools.check_openqasm_import_contract import (
+from tools.validation.check_openqasm_import_contract import (
     RULE_READERS,
     construction_time_only,
     contract_errors,

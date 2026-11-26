@@ -10,7 +10,6 @@ from typing import TypedDict
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir import MeasurementNode
 from flagquantum.runtime.measurements import execute_measurements
 from flagquantum.runtime.planner.synthesis import CheckedExecution
@@ -181,15 +180,3 @@ def probabilities(
         "elapsed_seconds": time.perf_counter() - started,
     }
     return Distribution(values, diagnostics)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _ReadDiagnostics,
-    Distribution,
-    probabilities,
-):
-    _identity_export.__module__ = "flagquantum.services._synthesis_readout"
-del _identity_export
-
-_alias_module("flagquantum.services._synthesis_readout", __name__)

@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -175,15 +173,3 @@ def apply_complex64_local_swap_sequence(
 
 
 __all__ = ["apply_complex64_local_swap_sequence"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _swap_source_bit_positions,
-    _complex64_local_swap_sequence_kernel,
-    apply_complex64_local_swap_sequence,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_swap"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_swap", __name__)

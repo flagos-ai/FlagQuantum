@@ -52,7 +52,7 @@ factor's transpose is distinguishable from its conjugate transpose:
 ```console
 $ PYTHONPATH=$PWD python - <<'PY'
 import torch
-from flagquantum.simulation.lindblad_generator import Liouvillian
+from flagquantum.simulation.dynamics.generator import Liouvillian
 
 def embed(single, wire, n):
     ops = [torch.eye(2, dtype=torch.complex128)] * n
@@ -100,7 +100,7 @@ Lindblad generator as a sum of left and right multiplication actions.
 
 ### 3. The right factor of the dense form is transposed, never conjugate-transposed
 
-`flagquantum/simulation/lindblad_generator.py:126-129` records the convention:
+`flagquantum/simulation/dynamics/generator.py:126-129` records the convention:
 `vec(A rho B) = (A (x) B^T) vec(rho)` for the row-major `Tensor.reshape(-1)`.
 `Liouvillian.dense()` therefore uses `torch.kron(operator, torch.conj(operator))`
 == `torch.kron(L, (L^dag)^T)` because the caller passes `L^dag` as the right
@@ -279,5 +279,5 @@ W6-02b can delegate without weakening the ceiling.
 7. A mutation run over the new module, with the exit-2 weak-kill distinction
    reported separately, and a list of deliberate non-mutations with structural
    reasons.
-8. `python tools/ci_tier.py pr-default` and `python tools/ci_tier.py pr-runtime`
+8. `python tools/ci/ci_tier.py pr-default` and `python tools/ci/ci_tier.py pr-runtime`
    on the final tree, plus the full static guardrail roster.

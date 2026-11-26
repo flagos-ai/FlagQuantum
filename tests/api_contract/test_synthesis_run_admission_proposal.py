@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
-from tools.public_api_snapshot import _initial_state_run_signature
+from tools.architecture.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

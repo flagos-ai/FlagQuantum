@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_split_real_imag_p5_autograd_optimizer_contract import (
+from tools.validation.check_split_real_imag_p5_autograd_optimizer_contract import (
     contract_errors,
     load_toml,
 )

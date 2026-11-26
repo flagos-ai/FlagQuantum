@@ -231,13 +231,13 @@ call sites `mypy --strict` names, and nothing else.**
    retired parameters. Its second version also matches a method by the last
    component of its qualified name, because a receiver typed `Any` — which is what
    a protocol-typed test fixture is — hides the keyword from every checker.
-5. **`tools/census_wire_vocabulary.py` keeps citing `wire_probability_dispatch`.**
+5. **`tools/architecture/census_wire_vocabulary.py` keeps citing `wire_probability_dispatch`.**
    The module name, the semantic id `mps.measurement.wire_probabilities.local`,
    and the private helper `_mps_wire_probabilities` are a *catalog identity*, not a
    qubit name: they are keys into the kernel catalog and are asserted by
    `tests/unit/test_mps_wire_probability_catalog_dispatch.py`, recorded in
    `benchmarks/results/local/mps_wire_probability_dispatch_a800.json`, and
-   documented in `flagquantum/kernels/README.md`. They stay, and the slice's own
+   documented in `flagquantum/simulation/kernels/README.md`. They stay, and the slice's own
    `SiteKernelStats` counters — which are *not* catalog identity — move.
 
 Four spellings inside the slice's *own* files were deliberately **not** renamed,
@@ -255,7 +255,7 @@ because the name belongs to a neighbour or to a frozen payload:
   `asymmetric_wire_order` where those are read from a versioned execution-policy
   payload.
 
-`python tools/check_team_scope.py --require-classified --base ae8910bfc` reads the
+`python tools/architecture/check_team_scope.py --require-classified --base ae8910bfc` reads the
 change as `58 changed paths: (protected) 1, (shared) 18, runtime 2, simulation 37`.
 `owner_team` stays `simulation` because the slice's own 17 files and 39 of the 58
 changed paths are simulation code; the two `runtime` paths are the executor
@@ -274,11 +274,11 @@ Each command was run at the commit that carries the rename, in
 | 1 | `python -m black --check flagquantum tests tools` | all files unchanged |
 | 2 | `python -m ruff check flagquantum tests tools` | `All checks passed!` |
 | 3 | `python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | `Success: no issues found in 624 source files` |
-| 4 | `python tools/check_architecture.py` | `architecture boundaries passed` |
-| 5 | `python tools/check_qubit_vocabulary.py` | exit 0; `286 of 341` parameters retired, `102 of 122` attributes retired, `8 of 10` definitions retired; WQ-7 is `78 / 18 / 1` with 0 remaining |
-| 6 | `python tools/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
-| 7 | `python tools/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
-| 8 | `python tools/check_team_scope.py --require-classified --base ae8910bfc` | `58 changed paths: (protected) 1, (shared) 18, runtime 2, simulation 37` |
+| 4 | `python tools/architecture/check_architecture.py` | `architecture boundaries passed` |
+| 5 | `python tools/architecture/check_qubit_vocabulary.py` | exit 0; `286 of 341` parameters retired, `102 of 122` attributes retired, `8 of 10` definitions retired; WQ-7 is `78 / 18 / 1` with 0 remaining |
+| 6 | `python tools/architecture/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
+| 7 | `python tools/ci/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
+| 8 | `python tools/architecture/check_team_scope.py --require-classified --base ae8910bfc` | `58 changed paths: (protected) 1, (shared) 18, runtime 2, simulation 37` |
 | 9 | the CI marker lane | no new failure; see the PR body for the exact run |
 
 Status: landed. The rename is WQ-7's and no other slice may retire a site this

@@ -53,9 +53,9 @@ row id and the reason, so the checklist can be repaired rather than trusted.
 
 Usage
 -----
-    python3 tools/check_qec_cudaq_alignment.py
-    python3 tools/check_qec_cudaq_alignment.py --quiet
-    python3 tools/check_qec_cudaq_alignment.py --json
+    python3 tools/validation/check_qec_cudaq_alignment.py
+    python3 tools/validation/check_qec_cudaq_alignment.py --quiet
+    python3 tools/validation/check_qec_cudaq_alignment.py --json
 """
 
 from __future__ import annotations
@@ -74,6 +74,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from tools.architecture.source_relocations import source_path
 
 try:
     import tomllib
@@ -369,7 +371,7 @@ def check_row(
                     f"negative_search {entry!r} now resolves -- the absence this row records is over",
                 )
         else:
-            if (repo_root / entry).exists():
+            if (source_path(repo_root, entry)).exists():
                 report.fail(
                     where,
                     f"negative_search {entry!r} now exists -- the absence this row records is over",
@@ -393,7 +395,7 @@ def check_row(
 
     for evidence in row.get("evidence", []) or []:
         report.check()
-        if not (repo_root / evidence).exists():
+        if not (source_path(repo_root, evidence)).exists():
             report.fail(where, f"evidence path {evidence!r} does not exist")
 
     maturity_ref = row.get("maturity_ref")
@@ -536,7 +538,7 @@ def check_field(
                 )
         else:
             report.check()
-            if (repo_root / entry).exists():
+            if (source_path(repo_root, entry)).exists():
                 report.fail(
                     where, f"negative_search {entry!r} now exists -- the diff is stale"
                 )
@@ -600,7 +602,7 @@ def main(argv: list[str] | None = None) -> int:
     # resolves is how a reader ends up running nothing and believing the rows.
     report.check()
     declared_tool = str(checklist.get("checked_by", ""))
-    if declared_tool and not (repo_root / declared_tool).is_file():
+    if declared_tool and not (source_path(repo_root, declared_tool)).is_file():
         report.fail(
             "header",
             f"checked_by names {declared_tool!r}, which is not a file in the repository",

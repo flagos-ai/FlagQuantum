@@ -2,7 +2,7 @@
 
 Every role in this script writes one *measurements* document and nothing else.
 The document is sealed into a signed ``measured_production_run`` envelope by
-``tools/seal_runtime_evidence.py``, which is the only place a claim flag is set.
+``tools/release/seal_runtime_evidence.py``, which is the only place a claim flag is set.
 Keeping the measurement and the envelope apart means the run cannot choose its
 own claim: it reports what executed, and the sealer reports what that is worth.
 
@@ -992,7 +992,7 @@ def _role_release_payload(args: argparse.Namespace) -> int:
     """Project one measurements document onto the contract the sealer reads.
 
     A role document states the release contract under ``measurements`` beside
-    the per-rank records it was assembled from. ``tools/seal_runtime_evidence.py``
+    the per-rank records it was assembled from. ``tools/release/seal_runtime_evidence.py``
     takes its evidence input at the top level, so something has to lift the
     contract out; doing it here keeps the projection reviewable and repeatable
     instead of leaving it to whoever runs the campaign.

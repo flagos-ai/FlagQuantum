@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.module_builder import CapturedModuleBuilder
+from flagquantum.compiler.frontends.torch._module_builder import CapturedModuleBuilder
 
 pytestmark = pytest.mark.unit
 pytest.importorskip("jax")

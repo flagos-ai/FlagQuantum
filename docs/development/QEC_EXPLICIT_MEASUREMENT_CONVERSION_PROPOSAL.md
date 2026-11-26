@@ -124,7 +124,7 @@ required, stop with the link log and revise the inventory before execution.
 15. `examples/README.md`
 16. `docs/reference/API.md`
 17. `docs/reference/KNOWN_LIMITATIONS.md`
-18. `tools/verify_embedded_stabilizer_install.py`
+18. `tools/validation/verify_embedded_stabilizer_install.py`
 
 This means 18 integration paths plus 16 new upstream paths.
 The original 78 upstream files retain their bytes.
@@ -225,7 +225,7 @@ were not executed and no new sampling run was performed.
 ```sh
 python -m pytest -q tests/unit/test_compiled_measurement_sampler_contract.py tests/qec/test_explicit_measurement_conversion.py tests/team/simulation/test_explicit_record_conversion_conformance.py
 python -m examples.qec.dynamic_measurement_conversion
-python -I tools/verify_embedded_stabilizer_install.py
+python -I tools/validation/verify_embedded_stabilizer_install.py
 ```
 
 Core fake tests must run without Stim or a compiler. Exercise both supported

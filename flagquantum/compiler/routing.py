@@ -29,9 +29,6 @@ from .topology.routing import (
 )
 from .topology.routing import __all__ as __all__
 from .topology.routing import (
-    _routing_metadata as _routing_metadata,
-)
-from .topology.routing import (
     estimate_routing_cost as estimate_routing_cost,
 )
 from .topology.routing import (

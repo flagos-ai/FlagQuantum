@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import SourceLocation
 
 
@@ -27,14 +26,3 @@ class HybridCaptureError(ValueError):
             f"{location.filename}:{location.line}:{location.column}: "
             f"{diagnostic.code}: {diagnostic.message}"
         )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    CaptureDiagnostic,
-    HybridCaptureError,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.diagnostics"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.diagnostics", __name__)

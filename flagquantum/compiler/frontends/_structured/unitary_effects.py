@@ -6,7 +6,6 @@ import math
 from collections.abc import Sequence
 from dataclasses import replace
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import Operation
 
 PURE_EFFECTS = frozenset(
@@ -144,15 +143,3 @@ def inverse_effects(operations: Sequence[Operation]) -> tuple[Operation, ...]:
             inverted.extend(inverse_effects(region[2:-2]))
             inverted.extend(region[-2:])
     return tuple(inverted)
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    unitary_regions,
-    _inverse_specs,
-    inverse_effects,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.unitary_effects"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.unitary_effects", __name__)

@@ -86,8 +86,8 @@ Expected: independent gates remain unchanged. Existing same-wire and two-qubit
 folds retain their operator, phase, parameter and validation contracts.
 
 ```sh
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 ```
 
 To reproduce the archived experiment, use its exact source pins and driver,

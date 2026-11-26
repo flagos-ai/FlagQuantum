@@ -222,8 +222,8 @@ The existing example passed on accepted main `82143b09` with Python 3.12.14/Torc
 
 ## Observer implementation under review
 
-The finite worker is `tools/observe_ftqc_phase_cost.py`; the serial controller
-is `tools/collect_ftqc_phase_cost.py`. Neither adds a registry entry or public
+The finite worker is `tools/validation/observe_ftqc_phase_cost.py`; the serial controller
+is `tools/validation/collect_ftqc_phase_cost.py`. Neither adds a registry entry or public
 mode. The worker imports only the admitted installed package, verifies its
 retained-wheel member hashes, and reuses the private Simulation CH prototype.
 The independent direct-T reference and handwritten Clifford scalar oracle are
@@ -251,7 +251,7 @@ controller/worker/monitor hashes and CPU identity. Run the controller from that
 checkout with its accepted interpreter and absolute report paths:
 
 ```bash
-python -m tools.collect_ftqc_phase_cost --source-commit "$OBSERVER_MAIN_SHA" \
+python -m tools.validation.collect_ftqc_phase_cost --source-commit "$OBSERVER_MAIN_SHA" \
   --install-report "$INSTALL_REPORT" --delivery-report "$DELIVERY_REPORT" \
   --output "$NEW_COLLECTION_DIRECTORY"
 ```

@@ -10,7 +10,7 @@ the channels in :mod:`.channels`.
 Every field is defined here rather than inferred from a vendor header, so an
 interoperating implementation -- including one on an FPGA -- has exactly one
 place to read the layout from. `contracts/realtime-messaging-v1-candidate.json`
-restates that layout for tooling, and `tools/check_realtime_messaging_contract.py`
+restates that layout for tooling, and `tools/validation/check_realtime_messaging_contract.py`
 fails if the two disagree.
 
 **What is not here.** No dispatcher, no ring buffer, no network transport, no
@@ -21,8 +21,8 @@ clock and makes no latency claim.
 from __future__ import annotations
 
 import struct
-import sys as _alias_sys
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 __all__ = [
     "HEADER_SIZE",
@@ -274,6 +274,18 @@ def _require_room(slot: bytes, needed: int, *, owner: str) -> None:
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    RPCHeader,
+    RPCResponse,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     RealtimeProtocolError,
     RealtimeCallError,
@@ -284,14 +296,6 @@ for _identity_export in (
     read_request,
     frame_response,
     read_response,
-    _require_slot_size,
-    _require_room,
 ):
     _identity_export.__module__ = "flagquantum.realtime.protocol"
 del _identity_export
-
-_alias_sys.modules["flagquantum.realtime.protocol"] = _alias_sys.modules[__name__]
-_parent = _alias_sys.modules.get("flagquantum.realtime")
-if _parent is not None:
-    setattr(_parent, "protocol", _alias_sys.modules[__name__])
-del _parent

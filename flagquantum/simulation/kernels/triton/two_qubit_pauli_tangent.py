@@ -9,8 +9,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -201,16 +199,3 @@ def repeated_rxx_ryy_rzz_tangents(
 
 
 __all__ = ["repeated_rxx_ryy_rzz_tangents"]
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _TensorJacobian,
-    _rxx_ryy_rzz_tangent_kernel,
-    _reference,
-    repeated_rxx_ryy_rzz_tangents,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.two_qubit_pauli_tangent"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.two_qubit_pauli_tangent", __name__)

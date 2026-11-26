@@ -15,6 +15,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -172,7 +174,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append(f"split real/imag P1 threshold {name} must be positive")
 
     for name, raw_path in contract.get("verification", {}).items():
-        if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
+        if not isinstance(raw_path, str) or not (source_path(ROOT, raw_path)).is_file():
             errors.append(
                 f"split real/imag P1 verification path {name!r} does not exist"
             )

@@ -8,7 +8,7 @@ from examples.synthesis.algorithms.machine_learning.quantum_autoencoder.comparis
     run_example,
 )
 from flagquantum import synth
-from tools.validate_qmod_binding_scopes import validate
+from tools.validation.validate_qmod_binding_scopes import validate
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128

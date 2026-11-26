@@ -420,7 +420,8 @@ def test_old_native_plan_cannot_seal_an_ising_source_as_rydberg(
         side_effect=AssertionError("discrete source reached Rydberg numerical work")
     )
     monkeypatch.setattr(
-        "flagquantum.lindblad._native_plan._plan_density_matrix_evolution", numerical
+        "flagquantum.runtime.evolution._native_plan._plan_density_matrix_evolution",
+        numerical,
     )
     with pytest.raises(SerializationError, match="timed Rydberg"):
         fql.LindbladPlan.from_dict(payload)

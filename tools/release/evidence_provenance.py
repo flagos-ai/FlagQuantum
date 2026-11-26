@@ -73,7 +73,7 @@ SUPPORTED_REVISION_ORIGINS = (
     ORIGIN_PRODUCING_HOST_HISTORY,
 )
 
-#: The sentinel ``_source_provenance`` in ``tools/validate_flagos_cuda_reference.py``
+#: The sentinel ``_source_provenance`` in ``tools/validation/validate_flagos_cuda_reference.py``
 #: writes when the producing host cannot read its own ``git rev-parse HEAD``.
 REVISION_UNAVAILABLE = "unavailable"
 

@@ -13,8 +13,8 @@ from typing import Any
 
 import pytest
 
-from tools import collect_ftqc_phase_cost as controller
-from tools import observe_ftqc_phase_cost as worker
+from tools.validation import collect_ftqc_phase_cost as controller
+from tools.validation import observe_ftqc_phase_cost as worker
 
 pytestmark = pytest.mark.unit
 

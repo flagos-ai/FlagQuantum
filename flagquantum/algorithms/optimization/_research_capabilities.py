@@ -12,8 +12,8 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from types import MappingProxyType
 from typing import Any, Literal
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization.ground_state import (
     ComplexAmplitude,
     GroundStateAnsatz,
@@ -664,11 +664,25 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    EnergyVarianceRequest,
+    ExactGroundStateRequest,
+    ResearchCapabilityCandidate,
+    ResearchCapabilityManifest,
+    ResearchCapabilityQuery,
+    ResearchResourceEstimate,
+    ResearchValidationIssue,
+    ResearchValidationReport,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _closed_mapping,
-    _pauli_sum_from_mapping,
-    _statevector_from_mapping,
-    _normalize_research_request,
     ExactGroundStateRequest,
     EnergyVarianceRequest,
     ResearchCapabilityQuery,
@@ -677,14 +691,10 @@ for _identity_export in (
     ResearchValidationIssue,
     ResearchValidationReport,
     ResearchResourceEstimate,
-    _normalized_query,
     search_research_capabilities,
     describe_research_capability,
-    _unsupported_report,
     validate_research_capability_input,
     estimate_research_capability,
 ):
     _identity_export.__module__ = "flagquantum.services.research_capabilities"
 del _identity_export
-
-_alias_module("flagquantum.services.research_capabilities", __name__)

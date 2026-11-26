@@ -1296,10 +1296,10 @@ For each phase:
 1. run the smallest new focused unit tests;
 2. run existing compiler tests;
 3. run existing statevector and gradient tests when the handoff is touched;
-4. run `python tools/check_team_scope.py` for the owning team;
-5. run `python tools/check_architecture.py`;
-6. run `python tools/ci_tier.py pr-default`;
-7. run `python tools/ci_tier.py pr-runtime` for vertical execution changes;
+4. run `python tools/architecture/check_team_scope.py` for the owning team;
+5. run `python tools/architecture/check_architecture.py`;
+6. run `python tools/ci/ci_tier.py pr-default`;
+7. run `python tools/ci/ci_tier.py pr-runtime` for vertical execution changes;
 8. compare the protected public API snapshot without regenerating it.
 
 All commands must use the repository-supported Python environment and bounded

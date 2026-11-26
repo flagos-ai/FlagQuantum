@@ -10,7 +10,7 @@ from examples.synthesis.algorithms.state_preparation.swap_test.comparisons.circu
     run_example,
 )
 from flagquantum import synth
-from tools.validate_qmod_swap_test import DTYPE, validate
+from tools.validation.validate_qmod_swap_test import DTYPE, validate
 
 pytestmark = pytest.mark.integration
 

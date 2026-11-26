@@ -14,6 +14,8 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -109,7 +111,7 @@ def contract_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         if float(policy.get("min_improvement_factor", 0.0)) <= 1.0:
             errors.append(f"Double-Single threshold {name!r} must improve on FP32")
     for name, raw_path in contract.get("verification", {}).items():
-        if not isinstance(raw_path, str) or not (ROOT / raw_path).is_file():
+        if not isinstance(raw_path, str) or not (source_path(ROOT, raw_path)).is_file():
             errors.append(f"Double-Single verification path {name!r} does not exist")
 
     tree = ast.parse(IMPLEMENTATION.read_text(encoding="utf-8"))

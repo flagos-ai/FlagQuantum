@@ -1,11 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
-from flagquantum.core.operators.channels import (
-    _UNITARY_TOLERANCE as _UNITARY_TOLERANCE,
-)
 from flagquantum.core.operators.channels import (
     CHANNEL_FACTORIES as CHANNEL_FACTORIES,
 )
@@ -16,21 +10,6 @@ from flagquantum.core.operators.channels import (
     UnitaryMixture as UnitaryMixture,
 )
 from flagquantum.core.operators.channels import __all__ as __all__
-from flagquantum.core.operators.channels import (
-    _as_probability as _as_probability,
-)
-from flagquantum.core.operators.channels import (
-    _complex_dtype as _complex_dtype,
-)
-from flagquantum.core.operators.channels import (
-    _pauli_basis as _pauli_basis,
-)
-from flagquantum.core.operators.channels import (
-    _real_dtype as _real_dtype,
-)
-from flagquantum.core.operators.channels import (
-    _scaled_unitary as _scaled_unitary,
-)
 from flagquantum.core.operators.channels import (
     amplitude_damping_channel as amplitude_damping_channel,
 )
@@ -64,6 +43,3 @@ from flagquantum.core.operators.channels import (
 from flagquantum.core.operators.channels import (
     y_flip_channel as y_flip_channel,
 )
-
-_implementation = _import_module("flagquantum.core.operators.channels")
-_sys.modules[__name__] = _implementation

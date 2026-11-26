@@ -438,4 +438,4 @@ def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
     assert aggregate["timeout-minutes"] == 20
     commands = [step.get("run", "") for step in aggregate["steps"]]
     assert "test '${{ needs.coverage-shard.result }}' = success" in commands
-    assert "python tools/check_coverage.py" in commands
+    assert "python tools/ci/check_coverage.py" in commands

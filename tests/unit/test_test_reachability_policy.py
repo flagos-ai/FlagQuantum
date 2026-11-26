@@ -9,7 +9,7 @@ unmarked ones passed it. This walks each file's syntax tree instead, so every
 test function is checked individually, and it checks the marker against the
 selectors the workflows really use rather than merely "not a builtin".
 
-The lane list below mirrors `.github/workflows/ci.yml` and `tools/ci_tier.py`.
+The lane list below mirrors `.github/workflows/ci.yml` and `tools/ci/ci_tier.py`.
 Adding a lane means adding its selector here; removing a lane's last selector
 means the tests that relied on it fail this check rather than going quiet.
 """
@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.ci_tier import CI_TIERS
+from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
 

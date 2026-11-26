@@ -7,7 +7,7 @@ import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
 from tests.integration.test_synthesis_qmod_coherent_walk import _reference
-from tools.validate_qmod_permutations import FIXTURES, validate
+from tools.validation.validate_qmod_permutations import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
 DTYPE = torch.complex128

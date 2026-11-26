@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.parity_matrix import load_inputs, validate_contract
+from tools.architecture.parity_matrix import load_inputs, validate_contract
 
 pytestmark = pytest.mark.unit
 

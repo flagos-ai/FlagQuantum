@@ -13,10 +13,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypedDict
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.local import get_platform_runtime
 from flagquantum.core.ir import IR_VERSION, ensure_circuit_ir
 from flagquantum.errors import ExecutionError
@@ -301,6 +301,20 @@ def _quantum_owner(module: torch.nn.Module) -> torch.nn.Module:
             "checkpoint requires exactly one fq.Module quantum owner"
         )
     return owners[0]
+
+
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    PrecisionPolicy,
+    SeedContract,
+    TrainingCheckpointRestore,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
 
 
 def _optimizer_contract(
@@ -904,26 +918,9 @@ for _identity_export in (
     SeedContract,
     TrainingCheckpointRestore,
     seed_everything,
-    _rng_state,
-    _restore_rng,
-    _topology,
-    _workload_signature,
-    _current_workload_signature,
-    _quantum_owner,
-    _optimizer_contract,
-    _captured_workload_signature,
-    _parameter_training,
-    _has_custom_checkpoint_methods,
-    _validate_checkpoint_target,
-    _validate_parameter_training,
     save_training_checkpoint,
-    _load_training_checkpoint_payload,
-    _validate_training_checkpoint,
-    _restore_training_checkpoint,
     load_training_checkpoint,
     assert_finite_training,
 ):
     _identity_export.__module__ = "flagquantum.runtime.training_state"
 del _identity_export
-
-_alias_module("flagquantum.runtime.training_state", __name__)

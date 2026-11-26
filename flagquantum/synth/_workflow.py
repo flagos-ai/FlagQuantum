@@ -8,8 +8,8 @@ from fractions import Fraction
 from os import PathLike
 from types import MappingProxyType
 from typing import Literal, overload
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction import program_types
 from flagquantum.compiler._construction.codegen.arithmetic import ArithmeticCandidate
@@ -989,22 +989,19 @@ def _complete(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    UInt,
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
     InputState,
-    SynthesisError,
     Program,
-    _target,
-    synthesize,
-    synthesize,
-    synthesize,
-    synthesize,
-    synthesize,
-    synthesize,
-    _synthesize,
-    _complete,
+    UInt,
 ):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (UInt, InputState, SynthesisError, Program, synthesize):
     _identity_export.__module__ = "flagquantum.services.synthesis"
 del _identity_export
-
-_alias_module("flagquantum.services.synthesis", __name__)

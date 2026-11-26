@@ -11,8 +11,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Literal
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.errors import CapabilityError, ExecutionError
 from flagquantum.runtime.results import ExecutionResult
 
@@ -825,13 +825,21 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (
+    MultiTargetSubmission,
+    TargetSubmission,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
-    _Receipt,
-    _normalize,
     RemoteJob,
     submit,
-    _prepare_quafu_package,
-    _submit_quafu,
     TargetSubmission,
     MultiTargetSubmission,
     submit_to_targets,
@@ -839,5 +847,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.remote.jobs"
 del _identity_export
-
-_alias_module("flagquantum.remote.jobs", __name__)

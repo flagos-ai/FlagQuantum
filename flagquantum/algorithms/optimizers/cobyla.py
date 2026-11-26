@@ -64,10 +64,10 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.errors import ValidationError
 
 __all__ = [
@@ -882,18 +882,15 @@ class CobylaOptimizer:
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    CobylaResult,
-    _largest_violation,
-    _residual,
-    _finite_positive,
-    _AffineModel,
-    _initial_tableau,
-    _trust_region_step,
-    _linearized_residual,
-    CobylaOptimizer,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (CobylaResult,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (CobylaResult, CobylaOptimizer):
     _identity_export.__module__ = "flagquantum.algorithms.cobyla"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.cobyla", __name__)

@@ -6,7 +6,7 @@ on:
       - 'flagquantum/ecosystem/openfermion.py'
       - 'flagquantum/ecosystem/chemistry/molecular_data.py'
       - 'flagquantum/observables/fermion.py'
-      - 'flagquantum/core/algebra/pauli.py'
+      - 'flagquantum/core/operators/pauli.py'
       - 'tests/unit/test_openfermion_conversion.py'
       - 'tests/integration/test_openfermion_interop.py'
       - '.github/workflows/openfermion-interop.yml'

@@ -8,8 +8,6 @@ import torch
 import triton
 import triton.language as tl
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 if TYPE_CHECKING:
     from ._jit import jit
 else:
@@ -150,17 +148,3 @@ def backward(
 
 
 __all__ = ("forward", "backward")
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _ry,
-    _vjp,
-    _validate,
-    forward,
-    backward,
-):
-    _identity_export.__module__ = "flagquantum.kernels.triton.statevector_ry_fp64"
-del _identity_export
-
-_alias_module("flagquantum.kernels.triton.statevector_ry_fp64", __name__)

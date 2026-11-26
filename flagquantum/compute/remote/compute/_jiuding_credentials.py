@@ -7,8 +7,6 @@ import os
 from pathlib import Path
 from typing import NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 class JiudingCredentials:
     """One in-memory Jiuding credential pair with a redacted representation.
@@ -77,16 +75,3 @@ def load_jiuding_credentials() -> tuple[str, str]:
 def _decode(path: Path) -> str:
     encoded = b"".join(path.read_bytes().split())
     return base64.b64decode(encoded, validate=True).decode()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    JiudingCredentials,
-    resolve_jiuding_credentials,
-    load_jiuding_credentials,
-    _decode,
-):
-    _identity_export.__module__ = "flagquantum.remote.compute._jiuding_credentials"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._jiuding_credentials", __name__)

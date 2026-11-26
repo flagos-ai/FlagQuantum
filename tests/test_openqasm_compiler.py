@@ -7,7 +7,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.openqasm import _format_number, emit_openqasm
+from flagquantum.compiler.formats.openqasm import _format_number
+from flagquantum.compiler.openqasm import emit_openqasm
 
 pytestmark = pytest.mark.unit
 

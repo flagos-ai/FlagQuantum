@@ -5,9 +5,6 @@ from importlib import import_module as _import_module
 from typing import Any as _Any
 
 from flagquantum.runtime.evolution import (
-    _MISSING as _MISSING,
-)
-from flagquantum.runtime.evolution import (
     INTEGRATOR_NAMES as INTEGRATOR_NAMES,
 )
 from flagquantum.runtime.evolution import (
@@ -20,15 +17,6 @@ from flagquantum.runtime.evolution import (
     LindbladPlan as LindbladPlan,
 )
 from flagquantum.runtime.evolution import __all__ as __all__
-from flagquantum.runtime.evolution import (
-    _execution_settings as _execution_settings,
-)
-from flagquantum.runtime.evolution import (
-    _infer_n_qubits as _infer_n_qubits,
-)
-from flagquantum.runtime.evolution import (
-    _observables as _observables,
-)
 from flagquantum.runtime.evolution import (
     adjoint_gradient as adjoint_gradient,
 )
@@ -47,6 +35,8 @@ __doc__ = _implementation.__doc__ or ""
 
 
 def __getattr__(name: str) -> _Any:
+    if name.startswith("_"):
+        raise AttributeError(name)
     cached = _alias_sys.modules.get(f"{__name__}.{name}")
     if cached is not None:
         return cached

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.chemistry.molecular import (
     MolecularHamiltonian,
     second_quantized_hamiltonian,
@@ -144,5 +143,3 @@ for _identity_export in (
 ):
     _identity_export.__module__ = "flagquantum.algorithms.chemistry_domain.problem"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.chemistry_domain.problem", __name__)

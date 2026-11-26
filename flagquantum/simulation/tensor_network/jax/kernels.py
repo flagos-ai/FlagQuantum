@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.simulation.numerics.jax import (
     _jax_pauli_matrix,
     _jax_real_dtype,
@@ -262,6 +261,3 @@ def _jax_einsum_reorder(
         + "".join(mapping[label] for label in output_labels)
     )
     return jnp.einsum(equation, tensor, precision=matmul_precision)
-
-
-_alias_module("flagquantum.simulation.jax.tensor_network.kernels", __name__)

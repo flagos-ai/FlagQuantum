@@ -54,6 +54,8 @@ from typing import Any
 
 import torch
 
+from tools.architecture.source_relocations import source_path
+
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -1241,11 +1243,11 @@ def _scope_errors(contract: Mapping[str, Any]) -> list[str]:
 def _verification_errors(contract: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     verification = contract["verification"]
-    contract_test = ROOT / str(verification["contract"])
+    contract_test = source_path(ROOT, str(verification["contract"]))
     if not contract_test.is_file():
         errors.append(f"the contract test {contract_test} does not exist")
     for relative in verification["expansion_tests"]:
-        if not (ROOT / str(relative)).is_file():
+        if not (source_path(ROOT, str(relative))).is_file():
             errors.append(f"the expansion test {relative} does not exist")
     symbol = str(verification["implementation_symbol"])
     module_name, _, attribute = symbol.rpartition(".")

@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Protocol
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.analysis import (
     HybridProgramAnalysis,
     analyze_program,
@@ -159,16 +158,3 @@ __all__ = (
     "analyze_program",
     "run_pass_pipeline",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    HybridProgramPass,
-    PassRecord,
-    HybridOptimizationResult,
-    run_pass_pipeline,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.passes"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.passes", __name__)

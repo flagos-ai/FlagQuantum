@@ -6,8 +6,6 @@ from collections.abc import Mapping
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 from .contracts import (
     PlatformDevice,
     PlatformRuntime,
@@ -103,16 +101,3 @@ __all__ = (
     "list_platform_status",
     "resolve_platform_device",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    get_platform_runtime,
-    list_platform_status,
-    discover_platform_devices,
-    resolve_platform_device,
-):
-    _identity_export.__module__ = "flagquantum.compute.registry"
-del _identity_export
-
-_alias_module("flagquantum.compute.registry", __name__)

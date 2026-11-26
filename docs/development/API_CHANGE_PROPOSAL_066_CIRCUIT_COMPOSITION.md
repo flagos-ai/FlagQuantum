@@ -416,7 +416,7 @@ now the reading of this section:
 | mechanism | each opcode declares its controlled form in `flagquantum/core/operator_schema.py` as a rule name, and `flagquantum/core/controlled.py` emits the resulting instruction sequence | 31 of the 35 registered opcodes declare a rule; the four that do not are exactly the channels |
 | ancilla ladder precedent | **not** reused. `flagquantum/algorithms/primitives/oracle.py` is outside `core` and `append_multi_controlled_x` returns a wrong answer on a dirty ancilla, which was measured: 8 of 32 operands at three controls, 32 of 128 at four, with the ancilla itself restored | the emitter is ancilla-free, and the contract records `ancilla_qubits = 0` |
 | ancilla argument | **declined**, because the chosen mechanism needs none | no `ancillas=` keyword exists; the declined candidate is recorded in the record's Decision Candidates |
-| exact refusal phrases | 13 rows, all reachable, frozen in `[[refusals]]` of `contracts/circuit-composition-contract.toml` and read back by `tools/check_circuit_composition_contract.py` | the contract holds 32 refusal rows across the four members, of which 31 are reachable |
+| exact refusal phrases | 13 rows, all reachable, frozen in `[[refusals]]` of `contracts/circuit-composition-contract.toml` and read back by `tools/validation/check_circuit_composition_contract.py` | the contract holds 32 refusal rows across the four members, of which 31 are reachable |
 | the identity opcode | `i` under any number of controls emits **no** instruction, which is a rule about that one opcode and not a no-op path for the operation: `n_controls` below one is still refused, and a control label that is not outside the receiver is still refused | Section 7's prohibition is about the operation, not about the one gate whose controlled form is empty |
 
 The acceptance test in the fourth bullet is measured twice: once as a simulated operator
@@ -501,7 +501,7 @@ gives every opcode a `power_rule`, either `scale_single_parameter` ("a unitary t
 declares exactly one parameter", which is exactly `U(theta)^k == U(k*theta)`) or
 `repeat_instruction` ("everything else"). Measured, that split is **12 opcodes in
 closed form and 23 repetitions**, and the contract gate
-`tools/check_circuit_composition_contract.py` compares the two dense operators for
+`tools/validation/check_circuit_composition_contract.py` compares the two dense operators for
 every one of the 12, so a gate whose angle does not in fact scale is refused by
 the gate rather than mis-announced by the field.
 
@@ -668,13 +668,13 @@ python -m pytest tests/unit/test_circuit_compose.py tests/unit/test_circuit_adjo
     tests/unit/test_circuit_control.py -q
 # 556 passed
 
-python tools/check_circuit_composition_contract.py
+python tools/validation/check_circuit_composition_contract.py
 # Circuit composition contract passed
 
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 # architecture boundaries passed
 
-python tools/check_docs_links.py
+python tools/docs/check_docs_links.py
 # Checked 562 markdown files; all local links and anchors resolve.
 ```
 

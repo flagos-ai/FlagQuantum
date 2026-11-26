@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.ci_tier import CI_TIERS, main
+from tools.ci.ci_tier import CI_TIERS, main
 
 pytestmark = pytest.mark.unit
 
@@ -73,7 +73,7 @@ def test_scheduled_hardware_tiers_do_not_block_default_pr():
     # as the whole performance result.
     def command(probe: str, report: str) -> str:
         return (
-            "python tools/multinode_launch_plan.py --run"
+            "python tools/validation/multinode_launch_plan.py --run"
             + (f" --probe {probe}" if probe else "")
             + " --staging /nfs/fq-multinode-tier"
             " --checkpoint-directory /nfs/fq-multinode-tier-checkpoints"
@@ -135,7 +135,7 @@ def test_docs_ci_matrix_matches_script_tiers_and_fail_closed_boundaries():
     text = Path("docs/development/TESTING.md").read_text(encoding="utf-8")
 
     for tier_name in CI_TIERS:
-        assert f"python tools/ci_tier.py {tier_name}" in text
+        assert f"python tools/ci/ci_tier.py {tier_name}" in text
     assert "explicit accelerator runner" in text
     assert "explicit rank placement" in text
     assert "not scalability evidence" in text
@@ -186,7 +186,8 @@ def test_ci_tier_partitions_preserve_the_original_selection(
     assert output.count("+ PYTHON_EXE -m pytest") == 1
     assert f"-m {marker} -q" in output
     assert (
-        f"-p tools.pytest_shard --fq-shard-count {shards} --fq-shard-index 1" in output
+        f"-p tools.ci.pytest_shard --fq-shard-count {shards} --fq-shard-index 1"
+        in output
     )
 
 

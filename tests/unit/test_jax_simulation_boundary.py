@@ -25,10 +25,10 @@ from flagquantum.runtime.executors.jax.tensor_network import (
 from flagquantum.runtime.executors.jax.tensor_network import (
     gradients as tensor_network_gradients,
 )
-from flagquantum.simulation.jax import primitives as jax_gate_primitives
 from flagquantum.simulation.mps.jax import batched as jax_mps_batched
 from flagquantum.simulation.mps.jax import kernels as jax_mps
 from flagquantum.simulation.mps.jax import pullbacks as jax_mps_pullbacks
+from flagquantum.simulation.numerics import jax as jax_gate_primitives
 from flagquantum.simulation.statevector.jax import kernels as jax_statevector
 from flagquantum.simulation.tensor_network.jax import (
     contraction as jax_tensor_network_contraction,

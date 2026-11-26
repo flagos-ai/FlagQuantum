@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.partition_failures_against_base import (
+from tools.ci.partition_failures_against_base import (
     UnattributableComparisonError,
     failure_ids,
     partition,

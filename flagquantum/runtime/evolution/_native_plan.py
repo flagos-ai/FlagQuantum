@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.ir.program.model import ProgramRecord
 from flagquantum.core.ir.program.physical import RydbergContext, RydbergPresence
 from flagquantum.core.ir.program.physical_codec import (
@@ -310,16 +309,3 @@ def validate_native_plan(payload: Mapping[str, Any]) -> None:
         RecursionError,
     ) as exc:
         raise SerializationError(f"invalid native Lindblad plan: {exc}") from exc
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    native_request,
-    build_native_plan,
-    _numeric_values,
-    validate_native_plan,
-):
-    _identity_export.__module__ = "flagquantum.lindblad._native_plan"
-del _identity_export
-
-_alias_module("flagquantum.lindblad._native_plan", __name__)

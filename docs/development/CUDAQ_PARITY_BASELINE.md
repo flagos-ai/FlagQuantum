@@ -169,7 +169,7 @@ one does not close the other.
 
 ## How the baseline is consumed
 
-`tools/parity_matrix.py` validates `contracts/cudaq-parity-matrix.toml` against
+`tools/architecture/parity_matrix.py` validates `contracts/cudaq-parity-matrix.toml` against
 this document's existence, against `capability-maturity.toml`, and against the
 repository, then renders `docs/reference/CUDAQ_PARITY_MATRIX.md`. The generated
 document is the published scoreboard.

@@ -1,32 +1,5 @@
 """Historical import facade for the relocated implementation."""
 
-import sys as _sys
-from importlib import import_module as _import_module
-
-from flagquantum.algorithms.optimization.ground_state import (
-    _ANSATZ_NAME as _ANSATZ_NAME,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _BASIS_CONVENTION as _BASIS_CONVENTION,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _OPTIMIZER_NAME as _OPTIMIZER_NAME,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _REFERENCE_SCHEMA as _REFERENCE_SCHEMA,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _REQUEST_SCHEMA as _REQUEST_SCHEMA,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _RESULT_SCHEMA as _RESULT_SCHEMA,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _TOOL_NAME as _TOOL_NAME,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _TOOL_VERSION as _TOOL_VERSION,
-)
 from flagquantum.algorithms.optimization.ground_state import (
     ComplexAmplitude as ComplexAmplitude,
 )
@@ -74,21 +47,6 @@ from flagquantum.algorithms.optimization.ground_state import (
 )
 from flagquantum.algorithms.optimization.ground_state import __all__ as __all__
 from flagquantum.algorithms.optimization.ground_state import (
-    _canonical_digest as _canonical_digest,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _native_hamiltonian as _native_hamiltonian,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _provenance as _provenance,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _unsupported_reason as _unsupported_reason,
-)
-from flagquantum.algorithms.optimization.ground_state import (
-    _unsupported_vqe_result as _unsupported_vqe_result,
-)
-from flagquantum.algorithms.optimization.ground_state import (
     energy_variance_reference as energy_variance_reference,
 )
 from flagquantum.algorithms.optimization.ground_state import (
@@ -103,6 +61,3 @@ from flagquantum.algorithms.optimization.ground_state import (
 from flagquantum.algorithms.optimization.ground_state import (
     validate_ground_state_vqe_request as validate_ground_state_vqe_request,
 )
-
-_implementation = _import_module("flagquantum.algorithms.optimization.ground_state")
-_sys.modules[__name__] = _implementation

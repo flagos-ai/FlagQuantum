@@ -129,7 +129,7 @@ in the executors' `summary()` payloads while the attribute that fills it says
 ```
 
 is the intended shape and not an oversight. The audit is
-`tools/census_wire_vocabulary.py`, which reports a *literal* separately from a
+`tools/architecture/census_wire_vocabulary.py`, which reports a *literal* separately from a
 *name*; the gate forbids the reverse direction, so an exclusion cannot be parked
 once its payload schema does move.
 
@@ -180,12 +180,12 @@ every bind.
 
 ## Acceptance Tests
 
-1. `python tools/check_qubit_vocabulary.py` exits 0 and reports
+1. `python tools/architecture/check_qubit_vocabulary.py` exits 0 and reports
    `79 of 341 baseline sites retired, 11 kept as deprecated aliases` with WQ-4 at
    `retired 49 remaining 0`; `68 of 122 attribute sites retired, 3 kept as
    deprecated aliases` with WQ-4 at `retired 41 remaining 0`; and
    `4 of 10 definition names retired` with WQ-4 at `retired 4 remaining 0`.
-2. `python tools/check_architecture.py` reports `architecture boundaries passed`,
+2. `python tools/architecture/check_architecture.py` reports `architecture boundaries passed`,
    and `flagquantum/runtime/executors/statevector/reverse_adjoint_sweep.py` is
    1249 lines, below the unraised 1250 ceiling.
 3. `python -m mypy --strict --python-version 3.12 --ignore-missing-imports
@@ -199,12 +199,12 @@ every bind.
    `test_statevector_full_state_gather.py`, `test_statevector_persistent_layout.py`,
    `test_statevector_reverse.py`, and `test_statevector_training.py` are run
    explicitly, because they read the renamed plan and result objects.
-6. `python tools/public_api_snapshot.py` reports `public API migration baseline
+6. `python tools/architecture/public_api_snapshot.py` reports `public API migration baseline
    passed`, and neither `docs/public_api_v1.json` nor
    `contracts/public-api-v0.2-baseline.json` is edited.
-7. `python tools/validate_required_checks.py` still passes: this change adds tests
+7. `python tools/ci/validate_required_checks.py` still passes: this change adds tests
    and contract rows, never a CI job.
-8. `python tools/check_team_scope.py --require-classified --base d529e9753`
+8. `python tools/architecture/check_team_scope.py --require-classified --base d529e9753`
    classifies every changed path, and `contracts/qubit-vocabulary-contract.toml`
    declares WQ-4's owner as `simulation + runtime`: 29 of the slice's 32 files sit
    under `flagquantum/runtime/executors/**`, which `config/team-ownership.toml` assigns

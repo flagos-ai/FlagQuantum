@@ -14,6 +14,8 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover
@@ -99,7 +101,7 @@ def contract_errors(
     if parameter_contract != expected_parameters:
         errors.append("PennyLane parameter names or order drifted")
     for raw_path in contract.get("verification", {}).values():
-        if not (ROOT / str(raw_path)).is_file():
+        if not (source_path(ROOT, str(raw_path))).is_file():
             errors.append(f"PennyLane verification path does not exist: {raw_path}")
     return tuple(errors)
 

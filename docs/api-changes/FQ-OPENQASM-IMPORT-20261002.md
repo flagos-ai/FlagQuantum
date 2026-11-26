@@ -101,7 +101,7 @@ size a later declaration had changed (`out_of_range_qubit`), which describes
 what the redefinition broke rather than the redefinition.
 
 `contracts/openqasm-import-v1-candidate.json` is the machine-readable form of
-this decision, and `tools/check_openqasm_import_contract.py` is its reader: it
+this decision, and `tools/validation/check_openqasm_import_contract.py` is its reader: it
 reconciles the refusal vocabulary with `openqasm_import._ISSUE_CODES` and with
 every literal `_refuse(...)` call site, the version lanes and the signature with
 the shipped importer, the root additions with `fq.__all__`, and requires each of
@@ -152,10 +152,10 @@ produces an ordinary `CircuitIR`.
 `contracts/openqasm-import-v1-candidate.json` records the authorization, the
 signature, the refusal vocabulary, and the accepted versions.
 `docs/public_api_v1.json` and `docs/generated/STABLE_API.md` list the new export.
-`tools/public_api_snapshot.py` folds the new contract's `root_additions` into its
+`tools/architecture/public_api_snapshot.py` folds the new contract's `root_additions` into its
 authorized set and protects the new signature.
-`tools/check_openqasm_import_contract.py` reads the interchange contract itself,
-runs in the `quality` job, and is a `tools/pre_push.py` check.
+`tools/validation/check_openqasm_import_contract.py` reads the interchange contract itself,
+runs in the `quality` job, and is a `tools/ci/pre_push.py` check.
 
 This proposal is not the `FQ-PAULI-QUANTUM-INFO-BOUNDARY-20260930` change and
 does not unblock it; that change alters the accepted inputs of an existing Stable
@@ -171,17 +171,17 @@ Core name and still needs the API-owner path.
   spacing tolerance, measurement permutation and whole-register mapping, the
   deprecated alias warning, the non-text `TypeError`, and all eleven refusal
   codes.
-- `python tools/public_api_snapshot.py` reports
+- `python tools/architecture/public_api_snapshot.py` reports
   `public API migration baseline passed`.
-- `python tools/check_openqasm_import_contract.py` reports
+- `python tools/validation/check_openqasm_import_contract.py` reports
   `OpenQASM import contract passed: 11 refusal codes, 2 version lanes, 9 rules
   each with a reader`, and `tests/unit/test_openqasm_import_contract.py` drives
   it with one deliberate drift per claim so a field that stopped being read
   fails there. `tests/unit/test_openqasm_import_boundary.py` proves the importer
   pulls in no runtime or simulation module in a fresh interpreter, and that the
   contract gate is a required CI step and a pre-push check.
-- `python tools/operator_manifest.py --check` and
-  `python tools/docs_source_of_truth.py --check` pass.
+- `python tools/docs/operator_manifest.py --check` and
+  `python tools/docs/docs_source_of_truth.py --check` pass.
 - The nine existing emitter tests (`tests/test_openqasm_compiler.py`) and the four
   conformance tests (`tests/hybrid_compiler/test_target_conformance.py`) pass
   unchanged, which is the replacement evidence that the shared gate table did not

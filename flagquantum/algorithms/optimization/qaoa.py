@@ -49,10 +49,10 @@ import math
 import operator
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from typing import get_type_hints as _class_type_hints
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.algorithms.optimization.qaoa_circuits import qaoa_loss
 from flagquantum.algorithms.optimization.vqe import OptimizerFactory
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
@@ -589,15 +589,15 @@ def run_qaoa(
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    QAOAResult,
-    _checked_endpoint,
-    _checked_cut_edges,
-    maxcut_hamiltonian,
-    maxcut_objective,
-    run_qaoa,
-):
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (QAOAResult,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
+for _identity_export in (QAOAResult, maxcut_hamiltonian, maxcut_objective, run_qaoa):
     _identity_export.__module__ = "flagquantum.algorithms.variational"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.variational", __name__)

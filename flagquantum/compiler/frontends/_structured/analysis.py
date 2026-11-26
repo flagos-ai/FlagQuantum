@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.model import (
     HybridProgram,
     Operation,
@@ -153,18 +152,3 @@ __all__ = (
     "fold_value",
     "operations",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    operations,
-    fold_value,
-    HybridProgramAnalysis,
-    analyze_program,
-    constant_loop_iterations,
-    direct_constant_loop_counts,
-):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.analysis"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.analysis", __name__)

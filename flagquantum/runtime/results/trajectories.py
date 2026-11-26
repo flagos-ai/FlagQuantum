@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
 import torch
-
-from flagquantum._import_compat import alias_module as _alias_module
 
 
 @dataclass(frozen=True)
@@ -238,4 +237,15 @@ class MPSMonteCarloResult:
 
 __all__ = ("MPSMonteCarloResult", "TrajectoryFailure", "TrajectoryStatistics")
 
-_alias_module("flagquantum.runtime.trajectories.result", __name__)
+# Keep field introspection independent of the historical pickle locator module.
+for _public_hint_class in (
+    MPSMonteCarloResult,
+    TrajectoryFailure,
+    TrajectoryStatistics,
+):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+    _public_hint_class.__module__ = "flagquantum.runtime.trajectories.result"
+del _public_hint_class, _public_field_hints

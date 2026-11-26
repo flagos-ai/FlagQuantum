@@ -6,8 +6,8 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
+from typing import get_type_hints as _class_type_hints
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler import CouplingMap
 from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
@@ -325,17 +325,19 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
+# Resolve field types before preserving historical public class module names.
+# Dataclass constructor/field contracts stay unchanged; introspection needs no facade import.
+for _public_hint_class in (AzureSubmissionPreview,):
+    _public_field_hints = _class_type_hints(_public_hint_class, include_extras=True)
+    _public_hint_class.__annotations__ = {
+        name: _public_field_hints[name] for name in _public_hint_class.__annotations__
+    }
+del _public_hint_class, _public_field_hints
+
 for _identity_export in (
     AzureSubmissionPreview,
-    _attribute,
     azure_backend_profile,
-    _job_id,
-    _bitstring,
-    _probabilities_to_counts,
-    _azure_counts,
     AzureQuantumProvider,
 ):
     _identity_export.__module__ = "flagquantum.remote.qpu.azure"
 del _identity_export
-
-_alias_module("flagquantum.remote.qpu.azure", __name__)

@@ -28,7 +28,7 @@ workloads whose required collective subset passed.
 Run the deterministic aggregator from the repository root:
 
 ```bash
-python tools/audit_flagos_workload_capability.py
+python tools/validation/audit_flagos_workload_capability.py
 ```
 
 The tool hashes each source artifact, validates raw cases and rank semantics, and

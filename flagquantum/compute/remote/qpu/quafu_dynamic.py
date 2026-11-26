@@ -14,7 +14,6 @@ from dataclasses import replace
 from datetime import datetime
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -341,21 +340,3 @@ def _quafu_dynamic_snapshot_from_fixture(
 
 
 __all__: tuple[str, ...] = ()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _closed_mapping,
-    _text,
-    _positive_int,
-    _boolean,
-    _string_tuple,
-    _integer_tuple,
-    _timestamp,
-    _directed_edges,
-    _quafu_dynamic_snapshot_from_fixture,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu.quafu_dynamic"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu.quafu_dynamic", __name__)

@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from tools import check_repository_language
-from tools.check_repository_language import violations
+from tools.architecture import check_repository_language
+from tools.architecture.check_repository_language import violations
 
 pytestmark = pytest.mark.unit
 

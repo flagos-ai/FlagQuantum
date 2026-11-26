@@ -6,8 +6,6 @@ import runpy
 import sys
 from pathlib import Path
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 
 def main() -> None:
     """Run one submitted script in this process and record what it returned.
@@ -59,11 +57,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (main,):
-    _identity_export.__module__ = "flagquantum.remote.compute._worker"
-del _identity_export
-
-_alias_module("flagquantum.remote.compute._worker", __name__)

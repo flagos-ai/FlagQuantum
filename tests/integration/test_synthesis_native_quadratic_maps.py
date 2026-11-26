@@ -21,7 +21,7 @@ from flagquantum import synth
 from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
-from tools.synthesis_catalog import load_catalog
+from tools.docs.synthesis_catalog import load_catalog
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

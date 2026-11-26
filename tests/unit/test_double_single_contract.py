@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.core.numerics import PrecisionPlanContract, coerce_precision_plan
-from tools.check_double_single_contract import contract_errors, load_toml
+from tools.validation.check_double_single_contract import contract_errors, load_toml
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

@@ -10,7 +10,13 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
-from tools.check_capability_maturity import (
+from tools.release.evidence_provenance import (
+    ORIGIN_PRODUCING_HOST_HISTORY,
+    ORIGIN_REPOSITORY_HISTORY,
+    ProvenanceUnavailableError,
+    revision_resolves,
+)
+from tools.validation.check_capability_maturity import (
     CODE_VERSION_ORIGIN_FIELD,
     EXPECTED_LEVELS,
     REQUIRED_USER_FIELDS,
@@ -18,12 +24,6 @@ from tools.check_capability_maturity import (
     claim_values,
     code_version_errors,
     maturity_errors,
-)
-from tools.evidence_provenance import (
-    ORIGIN_PRODUCING_HOST_HISTORY,
-    ORIGIN_REPOSITORY_HISTORY,
-    ProvenanceUnavailableError,
-    revision_resolves,
 )
 
 pytestmark = pytest.mark.unit

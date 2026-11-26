@@ -19,8 +19,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from flagquantum._import_compat import alias_module as _alias_module
-
 _MISSING = object()
 
 
@@ -200,20 +198,3 @@ __all__ = (
     "declared_width",
     "edge_pair",
 )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    declared_value,
-    declared_text,
-    declared_count,
-    declared_width,
-    declared_flag,
-    declared_gate_names,
-    edge_pair,
-    connectivity_edges,
-):
-    _identity_export.__module__ = "flagquantum.remote.qpu.declaration"
-del _identity_export
-
-_alias_module("flagquantum.remote.qpu.declaration", __name__)

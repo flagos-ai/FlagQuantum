@@ -9,7 +9,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any, TypedDict
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compute.remote.packages import (
     DeploymentPackage,
     validate_deployment_package,
@@ -284,19 +283,3 @@ def collection_result(
             "shots_returned": returned,
         },
     )
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _CollectionReceipt,
-    _digest,
-    validate_context,
-    submit_collection,
-    _fetch_results,
-    _fetch_sdk_results,
-    collection_result,
-):
-    _identity_export.__module__ = "flagquantum.remote._quafu_collection"
-del _identity_export
-
-_alias_module("flagquantum.remote._quafu_collection", __name__)

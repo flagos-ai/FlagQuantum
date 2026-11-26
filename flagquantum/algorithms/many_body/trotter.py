@@ -34,7 +34,6 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.lowering import _pauli_schedule
 from flagquantum.errors import CapabilityError
 from flagquantum.simulation.pauli import finite_rotation_angle, pauli_word_operators
@@ -365,18 +364,6 @@ __all__ = (
 
 
 # Preserve historical import identities for pickles and public introspection.
-for _identity_export in (
-    _real_coefficient,
-    _require_steps,
-    _require_order,
-    _supported_operators,
-    _append_exponential,
-    pauli_exponential_circuit,
-    _prepare_terms,
-    _append_term,
-    trotter_circuit,
-):
+for _identity_export in (pauli_exponential_circuit, trotter_circuit):
     _identity_export.__module__ = "flagquantum.algorithms.trotter"
 del _identity_export
-
-_alias_module("flagquantum.algorithms.trotter", __name__)

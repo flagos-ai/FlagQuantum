@@ -178,7 +178,7 @@ No dependency, assertion or resource threshold changed.
 Reproduction of this diagnostic, with coverage available:
 
 ```sh
-COVERAGE_CORE=sysmon python -m coverage run --source=flagquantum -m pytest   tests/integration/test_synthesis_native_catalog.py -k original_source_reference   -q -p tools.pytest_stack_watchdog --fq-stack-dump-after=1   -o faulthandler_timeout=0
+COVERAGE_CORE=sysmon python -m coverage run --source=flagquantum -m pytest   tests/integration/test_synthesis_native_catalog.py -k original_source_reference   -q -p tools.ci.pytest_stack_watchdog --fq-stack-dump-after=1   -o faulthandler_timeout=0
 ```
 
 Use an external bounded supervisor; the completed diagnostic used a 360-second

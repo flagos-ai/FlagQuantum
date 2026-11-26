@@ -6,7 +6,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.core.classical_control import (
     is_classical_control_instruction as instruction_is_dynamic,
 )
@@ -115,11 +114,3 @@ def prepare_inputs(
         if input_state is not None:
             state_name = state.kind
     return tuple(prepared), state_name
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (prepare_inputs,):
-    _identity_export.__module__ = "flagquantum.services._synthesis_preparation"
-del _identity_export
-
-_alias_module("flagquantum.services._synthesis_preparation", __name__)

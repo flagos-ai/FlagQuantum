@@ -6,7 +6,6 @@ import ast
 from collections.abc import Sequence
 from typing import Any, NoReturn
 
-from flagquantum._import_compat import alias_module as _alias_module
 from flagquantum.compiler.frontends._structured.frontend import (
     control,
     expressions,
@@ -219,11 +218,3 @@ class _Capture:
         serial = self._region_counter
         self._region_counter += 1
         return serial
-
-
-# Preserve historical import identities for pickles and public introspection.
-for _identity_export in (_Capture,):
-    _identity_export.__module__ = "flagquantum.compiler._hybrid.frontend.program"
-del _identity_export
-
-_alias_module("flagquantum.compiler._hybrid.frontend.program", __name__)
