@@ -64,11 +64,14 @@ retain the concrete count-versus-decomposition discrepancy and both original
 KXorInstance serialization limitations. The original notebook remains separately
 tracked under Q-0616. The source has no composite decomposition for the unique
 index or RHS root. Their primitive streams, full states and measurement histories
-remain unavailable. Native control route inspection declares the same wrapper
-choice, and executable root-level control-adder wiring remains open.
+remain unavailable. The later typed-context closure below supplies actual generic and specialized
+control-root wiring around the unchanged positive declarations. It does not
+create physical bodies for those source leaves.
 
-Q-0617 remains active for that concrete control-adder admission. Q-0618 remains
-active for the original count/serialization discrepancies and notebook evidence.
+Q-0617 remains active for original bodyless controlled/oracle execution and
+instance serialization boundaries. Q-0618 was subsequently accepted by the
+complete original-test disposition; its original failures remain documented in
+KIKUCHI_KXOR_SOURCE_TEST_ACCEPTANCE.md, not silently fixed.
 The complete source mapping adds no new sub-checklist identifiers.
 
 ## Existing user workflow
@@ -108,3 +111,67 @@ explicitly. This dependency adds resource evidence and carries no new physical
 primitive, amplitude or restoration claim. Concentrated regression passed 618
 tests. Strict typing, formatting, lint, scope, architecture, IR and API checks
 passed for the three changed Python files.
+
+
+## Complete typed loading and control context (2026-11-27)
+
+The Algorithms owner `kxor_loading_component.py` now composes the actual complete
+scope root from existing Compiler Allocate, QROM and Partition owners. The
+selection index is THRU and MSB-first. Each source scalar scope index is allocated
+in column order, loaded by the single shared QROM call and packed by the exact
+inverse Partition. The packed scope is a RIGHT output: its live storage transfers
+to the caller. Physical binding requires explicit allow_workspace_outputs; the
+scope is not falsely zeroed or released as private scratch. Private QROM
+predicates are still erased and released normally.
+
+The Ecosystem owner `_kxor_loading_component_library.py` binds an explicit native
+instance context; it does not serialize an upstream KXorInstance or register a
+fabricated shallow constructor. No foreign object reaches Compiler. Concrete
+ordinary scope roots execute. Symbolic scope, unique-index and RHS roots retain
+the source bodyless declarations. The existing flat make_on/append workflow is
+unchanged, and the new typed root is compared against its previously validated
+source stream rather than reimplementing the lookup.
+
+Single-positive controls preserve the actual positive source declaration.
+Negative and multiple external controls reuse ControlledViaAnd and the shared
+predicate owner. An already-controlled RHS uses the original two-control
+conjunction order, including zero activation, or its generic outer reduction.
+The shared specialized component owner consumes a declared RHS body explicitly;
+whole physical binding refuses that missing body. Roots, named operands and
+control/signature layouts are compared with original decompositions across all
+three oracle classes. No controlled scope XOR recipe or RHS phase-gradient port
+is invented: original positive scope control raises DecomposeTypeError for
+non-THRU registers, while index and RHS have no decomposition at all.
+
+### Reused source evidence and new conformance
+
+Complete original source/test/notebook and seven-category model evidence from
+6ff0f8a85, bdcd02cc4 and 54949021e is reused. Eight source/direct-control blobs
+match the locked CSV manifest. The complete new typed small and original large
+roots have the same 27 and 86 primitive instructions, operands, parameters and
+measurement feedback as the accepted lookup consumer. The small rectangular
+source tensor gives the full complex reference on valid indices; every raw
+history agrees and only private work is zero. SDK-blocked ordinary append and
+native trajectory execution also preserve the transferred scope state.
+
+| Fixture | Actual instructions | Measurements | Transferred output bits | Peak private bits | Minimum physical wires | Source QEC estimate | Source peak qubits |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| Three scopes, four variables | 27 | 1 | 4 | 1 | 7 | And=1, Clifford=9, measurement=1 | 7 |
+| Complete original example | 86 | 3 | 12 | 2 | 17 | And=3, Clifford=32, measurement=3 | 17 |
+
+Peak private counts exclude the still-live RIGHT output; root allocation peaks
+including it are five and fourteen bits. Minimum-wire counts use a caller pool
+trimmed to actual leases, not arbitrary unused supplied storage. The QEC And
+estimates remain separate from their physical T/CX/measurement recipes. Complete
+controlled-root primitive inventories and complex maps remain unavailable,
+not zero, because their original positive leaves have no executable bodies.
+
+Concentrated regression passes 31 cases without skips per actual Cirq 1.7.0 /
+Qiskit 2.5.0 and Cirq 1.6.1 / Qiskit 2.0.0 profile; real Qualtran 0.7.0 and
+Kickmix 0.1 Simulator are asserted. Local integration passes 145 cases. Three
+Python files pass strict typing, Black/Ruff, Algorithms/Ecosystem scopes,
+English/local links, architecture, IR and protected API checks. An initial test
+fixture restored all sys.modules and caused duplicate PyTorch registration; the
+final fixture only masks the three SDK entries. No production workaround,
+source modification, additional dependency or source-defect waiver is used.
+Q-0617 stays open for the retained original physical/serialization boundaries.
