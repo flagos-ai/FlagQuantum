@@ -8,7 +8,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
-from math import isfinite, sqrt
+from math import isfinite
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_classification import classify_resource_gate
@@ -42,25 +42,19 @@ from ...core.ir.program.register_types import (
 )
 from ...core.ir.program.registers import Register
 from ...dynamic import DynamicCircuit
+from ...simulation.numerics import hubbard_coefficients as _coefficients
 from .prepare_oracle import PrepareOracle
 
 
 def _hubbard_normalization(dimension: int, t: float, u: float) -> float:
-    modes = 2 * dimension**2
-    return 2 * modes * t + (modes * u) // 2
+    return _coefficients.hubbard_normalization(dimension, t, u)
 
 
 def _hubbard_preparation_angles(
     dimension: int, t: float, u: float
 ) -> tuple[float, float]:
-    """Retain the frozen source's numerator order, floor and NumPy arccos."""
-    import numpy as np
-
-    modes = 2 * dimension**2
-    return (
-        float(2 * np.arccos(sqrt(t * modes / _hubbard_normalization(dimension, t, u)))),
-        float(2 * np.arccos(np.sqrt(1 / 5))),
-    )
+    """Delegate the unchanged source coefficient arithmetic to its numeric owner."""
+    return _coefficients.hubbard_preparation_angles(dimension, t, u)
 
 
 def hubbard_selection_layout(dimension: int) -> RegisterLayout:
