@@ -46,10 +46,11 @@ def controlled_inverse_program(
 ) -> ProgramRecord | None:
     """Keep the directed source child graph under each explicit outer adjoint.
 
-    Raw SDK children, CNOT and atomic power rotations have explicit execution
-    views here. Positive ZPow uses the native measured CZPow owner. Other named
-    components require their own exact control/adjoint owner. No decomposition
-    work may escape its child port.
+    Raw SDK children, CNOT, fixed phases, Hadamard and atomic power rotations
+    have explicit execution views here. Positive ZPow uses the native measured
+    CZPow owner; positive Hadamard retains the source CHadamard atom. Other
+    named components require their own exact control/adjoint owner. No
+    decomposition work may escape its child port.
     """
     cirq = _cirq()
     children = decompose_cirq_once(original)
@@ -75,6 +76,9 @@ def controlled_inverse_program(
             "rotation.YPowGate",
             "rotation.ZPowGate",
             "rotation.Rz",
+            "hadamard.Hadamard",
+            "s_gate.SGate",
+            "t_gate.TGate",
             "global_phase.GlobalPhase",
         }:
             return None
@@ -118,7 +122,14 @@ def controlled_inverse_program(
     )
     ordered = tuple(reversed(source_order)) if inverse else source_order
     for index, child in enumerate(ordered):
-        directed = cirq.inverse(child) if inverse else child
+        selected = declared._select(child.gate)
+        # The named Hadamard's adjoint returns itself. Cirq's HPow(-1)
+        # has a different decomposition despite the same unitary operator.
+        directed = (
+            cirq.H.on(*child.qubits)
+            if selected is not None and selected[0] == "hadamard.Hadamard"
+            else (cirq.inverse(child) if inverse else child)
+        )
         operation = directed.controlled_by(*controls, control_values=bits)
         definition = declared.get(child.gate)
         child_signature = (
@@ -130,12 +141,16 @@ def controlled_inverse_program(
             child_signature,
             tuple((dtype, values.shape) for dtype, values in spec.clauses),
         )
-        selected = declared._select(child.gate)
         native_control = (
             selected is not None
             and default_control
             and selected[0]
-            in {"rotation.ZPowGate", "rotation.Rz", "global_phase.GlobalPhase"}
+            in {
+                "rotation.ZPowGate",
+                "rotation.Rz",
+                "global_phase.GlobalPhase",
+                "hadamard.Hadamard",
+            }
         )
         if (
             definition is not None
@@ -167,7 +182,10 @@ def controlled_inverse_program(
             )
             if any(not set(leaf.qubits) <= set(operation.qubits) for leaf in leaves):
                 return None
-            if selected is not None and selected[0] == "rotation.Rz":
+            if selected is not None and selected[0] in {
+                "rotation.Rz",
+                "hadamard.Hadamard",
+            }:
                 # Source capture anchors wire-free SDK phases to its first
                 # declared input, before the typed importer rotates live words.
                 anchored = []

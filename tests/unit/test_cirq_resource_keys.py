@@ -99,7 +99,10 @@ def test_controlled_scalar_uses_source_phase_model(
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("controls", ((1,), (0,), (0, 1), (0, 1, 0)))
 @pytest.mark.parametrize("depth", (1, 2, 3))
-@pytest.mark.parametrize("kind", ("matrix", "diag1", "diag2", "diag3"))
+@pytest.mark.parametrize(
+    "kind",
+    ("matrix", "diag1", "diag2", "diag3", "iswap", "iswap_t", "iswap_s", "iswap_zero"),
+)
 def test_controlled_external_declared_cost_closes_source_child_models(
     controls: tuple[int, ...],
     depth: int,
@@ -125,7 +128,18 @@ def test_controlled_external_declared_cost_closes_source_child_models(
             )
         )
         if kind.startswith("diag")
-        else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+        else (
+            cirq.ISwapPowGate(
+                exponent={
+                    "iswap": 0.375,
+                    "iswap_t": 0.5,
+                    "iswap_s": 1.0,
+                    "iswap_zero": 0.0,
+                }[kind]
+            )
+            if kind.startswith("iswap")
+            else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+        )
     )
     source: Bloq = Controlled(
         CirqGateAsBloq(gate),

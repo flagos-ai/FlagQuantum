@@ -529,7 +529,20 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
 
 
 @pytest.mark.parametrize("depth", (1, 2, 3))
-@pytest.mark.parametrize("kind", ("swap", "matrix1", "diag1", "diag2", "diag3"))
+@pytest.mark.parametrize(
+    "kind",
+    (
+        "swap",
+        "matrix1",
+        "diag1",
+        "diag2",
+        "diag3",
+        "iswap",
+        "iswap_t",
+        "iswap_s",
+        "iswap_zero",
+    ),
+)
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
 def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
     depth: int,
@@ -569,7 +582,18 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         else (
             cirq.SwapPowGate(exponent=0.375)
             if kind == "swap"
-            else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+            else (
+                cirq.ISwapPowGate(
+                    exponent={
+                        "iswap": 0.375,
+                        "iswap_t": 0.5,
+                        "iswap_s": 1.0,
+                        "iswap_zero": 0.0,
+                    }[kind]
+                )
+                if kind.startswith("iswap")
+                else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+            )
         )
     )
     source: Bloq = Controlled(locked_source.CirqGateAsBloq(raw), spec)
@@ -588,7 +612,7 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             )
         )
         if kind.startswith("diag")
-        else (3 if kind == "swap" else 4)
+        else (3 if kind == "swap" else (8 if kind.startswith("iswap") else 4))
     )
     assert len(children) == child_count
     if kind == "swap" and control == "positive":
@@ -699,7 +723,11 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
             FieldOperation(bound.circuit.n_wires, bound.circuit.instructions)
         )
         count = sum(op.name == "measure" for op in bound.circuit.instructions)
-        assert count == (2 if kind == "matrix1" and control == "positive" else 0)
+        assert count == (
+            2
+            if kind in ("matrix1", "iswap", "iswap_zero") and control == "positive"
+            else 0
+        )
         restored = CircuitIR.from_json(appended.to_ir().to_json())
         assert (
             restored.to_dict()["instructions"]
@@ -768,3 +796,65 @@ def test_zero_target_diagonal_retains_original_gray_code_failure(
         source.decompose_bloq()
     with pytest.raises(OverflowError, match="infinity"):
         resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())
+
+
+@pytest.mark.parametrize("value", (0.375, 0.5, 0.0))
+def test_symbolic_controlled_iswap_retains_the_unbound_source_graph(
+    value: float, locked_source: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from itertools import product
+
+    import sympy
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.register_source_graph import assert_source_wire_streams
+
+    theta = sympy.Symbol("theta")
+    source = Adjoint(
+        Controlled(
+            locked_source.CirqGateAsBloq(cirq.ISwapPowGate(exponent=theta)), CtrlSpec()
+        )
+    )
+    library = _library(source, 0)
+    reference = import_register_emitter(source).snapshots[0]
+    expected = torch.tensor(
+        cirq.unitary(cirq.ISwapPowGate(exponent=-value).controlled()),
+        dtype=torch.complex128,
+    )
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        program = resolve_component_program(library, 0, cirq_gate_library_factories())
+        bound = bind_register_program(program, ((0,), (1,), (2,)), clean=(3, 4))
+        patch.setitem(sys.modules, "cirq", None)
+        actual = (
+            Circuit(bound.circuit.n_wires, dtype=torch.complex128)
+            .append(FieldOperation(bound.circuit.n_wires, bound.circuit.instructions))
+            .bind_parameters({"theta": value})
+            .to_ir()
+        )
+        captured = (
+            Circuit(reference.n_wires, dtype=torch.complex128)
+            .append(FieldOperation(reference.n_wires, reference.instructions))
+            .bind_parameters({"theta": value})
+            .to_ir()
+        )
+        assert_source_wire_streams(actual.instructions, captured.instructions)
+        # Binding does not rerun concrete S/T constructor dispatch. Both source
+        # and native symbolic graphs retain the original two measured erasures.
+        assert sum(op.name == "measure" for op in actual.instructions) == 2
+        stride = 1 << (actual.n_wires - 3)
+        for column in range(8):
+            initial = torch.zeros(1 << actual.n_wires, dtype=torch.complex128)
+            initial[column * stride] = 1
+            target = torch.zeros_like(initial)
+            target[::stride] = expected[:, column] / 2
+            for history in product((0, 1), repeat=2):
+                torch.testing.assert_close(
+                    forced_branch(initial, actual.instructions, history),
+                    target,
+                    atol=3e-12,
+                    rtol=0,
+                )

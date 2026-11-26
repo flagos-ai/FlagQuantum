@@ -396,3 +396,52 @@ and Cirq 1.6.1/Qiskit 2.0.0 environment, without skips. Local integration passes
 145 cases. Three Python files pass strict typing, Black/Ruff, owner scopes,
 language, links, architecture, IR and API checks. Frozen source assets,
 Qualtran 0.7.0 and real Kickmix 0.1 Simulator are asserted before testing.
+
+### Complete controlled ISwapPow dependency closure
+
+The next independent module admits the existing named Hadamard and S/T phase
+children. Default positive Hadamard reuses the native atomic CHadamard owner;
+negative and grouped controls retain the source's direct SDK execution view.
+The source Hadamard adjoint returns itself. Cirq HPow(-1) has the same unitary
+but a different decomposition, so the adapter preserves the named source
+Hadamard before controlling it. SDK scalar leaves reuse the same first-input
+carrier binding as the diagonal batch. No new gate or compiler kernel is added.
+
+Complete ISwapPow roots at exponents 0.375, 0.5, 1 and 0 cover general, T, S
+and zero-angle child dispatch. Both control polarities, array and word layouts
+and three explicit adjoint depths retain all eight source child calls, exact
+port groupings, primitive order, operands, feedback and matrices. Complete
+complex operator columns and every small raw measurement history agree, with
+private work returned to zero. Normal append and serialization reuse the
+existing native execution path. Negated angles are exercised by the adjoints.
+
+| Exponent | Actual positive / negative / two-bit-control primitives | Actual positive measurements / private work | Independent positive QEC model |
+| --- | --- | --- | --- |
+| 0.375 | 42 / 146 / 290 | 2 / 1 | Toffoli 4, And 2, Clifford 10, rotation 6, measurement 2 |
+| 0.5 or 1 | 8 / 146 / 290 | 0 / 0 | Toffoli 4, Clifford 8, rotation 6 |
+| 0 | 42 / 138 / 266 | 2 / 1 | Toffoli 4, And 2, Clifford 12, rotation 4, measurement 2 |
+
+The zero-angle source graph is deliberately retained, including its measured
+And pairs; it is not replaced by an optimized identity. All 48 physical/model
+receipts compare source and native inventories and all seven QEC categories
+separately. Negative/grouped SDK paths have no physical measurements or private
+work, even where the source logical model estimates measured And cleanup.
+Three-control resource tests remain model-only. Matrices, rotations and
+Toffoli remain named instructions rather than a claimed Clifford+T synthesis.
+
+Other named fixed children, nested controlled SDK children and child-private
+allocation remain explicit gaps. In particular, the source-success QFT,
+PauliStringPhasor and CCXPow roots require their remaining direct dependencies.
+The original FSim and generic ZZ/SwapPow C[And] failures are not waived.
+
+The symbolic positive-control constructor is also executable. Binding the
+original symbolic graph to 0.375, 0.5 or 0 preserves both measured erasures;
+it does not re-run concrete S/T constructor dispatch at bind time. Native and
+original captured symbolic graphs match primitive streams after binding,
+complete complex branch amplitudes and clean work, with source/SDK imports
+disabled during native append and binding.
+
+The batch passes 397 concentrated cases plus three symbolic cases in each
+actual SDK environment, and 145 local integration cases. Strict typing,
+formatting, scopes, language, links, architecture, IR and API checks pass.
+All 24 existing complete Programs and bindings match published `3fe0c1fe9`.
