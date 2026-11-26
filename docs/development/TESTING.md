@@ -765,6 +765,17 @@ route.
 entrypoint. A skipped hardware test remains wiring information only, never
 execution proof.
 
+`cpu-nightly.yml` schedules the existing CPU nightly tier on weekdays at 11:00
+UTC and supports explicit maintainer dispatch. It uses a hosted Ubuntu runner,
+the existing isolated Python/CPU Torch actions, native test extras and the
+policy-owned FTQC references. Graphviz and native reference imports are checked
+before execution. Pytest runs serially with slow CPU cases included; the existing
+tier excludes benchmark contracts, scalability and hardware/multi-node tests.
+The 120-minute job and 90-minute test step are bounded. This independent entry
+adds no pull-request trigger or required check, and never cancels an older main
+reading. Its [source workflow audit](CPU_NIGHTLY_WORKFLOW_AUDIT.md) distinguishes
+local dispatch verification from an actual complete hosted-suite result.
+
 | CI Tier | Trigger Condition | Command | Blocks Ordinary PRs | Proof Boundary |
 | --- | --- | --- | --- | --- |
 | PR default | Every pull request and ordinary local issue verification. | `python tools/ci_tier.py pr-default` | Yes | Fast `smoke or unit` health only. |

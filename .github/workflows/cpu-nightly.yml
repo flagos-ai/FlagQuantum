@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Qualtran v0.7.0 .github/workflows/nightly.yaml, Google LLC.
+
+name: Nightly CPU
+
+on:
+  schedule:
+    - cron: "0 11 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Retain readings of main instead of cancelling a superseded revision.
+concurrency:
+  group: flagquantum-nightly-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  nightly-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    concurrency:
+      group: flagquantum-gh-4
+      queue: max
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      NUMBA_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
+      JAX_PLATFORMS: cpu
+      PYTEST_ADDOPTS: "-n 0 --durations=10"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Prepare Graphviz for diagram consumers
+        uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9
+        timeout-minutes: 5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - uses: ./.github/actions/install-cpu-torch
+        timeout-minutes: 8
+      - name: Install native test dependencies and policy-owned references
+        shell: bash
+        timeout-minutes: 20
+        run: |
+          python -m pip install --no-build-isolation -e '.[dev,jax,viz,interop-all]'
+          python -m pip install -r <(python tools/check_dependency_policy.py --print-test-environment ftqc-reference)
+          python -m pip check
+      - name: Verify native and diagram prerequisites
+        run: |
+          dot -V
+          python - <<'PYTHON'
+          from importlib.metadata import version
+
+          import torch
+          import kickmix
+
+          assert version("qualtran") == "0.7.0"
+          assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+          assert torch.version.cuda is None and "+cpu" in torch.__version__
+          PYTHON
+      - name: Run the existing complete CPU nightly tier
+        timeout-minutes: 90
+        run: python tools/ci_tier.py nightly
