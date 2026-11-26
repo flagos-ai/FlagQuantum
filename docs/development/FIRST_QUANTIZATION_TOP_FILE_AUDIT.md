@@ -83,3 +83,13 @@ The locked TUV, uniform pair,
 and SELECT T/UV leaves supply declarations without executable
 decompositions. The scheduling and resource comparisons therefore
 cover the source composite without giving it an emitted gate count.
+
+
+## Stored constructor closure
+
+The complete ordinary root file now resolves original level-0/1/2 libraries,
+including its four-call PREPARE, twenty-call SELECT and direct declaration-only
+SELECT/nuclear dependencies. See [the constructor audit](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md)
+for normalization, exact register domains, shared projectile replacement and
+separate model/physical evidence. Q-0388 remains open for its opaque whole-root
+physical path; this addition does not change the earlier tutorial acceptance.
