@@ -4,6 +4,60 @@ The reference is the immutable Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The batch covers
 `ec_add.py`, its tests and tutorial, and their direct arithmetic dependencies.
 
+## Typed constructor batch in progress (2026-11-27)
+
+The complete seven-class frozen file remains the batch unit. The flag and slope
+constructors now resolve actual original libraries at levels 0, 1 and 2 without
+SDK imports. Compiler keeps their literal 20/24 calls, MSB-first nominal
+Montgomery ports and one-sided output ownership. The remaining coordinate,
+product, slope-cleanup, flag-cleanup and six-stage root bindings are unfinished;
+neither source-file parent is newly accepted. The first two stages are local
+module commits pending publication of the complete batch.
+
+The flag constructor matches original primitive operands and feedback at widths
+2, 3 and 5. Its width-3/modulus-3 binding emits 665 instructions, including
+221 CX, 112 T-family and 28 measurements, with 21 physical wires. The independent
+source model also gives 112 T, 28 measurements and a 21-qubit peak. All 81
+residue quadruples, their complex superposition and every erasure history pass.
+The five live RIGHT outputs transfer to the caller; all private work clears.
+
+The slope binding reuses the owned inverse and measured Montgomery lookup
+components rather than duplicating their numerical implementations. Kaliski
+physically frees and rebinds some input bits: binding must explicitly transfer
+existing input-pool ownership and use returned output layouts. Default binding
+without that transfer retains its rejection. The source rare-flag discrepancy
+is preserved, not replaced by the high-level callback.
+
+On all 243 small coordinate/tangent inputs, the typed slope preserves the old
+source-validated coherent map and private cleanup. Its measured lookup route
+has 494 events, compared with 470 in the earlier reverse-forward lookup route.
+The exact inventory delta is +24 H, +24 measurements, +24 conditional X and
++12 conditional Z, minus 12 CX. T-family and CCX inventories are unchanged.
+The upstream lookup adjoint is model-only: these additional measured leaf
+primitives have no upstream physical decomposition to compare. They are not
+described as literal full-stream parity with an absent body.
+
+| Typed slope, n=3, p=3, window=1 | Measured primitive inventory | Independent source model |
+| --- | --- | --- |
+| Gates and measurement | 13,742 instructions; 3,056 T/T†; 6 CCX; 494 measurement events | 470 And; 6 Toffoli; 168 CSwap; 3,175 Clifford; 470 measurement events; default T estimate 2,576 |
+| Quantum storage | 55 bound wires and 55 live peak, using returned layouts | 55 peak qubits |
+
+The channel certificate now retains the Boolean phase coefficient of each
+X-basis lookup outcome until actual Z/CZ feedback cancels it. The two-outcome
+complex-state lemma and missing/wrong-feedback counterexamples validate this
+extension. Combined with the existing And lemmas it certifies all 494 slope
+histories on the recorded input domain; two full sparse complex executions
+independently agree. The controlled Equals dependency matches original gates
+at widths 1, 2, 3 and 5 under both polarities, including dirty targets.
+
+The source default Toffoli conversion uses four T, while emitted Toffoli stays
+CCX. These categories remain separate. The concentrated snapshot passes 127
+cases in each actual Cirq 1.7.0/Qiskit 2.5.0 and Cirq 1.6.1/Qiskit 2.0.0
+profile, with real Qualtran 0.7.0 and Kickmix 0.1 Simulator asserted. Nine Python
+files pass strict typing, formatting, owner scopes, language, architecture, IR
+and public API checks. Existing classical matrices and notebook receipts are
+reused. Whole-batch regression and publication await the remaining five bindings.
+
 ## Stage one
 
 The operation reads four big-endian Montgomery residues `a, b, x, y` and
