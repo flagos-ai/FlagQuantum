@@ -13,6 +13,7 @@ from ..core.ir.program import ProgramRecord
 from ..errors import SerializationError
 from ._pauli_select_rows import (
     pauli_select_control,
+    pauli_select_selection_width,
     pauli_select_width,
     sign_of_real_pauli_word,
 )
@@ -25,6 +26,11 @@ def capture_pauli_select_pair(source: object) -> tuple[ProgramRecord, ProgramRec
     if not isinstance(source, SelectPauliLCU):
         raise SerializationError("Expected an explicit source Pauli SELECT")
     foreign = cast(Any, source)
+    selection_width = pauli_select_selection_width(foreign.selection_bitsize)
+    if type(selection_width) is not int:
+        raise ValueError(
+            "Pauli SELECT Program capture requires a concrete selection width"
+        )
     words: list[str] = []
     for pauli in foreign.select_unitaries:
         try:
@@ -36,7 +42,7 @@ def capture_pauli_select_pair(source: object) -> tuple[ProgramRecord, ProgramRec
                 "Source sign-of-real Pauli leaf is not unitary"
             ) from error
     return pauli_select_component_pair(
-        pauli_select_width(foreign.selection_bitsize, "selection"),
+        selection_width,
         pauli_select_width(foreign.target_bitsize, "target"),
         tuple(words),
         control_value=pauli_select_control(foreign.control_val),

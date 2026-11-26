@@ -13,6 +13,7 @@ from typing import Any, cast
 from ...algorithms.primitives.multiplexers.select_pauli_lcu import SelectPauliLCU
 from .._pauli_select_rows import (
     pauli_select_control,
+    pauli_select_selection_width,
     pauli_select_width,
     sign_of_real_pauli_word,
 )
@@ -36,7 +37,7 @@ def select_pauli_lcu_from_cirq(source: object) -> SelectPauliLCU:
     except AttributeError as exc:
         raise TypeError("Cirq Pauli SELECT source is missing required fields") from exc
 
-    selection_bitsize = pauli_select_width(selection_bitsize, "selection")
+    selection_bitsize = pauli_select_selection_width(selection_bitsize)
     target_bitsize = pauli_select_width(target_bitsize, "target")
     control_val = pauli_select_control(control_val)
     if not isinstance(select_unitaries, Sequence) or not select_unitaries:

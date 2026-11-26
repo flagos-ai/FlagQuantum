@@ -9,6 +9,22 @@ from math import isnan
 from operator import index as integer_index
 from typing import SupportsInt
 
+from ..core.value_math import SymbolicInt
+
+
+def pauli_select_selection_width(value: object) -> SymbolicInt:
+    """Retain unbound selection expressions as native declaration metadata."""
+    if not isinstance(value, int):
+        from sympy import Expr
+
+        if isinstance(value, Expr) and value.free_symbols:
+            if value.is_negative is True:
+                raise ValueError(
+                    "Cirq Pauli SELECT requires a nonnegative selection width"
+                )
+            return value
+    return pauli_select_width(value, "selection")
+
 
 def pauli_select_width(value: object, name: str) -> int:
     """Normalize source Python integer and concrete symbolic integer widths.
@@ -22,6 +38,7 @@ def pauli_select_width(value: object, name: str) -> int:
         width = integer_index(value)
     else:
         from sympy import Integer
+
         if not isinstance(value, Integer):
             raise ValueError(message)
         width = int(value)
