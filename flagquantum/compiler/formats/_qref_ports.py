@@ -46,6 +46,7 @@ def qref_ports(registers: Iterable[Register]) -> list[QrefPort]:
     """Split through declarations and expand concrete rank-one register arrays."""
     ports: list[QrefPort] = []
     for register in registers:
+        start = len(ports)
         size = register.bitsize
         wire_size = size if type(size) is int else str(size)
         for prefix, direction, side in _DIRECTIONS:
@@ -59,4 +60,5 @@ def qref_ports(registers: Iterable[Register]) -> list[QrefPort]:
                         "direction": direction,
                     }
                 )
+        ports[start:] = sorted(ports[start:], key=lambda port: port["name"])
     return ports

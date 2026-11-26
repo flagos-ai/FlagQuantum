@@ -5,6 +5,8 @@
 
 """Export native component metadata and logical resource graphs to QREF v1."""
 
+from __future__ import annotations
+
 from collections.abc import Collection, Hashable, Mapping
 from dataclasses import dataclass
 from functools import cache
@@ -12,7 +14,7 @@ from importlib import import_module
 from typing import Any, TypeVar
 
 from ...core.ir.program.registers import Register
-from ...core.value_math import SymbolicInt
+from ...core.value_math import SymbolicInt, SymbolicReal
 from ...errors import SerializationError
 from .._component_trace.call_graph import SymbolicCallGraph
 from ._qref_ports import _port_suffix, qref_ports
@@ -38,7 +40,7 @@ class QrefComponent:
 
     name: str
     type_name: str
-    resources: Mapping[str, SymbolicInt]
+    resources: Mapping[str, SymbolicReal | str | None]
 
 
 @cache
@@ -53,14 +55,16 @@ def _attributes(
     name: str | None = None,
     type_name: str | None = None,
 ) -> dict[str, Any]:
+    from sympy import sympify
+
     ports = qref_ports(registers)
     locals_by_name = {}
-    params = set()
+    params: set[str] = set()
     for port in ports:
         size = port["size"]
         if isinstance(size, str):
             if size.isidentifier():
-                params.add(size)
+                params.update(str(symbol) for symbol in sympify(size).free_symbols)
             elif not size.removeprefix("-").isdecimal():
                 # Bartiq expects each symbolic input port size to be a single name.
                 local = f"{port['name']}_size"
@@ -71,12 +75,16 @@ def _attributes(
         if resource_name not in component.resources:
             raise SerializationError(f"QREF resource {resource_name!r} is missing")
         value = component.resources[resource_name]
-        if not isinstance(value, int):
+        if value is not None and not isinstance(value, (int, float, str)):
             params.update(str(symbol) for symbol in value.free_symbols)
         resources.append(
             {
                 "name": resource_name,
-                "value": value if type(value) is int else str(value),
+                "value": (
+                    value
+                    if value is None or isinstance(value, (int, float, str))
+                    else str(value)
+                ),
                 "type": "additive",
             }
         )
@@ -125,6 +133,7 @@ def qref_component_graph(
     metadata: Mapping[int, QrefComponent],
     *,
     decomposition_rules: bool | Collection[str] = False,
+    decompositions: Mapping[int, tuple[ComponentOccurrence, ...]] | None = None,
 ) -> Any:
     """Export ordered component edges and selected nested definitions to QREF.
 
@@ -148,7 +157,10 @@ def qref_component_graph(
             not isinstance(decomposition_rules, bool)
             and component.type_name in decomposition_rules
         )
-        expand = composite or (selected and bool(entry.connections))
+        declared = None if decompositions is None else decompositions.get(identifier)
+        expand = composite or (
+            selected and (bool(entry.connections) or declared is not None)
+        )
         attrs = _attributes(
             component,
             entry.declaration.registers or (),
@@ -157,10 +169,18 @@ def qref_component_graph(
         )
         if expand:
             active.add(identifier)
+            connected = _ordered_occurrences(entry.connections)
             occurrences = sorted(
-                _ordered_occurrences(entry.connections),
+                connected if declared is None else declared,
                 key=lambda node: node.instance_id,
             )
+            by_id = {node.instance_id: node for node in occurrences}
+            if len(by_id) != len(occurrences) or any(
+                by_id.get(node.instance_id) != node for node in connected
+            ):
+                raise SerializationError(
+                    "QREF decomposition occurrences differ from connected endpoints"
+                )
             for occurrence in occurrences:
                 if occurrence.definition_id not in metadata:
                     raise SerializationError(

@@ -43,3 +43,12 @@ corresponding full-complex, measurement-branch, cleanup and resource evidence
 only after proving identical Programs or bindings. Report measured primitive
 instructions separately from analytical model nodes. Update the relevant
 complete-source audit with any unsupported boundary.
+
+QREF conversion stays in `qref_resources.py` and `_qref_ports.py`. Optional live
+SDK metadata enters through Ecosystem's `_qref_source.py`, targeting the frozen
+Qualtran 0.7.0 input contract. It converts all source objects before calling
+these exporters and is removable independently if that external input contract
+is retired. Native Programs and metadata export do not depend on this adapter.
+Start with `tests/unit/test_qref_source_capture.py`: it compares complete large
+schemas, isolated scalar occurrences and source-free JSON consumers. QREF
+resources are declared model data; export emits no physical instructions.
