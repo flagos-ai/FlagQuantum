@@ -1,8 +1,8 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Literal calls from locked Qualtran v0.7.0 PrepareFirstQuantizationWithProj.
+# Literal calls from locked Qualtran v0.7.0 ordinary/projectile PREPARE.
 
-"""Compose projectile PREPARE while retaining its original plus-state bystander."""
+"""Compose both first-quantization PREPARE roots while retaining its original plus-state bystander."""
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 
 
-def projectile_preparation_program(
+def first_quantization_preparation_program(
     signature: Signature,
     stages: tuple[ProgramRecord, ProgramRecord, ProgramRecord, ProgramRecord],
 ) -> ProgramRecord:
@@ -21,12 +21,11 @@ def projectile_preparation_program(
         builder.import_program(stage, entry=stage.functions[0].name) for stage in stages
     )
     state = dict(builder.inputs)
-    for entry, names in zip(
-        entries[:3],
-        (("tuv", "tepm", "uv", "flags"), ("i", "j"), ("w", "w_mean", "r", "s")),
-        strict=True,
-    ):
-        state.update(builder.call_dict(entry, {name: state[name] for name in names}))
+    for entry, stage in zip(entries[:3], stages[:3], strict=True):
+        ports = Signature(stage.functions[0].registers or ()).lefts()
+        state.update(
+            builder.call_dict(entry, {port.name: state[port.name] for port in ports})
+        )
     result = builder.call_dict(
         entries[3],
         {

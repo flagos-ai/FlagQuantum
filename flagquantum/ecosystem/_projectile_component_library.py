@@ -29,8 +29,8 @@ from ..compiler.registers.control.projectile_selection_component import (
 from ..compiler.registers.layout.momentum_exchange_component import (
     momentum_exchange_program,
 )
-from ..compiler.registers.preparation.projectile_preparation_component import (
-    projectile_preparation_program,
+from ..compiler.registers.preparation.first_quantization_preparation_component import (
+    first_quantization_preparation_program,
 )
 from ..compiler.registers.primitives.controlled_swap_component import (
     controlled_swap_program,
@@ -214,7 +214,7 @@ def _root(
             if isinstance(potential, ProgramRecord)
             else ProgramRecord((potential,))
         )
-        record = projectile_preparation_program(
+        record = first_quantization_preparation_program(
             projectile_prepare_signature(n, eta, atoms, m),
             (
                 leaf("PrepareTUVSuperpositions"),
