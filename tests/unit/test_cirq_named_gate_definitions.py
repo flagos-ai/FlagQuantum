@@ -44,6 +44,8 @@ def _gates() -> tuple[Any, ...]:
         cirq.CNOT,
         cirq.TOFFOLI,
         cirq.X,
+        cirq.ControlledGate(cirq.X),
+        cirq.ControlledGate(cirq.X, num_controls=2),
         cirq.Y,
         cirq.ControlledGate(cirq.Y),
         cirq.Z,

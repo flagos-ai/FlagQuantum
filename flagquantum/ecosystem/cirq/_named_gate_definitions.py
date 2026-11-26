@@ -151,6 +151,13 @@ class _NamedGateDefinitions(Mapping[Hashable, FunctionRecord]):
         if isinstance(gate, cirq.ControlledGate):
             child = self._select(gate.sub_gate)
             if (
+                gate.num_controls() == 2
+                and tuple(gate.control_values.expand()) == ((1, 1),)
+                and child is not None
+                and child[0] == "x_basis.XGate"
+            ):
+                return "toffoli.Toffoli", child[1]
+            if (
                 gate.num_controls() == 1
                 and tuple(gate.control_values.expand()) == ((1,),)
                 and child is not None
@@ -162,6 +169,8 @@ class _NamedGateDefinitions(Mapping[Hashable, FunctionRecord]):
                     return "rotation.CRz", arguments
                 if source == "swap.TwoBitSwap":
                     return "swap.TwoBitCSwap", arguments
+                if source == "x_basis.XGate":
+                    return "cnot.CNOT", arguments
                 if source == "global_phase.GlobalPhase":
                     return "rotation.ZPowGate", arguments
             # General conjunctions use the predicate owner in __getitem__;
