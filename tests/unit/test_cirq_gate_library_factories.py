@@ -529,7 +529,7 @@ def test_generic_control_wrappers_do_not_borrow_raw_sdk_adjoint_recipes(
 
 
 @pytest.mark.parametrize("depth", (1, 2, 3))
-@pytest.mark.parametrize("kind", ("swap", "matrix1"))
+@pytest.mark.parametrize("kind", ("swap", "matrix1", "diag1", "diag2", "diag3"))
 @pytest.mark.parametrize("control", ("positive", "negative", "array", "word"))
 def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
     depth: int,
@@ -560,16 +560,36 @@ def test_controlled_external_adjoint_retains_source_children_and_sdk_leaves(
         "word": CtrlSpec(qdtypes=QUInt(2), cvs=1),
     }[control]
     raw = (
-        cirq.SwapPowGate(exponent=0.375)
-        if kind == "swap"
-        else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+        cirq.DiagonalGate(
+            tuple(
+                0.13 + 0.07 * i * i - 0.11 * (i % 3) for i in range(1 << int(kind[-1]))
+            )
+        )
+        if kind.startswith("diag")
+        else (
+            cirq.SwapPowGate(exponent=0.375)
+            if kind == "swap"
+            else cirq.MatrixGate(cirq.testing.random_unitary(2, random_state=17))
+        )
     )
     source: Bloq = Controlled(locked_source.CirqGateAsBloq(raw), spec)
     for _ in range(depth):
         source = Adjoint(source)
     graph = source.decompose_bloq()
     children = tuple(instance.bloq for instance in graph.bloq_instances)
-    child_count = 3 if kind == "swap" else 4
+    child_count = (
+        len(
+            tuple(
+                cirq.flatten_to_ops(
+                    cirq.decompose_once_with_qubits(
+                        raw, cirq.LineQubit.range(cirq.num_qubits(raw))
+                    )
+                )
+            )
+        )
+        if kind.startswith("diag")
+        else (3 if kind == "swap" else 4)
+    )
     assert len(children) == child_count
     if kind == "swap" and control == "positive":
         assert sorted(type(child).__name__ for child in children) == [
@@ -729,3 +749,22 @@ def test_raw_controlled_gate_has_its_own_original_adjoint_decomposition(
         atol=1e-12,
         rtol=0,
     )
+
+
+@pytest.mark.parametrize("control", (0, 1))
+def test_zero_target_diagonal_retains_original_gray_code_failure(
+    control: int, locked_source: Any
+) -> None:
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+
+    source = Adjoint(
+        Controlled(
+            locked_source.CirqGateAsBloq(cirq.DiagonalGate((0.1,))),
+            CtrlSpec(cvs=control),
+        )
+    )
+    with pytest.raises(OverflowError, match="infinity"):
+        source.decompose_bloq()
+    with pytest.raises(OverflowError, match="infinity"):
+        resolve_component_program(_library(source, 0), 0, cirq_gate_library_factories())

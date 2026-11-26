@@ -10,6 +10,11 @@ from ...compiler.formats.legacy_component_arguments import ControlSpecification
 from ...compiler.formats.legacy_control_specs import control_registers_from_spec
 from ...compiler.formats.legacy_word_factories import _rename_program
 from ...compiler.registers.component_control import quantum_control_signature
+from ...compiler.registers.primitives.controlled_rotation_component import (
+    controlled_rz_program,
+)
+from ...compiler.registers.primitives.global_phase import scalar_phase_ir
+from ...core.ir import CircuitIR
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.signatures import Signature
@@ -22,7 +27,13 @@ from ._feedback_import import (
 from ._gate_metadata import cirq_gate_signature
 from ._named_gate_definitions import _NamedGateDefinitions
 from ._register_import import _operation_ports, import_cirq_register_optree
-from .conversion import _cirq, _eigen_phase_operations
+from .conversion import (
+    _cirq,
+    _cirq_parameter_value,
+    _eigen_phase_operations,
+    _global_phase_angle,
+    export_cirq,
+)
 
 
 def controlled_inverse_program(
@@ -63,6 +74,7 @@ def controlled_inverse_program(
             "rotation.XPowGate",
             "rotation.YPowGate",
             "rotation.ZPowGate",
+            "rotation.Rz",
             "global_phase.GlobalPhase",
         }:
             return None
@@ -98,7 +110,13 @@ def controlled_inverse_program(
             return normalized
         return NotImplemented
 
-    ordered = tuple(reversed(children)) if inverse else tuple(children)
+    # The source graph inserts connected nodes from Soquet edges before its
+    # isolated zero-port nodes. Control later connects those scalar nodes to
+    # the control wire, so their original graph position must survive reversal.
+    source_order = tuple(child for child in children if child.qubits) + tuple(
+        child for child in children if not child.qubits
+    )
+    ordered = tuple(reversed(source_order)) if inverse else source_order
     for index, child in enumerate(ordered):
         directed = cirq.inverse(child) if inverse else child
         operation = directed.controlled_by(*controls, control_values=bits)
@@ -116,7 +134,8 @@ def controlled_inverse_program(
         native_control = (
             selected is not None
             and default_control
-            and selected[0] in {"rotation.ZPowGate", "global_phase.GlobalPhase"}
+            and selected[0]
+            in {"rotation.ZPowGate", "rotation.Rz", "global_phase.GlobalPhase"}
         )
         if (
             definition is not None
@@ -129,7 +148,13 @@ def controlled_inverse_program(
             controlled = declared[operation.gate]
             assert controlled.registers is not None
             ports = Signature(controlled.registers)
-        if native_control:
+        if native_control and selected is not None and selected[0] == "rotation.Rz":
+            # Adjoint(CRz) reverses the four source calls; CRz(-angle)
+            # has the same operator but a different literal call order.
+            program = controlled_rz_program(
+                _cirq_parameter_value(child.gate._rads, cache={}), adjoint=inverse
+            )
+        elif native_control:
             program = declared._module(declared[operation.gate])
         else:
             leaves = tuple(
@@ -142,6 +167,24 @@ def controlled_inverse_program(
             )
             if any(not set(leaf.qubits) <= set(operation.qubits) for leaf in leaves):
                 return None
+            if selected is not None and selected[0] == "rotation.Rz":
+                # Source capture anchors wire-free SDK phases to its first
+                # declared input, before the typed importer rotates live words.
+                anchored = []
+                for leaf in leaves:
+                    if not isinstance(leaf.gate, cirq.GlobalPhaseGate):
+                        anchored.append(leaf)
+                        continue
+                    scalar = scalar_phase_ir(
+                        0, _global_phase_angle(cirq, leaf.gate.coefficient)
+                    )
+                    exported = export_cirq(CircuitIR(1, scalar)).circuit
+                    anchored.extend(
+                        exported.transform_qubits(
+                            lambda _: controls[0]
+                        ).all_operations()
+                    )
+                leaves = tuple(anchored)
             incoming, outgoing = _operation_ports(ports, operation.qubits)
             program = import_cirq_register_optree(
                 cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW),

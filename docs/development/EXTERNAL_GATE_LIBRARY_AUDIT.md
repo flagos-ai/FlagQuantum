@@ -340,5 +340,59 @@ closure removes the missing scalar child model without inferring costs from
 emitted instructions. Source peak3/3/5 remains separately recorded; no new
 independent generic composite peak estimator is claimed. Generic controlled
 SwapPow still has its original atomic C[And] model failure and remains
-unpriced. Named Rz/CRz, other exact owners and child-private allocation remain
-separate execution gaps; whole-file parent acceptance is unchanged.
+unpriced. The following batch closes named Rz/CRz; other exact owners and
+child-private allocation remain separate execution gaps. Whole-file parent
+acceptance is unchanged.
+
+### Complete controlled diagonal dependency closure
+
+Serialized DiagonalGate roots now retain their full immediate source graph
+through positive, negative, array `[0, 1]` and unsigned-word controls, including
+one, two and three explicit Adjoint constructors. The existing Compiler
+`controlled_rz_program(angle, adjoint=...)` owns default positive CRz. Its
+adjoint reverses all four calls; substituting CRz with a negated angle would
+preserve the operator but change the source call order.
+
+The source graph inserts its connected nodes before isolated zero-port scalar
+nodes. This order is retained before control connects every child to the
+control register and before an outer adjoint reverses the graph. For nondefault
+controls, the original `as_cirq_op` execution view remains an SDK decomposition.
+Wire-free SDK phases reuse the shared scalar primitive owner, explicitly
+anchored on the first declared control bit. This prevents the typed importer's
+changing live-word iteration order from selecting a different phase carrier.
+No new Core instruction, control-cost formula or public entry is introduced.
+
+Complete one-, two- and three-target diagonal roots compare immediate child
+ports, each wire's primitive order, operands, parameters, matrices, feedback,
+complete complex operators and private-work cleanup. Native resolution runs
+without Qualtran imports; normal `Circuit.append(op)` and IR round trips run
+without either source or SDK imports. The tested physical paths have no
+measurements or private work, so there is one measurement history per path.
+All seven independent QEC categories match the original source separately,
+including three-control model-only cases. Model measurements are not claimed
+as physical measurements in the SDK execution view.
+
+| Targets | Actual positive / negative / two-bit-control primitives | Original/native declared model for positive control |
+| --- | --- | --- |
+| 1 | 5 / 18 / 38 | Clifford 2, rotation 3 |
+| 2 | 15 / 88 / 170 | Toffoli 2, Clifford 6, rotation 7 |
+| 3 | 35 / 228 / 434 | Toffoli 6, Clifford 14, rotation 15 |
+
+All three adjoint depths have matching source/native primitive inventories.
+Private work is zero. Negative and grouped QEC models remain separately
+recorded rather than inferred from these inventories. Existing 24 complete
+Programs and physical bindings are unchanged from published `439df3f48`.
+
+The unchanged zero-target DiagonalGate fails in the original SDK Gray-code
+decomposition with `OverflowError`, in both control polarities. Native
+resolution preserves that failure. Raw X/S wrappers still have no declared
+decomposition; generic ZZ/SwapPow paths retain original atomic C[And]
+export/model failures. Unqualified Rx/Ry children, other exact named controls
+and child-private allocation are not admitted by this batch. Serialization
+and resolver whole-file parents remain open; no partial closure is counted.
+
+The concentrated batch passes 301 cases in each actual Cirq 1.7.0/Qiskit 2.5.0
+and Cirq 1.6.1/Qiskit 2.0.0 environment, without skips. Local integration passes
+145 cases. Three Python files pass strict typing, Black/Ruff, owner scopes,
+language, links, architecture, IR and API checks. Frozen source assets,
+Qualtran 0.7.0 and real Kickmix 0.1 Simulator are asserted before testing.
