@@ -5,7 +5,7 @@
 
 """Collect signed terms before binding a block encoding to a circuit."""
 
-from collections.abc import Callable, Hashable
+from collections.abc import Callable, Hashable, Iterable
 from dataclasses import replace
 from typing import cast
 
@@ -35,7 +35,8 @@ def collect_like_terms(
 
     A supplied key declares interchangeability of complete terms, including
     their metadata and directional binders. A key of None uses native object
-    equality. The first term for each key supplies the binding.
+    equality, including owned snapshots whose IR mappings are not hashable.
+    Explicit keys must be hashable. The first term for each key supplies the binding.
     """
 
     def rewrite(node: _BlockMetadata) -> _BlockMetadata:
@@ -51,15 +52,32 @@ def collect_like_terms(
         ):
             return node
 
-        terms: dict[
-            tuple[bool, _BlockMetadata | Hashable], tuple[_BlockMetadata, float]
-        ] = {}
+        terms: list[
+            tuple[tuple[bool, _BlockMetadata | Hashable], _BlockMetadata, float]
+        ] = []
+        buckets: dict[int | None, list[int]] = {}
 
         def accumulate(term: _BlockMetadata, coefficient: float) -> None:
             explicit = term_key(term) if term_key is not None else None
             key = (False, term) if explicit is None else (True, explicit)
-            first, subtotal = terms.get(key, (term, 0.0))
-            terms[key] = first, subtotal + coefficient
+            key_hash: int | None
+            candidates: Iterable[int]
+            try:
+                key_hash = hash(key)
+            except TypeError:
+                if explicit is not None:
+                    raise
+                key_hash = None
+                candidates = range(len(terms))
+            else:
+                candidates = (*buckets.get(key_hash, ()), *buckets.get(None, ()))
+            for index in candidates:
+                old_key, first, subtotal = terms[index]
+                if old_key == key:
+                    terms[index] = old_key, first, subtotal + coefficient
+                    return
+            buckets.setdefault(key_hash, []).append(len(terms))
+            terms.append((key, term, coefficient))
 
         precision = node.coefficient_bits
         for child, weight in zip(node.block_encodings, node.coefficients, strict=True):
@@ -78,8 +96,8 @@ def collect_like_terms(
             else:
                 accumulate(term, weight)
         return LinearCombinationBlockEncoding(
-            tuple(term for term, _ in terms.values()),
-            tuple(coefficient for _, coefficient in terms.values()),
+            tuple(term for _, term, _ in terms),
+            tuple(coefficient for _, _, coefficient in terms),
             precision,
         )
 

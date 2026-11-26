@@ -88,3 +88,46 @@ assert rewritten.coefficient_bits == 2
 
 The complete append and source-model checks are in
 `tests/unit/test_block_encoding_rewrites.py`.
+
+## Owned snapshot term equality, November 26
+
+Actual separately imported source Unitary(XGate()) terms produce equal owned
+CircuitBlockEncoding snapshots. Their IR mappings are intentionally unhashable;
+the previous dictionary-only accumulator rejected them before any rewrite.
+The accumulator now compares native values in hash buckets, with an equality
+fallback for unhashable native terms. Hashable terms retain indexed lookup,
+hash collisions still require complete key equality, and first occurrence
+supplies the retained binding. Explicit caller keys must remain hashable.
+No source object, numerical equivalence solver or callback execution is added
+to Algorithms term comparison.
+
+`test_block_rewrite_snapshots.py` imports independently constructed X/X/H source
+blocks and combines coefficients (1,2,3) into (3,3), including a nested LCU.
+Both directions use captured controlled children through circuit.append(op).
+Ordered source operands and feedback, every small measurement history, full
+complex logical outputs and clean work are checked against the original source.
+Independent source gate categories and logical peak are checked separately
+from the physical instruction stream. Different normalization, precision and
+controlled snapshot availability prevent accidental collection.
+
+| Captured rewritten fixture, either direction | Measured T-family / CX / measurement / clean work / reserved wires | Original model CSwap / And / Clifford / rotation / measurement / peak |
+| --- | --- | --- |
+| Flat, coefficient precision one | 22 / 49 / 2 / 2 / 8 | 2 / 2 / 43 / 2 / 2 / 8 |
+| Nested, resulting precision two | 38 / 109 / 6 / 5 / 13 | 2 / 6 / 89 / 2 / 6 / 13 |
+
+The captured CH remains one physical named instruction; its independent model
+includes four Cliffords and two rotations. It is not counted as zero work or
+one Clifford by equating a named instruction with a model category.
+
+This closes the owned snapshot dependency gap. Arbitrary independently supplied
+callback equivalence remains explicit via term_key; equality is not inferred by
+running a callback at sample inputs. The full parent retains its recorded scope
+until that original acceptance boundary receives an explicit disposition.
+
+Batch regression passes 278 cases in each Cirq 1.7 and 1.6 profile, including
+the complete unchanged original rewrite tests, and 145 local integration cases.
+Strict typing covers both changed Python files; format, team scope, language,
+links, architecture, IR and public API checks pass. Four frozen source blobs,
+Qualtran 0.7.0 and the actual Kickmix 0.1 Simulator are verified. The initially
+overbroad unrelated coefficient-grid replay was stopped and archived as
+superseded; it is not cited as a completed regression.
