@@ -84,3 +84,14 @@ Frozen contracts, public API snapshots, packaged contract copies and raw
 scientific evidence are unchanged. This is local structural acceptance, not a
 GPU/QPU, distributed-capacity, Rust or performance qualification. GitHub CI must
 qualify the new pushed commit; results for the preceding migration do not count.
+
+## CI manifest follow-up
+
+The first remote CPU and distributed jobs stopped before tests: the locked-image
+manifest comparison included Ruff configuration, whose per-file path changed
+with the operator relocation. The checker now excludes Ruff settings, as it
+already excludes release-wheel configuration. Dependency declarations, optional
+dependencies, build requirements and the build backend remain compared.
+All 25 offline-environment tests pass, including relocated lint paths and rejection
+of dependency/build changes. The normalized checkout manifest also matches the
+audited main baseline. Remote CI must validate the follow-up commit.
