@@ -29,6 +29,7 @@ from flagquantum.compiler.registers.bits.hamming_weight import (
     hamming_weight_requirements,
 )
 from tests.unit.measurement_checks import forced_branch
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 CASES = (
@@ -43,10 +44,8 @@ CASES = (
 @pytest.fixture(scope="module", autouse=True)
 def unchanged_complete_source_files() -> None:
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for filename in ("hamming_weight.py", "hamming_weight_test.py"):
         name = "qualtran/bloqs/arithmetic/" + filename
         raw = (reference / name).read_bytes()

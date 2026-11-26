@@ -14,6 +14,7 @@ import pytest
 
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import process, protobuf_command
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,20 +44,18 @@ def generated(root: Path) -> dict[str, bytes]:
 def test_source_script_and_all_eight_schema_blobs() -> None:
     selected = {"Q-0041"}
     count = 0
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            schema = row["源文件"].startswith("qualtran/protos/") and row[
-                "源文件"
+            schema = row["path"].startswith("qualtran/protos/") and row[
+                "path"
             ].endswith(".proto")
-            if row["编号"] in selected or schema:
-                data = (REFERENCE / row["源文件"]).read_bytes()
+            if row["id"] in selected or schema:
+                data = (REFERENCE / row["path"]).read_bytes()
                 assert (
                     hashlib.sha1(
                         b"blob " + str(len(data)).encode() + b"\0" + data
                     ).hexdigest()
-                    == row["源对象"]
+                    == row["git_blob"]
                 )
                 count += 1
     assert count == 9

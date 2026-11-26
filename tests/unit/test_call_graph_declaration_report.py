@@ -19,6 +19,7 @@ from flagquantum.compiler._component_trace.call_graph import (
     symbolic_call_graph,
 )
 from tests.unit.test_development_tools import REFERENCE, load_source
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,14 +47,12 @@ def original(monkeypatch: pytest.MonkeyPatch) -> types.ModuleType:
 
 
 def test_complete_original_blob() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0038")
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0038")
     data = SOURCE.read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )
 
 

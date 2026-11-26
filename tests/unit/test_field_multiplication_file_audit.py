@@ -25,6 +25,7 @@ from flagquantum.compiler.registers.finite_field.multiplication_model import (
     TOFFOLI,
     polynomial_multiplication_graph,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -38,20 +39,18 @@ def frozen_assets() -> None:
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as handle:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as handle:
         rows = [
             r
             for r in csv.DictReader(handle)
-            if r["编号"] in {"Q-0518", "Q-0519", "Q-0520", "Q-0524"}
+            if r["id"] in {"Q-0518", "Q-0519", "Q-0520", "Q-0524"}
         ]
     assert len(rows) == 4
     for row in rows:
-        data = (REFERENCE / row["源文件"]).read_bytes()
+        data = (REFERENCE / row["path"]).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == row["源对象"]
+            == row["git_blob"]
         )
 
 

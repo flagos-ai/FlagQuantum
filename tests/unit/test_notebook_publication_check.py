@@ -14,6 +14,7 @@ from tests.unit.test_development_tools import REFERENCE
 from tools.development import notebook_publication as publication
 from tools.development import notebook_publication_check as native
 from tools.development.notebook_catalog import notebook_sections
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -25,14 +26,12 @@ def git(root: Path, *args: str) -> str:
 
 
 def test_frozen_shell_source_blob() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0024")
-    data = (REFERENCE / row["源文件"]).read_bytes()
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0024")
+    data = (REFERENCE / row["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )
 
 

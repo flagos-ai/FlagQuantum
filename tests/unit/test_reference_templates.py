@@ -16,6 +16,7 @@ from typing import Any
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -134,24 +135,22 @@ def transform(value: int) -> int:
 
 def test_complete_source_and_six_asset_blobs() -> None:
     remaining = {"Q-0086", "Q-0113", "Q-0114", "Q-0115", "Q-0116", "Q-0117", "Q-0118"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            if row["源文件"].endswith(".jinja"):
+            if row["path"].endswith(".jinja"):
                 assert (
-                    Path("tools/development/templates") / Path(row["源文件"]).name
+                    Path("tools/development/templates") / Path(row["path"]).name
                 ).read_bytes() == data
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
     assert metadata.version("tensorflow-docs") == "2023.5.24.56664"
     assert metadata.version("jinja2") == "3.1.6"

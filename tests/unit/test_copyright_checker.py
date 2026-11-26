@@ -13,6 +13,7 @@ from unittest.mock import patch
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -52,20 +53,18 @@ def messages(owner: Any, data: bytes, *, enabled: bool = True) -> list[Any]:
 
 def test_frozen_source_and_exact_optional_versions() -> None:
     remaining = {"Q-0084", "Q-0085"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
     assert metadata.version("pylint") == "3.3.9"
     assert metadata.version("astroid") == "3.3.11"

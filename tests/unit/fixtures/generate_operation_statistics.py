@@ -47,11 +47,11 @@ def snapshot(stats: Any) -> StatisticsRow:
 
 def verify_source(source: Path, inventory: Path) -> dict[str, str]:
     expected = {
-        row["源文件"].removeprefix("kickmix/src/"): row["源对象"]
+        row["path"].removeprefix("kickmix/src/"): row["git_blob"]
         for row in csv.DictReader(
             inventory.read_text(encoding="utf-8-sig").splitlines()
         )
-        if row["源文件"].startswith("kickmix/src/")
+        if row["path"].startswith("kickmix/src/")
     }
     pending = [
         source / "kickmix/py/operation_statistics.pybind.cc",

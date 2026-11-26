@@ -15,6 +15,7 @@ import pytest
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import process
 from tools.development import requirement_locks as native
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,19 +49,17 @@ def outputs(root: Path) -> dict[str, str]:
 
 def test_complete_source_and_exact_optional_lock() -> None:
     checked = set()
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] in {"Q-0099", "Q-0107", "Q-0112"}:
-                data = (REFERENCE / row["源文件"]).read_bytes()
+            if row["id"] in {"Q-0099", "Q-0107", "Q-0112"}:
+                data = (REFERENCE / row["path"]).read_bytes()
                 assert (
                     hashlib.sha1(
                         b"blob " + str(len(data)).encode() + b"\0" + data
                     ).hexdigest()
-                    == row["源对象"]
+                    == row["git_blob"]
                 )
-                checked.add(row["编号"])
+                checked.add(row["id"])
     assert checked == {"Q-0099", "Q-0107", "Q-0112"}
     assert (
         REFERENCE / "dev_tools/requirements/deps/pip-tools.txt"

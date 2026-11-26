@@ -20,6 +20,7 @@ from nbformat import NotebookNode
 from flagquantum.testing.notebook_execution import execute_notebook_node
 from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import notebook_execution as native
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 nbformat = import_module("nbformat")
@@ -59,20 +60,18 @@ def test_original_blobs_and_unchanged_source_tests(
     original: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     remaining = {"Q-0078", "Q-0079"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            raw = (REFERENCE / row["源文件"]).read_bytes()
+            raw = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(raw)).encode() + b"\0" + raw
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
     provider = types.ModuleType("_development_reference.notebook_execution")
     setattr(provider, "is_out_of_date", native.is_out_of_date)

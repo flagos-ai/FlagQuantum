@@ -22,6 +22,7 @@ from flagquantum.testing.example_checks import (
 from tests.unit.test_library_call_graph import load_reference
 from tests.unit.test_reference_testing_file import lower_fixture, parallel_example
 from tools.development import component_report as native
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -258,12 +259,10 @@ def test_source_report_blob() -> None:
 
     from tests.unit.test_development_tools import REFERENCE
 
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0058")
-    raw = (REFERENCE / row["源文件"]).read_bytes()
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0058")
+    raw = (REFERENCE / row["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )

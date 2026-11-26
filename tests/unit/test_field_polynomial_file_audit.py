@@ -37,6 +37,7 @@ from flagquantum.simulation.finite_field_addition import binary_field_encoding
 from flagquantum.simulation.finite_field_polynomial_encoding import (
     FiniteFieldPolynomialEncoding,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -48,20 +49,18 @@ def complete_locked_assets() -> None:
 
     assert version("qualtran") == "0.7.0"
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as handle:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as handle:
         rows = [
             row
             for row in csv.DictReader(handle)
-            if row["编号"] in {f"Q-{i:04d}" for i in range(525, 535)}
+            if row["id"] in {f"Q-{i:04d}" for i in range(525, 535)}
         ]
     assert len(rows) == 10
     for row in rows:
-        data = (REFERENCE / row["源文件"]).read_bytes()
+        data = (REFERENCE / row["path"]).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == row["源对象"]
+            == row["git_blob"]
         )
 
 

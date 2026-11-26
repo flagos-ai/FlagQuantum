@@ -26,6 +26,7 @@ from tests.unit.test_component_tensor_nodes import fixture, h_supplier, order
 from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import tensor_report
 from tools.development.process_deadlines import ProcessDeadlineExecutor
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -50,14 +51,12 @@ def never_exit(cxn: Connection) -> None:
 
 
 def test_source_file_blob() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0089")
-    raw = (REFERENCE / row["源文件"]).read_bytes()
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0089")
+    raw = (REFERENCE / row["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )
 
 

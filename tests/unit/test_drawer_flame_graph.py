@@ -21,6 +21,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
 )
 from flagquantum.drawer.flame_graph import iter_flame_graph_data
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -28,10 +29,8 @@ REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
 
 @pytest.fixture(scope="module", autouse=True)
 def frozen_source() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for name in (
         "qualtran/drawing/flame_graph.py",
         "qualtran/drawing/flame_graph_test.py",

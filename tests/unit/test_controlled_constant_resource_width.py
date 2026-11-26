@@ -40,6 +40,7 @@ from tests.unit.test_constant_addition_resource_width import (
 from tests.unit.test_constant_addition_resource_width import (
     source_key as plain_source_key,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 Operation = Literal["controlled_constant_add", "controlled_xor_constant"]
@@ -48,10 +49,8 @@ Operation = Literal["controlled_constant_add", "controlled_xor_constant"]
 @pytest.fixture(scope="module", autouse=True)
 def frozen_source() -> None:
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for name in (
         "qualtran/resource_counting/_qubit_counts.py",
         "qualtran/bloqs/arithmetic/addition.py",

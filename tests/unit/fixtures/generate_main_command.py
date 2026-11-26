@@ -14,9 +14,9 @@ def regenerate(source: Path, inventory: Path, output: Path) -> None:
     source = source.resolve()
     rows = list(csv.DictReader(inventory.read_text(encoding="utf-8-sig").splitlines()))
     expected = {
-        row["源文件"].removeprefix("kickmix/src/"): row["源对象"]
+        row["path"].removeprefix("kickmix/src/"): row["git_blob"]
         for row in rows
-        if row["源文件"].startswith("kickmix/src/")
+        if row["path"].startswith("kickmix/src/")
     }
     pending = [source / "kickmix/main.cc"]
     visited = set()

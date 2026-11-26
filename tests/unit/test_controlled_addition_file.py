@@ -25,6 +25,7 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 from tests.unit.test_register_controlled_addition import layout
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_register_tensor import native_signature
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -35,11 +36,8 @@ def frozen_complete_source() -> None:
 
     from qualtran.bloqs.arithmetic import controlled_addition
 
-    root = Path(__file__).resolve().parents[2]
-    with (root.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for name in ("controlled_addition.py", "controlled_addition_test.py"):
         raw = (Path(controlled_addition.__file__).parent / name).read_bytes()
         assert (

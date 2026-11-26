@@ -13,6 +13,7 @@ import pytest
 
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import notebook_catalog as native
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -122,25 +123,23 @@ def test_complete_original_catalog_and_registered_notebook_parents(
     assert [section for section, _ in native.NOTEBOOKS_BY_SECTION] == [
         section for section, _ in source.NB_BY_SECTION
     ]
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as handle:
-        inventory = {row["源文件"]: row for row in csv.DictReader(handle)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as handle:
+        inventory = {row["path"]: row for row in csv.DictReader(handle)}
     selected = inventory["dev_tools/qualtran_dev_tools/notebook_specs.py"]
-    raw = (REFERENCE / selected["源文件"]).read_bytes()
+    raw = (REFERENCE / selected["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
-        == selected["源对象"]
+        == selected["git_blob"]
     )
-    assert selected["编号"] == "Q-0080"
+    assert selected["id"] == "Q-0080"
     for original in rows:
         path = str(original["notebook"])
         row = inventory[path]
-        assert row["编号"].startswith("Q-") and path.endswith(".ipynb")
+        assert row["id"].startswith("Q-") and path.endswith(".ipynb")
         data = (REFERENCE / path).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == row["源对象"]
+            == row["git_blob"]
         )
 
 

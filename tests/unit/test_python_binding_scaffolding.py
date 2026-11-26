@@ -19,6 +19,7 @@ from flagquantum.compiler.registers.primitives.operand_binding import (
 )
 from flagquantum.ecosystem._physical_basis_session import PhysicalBasisSession
 from tools.development.docstrings import get_markdown_docstring_lines
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = pytest.mark.unit
 _DATA = json.loads(
@@ -33,10 +34,8 @@ def test_complete_scaffolding_and_direct_dependency_blobs() -> None:
         "kickmix/src/kickmix/py/" + name
         for name in ("types.pybind.h", "util.pybind.cc", "util.pybind.h")
     ]
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        expected = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        expected = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     verified = set()
     while pending:
         path = pending.pop()

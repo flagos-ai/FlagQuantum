@@ -19,6 +19,7 @@ import pytest
 
 from tests.unit.test_development_tools import REFERENCE
 from tests.unit.test_reference_page_renderers import original as original
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 if TYPE_CHECKING:
     import griffe
@@ -73,28 +74,26 @@ def test_full_source_and_export_blobs() -> None:
     from tools.development import reference_docs
 
     remaining = {"Q-0065", "Q-0066", "Q-0071", "Q-0073"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
             tree = ast.parse(data)
-            if row["编号"] == "Q-0065":
+            if row["id"] == "Q-0065":
                 assert len(tree.body) == 1 and isinstance(tree.body[0], ast.ImportFrom)
                 assert [alias.name for alias in tree.body[0].names] == [
                     "make_reference_docs"
                 ]
-            elif row["编号"] in {"Q-0066", "Q-0073"}:
+            elif row["id"] in {"Q-0066", "Q-0073"}:
                 assert tree.body == []
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
     assert callable(reference_docs.make_reference_docs)
 

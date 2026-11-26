@@ -22,6 +22,7 @@ from flagquantum.testing.component_examples import (
 from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import notebook_autogen as native
 from tools.development import notebook_cleaning as cleaning
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 # nbformat exposes untyped optional I/O; validate nodes at this boundary.
 nbformat = import_module("nbformat")
@@ -83,20 +84,18 @@ def normalized(notebook: NotebookNode) -> dict[str, Any]:
 
 def test_source_blobs() -> None:
     remaining = {"Q-0059", "Q-0063", "Q-0064"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            raw = (REFERENCE / row["源文件"]).read_bytes()
+            raw = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(raw)).encode() + b"\0" + raw
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
 
 

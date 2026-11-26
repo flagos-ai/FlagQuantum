@@ -22,6 +22,7 @@ from tools.development import (
     lint_command,
     typecheck_command,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,14 +42,12 @@ def checkout(tmp_path: Path) -> Path:
 
 
 def test_complete_frozen_composer() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0023")
-    data = (REFERENCE / row["源文件"]).read_bytes()
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0023")
+    data = (REFERENCE / row["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )
 
 

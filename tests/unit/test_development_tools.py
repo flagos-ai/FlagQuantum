@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from tools.development import files, process, repository
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -31,17 +32,17 @@ def load_source(name: str) -> types.ModuleType:
 
 
 def test_locked_complete_source_blobs() -> None:
-    ledger = REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv"
+    ledger = FTQC_SOURCE_INVENTORY
     selected = {"Q-0054", "Q-0060", "Q-0087", "Q-0088", "Q-0090"}
     verified = set()
     with ledger.open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in selected:
+            if row["id"] not in selected:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             digest = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data)
-            assert digest.hexdigest() == row["源对象"]
-            verified.add(row["编号"])
+            assert digest.hexdigest() == row["git_blob"]
+            verified.add(row["id"])
     assert verified == selected
 
 

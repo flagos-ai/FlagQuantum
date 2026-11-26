@@ -15,6 +15,7 @@ import pytest
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import process, pytest_command
 from tools.development.changed_tests import changed_test_paths, comparison_revision
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -46,20 +47,18 @@ def checkout(tmp_path: Path) -> Path:
 def test_complete_frozen_pytest_source_group() -> None:
     selected = {"Q-0030", "Q-0032", "Q-0034"}
     verified = set()
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in selected:
+            if row["id"] not in selected:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            verified.add(row["编号"])
+            verified.add(row["id"])
     assert verified == selected
 
 

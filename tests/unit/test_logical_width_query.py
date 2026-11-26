@@ -21,6 +21,7 @@ from flagquantum.compiler._component_trace.width_schedule import (
     estimate_connection_width,
 )
 from flagquantum.drawer.call_graph import export_resource_call_graph_dot
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = pytest.mark.unit
 
@@ -270,10 +271,8 @@ def test_full_recursive_cache_matches_unmodified_source(case: str) -> None:
     from qualtran.resource_counting._call_graph import get_bloq_callee_counts
 
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     name = "qualtran/resource_counting/_qubit_counts.py"
     raw = (reference / name).read_bytes()
     assert hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blobs[name]

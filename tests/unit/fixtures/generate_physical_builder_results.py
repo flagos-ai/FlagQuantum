@@ -16,6 +16,10 @@ import kickmix as km
 
 from tests.unit.fixtures.generate_physical_circuit_binding import observe
 
+FTQC_SOURCE_INVENTORY = (
+    Path(__file__).resolve().parents[3] / "docs/development/ftqc_source_inventory.csv"
+)
+
 
 class ResultObservation(TypedDict):
     columns: dict[str, list[int]]
@@ -23,9 +27,9 @@ class ResultObservation(TypedDict):
 
 
 def verify_sources(source: Path) -> None:
-    inventory = source.parents[2] / "FlagQuantum-Qualtran-Kickmix-移植进度.csv"
+    inventory = FTQC_SOURCE_INVENTORY
     with inventory.open(encoding="utf-8-sig") as stream:
-        expected = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+        expected = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     pending = [
         source / name
         for name in (

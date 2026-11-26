@@ -40,6 +40,7 @@ from flagquantum.drawer.call_graph import (
     format_call_graph_markdown,
     format_counts_markdown,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -57,10 +58,8 @@ FUNCTIONS = (
 
 @pytest.fixture(scope="module", autouse=True)
 def source_tests() -> dict[str, Any]:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for path in (
         "drawing/bloq_counts_graph_test.py",
         "drawing/bloq_counts_graph.py",

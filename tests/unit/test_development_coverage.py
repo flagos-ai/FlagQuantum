@@ -13,6 +13,7 @@ from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import incremental_coverage as coverage
 from tools.development import process
 from tools.development.environment import PreparedEnvironment
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -47,19 +48,17 @@ def test_complete_reference_blobs() -> None:
     import hashlib
 
     selected = {"Q-0061", "Q-0062", "Q-0083"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] in selected:
-                data = (REFERENCE / row["源文件"]).read_bytes()
+            if row["id"] in selected:
+                data = (REFERENCE / row["path"]).read_bytes()
                 assert (
                     hashlib.sha1(
                         b"blob " + str(len(data)).encode() + b"\0" + data
                     ).hexdigest()
-                    == row["源对象"]
+                    == row["git_blob"]
                 )
-                selected.remove(row["编号"])
+                selected.remove(row["id"])
     assert not selected
 
 

@@ -19,6 +19,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 from flagquantum.compiler._component_trace.resource_generalization import ResourceCall
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.drawer.call_graph import export_call_graph_dot, render_call_graph_svg
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,10 +41,8 @@ def execute(notebook: dict[str, Any]) -> dict[str, Any]:
 def frozen_source() -> None:
     import csv
 
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for path in (
         "drawing/drawing_call_graph.ipynb",
         "drawing/bloq_counts_graph.py",

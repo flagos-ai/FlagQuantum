@@ -22,6 +22,7 @@ from flagquantum.testing.notebook_execution import execute_notebook_node
 from tests.unit.test_development_tools import REFERENCE
 from tests.unit.test_notebook_execution import configure_kernel_environment
 from tools.development import component_report
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,14 +54,12 @@ def execute_cells(path: Path) -> tuple[dict[str, Any], list[Any]]:
 
 
 def test_frozen_source_and_complete_native_cells() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0040")
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0040")
     data = ORIGINAL.read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )
     original = json.loads(data)
     native = json.loads(NATIVE.read_text())

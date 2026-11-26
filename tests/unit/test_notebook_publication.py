@@ -20,6 +20,7 @@ import pytest
 from tests.unit.test_development_tools import REFERENCE
 from tools.development import notebook_publication as native
 from tools.development.notebook_catalog import notebook_sections
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,10 +51,8 @@ def test_frozen_source_and_concept_root_mapping(original: Any) -> None:
     assert [Path(row["native_notebook"]).name for row in records] == list(
         native.CONCEPTS + native.ROOT_COMPONENTS
     )
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        inventory = {row["源文件"]: row for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        inventory = {row["path"]: row for row in csv.DictReader(stream)}
     for path in [
         "dev_tools/autogenerate-bloqs-notebooks-v2.py",
         *[row["source_notebook"] for row in records],
@@ -61,9 +60,9 @@ def test_frozen_source_and_concept_root_mapping(original: Any) -> None:
         data = (REFERENCE / path).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-            == inventory[path]["源对象"]
+            == inventory[path]["git_blob"]
         )
-    assert inventory["dev_tools/autogenerate-bloqs-notebooks-v2.py"]["编号"] == "Q-0036"
+    assert inventory["dev_tools/autogenerate-bloqs-notebooks-v2.py"]["id"] == "Q-0036"
 
 
 def test_source_render_order_and_toc_equivalence(original: Any, tmp_path: Path) -> None:

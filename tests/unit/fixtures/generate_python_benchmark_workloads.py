@@ -15,6 +15,10 @@ from unittest.mock import patch
 
 import kickmix as km
 
+FTQC_SOURCE_INVENTORY = (
+    Path(__file__).resolve().parents[3] / "docs/development/ftqc_source_inventory.csv"
+)
+
 
 def _load(name: str, source: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, source / (name + ".py"))
@@ -28,10 +32,8 @@ def _load(name: str, source: Path) -> ModuleType:
 def main() -> None:
     reference = Path(__file__).resolve().parents[4] / "ftqc-reference-env"
     source = reference / "kickmix/src/kickmix/py/perf"
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        expected = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        expected = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     blobs = {}
     for path in sorted(source.glob("*.py")):
         relative = str(path.relative_to(reference))

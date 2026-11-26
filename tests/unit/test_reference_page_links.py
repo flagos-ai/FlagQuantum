@@ -16,6 +16,7 @@ import pytest
 
 from tests.unit.test_development_tools import REFERENCE
 from tools.development.files import WriteIfDifferent
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 if TYPE_CHECKING:
 
@@ -49,20 +50,18 @@ def original(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 
 def test_frozen_blobs_and_optional_dependency_versions() -> None:
     selected = {"Q-0067", "Q-0070", "Q-0072", "Q-0077", "Q-0104"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in selected:
+            if row["id"] not in selected:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            selected.remove(row["编号"])
+            selected.remove(row["id"])
     assert not selected
     lock = (REFERENCE / "dev_tools/requirements/envs/docs.env.txt").read_text()
     for name in ["griffe", "mdit-py-plugins", "markdown-it-py", "mdurl", "colorama"]:

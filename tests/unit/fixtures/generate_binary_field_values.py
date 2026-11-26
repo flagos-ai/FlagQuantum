@@ -10,6 +10,10 @@ import tempfile
 from pathlib import Path
 from typing import TypedDict
 
+FTQC_SOURCE_INVENTORY = (
+    Path(__file__).resolve().parents[3] / "docs/development/ftqc_source_inventory.csv"
+)
+
 
 class Case(TypedDict):
     request: list[str]
@@ -95,11 +99,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     root = args.source_root.resolve()
-    inventory = root.parent.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv"
+    inventory = FTQC_SOURCE_INVENTORY
     sources = []
     with inventory.open(encoding="utf-8-sig") as handle:
         for row in csv.DictReader(handle):
-            if row["编号"] not in {
+            if row["id"] not in {
                 "K-0302",
                 "K-0303",
                 "K-0304",
@@ -113,12 +117,12 @@ def main() -> None:
                 "K-0322",
             }:
                 continue
-            data = (root.parent / row["源文件"]).read_bytes()
+            data = (root.parent / row["path"]).read_bytes()
             blob = hashlib.sha1(
                 b"blob " + str(len(data)).encode() + b"\0" + data
             ).hexdigest()
-            assert blob == row["源对象"]
-            sources.append({"parent": row["编号"], "path": row["源文件"], "blob": blob})
+            assert blob == row["git_blob"]
+            sources.append({"parent": row["id"], "path": row["path"], "blob": blob})
     cases: list[Case] = []
 
     def add(*request: str) -> None:

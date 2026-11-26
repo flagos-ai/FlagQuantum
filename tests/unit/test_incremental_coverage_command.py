@@ -14,6 +14,7 @@ from tests.unit.test_documentation_commands import original_command
 from tools.development import incremental_coverage as native
 from tools.development import process
 from tools.development.environment import PreparedEnvironment
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -24,19 +25,17 @@ def test_source_command_arguments_output_and_errors(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     remaining = {"Q-0044"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] in remaining:
-                data = (REFERENCE / row["源文件"]).read_bytes()
+            if row["id"] in remaining:
+                data = (REFERENCE / row["path"]).read_bytes()
                 assert (
                     hashlib.sha1(
                         b"blob " + str(len(data)).encode() + b"\0" + data
                     ).hexdigest()
-                    == row["源对象"]
+                    == row["git_blob"]
                 )
-                remaining.remove(row["编号"])
+                remaining.remove(row["id"])
     assert not remaining
     monkeypatch.chdir(tmp_path)
     calls: list[tuple[str | None, str, str | None]] = []

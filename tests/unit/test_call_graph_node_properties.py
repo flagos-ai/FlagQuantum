@@ -28,6 +28,7 @@ from flagquantum.drawer.call_graph import (
     export_resource_call_graph_dot,
     render_call_graph_svg,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
@@ -35,10 +36,8 @@ REFERENCE = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
 
 @pytest.fixture(scope="module", autouse=True)
 def frozen_source() -> None:
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     raw = (REFERENCE / "qualtran/drawing/bloq_counts_graph.py").read_bytes()
     assert (
         hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()

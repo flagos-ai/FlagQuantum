@@ -44,7 +44,7 @@ class OperandUnionCorpus(TypedDict):
 
 def regenerate(source: Path, inventory: Path, output: Path) -> None:
     expected = {
-        row["源文件"]: row["源对象"]
+        row["path"]: row["git_blob"]
         for row in csv.DictReader(
             inventory.read_text(encoding="utf-8-sig").splitlines()
         )

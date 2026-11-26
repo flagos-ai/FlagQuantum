@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, TextIO
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE, load_source
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 if TYPE_CHECKING:
     import griffe
@@ -70,20 +71,18 @@ def original(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 
 def test_renderer_blobs() -> None:
     remaining = {"Q-0074", "Q-0075", "Q-0076"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] not in remaining:
+            if row["id"] not in remaining:
                 continue
-            data = (REFERENCE / row["源文件"]).read_bytes()
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            remaining.remove(row["编号"])
+            remaining.remove(row["id"])
     assert not remaining
 
 

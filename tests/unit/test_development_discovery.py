@@ -15,6 +15,7 @@ from flagquantum.testing.component_examples import (
 )
 from tests.unit.test_development_tools import REFERENCE, load_source
 from tools.development import component_discovery as discovery
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -235,12 +236,10 @@ def test_frozen_discovery_blob() -> None:
     import csv
     import hashlib
 
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        row = next(row for row in csv.DictReader(stream) if row["编号"] == "Q-0057")
-    data = (REFERENCE / row["源文件"]).read_bytes()
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        row = next(row for row in csv.DictReader(stream) if row["id"] == "Q-0057")
+    data = (REFERENCE / row["path"]).read_bytes()
     assert (
         hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
-        == row["源对象"]
+        == row["git_blob"]
     )

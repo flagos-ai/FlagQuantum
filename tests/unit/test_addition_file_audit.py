@@ -42,6 +42,7 @@ from flagquantum.simulation.tensor_network.component_dense import (
 )
 from tests.unit.test_constant_addition_resource_width import source_key as add_key
 from tests.unit.test_out_of_place_resource_width import source_key as oop_key
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ROOT = Path(__file__).resolve().parents[2]
@@ -77,10 +78,8 @@ ORIGINAL_TESTS = {
 
 @pytest.fixture(scope="module", autouse=True)
 def frozen_complete_source_assets() -> None:
-    with (ROOT.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for filename in ("addition.py", "addition_test.py", "addition.ipynb"):
         path = "qualtran/bloqs/arithmetic/" + filename
         raw = (REFERENCE / path).read_bytes()

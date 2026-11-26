@@ -26,6 +26,7 @@ from tools.development.library_call_graph import (
     library_call_graph,
     resource_library_call_graph,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -103,19 +104,17 @@ def test_union_native_failures_and_terminals() -> None:
 
 def test_source_library_file_blobs() -> None:
     selected = {"Q-0055", "Q-0056"}
-    with (REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
         for row in csv.DictReader(stream):
-            if row["编号"] in selected:
-                data = (REFERENCE / row["源文件"]).read_bytes()
+            if row["id"] in selected:
+                data = (REFERENCE / row["path"]).read_bytes()
                 assert (
                     hashlib.sha1(
                         b"blob " + str(len(data)).encode() + b"\0" + data
                     ).hexdigest()
-                    == row["源对象"]
+                    == row["git_blob"]
                 )
-                selected.remove(row["编号"])
+                selected.remove(row["id"])
     assert not selected
 
 

@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from tests.unit.test_development_tools import REFERENCE
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -37,19 +38,19 @@ def original_command(
 
 
 def test_frozen_command_blobs() -> None:
-    inventory = REFERENCE.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv"
+    inventory = FTQC_SOURCE_INVENTORY
     selected = {"Q-0042", "Q-0043", "Q-0045", "Q-0050"}
     found = set()
     for row in csv.DictReader(inventory.open(encoding="utf-8-sig")):
-        if row["编号"] in selected:
-            data = (REFERENCE / row["源文件"]).read_bytes()
+        if row["id"] in selected:
+            data = (REFERENCE / row["path"]).read_bytes()
             assert (
                 hashlib.sha1(
                     b"blob " + str(len(data)).encode() + b"\0" + data
                 ).hexdigest()
-                == row["源对象"]
+                == row["git_blob"]
             )
-            found.add(row["编号"])
+            found.add(row["id"])
     assert found == selected
 
 

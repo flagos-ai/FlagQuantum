@@ -31,6 +31,7 @@ from flagquantum.drawer.call_graph import (
     GateAggregation,
     export_resource_call_graph_dot,
 )
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = pytest.mark.unit
 
@@ -55,10 +56,8 @@ def source_atoms() -> dict[ResourceCall, Any]:
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
 
     reference = Path(__file__).resolve().parents[3] / "ftqc-reference-env"
-    with (reference.parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for name in [
         "qualtran/resource_counting/_qubit_counts.py",
         "qualtran/bloqs/basic_gates/on_each.py",

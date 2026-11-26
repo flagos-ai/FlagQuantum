@@ -25,6 +25,7 @@ from flagquantum.drawer.register_score_mpl import draw_register_score
 from tests.unit.test_drawer_component_score import assert_source_geometry
 from tests.unit.test_drawer_custom_symbols import assert_pixels
 from tests.unit.test_program_classical_registers import identity
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -37,11 +38,11 @@ def frozen_source() -> None:
     )
     raw = path.read_bytes()
     # Check the fixed inventory instead of modifying the upstream default method.
-    inventory = path.parents[2].parent / "FlagQuantum-Qualtran-Kickmix-移植进度.csv"
+    inventory = FTQC_SOURCE_INVENTORY
     with inventory.open(encoding="utf-8-sig") as stream:
         rows = list(csv.DictReader(stream))
     expected = next(
-        row["源对象"] for row in rows if row["源文件"] == "qualtran/_infra/bloq.py"
+        row["git_blob"] for row in rows if row["path"] == "qualtran/_infra/bloq.py"
     )
     assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == expected
 

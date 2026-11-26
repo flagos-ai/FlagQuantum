@@ -19,6 +19,7 @@ from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.register_score_data import register_score_data
 from tests.unit.test_drawer_component_score import assert_source_geometry
 from tests.unit.test_program_classical_registers import identity
+from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 ORDERS = [(0, 1), (1, 0), *permutations(range(3)), (3, 1, 0, 2), (3, 2, 1, 0)]
@@ -27,10 +28,8 @@ ORDERS = [(0, 1), (1, 0), *permutations(range(3)), (3, 1, 0, 2), (3, 2, 1, 0)]
 @pytest.fixture(scope="module", autouse=True)
 def frozen_source() -> None:
     root = Path(__file__).resolve().parents[3]
-    with (root / "FlagQuantum-Qualtran-Kickmix-移植进度.csv").open(
-        encoding="utf-8-sig"
-    ) as stream:
-        blobs = {row["源文件"]: row["源对象"] for row in csv.DictReader(stream)}
+    with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as stream:
+        blobs = {row["path"]: row["git_blob"] for row in csv.DictReader(stream)}
     for name in (
         "qualtran/_infra/composite_bloq.py",
         "qualtran/drawing/musical_score.py",
