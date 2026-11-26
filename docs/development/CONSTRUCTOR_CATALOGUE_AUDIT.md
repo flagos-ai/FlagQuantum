@@ -18,13 +18,13 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 50 |
-| Union of exact native registrations | 212 |
-| Keys without an exact factory in these providers | 91 |
+| Keys reachable through Ecosystem providers | 53 |
+| Union of exact native registrations | 215 |
+| Keys without an exact factory in these providers | 88 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq and eight
-finite ordinary/projectile momentum-preparation constructors add nine keys. These are registration facts, not accepted constructor totals.
+The Ecosystem count overlaps Compiler for 41 keys. CirqGateAsBloq and eleven
+finite momentum/potential/nuclear-preparation constructors add twelve keys. These are registration facts, not accepted constructor totals.
 The old 117/303 complete counter is historical. Current acceptance must be
 reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
@@ -210,13 +210,13 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu.TestNuLessThanMu` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py` | `ecosystem/_nu_preparation_library.py:nu_preparation_factories` | Finite literal signatures and six-call root; opaque leaves and original RIGHT inverse-flag failure retained; [audit](RESOLVER_PROJECTILE_NU_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t.PreparePowerTwoState` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_t.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t.PrepareTFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_t.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv.PrepareUVFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_uv.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta.PrepareZetaState` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_zeta.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv.PrepareUVFirstQuantization` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_uv.py` | `ecosystem/_potential_preparation_library.py:potential_preparation_factories` | Finite source field/signature and nu-then-zeta dependency binding; opaque physical leaves remain; [audit](RESOLVER_POTENTIAL_PREPARATION_AUDIT.md) |
+| `qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta.PrepareZetaState` | `qualtran/bloqs/chemistry/pbc/first_quantization/prepare_zeta.py` | `ecosystem/_potential_preparation_library.py:potential_preparation_factories` | Finite source field/signature and nu-then-zeta dependency binding; opaque physical leaves remain; [audit](RESOLVER_POTENTIAL_PREPARATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu.PrepareMuUnaryEncodedOneHotWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_nu.py` | `ecosystem/_nu_preparation_library.py:nu_preparation_factories` | Finite literal signatures and six-call root; opaque leaves and original RIGHT inverse-flag failure retained; [audit](RESOLVER_PROJECTILE_NU_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu.PrepareNuStateWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_nu.py` | `ecosystem/_nu_preparation_library.py:nu_preparation_factories` | Finite literal signatures and six-call root; opaque leaves and original RIGHT inverse-flag failure retained; [audit](RESOLVER_PROJECTILE_NU_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t.PreparePowerTwoStateWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_t.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t.PrepareTFirstQuantizationWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_t.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv.PrepareUVFirstQuantizationWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_uv.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv.PrepareUVFirstQuantizationWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_uv.py` | `ecosystem/_potential_preparation_library.py:potential_preparation_factories` | Finite source field/signature and nu-then-zeta dependency binding; opaque physical leaves remain; [audit](RESOLVER_POTENTIAL_PREPARATION_AUDIT.md) |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare.ControlledMultiplexedCSwap3D` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/select_and_prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare.PrepareFirstQuantizationWithProj` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/select_and_prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare.PrepareTUVSuperpositions` | `qualtran/bloqs/chemistry/pbc/first_quantization/projectile/select_and_prepare.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |

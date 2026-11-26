@@ -1,5 +1,10 @@
 # Projectile kinetic and potential PREPARE audit
 
+The subsequent [finite potential constructor audit](RESOLVER_POTENTIAL_PREPARATION_AUDIT.md)
+connects both original UV constructors and the zeta declaration to the shared
+typed nu dependency. It preserves the source inverse/physical boundaries below;
+constructor registration does not close those gaps.
+
 The frozen Qualtran v0.7.0 reference is under
 `qualtran/bloqs/chemistry/pbc/first_quantization/projectile` at
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
