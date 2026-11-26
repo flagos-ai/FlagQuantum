@@ -13,11 +13,14 @@ from ..arithmetic.addition_component import addition_component_program
 from ..arithmetic.constant_addition_component import constant_addition_program
 from ..comparison._component_gates import comparison_bit_functions
 from ..comparison.linear_component import linear_greater_program
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from .modular_addition import modular_add_requirements
 
 
-def modular_addition_program(width: int, modulus: int) -> ProgramRecord:
+def modular_addition_program(
+    width: int, modulus: int, *, adjoint: bool = False
+) -> ProgramRecord:
     """Preserve x and add it modulo modulus into y using the source graph.
 
     Both MSB-first ports retain the declared Montgomery modulus. The internal
@@ -25,7 +28,10 @@ def modular_addition_program(width: int, modulus: int) -> ProgramRecord:
     prefixes and arithmetic work are owned until release. Physical cleanup is
     promised for x in [0, modulus] and y in [0, modulus), subject to source
     defects recorded in the file audit.
+    The adjoint reverses the same typed children using their exact inverses.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Modular addition direction must be Boolean")
     modular_add_requirements(width)
     if type(modulus) is not int or not 1 <= modulus <= 1 << width:
         raise ValueError("Modulus must be a positive integer fitting the operand")
@@ -67,4 +73,37 @@ def modular_addition_program(width: int, modulus: int) -> ProgramRecord:
     assert isinstance(cleared_sign, RegisterBinding)
     builder.free(junk)
     builder.free(cleared_sign)
-    return builder.finalize({"x": compared["a"], "y": compared["b"]})
+    record = builder.finalize({"x": compared["a"], "y": compared["b"]})
+    if not adjoint:
+        return record
+    x_gate = ProgramRecord((comparison_bit_functions()[0],))
+    return adjoint_component_calls(
+        record,
+        (
+            (
+                addition_component_program(
+                    width + 1, left_dtype=wide, right_dtype=wide
+                ),
+                addition_component_program(
+                    width + 1, left_dtype=wide, right_dtype=wide, adjoint=True
+                ),
+            ),
+            (
+                constant_addition_program(wide, (-modulus) % (1 << (width + 1))),
+                constant_addition_program(
+                    wide, (-modulus) % (1 << (width + 1)), adjoint=True
+                ),
+            ),
+            (
+                constant_addition_program(narrow, modulus, control_value=1),
+                constant_addition_program(
+                    narrow, modulus, control_value=1, adjoint=True
+                ),
+            ),
+            (
+                linear_greater_program(width),
+                linear_greater_program(width, adjoint=True),
+            ),
+            (x_gate, x_gate),
+        ),
+    )
