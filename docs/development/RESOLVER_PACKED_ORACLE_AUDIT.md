@@ -21,8 +21,9 @@ only Core Signature/Register metadata and complete native Program children;
 Algorithms types and SDK objects do not cross that boundary.
 
 Formats requires explicit selection/junk or selection/target metadata and exact
-child inverse Programs from the owning provider. Ecosystem supplies the original
-Hubbard examples through the existing native Hubbard owners. Additional native
+child inverse Programs from the owning provider. Compiler legacy_hubbard_packed_context supplies the original
+Hubbard example Programs through existing native owners, while Ecosystem
+injects numerical coefficient conversion. Additional native
 owners can replace that dependency without modifying the packed consumer.
 Unknown roles are not inferred from names, widths, amplitudes or gate counts.
 Normal consumption remains circuit.append(op).
@@ -113,3 +114,13 @@ the new optional NumPy reference test is guarded rather than accepting a new
 finding. Existing test callback annotations and a shadowed local name were
 corrected without changing assertions. No reference file or protected API
 snapshot was changed. Receipts use g2-packed-oracle-constructor-*-20261125.
+
+## Shared scoped context continuation
+
+The original packed/Hubbard role, inverse and specialized-control context now
+belongs to Compiler. Ecosystem retains coefficient conversion and the existing
+entry signatures. Algorithms object construction is removed from pure SELECT
+parsing; both native signatures and literal Programs reuse existing Compiler
+owners. See [the complete dependency audit](HUBBARD_PACKED_CONTEXT_OWNER.md).
+All 22 original Program/binding/failure records remain identical; source enum
+serialization and singleton refusals remain explicit.
