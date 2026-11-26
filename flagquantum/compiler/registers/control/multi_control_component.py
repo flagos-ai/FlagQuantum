@@ -10,7 +10,7 @@ from typing import Literal
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
@@ -33,8 +33,19 @@ def multi_control_z_program(values: tuple[int, ...]) -> ProgramRecord:
     return _multi_control_program(values, "z")
 
 
+def controlled_word_x_program(values: tuple[int, ...]) -> ProgramRecord:
+    """Preserve the source opaque control-word port and scalar q target.
+
+    The same predicate owner handles word and array layouts. Packing adds no
+    gates; the returned root is the actual word predicate/positive-X/erase chain.
+    """
+    if not values:
+        raise ValueError("Word-controlled X requires a nonempty activation")
+    return _multi_control_program(values, "x", word_control=True)
+
+
 def _multi_control_program(
-    values: tuple[int, ...], axis: Literal["x", "z"]
+    values: tuple[int, ...], axis: Literal["x", "z"], *, word_control: bool = False
 ) -> ProgramRecord:
     if any(type(value) is not int or value not in (0, 1) for value in values):
         raise ValueError(
@@ -66,16 +77,35 @@ def _multi_control_program(
             )
             return result[control_name], (result[target_name],)
 
+        control_port = (
+            Register("ctrl", opaque_register_type(len(values)))
+            if word_control
+            else Register("ctrl", bit, (len(values),))
+        )
+        pattern = (
+            ControlRegister(
+                len(values),
+                (
+                    sum(
+                        value << (len(values) - i - 1) for i, value in enumerate(values)
+                    ),
+                ),
+            )
+            if word_control
+            else ControlRegister(1, values)
+        )
         controlled = control_component_via_predicate(
             body.finalize({"q": target}),
             {"main": add_controlled},
-            (Register("ctrl", bit, (len(values),)),),
-            (ControlRegister(1, values),),
+            (control_port,),
+            (pattern,),
         )
         controlled = replace(
             controlled,
             functions=tuple(f for f in controlled.functions if f.name != axis),
         )
+        if word_control:
+            return controlled
         builder = ComponentProgramBuilder(
             Signature(
                 (Register("controls", bit, (len(values),)), Register("target", bit))

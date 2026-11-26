@@ -2,6 +2,13 @@
 
 This package owns control predicates, multi-control, indexed and controlled component composition.
 
+`controlled_word_x_program` retains an MSB-first opaque control word and scalar
+target through the existing predicate owner. Its array counterpart retains the
+original outer MultiControlX wrapper. Packing changes no emitted primitives;
+both paths share workspace and measured erasure. Run
+`tests/unit/test_multi_control_component.py` for all small activation patterns,
+literal source hierarchy and primitive/feedback equivalence.
+
 `hubbard_select_component.py` owns literal controlled/uncontrolled Hubbard SELECT
 calls and explicit inverse dependencies. The zero-port scalar delegates to
 the existing private-carrier owner; no Core effect or backend selection is

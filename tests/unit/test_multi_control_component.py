@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.compiler.registers.control.multi_control_component import (
+    controlled_word_x_program,
     multi_control_x_program,
     multi_control_z_program,
 )
@@ -75,7 +76,7 @@ class MeasurementSlots(dict[int, int]):
 def test_multi_control_root_and_primitive_dependencies(
     values: tuple[int, ...], axis: str
 ) -> None:
-    from qualtran.bloqs.mcmt import MultiControlX, MultiControlZ
+    from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlX, MultiControlZ
 
     graph = (multi_control_x_program if axis == "x" else multi_control_z_program)(
         values
@@ -96,4 +97,45 @@ def test_multi_control_root_and_primitive_dependencies(
     assert_source(
         bound.circuit.instructions,
         reference_arithmetic_gates(source, ports, clean, slots, keep_pauli_leaves=True),
+    )
+
+
+@pytest.mark.parametrize(
+    "values", [pattern for n in range(1, 5) for pattern in product((0, 1), repeat=n)]
+)
+def test_word_controls_retain_source_hierarchy_and_array_primitive_stream(
+    values: tuple[int, ...],
+) -> None:
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QAny
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+    width = len(values)
+    activation = sum(value << (width - i - 1) for i, value in enumerate(values))
+    source = ControlledViaAnd(XGate(), CtrlSpec(qdtypes=QAny(width), cvs=activation))
+    graph = controlled_word_x_program(values)
+    assert not verify_program_record(graph)
+    if width > 1:
+        compare_layers(graph, source, atomic_leaves(graph))
+    clean = tuple(range(width + 1, 2 * width))
+    word = bind_register_program(graph, (tuple(range(width)), (width,)), clean=clean)
+    array = bind_register_program(
+        multi_control_x_program(values),
+        (*((i,) for i in range(width)), (width,)),
+        clean=clean,
+    )
+    assert word.circuit == array.circuit
+    assert tuple(wire for output in word.outputs for wire in output) == tuple(
+        wire for output in array.outputs for wire in output
+    )
+    assert_source(
+        word.circuit.instructions,
+        reference_arithmetic_gates(
+            source,
+            {"ctrl": tuple(range(width)), "q": (width,)},
+            clean,
+            MeasurementSlots(word.circuit.instructions),
+            keep_pauli_leaves=True,
+        ),
     )
