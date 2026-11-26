@@ -120,57 +120,13 @@ class MPSMonteCarloResult:
             raise ValueError("sample shots must be a positive integer")
         self._require_retained_trajectories()
 
-        first = self.trajectories[0]
-        n_qubits = int(first.n_qubits)
-        bsz = int(first.bsz)
-        device = torch.device(first.device)
-        for state in self.trajectories[1:]:
-            if (
-                int(state.n_qubits) != n_qubits
-                or int(state.bsz) != bsz
-                or torch.device(state.device) != device
-            ):
-                raise ValueError("retained noisy MPS trajectories are incompatible")
-
-        selected = torch.randint(
-            len(self.trajectories),
-            (bsz, shots),
-            device=device,
-            generator=generator,
+        from flagquantum.simulation.mps.sampling import (
+            _sample_retained_trajectory_mixture,
         )
-        samples = torch.empty(
-            bsz,
-            shots,
-            n_qubits,
-            dtype=torch.int64,
-            device=device,
-        )
-        for trajectory_index, state in enumerate(self.trajectories):
-            per_batch = [
-                torch.nonzero(
-                    selected[row] == trajectory_index, as_tuple=False
-                ).flatten()
-                for row in range(bsz)
-            ]
-            draw_count = max(
-                (int(positions.numel()) for positions in per_batch), default=0
-            )
-            if draw_count == 0:
-                continue
-            draws = state.sample(draw_count, generator=generator, format="bits")
-            for row, positions in enumerate(per_batch):
-                if positions.numel():
-                    samples[row, positions] = draws[row, : positions.numel()]
 
-        if format == "bits":
-            return samples
-        if n_qubits > 63:
-            raise ValueError(
-                "integer-index noisy MPS samples support at most 63 qubits; "
-                "request format='bits' for wider circuits"
-            )
-        shifts = torch.arange(n_qubits - 1, -1, -1, device=device)
-        return torch.sum(samples << shifts, dim=-1)
+        return _sample_retained_trajectory_mixture(
+            self.trajectories, shots, generator=generator, format=format
+        )
 
     def sampling_summary(self) -> dict[str, Any]:
         """Describe the approximation used for shot sampling."""

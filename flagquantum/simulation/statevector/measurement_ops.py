@@ -171,3 +171,48 @@ def _measure_wires_batched(
     collapsed = shaped * selector.reshape(view_shape)
     norms = torch.linalg.vector_norm(collapsed.reshape(state.shape[0], -1), dim=1)
     return collapsed.reshape_as(state) / norms.reshape(-1, 1), bits
+
+
+def _sample_trajectory_state(
+    state: torch.Tensor,
+    n_qubits: int,
+    *,
+    generator: torch.Generator,
+) -> torch.Tensor:
+    """Sample one trajectory state with the existing integer bit convention."""
+
+    basis_index = int(
+        torch.multinomial(
+            torch.abs(state.reshape(-1)) ** 2,
+            1,
+            generator=generator,
+        ).item()
+    )
+    sample = torch.tensor(
+        [(basis_index >> (n_qubits - wire - 1)) & 1 for wire in range(n_qubits)],
+        dtype=torch.int64,
+        device=state.device,
+    )
+    return sample
+
+
+def _sample_batched_trajectory_states(
+    state: torch.Tensor,
+    n_qubits: int,
+    *,
+    generator: torch.Generator,
+) -> torch.Tensor:
+    """Sample one basis result per already-owned trajectory row."""
+
+    sampled_indices = torch.multinomial(
+        torch.abs(state) ** 2,
+        1,
+        generator=generator,
+    ).reshape(-1)
+    samples = torch.stack(
+        tuple(
+            (sampled_indices >> (n_qubits - wire - 1)) & 1 for wire in range(n_qubits)
+        ),
+        dim=1,
+    )
+    return samples

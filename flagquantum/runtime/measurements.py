@@ -375,16 +375,18 @@ def _sample_pauli_product(
         state_output=state_output,
         n_wires=n_wires,
     )
-    distribution = torch.clamp(distribution, min=0)
-    distribution = distribution / distribution.sum(dim=-1, keepdim=True)
-    indices = torch.multinomial(
+    from flagquantum.simulation.numerics.probabilities import (
+        _normalize_pauli_sampling_distribution,
+        _sample_pauli_distribution,
+    )
+
+    distribution = _normalize_pauli_sampling_distribution(distribution)
+    return _sample_pauli_distribution(
         distribution,
-        shots,
-        replacement=True,
+        shots=shots,
+        n_qubits=len(wires),
         generator=_generator(target, metadata),
     )
-    shifts = torch.arange(len(wires) - 1, -1, -1, device=indices.device)
-    return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
 
 
 def _pauli_basis_distribution(

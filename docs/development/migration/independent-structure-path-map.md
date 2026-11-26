@@ -568,3 +568,7 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | compiler-runtime-private-binding-retirement | `flagquantum/compiler/topology/routing_cost.py` | `flagquantum/compiler/topology/link_error_rates.py` | partial: retire `_quantized` imported aliases; definitions unchanged |
 | compiler-runtime-private-binding-retirement | `flagquantum/compiler/topology/sabre.py` | `flagquantum/compiler/topology/layout_restore.py` | partial: retire `_restore_path` imported aliases; definitions unchanged |
 | compiler-runtime-private-binding-retirement | `flagquantum/runtime/dynamic/__init__.py` | `flagquantum/runtime/dynamic/_conditions.py` | partial: retire `_classical_width`, `_instruction_conditions` imported aliases; definitions unchanged |
+
+| runtime-readout-sampling-numerics | `flagquantum/runtime/measurements.py` | `flagquantum/simulation/numerics/probabilities.py` | partial: Pauli probability clamp/normalization, draw and bit reconstruction; existing orchestration/public method remains |
+| runtime-readout-sampling-numerics | `flagquantum/runtime/dynamic/execution.py` | `flagquantum/simulation/statevector/measurement_ops.py` | partial: Single and batched final trajectory draws; existing orchestration/public method remains |
+| runtime-readout-sampling-numerics | `flagquantum/runtime/results/trajectories.py` | `flagquantum/simulation/mps/sampling.py` | partial: Empirical retained noisy-MPS mixture sampling; existing orchestration/public method remains |

@@ -256,3 +256,8 @@ namespace, replacement-owner and serialization obligations.
 The [independent helper-binding closure](migration/internal-private-binding-closure.md)
 combines QEC alias retirement with unused Compiler Topology and internal
 Runtime Dynamic aliases; frozen public and historical QEC boundaries remain.
+
+The [readout sampling numerical batch](migration/runtime-readout-sampling-ownership.md)
+places final trajectory, Pauli-distribution and retained noisy-MPS mixture
+sampling in their existing Simulation owners. Runtime keeps request/RNG policy,
+readout corrections and published result validation; no forwarding is added.

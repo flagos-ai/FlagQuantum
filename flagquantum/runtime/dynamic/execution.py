@@ -184,17 +184,8 @@ def _sample_trajectory(
 ) -> tuple[torch.Tensor, int]:
     """Sample a final state with readout noise and Pauli-frame corrections."""
 
-    basis_index = int(
-        torch.multinomial(
-            torch.abs(state.reshape(-1)) ** 2,
-            1,
-            generator=generator,
-        ).item()
-    )
-    sample = torch.tensor(
-        [(basis_index >> (n_wires - wire - 1)) & 1 for wire in range(n_wires)],
-        dtype=torch.int64,
-        device=state.device,
+    sample = _statevector_measurements._sample_trajectory_state(
+        state, n_wires, generator=generator
     )
     readout_errors = 0
     for wire in range(n_wires):
@@ -593,17 +584,8 @@ def _run_dynamic_batched(
             noise_channel_applications += applications
             bit_flip_events += events
 
-    sampled_indices = torch.multinomial(
-        torch.abs(state) ** 2,
-        1,
-        generator=generator,
-    ).reshape(-1)
-    samples = torch.stack(
-        tuple(
-            (sampled_indices >> (circuit.n_qubits - wire - 1)) & 1
-            for wire in range(circuit.n_qubits)
-        ),
-        dim=1,
+    samples = _statevector_measurements._sample_batched_trajectory_states(
+        state, circuit.n_qubits, generator=generator
     )
     for wire in range(circuit.n_qubits):
         observed, count = _apply_readout_error(
