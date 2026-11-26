@@ -306,3 +306,127 @@ def test_flags_symbolic_declaration_and_invalid_constructor_contract() -> None:
         factory("flags", None, {"n": 3, "mod": 3, "window_size": 1})
     with pytest.raises(SerializationError, match="signature"):
         factory("flags", (), {"n": 3, "mod": 3})
+
+
+@pytest.mark.parametrize("depth", (0, 1, 2))
+def test_slope_actual_constructor_literal_calls_and_sdk_free_replacement(
+    depth: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from qualtran.bloqs.cryptography.ecc.ec_add import _ECAddStepTwo
+
+    source = _ECAddStepTwo(3, 3, 1)
+    library = _library(source, depth)
+    with monkeypatch.context() as patch:
+        patch.setitem(sys.modules, "qualtran", None)
+        patch.setitem(sys.modules, "cirq", None)
+        graph = resolve_component_program(
+            library, 0, elliptic_curve_addition_factories()
+        )
+    assert verify_program_record(graph) == ()
+    assert len(graph.functions[0].blocks[0].operations) == 24
+    assert _named_inputs(
+        _native_trace(graph, graph.functions[0].name)
+    ) == _named_inputs(_source_trace(SourceCalls, source.decompose_bloq()))
+
+
+def test_typed_slope_replaces_flat_path_on_all_small_promised_inputs() -> None:
+    from flagquantum.algorithms.primitives.elliptic_curve_addition_flags import (
+        EllipticCurveAdditionFlags,
+    )
+    from flagquantum.algorithms.primitives.elliptic_curve_addition_slope import (
+        EllipticCurveAdditionSlope,
+    )
+    from tests.unit.test_elliptic_curve_addition_slope import layout, pack
+
+    factory = elliptic_curve_addition_factories()[
+        "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepTwo"
+    ]
+    graph = factory("main", None, {"n": 3, "mod": 3, "window_size": 1})
+    assert isinstance(graph, ProgramRecord)
+    names = ("f1", "ctrl", "a", "b", "x", "y", "lam_r")
+    sizes = (1, 1, 3, 3, 3, 3, 3)
+    offset = 0
+    ports = {}
+    for name, size in zip(names, sizes, strict=True):
+        ports[name] = tuple(range(offset, offset + size))
+        offset += size
+    bound = bind_register_program(
+        graph,
+        tuple(ports.values()),
+        clean=tuple(range(offset, offset + 100)),
+        allow_workspace_outputs=True,
+        input_ownership=tuple((wire, False) for wire in range(offset)),
+    )
+    used = max(wire for event in bound.events for wire in event.wires) + 1
+    bound = bind_register_program(
+        graph,
+        tuple(ports.values()),
+        clean=tuple(range(offset, used)),
+        allow_workspace_outputs=True,
+        input_ownership=tuple((wire, False) for wire in range(offset)),
+    )
+    old, old_ports, _, _ = layout(EllipticCurveAdditionSlope(3, 3), reverse=True)
+    old_words, new_words, amplitudes = [], [], []
+    for index, (a, b, x, y, tangent) in enumerate(product(range(3), repeat=5), 1):
+        f1, _, _, _, ctrl, *_ = EllipticCurveAdditionFlags(3, 3).classical_values(
+            a, b, x, y
+        )
+        values = {
+            "f1": f1,
+            "ctrl": ctrl,
+            "a": a,
+            "b": b,
+            "x": x,
+            "y": y,
+            "lam_r": tangent,
+        }
+        old_word, new_word = pack(values, old_ports, old.n_wires), pack(
+            values, ports, used
+        )
+        old_words.append(
+            tuple((old_word >> (old.n_wires - i - 1)) & 1 for i in range(old.n_wires))
+        )
+        new_words.append(tuple((new_word >> (used - i - 1)) & 1 for i in range(used)))
+        amplitudes.append(complex(index, 11 - index))
+    old_outputs, old_measurements = certified_and_channel_map(
+        old.instructions, tuple(old_words)
+    )
+    mapped, measured = certified_and_channel_map(
+        bound.circuit.instructions, tuple(new_words)
+    )
+    assert old_measurements == 470
+    assert measured == 494
+    output_ports = dict(
+        zip(
+            ("f1", "ctrl", "a", "b", "x", "y", "lam", "lam_r"),
+            bound.outputs,
+            strict=True,
+        )
+    )
+    expected_words = []
+    for row in old_outputs:
+        values = {
+            name: sum(row[wire] << (len(wires) - i - 1) for i, wire in enumerate(wires))
+            for name, wires in old_ports.items()
+        }
+        expected_words.append(pack(values, output_ports, used))
+    actual_words = [
+        sum(bit << (used - i - 1) for i, bit in enumerate(row)) for row in mapped
+    ]
+    assert actual_words == expected_words
+    norm = sum(abs(value) ** 2 for value in amplitudes) ** 0.5
+    before = {
+        sum(bit << (used - i - 1) for i, bit in enumerate(row)): value / norm
+        for row, value in zip(new_words, amplitudes, strict=True)
+    }
+    expected = {
+        word: value / norm
+        for word, value in zip(expected_words, amplitudes, strict=True)
+    }
+    for seed in (0, 19):
+        assert execute_sparse_register(
+            bound.circuit, before, seed=seed
+        ) == pytest.approx(expected, abs=2e-12)
+    delta = Counter(g.name for g in bound.circuit.instructions)
+    delta.subtract(g.name for g in old.instructions)
+    assert delta == Counter({"h": 24, "measure": 24, "x": 24, "z": 12, "cx": -12})
