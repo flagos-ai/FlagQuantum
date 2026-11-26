@@ -75,9 +75,12 @@ point arithmetic, signatures and table generation; Compiler performs no numerica
 evaluation and imports no SDK or Algorithms implementation.
 
 The original source connects nominal QAny/unsigned lookup words to Montgomery
-ports without converting their bits. Native typing uses an explicit five-word
-wrapper with ten Casts and one ECAdd call. These casts preserve MSB order,
-source a/b/x/y/lam_r return order, leases and raw encodings, and emit no gates.
+ports without converting their bits. Existing loose source-compatible word
+consistency admits these direct links. A follow-up removed the initially added
+ten-Cast wrapper and eleven helper definitions after checking complete physical
+IR and all returned layouts against published `dec49fcad` at address widths one
+and five. No primitive, measurement, output or physical pool changes. The root
+now calls the six-stage ECAdd directly, retaining a/b/x/y/lam_r source order.
 The root still has five comparable source calls. Original serialized libraries
 at depths zero and two resolve without Qualtran, Cirq or Qiskit imports. The
 unchanged `_ec_window_add_r_small` example (16 bits, modulus 7, address width 4)
