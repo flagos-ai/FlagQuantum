@@ -104,3 +104,79 @@ cases and the six-cell, four-SVG native notebook in an isolated kernel with
 reference imports blocked. Strict typing for all three Python files, Black,
 Ruff, Algorithms scope, architecture, IR and public API checks passed. The
 Cirq 1.6.1 lane passed 11 model and physical cases with native Kickmix present.
+
+## Stored constructor interface recorded before implementation
+
+Ecosystem owns the exact RSAPhaseEstimate and MeasureQFT identifiers and reuses
+the existing RSA parameter validation and Fourier-measurement signature.
+Compiler owns the literal 4n+3-call root: 2n PlusState calls, IntState(1),
+2n controlled modular multipliers in reverse exponent order, MeasureQFT(2n),
+and dirty Free of the modular result. Initial states and multipliers reuse
+their current typed factories. All private arithmetic work remains with those
+owners. The modular result is deliberately discarded dirty, not asserted zero.
+
+Unmodified MeasureQFT cannot finalize its unused MeasureZ CBit outputs. Its
+exact constructor therefore remains a bodyless LEFT-array declaration; the
+new RSA root must refuse physical binding at that leaf. Preserve width-zero
+QFT failure and concrete deeper-library failure, and symbolic RSA decomposition
+refusal. Do not substitute the Kickmix demolition QFT or silently repair source
+finalization. Existing native explicit-readout execution is a separate proven
+path. Root signature remains empty, with no added public result or entry point.
+The original n-width model stays separate from actual 2n readout.
+
+
+### Exact root/shim constructor closure, November 27
+
+Both original identifiers now resolve through
+`ecosystem/_rsa_component_library.py`. The Compiler root resides in
+`registers/phase/rsa_phase_component.py`. Native primitive, modular arithmetic
+and backend owners are unchanged. Concrete widths two/four, the original
+eight-bit example, and fixed width with symbolic modulus/base preserve all
+source named input producers, port/array identities and ordered outputs.
+Level-zero/one library round trips preserve source fields, and complete Programs
+are identical between levels. Repeated equal multiplier constructors share one
+native callee. Each distinct child definition equals the existing registered
+CModMulK factory, with no modified helper body. Source caller-visible returns
+remain empty, and the final release retains its dirty flag.
+
+Symbolic-width metadata survives all three library levels and remains a
+nonexecutable declaration. Original MeasureQFT shallow metadata is preserved
+for widths zero/one/two. Its zero-width rejected-QFT-argument failure and its
+positive-width unused-CBit finalization failures are asserted unchanged for
+decomposition and deeper libraries. Concrete RSA level-two serialization
+reaches that same original BloqError. Missing physical bodies explicitly refuse
+binding. This closes the constructor/root wiring gap without inventing a
+successful original terminal measurement graph or closing Q-0473.
+
+The actual first multiplier of the width-two root is extracted with the
+existing reachable-definition utility. Its primitive operands and feedback
+match unmodified source expansion. Six valid input basis columns and a complex
+superposition reproduce source classical permutation with absolute phases and
+zero work amplitudes. A local erasure certificate covers all 2^48 raw histories;
+none are sampled. Invalid modular input codes are not included in the promised
+clean-output subspace. All scratch leases return. Existing native RSA readout
+and parameter/model regressions also pass, retaining their separate output API.
+
+The selected multiplier emits 1154 primitive instructions, including 206
+T-family gates, 48 measurements and 48 resets, with thirteen private wires at
+peak (three logical wires plus scratch, sixteen total). Its independent source model is
+two CSwap, 48 And, 348 Clifford and 48 measurements, with peak sixteen. Model
+T conversion uses seven T per CSwap; these model categories are not primitive
+counts. The width-two root has eleven calls and four actual terminal inputs;
+its independent original model still uses a two-bit terminal and declares
+eight CSwap,193 And,1397 Clifford and195 measurements. Source whole QubitCount
+fails at MeasureQFT; whole emitted inventory is unavailable, not zero.
+External raw receipts are `g2-rsa-resources-20261127.json` and
+`g2-rsa-constructor-probe-20261127.json`.
+
+Both actual Cirq1.7.0/Qiskit2.5.0 and Cirq1.6.1/Qiskit2.0.0 lanes pass59
+concentrated cases without skips, then the strengthened six-column child check
+passes independently in each lane. Local integration passes145. Actual
+Qualtran0.7.0 and Kickmix0.1 Simulator are asserted. Strict three,Black/Ruff,
+Compiler/Ecosystem scopes,English/links,architecture,IR and API baselines pass.
+Three frozen source/test/shim blobs remain unchanged. Original suite results
+are5pass/4source skips/1source xfail/1notebook deselected; prior notebook evidence
+is reused. The initial diagnostic was explicitly stopped after identifying
+repeated child expansion; final bounded runs reuse unique child evidence and
+retain the full original example and sharing checks. No source failure is
+converted into a skip or a native physical success.
